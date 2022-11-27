@@ -1,0 +1,137 @@
+main > .container {
+    padding: 40px 15px 20px;
+}
+
+.footer {
+    background-color: #f5f5f5;
+    font-size: .9em;
+    height: 60px;
+}
+
+.footer > .container {
+    padding-right: 15px;
+    padding-left: 15px;
+}
+
+.not-set {
+    color: #c55;
+    font-style: italic;
+}
+
+/* add sorting icons to gridview sort links */
+a.asc:after, a.desc:after {
+    content: '';
+    left: 3px;
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border: solid 5px transparent;
+    margin: 4px 4px 2px 4px;
+    background: transparent;
+}
+
+a.asc:after {
+    border-bottom: solid 7px #212529;
+    border-top-width: 0;
+}
+
+a.desc:after {
+    border-top: solid 7px #212529;
+    border-bottom-width: 0;
+}
+
+.grid-view th {
+    white-space: nowrap;
+}
+
+.hint-block {
+    display: block;
+    margin-top: 5px;
+    color: #999;
+}
+
+.error-summary {
+    color: #a94442;
+    background: #fdf7f7;
+    border-left: 3px solid #eed3d7;
+    padding: 10px 20px;
+    margin: 0 0 15px 0;
+}
+
+/* align the logout "link" (button in form) of the navbar */
+.nav li > form > button.logout {
+    padding-top: 7px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+@media(max-width:767px) {
+    .nav li > form > button.logout {
+        display:block;
+        text-align: left;
+        width: 100%;
+        padding: 10px 0;
+    }
+}
+
+.nav > li > form > button.logout:focus,
+.nav > li > form > button.logout:hover {
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.nav > li > form > button.logout:focus {
+    outline: none;
+}
+
+table.table {
+    margin-top: 5px;
+}
+table.table tbody tr td, table thead tr th, table thead tr td {
+    border: 1px solid #ddd;
+    padding: 5px;
+    font-size: 12px;
+}
+
+table.table thead tr:nth-child(even){
+    background-color: #f2f2f2;
+}
+
+table.table tbody tr:hover {
+    background-color: #ddd;
+}
+
+table.table thead tr th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #fff;
+    color: white;
+}
+
+.breadcrumbs_wrap {
+    background-color: #f2f2f2;
+    padding: 5px 0;
+}
+.breadcrumbs_wrap .breadcrumb {
+    margin-bottom: 0;
+}
+.breadcrumbs_wrap .breadcrumb a {
+    color: #000;
+}
+
+h1 {
+    font-size: 24px;
+}
+
+h1:after {
+    content: '';
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    height: 2px;
+    background: #ddd;
+}
+
+table.table .kv-table-header  {
+    border-width: 1px;
+}
