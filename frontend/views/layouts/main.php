@@ -11,6 +11,7 @@ use yii\bootstrap5\Nav;
 use yii\bootstrap5\NavBar;
 
 AppAsset::register($this);
+\frontend\assets\OnlineCounterAsset::register($this);
 
 $this->registerCsrfMetaTags();
 $this->registerMetaTag(['charset' => Yii::$app->charset], 'charset');
@@ -21,8 +22,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => '@w
 
 $rightMenu = [
     [
-        'label'   => '<span class="auth__text">'.Yii::t('common', 'Войти').'</span>
-                      <span class="auth__logo">' . Html::img('/images/icons/steam.svg') . '</span>',
+        'label'   => '<span class="auth__text">'.Yii::t('common', 'Войти через Steam').'</span>',
         'url'     => '/auth/oauth?authclient=steam',
         'encode' => false,
         'options'     => [
@@ -35,7 +35,7 @@ if (!Yii::$app->user->isGuest) {
     $rightMenu[] = [
         'label'   => '<div class="balance-item">
                                     <div class="name">' . Yii::$app->user->identity->userProfile->name . '</div>
-                                    <div class="balance">' . Yii::$app->user->identity->getPersonalBalance()->balance . ' ₽</div>
+                                    <div class="balance">' . Yii::$app->user->identity->getPersonalBalance()->getBalanceFormat() . ' ₽</div>
                             </div>',
         'visible' => !Yii::$app->user->isGuest,
         'encode' => false,
@@ -47,9 +47,12 @@ if (!Yii::$app->user->isGuest) {
         'items' => [
             [
                 'label'   => 'АДМИНКА',
-                'icon'    => 'mdi-settings',
                 'url'     => Yii::$app->params['backendUrl'],
                 'visible' => Yii::$app->user->identity && Yii::$app->user->identity->isAccessBackend(),
+            ],
+            [
+                'label'   => 'Инвентарь',
+                'url'     => '/user/inventory',
             ],
             [
                 'label'  => Yii::t('common', 'Выйти'),
@@ -83,9 +86,7 @@ if (!Yii::$app->user->isGuest) {
                             'label'   => '<div class="header__online-counter">
                                                 ' . Html::img('/images/icons/online.svg', ['width' => '27px', 'class' => 'header__online-icon']) . '
                                                 <div class="header__online">
-                                                    <div class="header__online-cnt">
-                                                        <div>900</div>
-                                                    </div>
+                                                    <div class="header__online-cnt online_counter">' . $this->render('@frontend/views/widgets/_online_counter') . '</div>
                                                     <div class="header__online-label">'.Yii::t('common', 'Онлайн').'</div>
                                                 </div>
                                            </div>',
@@ -138,15 +139,11 @@ if (!Yii::$app->user->isGuest) {
     </nav>
 </header>
 
-<main id="main" class="flex-shrink-0" role="main">
-    <div class="container">
-        <?php if (!empty($this->params['breadcrumbs'])): ?>
-            <?= Breadcrumbs::widget(['links' => $this->params['breadcrumbs']]) ?>
-        <?php endif ?>
-        <?= Alert::widget() ?>
-        <?= $content ?>
-    </div>
-</main>
+<?php if (!empty($this->params['breadcrumbs'])): ?>
+    <?= Breadcrumbs::widget(['links' => $this->params['breadcrumbs']]) ?>
+<?php endif ?>
+<?= Alert::widget() ?>
+<?= $content ?>
 
 <footer id="footer" class="mt-auto">
     <div class="container">

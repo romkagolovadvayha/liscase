@@ -14,6 +14,7 @@ use common\components\base\ActiveRecord;
  * @property string     $created_at
  *
  * @property BoxDrop[]  $boxDrop
+ * @property BoxDrop[]  $boxDropCarousel
  * @property BoxImage[] $boxImages
  * @property BoxImage   $imageOrig
  */
@@ -89,6 +90,65 @@ class Box extends ActiveRecord
     public function getBoxDrop()
     {
         return $this->hasMany(BoxDrop::class, ['box_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[User]].
+     * Gets query for [[BoxDrop]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getBoxDropCarousel()
+    {
+        /** @var BoxDrop[] $boxDrops */
+        $boxDrops = $this->hasMany(BoxDrop::class, ['box_id' => 'id'])->all();
+        $result = [];
+        foreach ($boxDrops as $boxDrop) {
+            if ($boxDrop->drop->price < 30) {
+                for ($i = 0; $i < 5; $i++) {
+                    $result[] = $boxDrop;
+                }
+            }
+            if ($boxDrop->drop->price < 50) {
+                for ($i = 0; $i < 5; $i++) {
+                    $result[] = $boxDrop;
+                }
+            }
+            if ($boxDrop->drop->price < 100) {
+                for ($i = 0; $i < 5; $i++) {
+                    $result[] = $boxDrop;
+                }
+            }
+            if ($boxDrop->drop->price < 300) {
+                for ($i = 0; $i < 5; $i++) {
+                    $result[] = $boxDrop;
+                }
+            }
+            if ($boxDrop->drop->price < 500) {
+                for ($i = 0; $i < 5; $i++) {
+                    $result[] = $boxDrop;
+                }
+            }
+            if ($boxDrop->drop->price < 1000) {
+                for ($i = 0; $i < 5; $i++) {
+                    $result[] = $boxDrop;
+                }
+            }
+            if ($boxDrop->drop->price < 3000) {
+                for ($i = 0; $i < 10; $i++) {
+                    $result[] = $boxDrop;
+                }
+            }
+            if ($boxDrop->drop->price >= 3000) {
+                for ($i = 0; $i < 10; $i++) {
+                    $result[] = $boxDrop;
+                }
+            }
+        }
+        shuffle($result);
+        shuffle($result);
+
+        return $result;
     }
 
     /**

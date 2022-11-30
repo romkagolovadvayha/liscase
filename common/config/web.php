@@ -86,6 +86,11 @@ $config = [
             'apiKey'      => '2gCOCfIiIu4V74f9763v5SjV7jyjT45',
             'baseUrl' => 'https://market.csgo.com/api/v2'
         ],
+        'paypalychApi'   => [
+            'class' => \common\components\payments\Paypalych::class,
+            'secretKey' => '',
+            'shop_id' => '',
+        ],
         'curl'          => [
             'class' => \linslin\yii2\curl\Curl::class,
         ],

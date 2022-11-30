@@ -6,7 +6,7 @@ use yii\authclient\OpenId;
 use Yii;
 
 /**
- * VKontakte allows authentication via Steam OAuth.
+ * Steam allows authentication via Steam OAuth.
  *
  * Example application configuration:
  *

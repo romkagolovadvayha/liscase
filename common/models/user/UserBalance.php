@@ -2,6 +2,7 @@
 
 namespace common\models\user;
 
+use common\models\invoice\Invoice;
 use Yii;
 use common\models\profit\Profit;
 use yii\base\BaseObject;
@@ -17,6 +18,7 @@ use yii\base\BaseObject;
  *
  * @property User     $user
  * @property Profit[] $profits
+ * @property Invoice[] $invoices
  */
 class UserBalance extends \common\components\base\ActiveRecord
 {
@@ -86,6 +88,14 @@ class UserBalance extends \common\components\base\ActiveRecord
     /**
      * @return \yii\db\ActiveQuery
      */
+    public function getInvoices()
+    {
+        return $this->hasMany(Invoice::class, ['user_id' => 'user_id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
     public function getUser()
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
@@ -132,8 +142,18 @@ class UserBalance extends \common\components\base\ActiveRecord
     public function recalculateBalance()
     {
         $balance = (float)$this->getProfits()->sum('amount');
+        $invoices = (float)$this->getInvoices()->sum('amount');
 
-        $this->balance = $balance;
+        $this->balance = $balance - $invoices;
         $this->save(false);
+    }
+
+    /**
+     * @return string
+     */
+    public function getBalanceFormat()
+    {
+        return number_format($this->balance, 2, '.', ' ');
+
     }
 }

@@ -1,7 +1,9 @@
 <?php
 
+use yii\base\Component;
+
 $params = require __DIR__ . '/../../common/config/params.php';
-$db = require __DIR__ . '/../../common/config/db.php';
+$db     = require __DIR__ . '/../../common/config/db.php';
 
 $config = [
     'id' => 'basic',
@@ -19,6 +21,10 @@ $config = [
         ],
         'cache' => [
             'class' => 'yii\caching\FileCache',
+        ],
+        'assetManager' => [
+            'class' => 'yii\web\AssetManager',
+            'forceCopy' => YII_DEBUG,
         ],
         'user' => [
             'identityClass'   => 'common\models\user\User',

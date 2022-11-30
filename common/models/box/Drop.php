@@ -65,6 +65,38 @@ class Drop extends ActiveRecord
         ];
     }
 
+    /**
+     * @return mixed|string
+     */
+    public function getShortName() {
+        $array = explode('|', $this->name);
+        if (count($array) < 2) {
+            return $this->name;
+        }
+        $array2 = explode('(', $array[1]);
+        if (count($array2) < 2) {
+            return trim($array[1]);
+        }
+        return trim($array2[0]);
+    }
+
+    /**
+     * @return mixed|string
+     */
+    public function getLevel() {
+        $level = 0;
+        if ($this->price > 100) {
+            $level = 1;
+        }
+        if ($this->price > 500) {
+            $level = 2;
+        }
+        if ($this->price > 1000) {
+            $level = 3;
+        }
+        return $level;
+    }
+
     public function rules(): array
     {
         return [

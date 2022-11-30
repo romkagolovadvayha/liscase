@@ -24,6 +24,7 @@ class Profit extends \common\components\base\ActiveRecord
 {
     const TYPE_REFERRAL         = 1;
     const TYPE_BONUS            = 2;
+    const TYPE_SELL_DROP             = 3;
 
     /**
      * @return array
@@ -33,6 +34,7 @@ class Profit extends \common\components\base\ActiveRecord
         return [
             self::TYPE_REFERRAL         => Yii::t('common', 'Партнерская программа'),
             self::TYPE_BONUS            => Yii::t('common', 'Бонус'),
+            self::TYPE_SELL_DROP            => Yii::t('common', 'Продажа предметов'),
         ];
     }
 

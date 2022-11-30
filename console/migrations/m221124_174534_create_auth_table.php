@@ -12,12 +12,12 @@ class m221124_174534_create_auth_table extends Migration
      */
     public function safeUp()
     {
-        $this->createTable('auth', [
-            'id' => $this->primaryKey(),
-            'user_id' => $this->integer()->notNull(),
-            'source' => $this->string()->notNull(),
-            'source_id' => $this->string()->notNull(),
-        ]);
+//        $this->createTable('auth', [
+//            'id' => $this->primaryKey(),
+//            'user_id' => $this->integer()->notNull(),
+//            'source' => $this->string()->notNull(),
+//            'source_id' => $this->string()->notNull(),
+//        ]);
     }
 
     /**

@@ -23,6 +23,9 @@ use common\components\base\ActiveRecord;
  *
  * @property UserProfile         $userProfile
  * @property UserBalance[]       $userBalances
+ * @property UserBox[]           $userBoxWaitOpen
+ * @property UserBox[]           $userBoxOpened
+ * @property UserDrop[]          $userDrop
  */
 class User extends ActiveRecord implements IdentityInterface
 {
@@ -160,6 +163,32 @@ class User extends ActiveRecord implements IdentityInterface
     public function getUserBalances()
     {
         return $this->hasMany(UserBalance::class, ['user_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUserBoxWaitOpen()
+    {
+        return $this->hasMany(UserBox::class, ['user_id' => 'id'])
+            ->andWhere(['status' => UserBox::STATUS_WAIT_OPEN]);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUserBoxOpened()
+    {
+        return $this->hasMany(UserBox::class, ['user_id' => 'id'])
+                    ->andWhere(['status' => UserBox::STATUS_OPENED]);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUserDrop()
+    {
+        return $this->hasMany(UserDrop::class, ['user_id' => 'id']);
     }
 
     /**

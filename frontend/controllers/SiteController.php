@@ -2,12 +2,12 @@
 
 namespace frontend\controllers;
 
+use common\models\user\UserBox;
+use common\models\user\UserDrop;
 use Yii;
 use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\Response;
-use common\models\LoginForm;
-use common\models\ContactForm;
 
 class SiteController extends Controller
 {
@@ -40,10 +40,6 @@ class SiteController extends Controller
             'error' => [
                 'class' => 'yii\web\ErrorAction',
             ],
-            'captcha' => [
-                'class' => 'yii\captcha\CaptchaAction',
-                'fixedVerifyCode' => YII_ENV_TEST ? 'testme' : null,
-            ],
         ];
     }
 
@@ -57,26 +53,41 @@ class SiteController extends Controller
         return $this->render('index');
     }
 
-    /**
-     * Login action.
-     *
-     * @return Response|string
-     */
-    public function actionLogin()
+    private function _botOpenBox() {
+        $cacheKey = 'botGenerate';
+        if (Yii::$app->cache->get($cacheKey)) {
+            return;
+        }
+        Yii::$app->cache->set($cacheKey, 1, 5);
+        $rand = rand(1, 3);
+        for ($i = 0; $i < $rand; $i++) {
+            UserBox::botGenerate();
+        }
+    }
+
+    public function actionLastDrops()
     {
-        if (!Yii::$app->user->isGuest) {
-            return $this->goHome();
+        $this->_botOpenBox();
+        $this->layout = 'service';
+        $result = [];
+        $userDrops = UserDrop::getUsersDropLast();
+        foreach ($userDrops as $userDrop) {
+            $result[] = [
+                'id' =>  $userDrop->id,
+                'view' =>  $this->render('@frontend/views/widgets/_last_drops_item', [
+                                'userDrop' => $userDrop,
+                                'opened' => true,
+                           ])
+            ];
         }
+        header("Content-Type: application/json");
+        return json_encode($result);
+    }
 
-        $model = new LoginForm();
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->goBack();
-        }
-
-        $model->password = '';
-        return $this->render('login', [
-            'model' => $model,
-        ]);
+    public function actionOnlineCounter()
+    {
+        $this->layout = 'service';
+        return $this->render('@frontend/views/widgets/_online_counter');
     }
 
     /**
@@ -91,31 +102,4 @@ class SiteController extends Controller
         return $this->goHome();
     }
 
-    /**
-     * Displays contact page.
-     *
-     * @return Response|string
-     */
-    public function actionContact()
-    {
-        $model = new ContactForm();
-        if ($model->load(Yii::$app->request->post()) && $model->contact(Yii::$app->params['adminEmail'])) {
-            Yii::$app->session->setFlash('contactFormSubmitted');
-
-            return $this->refresh();
-        }
-        return $this->render('contact', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Displays about page.
-     *
-     * @return string
-     */
-    public function actionAbout()
-    {
-        return $this->render('about');
-    }
 }

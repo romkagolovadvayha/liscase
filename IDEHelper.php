@@ -24,6 +24,7 @@ Yii::$container = new yii\di\Container;
  * @property linslin\yii2\curl\Curl             $curl
  * @property \common\components\web\User        $user
  * @property \common\components\steam\MarketApi $marketApi
+ * @property \common\components\payments\Paypalych $paypalych
  */
 abstract class BaseApplication extends yii\base\Application
 {
