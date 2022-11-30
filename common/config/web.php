@@ -1,6 +1,6 @@
 <?php
 
-$params = require __DIR__ . '/params.php';
+$params = require __DIR__ . '/params-local.php';
 $db = require __DIR__ . '/db-local.php';
 
 $config = [

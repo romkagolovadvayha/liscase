@@ -2,7 +2,7 @@
 
 use yii\base\Component;
 
-$params = require __DIR__ . '/../../common/config/params.php';
+$params = require __DIR__ . '/../../common/config/params-local.php';
 $db     = require __DIR__ . '/../../common/config/db-local.php';
 
 $config = [
@@ -68,7 +68,7 @@ $config = [
             'clients' => [
                 'steam' => [
                     'class' => \common\components\oauth\Steam::class,
-                    'key' => '572DD51D724E764F4E34F6AA7426F59C',
+                    'key' => 'AFB0E78DFC0AB8BDEFFE1D54AA488281',
                 ],
             ],
         ],
