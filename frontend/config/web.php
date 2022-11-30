@@ -68,7 +68,7 @@ $config = [
             'clients' => [
                 'steam' => [
                     'class' => \common\components\oauth\Steam::class,
-                    'key' => 'AFB0E78DFC0AB8BDEFFE1D54AA488281',
+                    'key' => $params['steamApiKey'],
                 ],
             ],
         ],
