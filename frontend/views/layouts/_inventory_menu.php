@@ -8,6 +8,11 @@
 <?=\yii\bootstrap5\Nav::widget([
     'items' => [
         [
+            'label'   => Yii::t('common', "Профиль"),
+            'url'     => '/user/profile',
+            'active' => _checkActive('/user/profile'),
+        ],
+        [
             'label'   => Yii::t('common', "Мои вещи"),
             'url'     => '/user/inventory',
             'active' => _checkActive('/user/inventory'),

@@ -4,6 +4,7 @@ namespace common\models\user;
 
 use Yii;
 use yii\base\BaseObject;
+use yii\helpers\ArrayHelper;
 
 /**
  * This is the model class for table "user_profile".
@@ -18,6 +19,7 @@ use yii\base\BaseObject;
  * @property string  $avatar
  * @property int     $gender
  * @property string  $birthday
+ * @property string  $trade_link
  *
  * @property User    $user
  */
@@ -58,10 +60,18 @@ class UserProfile extends \common\components\base\ActiveRecord
                 ],
                 'integer',
             ],
-            [['name', 'surname', 'full_name', 'avatar'], 'string', 'max' => 255],
+            [['name', 'surname', 'trade_link', 'full_name', 'avatar'], 'string', 'max' => 255],
             [['phone'], 'string', 'max' => 20],
             [['birthday'], 'safe'],
             [['user_id'], 'unique'],
+        ];
+    }
+
+    public function attributeLabels(): array
+    {
+        return [
+            'name' => 'Имя',
+            'trade_link' => 'Ссылка на страницу обмена Steam',
         ];
     }
 

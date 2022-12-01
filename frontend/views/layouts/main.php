@@ -47,13 +47,17 @@ if (!Yii::$app->user->isGuest) {
         'encode' => false,
         'items' => [
             [
-                'label'   => 'АДМИНКА',
-                'url'     => Yii::$app->params['backendUrl'],
-                'visible' => Yii::$app->user->identity && Yii::$app->user->identity->isAccessBackend(),
+                'label'   => 'Профиль',
+                'url'     => '/user/profile',
             ],
             [
                 'label'   => 'Инвентарь',
                 'url'     => '/user/inventory',
+            ],
+            [
+                'label'   => 'АДМИНКА',
+                'url'     => Yii::$app->params['backendUrl'],
+                'visible' => Yii::$app->user->identity && Yii::$app->user->identity->isAccessBackend(),
             ],
             [
                 'label'  => Yii::t('common', 'Выйти'),
@@ -138,7 +142,6 @@ if (!Yii::$app->user->isGuest) {
 <?php if (!empty($this->params['breadcrumbs'])): ?>
     <?= Breadcrumbs::widget(['links' => $this->params['breadcrumbs']]) ?>
 <?php endif ?>
-<?= Alert::widget() ?>
 <?= $content ?>
 
 <footer id="footer" class="mt-auto">

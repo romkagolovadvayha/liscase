@@ -58,7 +58,9 @@ class BoxController extends Controller
             if ($boxDropCarousel[$number]->drop->price > 2000) {
                 [$boxDropCarousel, $number] = $this->_getDrop($userBox);
             }
-            UserDrop::createRecord($user->id, $boxDropCarousel[$number]->drop->id, $box->id, UserDrop::STATUS_ACTIVE, true);
+            $userBox->status = UserBox::STATUS_OPENED;
+            $userBox->save();
+            UserDrop::createRecord($user->id, $boxDropCarousel[$number]->drop->id, $box->id, UserDrop::STATUS_ACTIVE, false);
 
             return $this->render('../widgets/_roulete', [
                 'boxDropCarousel' => $boxDropCarousel,

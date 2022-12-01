@@ -7,11 +7,13 @@ use common\models\box\Drop;
 use common\models\profit\Profit;
 use common\models\user\UserBox;
 use common\models\user\UserDrop;
+use frontend\forms\profile\ProfileForm;
 use yii\base\BaseObject;
 use yii\web\Controller;
 use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
 use Yii;
+use yii\web\Response;
 
 class UserController extends Controller
 {
@@ -104,6 +106,25 @@ class UserController extends Controller
     public function actionBoxes()
     {
         return $this->render('boxes');
+    }
+
+    /**
+     * @return string
+     */
+    public function actionProfile()
+    {
+        $user = Yii::$app->user->identity;
+        $model = ProfileForm::findOne($user->userProfile->id);
+
+        if ($model->load(Yii::$app->request->post())) {
+            if ($model->saveRecord()) {
+                Yii::$app->session->addFlash('success', 'Профиль успешно сохранен!');
+            }
+        }
+
+        return $this->render('profile', [
+            'model' => $model
+        ]);
     }
 
     /**
