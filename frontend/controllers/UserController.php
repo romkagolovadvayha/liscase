@@ -2,20 +2,17 @@
 
 namespace frontend\controllers;
 
-use common\models\box\Box;
+use common\controllers\WebController;
 use common\models\box\Drop;
 use common\models\profit\Profit;
-use common\models\user\UserBox;
 use common\models\user\UserDrop;
 use frontend\forms\profile\ProfileForm;
-use yii\base\BaseObject;
-use yii\web\Controller;
 use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
 use Yii;
 use yii\web\Response;
 
-class UserController extends Controller
+class UserController extends WebController
 {
 
     /**

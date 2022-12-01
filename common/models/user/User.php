@@ -4,6 +4,7 @@ namespace common\models\user;
 
 use common\components\helpers\Role;
 use common\models\auth\AuthAssignment;
+use common\models\payment\Payment;
 use yii\base\NotSupportedException;
 use Yii;
 use yii\web\IdentityInterface;
@@ -26,6 +27,8 @@ use common\components\base\ActiveRecord;
  * @property UserBox[]           $userBoxWaitOpen
  * @property UserBox[]           $userBoxOpened
  * @property UserDrop[]          $userDrop
+ * @property Payment[]           $payments
+ * @property UserPromocode[]     $userPromocodes
  */
 class User extends ActiveRecord implements IdentityInterface
 {
@@ -189,6 +192,22 @@ class User extends ActiveRecord implements IdentityInterface
     public function getUserDrop()
     {
         return $this->hasMany(UserDrop::class, ['user_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getPayments()
+    {
+        return $this->hasMany(Payment::class, ['user_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUserPromocodes()
+    {
+        return $this->hasMany(UserPromocode::class, ['user_id' => 'id']);
     }
 
     /**

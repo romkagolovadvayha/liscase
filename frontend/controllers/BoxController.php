@@ -2,16 +2,16 @@
 
 namespace frontend\controllers;
 
+use common\controllers\WebController;
 use common\models\box\Box;
 use common\models\invoice\Invoice;
 use common\models\user\UserBox;
 use common\models\user\UserDrop;
-use yii\web\Controller;
 use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
 use Yii;
 
-class BoxController extends Controller
+class BoxController extends WebController
 {
 
     /**

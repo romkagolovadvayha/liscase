@@ -12,17 +12,9 @@ class WebController extends Controller
 {
     public $defaultAction = 'index';
 
-    public $metaDescription;
-    public $containerClass;
-    public $metaImage;
-
-    public $breadCrumbs;
-    public $hideTopBanner = false;
-
     public function beforeAction($action)
     {
         $this->_setRefCookies();
-        $this->_setUtmSourceCookies();
 
         return parent::beforeAction($action);
     }
@@ -36,22 +28,6 @@ class WebController extends Controller
 
         Cookie::remove('refCode');
         Cookie::add('refCode', $refCode, true, 365 * 24 * 60);
-    }
-
-    public function _setUtmSourceCookies()
-    {
-        $utmList = [
-            'utm_source',
-            'utm_post',
-            'utm_telegram_id',
-        ];
-
-        foreach ($utmList as $utmName) {
-            $value = Yii::$app->request->get($utmName);
-            if (!empty($value)) {
-                Yii::$app->session->setFlash($utmName, $value);
-            }
-        }
     }
 
     /**

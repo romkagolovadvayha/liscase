@@ -47,7 +47,7 @@ class Invoice extends \common\components\base\ActiveRecord
     {
         return [
             [['user_id', 'type', 'amount'], 'required'],
-            [['user_id', 'box_id', 'type', 'status'], 'integer'],
+            [['user_id', 'box_id', 'type'], 'integer'],
             [['amount'], 'number', 'min' => 0.01],
             [['created_at'], 'safe'],
         ];
@@ -81,7 +81,12 @@ class Invoice extends \common\components\base\ActiveRecord
     }
 
     /**
-     * @throws \Exception
+     * @param      $userId
+     * @param      $amount
+     * @param null $type
+     * @param null $boxId
+     *
+     * @return string
      */
     public static function createRecord($userId, $amount, $type = null, $boxId = null)
     {

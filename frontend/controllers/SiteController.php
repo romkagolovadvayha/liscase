@@ -2,14 +2,16 @@
 
 namespace frontend\controllers;
 
+use common\controllers\WebController;
+use common\models\payment\Promocode;
 use common\models\user\UserBox;
 use common\models\user\UserDrop;
+use frontend\forms\promocode\PromocodeForm;
 use Yii;
 use yii\filters\AccessControl;
-use yii\web\Controller;
 use yii\web\Response;
 
-class SiteController extends Controller
+class SiteController extends WebController
 {
     /**
      * {@inheritdoc}
@@ -50,7 +52,13 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        return $this->render('index');
+        $promocodeForm = new PromocodeForm();
+        if ($promocodeForm->load(Yii::$app->request->post())) {
+            $promocodeForm->setCookiePromocode();
+        }
+        return $this->render('index', [
+            'promocodeForm' => $promocodeForm
+        ]);
     }
 
     private function _botOpenBox() {

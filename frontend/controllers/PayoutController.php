@@ -2,11 +2,11 @@
 
 namespace frontend\controllers;
 
-use yii\web\Controller;
+use common\controllers\WebController;
 use yii\web\NotFoundHttpException;
 use Yii;
 
-class PayoutController extends Controller
+class PayoutController extends WebController
 {
 
     /**

@@ -1,13 +1,18 @@
 <?php
 
 /** @var yii\web\View $this */
+/** @var \frontend\forms\promocode\PromocodeForm $promocodeForm */
 
 use common\models\box\Box;
 
 $this->title = Yii::$app->name . ' - Лучшие CSGO кейсы';
 
 \frontend\assets\LastDropAsset::register($this);
+
 ?>
+<?= $this->render('@frontend/views/layouts/_promocode_line', [
+    'promocodeForm' => $promocodeForm
+]); ?>
 <div class="last_drops_wrapper">
     <?= $this->render('@frontend/views/widgets/_last_drops'); ?>
 </div>
