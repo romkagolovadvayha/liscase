@@ -106,4 +106,12 @@ class UserController extends Controller
         return $this->render('boxes');
     }
 
+    /**
+     * @return string
+     */
+    public function actionPayment()
+    {
+        return $this->render('payment');
+    }
+
 }

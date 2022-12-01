@@ -38,6 +38,7 @@ if (!Yii::$app->user->isGuest) {
                                     <div class="balance">' . Yii::$app->user->identity->getPersonalBalance()->getBalanceFormat() . ' ₽</div>
                             </div>',
         'visible' => !Yii::$app->user->isGuest,
+        'url'     => '/user/payment',
         'encode' => false,
     ];
     $rightMenu[] = [
@@ -96,7 +97,7 @@ if (!Yii::$app->user->isGuest) {
                         ],
                         [
                             'label'   => 'FAQ ' . Html::img('/images/icons/faq.svg', ['width' => '18px']),
-                            'url'     => '#',
+                            'url'     => '/faq',
                             'encode' => false,
                             'options'     => [
                                 'class' => 'menu-faq'
@@ -111,20 +112,14 @@ if (!Yii::$app->user->isGuest) {
                         [
                             'label'   => Html::img('/images/social/vk.svg', ['width' => '22px']),
                             'encode' => false,
-                            'icon'    => 'mdi-settings',
-                            'url'     => '#',
+                            'url'     => 'https://vk.com/ezdrop_pro',
+                            'linkOptions'     => ['target' => '_blank'],
                         ],
                         [
                             'label'   => Html::img('/images/social/telegram.svg', ['width' => '22px']),
                             'encode' => false,
-                            'icon'    => 'mdi-settings',
-                            'url'     => '#',
-                        ],
-                        [
-                            'label'   => Html::img('/images/social/discord.svg', ['width' => '22px']),
-                            'encode' => false,
-                            'icon'    => 'mdi-settings',
-                            'url'     => '#',
+                            'url'     => 'https://t.me/ezdrop_pro',
+                            'linkOptions'     => ['target' => '_blank'],
                         ],
                     ],
                     'options' => ['class' =>'navbar-nav nav-pills header-social-menu'],
@@ -149,7 +144,7 @@ if (!Yii::$app->user->isGuest) {
 <footer id="footer" class="mt-auto">
     <div class="container">
         <div class="row text-muted">
-            <div class="col-md-6 text-center text-md-start">&copy; FOXDROP <?= date('Y') ?></div>
+            <div class="col-md-6 text-center text-md-start">&copy; <?=Yii::$app->name?> <?= date('Y') ?></div>
             <div class="col-md-6 text-center text-md-end"></div>
         </div>
     </div>

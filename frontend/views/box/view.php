@@ -139,7 +139,7 @@ $this->title = Yii::t('common', $box->name . " кейс для CS GO");
                     </div>
                     <div class="modal-body">
                         <p><?=Yii::t('common', 'На вашем балансе недостаточно средств')?>.</p>
-                        <a href="user/payment" class="btn"><?=Yii::t('common', 'Пополнить')?></a>
+                        <a href="/user/payment" class="btn"><?=Yii::t('common', 'Пополнить')?></a>
                     </div>
                 </div>
             </div>
