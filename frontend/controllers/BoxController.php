@@ -5,8 +5,10 @@ namespace frontend\controllers;
 use common\controllers\WebController;
 use common\models\box\Box;
 use common\models\invoice\Invoice;
+use common\models\promocode\Promocode;
 use common\models\user\UserBox;
 use common\models\user\UserDrop;
+use common\models\user\UserPromocode;
 use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
 use Yii;
@@ -43,11 +45,15 @@ class BoxController extends WebController
         if (!empty($post['buy'])) {
             $user = Yii::$app->user->identity;
             $balance = $user->getPersonalBalance();
-            if ($box->price > $balance->balance && $box->type !== Box::TYPE_FREE) {
+            if ($box->getPriceFinal() > $balance->balance) {
                 throw new HttpException(402, Yii::t('common', 'Недостаточно средств на счете!'));
             }
-            if ($box->type !== Box::TYPE_FREE) {
-                Invoice::createRecord($user->id, $box->price, null, $box->id);
+            if ($box->getPriceFinal() > 0) {
+                $promocode = Promocode::getActivePromocode();
+                if (!empty($promocode)) {
+                    UserPromocode::createRecord($user->id, $promocode->id);
+                }
+                Invoice::createRecord($user->id, $box->getPriceFinal(), null, $box->id);
             }
             $userBoxId = UserBox::createRecord($user->id, $box->id);
             $userBox = UserBox::findOne($userBoxId);

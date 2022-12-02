@@ -55,7 +55,7 @@ class Cookie
 
         Yii::$app->response->cookies->remove($cookie);
 
-        if (in_array($cookieName, ['fromSwitcherUserId', 'refCode'])) {
+        if (in_array($cookieName, ['fromSwitcherUserId', 'refCode', 'promocode'])) {
             setcookie($cookieName, null, -1, '/', Yii::$app->params['cookieDomain']);
         }
     }

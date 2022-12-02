@@ -339,4 +339,8 @@ class User extends ActiveRecord implements IdentityInterface
     {
         return self::findOne(['auth_key' => $authKey]);
     }
+
+    public function getPartnerLink() {
+        return Yii::$app->params['baseUrl'] . '/p/1304069465';
+    }
 }

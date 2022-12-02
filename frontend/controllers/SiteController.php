@@ -3,7 +3,6 @@
 namespace frontend\controllers;
 
 use common\controllers\WebController;
-use common\models\payment\Promocode;
 use common\models\user\UserBox;
 use common\models\user\UserDrop;
 use frontend\forms\promocode\PromocodeForm;
@@ -48,13 +47,15 @@ class SiteController extends WebController
     /**
      * Displays homepage.
      *
-     * @return string
+     * @return string|Response
      */
     public function actionIndex()
     {
         $promocodeForm = new PromocodeForm();
         if ($promocodeForm->load(Yii::$app->request->post())) {
-            $promocodeForm->setCookiePromocode();
+            if ($promocodeForm->setCookiePromocode()) {
+                return $this->redirect(Yii::$app->homeUrl);
+            }
         }
         return $this->render('index', [
             'promocodeForm' => $promocodeForm

@@ -16,7 +16,14 @@ $promocode = Promocode::getActivePromocode();
     <div class="header_promocode_line">
         <?php if (!empty($promocode)): ?>
             <div class="promocode">
-                Вы успешно применили промокод: <?=$promocode->code?>
+                <div>
+                <?php if ($promocode->type === Promocode::TYPE_PAYMENT_DISCOUNT): ?>
+                    Действует скидка <?=$promocode->getPercentCeil()?>% на все товары
+                <?php elseif ($promocode->type === Promocode::TYPE_PAYMENT_PAYMENT): ?>
+                    Действует скидка <?=$promocode->getPercentCeil()?>% на пополнение баланса
+                <?php endif; ?>
+                </div>
+                <div><a href="/promocode/clear">Отменить</a></div>
             </div>
         <?php else: ?>
             <div class="promocode">

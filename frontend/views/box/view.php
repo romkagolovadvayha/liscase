@@ -35,10 +35,10 @@ $this->title = Yii::t('common', $box->name . " кейс для CS GO");
                             <a class="box_entity_card_actions_btn" data-bs-toggle="modal" href="#openBoxModal" role="button">
                                 <?=Yii::t('common', 'Открыть контейнер')?>
                                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                    <?php if ($box->type === \common\models\box\Box::TYPE_FREE): ?>
+                                    <?php if ($box->getPriceFinal() <= 0): ?>
                                         <?=Yii::t('common', 'Бесплатно')?>
                                     <?php else: ?>
-                                        <?=$box->price?> ₽
+                                        <?=$box->getPriceFinal()?> ₽
                                     <?php endif; ?>
                                 </span>
                             </a>
@@ -84,7 +84,7 @@ $this->title = Yii::t('common', $box->name . " кейс для CS GO");
 
 <?php if (!Yii::$app->user->isGuest):?>
     <?php $balance = Yii::$app->user->identity->getPersonalBalance(); ?>
-    <?php if ($balance->balance >= $box->price):?>
+    <?php if ($balance->balance >= $box->getPriceFinal()):?>
         <div class="modal modal-alert fade" id="openBoxModal" tabindex="-1" aria-labelledby="openBoxModal" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -93,7 +93,7 @@ $this->title = Yii::t('common', $box->name . " кейс для CS GO");
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p><?=Yii::t('common', 'С вашего баланса будет списано')?> <?=$box->price?> <?=Yii::t('common', 'рублей')?>.</p>
+                        <p><?=Yii::t('common', 'С вашего баланса будет списано')?> <?=$box->getPriceFinal()?> <?=Yii::t('common', 'рублей')?>.</p>
                         <p><?=Yii::t('common', 'Вы уверены?')?></p>
                         <?php $form = ActiveForm::begin([
                             'id' => 'buy-container',

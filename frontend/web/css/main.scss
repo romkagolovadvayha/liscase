@@ -1066,6 +1066,7 @@ h1 {
   padding: 20px 0;
   display: flex;
   justify-content: flex-start;
+  align-items: center;
   .promocode {
     width: 400px;
     .input-group {
@@ -1073,6 +1074,7 @@ h1 {
       .form-control {
         border-top-right-radius: 0;
         border-bottom-right-radius: 0;
+        text-transform: uppercase;
       }
       .btn {
         border-top-left-radius: 0;

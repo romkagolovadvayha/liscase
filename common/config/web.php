@@ -75,7 +75,9 @@ $config = [
         'urlManager'    => [
             'enablePrettyUrl' => true,
             'showScriptName'  => false,
-            'rules'           => [],
+            'rules'           => [
+                '/p/<refCode:\d+>'                 => '/',
+            ],
         ],
         'authManager'   => [
             'class' => \yii\rbac\DbManager::class,

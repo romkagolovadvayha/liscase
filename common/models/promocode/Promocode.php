@@ -12,7 +12,6 @@ use yii\base\BaseObject;
  * This is the model class for table "promocode".
  *
  * @property int    $id
- * @property int    $user_id
  * @property string $code
  * @property int    $type
  * @property int    $status
@@ -67,8 +66,8 @@ class Promocode extends \common\components\base\ActiveRecord
     public function rules()
     {
         return [
-            [['user_id', 'type', 'percent', 'code'], 'required'],
-            [['user_id', 'type', 'status', 'percent', 'count', 'left_count'], 'integer'],
+            [['type', 'percent', 'code'], 'required'],
+            [['type', 'status', 'percent', 'count', 'left_count'], 'integer'],
             [['percent'], 'number', 'min' => 1],
             [['created_at'], 'safe'],
         ];
@@ -78,7 +77,6 @@ class Promocode extends \common\components\base\ActiveRecord
     {
         return [
             'id'            => 'ID',
-            'user_id'       => Yii::t('common', 'ID пользователя'),
             'code'       => Yii::t('common', 'Промокод'),
             'type'          => Yii::t('common', 'Тип'),
             'percent'       => Yii::t('common', 'Процент'),
@@ -114,10 +112,9 @@ class Promocode extends \common\components\base\ActiveRecord
      *
      * @return string
      */
-    public static function createRecord($userId, $code, $count, $type, $percent = false, $status = null)
+    public static function createRecord($code, $count, $type, $percent = false, $status = null)
     {
         $model = new Promocode();
-        $model->user_id = $userId;
         $model->percent = $percent;
         $model->type = $type;
         $model->code = $code;
@@ -143,6 +140,13 @@ class Promocode extends \common\components\base\ActiveRecord
                         ->cache(3)
                         ->andWhere(['code' => $code])
                         ->one();
+    }
+
+    /**
+     * @return false|float
+     */
+    public function getPercentCeil() {
+        return ceil($this->percent);
     }
 
     /**

@@ -100,9 +100,9 @@ class UserController extends WebController
      * @return \yii\web\Response | string
      * @throws NotFoundHttpException
      */
-    public function actionBoxes()
+    public function actionPartner()
     {
-        return $this->render('boxes');
+        return $this->render('partner');
     }
 
     /**

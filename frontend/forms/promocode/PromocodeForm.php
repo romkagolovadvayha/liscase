@@ -40,7 +40,7 @@ class PromocodeForm extends Promocode
                 ->andWhere(['promocode_id' => $model->id])
                 ->exists();
             if ($exist) {
-                $this->addError('code', Yii::t('common', 'Вы уже использовали проомокод!'));
+                $this->addError('code', Yii::t('common', 'Вы уже использовали этот проомокод!'));
                 return false;
             }
         }

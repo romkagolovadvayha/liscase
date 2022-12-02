@@ -18,9 +18,9 @@
             'active' => _checkActive('/user/inventory'),
         ],
         [
-            'label'   => Yii::t('common', "Кейсы"),
-            'url'     => '/user/boxes',
-            'active' => _checkActive('/user/boxes'),
+            'label'   => Yii::t('common', "Партнерская программа"),
+            'url'     => '/user/partner',
+            'active' => _checkActive('/user/partner'),
         ],
         [
             'label'   => Yii::t('common', "Вывод"),

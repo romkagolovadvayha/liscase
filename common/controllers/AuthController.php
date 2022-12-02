@@ -4,6 +4,7 @@ namespace common\controllers;
 
 use common\models\user\Auth;
 use common\models\user\UserProfile;
+use common\models\user\UserTree;
 use Yii;
 use yii\filters\AccessControl;
 use yii\web\BadRequestHttpException;
@@ -111,6 +112,11 @@ class AuthController extends WebController
                     $user->generateAuthKey();
                     $user->generateRefCode();
                     $user->generateSocketRoom();
+                    $refCode = Cookie::getValue('refCode');
+                    if (!empty($refCode)) {
+                        $parentUser = User::findByRefCode($refCode);
+                        UserTree::appendUser($user->id, $parentUser->id);
+                    }
                     $transaction = $user->getDb()->beginTransaction();
                     if ($user->save()) {
                         UserProfile::createModel($user, $attributes['username']);

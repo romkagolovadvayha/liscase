@@ -2,6 +2,7 @@
 
 namespace common\models\box;
 
+use common\models\promocode\Promocode;
 use Yii;
 use common\components\base\ActiveRecord;
 
@@ -197,5 +198,17 @@ class Box extends ActiveRecord
                   ->andWhere(['type' => $type])
                   ->andWhere(['status' => Box::STATUS_ACTIVE])
                   ->all();
+    }
+
+    /**
+     * @return float
+     */
+    public function getPriceFinal() {
+        $price = $this->price;
+        $promocode = Promocode::getActivePromocode();
+        if (!empty($promocode)) {
+            $price = ceil($promocode->percent / 100 * $this->price);
+        }
+        return $price;
     }
 }
