@@ -8,9 +8,6 @@ use common\models\user\UserBalance;
 /* @var $this yii\web\View */
 /* @var $bonusForm BonusForm */
 
-if (YII_ENV_PROD) {
-    return;
-}
 ?>
 
 <div class="panel panel-info">
