@@ -510,7 +510,6 @@ $color_background_body: #17171f;
   background: $color_background_body;
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-
   &:before {
     content: '';
     display: block;
@@ -532,6 +531,37 @@ $color_background_body: #17171f;
     z-index: 2;
     width: 300px;
     background: linear-gradient(270deg, darken($color_background_body, 1%) 11.88%, rgba(0, 0, 0, 0) 81.88%);
+  }
+  .slider {
+    position: relative;
+    &:before {
+      content: "";
+      display: block;
+      top: 5px;
+      left: 50%;
+      margin-left: -6px;
+      position: absolute;
+      z-index: 2;
+      width: 0;
+      height: 0;
+      border-width: 6px 6px 0 6px;
+      border-color: #e69d5d transparent transparent transparent;
+      border-style: solid;
+    }
+    &:after {
+      content: '';
+      display: block;
+      bottom: 5px;
+      right: 50%;
+      margin-right: -6px;
+      position: absolute;
+      z-index: 2;
+      width: 0;
+      height: 0;
+      border-width: 0 6px 6px 6px;
+      border-color: transparent transparent #e69d5d transparent;
+      border-style: solid;
+    }
   }
 }
 .roulete_blur {

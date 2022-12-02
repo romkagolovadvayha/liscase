@@ -10,7 +10,7 @@ function slickRouleteInit() {
     var roulete = $('.roulete').slick({
         centerMode: true,
         centerPadding: '60px',
-        speed: 10000,
+        speed: 9000,
         slidesToShow: 3,
         arrows: false,
         touchMove: false,
@@ -38,7 +38,7 @@ function slickRouleteInit() {
     $('.roulete_blur').slick({
         centerMode: true,
         centerPadding: '60px',
-        speed: 10000,
+        speed: 9000,
         slidesToShow: 7,
         arrows: false,
         touchMove: false,
@@ -70,17 +70,19 @@ function slickRouleteInit() {
     //     rouleteBlur.slick('slickGoTo', 180);
     // });
 
+    var stopAudio = new Audio("/audio/gambling.mp3");
     roulete.on('afterChange', function(event, slick, currentSlide, nextSlide){
         $('.box_entity_card_actions_btn').removeClass('disabled');
         blockedRoulete = false;
+        stopAudio.play();
+    });
+    var startAudio = new Audio("/audio/go-new-gambling.mp3");
+    roulete.on('beforeChange', function(event, slick, currentSlide, nextSlide){
+        console.log('go-new-gambling.mp3');
+        startAudio.play();
     });
 }
 slickRouleteInit();
-// var audio = new Audio("/audio/roll.mp3");
-// roulete.on('breakpoint', function(event, slick, currentSlide, nextSlide){
-//     console.log(nextSlide);
-//     audio.play();
-// });
 
 // var roulete_open = $('#roulete_open');
 var roulete_open_content = $('.roulete_open_content');
