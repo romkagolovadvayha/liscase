@@ -48,6 +48,9 @@ class BoxController extends WebController
             if ($box->getPriceFinal() > $balance->balance) {
                 throw new HttpException(402, Yii::t('common', 'Недостаточно средств на счете!'));
             }
+            if ($box->type === Box::TYPE_FREE && !empty(Box::getNextOpenFreeBoxDate())) {
+                throw new HttpException(402, Yii::t('common', 'Бесплатный кейс не доступен!'));
+            }
             if ($box->getPriceFinal() > 0) {
                 $promocode = Promocode::getActivePromocode();
                 if (!empty($promocode)) {
@@ -57,13 +60,7 @@ class BoxController extends WebController
             }
             $userBoxId = UserBox::createRecord($user->id, $box->id);
             $userBox = UserBox::findOne($userBoxId);
-            [$boxDropCarousel, $number] = $this->_getDrop($userBox);
-            if ($boxDropCarousel[$number]->drop->price > 1000) {
-                [$boxDropCarousel, $number] = $this->_getDrop($userBox);
-            }
-            if ($boxDropCarousel[$number]->drop->price > 2000) {
-                [$boxDropCarousel, $number] = $this->_getDrop($userBox);
-            }
+            [$boxDropCarousel, $number] = $userBox->box->_getDropFinal();
             $userBox->status = UserBox::STATUS_OPENED;
             $userBox->save();
             UserDrop::createRecord($user->id, $boxDropCarousel[$number]->drop->id, $box->id, UserDrop::STATUS_ACTIVE, false);
@@ -73,18 +70,6 @@ class BoxController extends WebController
                 'number' => $number,
             ]);
         }
-    }
-
-    /**
-     * @param $userBox
-     *
-     * @return array
-     */
-    private function _getDrop($userBox) {
-        $boxDropCarousel = $userBox->box->boxDropCarousel;
-        $number = rand(count($boxDropCarousel) / 2, count($boxDropCarousel) - 1);
-
-        return [$boxDropCarousel, $number];
     }
 
     /**

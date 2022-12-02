@@ -32,8 +32,5 @@ use common\models\box\BoxDrop;
                 <?php endforeach; ?>
             </div>
         </div>
-        <div class="roulete_actions" id="roulete_start">
-            <a href="/user/inventory" class="btn"><?=Yii::t('common', "Перейти в инвентарь")?></a>
-        </div>
     </div>
 </div>

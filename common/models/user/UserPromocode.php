@@ -3,7 +3,7 @@
 namespace common\models\user;
 
 use common\components\base\ActiveRecord;
-use common\models\payment\Promocode;
+use common\models\promocode\Promocode;
 use Yii;
 
 /**
@@ -63,6 +63,13 @@ class UserPromocode extends ActiveRecord
      */
     public static function createRecord($userId, $promocodeId): bool
     {
+        $promocode = Promocode::findOne($promocodeId);
+        if (empty($promocode)) {
+            return false;
+        }
+        $promocode->left_count--;
+        $promocode->save(false);
+
         $model = new UserPromocode();
         $model->user_id = $userId;
         $model->promocode_id = $promocodeId;

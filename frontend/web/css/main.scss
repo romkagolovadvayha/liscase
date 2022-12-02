@@ -129,12 +129,19 @@ $color_background_body: #17171f;
   }
 }
 .box_entity {
-  width: 350px;
   &_wrapper {
-    display: flex;
-    justify-content: flex-start;
-    align-items: flex-start;
+    display: block;
     margin-top: 40px;
+    .header_actions {
+      text-align: center;
+      a {
+        color: #e8e9f3;
+        font-weight: 500;
+        font-size: 14px;
+        text-transform: uppercase;
+        display: inline-block;
+      }
+    }
   }
   &_card {
     text-align: center;
@@ -142,12 +149,13 @@ $color_background_body: #17171f;
     &_title {
       margin-top: 5px;
       color: #e8e9f3;
-      font-weight: 300;
+      font-weight: 700;
       font-size: 28px;
+      text-align: center;
     }
     &_image {
       img {
-        width: 100%;
+        width: 350px;
         max-width: 100%;
       }
     }
@@ -175,11 +183,12 @@ $color_background_body: #17171f;
     }
     &_actions {
       margin-top: 10px;
+      text-align: center;
       &_btn {
         position: relative;
         height: 100%;
         padding: 20px 25px;
-        overflow: hidden;
+        display: inline-block;
         color: #392c22;
         font-weight: 700;
         font-size: 13px;
@@ -195,12 +204,21 @@ $color_background_body: #17171f;
     }
   }
 }
-.box_content {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 30px;
+.open_case_content {
+  .timerNextOpenFreeBoxDate {
+    text-align: center;
+    .timer__desc, p {
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 14px;
+    }
+    .timer__items {
+      justify-content: center;
+    }
+    .timer {
+      margin-top: 30px;
+    }
+  }
   &:after {
     content: '';
     display: block;
@@ -224,12 +242,11 @@ $color_background_body: #17171f;
     right: -3px;
   }
   &_wrapper {
-    flex: 1 0;
     background: darken($color_background_body, 1%);
     padding: 20px;
-    margin-left: 20px;
     border: 1px solid #f3a45d;
     position: relative;
+    margin-top: 30px;
     h2 {
       color: #e8e9f3;
       font-weight: 700;
@@ -260,14 +277,32 @@ $color_background_body: #17171f;
       right: 10px;
     }
   }
+}
+.box_content {
+  //display: flex;
+  //align-items: flex-start;
+  //justify-content: center;
+  //flex-wrap: wrap;
+  grid-template-columns: repeat(auto-fill,minmax(160px,1fr));
+  grid-gap: 20px;
+  display: grid;
+  margin-top: 30px;
+  &_wrapper {
+    position: relative;
+    margin-top: 50px;
+    h2 {
+      color: #e8e9f3;
+      font-weight: 700;
+      font-size: 22px;
+      text-align: center;
+      text-transform: uppercase;
+    }
+  }
   &_card {
-    min-width: 18%;
-    min-height: 120px;
-    height: 120px;
+    height: 136px;
     position: relative;
     border-radius: 3px;
     overflow: hidden;
-    margin: 5px;
     &_info {
       position: absolute;
       bottom: 5px;
@@ -299,9 +334,7 @@ $color_background_body: #17171f;
       z-index: 0;
       text-align: center;
       img {
-        width: 80%;
-        max-width: 80%;
-        max-height: 80px;
+        height: 110px;
         display: inline-block;
       }
     }
@@ -475,7 +508,7 @@ $color_background_body: #17171f;
     position: absolute;
     z-index: 2;
     width: 300px;
-    background: linear-gradient(90deg, $color_background_body 11.88%, rgba(0, 0, 0, 0) 81.88%);
+    background: linear-gradient(90deg, darken($color_background_body, 1%) 11.88%, rgba(0, 0, 0, 0) 81.88%);
   }
   &:after {
     content: '';
@@ -486,7 +519,7 @@ $color_background_body: #17171f;
     position: absolute;
     z-index: 2;
     width: 300px;
-    background: linear-gradient(270deg, $color_background_body 11.88%, rgba(0, 0, 0, 0) 81.88%);
+    background: linear-gradient(270deg, darken($color_background_body, 1%) 11.88%, rgba(0, 0, 0, 0) 81.88%);
   }
 }
 .roulete_blur {
@@ -506,7 +539,7 @@ $color_background_body: #17171f;
       position: absolute;
       z-index: 2;
       width: 160px;
-      background: linear-gradient(90deg, $color_background_body 11.88%, rgba(0, 0, 0, 0) 81.88%);
+      background: linear-gradient(90deg, darken($color_background_body, 1%) 11.88%, rgba(0, 0, 0, 0) 81.88%);
     }
     &:after {
       content: '';
@@ -517,7 +550,7 @@ $color_background_body: #17171f;
       position: absolute;
       z-index: 2;
       width: 160px;
-      background: linear-gradient(270deg, $color_background_body 11.88%, rgba(0, 0, 0, 0) 81.88%);
+      background: linear-gradient(270deg, darken($color_background_body, 1%) 11.88%, rgba(0, 0, 0, 0) 81.88%);
     }
   }
   &_item {
@@ -559,22 +592,11 @@ $color_background_body: #17171f;
 }
 
 .roulete_open {
-  display: none;
-  background: fade-out($color_background_body, 0.02);
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  z-index: 9999;
-  &.active {
-    display: block;
-  }
   &_content {
     max-width: 100%;
     width: 100%;
-    padding: 30px;
-    margin-top: 100px;
+    padding: 0 30px;
+    margin-top: 50px;
     text-align: center;
   }
 }
@@ -1137,4 +1159,8 @@ h1 {
       }
     }
   }
+}
+
+main {
+  margin-bottom: 50px;
 }

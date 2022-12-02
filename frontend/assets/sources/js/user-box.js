@@ -70,20 +70,21 @@ function slickRouleteInit() {
     //     rouleteBlur.slick('slickGoTo', 180);
     // });
 
-    roulete.on('afterChange', function(event, slick, currentSlide, nextSlide){
-        $('.roulete_actions').addClass('active');
-    });
+    // roulete.on('afterChange', function(event, slick, currentSlide, nextSlide){
+    //     $('.roulete_actions').addClass('active');
+    // });
 }
+slickRouleteInit();
 // var audio = new Audio("/audio/roll.mp3");
 // roulete.on('breakpoint', function(event, slick, currentSlide, nextSlide){
 //     console.log(nextSlide);
 //     audio.play();
 // });
 
-var roulete_open = $('#roulete_open');
-var roulete_open_content = $('#roulete_open .roulete_open_content');
+// var roulete_open = $('#roulete_open');
+var roulete_open_content = $('.roulete_open_content');
 $('#buy-free-container, #buy-container').on('beforeSubmit', function () {
-    roulete_open.addClass('active');
+    // roulete_open.addClass('active');
     var $yiiform = $(this);
     $.ajax({
             type: $yiiform.attr('method'),

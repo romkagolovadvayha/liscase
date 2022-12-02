@@ -3,6 +3,7 @@
 namespace common\models\box;
 
 use common\models\promocode\Promocode;
+use common\models\user\UserBox;
 use Yii;
 use common\components\base\ActiveRecord;
 
@@ -209,6 +210,70 @@ class Box extends ActiveRecord
         if (!empty($promocode)) {
             $price = ceil($promocode->percent / 100 * $this->price);
         }
+        if ($this->type === Box::TYPE_FREE) {
+            return 0;
+        }
         return $price;
+    }
+
+    /**
+     * @return UserBox|\yii\db\ActiveRecord|null
+     */
+    public static function getLastOpenFreeBox($userId = null) {
+        if (empty($userId)) {
+            $userId = Yii::$app->user->id;
+        }
+        return UserBox::find()
+                      ->alias('ub')
+                      ->joinWith('box b')
+                      ->andWhere(['b.type' => Box::TYPE_FREE])
+                      ->andWhere(['ub.user_id' => $userId])
+                      ->orderBy(['id' => SORT_DESC])
+                      ->one();
+    }
+
+    /**
+     * @return string|null
+     * @throws \Exception
+     */
+    public static function getNextOpenFreeBoxDate() {
+        $last = Box::getLastOpenFreeBox();
+        if (empty($last)) {
+            return null;
+        }
+        $createdDate = new \DateTime($last->created_at);
+        $createdDate->modify('+1 day');
+
+        if ($createdDate->getTimestamp() < time()) {
+            return null;
+        }
+
+        return $createdDate->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * @param $userBox
+     */
+    public function _getDropFinal() {
+        [$boxDropCarousel, $number] = $this->_getDrop();
+        if ($boxDropCarousel[$number]->drop->price > 1000) {
+            [$boxDropCarousel, $number] = $this->_getDrop();
+        }
+        if ($boxDropCarousel[$number]->drop->price > 2000) {
+            [$boxDropCarousel, $number] = $this->_getDrop();
+        }
+        return [$boxDropCarousel, $number];
+    }
+
+    /**
+     * @param $userBox
+     *
+     * @return array
+     */
+    public function _getDrop() {
+        $boxDropCarousel = $this->boxDropCarousel;
+        $number = rand(count($boxDropCarousel) / 2, count($boxDropCarousel) - 1);
+
+        return [$boxDropCarousel, $number];
     }
 }

@@ -5,7 +5,6 @@ namespace common\models\promocode;
 use common\components\web\Cookie;
 use common\models\user\UserPromocode;
 use Yii;
-use common\models\user\User;
 use yii\base\BaseObject;
 
 /**
@@ -19,8 +18,6 @@ use yii\base\BaseObject;
  * @property int    $left_count
  * @property int    $count
  * @property string $created_at
- *
- * @property User   $user
  */
 class Promocode extends \common\components\base\ActiveRecord
 {
@@ -67,8 +64,8 @@ class Promocode extends \common\components\base\ActiveRecord
     {
         return [
             [['type', 'percent', 'code'], 'required'],
-            [['type', 'status', 'percent', 'count', 'left_count'], 'integer'],
-            [['percent'], 'number', 'min' => 1],
+            [['type', 'status', 'count', 'left_count'], 'integer'],
+            [['percent'], 'string'],
             [['created_at'], 'safe'],
         ];
     }
@@ -90,20 +87,9 @@ class Promocode extends \common\components\base\ActiveRecord
     public function afterSave($insert, $changedAttributes)
     {
         parent::afterSave($insert, $changedAttributes);
-
-        $this->user->getPersonalBalance()->recalculateBalance();
     }
 
     /**
-     * @return \yii\db\ActiveQuery
-     */
-    public function getUser()
-    {
-        return $this->hasOne(User::class, ['id' => 'user_id']);
-    }
-
-    /**
-     * @param       $userId
      * @param       $count
      * @param       $code
      * @param       $type
