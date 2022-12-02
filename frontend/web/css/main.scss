@@ -537,7 +537,7 @@ $color_background_body: #17171f;
     &:before {
       content: "";
       display: block;
-      top: 5px;
+      top: 3px;
       left: 50%;
       margin-left: -6px;
       position: absolute;
@@ -551,7 +551,7 @@ $color_background_body: #17171f;
     &:after {
       content: '';
       display: block;
-      bottom: 5px;
+      bottom: 3px;
       right: 50%;
       margin-right: -6px;
       position: absolute;
