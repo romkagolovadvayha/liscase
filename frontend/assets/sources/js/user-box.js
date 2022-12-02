@@ -85,6 +85,7 @@ slickRouleteInit();
 // var roulete_open = $('#roulete_open');
 var roulete_open_content = $('.roulete_open_content');
 var blockedRoulete = false;
+var boxFree = false;
 var openBoxModal = new bootstrap.Modal(document.getElementById('openBoxModal'));
 var notBalanceModal = new bootstrap.Modal(document.getElementById('notBalanceModal'));
 $('.box_entity_card_actions_btn').on('click', function () {
@@ -98,9 +99,17 @@ $('.box_entity_card_actions_btn').on('click', function () {
     }
     return false;
 });
+$('.box_entity_card_actions_btn_free').on('click', function () {
+    boxFree = true;
+    return false;
+});
 $('#buy-free-container, #buy-container').on('beforeSubmit', function () {
     if (blockedRoulete) {
         return false;
+    }
+    if (boxFree) {
+        $('.box_entity_card_actions_btn').hide();
+        $('.box_entity_card_actions_inventory_btn').show();
     }
     $('.box_entity_card_actions_btn').addClass('disabled');
     blockedRoulete = true;

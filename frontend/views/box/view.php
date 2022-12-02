@@ -57,7 +57,7 @@ JS
                            </div>
                         <?php else: ?>
                             <div class="box_entity_card_actions">
-                                <a class="box_entity_card_actions_btn" href="#">
+                                <a class="box_entity_card_actions_btn<?=($box->getPriceFinal() <= 0) ? ' box_entity_card_actions_btn_free' : '' ?>" href="#">
                                     <?=Yii::t('common', 'Открыть контейнер')?>
                                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                                         <?php if ($box->getPriceFinal() <= 0): ?>
@@ -67,6 +67,9 @@ JS
                                         <?php endif; ?>
                                     </span>
                                 </a>
+                                <a class="btn box_entity_card_actions_inventory_btn" style="display: none" href="/user/inventory">
+                                    <?=Yii::t('common', 'Открыть инвентарь')?>
+                                </a>
                             </div>
                             <div class="roulete_open_content">
                                 <?=$this->render('../widgets/_roulete', [
@@ -74,9 +77,6 @@ JS
                                         'number' => $number,
                                     ])?>
                             </div>
-<!--                            <div class="roulete_actions active">-->
-<!--                                <a href="/user/inventory" class="btn">--><?//=Yii::t('common', "Перейти в инвентарь")?><!--</a>-->
-<!--                            </div>-->
                         <?php endif; ?>
                     </div>
                 </div>

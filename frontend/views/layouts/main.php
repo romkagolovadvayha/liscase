@@ -32,14 +32,14 @@ $rightMenu = [
         'visible' => Yii::$app->user->isGuest,
     ]
 ];
-$balanceStr = Yii::$app->user->identity->getPersonalBalance()->getBalanceFormat();
-$balance = Yii::$app->user->identity->getPersonalBalance()->balance;
-$this->registerJs(<<<JS
+if (!Yii::$app->user->isGuest) {
+    $balanceStr = Yii::$app->user->identity->getPersonalBalance()->getBalanceFormat();
+    $balance = Yii::$app->user->identity->getPersonalBalance()->balance;
+    $this->registerJs(<<<JS
     var balanceStr = '{$balanceStr}';
     var balance = {$balance};
 JS
-    , \yii\web\View::POS_BEGIN);
-if (!Yii::$app->user->isGuest) {
+        , \yii\web\View::POS_BEGIN);
     $rightMenu[] = [
         'label'   => '<div class="balance-item">
                                     <div class="name">' . Yii::$app->user->identity->userProfile->name . '</div>
