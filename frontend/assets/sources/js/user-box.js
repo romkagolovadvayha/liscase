@@ -70,9 +70,10 @@ function slickRouleteInit() {
     //     rouleteBlur.slick('slickGoTo', 180);
     // });
 
-    // roulete.on('afterChange', function(event, slick, currentSlide, nextSlide){
-    //     $('.roulete_actions').addClass('active');
-    // });
+    roulete.on('afterChange', function(event, slick, currentSlide, nextSlide){
+        $('.box_entity_card_actions_btn').removeClass('disabled');
+        blockedRoulete = false;
+    });
 }
 slickRouleteInit();
 // var audio = new Audio("/audio/roll.mp3");
@@ -83,8 +84,26 @@ slickRouleteInit();
 
 // var roulete_open = $('#roulete_open');
 var roulete_open_content = $('.roulete_open_content');
+var blockedRoulete = false;
+var openBoxModal = new bootstrap.Modal(document.getElementById('openBoxModal'));
+var notBalanceModal = new bootstrap.Modal(document.getElementById('notBalanceModal'));
+$('.box_entity_card_actions_btn').on('click', function () {
+    if (blockedRoulete) {
+        return false;
+    }
+    if (balance >= boxPrice) {
+        openBoxModal.show();
+    } else {
+        notBalanceModal.show();
+    }
+    return false;
+});
 $('#buy-free-container, #buy-container').on('beforeSubmit', function () {
-    // roulete_open.addClass('active');
+    if (blockedRoulete) {
+        return false;
+    }
+    $('.box_entity_card_actions_btn').addClass('disabled');
+    blockedRoulete = true;
     var $yiiform = $(this);
     $.ajax({
             type: $yiiform.attr('method'),
@@ -97,6 +116,7 @@ $('#buy-free-container, #buy-container').on('beforeSubmit', function () {
             var number = $('.roulete_wrapper').data().success;
             $('.roulete').slick('slickGoTo', number);
             $('.roulete_blur').slick('slickGoTo', number);
+            updateBalance();
     }).fail(function () {})
     return false;
 });

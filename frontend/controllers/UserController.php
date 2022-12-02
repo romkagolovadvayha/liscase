@@ -132,4 +132,14 @@ class UserController extends WebController
         return $this->render('payment');
     }
 
+
+    public function actionGetBalance()
+    {
+        $result = [
+            'balanceStr' => Yii::$app->user->identity->getPersonalBalance()->getBalanceFormat(),
+            'balance' => Yii::$app->user->identity->getPersonalBalance()->balance
+        ];
+        header("Content-Type: application/json");
+        return json_encode($result);
+    }
 }

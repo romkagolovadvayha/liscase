@@ -12,6 +12,7 @@ use yii\bootstrap5\NavBar;
 
 AppAsset::register($this);
 \frontend\assets\OnlineCounterAsset::register($this);
+\frontend\assets\BalanceAsset::register($this);
 
 $this->registerCsrfMetaTags();
 $this->registerMetaTag(['charset' => Yii::$app->charset], 'charset');
@@ -31,11 +32,18 @@ $rightMenu = [
         'visible' => Yii::$app->user->isGuest,
     ]
 ];
+$balanceStr = Yii::$app->user->identity->getPersonalBalance()->getBalanceFormat();
+$balance = Yii::$app->user->identity->getPersonalBalance()->balance;
+$this->registerJs(<<<JS
+    var balanceStr = '{$balanceStr}';
+    var balance = {$balance};
+JS
+    , \yii\web\View::POS_BEGIN);
 if (!Yii::$app->user->isGuest) {
     $rightMenu[] = [
         'label'   => '<div class="balance-item">
                                     <div class="name">' . Yii::$app->user->identity->userProfile->name . '</div>
-                                    <div class="balance">' . Yii::$app->user->identity->getPersonalBalance()->getBalanceFormat() . ' ₽</div>
+                                    <div class="balance"><span class="balance_count">' . $balanceStr . '</span> ₽</div>
                             </div>',
         'visible' => !Yii::$app->user->isGuest,
         'url'     => '/user/payment',

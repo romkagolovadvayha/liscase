@@ -2,6 +2,9 @@
 
 namespace frontend\assets;
 
+use common\assets\SlickCarouselAsset;
+use yii\bootstrap5\BootstrapAsset;
+use yii\bootstrap5\BootstrapPluginAsset;
 use yii\web\AssetBundle;
 
 class UserBoxAsset extends AssetBundle
@@ -15,7 +18,7 @@ class UserBoxAsset extends AssetBundle
 
     public $depends
         = [
-            'frontend\assets\AppAsset',
-            'common\assets\SlickCarouselAsset',
+            SlickCarouselAsset::class,
+            BootstrapPluginAsset::class,
         ];
 }

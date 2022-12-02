@@ -12,7 +12,10 @@ $this->title = Yii::t('common', $box->name . " кейс для CS GO");
 \frontend\assets\UserBoxAsset::register($this);
 
 [$boxDropCarousel, $number] = $box->_getDrop();
-
+$this->registerJs(<<<JS
+    var boxPrice = {$box->price};
+JS
+    , \yii\web\View::POS_BEGIN);
 ?>
 
 <main id="main" role="main">
@@ -54,7 +57,7 @@ $this->title = Yii::t('common', $box->name . " кейс для CS GO");
                            </div>
                         <?php else: ?>
                             <div class="box_entity_card_actions">
-                                <a class="box_entity_card_actions_btn" data-bs-toggle="modal" href="#openBoxModal" role="button">
+                                <a class="box_entity_card_actions_btn" href="#">
                                     <?=Yii::t('common', 'Открыть контейнер')?>
                                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                                         <?php if ($box->getPriceFinal() <= 0): ?>
@@ -100,66 +103,40 @@ $this->title = Yii::t('common', $box->name . " кейс для CS GO");
 
 
 <?php if (!Yii::$app->user->isGuest):?>
-    <?php $balance = Yii::$app->user->identity->getPersonalBalance(); ?>
-    <?php if ($balance->balance >= $box->getPriceFinal()):?>
-        <div class="modal modal-alert fade" id="openBoxModal" tabindex="-1" aria-labelledby="openBoxModal" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel"><?=Yii::t('common', 'Внимание!')?></h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p><?=Yii::t('common', 'С вашего баланса будет списано')?> <?=$box->getPriceFinal()?> <?=Yii::t('common', 'рублей')?>.</p>
-                        <p><?=Yii::t('common', 'Вы уверены?')?></p>
-                        <?php $form = ActiveForm::begin([
-                            'id' => 'buy-container',
-                            'action' => 'buy-container?id=' . $box->id,
-                            ]); ?>
-                            <input type="hidden" name="buy" value="1"/>
-                            <button type="button" class="btn cancel" data-bs-dismiss="modal"><?=Yii::t('common', 'Отмена')?></button>
-                            <button type="submit" class="btn" data-bs-dismiss="modal"><?=Yii::t('common', 'Продолжить')?></button>
-                        <?php ActiveForm::end(); ?>
-                    </div>
+    <div class="modal modal-alert fade" id="openBoxModal" tabindex="-1" aria-labelledby="openBoxModal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel"><?=Yii::t('common', 'Внимание!')?></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><?=Yii::t('common', 'С вашего баланса будет списано')?> <?=$box->getPriceFinal()?> <?=Yii::t('common', 'рублей')?>.</p>
+                    <p><?=Yii::t('common', 'Вы уверены?')?></p>
+                    <?php $form = ActiveForm::begin([
+                        'id' => 'buy-container',
+                        'action' => 'buy-container?id=' . $box->id,
+                    ]); ?>
+                    <input type="hidden" name="buy" value="1"/>
+                    <button type="button" class="btn cancel" data-bs-dismiss="modal"><?=Yii::t('common', 'Отмена')?></button>
+                    <button type="submit" class="btn" data-bs-dismiss="modal"><?=Yii::t('common', 'Продолжить')?></button>
+                    <?php ActiveForm::end(); ?>
                 </div>
             </div>
         </div>
-    <?php elseif ($box->type === \common\models\box\Box::TYPE_FREE && !empty(Box::getNextOpenFreeBoxDate())): ?>
-        <div class="modal modal-alert fade" id="openBoxModal" tabindex="-1" aria-labelledby="openBoxModal" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel"><?=Yii::t('common', 'Внимание!')?></h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p><?=Yii::t('common', 'Вы уверены?')?></p>
-                        <?php $form = ActiveForm::begin([
-                            'id' => 'buy-free-container',
-                            'action' => 'buy-container?id=' . $box->id,
-                        ]); ?>
-                        <input type="hidden" name="buy" value="1"/>
-                        <button type="button" class="btn cancel" data-bs-dismiss="modal"><?=Yii::t('common', 'Отмена')?></button>
-                        <button type="submit" class="btn" data-bs-dismiss="modal"><?=Yii::t('common', 'Продолжить')?></button>
-                        <?php ActiveForm::end(); ?>
-                    </div>
+    </div>
+    <div class="modal modal-alert fade" id="notBalanceModal" tabindex="-1" aria-labelledby="notBalanceModal" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel"><?=Yii::t('common', 'Внимание!')?></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><?=Yii::t('common', 'На вашем балансе недостаточно средств')?>.</p>
+                    <a href="/user/payment" class="btn"><?=Yii::t('common', 'Пополнить')?></a>
                 </div>
             </div>
         </div>
-    <?php else: ?>
-        <div class="modal modal-alert fade" id="openBoxModal" tabindex="-1" aria-labelledby="openBoxModal" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel"><?=Yii::t('common', 'Внимание!')?></h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p><?=Yii::t('common', 'На вашем балансе недостаточно средств')?>.</p>
-                        <a href="/user/payment" class="btn"><?=Yii::t('common', 'Пополнить')?></a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    <?php endif; ?>
+    </div>
 <?php endif; ?>

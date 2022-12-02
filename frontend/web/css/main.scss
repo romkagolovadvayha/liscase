@@ -200,6 +200,18 @@ $color_background_body: #17171f;
           color: #684933;
           background-color: #fac26f;
         }
+        &.disabled {
+          background-color: #9f9d9b;
+          cursor: default;
+          color: #392c22;
+          &:hover {
+            background-color: #9f9d9b;
+            color: #392c22;
+          }
+          .badge {
+            background-color: #767676 !important;
+          }
+        }
       }
     }
   }
