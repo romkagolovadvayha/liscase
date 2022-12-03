@@ -67,9 +67,12 @@ JS
                                         <?php endif; ?>
                                     </span>
                                 </a>
-                                <a class="btn box_entity_card_actions_inventory_btn" style="display: none" href="/user/inventory">
-                                    <?=Yii::t('common', 'Открыть инвентарь')?>
-                                </a>
+                                <div class="box_entity_card_actions_inventory_action" style="display: none">
+                                    <a class="btn box_entity_card_actions_inventory_btn" href="/user/inventory">
+                                        <?=Yii::t('common', 'Открыть инвентарь')?>
+                                    </a>
+                                    <p>Следующий бесплатный контейнер будет доступен через 24 часа</p>
+                                </div>
                             </div>
                             <div class="roulete_open_content">
                                 <?=$this->render('../widgets/_roulete', [

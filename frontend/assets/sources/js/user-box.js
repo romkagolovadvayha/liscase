@@ -111,7 +111,7 @@ $('#buy-free-container, #buy-container').on('beforeSubmit', function () {
     }
     if (boxFree) {
         $('.box_entity_card_actions_btn').hide();
-        $('.box_entity_card_actions_inventory_btn').show();
+        $('.box_entity_card_actions_inventory_action').show();
     }
     $('.box_entity_card_actions_btn').addClass('disabled');
     blockedRoulete = true;

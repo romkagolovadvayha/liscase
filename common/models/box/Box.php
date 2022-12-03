@@ -141,11 +141,7 @@ class Box extends ActiveRecord
                     $result[] = $boxDrop;
                 }
             }
-            if ($boxDrop->drop->price >= 3000) {
-                for ($i = 0; $i < 10; $i++) {
-                    $result[] = $boxDrop;
-                }
-            }
+            $result[] = $boxDrop;
         }
         shuffle($result);
         shuffle($result);
@@ -228,6 +224,7 @@ class Box extends ActiveRecord
                       ->joinWith('box b')
                       ->andWhere(['b.type' => Box::TYPE_FREE])
                       ->andWhere(['ub.user_id' => $userId])
+                      ->andWhere(['ub.auto' => 0])
                       ->orderBy(['id' => SORT_DESC])
                       ->one();
     }
