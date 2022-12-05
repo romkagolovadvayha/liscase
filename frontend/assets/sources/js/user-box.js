@@ -120,6 +120,7 @@ $('#buy-free-container, #buy-container').on('beforeSubmit', function () {
     }
     $('.box_entity_card_actions_btn').addClass('disabled');
     blockedRoulete = true;
+    win_drop.removeClass('active');
     var $yiiform = $(this);
     $.ajax({
             type: $yiiform.attr('method'),
