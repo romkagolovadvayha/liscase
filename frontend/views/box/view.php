@@ -74,11 +74,16 @@ JS
                                     <p>Следующий бесплатный контейнер будет доступен через 24 часа</p>
                                 </div>
                             </div>
-                            <div class="roulete_open_content">
-                                <?=$this->render('../widgets/_roulete', [
-                                        'boxDropCarousel' => $boxDropCarousel,
-                                        'number' => $number,
-                                    ])?>
+                            <div class="roulete_open_content_wrapp">
+                                <div class="roulete_open_content">
+                                    <?=$this->render('../widgets/_roulete', [
+                                            'boxDropCarousel' => $boxDropCarousel,
+                                            'number' => $number,
+                                        ])?>
+                                </div>
+                                <div class="win_drop" id="win_drop">
+
+                                </div>
                             </div>
                         <?php endif; ?>
                     </div>

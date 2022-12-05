@@ -246,7 +246,6 @@ header nav.bg-dark {
     display: flex;
     flex-shrink: 0;
     align-items: center;
-    margin-left: 30px;
 }
 
 .header__online-icon {

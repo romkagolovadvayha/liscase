@@ -75,6 +75,10 @@ function slickRouleteInit() {
         $('.box_entity_card_actions_btn').removeClass('disabled');
         blockedRoulete = false;
         stopAudio.play();
+        win_drop.addClass('active');
+        setTimeout(function () {
+            win_drop.removeClass('active');
+        }, 8200);
     });
     var startAudio = new Audio("/audio/go-new-gambling.mp3");
     roulete.on('beforeChange', function(event, slick, currentSlide, nextSlide){
@@ -105,6 +109,7 @@ $('.box_entity_card_actions_btn_free').on('click', function () {
     boxFree = true;
     return false;
 });
+var win_drop = $('#win_drop');
 $('#buy-free-container, #buy-container').on('beforeSubmit', function () {
     if (blockedRoulete) {
         return false;
@@ -127,6 +132,12 @@ $('#buy-free-container, #buy-container').on('beforeSubmit', function () {
             var number = $('.roulete_wrapper').data().success;
             $('.roulete').slick('slickGoTo', number);
             $('.roulete_blur').slick('slickGoTo', number);
+
+            var slickCurrent = $('.roulete_main_wrap .slick-active.slick-current').clone();
+            slickCurrent.removeClass('roulete_item drop_card slick-slide slick-current slick-active slick-center')
+            slickCurrent.addClass('win_drop_item');
+            slickCurrent.removeAttr('style');
+            win_drop.html(slickCurrent);
             updateBalance();
     }).fail(function () {})
     return false;
