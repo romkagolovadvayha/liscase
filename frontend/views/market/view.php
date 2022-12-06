@@ -9,7 +9,16 @@ use yii\bootstrap5\ActiveForm;
 $this->title = Yii::t('common', $drop->name);
 
 \common\assets\SlickCarouselAsset::register($this);
-
+$this->registerJs(<<<JS
+    $('.market_view_boxes').slick({
+        centerMode: true,
+        centerPadding: '60px',
+        slidesToShow: 3,
+        arrows: false,
+        slidesToScroll: 1
+        });
+JS
+    , \yii\web\View::POS_END);
 ?>
 
 <main id="main" role="main">
@@ -64,6 +73,25 @@ $this->title = Yii::t('common', $drop->name);
                                     <?=Yii::t('common', 'Цена')?>: <?=$drop->getPriceFormat()?> <span class="currency"><?=$drop->currency?></span>
                                 </li>
                             </ul>
+                        </div>
+                    </div>
+                    <div class="market_view_boxes_wrapper">
+                        <h2><?=Yii::t('common', 'Может выпасть в кейсах')?></h2>
+                        <div class="market_view_boxes">
+                            <?php foreach ($drop->boxDrop as $boxDrop): ?>
+                                <a href="/box/view?id=<?=$boxDrop->box->id?>" class="market_view_boxes_item">
+                                    <div class="market_view_boxes_item_image">
+                                        <img src="<?= $boxDrop->box->imageOrig->getImagePubUrl() ?>" alt="<?= $boxDrop->box->name ?>" width="100px">
+                                    </div>
+                                    <div class="market_view_boxes_item_title"><?= $boxDrop->box->name ?></div>
+                                    <div class="market_view_boxes_item_price">
+                                        <span class="market_view_boxes_item_price_current"><?=$boxDrop->box->getPriceFinal()?></span>
+                                        <?php if ($boxDrop->box->getPriceFinal() < $boxDrop->box->price): ?>
+                                            <span class="market_view_boxes_item_price_old"><s><?=$boxDrop->box->price?></s></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </a>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>

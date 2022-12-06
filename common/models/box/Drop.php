@@ -24,6 +24,7 @@ use Yii;
  * @property string      $priceCeil
  * @property string      $priceMarket
  * @property string      $currency
+ * @property BoxDrop     $boxDrop
  */
 class Drop extends ActiveRecord
 {
@@ -222,6 +223,18 @@ class Drop extends ActiveRecord
     public function getType()
     {
         return $this->hasOne(DropType::class, ['id' => 'type_id']);
+    }
+
+    /**
+     * Gets query for [BoxDrop].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getBoxDrop()
+    {
+        return $this->hasMany(BoxDrop::class, ['drop_id' => 'id'])
+            ->joinWith('box b')
+            ->andWhere(['b.status' => Box::STATUS_ACTIVE]);
     }
 
     /**
