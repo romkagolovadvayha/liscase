@@ -36,9 +36,10 @@ $this->title = Yii::t('common', $drop->name);
                             <?php else: ?>
                                 <div class="market_entity_card_actions">
                                     <a class="market_entity_card_actions_btn" href="#">
-                                        <?=Yii::t('common', 'Купить')?>
-                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                            <?=$drop->getPriceFormat()?> <span class="currency"><?=$drop->currency?></span>
+                                        <span class="market_entity_card_actions_btn_text"><?=Yii::t('common', 'Купить')?></span>
+                                        <span class="market_entity_card_actions_btn_price">
+                                            <span class="currency"><?=$drop->currency?></span>
+                                            <span class="price"><?=$drop->getPriceFormat()?></span>
                                         </span>
                                     </a>
                                 </div>

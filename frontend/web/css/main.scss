@@ -1407,7 +1407,6 @@ main {
     }
     &_btn {
       position: relative;
-      display: block;
       color: #392c22;
       font-weight: 700;
       font-size: 13px;
@@ -1418,12 +1417,29 @@ main {
       border-radius: 0;
       border: 0;
       transition: background-color .3s ease,color .3s ease;
+      line-height: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       &:hover {
         color: #684933;
         background-color: #fac26f;
       }
     }
     &_price {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      .currency {
+        width: 20px;
+        height: 20px;
+      }
+      .price {
+        margin-left: 5px;
+      }
+      margin-left: 5px;
+    }
+    &.text {
 
     }
   }
@@ -1631,7 +1647,9 @@ main {
         position: relative;
         height: 100%;
         padding: 20px 25px;
-        display: inline-block;
+        max-width: 100%;
+        width: 200px;
+        margin: 0 auto;
         color: #392c22;
         font-weight: 700;
         font-size: 13px;
@@ -1639,6 +1657,22 @@ main {
         background-color: #e69d5d;
         border-radius: 8px;
         transition: background-color .3s ease,color .3s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        &_price {
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
+          .currency {
+            width: 20px;
+            height: 20px;
+          }
+          .price {
+            margin-left: 5px;
+          }
+          margin-left: 5px;
+        }
         &:hover {
           color: #684933;
           background-color: #fac26f;
@@ -1658,4 +1692,13 @@ main {
       }
     }
   }
+}
+
+.currency {
+  color: rgba(0,0,0,0);
+  background: url(/images/icons/coin.svg) no-repeat;
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  vertical-align: middle;
 }

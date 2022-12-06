@@ -32,7 +32,7 @@ $this->title = Yii::$app->name . ' - Лучшие CSGO кейсы';
                         </div>
                         <div class="boxes_free_item_title"><?= $box->name ?></div>
                         <div class="boxes_free_item_price">
-                            <span class="boxes_top_item_price_old"><s><?= $box->price  ?> <span class="currency"><?=$box->currency?></span></s></span>
+                            <span class="boxes_top_item_price_old"><s><?=$box->price?></s></span>
                         </div>
                     </a>
                 <?php endforeach; ?>
@@ -52,9 +52,9 @@ $this->title = Yii::$app->name . ' - Лучшие CSGO кейсы';
                         </div>
                         <div class="boxes_top_item_title"><?= $box->name ?></div>
                         <div class="boxes_top_item_price">
-                            <span class="boxes_top_item_price_current"><?= $box->getPriceFinal() ?> <span class="currency"><?=$box->currency?></span></span>
+                            <span class="boxes_top_item_price_current"><?=$box->getPriceFinal()?></span>
                             <?php if ($box->getPriceFinal() < $box->price): ?>
-                                <span class="boxes_top_item_price_old"><s><?=$box->price?> <span class="currency"><?=$box->currency?></span></s></span>
+                                <span class="boxes_top_item_price_old"><s><?=$box->price?></s></span>
                             <?php endif; ?>
                         </div>
                     </a>

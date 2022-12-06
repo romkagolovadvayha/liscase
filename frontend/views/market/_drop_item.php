@@ -19,8 +19,11 @@ $image = Html::img($model->imageOrig->getImagePubUrl(), ['width' => '40px']);
     <div class="market_drop_item_quality"><?=$model->quality?></div>
     <?php $form = ActiveForm::begin(); ?>
     <a class="market_drop_item_btn" href="/market/view?id=<?=$model->id?>" <?=$balance < $model->priceMarket ? 'disabled' : ''?>>
-        Купить
-        <span class="market_drop_item_price"><?=$model->getPriceFormat()?> <span class="currency"><?=$model->currency?></span></span>
+        <span class="market_drop_item_text"><?=Yii::t('common', 'Купить')?></span>
+        <span class="market_drop_item_price">
+            <span class="currency"><?=$model->currency?></span>
+            <span class="price"><?=$model->getPriceFormat()?></span>
+        </span>
     </a>
     <?php ActiveForm::end(); ?>
 </div>

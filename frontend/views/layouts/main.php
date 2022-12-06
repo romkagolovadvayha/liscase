@@ -44,7 +44,10 @@ JS
     $rightMenu[] = [
         'label'   => '<div class="balance-item">
                                     <div class="name">' . Yii::$app->user->identity->userProfile->name . '</div>
-                                    <div class="balance"><span class="balance_count">' . $balanceStr . '</span> <span class="currency">' . UserBalance::getCurrency() . '</span></div>
+                                    <div class="balance">
+                                        <span class="currency">' . UserBalance::getCurrency() . '</span>
+                                        <span class="balance_count">' . $balanceStr . '</span>
+                                    </div>
                             </div>',
         'visible' => !Yii::$app->user->isGuest,
         'url'     => '/user/payment',
