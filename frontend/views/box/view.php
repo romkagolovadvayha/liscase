@@ -93,7 +93,7 @@ JS
                 <h2><?=Yii::t('common', 'СОДЕРЖИМОЕ КЕЙСА')?></h2>
                 <div class="box_content">
                     <?php foreach ($box->boxDrop as $boxDrop): ?>
-                        <div class="box_content_card<?=' drop_card level' . $boxDrop->drop->getLevel()?>">
+                        <a href="/market/view?id=<?= $boxDrop->drop->id ?>" class="box_content_card<?=' drop_card level' . $boxDrop->drop->getLevel()?>">
                             <div class="box_content_card_info">
                                 <div class="box_content_card_info_type"><?=Yii::t('common', $boxDrop->drop->type->name)?></div>
                                 <div class="box_content_card_info_title"><?=Yii::t('common', $boxDrop->drop->getShortName())?></div>
@@ -101,7 +101,7 @@ JS
                             <div class="box_content_card_image">
                                 <img src="<?= $boxDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('common', $boxDrop->drop->name)?>">
                             </div>
-                        </div>
+                        </a>
                     <?php endforeach; ?>
                 </div>
             </div>
