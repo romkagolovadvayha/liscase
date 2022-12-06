@@ -10,13 +10,15 @@ $this->title = Yii::t('common', $drop->name);
 
 \common\assets\SlickCarouselAsset::register($this);
 $this->registerJs(<<<JS
-    $('.market_view_boxes').slick({
-        centerMode: true,
-        centerPadding: '60px',
-        slidesToShow: 3,
-        arrows: false,
-        slidesToScroll: 1
-        });
+    if ($('.market_view_boxes').length) {
+        $('.market_view_boxes').slick({
+            centerMode: false,
+            centerPadding: '60px',
+            slidesToShow: 3,
+            arrows: false,
+            slidesToScroll: 1
+            });
+    }
 JS
     , \yii\web\View::POS_END);
 ?>
@@ -75,6 +77,7 @@ JS
                             </ul>
                         </div>
                     </div>
+                    <?php if (!empty($drop->boxDrop)): ?>
                     <div class="market_view_boxes_wrapper">
                         <h2><?=Yii::t('common', 'Может выпасть в кейсах')?></h2>
                         <div class="market_view_boxes">
@@ -94,6 +97,7 @@ JS
                             <?php endforeach; ?>
                         </div>
                     </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

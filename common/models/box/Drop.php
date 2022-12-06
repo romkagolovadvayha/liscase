@@ -234,6 +234,7 @@ class Drop extends ActiveRecord
     {
         return $this->hasMany(BoxDrop::class, ['drop_id' => 'id'])
             ->joinWith('box b')
+            ->andWhere(['NOT IN', 'b.type', [Box::TYPE_FREE]])
             ->andWhere(['b.status' => Box::STATUS_ACTIVE]);
     }
 
