@@ -85,7 +85,7 @@ class UserController extends WebController
             $profit = new Profit();
             $profit->status = 1;
             $profit->type = Profit::TYPE_SELL_DROP;
-            $profit->amount = $drop->price;
+            $profit->amount = $drop->priceCeil;
             $profit->user_balance_id = $userBalanceId;
             $profit->comment = Yii::t('common', 'Продажа предметов', [], 'ru-RU');
             $profit->created_at = date('Y-m-d H:i:s');
@@ -137,7 +137,7 @@ class UserController extends WebController
     {
         $result = [
             'balanceStr' => Yii::$app->user->identity->getPersonalBalance()->getBalanceFormat(),
-            'balance' => Yii::$app->user->identity->getPersonalBalance()->balance
+            'balance' => Yii::$app->user->identity->getPersonalBalance()->balanceCeil
         ];
         header("Content-Type: application/json");
         return json_encode($result);

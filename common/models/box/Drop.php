@@ -3,6 +3,7 @@
 namespace common\models\box;
 
 use common\components\base\ActiveRecord;
+use common\components\helpers\CurrencyHelper;
 use Yii;
 
 /**
@@ -20,6 +21,9 @@ use Yii;
  * @property DropImage[] $dropImages
  * @property DropImage   $imageOrig
  * @property DropType    $type
+ * @property string      $priceCeil
+ * @property string      $priceMarket
+ * @property string      $currency
  */
 class Drop extends ActiveRecord
 {
@@ -81,17 +85,50 @@ class Drop extends ActiveRecord
     }
 
     /**
+     * @return array
+     */
+    public static function getQualityList() {
+        $all = Drop::find()
+            ->cache(24 * 60 * 60)
+            ->select('quality')
+            ->andWhere(['status' => Drop::STATUS_ACTIVE])
+            ->distinct(true)
+            ->indexBy('quality')
+            ->asArray()
+            ->all();
+
+        $result = [];
+        foreach ($all as $index => $item) {
+            $result[$index] = $index;
+        }
+        return $result;
+    }
+
+    /**
+     * @return string
+     */
+    public static function getPriceMax() {
+        $result = Drop::find()
+                      ->cache(24 * 60 * 60)
+                      ->select('MAX(price)')
+                      ->andWhere(['status' => Drop::STATUS_ACTIVE])
+                      ->createCommand()
+                      ->queryScalar();
+        return ceil($result);
+    }
+
+    /**
      * @return mixed|string
      */
     public function getLevel() {
         $level = 0;
-        if ($this->price > 100) {
+        if ($this->priceCeil > 100) {
             $level = 1;
         }
-        if ($this->price > 500) {
+        if ($this->priceCeil > 500) {
             $level = 2;
         }
-        if ($this->price > 1000) {
+        if ($this->priceCeil > 1000) {
             $level = 3;
         }
         return $level;
@@ -132,6 +169,41 @@ class Drop extends ActiveRecord
     }
 
     /**
+     *
+     * @return string
+     */
+    public function getPriceCeil()
+    {
+        return ceil($this->price);
+    }
+
+    /**
+     * @return string
+     */
+    public function getPriceFormat()
+    {
+        return number_format($this->priceCeil, 0, '.', ' ');
+    }
+
+    /**
+     *
+     * @return string
+     */
+    public function getPriceMarket()
+    {
+        return ceil($this->priceCeil * 1.05);
+    }
+
+    /**
+     *
+     * @return string
+     */
+    public function getCurrency()
+    {
+        return CurrencyHelper::default();
+    }
+
+    /**
      * Gets query for [ImageOrig].
      *
      * @return \yii\db\ActiveQuery
@@ -160,7 +232,7 @@ class Drop extends ActiveRecord
         $item = Yii::$app->marketApi->getParserItemById($this->market_id);
         $this->name = $item['name'];
         $this->eng_name = $item['market_hash_name'];
-        $this->price = $item['min_price']/100;
+        $this->price = ceil($item['min_price']/100);
         $this->quality = $item['quality'];
         if (empty($this->description)) {
             $this->description = "";

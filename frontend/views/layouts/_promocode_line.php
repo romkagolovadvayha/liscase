@@ -23,14 +23,14 @@ $promocode = Promocode::getActivePromocode();
                     Действует скидка <?=$promocode->getPercentCeil()?>% на пополнение баланса
                 <?php endif; ?>
                 </div>
-                <div><a href="/promocode/clear">Отменить</a></div>
+                <div><a href="/promocode/clear"><?=Yii::t('common', 'Отменить')?></a></div>
             </div>
         <?php else: ?>
             <div class="promocode">
                 <?php $form = ActiveForm::begin(); ?>
                 <?= $form->field($promocodeForm, 'code', [
                         'template' => "{label}\n<div class=\"input-group\">{input}\n<span class=\"input-group-btn\"><button type=\"submit\" class=\"btn\">".Yii::t('common', 'Применить')."</button>\n{hint}\n{error}</span></div>"
-                    ])->label(false)->textInput(['placeholder' => 'Введите промокод']); ?>
+                    ])->label(false)->textInput(['placeholder' => Yii::t('common', 'Введите промокод')]); ?>
                 <?php ActiveForm::end(); ?>
             </div>
         <?php endif; ?>
@@ -43,9 +43,9 @@ $promocode = Promocode::getActivePromocode();
                         'active' => _checkActive('/'),
                     ],
                     [
-                        'label'   => Yii::t('common', "Сражения"),
-                        'url'     => '/battle',
-                        'active' => _checkActive('/battle'),
+                        'label'   => Yii::t('common', "Маркет"),
+                        'url'     => '/market/index',
+                        'active' => _checkActive('/market/index'),
                     ],
                 ],
                 'options' => ['class' =>'navigation_bar_menu'],

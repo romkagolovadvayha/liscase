@@ -21,8 +21,8 @@ $this->title = Yii::$app->name . ' - Лучшие CSGO кейсы';
     <div class="container">
         <div class="boxes_free_wrapper">
             <div class="header">
-                <h2>Бесплатные кейсы</h2>
-                <p>Получи дроп бесплатно!</p>
+                <h2><?=Yii::t('common', 'Бесплатные кейсы')?></h2>
+                <p><?=Yii::t('common', 'Получи дроп бесплатно!')?></p>
             </div>
             <div class="boxes_free">
                 <?php foreach (Box::getBoxesByType(Box::TYPE_FREE) as $box): ?>
@@ -32,7 +32,7 @@ $this->title = Yii::$app->name . ' - Лучшие CSGO кейсы';
                         </div>
                         <div class="boxes_free_item_title"><?= $box->name ?></div>
                         <div class="boxes_free_item_price">
-                            <span class="boxes_top_item_price_old"><s><?= $box->price  ?> ₽</s></span>
+                            <span class="boxes_top_item_price_old"><s><?= $box->price  ?> <span class="currency"><?=$box->currency?></span></s></span>
                         </div>
                     </a>
                 <?php endforeach; ?>
@@ -41,8 +41,8 @@ $this->title = Yii::$app->name . ' - Лучшие CSGO кейсы';
 
         <div class="boxes_top_wrapper">
             <div class="header">
-                <h2>Лучшие кейсы</h2>
-                <p>Кейсы по низким ценам!</p>
+                <h2><?=Yii::t('common', 'Лучшие кейсы')?></h2>
+                <p><?=Yii::t('common', 'Кейсы по низким ценам!')?></p>
             </div>
             <div class="boxes_top">
                 <?php foreach (Box::getBoxesByType(Box::TYPE_DEFAULT) as $box): ?>
@@ -52,9 +52,9 @@ $this->title = Yii::$app->name . ' - Лучшие CSGO кейсы';
                         </div>
                         <div class="boxes_top_item_title"><?= $box->name ?></div>
                         <div class="boxes_top_item_price">
-                            <span class="boxes_top_item_price_current"><?= $box->getPriceFinal() ?> ₽</span>
+                            <span class="boxes_top_item_price_current"><?= $box->getPriceFinal() ?> <span class="currency"><?=$box->currency?></span></span>
                             <?php if ($box->getPriceFinal() < $box->price): ?>
-                                <span class="boxes_top_item_price_old"><s><?= $box->price  ?> ₽</s></span>
+                                <span class="boxes_top_item_price_old"><s><?=$box->price?> <span class="currency"><?=$box->currency?></span></s></span>
                             <?php endif; ?>
                         </div>
                     </a>

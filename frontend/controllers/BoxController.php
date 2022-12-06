@@ -45,7 +45,7 @@ class BoxController extends WebController
         if (!empty($post['buy'])) {
             $user = Yii::$app->user->identity;
             $balance = $user->getPersonalBalance();
-            if ($box->getPriceFinal() > $balance->balance) {
+            if ($box->getPriceFinal() > $balance->balanceCeil) {
                 throw new HttpException(402, Yii::t('common', 'Недостаточно средств на счете!'));
             }
             if ($box->type === Box::TYPE_FREE && !empty(Box::getNextOpenFreeBoxDate())) {

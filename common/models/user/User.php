@@ -29,6 +29,7 @@ use common\components\base\ActiveRecord;
  * @property UserDrop[]          $userDrop
  * @property Payment[]           $payments
  * @property UserPromocode[]     $userPromocodes
+ * @property string              $currency
  */
 class User extends ActiveRecord implements IdentityInterface
 {
@@ -224,6 +225,14 @@ class User extends ActiveRecord implements IdentityInterface
     public function getPersonalBalance()
     {
         return $this->_getUserBalanceByType(UserBalance::TYPE_PERSONAL);
+    }
+
+    /**
+     * @return string
+     */
+    public function getCurrency()
+    {
+        return 'COIN';
     }
 
     /**

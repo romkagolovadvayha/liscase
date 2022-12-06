@@ -2,6 +2,7 @@
 
 namespace common\models\box;
 
+use common\components\helpers\CurrencyHelper;
 use common\models\promocode\Promocode;
 use common\models\user\UserBox;
 use Yii;
@@ -106,37 +107,37 @@ class Box extends ActiveRecord
         $boxDrops = $this->hasMany(BoxDrop::class, ['box_id' => 'id'])->all();
         $result = [];
         foreach ($boxDrops as $boxDrop) {
-            if ($boxDrop->drop->price < 30) {
+            if ($boxDrop->drop->priceCeil < 30) {
                 for ($i = 0; $i < 5; $i++) {
                     $result[] = $boxDrop;
                 }
             }
-            if ($boxDrop->drop->price < 50) {
+            if ($boxDrop->drop->priceCeil < 50) {
                 for ($i = 0; $i < 5; $i++) {
                     $result[] = $boxDrop;
                 }
             }
-            if ($boxDrop->drop->price < 100) {
+            if ($boxDrop->drop->priceCeil < 100) {
                 for ($i = 0; $i < 5; $i++) {
                     $result[] = $boxDrop;
                 }
             }
-            if ($boxDrop->drop->price < 300) {
+            if ($boxDrop->drop->priceCeil < 300) {
                 for ($i = 0; $i < 5; $i++) {
                     $result[] = $boxDrop;
                 }
             }
-            if ($boxDrop->drop->price < 500) {
+            if ($boxDrop->drop->priceCeil < 500) {
                 for ($i = 0; $i < 5; $i++) {
                     $result[] = $boxDrop;
                 }
             }
-            if ($boxDrop->drop->price < 1000) {
+            if ($boxDrop->drop->priceCeil < 1000) {
                 for ($i = 0; $i < 5; $i++) {
                     $result[] = $boxDrop;
                 }
             }
-            if ($boxDrop->drop->price < 3000) {
+            if ($boxDrop->drop->priceCeil < 3000) {
                 for ($i = 0; $i < 10; $i++) {
                     $result[] = $boxDrop;
                 }
@@ -172,6 +173,15 @@ class Box extends ActiveRecord
             return false;
         }
         return true;
+    }
+
+    /**
+     *
+     * @return string
+     */
+    public function getCurrency()
+    {
+        return CurrencyHelper::default();
     }
 
     /**
@@ -253,10 +263,10 @@ class Box extends ActiveRecord
      */
     public function _getDropFinal() {
         [$boxDropCarousel, $number] = $this->_getDrop();
-        if ($boxDropCarousel[$number]->drop->price > 1000) {
+        if ($boxDropCarousel[$number]->drop->priceCeil > 1000) {
             [$boxDropCarousel, $number] = $this->_getDrop();
         }
-        if ($boxDropCarousel[$number]->drop->price > 2000) {
+        if ($boxDropCarousel[$number]->drop->priceCeil > 2000) {
             [$boxDropCarousel, $number] = $this->_getDrop();
         }
         return [$boxDropCarousel, $number];

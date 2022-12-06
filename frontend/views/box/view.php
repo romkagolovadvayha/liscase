@@ -63,7 +63,7 @@ JS
                                         <?php if ($box->getPriceFinal() <= 0): ?>
                                             <?=Yii::t('common', 'Бесплатно')?>
                                         <?php else: ?>
-                                            <?=$box->getPriceFinal()?> ₽
+                                            <?=$box->getPriceFinal()?> <span class="currency"><?=$box->currency?></span>
                                         <?php endif; ?>
                                     </span>
                                 </a>
@@ -119,7 +119,7 @@ JS
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p><?=Yii::t('common', 'С вашего баланса будет списано')?> <?=$box->getPriceFinal()?> <?=Yii::t('common', 'рублей')?>.</p>
+                    <p><?=Yii::t('common', 'С вашего баланса будет списано')?> <?=$box->getPriceFinal()?> <span class="currency"><?=$box->currency?></span>.</p>
                     <p><?=Yii::t('common', 'Вы уверены?')?></p>
                     <?php $form = ActiveForm::begin([
                         'id' => 'buy-container',

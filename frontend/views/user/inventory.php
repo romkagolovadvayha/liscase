@@ -3,6 +3,7 @@
 use yii\web\View;
 use common\models\user\UserDrop;
 use yii\widgets\ActiveForm;
+use common\models\user\UserBalance;
 
 /** @var View $this */
 
@@ -36,11 +37,11 @@ $priceTotal = 0;
                                     <input type="hidden" name="sell" value="<?=$userDrop->id?>"/>
                                     <button type="submit" class="btn box_cards_card_btn" data-bs-dismiss="modal">
                                         <?=Yii::t('common', 'Продать')?>
-                                        <span class="badge bg-danger">+<?=$drop->price?></span>
+                                        <span class="badge bg-danger">+<?=$drop->priceCeil?></span>
                                     </button>
                                     <?php ActiveForm::end(); ?>
                                 </div>
-                                <?php $priceTotal += $drop->price; ?>
+                                <?php $priceTotal += $drop->priceCeil; ?>
                             <?php endforeach; ?>
                         <?php endforeach; ?>
                     </div>
@@ -49,7 +50,7 @@ $priceTotal = 0;
                         <?php $form = ActiveForm::begin(); ?>
                         <input type="hidden" name="sell" value="all"/>
                         <button type="submit" class="btn" data-bs-dismiss="modal">
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">+<?=$priceTotal?> ₽</span>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">+<?=$priceTotal?> <span class="currency"><?=UserBalance::getCurrency()?></span></span>
                             <?=Yii::t('common', 'Продать все')?>
                         </button>
                         <?php ActiveForm::end(); ?>

@@ -9,6 +9,7 @@ use yii\bootstrap5\Breadcrumbs;
 use yii\bootstrap5\Html;
 use yii\bootstrap5\Nav;
 use yii\bootstrap5\NavBar;
+use common\models\user\UserBalance;
 
 AppAsset::register($this);
 \frontend\assets\OnlineCounterAsset::register($this);
@@ -34,7 +35,7 @@ $rightMenu = [
 ];
 if (!Yii::$app->user->isGuest) {
     $balanceStr = Yii::$app->user->identity->getPersonalBalance()->getBalanceFormat();
-    $balance = Yii::$app->user->identity->getPersonalBalance()->balance;
+    $balance = Yii::$app->user->identity->getPersonalBalance()->balanceCeil;
     $this->registerJs(<<<JS
     var balanceStr = '{$balanceStr}';
     var balance = {$balance};
@@ -43,7 +44,7 @@ JS
     $rightMenu[] = [
         'label'   => '<div class="balance-item">
                                     <div class="name">' . Yii::$app->user->identity->userProfile->name . '</div>
-                                    <div class="balance"><span class="balance_count">' . $balanceStr . '</span> ₽</div>
+                                    <div class="balance"><span class="balance_count">' . $balanceStr . '</span> <span class="currency">' . UserBalance::getCurrency() . '</span></div>
                             </div>',
         'visible' => !Yii::$app->user->isGuest,
         'url'     => '/user/payment',

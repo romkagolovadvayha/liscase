@@ -1061,6 +1061,24 @@ input.form-control {
     box-shadow: none !important;
   }
 }
+select.form-select {
+  width: 100%;
+  padding: 17px 20px;
+  color: #c2c7d7;
+  font-size: 13px;
+  text-align: left;
+  background-color: #252530;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  transition: background-color .3s ease;
+  &:focus {
+    background-color: #2c2c38;
+    color: #c2c7d7;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
 
 .alert {
   border-radius: 3px;
@@ -1346,4 +1364,298 @@ main {
 
 .modal {
   z-index: 99999;
+}
+
+.market_drop {
+  grid-template-columns: repeat(auto-fill,minmax(160px,1fr));
+  grid-gap: 10px;
+  display: grid;
+  &_item {
+    text-align: center;
+    border: 1px solid #e69d5d;
+    &_image {
+      padding: 5px;
+      img {
+        width: 90%;
+      }
+    }
+    &_name {
+      font-size: 12px;
+      font-weight: 500;
+      z-index: 1;
+      color: #e2e3e7;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      padding: 3px;
+      background-color: rgba(230, 157, 93, 0.48);
+    }
+    &_quality {
+      font-size: 12px;
+      font-weight: 500;
+      z-index: 1;
+      color: #e2e3e7;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      background-color: rgba(230, 157, 93, 0.15);
+      padding: 3px;
+    }
+    form {
+      margin: 0;
+      padding: 0;
+    }
+    &_btn {
+      position: relative;
+      display: block;
+      color: #392c22;
+      font-weight: 700;
+      font-size: 13px;
+      width: 100%;
+      padding: 10px;
+      text-transform: uppercase;
+      background-color: #e69d5d;
+      border-radius: 0;
+      border: 0;
+      transition: background-color .3s ease,color .3s ease;
+      &:hover {
+        color: #684933;
+        background-color: #fac26f;
+      }
+    }
+    &_price {
+
+    }
+  }
+}
+.market_pagination {
+  margin-top: 20px;
+  text-align: center;
+  .pagination {
+    justify-content: center;
+    .page-item {
+      margin: 0 3px;
+      a {
+        background: #e2e3e7;
+        border-color: #e2e3e7;
+        color: $color_background_body;
+        font-size: 14px;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        line-height: 24px;
+        text-align: center;
+        &:hover {
+          background-color: #e69d5d;
+          border-color: #e69d5d;
+        }
+      }
+      &.active {
+        a {
+          background-color: #e69d5d;
+          border-color: #e69d5d;
+          cursor: default;
+        }
+      }
+      &.disabled {
+        a {
+          color: #898989 !important;
+        }
+      }
+      &.prev {
+        a {
+          background: transparent;
+          border: none;
+          color: #e69d5d;
+        }
+      }
+      &.next {
+        a {
+          background: transparent;
+          border: none;
+          color: #e69d5d;
+        }
+      }
+    }
+  }
+}
+.market_filter {
+  &_btn {
+    position: relative;
+    display: block;
+    color: #392c22;
+    font-weight: 700;
+    font-size: 13px;
+    width: 100%;
+    padding: 10px;
+    text-transform: uppercase;
+    background-color: #e69d5d;
+    border-radius: 8px;
+    border: 0;
+    transition: background-color .3s ease,color .3s ease;
+    &:hover {
+      color: #684933;
+      background-color: #fac26f;
+    }
+  }
+}
+
+
+.market_view_content {
+  &:after {
+    content: '';
+    display: block;
+    width: 5px;
+    background: $color_background_body;
+    position: absolute;
+    z-index: 0;
+    bottom: 10px;
+    top: 10px;
+    left: -3px;
+  }
+  &:before {
+    content: '';
+    display: block;
+    width: 5px;
+    background: $color_background_body;
+    position: absolute;
+    z-index: 0;
+    bottom: 10px;
+    top: 10px;
+    right: -3px;
+  }
+  &_wrapper {
+    background: darken($color_background_body, 1%);
+    padding: 20px;
+    border: 1px solid #f3a45d;
+    position: relative;
+    h2 {
+      color: #e8e9f3;
+      font-weight: 700;
+      font-size: 22px;
+      text-align: center;
+      text-transform: uppercase;
+    }
+    &:before {
+      content: '';
+      display: block;
+      height: 5px;
+      background: $color_background_body;
+      position: absolute;
+      z-index: 0;
+      top: -3px;
+      left: 10px;
+      right: 10px;
+    }
+    &:after {
+      content: '';
+      display: block;
+      height: 5px;
+      background: $color_background_body;
+      position: absolute;
+      z-index: 0;
+      bottom: -3px;
+      left: 10px;
+      right: 10px;
+    }
+  }
+  &_list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    > li {
+      + li {
+        margin-top: 5px;
+      }
+    }
+  }
+}
+.market_entity {
+  &_wrapper {
+    display: block;
+    margin-top: 40px;
+    .header_actions {
+      text-align: center;
+      a {
+        color: #e8e9f3;
+        font-weight: 500;
+        font-size: 14px;
+        text-transform: uppercase;
+        display: inline-block;
+      }
+    }
+  }
+  &_card {
+    text-align: center;
+    position: relative;
+    &_title {
+      margin-top: 5px;
+      color: #e8e9f3;
+      font-weight: 700;
+      font-size: 28px;
+      text-align: center;
+    }
+    &_image {
+      img {
+        width: 350px;
+        max-width: 100%;
+      }
+    }
+    &_alert {
+      position: relative;
+      padding: 20px 20px;
+      text-align: center;
+      background-color: rgba(86,68,51,.6);
+      border-radius: 10px;
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      margin-top: -50px;
+      &_title {
+        margin-bottom: 5px;
+        color: #ffc27b;
+        font-weight: 900;
+        font-size: 15px;
+        text-transform: uppercase;
+      }
+      &_text {
+        color: #f8f3ec;
+        font-weight: 300;
+        font-size: 14px;
+      }
+    }
+    &_actions {
+      margin-top: 10px;
+      text-align: center;
+      &_btn {
+        position: relative;
+        height: 100%;
+        padding: 20px 25px;
+        display: inline-block;
+        color: #392c22;
+        font-weight: 700;
+        font-size: 13px;
+        text-transform: uppercase;
+        background-color: #e69d5d;
+        border-radius: 8px;
+        transition: background-color .3s ease,color .3s ease;
+        &:hover {
+          color: #684933;
+          background-color: #fac26f;
+        }
+        &.disabled {
+          background-color: #9f9d9b;
+          cursor: default;
+          color: #392c22;
+          &:hover {
+            background-color: #9f9d9b;
+            color: #392c22;
+          }
+          .badge {
+            background-color: #767676 !important;
+          }
+        }
+      }
+    }
+  }
 }

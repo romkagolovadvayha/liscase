@@ -2,6 +2,7 @@
 
 namespace common\models\user;
 
+use common\components\helpers\CurrencyHelper;
 use common\models\invoice\Invoice;
 use Yii;
 use common\models\profit\Profit;
@@ -16,9 +17,10 @@ use yii\base\BaseObject;
  * @property float    $balance
  * @property string   $created_at
  *
- * @property User     $user
- * @property Profit[] $profits
+ * @property User      $user
+ * @property Profit[]  $profits
  * @property Invoice[] $invoices
+ * @property float     $balanceCeil
  */
 class UserBalance extends \common\components\base\ActiveRecord
 {
@@ -94,6 +96,15 @@ class UserBalance extends \common\components\base\ActiveRecord
     }
 
     /**
+     *
+     * @return string
+     */
+    public static function getCurrency()
+    {
+        return CurrencyHelper::default();
+    }
+
+    /**
      * @return \yii\db\ActiveQuery
      */
     public function getUser()
@@ -153,7 +164,6 @@ class UserBalance extends \common\components\base\ActiveRecord
      */
     public function getBalanceFormat()
     {
-        return number_format($this->balance, 2, '.', ' ');
-
+        return number_format($this->balanceCeil, 0, '.', ' ');
     }
 }
