@@ -8,6 +8,8 @@ $languages = [
     'en' => 'en-US',
     'ru' => 'ru-RU',
     'de' => 'de-DE',
+    'uk' => 'uk-UA',
+    'es' => 'es-ES',
 ];
 $config = [
     'id' => 'basic',
