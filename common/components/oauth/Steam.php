@@ -59,28 +59,10 @@ class Steam extends OpenId
         $usersInfo = json_decode($response, 1)['response']['players'];
         if (!empty($usersInfo)) {
             $result['username'] = $usersInfo[0]['personaname'];
-            $avatar = $usersInfo[0]['avatarfull'];
-            $avatarUrl = $this->_loadImage($avatar, $id);
-            $result['avatar'] = $avatarUrl;
+            $result['avatar_link'] = $usersInfo[0]['avatarfull'];
         }
 
         return array_merge($result, $this->fetchAttributes());
-    }
-
-    private function _loadImage($imageUrl, $id) {
-        $uploadDir = Yii::getAlias('@app/web');
-        $fileUrl = "/uploads/avatar/steam/{$id}.png";
-        $filePath = $uploadDir . $fileUrl;
-        if (!file_exists(dirname(dirname($filePath)))) {
-            mkdir(dirname(dirname($filePath)));
-            chmod(dirname(dirname($filePath)), 0777);
-        }
-        if (!file_exists(dirname($filePath))) {
-            mkdir(dirname($filePath));
-            chmod(dirname($filePath), 0777);
-        }
-        file_put_contents($filePath, file_get_contents($imageUrl));
-        return $fileUrl;
     }
 
     /**

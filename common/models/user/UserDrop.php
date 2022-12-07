@@ -95,6 +95,7 @@ class UserDrop extends ActiveRecord
         return UserDrop::find()
             ->cache(6)
             ->andWhere(['IN', 'status', [UserDrop::STATUS_ACTIVE, UserDrop::STATUS_SENDED]])
+            ->andWhere('box_id IS NOT NULL')
             ->orderBy(['id' => SORT_DESC])
             ->limit(10)
             ->all();

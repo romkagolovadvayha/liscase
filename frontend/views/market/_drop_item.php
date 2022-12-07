@@ -22,7 +22,7 @@ $image = Html::img($model->imageOrig->getImagePubUrl(), ['width' => '40px']);
         <span class="market_drop_item_text"><?=Yii::t('common', 'Купить')?></span>
         <span class="market_drop_item_price">
             <span class="currency"><?=$model->currency?></span>
-            <span class="price"><?=$model->getPriceFormat()?></span>
+            <span class="price"><?=$model->getPriceMarket()?></span>
         </span>
     </a>
     <?php ActiveForm::end(); ?>

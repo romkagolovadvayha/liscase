@@ -99,16 +99,4 @@ class SiteController extends WebController
         return $this->render('@frontend/views/widgets/_online_counter');
     }
 
-    /**
-     * Logout action.
-     *
-     * @return Response
-     */
-    public function actionLogout()
-    {
-        Yii::$app->user->logout();
-
-        return $this->goHome();
-    }
-
 }

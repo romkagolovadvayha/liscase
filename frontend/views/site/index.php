@@ -3,6 +3,7 @@
 /** @var yii\web\View $this */
 /** @var \frontend\forms\promocode\PromocodeForm $promocodeForm */
 
+use common\components\web\Cookie;
 use common\models\box\Box;
 
 $this->title = Yii::$app->name . ' - ' . Yii::t('common', 'Лучшие CSGO кейсы');

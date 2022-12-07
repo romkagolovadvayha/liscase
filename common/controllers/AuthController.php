@@ -2,10 +2,12 @@
 
 namespace common\controllers;
 
+use common\components\oauth\AuthAction;
 use common\models\user\Auth;
 use common\models\user\UserProfile;
 use common\models\user\UserTree;
 use Yii;
+use yii\base\BaseObject;
 use yii\filters\AccessControl;
 use yii\web\BadRequestHttpException;
 use common\components\web\Cookie;
@@ -32,11 +34,9 @@ class AuthController extends WebController
                     [
                         'allow'   => true,
                         'actions' => [
-                            'login',
                             'login-social',
                             'registration',
                             'request-password-reset',
-                            'reset-password',
                             'confirm-email',
                             'alert-page',
                             'oauth',
@@ -60,7 +60,7 @@ class AuthController extends WebController
     {
         return [
             'oauth' => [
-                'class'           => 'yii\authclient\AuthAction',
+                'class'           => AuthAction::class,
                 'successCallback' => [$this, 'onAuthSuccess'],
             ],
         ];
@@ -88,61 +88,58 @@ class AuthController extends WebController
             ])->one();
 
         if (Yii::$app->user->isGuest) {
+            $referer = Yii::$app->session->get('referer_link');
+            Yii::$app->session->remove('referer_link');
             if ($auth) {
                 // авторизация
                 $user = $auth->user;
                 Yii::$app->user->login($user,3600*24*7);
             } else {
                 // регистрация
-                if (isset($attributes['email']) && User::find()->where(['email' => $attributes['email']])->exists()) {
-                    Yii::$app->getSession()->setFlash(
-                        'error', [
-                        Yii::t(
-                            'app',
-                            "Пользователь с такой электронной почтой как в {client} уже существует, но с ним не связан. Для начала войдите на сайт использую электронную почту, для того, что бы связать её.",
-                            ['client' => $client->getTitle()]
-                        ),
-                    ]
+                $user     = new User();
+                $user->email = "{$attributes['id']}@steam.com";
+                $user->setPassword(Yii::$app->security->generateRandomString());
+                $user->status = User::STATUS_ACTIVE;
+                $user->generateAuthKey();
+                $user->generateRefCode();
+                $user->generateSocketRoom();
+                $refCode = Cookie::getValue('refCode');
+                if (!empty($refCode)) {
+                    $parentUser = User::findByRefCode($refCode);
+                    UserTree::appendUser($user->id, $parentUser->id);
+                }
+                $transaction = $user->getDb()->beginTransaction();
+                if ($user->save()) {
+                    UserProfile::createModel($user, $attributes['username']);
+                    try {
+                        $avatar = $this->_loadImage($attributes['avatar_link'], $attributes['id']);
+                        $user->userProfile->avatar = $avatar;
+                    } catch (\Exception $ex) {}
+                    $user->userProfile->save();
+                    $auth = new Auth(
+                        [
+                            'user_id'   => $user->id,
+                            'source' => $client->getId(),
+                            'source_id' => (string)$attributes['id'],
+                        ]
                     );
-                } else {
-                    $user     = new User();
-                    $user->email = "{$attributes['id']}@steam.com";
-                    $user->setPassword(Yii::$app->security->generateRandomString());
-                    $user->status = User::STATUS_ACTIVE;
-                    $user->generateAuthKey();
-                    $user->generateRefCode();
-                    $user->generateSocketRoom();
-                    $refCode = Cookie::getValue('refCode');
-                    if (!empty($refCode)) {
-                        $parentUser = User::findByRefCode($refCode);
-                        UserTree::appendUser($user->id, $parentUser->id);
-                    }
-                    $transaction = $user->getDb()->beginTransaction();
-                    if ($user->save()) {
-                        UserProfile::createModel($user, $attributes['username']);
-                        $user->userProfile->avatar = $attributes['avatar'];
-                        $user->userProfile->save();
-                        $auth = new Auth(
-                            [
-                                'user_id'   => $user->id,
-                                'source' => $client->getId(),
-                                'source_id' => (string)$attributes['id'],
-                            ]
-                        );
-                        if ($auth->save()) {
-                            $transaction->commit();
-                            Yii::$app->user->login($user,3600*24*7);
-                        }
-                        else {
-                            print_r($auth->getErrors());
-                        }
+                    if ($auth->save()) {
+                        $transaction->commit();
+                        Yii::$app->user->login($user,3600*24*7);
                     }
                     else {
-                        print_r($user->getErrors());
+                        print_r($auth->getErrors());
                     }
                 }
+                else {
+                    print_r($user->getErrors());
+                }
             }
-        } else { // Пользователь уже зарегистрирован
+            if (!empty($referer)) {
+                return $this->redirect($referer);
+            }
+        } else {
+            // Пользователь уже зарегистрирован
             if (!$auth) { // добавляем внешний сервис аутентификации
                 $auth = new Auth(
                     [
@@ -156,33 +153,26 @@ class AuthController extends WebController
         }
     }
 
+    private function _loadImage($imageUrl, $id) {
+        $uploadDir = Yii::getAlias('@app/web');
+        $fileUrl = "/uploads/avatar/steam/{$id}.png";
+        $filePath = $uploadDir . $fileUrl;
+        if (!file_exists(dirname(dirname($filePath)))) {
+            mkdir(dirname(dirname($filePath)));
+            chmod(dirname(dirname($filePath)), 0777);
+        }
+        if (!file_exists(dirname($filePath))) {
+            mkdir(dirname($filePath));
+            chmod(dirname($filePath), 0777);
+        }
+        file_put_contents($filePath, file_get_contents($imageUrl));
+        return $fileUrl;
+    }
+
     public function actionLoginSocial()
     {
         return $this->render('_oauth-clients', [
             'title' => Yii::t('common', 'Войти через соц.сети'),
-        ]);
-    }
-
-    public function actionLogin()
-    {
-        $model = new LoginForm();
-
-        $model->email = Cookie::getValue('currentEmail');
-
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
-
-            Cookie::remove('closedConfirmGiftDigiuBonusModal');
-            if (Yii::$app->user->identity->two_step_auth) {
-                return $this->redirect('two-step-scan');
-            }
-
-            return $this->_loginSuccess();
-        }
-
-        $model->password = null;
-
-        return $this->render('login', [
-            'model' => $model,
         ]);
     }
 
@@ -243,28 +233,6 @@ class AuthController extends WebController
 
         return $this->goHome();
     }
-
-    public function actionRequestPasswordReset()
-    {
-        $model = new PasswordResetRequestForm();
-        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
-            if ($model->sendEmail()) {
-                $alertText = Yii::t('common', 'Ссылка на восстановление пароля отправлена на указанный E-mail');
-
-                return $this->redirect(['alert-page', 'alertText' => $alertText]);
-
-            } else {
-                Yii::$app->session->setFlash('error',
-                    Yii::t('common', 'К сожалению, мы не можем отправить письмо на указанный E-mail'));
-            }
-        }
-
-        return $this->render('request-password-reset', [
-            'model' => $model,
-        ]);
-    }
-
-
 
     public function actionAlertPage($alertText)
     {

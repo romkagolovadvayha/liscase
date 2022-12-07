@@ -21,6 +21,7 @@ use yii\base\BaseObject;
 class Invoice extends \common\components\base\ActiveRecord
 {
     const TYPE_PAYMENT_BOX         = 1;
+    const TYPE_PAYMENT_MARKET_DROP      = 2;
 
     /**
      * @return array
@@ -29,6 +30,7 @@ class Invoice extends \common\components\base\ActiveRecord
     {
         return [
             self::TYPE_PAYMENT_BOX         => Yii::t('common', 'Оплата контейнера'),
+            self::TYPE_PAYMENT_MARKET_DROP         => Yii::t('common', 'Оплата предмета на маркете'),
         ];
     }
 

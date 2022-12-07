@@ -11,7 +11,7 @@ use common\models\box\Drop;
 
 ?>
 <?php foreach ($userDrop->drop as $index => $drop): ?>
-    <a href="#" class="last_drops_item<?=!empty($opened) && $opened ? ' opened' : ''?><?=' level' . $drop->getLevel()?>">
+    <a href="/market/view?id=<?=$drop->id?>" class="last_drops_item<?=!empty($opened) && $opened ? ' opened' : ''?><?=' level' . $drop->getLevel()?>">
         <div class="last_drops_item_content">
             <div class="last_drops_item_image">
                 <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $drop->name) ?>">

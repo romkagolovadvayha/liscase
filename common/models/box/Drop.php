@@ -100,7 +100,7 @@ class Drop extends ActiveRecord
 
         $result = [];
         foreach ($all as $index => $item) {
-            $result[$index] = $index;
+            $result[$index] = Yii::t('database', $index);
         }
         return $result;
     }

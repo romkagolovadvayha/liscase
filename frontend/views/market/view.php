@@ -5,6 +5,7 @@
 
 use common\models\box\Box;
 use yii\bootstrap5\ActiveForm;
+use frontend\widgets\Alert;
 
 $this->title = Yii::t('common', $drop->name);
 
@@ -45,12 +46,13 @@ JS
                                     </a>
                                 </div>
                             <?php else: ?>
+                                <?= Alert::widget() ?>
                                 <div class="market_entity_card_actions">
-                                    <a class="market_entity_card_actions_btn" href="#">
+                                    <a class="market_entity_card_actions_btn" href="#" data-bs-toggle="modal" data-bs-target="#buyModal">
                                         <span class="market_entity_card_actions_btn_text"><?=Yii::t('common', 'Купить')?></span>
                                         <span class="market_entity_card_actions_btn_price">
                                             <span class="currency"><?=$drop->currency?></span>
-                                            <span class="price"><?=$drop->getPriceFormat()?></span>
+                                            <span class="price"><?=$drop->getPriceMarket()?></span>
                                         </span>
                                     </a>
                                 </div>
@@ -72,7 +74,7 @@ JS
                                     <?=Yii::t('common', 'Качество')?>: <a href="/market/index?DropSearch%5Bquality%5D=<?=urlencode($drop->quality)?>"><?=Yii::t('database', $drop->quality)?></a>
                                 </li>
                                 <li class="price">
-                                    <?=Yii::t('common', 'Цена')?>: <?=$drop->getPriceFormat()?> <span class="currency"><?=$drop->currency?></span>
+                                    <?=Yii::t('common', 'Цена')?>: <?=$drop->getPriceMarket()?> <span class="currency"><?=$drop->currency?></span>
                                 </li>
                             </ul>
                         </div>
@@ -106,7 +108,7 @@ JS
 
 
 <?php if (!Yii::$app->user->isGuest):?>
-    <div class="modal modal-alert fade" id="openBoxModal" tabindex="-1" aria-labelledby="openBoxModal" aria-hidden="true">
+    <div class="modal modal-alert fade" id="buyModal" tabindex="-1" aria-labelledby="buyModal" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -114,12 +116,9 @@ JS
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p><?=Yii::t('common', 'С вашего баланса будет списано')?> <?=$drop->getPriceCeil()?> <span class="currency"><?=$drop->currency?></span>.</p>
+                    <p><?=Yii::t('common', 'С вашего баланса будет списано')?> <?=$drop->getPriceMarket()?> <span class="currency"><?=$drop->currency?></span>.</p>
                     <p><?=Yii::t('common', 'Вы уверены?')?></p>
-                    <?php $form = ActiveForm::begin([
-                        'id' => 'buy',
-                        'action' => 'buy?id=' . $drop->id,
-                    ]); ?>
+                    <?php $form = ActiveForm::begin(); ?>
                     <input type="hidden" name="buy" value="1"/>
                     <button type="button" class="btn cancel" data-bs-dismiss="modal"><?=Yii::t('common', 'Отмена')?></button>
                     <button type="submit" class="btn" data-bs-dismiss="modal"><?=Yii::t('common', 'Продолжить')?></button>

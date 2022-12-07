@@ -76,7 +76,7 @@ JS
             ],
             [
                 'label'  => Yii::t('common', 'Выйти'),
-                'url'    => '/site/logout',
+                'url'    => '/user/logout',
             ],
         ],
     ];

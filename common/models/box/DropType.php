@@ -66,7 +66,7 @@ class DropType extends ActiveRecord
         $types = DropType::find()->all();
         $list = [];
         foreach ($types as $item) {
-            $list[$item->id] = $item->name;
+            $list[$item->id] = Yii::t('database', $item->name);
         }
         return $list;
     }

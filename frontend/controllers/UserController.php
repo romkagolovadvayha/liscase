@@ -9,11 +9,13 @@ use common\models\user\UserDrop;
 use frontend\forms\profile\ProfileForm;
 use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
+use common\components\web\AuthorizedControllerTrait;
 use Yii;
 use yii\web\Response;
 
 class UserController extends WebController
 {
+    use AuthorizedControllerTrait;
 
     /**
      * {@inheritdoc}
@@ -132,6 +134,16 @@ class UserController extends WebController
         return $this->render('payment');
     }
 
+    /**
+     * Logout action.
+     *
+     * @return Response
+     */
+    public function actionLogout()
+    {
+        Yii::$app->user->logout();
+        return $this->goHome();
+    }
 
     public function actionGetBalance()
     {
