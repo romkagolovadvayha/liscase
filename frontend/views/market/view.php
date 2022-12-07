@@ -62,7 +62,7 @@ JS
                     <div class="market_view_content_wrapper">
                         <div class="market_view_content">
                             <p class="market_view_content_description">
-                                <?=Yii::t('database', $drop->description)?>
+                                <?=Yii::t('database', trim($drop->description))?>
                             </p>
                             <ul class="market_view_content_list">
                                 <li class="category">
