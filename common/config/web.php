@@ -12,9 +12,9 @@ $config = [
             'class' => 'DemonDogSL\translateManager\Component'
         ]
     ],
-    'language'       => 'en-EN',
-    'name'       => 'EZDROP.PRO',
+    'language' => 'ru-RU',
     'sourceLanguage' => 'ru-RU',
+    'name'       => 'EZDROP.PRO',
     'vendorPath'     => dirname(dirname(__DIR__)) . '/vendor',
     'modules'        => [
         'gridview' =>  [

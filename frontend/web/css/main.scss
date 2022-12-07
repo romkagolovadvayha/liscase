@@ -1648,7 +1648,6 @@ main {
         height: 100%;
         padding: 20px 25px;
         max-width: 100%;
-        width: 200px;
         margin: 0 auto;
         color: #392c22;
         font-weight: 700;
@@ -1657,13 +1656,14 @@ main {
         background-color: #e69d5d;
         border-radius: 8px;
         transition: background-color .3s ease,color .3s ease;
-        display: flex;
+        display: inline-flex;
         justify-content: space-between;
         align-items: center;
         &_price {
           display: flex;
           justify-content: flex-end;
           align-items: center;
+          margin-left: 50px;
           .currency {
             width: 20px;
             height: 20px;
@@ -1671,7 +1671,6 @@ main {
           .price {
             margin-left: 5px;
           }
-          margin-left: 5px;
         }
         &:hover {
           color: #684933;

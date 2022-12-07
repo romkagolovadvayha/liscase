@@ -6,7 +6,7 @@
 use frontend\assets\AppAsset;
 use frontend\widgets\Alert;
 use yii\bootstrap5\Breadcrumbs;
-use common\components\widgets\LanguagePicker;
+use common\components\web\LanguagePicker;
 use yii\bootstrap5\Html;
 use yii\bootstrap5\Nav;
 use yii\bootstrap5\NavBar;
@@ -14,7 +14,9 @@ use common\models\user\UserBalance;
 
 AppAsset::register($this);
 \frontend\assets\OnlineCounterAsset::register($this);
-\frontend\assets\BalanceAsset::register($this);
+if (!Yii::$app->user->isGuest) {
+    \frontend\assets\BalanceAsset::register($this);
+}
 
 $this->registerCsrfMetaTags();
 $this->registerMetaTag(['charset' => Yii::$app->charset], 'charset');
@@ -101,10 +103,16 @@ JS
                 <a class="navbar-brand" href="<?=Yii::$app->homeUrl?>">
                     <img src="/images/logo-white.svg" alt="<?=Yii::$app->name?>"/>
                 </a>
+
                 <div class="header-language-picker" style="display: none">
                     <?=LanguagePicker::widget([
-                    'skin' => LanguagePicker::SKIN_DROPDOWN,
-                    'size' => LanguagePicker::SIZE_LARGE,
+                        'languages'  => [
+                            'en-US' => 'EN',
+                            'ru-RU' => 'RU',
+                            'de-DE' => 'DE',
+                        ],
+                        'skin' => LanguagePicker::SKIN_DROPDOWN,
+                        'size' => LanguagePicker::SIZE_LARGE,
                     ])?>
                 </div>
                 <?=Nav::widget([

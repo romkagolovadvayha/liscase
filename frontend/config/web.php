@@ -4,11 +4,19 @@ use yii\base\Component;
 
 $params = require __DIR__ . '/../../common/config/params-local.php';
 $db     = require __DIR__ . '/../../common/config/db-local.php';
-
+$languages = [
+    'en' => 'en-US',
+    'ru' => 'ru-RU',
+    'de' => 'de-DE',
+];
 $config = [
     'id' => 'basic',
     'basePath' => dirname(__DIR__),
-    'bootstrap' => ['log', 'languagepicker'],
+    'language' => 'en-US',
+    'bootstrap' => [
+        'log',
+//        'languagepicker'
+    ],
     'controllerNamespace' => 'frontend\controllers',
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
@@ -19,25 +27,24 @@ $config = [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => '5c4cf22fbe90065a4a8e4591cf2cea84',
         ],
-        'languagepicker'       => [
-            'class'      => 'common\components\web\LanguagePickerComponent',
-            'cookieName' => 'language-picker',
-            'languages'  => [
-                'ru-RU' => 'RU',
-                'en-US' => 'EN',
-                'de-DE' => 'DE',
-                'it-IT' => 'IT',
-                'es-ES' => 'ES',
-                'fr-FR' => 'FR',
-                'vi-VN' => 'VN',
-                'id-ID' => 'ID',
-                'hi-IN' => 'HI',
-                'pt-PT' => 'PT',
-                'tr-TR' => 'TR',
-                'hr-HR' => 'HR',
-                //                'nl-NL' => 'NL',
-            ],
-        ],
+//        'languagepicker'       => [
+//            'class'      => 'common\components\web\LanguagePicker',
+//            'cookieName' => 'language-picker',
+//            'languages'  => [
+//                'en-US' => 'EN',
+//                'ru-RU' => 'RU',
+//                'de-DE' => 'DE',
+//                'it-IT' => 'IT',
+//                'es-ES' => 'ES',
+//                'fr-FR' => 'FR',
+//                'vi-VN' => 'VN',
+//                'id-ID' => 'ID',
+//                'hi-IN' => 'HI',
+//                'pt-PT' => 'PT',
+//                'tr-TR' => 'TR',
+//                'hr-HR' => 'HR',
+//            ],
+//        ],
         'cache' => [
             'class' => 'yii\caching\FileCache',
         ],
@@ -112,4 +119,9 @@ if (YII_ENV_DEV) {
     ];
 }
 
+$subDomain = explode('.', $_SERVER['HTTP_HOST'])[0];
+$subDomain = str_replace(['https://', 'http://'], '', $subDomain);
+if (in_array($subDomain, array_keys($languages))) {
+    $config['language'] = $languages[$subDomain];
+}
 return $config;
