@@ -14,10 +14,10 @@ use common\models\box\Drop;
     <a href="#" class="last_drops_item<?=!empty($opened) && $opened ? ' opened' : ''?><?=' level' . $drop->getLevel()?>">
         <div class="last_drops_item_content">
             <div class="last_drops_item_image">
-                <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?= $drop->name ?>">
+                <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $drop->name) ?>">
             </div>
             <div class="last_drops_item_box_image">
-                <img src="<?= $userDrop->box->imageOrig->getImagePubUrl() ?>" alt="<?= $userDrop->box->name ?>">
+                <img src="<?= $userDrop->box->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $userDrop->box->name) ?>">
             </div>
             <div class="last_drops_item_title"><?=$drop->getShortName()?></div>
         </div>

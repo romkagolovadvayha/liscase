@@ -30,7 +30,7 @@ class MainMenu
         if (!Yii::$app->user->identity->isAccessBackend()) {
             $array = [
                 [
-                    'label' => Yii::t('common', 'Личный кабинет ({email})', [
+                    'label' => Yii::t('common', Yii::$app->user->identity->email, [
                         'email' => Yii::$app->user->identity->email,
                     ]),
                     'icon'  => 'log-out',

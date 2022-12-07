@@ -6,15 +6,35 @@ $db = require __DIR__ . '/db-local.php';
 $config = [
     'id' => 'basic',
     'basePath' => dirname(__DIR__),
-    'bootstrap' => ['log'],
-    'language'       => 'ru-RU',
+    'bootstrap' => [
+        'log',
+        'translateManager' => [
+            'class' => 'DemonDogSL\translateManager\Component'
+        ]
+    ],
+    'language'       => 'en-EN',
     'name'       => 'EZDROP.PRO',
     'sourceLanguage' => 'ru-RU',
     'vendorPath'     => dirname(dirname(__DIR__)) . '/vendor',
     'modules'        => [
         'gridview' =>  [
             'class' => '\kartik\grid\Module'
-        ]
+        ],
+        'translateManager' => [
+            'class'                   => 'DemonDogSL\translateManager\Module',
+            'root'                    => [
+                '@backend',
+                '@frontend',
+                '@common',
+                '@console',
+            ],
+            'scanRootParentDirectory' => true,
+            'ignoredCategories'       => ['yii', 'kvdrp'],
+            'ignoredItems'            => ['assets', 'vendor'],
+            'layout'                  => '@backend/views/layouts/main',
+            'roles'                   => ['ADMIN'],
+            'allowedIPs'              => ['*']
+        ],
     ],
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
@@ -33,6 +53,9 @@ $config = [
                     'cachingDuration'    => 86400,
                 ],
             ],
+        ],
+        'translateManager' => [
+            'class' => 'DemonDogSL\translateManager\Component'
         ],
         'redis'         => [
             'class'    => 'yii\redis\Connection',

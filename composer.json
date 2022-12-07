@@ -31,7 +31,10 @@
         "kartik-v/yii2-bootstrap5-dropdown": "^1.0",
         "kartik-v/yii2-date-range": "^1.7",
         "nizsheanez/yii2-asset-converter": "^2.0",
-        "bower-asset/slick-carousel": "^1.8"
+        "bower-asset/slick-carousel": "^1.8",
+        "lajax/yii2-language-picker": "^1.2",
+        "google/cloud-translate": "^1.12",
+        "demondogsl/yii2-translate-manager": "^1.0"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",

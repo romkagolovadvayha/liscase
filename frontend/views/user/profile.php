@@ -19,7 +19,7 @@ $this->title = Yii::t('common', "Профиль") . " - {$user->userProfile->nam
             <?= Alert::widget() ?>
             <?php $form = ActiveForm::begin(); ?>
             <label class="form-label" for="profileform-trade_link">
-                Вставьте свою <a href="https://steamcommunity.com/id/me/tradeoffers/privacy#trade_offer_access_url" target="_blank">ссылку</a> на обмен
+                <?=Yii::t('common', "Вставьте свою")?> <a href="https://steamcommunity.com/id/me/tradeoffers/privacy#trade_offer_access_url" target="_blank"><?=Yii::t('common', "ссылку")?></a> <?=Yii::t('common', "на обмен")?>
             </label>
             <?= $form->field($model, 'trade_link')->label(false)->textInput(); ?>
             <button type="submit" class="btn"><?=Yii::t('common', 'Сохранить')?></button>

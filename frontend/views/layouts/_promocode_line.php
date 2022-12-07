@@ -18,9 +18,9 @@ $promocode = Promocode::getActivePromocode();
             <div class="promocode">
                 <div>
                 <?php if ($promocode->type === Promocode::TYPE_PAYMENT_DISCOUNT): ?>
-                    Действует скидка <?=$promocode->getPercentCeil()?>% на все товары
+                    <?=Yii::t('common', 'Действует скидка')?> <?=$promocode->getPercentCeil()?>% <?=Yii::t('common', 'на все товары')?>
                 <?php elseif ($promocode->type === Promocode::TYPE_PAYMENT_PAYMENT): ?>
-                    Действует скидка <?=$promocode->getPercentCeil()?>% на пополнение баланса
+                    <?=Yii::t('common', 'Действует скидка')?> <?=$promocode->getPercentCeil()?>% <?=Yii::t('common', 'на пополнение баланса')?>
                 <?php endif; ?>
                 </div>
                 <div><a href="/promocode/clear"><?=Yii::t('common', 'Отменить')?></a></div>

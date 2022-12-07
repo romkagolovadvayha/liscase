@@ -13,7 +13,7 @@ $this->title = Yii::t('common', "Вывод") . " - {$user->userProfile->name}";
         <?= $this->render('@frontend/views/layouts/_inventory_menu'); ?>
         <div class="tab-content mt-2">
             <p>
-                Данная таблица отражает полную историю ваших начислений по партнёрской программе
+                <?= Yii::t('common', 'Данная таблица отражает полную историю ваших начислений по партнёрской программе') ?>
             </p>
         </div>
     </div>

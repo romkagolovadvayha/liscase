@@ -6,6 +6,7 @@
 use frontend\assets\AppAsset;
 use frontend\widgets\Alert;
 use yii\bootstrap5\Breadcrumbs;
+use common\components\widgets\LanguagePicker;
 use yii\bootstrap5\Html;
 use yii\bootstrap5\Nav;
 use yii\bootstrap5\NavBar;
@@ -59,15 +60,15 @@ JS
         'encode' => false,
         'items' => [
             [
-                'label'   => 'Профиль',
+                'label'   => Yii::t('common', 'Профиль'),
                 'url'     => '/user/profile',
             ],
             [
-                'label'   => 'Инвентарь',
+                'label'   => Yii::t('common', 'Инвентарь'),
                 'url'     => '/user/inventory',
             ],
             [
-                'label'   => 'АДМИНКА',
+                'label'   => Yii::t('common', 'АДМИНКА'),
                 'url'     => Yii::$app->params['backendUrl'],
                 'visible' => Yii::$app->user->identity && Yii::$app->user->identity->isAccessBackend(),
             ],
@@ -100,6 +101,12 @@ JS
                 <a class="navbar-brand" href="<?=Yii::$app->homeUrl?>">
                     <img src="/images/logo-white.svg" alt="<?=Yii::$app->name?>"/>
                 </a>
+                <div class="header-language-picker" style="display: none">
+                    <?=LanguagePicker::widget([
+                    'skin' => LanguagePicker::SKIN_DROPDOWN,
+                    'size' => LanguagePicker::SIZE_LARGE,
+                    ])?>
+                </div>
                 <?=Nav::widget([
                     'items' => [
                         [

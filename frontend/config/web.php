@@ -8,7 +8,7 @@ $db     = require __DIR__ . '/../../common/config/db-local.php';
 $config = [
     'id' => 'basic',
     'basePath' => dirname(__DIR__),
-    'bootstrap' => ['log'],
+    'bootstrap' => ['log', 'languagepicker'],
     'controllerNamespace' => 'frontend\controllers',
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
@@ -18,6 +18,25 @@ $config = [
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => '5c4cf22fbe90065a4a8e4591cf2cea84',
+        ],
+        'languagepicker'       => [
+            'class'      => 'common\components\web\LanguagePickerComponent',
+            'cookieName' => 'language-picker',
+            'languages'  => [
+                'ru-RU' => 'RU',
+                'en-US' => 'EN',
+                'de-DE' => 'DE',
+                'it-IT' => 'IT',
+                'es-ES' => 'ES',
+                'fr-FR' => 'FR',
+                'vi-VN' => 'VN',
+                'id-ID' => 'ID',
+                'hi-IN' => 'HI',
+                'pt-PT' => 'PT',
+                'tr-TR' => 'TR',
+                'hr-HR' => 'HR',
+                //                'nl-NL' => 'NL',
+            ],
         ],
         'cache' => [
             'class' => 'yii\caching\FileCache',

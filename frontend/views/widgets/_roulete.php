@@ -15,7 +15,7 @@ use common\models\box\BoxDrop;
                 <?php foreach ($boxDropCarousel as $boxDrop): ?>
                     <div class="roulete_item<?=' drop_card level' . $boxDrop->drop->getLevel()?>">
                         <div class="roulete_item_image">
-                            <img src="<?= $boxDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('common', $boxDrop->drop->name)?>">
+                            <img src="<?= $boxDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $boxDrop->drop->name)?>">
                         </div>
                     </div>
                 <?php endforeach; ?>
@@ -26,7 +26,7 @@ use common\models\box\BoxDrop;
                 <?php foreach ($boxDropCarousel as $boxDrop): ?>
                     <div class="roulete_blur_item<?=' drop_card level' . $boxDrop->drop->getLevel()?>">
                         <div class="roulete_blur_item_image">
-                            <img src="<?= $boxDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('common', $boxDrop->drop->name)?>">
+                            <img src="<?= $boxDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $boxDrop->drop->name)?>">
                         </div>
                     </div>
                 <?php endforeach; ?>

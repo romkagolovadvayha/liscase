@@ -74,9 +74,9 @@ class Drop extends ActiveRecord
      * @return mixed|string
      */
     public function getShortName() {
-        $array = explode('|', $this->name);
+        $array = explode('|', Yii::t('database', $this->name));
         if (count($array) < 2) {
-            return $this->name;
+            return Yii::t('database', $this->name);
         }
         $array2 = explode('(', $array[1]);
         if (count($array2) < 2) {

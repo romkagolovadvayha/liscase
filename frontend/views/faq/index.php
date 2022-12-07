@@ -70,8 +70,8 @@ $this->title = Yii::t('common', "Faq");
                         </div>
                     </div>
                     <div aria-hidden="true" class="questions__answer-wrapper rah-static--height-zero">
-                        <div class="questions__answer">После оплаты необходимо подождать, если спустя час, деньги не
-                            поступили, пожалуйста, обратитесь в поддержку, указав реквизиты платежа.
+                        <div class="questions__answer">
+                            <?=Yii::t('common', 'После оплаты необходимо подождать, если спустя час, деньги не поступили, пожалуйста, обратитесь в поддержку, указав реквизиты платежа.')?>
                         </div>
                     </div>
                 </li>
@@ -81,16 +81,13 @@ $this->title = Yii::t('common', "Faq");
                             <span class="questions__separator-line"></span>
                             <span class="questions__separator-line"></span>
                         </div>
-                        <div class="questions__question-title">Что делать, если предмет не пришел или вы не можете его
-                            забрать?
+                        <div class="questions__question-title">
+                            <?=Yii::t('common', 'Что делать, если предмет не пришел или вы не можете его забрать?')?>
                         </div>
                     </div>
                     <div aria-hidden="true" class="questions__answer-wrapper rah-static--height-zero">
                         <div class="questions__answer">
-                            Всё просто! Наиболее частые причины проблем с выводом
-                            предмета – бан трейда, скрытый инвентарь или отсутствие ссылки на обмен. В таком случае
-                            вам необходимо обратиться в нашу службу поддержки, и мы постараемся максимально быстро
-                            решить проблему.
+                            <?=Yii::t('common', 'Всё просто! Наиболее частые причины проблем с выводом предмета – бан трейда, скрытый инвентарь или отсутствие ссылки на обмен. В таком случае вам необходимо обратиться в нашу службу поддержки, и мы постараемся максимально быстро решить проблему.')?>
                         </div>
                     </div>
                 </li>
@@ -100,14 +97,13 @@ $this->title = Yii::t('common', "Faq");
                             <span class="questions__separator-line"></span>
                             <span class="questions__separator-line"></span>
                         </div>
-                        <div class="questions__question-title">Что делать, если к вам добавился в стиме под видом нашего
-                            сотрудника и предложил двойной баланс за ваши вещи?
+                        <div class="questions__question-title">
+                            <?=Yii::t('common', 'Что делать, если к вам добавился в стиме под видом нашего сотрудника и предложил двойной баланс за ваши вещи?')?>
                         </div>
                     </div>
                     <div aria-hidden="true" class="questions__answer-wrapper rah-static--height-zero">
-                        <div class="questions__answer">Остерегайтесь подобных сообщений! Мы никогда не добавимся в
-                            стим, тем более не станем просить вещи! Мошенники будут пытаться любым способом получить
-                            Ваши предметы! Будьте бдительны!
+                        <div class="questions__answer">
+                            <?=Yii::t('common', 'Остерегайтесь подобных сообщений! Мы никогда не добавимся в стим, тем более не станем просить вещи! Мошенники будут пытаться любым способом получить Ваши предметы! Будьте бдительны!')?>
                         </div>
                     </div>
                 </li>
@@ -117,11 +113,13 @@ $this->title = Yii::t('common', "Faq");
                             <span class="questions__separator-line"></span>
                             <span class="questions__separator-line"></span>
                         </div>
-                        <div class="questions__question-title">Можно ли перевести средства со счета Steam?</div>
+                        <div class="questions__question-title">
+                            <?=Yii::t('common', 'Можно ли перевести средства со счета Steam?')?>
+                        </div>
                     </div>
                     <div aria-hidden="true" class="questions__answer-wrapper rah-static--height-zero">
-                        <div class="questions__answer">Нет, к сожалению Steam не предоставляет никаких способов для
-                            вывода средств с их счета.
+                        <div class="questions__answer">
+                            <?=Yii::t('common', 'Нет, к сожалению Steam не предоставляет никаких способов для вывода средств с их счета.')?>
                         </div>
                     </div>
                 </li>
@@ -131,13 +129,13 @@ $this->title = Yii::t('common', "Faq");
                             <span class="questions__separator-line"></span>
                             <span class="questions__separator-line"></span>
                         </div>
-                        <div class="questions__question-title">Как продать или вывести предмет с сайта?</div>
+                        <div class="questions__question-title">
+                            <?=Yii::t('common', 'Как продать или вывести предмет с сайта?')?>
+                        </div>
                     </div>
                     <div aria-hidden="true" class="questions__answer-wrapper rah-static--height-zero">
-                        <div class="questions__answer">В профиле пользователя, на иконке скина, нужно выбрать
-                            действие, которое вы решили совершить. "Запросить с маркета" - система сформирует запрос
-                            на покупку, а затем отправит вам выбранный предмет. "Продать" - продажа предмета сайту,
-                            мгновенно получаете его стоимость на баланс.
+                        <div class="questions__answer">
+                            <?=Yii::t('common', 'В профиле пользователя, на иконке скина, нужно выбрать действие, которое вы решили совершить. "Запросить с маркета" - система сформирует запрос на покупку, а затем отправит вам выбранный предмет. "Продать" - продажа предмета сайту, мгновенно получаете его стоимость на баланс.')?>
                         </div>
                     </div>
                 </li>

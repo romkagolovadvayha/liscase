@@ -352,4 +352,13 @@ class User extends ActiveRecord implements IdentityInterface
     public function getPartnerLink() {
         return Yii::$app->params['baseUrl'] . '/p/1304069465';
     }
+
+    public function updateCurrentLanguage()
+    {
+        $language = Yii::$app->language;
+        if ($this->current_language != $language) {
+            $this->current_language = $language;
+            $this->save(false);
+        }
+    }
 }

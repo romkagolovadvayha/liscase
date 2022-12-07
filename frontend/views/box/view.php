@@ -6,7 +6,7 @@
 use common\models\box\Box;
 use yii\bootstrap5\ActiveForm;
 
-$this->title = Yii::t('common', $box->name . " кейс для CS GO");
+$this->title = Yii::t('database',  $box->name) . ' ' . Yii::t('common',  "кейс для CS GO");
 
 \common\assets\SlickCarouselAsset::register($this);
 \frontend\assets\UserBoxAsset::register($this);
@@ -22,13 +22,13 @@ JS
     <div class="container">
         <div class="box_entity_wrapper">
             <div class="header_actions">
-                <a href="/">Вернуться назад</a>
+                <a href="/"><?=Yii::t('common',  "Вернуться назад")?></a>
             </div>
             <div class="box_entity">
                 <div class="box_entity_card">
-                    <div class="box_entity_card_title"><?= $box->name ?></div>
+                    <div class="box_entity_card_title"><?=Yii::t('database',  $box->name)?></div>
                     <div class="box_entity_card_image">
-                        <img src="<?= $box->imageOrig->getImagePubUrl() ?>" alt="<?= $box->name ?>" width="200px">
+                        <img src="<?= $box->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database',  $box->name)?>" width="200px">
                     </div>
     <?php if (Yii::$app->user->isGuest): ?>
         <div class="box_entity_card_alert">
@@ -48,7 +48,7 @@ JS
                     <div class="open_case_content">
                         <?php if ($box->type === \common\models\box\Box::TYPE_FREE && !empty($getNextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate())): ?>
                            <div class="timerNextOpenFreeBoxDate">
-                               <p>Открытие кейса недоступно, так как вы недавно уже открывали бесплатный кейс.</p>
+                               <p><?=Yii::t('common',  'Открытие кейса недоступно, так как вы недавно уже открывали бесплатный кейс.')?></p>
                                <?= \common\components\widgets\TimerWidget::widget([
                                    'deadline' => $getNextOpenFreeBoxDate,
                                    'timerId' => 'nextOpenFreeBoxDate',
@@ -71,7 +71,7 @@ JS
                                     <a class="btn box_entity_card_actions_inventory_btn" href="/user/inventory">
                                         <?=Yii::t('common', 'Открыть инвентарь')?>
                                     </a>
-                                    <p>Следующий бесплатный контейнер будет доступен через 24 часа</p>
+                                    <p><?=Yii::t('common',  'Следующий бесплатный контейнер будет доступен через 24 часа')?></p>
                                 </div>
                             </div>
                             <div class="roulete_open_content_wrapp">
@@ -90,16 +90,16 @@ JS
                 </div>
             <?php endif; ?>
             <div class="box_content_wrapper">
-                <h2><?=Yii::t('common', 'СОДЕРЖИМОЕ КЕЙСА')?></h2>
+                <h2><?=Yii::t('common', 'Содержание кейса')?></h2>
                 <div class="box_content">
                     <?php foreach ($box->boxDrop as $boxDrop): ?>
                         <a href="/market/view?id=<?= $boxDrop->drop->id ?>" class="box_content_card<?=' drop_card level' . $boxDrop->drop->getLevel()?>">
                             <div class="box_content_card_info">
-                                <div class="box_content_card_info_type"><?=Yii::t('common', $boxDrop->drop->type->name)?></div>
-                                <div class="box_content_card_info_title"><?=Yii::t('common', $boxDrop->drop->getShortName())?></div>
+                                <div class="box_content_card_info_type"><?=Yii::t('database', $boxDrop->drop->type->name)?></div>
+                                <div class="box_content_card_info_title"><?=$boxDrop->drop->getShortName()?></div>
                             </div>
                             <div class="box_content_card_image">
-                                <img src="<?= $boxDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('common', $boxDrop->drop->name)?>">
+                                <img src="<?= $boxDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $boxDrop->drop->name)?>">
                             </div>
                         </a>
                     <?php endforeach; ?>

@@ -31,7 +31,7 @@ $priceTotal = 0;
                                         <div class="box_cards_card_info_title"><?=Yii::t('common', $drop->getShortName())?></div>
                                     </div>
                                     <div class="box_cards_card_image">
-                                        <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('common', $drop->name)?>">
+                                        <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $drop->name)?>">
                                     </div>
                                     <?php $form = ActiveForm::begin(); ?>
                                     <input type="hidden" name="sell" value="<?=$userDrop->id?>"/>

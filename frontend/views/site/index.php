@@ -5,7 +5,7 @@
 
 use common\models\box\Box;
 
-$this->title = Yii::$app->name . ' - Лучшие CSGO кейсы';
+$this->title = Yii::$app->name . ' - ' . Yii::t('common', 'Лучшие CSGO кейсы');
 
 \frontend\assets\LastDropAsset::register($this);
 
@@ -28,9 +28,9 @@ $this->title = Yii::$app->name . ' - Лучшие CSGO кейсы';
                 <?php foreach (Box::getBoxesByType(Box::TYPE_FREE) as $box): ?>
                     <a href="/box/view?id=<?=$box->id?>" class="boxes_free_item">
                         <div class="boxes_free_item_image">
-                            <img src="<?= $box->imageOrig->getImagePubUrl() ?>" alt="<?= $box->name ?>" width="100px">
+                            <img src="<?= $box->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $box->name)?>" width="100px">
                         </div>
-                        <div class="boxes_free_item_title"><?= $box->name ?></div>
+                        <div class="boxes_free_item_title"><?=Yii::t('database', $box->name)?></div>
                         <div class="boxes_free_item_price">
                             <span class="boxes_top_item_price_old"><s><?=$box->price?></s></span>
                         </div>
@@ -48,9 +48,9 @@ $this->title = Yii::$app->name . ' - Лучшие CSGO кейсы';
                 <?php foreach (Box::getBoxesByType(Box::TYPE_DEFAULT) as $box): ?>
                     <a href="/box/view?id=<?=$box->id?>" class="boxes_top_item">
                         <div class="boxes_top_item_image">
-                            <img src="<?= $box->imageOrig->getImagePubUrl() ?>" alt="<?= $box->name ?>" width="100px">
+                            <img src="<?= $box->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $box->name)?>" width="100px">
                         </div>
-                        <div class="boxes_top_item_title"><?= $box->name ?></div>
+                        <div class="boxes_top_item_title"><?=Yii::t('database', $box->name)?></div>
                         <div class="boxes_top_item_price">
                             <span class="boxes_top_item_price_current"><?=$box->getPriceFinal()?></span>
                             <?php if ($box->getPriceFinal() < $box->price): ?>

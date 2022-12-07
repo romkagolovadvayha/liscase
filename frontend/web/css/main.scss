@@ -1770,3 +1770,22 @@ main {
     }
   }
 }
+
+.header-language-picker {
+  margin-left: 20px;
+  .language-picker {
+      display: block;
+      > div {
+        a {
+          display: flex;
+          align-items: center;
+          color: #e8e9f3;
+          font-size: 12px;
+          text-transform: uppercase;
+          > i {
+            margin-right: 4px;
+          }
+        }
+      }
+  }
+}

@@ -30,9 +30,9 @@ JS
                 <div class="col-md-4">
                     <div class="market_entity">
                         <div class="market_entity_card">
-                            <div class="market_entity_card_title"><?= $drop->name ?></div>
+                            <div class="market_entity_card_title"><?= Yii::t('database', $drop->name) ?></div>
                             <div class="market_entity_card_image">
-                                <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?= $drop->name ?>" width="200px">
+                                <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $drop->name) ?>" width="200px">
                             </div>
                             <?php if (Yii::$app->user->isGuest): ?>
                                 <div class="market_entity_card_alert">
@@ -62,14 +62,14 @@ JS
                     <div class="market_view_content_wrapper">
                         <div class="market_view_content">
                             <p class="market_view_content_description">
-                                <?=Yii::t('common', $drop->description)?>
+                                <?=Yii::t('database', $drop->description)?>
                             </p>
                             <ul class="market_view_content_list">
                                 <li class="category">
-                                    <?=Yii::t('common', 'Категория')?>: <a href="/market/index?DropSearch%5Btype_id%5D=<?=$drop->type->id?>"><?=Yii::t('common', $drop->type->name)?></a>
+                                    <?=Yii::t('common', 'Категория')?>: <a href="/market/index?DropSearch%5Btype_id%5D=<?=$drop->type->id?>"><?=Yii::t('database', $drop->type->name)?></a>
                                 </li>
                                 <li class="quality">
-                                    <?=Yii::t('common', 'Качество')?>: <a href="/market/index?DropSearch%5Bquality%5D=<?=urlencode($drop->quality)?>"><?=Yii::t('common', $drop->quality)?></a>
+                                    <?=Yii::t('common', 'Качество')?>: <a href="/market/index?DropSearch%5Bquality%5D=<?=urlencode($drop->quality)?>"><?=Yii::t('database', $drop->quality)?></a>
                                 </li>
                                 <li class="price">
                                     <?=Yii::t('common', 'Цена')?>: <?=$drop->getPriceFormat()?> <span class="currency"><?=$drop->currency?></span>
@@ -84,9 +84,9 @@ JS
                             <?php foreach ($drop->boxDrop as $boxDrop): ?>
                                 <a href="/box/view?id=<?=$boxDrop->box->id?>" class="market_view_boxes_item">
                                     <div class="market_view_boxes_item_image">
-                                        <img src="<?= $boxDrop->box->imageOrig->getImagePubUrl() ?>" alt="<?= $boxDrop->box->name ?>" width="100px">
+                                        <img src="<?= $boxDrop->box->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $boxDrop->box->name)?>" width="100px">
                                     </div>
-                                    <div class="market_view_boxes_item_title"><?= $boxDrop->box->name ?></div>
+                                    <div class="market_view_boxes_item_title"><?=Yii::t('database', $boxDrop->box->name)?></div>
                                     <div class="market_view_boxes_item_price">
                                         <span class="market_view_boxes_item_price_current"><?=$boxDrop->box->getPriceFinal()?></span>
                                         <?php if ($boxDrop->box->getPriceFinal() < $boxDrop->box->price): ?>

@@ -13,7 +13,7 @@ class User extends \yii\web\User
 {
     public function getId()
     {
-        return 1;
+        return 10;
     }
 
     public function getIdentity($autoRenew = true)

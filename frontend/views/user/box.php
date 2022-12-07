@@ -6,7 +6,7 @@ use common\models\user\UserBox;
 /** @var View $this */
 /** @var UserBox $userBox */
 
-$this->title = Yii::t('common', $userBox->box->name . " кейс для CS GO");
+$this->title = Yii::t('database', $userBox->box->name) . ' ' . Yii::t('common', "кейс для CS GO");
 
 \common\assets\SlickCarouselAsset::register($this);
 \frontend\assets\UserBoxAsset::register($this);
@@ -23,7 +23,7 @@ $boxDropCarousel = $userBox->box->boxDropCarousel;
                         <?php foreach ($boxDropCarousel as $boxDrop): ?>
                             <div class="roulete_item<?=' drop_card level' . $boxDrop->drop->getLevel()?>">
                                 <div class="roulete_item_image">
-                                    <img src="<?= $boxDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('common', $boxDrop->drop->name)?>">
+                                    <img src="<?= $boxDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $boxDrop->drop->name)?>">
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -34,7 +34,7 @@ $boxDropCarousel = $userBox->box->boxDropCarousel;
                         <?php foreach ($boxDropCarousel as $boxDrop): ?>
                             <div class="roulete_blur_item<?=' drop_card level' . $boxDrop->drop->getLevel()?>">
                                 <div class="roulete_blur_item_image">
-                                    <img src="<?= $boxDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('common', $boxDrop->drop->name)?>">
+                                    <img src="<?= $boxDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $boxDrop->drop->name)?>">
                                 </div>
                             </div>
                         <?php endforeach; ?>
