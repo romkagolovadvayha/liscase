@@ -30,7 +30,7 @@ class TranslateController extends Controller
         $languages = [
             'en' => 'en-US',
             'de' => 'de-DE',
-            'ua' => 'uk-UA',
+            'uk' => 'uk-UA',
             'es' => 'es-ES',
             'fr' => 'fr-FR',
             'tr' => 'tr-TR',
