@@ -30,15 +30,10 @@ class TranslateController extends Controller
         $languages = [
             'en' => 'en-US',
             'de' => 'de-DE',
-            'it' => 'it-IT',
+            'ua' => 'uk-UA',
             'es' => 'es-ES',
             'fr' => 'fr-FR',
-            'vi' => 'vi-VN',
-            'id' => 'id-ID',
-            'hi' => 'hi-IN',
-            'pt' => 'pt-PT',
             'tr' => 'tr-TR',
-            'hr' => 'hr-HR',
         ];
 
         $google = new TranslateApi();
