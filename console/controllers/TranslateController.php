@@ -32,8 +32,6 @@ class TranslateController extends Controller
             'de' => 'de-DE',
             'uk' => 'uk-UA',
             'es' => 'es-ES',
-            'fr' => 'fr-FR',
-            'tr' => 'tr-TR',
         ];
 
         $google = new TranslateApi();

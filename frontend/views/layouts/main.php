@@ -112,8 +112,6 @@ JS
                             'de-DE' => 'DE',
                             'uk-UA' => 'UK',
                             'es-ES' => 'ES',
-                            'fr-FR' => 'FR',
-                            'tr-TR' => 'TR',
                         ],
                         'skin' => LanguagePicker::SKIN_DROPDOWN,
                         'size' => LanguagePicker::SIZE_LARGE,

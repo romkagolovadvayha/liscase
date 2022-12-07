@@ -47,7 +47,7 @@ $models = $dataProvider->getModels();
                            <?= $form->field($searchModel, 'price_max')->label(false)->textInput(); ?>
                        </div>
                    </div>
-                   <button class="market_filter_btn" type="submit">Применить</button>
+                   <button class="market_filter_btn" type="submit"><?=Yii::t('common', 'Применить')?></button>
                    <?php ActiveForm::end(); ?>
                </div>
            </div>
