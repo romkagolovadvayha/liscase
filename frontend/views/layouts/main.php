@@ -110,7 +110,7 @@ JS
                             'en-US' => 'EN',
                             'ru-RU' => 'RU',
                             'de-DE' => 'DE',
-                            'uk-UA' => 'UA',
+                            'uk-UA' => 'UK',
                             'es-ES' => 'ES',
                             'fr-FR' => 'FR',
                             'tr-TR' => 'TR',
