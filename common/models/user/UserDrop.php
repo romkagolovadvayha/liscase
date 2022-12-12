@@ -23,7 +23,7 @@ use Yii;
 class UserDrop extends ActiveRecord
 {
 
-    const STATUS_NOT_ACTIVE = 0;
+    const STATUS_TEMP_BLOCKED = 0;
     const STATUS_ACTIVE = 1;
     const STATUS_SENDED = 2;
     const STATUS_SELL = 3;
@@ -34,7 +34,7 @@ class UserDrop extends ActiveRecord
     public static function getStatusList(): array
     {
         return [
-            self::STATUS_NOT_ACTIVE       => Yii::t('common', 'Не активный'),
+            self::STATUS_TEMP_BLOCKED       => Yii::t('common', 'Времено блокирован'),
             self::STATUS_ACTIVE       => Yii::t('common', 'Доступен'),
             self::STATUS_SENDED       => Yii::t('common', 'Отправлен'),
             self::STATUS_SELL       => Yii::t('common', 'Продан'),

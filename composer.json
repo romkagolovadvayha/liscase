@@ -34,7 +34,8 @@
         "bower-asset/slick-carousel": "^1.8",
         "lajax/yii2-language-picker": "^1.2",
         "google/cloud-translate": "^1.12",
-        "demondogsl/yii2-translate-manager": "^1.0"
+        "demondogsl/yii2-translate-manager": "^1.0",
+        "consik/yii2-websocket": "^1.0"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",

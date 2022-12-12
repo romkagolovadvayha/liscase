@@ -19,6 +19,7 @@ use common\components\base\ActiveRecord;
  * @property string              $socket_room
  * @property string              $current_language
  * @property int                 $status
+ * @property string              $jwt
  * @property int                 $auto
  * @property string              $created_at
  *
@@ -360,5 +361,27 @@ class User extends ActiveRecord implements IdentityInterface
             $this->current_language = $language;
             $this->save(false);
         }
+    }
+
+    public function getJwtToken() {
+        if (empty($this->jwt)) {
+            $this->jwt = Yii::$app->security->generateRandomString();
+            $this->save();
+        }
+        return $this->jwt;
+    }
+
+    /**
+     * @param string $jwt
+     *
+     * @return User|null
+     */
+    public static function findByJwtToken($jwt)
+    {
+        if (empty($jwt)) {
+            return null;
+        }
+
+        return static::findOne(['jwt' => $jwt]);
     }
 }

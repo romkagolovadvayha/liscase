@@ -43,6 +43,11 @@ $promocode = Promocode::getActivePromocode();
                         'active' => _checkActive('/'),
                     ],
                     [
+                        'label'   => Yii::t('common', "Сражения"),
+                        'url'     => '/battle/index',
+                        'active' => _checkActive('/battle/index'),
+                    ],
+                    [
                         'label'   => Yii::t('common', "Маркет"),
                         'url'     => '/market/index',
                         'active' => _checkActive('/market/index'),

@@ -13,7 +13,7 @@ $this->title = Yii::t('database',  $box->name) . ' ' . Yii::t('common',  "кей
 
 [$boxDropCarousel, $number] = $box->_getDrop();
 $this->registerJs(<<<JS
-    var boxPrice = {$box->price};
+    var boxPrice = {$box->getPriceFinal()};
 JS
     , \yii\web\View::POS_BEGIN);
 ?>
@@ -52,7 +52,7 @@ JS
                                <?= \common\components\widgets\TimerWidget::widget([
                                    'deadline' => $getNextOpenFreeBoxDate,
                                    'timerId' => 'nextOpenFreeBoxDate',
-                                   'text' => 'Кейс будет доступен через:',
+                                   'text' => Yii::t('common',  'Кейс будет доступен через:'),
                                ]); ?>
                            </div>
                         <?php else: ?>
