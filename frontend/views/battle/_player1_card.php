@@ -28,7 +28,7 @@ use frontend\widgets\Alert;
     </div>
     <?php if ($battle->player1->id === Yii::$app->user->id && $battle->status === Battle::STATUS_WAIT_PLAYER): ?>
         <div class="battle_view_controls">
-            <a href="/battle/reject?id=<?=$battle->id?>" class="btn danger">Отменить ставку</a>
+            <a href="/battle/reject?id=<?=$battle->id?>" class="btn danger"><?=Yii::t('common', "Отменить ставку")?></a>
         </div>
     <?php endif; ?>
 </div>
