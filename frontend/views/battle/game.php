@@ -15,9 +15,9 @@ JS
     , View::POS_BEGIN);
 
 if (!empty($battle->player_winner_user_id)) {
-    $winnerNumber = 1;
+    $winnerNumber = 0;
     if ($battle->player_winner_user_id === $battle->player2_user_id) {
-        $winnerNumber = 2;
+        $winnerNumber = 1;
     }
     $this->registerJs(
         <<<JS
