@@ -9,6 +9,7 @@ use frontend\widgets\Alert;
 
 $this->title = Yii::t('common', "Сражение против игрока") . " " . $battle->player1->userProfile->name;
 
+\frontend\assets\BattleGameAsset::register($this);
 ?>
 
 <main id="main" role="main" class="mt-5">
@@ -21,6 +22,20 @@ $this->title = Yii::t('common', "Сражение против игрока") . 
                 ]); ?>
                 <div class="battle_view_players_middle">
                     <div class="battle_view_players_middle_separator">VS</div>
+                    <div class="battle_view_players_middle_roulete">
+                        <div class="game_roulette">
+                            <div class="spinner"></div>
+                            <div class="shadow"></div>
+                            <div class="markers">
+                                <div class="triangle">
+
+                                </div>
+                            </div>
+                            <div class="button">
+                                <span>SPIN</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <?= $this->render('_player2_card', [
                     'battle' => $battle

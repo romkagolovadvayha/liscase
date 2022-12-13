@@ -1,5 +1,8 @@
 $color_background_body: #17171f;
 
+
+@import 'battle/game';
+
 .boxes_free, .boxes_top {
   display: flex;
   flex-wrap: nowrap;
@@ -2174,6 +2177,12 @@ main {
         font-size: 32px;
         text-align: center;
         text-transform: uppercase;
+      }
+      &_roulete {
+        text-align: center;
+        canvas {
+          margin: 0 auto;
+        }
       }
     }
   }
