@@ -9,6 +9,25 @@ use frontend\widgets\Alert;
 
 $this->title = Yii::t('common', "Сражение против игрока") . " " . $battle->player1->userProfile->name;
 
+$this->registerJs(<<<JS
+    var data = [];
+JS
+    , View::POS_BEGIN);
+
+if (!empty($battle->player_winner_user_id)) {
+    $winnerNumber = 1;
+    if ($battle->player_winner_user_id === $battle->player2_user_id) {
+        $winnerNumber = 2;
+    }
+    $this->registerJs(
+        <<<JS
+    $(window).ready(function(){
+        spinner.spin({$winnerNumber});
+    });
+JS, View::POS_END
+    );
+}
+
 \frontend\assets\BattleGameAsset::register($this);
 ?>
 
@@ -31,9 +50,9 @@ $this->title = Yii::t('common', "Сражение против игрока") . 
 
                                 </div>
                             </div>
-                            <div class="button">
-                                <span>SPIN</span>
-                            </div>
+<!--                            <div class="button">-->
+<!--                                <span>SPIN</span>-->
+<!--                            </div>-->
                         </div>
                     </div>
                 </div>

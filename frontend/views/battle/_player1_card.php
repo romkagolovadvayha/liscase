@@ -7,6 +7,10 @@ use frontend\widgets\Alert;
 /** @var View $this */
 /** @var Battle $battle */
 
+$this->registerJs(<<<JS
+    data[data.length] = { id: '1', color: '#811f88', avatar: '{$battle->player1->userProfile->avatar}' };
+JS
+    , View::POS_BEGIN);
 ?>
 <div class="battle_view_players_player1">
     <div class="battle_view_players_player1_image" style="background-image: url(<?=$battle->player1->userProfile->avatar?>)"></div>

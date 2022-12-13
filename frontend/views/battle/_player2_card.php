@@ -8,6 +8,13 @@ use yii\widgets\ActiveForm;
 /** @var View $this */
 /** @var Battle $battle */
 
+if (!empty($battle->player_winner_user_id)) {
+    $this->registerJs(
+        <<<JS
+    data[data.length] = { id: '2', color: '#1f7588', avatar: '{$battle->player2->userProfile->avatar}' };
+JS, View::POS_BEGIN
+    );
+}
 ?>
 <div class="battle_view_players_player2">
     <div class="battle_view_players_player2_image" style="background-image: url(<?=!empty($battle->player2) ? $battle->player2->userProfile->avatar : ''?>)">

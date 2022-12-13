@@ -1,9 +1,3 @@
-var data = [
-    //{ id: '', color: '#3f297e', text: 'ALL IN', ikon: 'invert_colors' },
-    { id: '1', type: 'allin', color: '#3f297e', text: 'ALL IN', ikon: 'grade' },
-    { id: '2', type: 'replay', color: '#881f7e', text: 'PLAY AGAIN', ikon: 'replay' }
-];
-
 var RouletteWheel = function(el, items){
     this.$el = $(el);
     this.items = items || [];
@@ -11,13 +5,13 @@ var RouletteWheel = function(el, items){
     this._angle = 0;
     this._index = 0;
     this.options = {
-        angleOffset: -90
+        angleOffset: -180
     }
 }
 
 _.extend(RouletteWheel.prototype, Backbone.Events);
 
-RouletteWheel.prototype.spin = function(_index){
+RouletteWheel.prototype.spin = function(_index) {
 
     var count = this.items.length;
     var delta = 360/count;
@@ -75,8 +69,7 @@ RouletteWheel.prototype.render = function(){
         var item = this.items[i];
 
         var color = item.color;
-        var text = item.text;
-        var ikon = item.ikon;
+        var avatar = item.avatar;
 
         var html = [];
         html.push('<div class="item" ');
@@ -84,9 +77,7 @@ RouletteWheel.prototype.render = function(){
         html.push('data-type="'+item.type+'" ');
         html.push('>');
         html.push('<span class="label">');
-        if(ikon)
-            html.push('<i class="material-icons">'+ikon+'</i>');
-        html.push('<span class="text">'+text+'</span>');
+        html.push('<span class="avatar" style="background-image: url('+avatar+');"></span>');
         html.push('</span>');
         html.push('</div>');
 
@@ -106,14 +97,13 @@ RouletteWheel.prototype.render = function(){
             borderTopColor: color
         });
 
-        var textHeight = parseInt(((2*Math.PI*R)/count)*.5);
-
+        var textHeight = parseInt(((2*Math.PI*R)/count)*.1);
+        // translateY(-46px) translateX(86.42px) rotateZ(180deg)
         $item.find('.label').css({
             //transform: 'translateX('+ (textHeight) +'px) translateY('+  (-1 * R) +'px) rotateZ('+ (90 + delta*.5) +'deg)',
-            transform: 'translateY('+ (D*-.25) +'px) translateX('+  (textHeight*1.03) +'px) rotateZ('+ (90 + delta*.5) +'deg)',
+            transform: 'translateY('+ (D*-.5 + textHeight/2) +'px) translateX('+  (textHeight*.3) +'px) rotateZ('+ (180 + delta*.5) +'deg)',
             height: textHeight+'px',
-            lineHeight: textHeight+'px',
-            textIndent: (R*.1)+'px'
+            width: textHeight+'px',
         });
 
         $spinner.append($item);
@@ -167,18 +157,22 @@ RouletteWheel.prototype.renderMarker = function(){
 
 }
 
-RouletteWheel.prototype.bindEvents = function(){
-    this.$el.find('.button').on('click', $.proxy(this.spin,this));
-}
+// RouletteWheel.prototype.bindEvents = function(){
+//     this.$el.find('.button').on('click', $.proxy(this.spin,this));
+// }
 
 var spinner;
 $(window).ready(function(){
 
     spinner = new RouletteWheel($('.game_roulette'), data);
     spinner.render();
-    spinner.bindEvents();
+    // spinner.bindEvents();
 
-    spinner.on('spin:start', function(r){ console.log('spin start!') });
-    spinner.on('spin:end', function(r){ console.log('spin end! -->'+ r._index) });
+    spinner.on('spin:start', function(r){
+        console.log('spin start!')
+    });
+    spinner.on('spin:end', function(r){
+        console.log(data[r._index])
+    });
 
 })

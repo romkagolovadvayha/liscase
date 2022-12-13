@@ -12,8 +12,7 @@ $R: $size_roulette*0.5;
   position: relative;
   width: $size_roulette;
   height: $size_roulette;
-  margin-top: 40px;
-
+  margin: 40px auto 0 auto;
   .shadow {
     display: block;
     position: absolute;
@@ -49,13 +48,13 @@ $R: $size_roulette*0.5;
       width: 0;
       height: 0;
       border-style: solid;
-      border-width: 1em 0 1em 1em;
-      border-color: transparent transparent transparent #007bff;
+      border-width: 0 1em 1em 1em;
+      border-color: transparent transparent #ffffff transparent;
       position: absolute;
-      border-left-color: #FFF;
-      top: 50%;
-      left: -1px;
-      margin-top: -1em;
+      border-top-color: #fff;
+      left: 50%;
+      bottom: -1px;
+      margin-left: -1em;
       filter: drop-shadow(0 0.25em 0 rgba(0, 0, 0, 0.25));
 
     }
@@ -97,13 +96,18 @@ $R: $size_roulette*0.5;
         white-space: nowrap;
         transform-origin: 0 0;
         font-size: .8em;
-
-        i, .text {
+        .avatar {
           display: inline-block;
           vertical-align: middle;
-          line-height: 1;
-          font-size: 1em;
-          text-indent: 0;
+          border-radius: 50%;
+          background-image: url(https://ezdrop.pro/uploads/avatar/steam/76561199259890813.png);
+          background-size: cover;
+          background-position: center center;
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          right: 0;
         }
 
         i {
@@ -126,7 +130,7 @@ $R: $size_roulette*0.5;
     font-weight: 800;
     z-index: 998;
     position: absolute;
-    background: #FFF;
+    background: $color_background_body;
     border: none;
     border-radius: 100%;
     outline: none;
@@ -167,20 +171,6 @@ $R: $size_roulette*0.5;
     .item[data-type="question"] .label {
       font-size: 1.3em;
       font-weight: 600;
-    }
-
-    .item[data-type="replay"] .label {
-      .text {
-        font-size: .6em;
-        white-space: initial;
-        width: 1em;
-        text-align: center;
-        line-height: 1.2;
-      }
-
-      i {
-        font-size: 1.5em;
-      }
     }
 
     .item[data-type="time"] .label {
