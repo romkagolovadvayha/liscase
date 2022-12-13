@@ -39,7 +39,7 @@ class AddBattleForm extends Battle
                 throw new \Exception(Yii::t('common', 'В вашем инвентаре не найден предмет!'));
             }
             $userDrop->status = UserDrop::STATUS_TEMP_BLOCKED;
-            $userDrop->save();
+            $userDrop->save(false);
             $battleId = Battle::createRecord($userId);
             BattleRate::createRecord($userId, $battleId, $userDrop->id);
             $dbTransaction->commit();
