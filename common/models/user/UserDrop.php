@@ -52,7 +52,7 @@ class UserDrop extends ActiveRecord
     public function rules(): array
     {
         return [
-            [['drop_id', 'box_id', 'created_at'], 'required'],
+            [['drop_id', 'created_at'], 'required'],
             [['drop_id', 'box_id', 'status'], 'integer'],
             [['created_at'], 'safe'],
         ];
