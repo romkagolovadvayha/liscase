@@ -4,17 +4,9 @@ use yii\base\Component;
 
 $params = require __DIR__ . '/../../common/config/params-local.php';
 $db     = require __DIR__ . '/../../common/config/db-local.php';
-$languages = [
-    'en' => 'en-US',
-    'ru' => 'ru-RU',
-    'de' => 'de-DE',
-    'uk' => 'uk-UA',
-    'es' => 'es-ES',
-];
 $config = [
     'id' => 'basic',
     'basePath' => dirname(__DIR__),
-    'language' => 'en-US',
     'bootstrap' => [
         'log',
 //        'languagepicker'
@@ -121,9 +113,19 @@ if (YII_ENV_DEV) {
     ];
 }
 
+$languages = [
+    'en' => 'en-US',
+    'ru' => 'ru-RU',
+    'de' => 'de-DE',
+    'uk' => 'uk-UA',
+    'es' => 'es-ES',
+];
+$config['params']['language'] = 'en-US';
 $subDomain = explode('.', $_SERVER['HTTP_HOST'])[0];
 $subDomain = str_replace(['https://', 'http://'], '', $subDomain);
 if (in_array($subDomain, array_keys($languages))) {
     $config['language'] = $languages[$subDomain];
+    $config['params']['language'] = $languages[$subDomain];
 }
+$config['params']['homePage'] = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
 return $config;

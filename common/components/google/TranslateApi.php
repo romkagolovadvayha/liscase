@@ -11,7 +11,7 @@ class TranslateApi
     public function __construct()
     {
         putenv('GOOGLE_APPLICATION_CREDENTIALS='
-               . Yii::$app->getBasePath() . '/config/client_translate_credentials.json');
+               . Yii::$app->getBasePath() . '/../common/config/client_translate_credentials.json');
     }
 
     /**

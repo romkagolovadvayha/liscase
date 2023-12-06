@@ -4,6 +4,8 @@ namespace common\models\user;
 
 use common\components\helpers\Role;
 use common\models\auth\AuthAssignment;
+use common\models\blog\Blog;
+use common\models\box\DropImage;
 use common\models\payment\Payment;
 use yii\base\NotSupportedException;
 use Yii;
@@ -13,6 +15,7 @@ use common\components\base\ActiveRecord;
 /**
  * @property int                 $id
  * @property string              $email
+ * @property string              $username
  * @property string              $password_hash
  * @property string              $auth_key
  * @property int                 $ref_code
@@ -25,11 +28,7 @@ use common\components\base\ActiveRecord;
  *
  * @property UserProfile         $userProfile
  * @property UserBalance[]       $userBalances
- * @property UserBox[]           $userBoxWaitOpen
- * @property UserBox[]           $userBoxOpened
- * @property UserDrop[]          $userDrop
- * @property Payment[]           $payments
- * @property UserPromocode[]     $userPromocodes
+ * @property Blog[]              $blogs
  * @property string              $currency
  */
 class User extends ActiveRecord implements IdentityInterface
@@ -68,7 +67,8 @@ class User extends ActiveRecord implements IdentityInterface
         return [
             'id'                  => Yii::t('common', 'ID'),
             'email'               => Yii::t('common', 'Email'),
-            'ref_code'            => Yii::t('common', 'Партнерский код'),
+            'username'               => Yii::t('common', 'Логин'),
+            'ref_code'            => Yii::t('common', 'Код приглашения'),
             'status'              => Yii::t('common', 'Статус'),
             'current_language'    => Yii::t('common', 'Выбранный язык'),
             'created_at'          => Yii::t('common', 'Дата регистрации'),
@@ -78,11 +78,11 @@ class User extends ActiveRecord implements IdentityInterface
     public function rules(): array
     {
         return [
-            [['email', 'password_hash', 'auth_key', 'ref_code', 'socket_room', 'status'], 'required'],
+            [['email', 'password_hash', 'auth_key', 'ref_code', 'socket_room', 'status', 'username'], 'required'],
             [['status', 'auto'], 'integer'],
             [['ref_code'], 'number'],
             [['ref_code'], 'string', 'min' => 9, 'max' => 10],
-            [['email', 'password_hash'], 'string', 'max' => 255],
+            [['email', 'password_hash', 'username'], 'string', 'max' => 255],
             [['auth_key', 'socket_room'], 'string', 'max' => 32],
             [['current_language', 'created_at'], 'safe'],
             [['email'], 'unique'],
@@ -173,43 +173,9 @@ class User extends ActiveRecord implements IdentityInterface
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getUserBoxWaitOpen()
+    public function getBlogs()
     {
-        return $this->hasMany(UserBox::class, ['user_id' => 'id'])
-            ->andWhere(['status' => UserBox::STATUS_WAIT_OPEN]);
-    }
-
-    /**
-     * @return \yii\db\ActiveQuery
-     */
-    public function getUserBoxOpened()
-    {
-        return $this->hasMany(UserBox::class, ['user_id' => 'id'])
-                    ->andWhere(['status' => UserBox::STATUS_OPENED]);
-    }
-
-    /**
-     * @return \yii\db\ActiveQuery
-     */
-    public function getUserDrop()
-    {
-        return $this->hasMany(UserDrop::class, ['user_id' => 'id']);
-    }
-
-    /**
-     * @return \yii\db\ActiveQuery
-     */
-    public function getPayments()
-    {
-        return $this->hasMany(Payment::class, ['user_id' => 'id']);
-    }
-
-    /**
-     * @return \yii\db\ActiveQuery
-     */
-    public function getUserPromocodes()
-    {
-        return $this->hasMany(UserPromocode::class, ['user_id' => 'id']);
+        return $this->hasMany(Blog::class, ['user_id' => 'id']);
     }
 
     /**
@@ -351,7 +317,7 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     public function getPartnerLink() {
-        return Yii::$app->params['baseUrl'] . '/p/1304069465';
+        return Yii::$app->params['homePage'] . '/p/1304069465';
     }
 
     public function updateCurrentLanguage()
@@ -383,5 +349,73 @@ class User extends ActiveRecord implements IdentityInterface
         }
 
         return static::findOne(['jwt' => $jwt]);
+    }
+
+    public function getAvatar() {
+        return $this->_loadAvatar("https://api.multiavatar.com/{$this->username}.png?apikey=PeROWLukU1SDHm", $this->username);
+    }
+
+    /**
+     * @return array[]
+     */
+    public static function getRanges() {
+        return [
+            [
+                'name' => Yii::t('common', 'Пользователь'),
+                'posts' => 0,
+                'class' => 'user_range_1',
+            ],
+            [
+                'name' => Yii::t('common', 'Новичок'),
+                'posts' => 1,
+                'class' => 'user_range_2',
+            ],
+            [
+                'name' => Yii::t('common', 'Любитель'),
+                'posts' => 3,
+                'class' => 'user_range_3',
+            ],
+            [
+                'name' => Yii::t('common', 'Освоенный'),
+                'posts' => 6,
+                'class' => 'user_range_4',
+            ],
+            [
+                'name' => Yii::t('common', 'Легенда'),
+                'posts' => 10,
+                'class' => 'user_range_5',
+            ],
+        ];
+    }
+
+    /**
+     * @return array|null
+     */
+    public function getRange() {
+        $count = count($this->blogs);
+        $result = null;
+        foreach (User::getRanges() as $range) {
+            if ($count >= $range['posts']) {
+                $result = $range;
+            }
+        }
+        return $result;
+    }
+
+    private function _loadAvatar($imageUrl, $username) {
+        $uploadDir = Yii::getAlias('@app/web');
+        $fileUrl = "/uploads/avatar/{$username}.png";
+        $filePath = $uploadDir . $fileUrl;
+        if (file_exists($filePath)) {
+            return $fileUrl;
+        }
+        if (!file_exists(dirname(dirname($filePath)))) {
+            mkdir(dirname(dirname($filePath)));
+            chmod(dirname(dirname($filePath)), 0777);
+        }
+        $this->userProfile->avatar = $fileUrl;
+        $this->userProfile->save(false);
+        file_put_contents($filePath, file_get_contents($imageUrl));
+        return $fileUrl;
     }
 }

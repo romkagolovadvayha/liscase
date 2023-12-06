@@ -4,7 +4,7 @@ function updateOnlineCounter() {
             url: '/site/online-counter',
             success: function (res) {
                 if (res) {
-                    $('.online_counter').html(res);
+                    $('#online_counter').html(res);
                 }
             }
         });

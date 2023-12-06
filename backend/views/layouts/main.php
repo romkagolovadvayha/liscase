@@ -63,12 +63,8 @@ use yii\bootstrap5\NavBar;
         <?php endif; ?>
         <main id="main" class="flex-shrink-0" role="main">
             <div class="container container-full">
-                <div class="row">
-                    <div class="col-sm-12">
-                        <h1><?= Html::encode($this->title); ?></h1>
-                        <?= $content; ?>
-                    </div>
-                </div>
+                <?= \backend\widgets\Alert::widget() ?>
+                <?= $content; ?>
             </div>
         </main>
     </div>

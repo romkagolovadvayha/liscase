@@ -115,29 +115,16 @@ class MainMenu
                 ],
             ],
             [
-                'label'  => Yii::t('common', 'Новости'),
+                'label'  => Yii::t('common', 'Блог'),
                 'icon'   => 'bi bi-newspaper',
-                'url'    => '/news/index',
-                'active' => $this->_checkActive('/news/'),
+                'url'    => '/blog/index',
+                'active' => $this->_checkActive('/blog/'),
             ],
             [
-                'label' => Yii::t('common', 'Кейсы'),
-                'icon'  => 'bi bi-gift-fill',
-                'badge' => 0,
-                'items' => [
-                    [
-                        'label'  => Yii::t('common', 'Кейсы'),
-                        'url'    => '/box/index',
-                        'icon'   => 'bi bi-gift-fill',
-                        'active' => $this->_checkActive('/box/'),
-                    ],
-                    [
-                        'label'  => Yii::t('common', 'Дроп'),
-                        'icon'   => 'bi bi-dropbox',
-                        'url'    => '/drop/index',
-                        'active' => $this->_checkActive('/drop/'),
-                    ],
-                ],
+                'label'  => Yii::t('common', 'Мультиязычность'),
+                'icon'   => 'bi bi-shield-fill',
+                'url'    => '/translateManager/language/list',
+                'active' => $this->_checkActive('/translatemanager/'),
             ],
             [
                 'label' => Yii::t('common', 'Администрирование'),
@@ -145,13 +132,18 @@ class MainMenu
                 'badge' => 0,
                 'items' => [
                     [
-                        'label'  => Yii::t('common', 'Диспетчер задач'),
-                        'icon'   => 'tasks',
-                        'url'    => '/task-manager/index',
-                        'active' => $this->_checkActive('/task-manager/'),
+                        'label'  => Yii::t('common', 'Настройки'),
+                        'url'    => '/settings/index',
+                        'active' => $this->_checkActive('/settings/index'),
+                    ],
+                    [
+                        'label'  => Yii::t('common', 'Внешний вид'),
+                        'url'    => '/settings/theme',
+                        'active' => $this->_checkActive('/settings/theme'),
                     ],
                 ],
-            ],
+
+            ]
         ];
     }
 

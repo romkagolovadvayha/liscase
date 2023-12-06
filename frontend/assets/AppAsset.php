@@ -8,6 +8,7 @@
 namespace frontend\assets;
 
 use yii\web\AssetBundle;
+use yii\web\JqueryAsset;
 
 /**
  * Main application asset bundle.
@@ -20,13 +21,16 @@ class AppAsset extends AssetBundle
     public $basePath = '@webroot';
     public $baseUrl = '@web';
     public $css = [
+        'css/colors.css',
         'css/site.css',
         'css/main.scss',
     ];
     public $js = [
+        'js/main.js',
     ];
     public $depends = [
         'yii\web\YiiAsset',
-        'yii\bootstrap5\BootstrapAsset'
+        'yii\bootstrap5\BootstrapAsset',
+        JqueryAsset::class
     ];
 }

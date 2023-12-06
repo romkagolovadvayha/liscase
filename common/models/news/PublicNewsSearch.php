@@ -45,7 +45,7 @@ class PublicNewsSearch extends NewsSearch
 
     public function getShareUrl()
     {
-        $url = Yii::$app->params['baseUrl'] . '/news/view?id=' . $this->id;
+        $url = Yii::$app->params['homePage'] . '/news/view?id=' . $this->id;
 
         if (!Yii::$app->user->isGuest) {
             $url .= '&refCode=' . Yii::$app->user->identity->ref_code;

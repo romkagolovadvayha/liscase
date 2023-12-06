@@ -135,3 +135,42 @@ h1:after {
 table.table .kv-table-header  {
     border-width: 1px;
 }
+
+tr.category td {
+    background: #99c3ff;
+    box-shadow: none;
+}
+tr.sub-category td {
+    background: #fff;
+    box-shadow: none;
+}
+table.table  thead tr th {
+    color: #000;
+}
+
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.pagination li a, .pagination li.prev span {
+    padding: 10px;
+    margin: 0 3px;
+    border-radius: 3px;
+    color: #000;
+    text-decoration: none;
+    line-height: 18px;
+    font-size: 18px;
+    display: block;
+}
+.pagination li a:hover {
+    background: #d8e7ff;
+}
+.pagination li.prev span {
+    color: #848484;
+}
+.pagination li.active a, .pagination li.active a:hover {
+    background: #0d6efd;
+    color: #fff;
+}

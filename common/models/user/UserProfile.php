@@ -14,12 +14,9 @@ use yii\helpers\ArrayHelper;
  * @property string  $name
  * @property string  $surname
  * @property string  $full_name
- * @property string  $phone
- * @property int     $phone_is_confirm
  * @property string  $avatar
  * @property int     $gender
  * @property string  $birthday
- * @property string  $trade_link
  *
  * @property User    $user
  */
@@ -55,13 +52,11 @@ class UserProfile extends \common\components\base\ActiveRecord
             [
                 [
                     'user_id',
-                    'phone_is_confirm',
                     'gender',
                 ],
                 'integer',
             ],
-            [['name', 'surname', 'trade_link', 'full_name', 'avatar'], 'string', 'max' => 255],
-            [['phone'], 'string', 'max' => 20],
+            [['name', 'surname', 'full_name', 'avatar'], 'string', 'max' => 255],
             [['birthday'], 'safe'],
             [['user_id'], 'unique'],
         ];
@@ -71,7 +66,6 @@ class UserProfile extends \common\components\base\ActiveRecord
     {
         return [
             'name' => 'Имя',
-            'trade_link' => 'Ссылка на страницу обмена Steam',
         ];
     }
 
@@ -85,13 +79,10 @@ class UserProfile extends \common\components\base\ActiveRecord
 
     /**
      * @param User   $user
-     * @param string $name
-     * @param string $surname
-     * @param string $phone
      *
      * @return bool
      */
-    public static function createModel(User $user, $name)
+    public static function createModel(User $user)
     {
         $model = self::findOne(['user_id' => $user->id]);
         if (!empty($model)) {
@@ -100,21 +91,7 @@ class UserProfile extends \common\components\base\ActiveRecord
 
         $model = new self();
         $model->user_id              = $user->id;
-        $model->name                 = $name;
-        $model->full_name            = trim($name);
 
-        return $model->save();
-    }
-
-    /**
-     * @param string $phone
-     *
-     * @return static|null
-     */
-    public static function findByPhone($phone)
-    {
-        $attributes = ['phone' => $phone];
-
-        return static::findOne($attributes);
+        return $model->save(false);
     }
 }

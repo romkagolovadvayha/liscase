@@ -67,7 +67,7 @@ class NewsImage extends \common\components\base\ActiveRecord
      */
     public function getUrl()
     {
-        return Yii::$app->params['baseUrl'] . '/uploads/news/' . $this->image;
+        return Yii::$app->params['homePage'] . '/uploads/news/' . $this->image;
     }
 
     /**

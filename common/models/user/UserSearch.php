@@ -17,16 +17,10 @@ class UserSearch extends User
             [
                 [
                     'id',
-                    'email',
+                    'username',
                     'status',
-                    'ref_code',
                     'country_id',
-                    'is_mailer',
                     'created_at',
-                    'last_visit',
-                    'userPhone',
-                    'investorLevel',
-                    'hasActiveLicense',
                 ],
                 'safe',
             ],

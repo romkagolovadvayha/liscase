@@ -2,8 +2,13 @@
 
 namespace common\controllers;
 
+use cabinet\forms\finance\TransferGiftForm;
 use common\components\oauth\AuthAction;
+use common\forms\user\LoginForm;
+use common\forms\user\RegistrationForm;
+use common\models\finance\FinanceTransfer;
 use common\models\user\Auth;
+use common\models\user\UserBalanceGift;
 use common\models\user\UserProfile;
 use common\models\user\UserTree;
 use Yii;
@@ -15,7 +20,7 @@ use common\models\user\User;
 
 class AuthController extends WebController
 {
-    public $layout   = '@common/views/layouts/login';
+    public $layout   = '@frontend/views/layouts/main';
     public $boxClass = 'login-box';
 
     /**
@@ -34,6 +39,7 @@ class AuthController extends WebController
                     [
                         'allow'   => true,
                         'actions' => [
+                            'login',
                             'login-social',
                             'registration',
                             'request-password-reset',
@@ -76,6 +82,40 @@ class AuthController extends WebController
     public function getViewPath()
     {
         return '@common/views/auth';
+    }
+
+    public function actionLogin()
+    {
+        $model = new LoginForm();
+        $model->email = Cookie::getValue('currentEmail');
+        if ($model->load(Yii::$app->request->post()) && $model->login()) {
+            return $this->_loginSuccess();
+        }
+        $model->password = null;
+        return $this->render('login', [
+            'model' => $model,
+        ]);
+    }
+
+    public function actionRegistration()
+    {
+        $this->boxClass = 'login-box register-box';
+
+        $model = new RegistrationForm();
+        if ($model->load(Yii::$app->request->post())
+            && $_POST['RegistrationForm']['checkForm'] === 'no_spam'
+            && $user = $model->register()
+        ) {
+            $loginForm = new LoginForm();
+            $loginForm->email = $model->email;
+            $loginForm->password = $model->password;
+            $loginForm->login();
+            return $this->_loginSuccess();
+        }
+
+        return $this->render('registration', [
+            'model' => $model,
+        ]);
     }
 
     public function onAuthSuccess($client)
@@ -181,7 +221,7 @@ class AuthController extends WebController
      */
     private function _loginSuccess()
     {
-        return $this->redirect(['login-success', 'url' => $this->_getRedirectUrl()]);
+        return $this->redirect(['/', 'url' => $this->_getRedirectUrl()]);
     }
 
     private function _getRedirectUrl()

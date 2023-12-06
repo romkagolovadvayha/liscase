@@ -3,11 +3,13 @@
 namespace backend\controllers;
 
 use backend\forms\userProfile\BonusForm;
-use backend\forms\userProfile\PasswordForm;
 use backend\forms\userProfile\RoleForm;
 use common\components\helpers\Role;
+use common\components\queue\openAi\GenUsersJob;
+use common\models\blog\BlogCategory;
 use common\models\user\UserSearch;
 use Yii;
+use yii\base\BaseObject;
 use yii\filters\AccessControl;
 use yii\helpers\ArrayHelper;
 use common\models\user\User;
@@ -53,6 +55,21 @@ class UserController extends CrudController
     protected function _getSearchClassName()
     {
         return UserSearch::class;
+    }
+
+    public function actionGenerate()
+    {
+//        $cacheKey  = 'actionGenerate_Users';
+//        $cacheData = Yii::$app->cache->get($cacheKey);
+//        if (!empty($cacheData)) {
+//            Yii::$app->session->addFlash('success', 'Процесс генерации уже запущен, ожидайте.');
+//            return $this->redirect(['/user/index']);
+//        }
+
+        Yii::$app->queueOpenAi->push(new GenUsersJob());
+        Yii::$app->session->addFlash('success', 'Процесс генерации запущен, ожидайте.');
+//        Yii::$app->cache->set($cacheKey, $cacheKey, 6 * 60 * 60);
+        return $this->redirect(['/user/index']);
     }
 
     public function actionProfile($userId)

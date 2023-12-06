@@ -3,6 +3,7 @@
 namespace console\controllers;
 
 use common\components\google\TranslateApi;
+use common\models\blog\Blog;
 use common\models\box\Box;
 use common\models\user\User;
 use common\models\user\UserBox;
@@ -29,9 +30,9 @@ class TranslateController extends Controller
 
         $languages = [
             'en' => 'en-US',
-            'de' => 'de-DE',
-            'uk' => 'uk-UA',
-            'es' => 'es-ES',
+//            'de' => 'de-DE',
+//            'uk' => 'uk-UA',
+//            'es' => 'es-ES',
         ];
 
         $google = new TranslateApi();
@@ -86,16 +87,16 @@ class TranslateController extends Controller
         $languages = [
             'ru-RU',
             'en-US',
-            'de-DE',
-            'it-IT',
-            'es-ES',
-            'fr-FR',
-            'vi-VN',
-            'id-ID',
-            'hi-IN',
-            'pt-PT',
-            'tr-TR',
-            'hr-HR'
+//            'de-DE',
+//            'it-IT',
+//            'es-ES',
+//            'fr-FR',
+//            'vi-VN',
+//            'id-ID',
+//            'hi-IN',
+//            'pt-PT',
+//            'tr-TR',
+//            'hr-HR'
         ];
 
         foreach ($languages as $language) {

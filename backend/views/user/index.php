@@ -8,6 +8,11 @@ use common\models\user\UserSearch;
 $this->title = Yii::t('common', 'Пользователи');
 ?>
 
+<?= Html::a('Генерация пользователей', ['generate'], ['class' => 'btn btn-primary', 'data' => [
+    'confirm' => 'Вы уверены?',
+    'method' => 'post',
+]]) ?>
+
 <?= GridView::widget([
     'dataProvider' => $dataProvider,
     'filterModel'  => $searchModel,
@@ -23,24 +28,28 @@ $this->title = Yii::t('common', 'Пользователи');
                 if (empty($model->userProfile)) {
                     return null;
                 }
-                return Html::img($model->userProfile->avatar, ['width' => '24px']);
+                return Html::img($model->getAvatar(), ['width' => '24px']);
             },
         ],
-        'email',
         [
-            'attribute' => 'ref_code',
-            'label'     => 'Реф.код',
-            'options'   => ['width' => '100'],
+            'attribute' => 'username',
             'format'    => 'raw',
+            'options'   => ['width' => '150'],
             'value'          => function (UserSearch $model) {
                 $isAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
                 $isAccountManager = Yii::$app->user->can(Role::ROLE_ACCOUNT_MANAGER);
                 $isSupport = Yii::$app->user->can(Role::ROLE_SUPPORT);
                 if (!$isAdmin && !$isAccountManager && !$isSupport) {
-                    return $model->ref_code;
+                    return $model->username;
                 }
                 $url = \yii\helpers\Url::to(['/user/profile', 'userId' => $model->id]);
-                return Html::a($model->ref_code, $url);
+                return Html::a($model->username, $url);
+            },
+        ],
+        [
+            'attribute'       => 'full_name',
+            'value'          => function (UserSearch $model) {
+                return $model->userProfile->full_name;
             },
         ],
         [

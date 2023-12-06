@@ -5,7 +5,7 @@ $db = require __DIR__ . '/../../common/config/db-local.php';
 
 $config = [
     'id' => 'basic',
-    'name' => 'LisCase',
+    'name' => 'Админка',
     'basePath' => dirname(__DIR__),
     'bootstrap' => ['log'],
     'controllerNamespace' => 'backend\controllers',

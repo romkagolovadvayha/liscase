@@ -24,7 +24,10 @@ Yii::$container = new yii\di\Container;
  * @property linslin\yii2\curl\Curl             $curl
  * @property \common\components\web\User        $user
  * @property \common\components\steam\MarketApi $marketApi
- * @property \common\components\payments\Paypalych $paypalych
+ * @property \common\components\openAi\OpenAiApi $openAi
+ * @property \common\components\midjourney\MidjourneyApi $midjourney
+ * @property \yii\queue\redis\Queue              $queueOpenAi
+ * @property \yii\queue\redis\Queue              $queueMidjourney
  */
 abstract class BaseApplication extends yii\base\Application
 {

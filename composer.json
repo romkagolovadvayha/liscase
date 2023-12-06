@@ -35,26 +35,26 @@
         "lajax/yii2-language-picker": "^1.2",
         "google/cloud-translate": "^1.12",
         "demondogsl/yii2-translate-manager": "^1.0",
-        "consik/yii2-websocket": "^1.0"
+        "consik/yii2-websocket": "^1.0",
+        "orhanerday/open-ai": "^4.8",
+        "tectalic/openai": "^1.6",
+        "ferranfg/midjourney-php": "^1.0",
+        "batdan/midjourney-api-php": "^2.1",
+        "yii2mod/yii2-comments": "*",
+        "kartik-v/yii2-widget-activeform": "@dev"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",
         "yiisoft/yii2-gii": "~2.2.0",
         "yiisoft/yii2-faker": "~2.0.0",
-        "phpunit/phpunit": "~9.5.0",
-        "codeception/codeception": "^5.0.0 || ^4.0",
-        "codeception/lib-innerbrowser": "^3.0 || ^1.1",
-        "codeception/module-asserts": "^3.0 || ^1.1",
-        "codeception/module-yii2": "^1.1",
-        "codeception/module-filesystem": "^3.0 || ^1.1",
-        "codeception/verify": "^2.2",
-        "symfony/browser-kit": "^6.0 || >=2.7 <=4.2.4"
+        "phpunit/phpunit": "~9.5.0"
     },
     "config": {
         "allow-plugins": {
-            "yiisoft/yii2-composer" : true
+            "yiisoft/yii2-composer": true,
+            "php-http/discovery": true
         },
-        "process-timeout": 1800,
+        "process-timeout": 2500,
         "fxp-asset": {
             "enabled": false
         }

@@ -12,16 +12,16 @@ $config = [
             'class' => 'DemonDogSL\translateManager\Component'
         ]
     ],
-    'language' => 'ru-RU',
+    'language' => 'en-US',
     'sourceLanguage' => 'ru-RU',
-    'name'       => 'EZDROP.PRO',
+    'name'       => 'WARCRAFT.PRO',
     'vendorPath'     => dirname(dirname(__DIR__)) . '/vendor',
     'modules'        => [
         'gridview' =>  [
             'class' => '\kartik\grid\Module'
         ],
         'translateManager' => [
-            'class'                   => 'DemonDogSL\translateManager\Module',
+            'class'                   => DemonDogSL\translateManager\Module::class,
             'root'                    => [
                 '@backend',
                 '@frontend',
@@ -33,7 +33,42 @@ $config = [
             'ignoredItems'            => ['assets', 'vendor'],
             'layout'                  => '@backend/views/layouts/main',
             'roles'                   => ['ADMIN'],
-            'allowedIPs'              => ['*']
+            'allowedIPs'              => ['*'],
+            'tables' => [
+                [
+                    'connection' => 'db',
+                    'table' => '{{%blog}}',
+                    'columns' => ['name', 'content', 'keywords', 'description'],
+                    'category' => 'database',
+                ],
+                [
+                    'connection' => 'db',
+                    'table' => '{{%blog_category}}',
+                    'columns' => ['name', 'keywords', 'description'],
+                    'category' => 'database',
+                ],
+                [
+                    'connection' => 'db',
+                    'table' => '{{%comment}}',
+                    'columns' => ['content'],
+                    'category' => 'database',
+                ],
+                [
+                    'connection' => 'db',
+                    'table' => '{{%user_profile}}',
+                    'columns' => ['full_name'],
+                    'category' => 'database',
+                ],
+                [
+                    'connection' => 'db',
+                    'table' => '{{%settings}}',
+                    'columns' => ['text'],
+                    'category' => 'database',
+                ]
+            ],
+        ],
+        'comment' => [
+            'class' => 'yii2mod\comments\Module',
         ],
     ],
     'aliases' => [
@@ -49,7 +84,7 @@ $config = [
                     'sourceLanguage'     => 'ru-RU',
                     'sourceMessageTable' => '{{%language_source}}',
                     'messageTable'       => '{{%language_translate}}',
-                    'enableCaching'      => true,
+                    'enableCaching'      => false,
                     'cachingDuration'    => 86400,
                 ],
             ],
@@ -99,17 +134,30 @@ $config = [
             'enablePrettyUrl' => true,
             'showScriptName'  => false,
             'rules'           => [
-                '/p/<refCode:\d+>'                 => '/',
+                'posts' => 'blog/index',
+                'posts/<categoryLinkName:[a-z0-9_-]+>/post-<blogLinkName:[a-z0-9_-]+>/?' => 'blog/view',
+                'posts/<categoryLinkName:[a-z0-9_-]+>/<categoryLinkNameChild:[a-z0-9_-]+>/post-<blogLinkName:[a-z0-9_-]+>/?' => 'blog/view',
+                'posts/<categoryLinkName:[a-z0-9_-]+>/?' => 'blog/category',
+                'posts/<categoryLinkName:[a-z0-9_-]+>/<categoryLinkNameChild:[a-z0-9_-]+>/?' => 'blog/category',
+                'users/<username:[a-z0-9_-]+>/?' => 'users/view',
+                '/css/colors.css' => '/settings/colors',
+                'sitemap.xml' => 'site/sitemap',
+                'robots.txt' => 'site/robots',
+                'rss' => 'site/rss',
             ],
         ],
         'authManager'   => [
             'class' => \yii\rbac\DbManager::class,
             'cache' => 'cache',
         ],
-        'marketApi'   => [
-            'class'  => \common\components\steam\MarketApi::class,
-            'apiKey'      => '2gCOCfIiIu4V74f9763v5SjV7jyjT45',
-            'baseUrl' => 'https://market.csgo.com/api/v2'
+        'openAi'   => [
+            'class'  => \common\components\openAi\OpenAiApi::class,
+            'apiKey'      => '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',
+        ],
+        'midjourney'   => [
+            'class'  => \common\components\midjourney\MidjourneyApi::class,
+            'discordChannelId'      => '1150211599395737601',
+            'discordUserToken'      => 'MTE1MDIxMDQ4MTI2NTU5MDI5Mg.GZhegP.iSny8xdLjtgnETPDiiYygmJr4sHVu_hjEA-5R0',
         ],
         'paypalychApi'   => [
             'class' => \common\components\payments\Paypalych::class,
@@ -122,6 +170,11 @@ $config = [
     ],
     'params' => $params,
 ];
+
+$config = yii\helpers\ArrayHelper::merge(
+    $config,
+    require('queue.php'),
+);
 
 if (YII_ENV_DEV) {
     // configuration adjustments for 'dev' environment
