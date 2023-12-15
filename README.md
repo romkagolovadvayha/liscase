@@ -3,8 +3,19 @@
 ## Settings
 
 ### Install
-- `composer install`
-- `init`
+- `cd ~/.ssh && ssh-keygen`
+- `apt install composer`
+- `cd /var/www && git clone git@github.com:romkagolovadvayha/liscase.git`
+- `sudo apt-get update`
+- `sudo apt-get upgrade`
+- `sudo apt install software-properties-common`
+- `sudo add-apt-repository ppa:ondrej/php`
+- `sudo apt update`
+- `sudo apt-get install php7.4 php7.4-fpm`
+- `sudo apt-get install php7.4-mysql php7.4-mbstring php7.4-xml php7.4-gd php7.4-curl`
+- `curl -sS https://getcomposer.org/installer | php`
+- `php composer.phar update`
+- `php init`
 - `nginx`
 - `supervisor`
 
