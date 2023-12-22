@@ -71,7 +71,6 @@ if (!Yii::$app->user->isGuest) {
 <head>
     <title><?= Html::encode($this->title) ?></title>
     <?php $this->head() ?>
-    <meta name="robots" content="noindex, nofollow"/>
 </head>
 <body class="d-flex flex-column h-100">
 <?php $this->beginBody() ?>
