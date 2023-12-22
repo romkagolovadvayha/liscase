@@ -132,6 +132,15 @@ if (!Yii::$app->user->isGuest) {
 </footer>
 
 <?php $this->endBody() ?>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y1DRJ7YVXC"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-Y1DRJ7YVXC');
+</script>
 </body>
 </html>
 <?php $this->endPage() ?>

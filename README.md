@@ -18,6 +18,7 @@
 - `php init`
 - `nginx`
 - `supervisor`
+- `SSL CERT: https://www.inmotionhosting.com/support/website/ssl/lets-encrypt-ssl-ubuntu-with-certbot/`
 
 ### php.ini
 - `max_execution_time=600`
