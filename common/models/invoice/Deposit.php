@@ -238,16 +238,15 @@ class Deposit extends \common\components\base\ActiveRecord
         }
 
         if ($bonus > 0) {
-            return 0;
+            $profit = new Profit();
+            $profit->status = 1;
+            $profit->type = Profit::TYPE_BONUS;
+            $profit->amount = ceil($bonus);
+            $profit->user_balance_id = $user->getPersonalBalance()->id;
+            $profit->comment = Yii::t('common', 'Бонус при пополнении');
+            $profit->created_at = date('Y-m-d H:i:s');
+            $profit->save(false);
         }
-
-        $profit = new Profit();
-        $profit->status = 1;
-        $profit->type = Profit::TYPE_BONUS;
-        $profit->amount = ceil($bonus);
-        $profit->user_balance_id = $user->getPersonalBalance()->id;
-        $profit->comment = Yii::t('common', 'Бонус при пополнении');
-        $profit->created_at = date('Y-m-d H:i:s');
-        return $profit->save(false);
+        return true;
     }
 }
