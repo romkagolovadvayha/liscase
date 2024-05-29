@@ -2,8 +2,6 @@
 
 namespace console\controllers;
 
-require __DIR__ . '\..\..\vendor\romkagolovadvayha\php-source-query-class\SourceQuery\bootstrap.php';
-
 use common\models\servers\Servers;
 use common\models\stats\Info;
 use romkagolovadva\SourceQuery\SourceQuery;
