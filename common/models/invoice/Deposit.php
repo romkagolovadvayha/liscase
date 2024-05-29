@@ -216,7 +216,7 @@ class Deposit extends \common\components\base\ActiveRecord
                             ->andWhere(['<=', 'created_at', date('Y-m-d') . " 23:59:59"])
                             ->andWhere(['status' => Deposit::STATUS_SUCCESS])
                             ->sum('amount') ?? 0;
-        $message = "<b>Пополнение баланса</b>" . PHP_EOL
+        $message = "💰️ <b>Пополнение баланса</b>" . PHP_EOL
             . "Пользователь: {$user->username}" . PHP_EOL
             . "SteamID: {$user->steam_id}" . PHP_EOL
             . "Сумма: {$amount} RUB" . PHP_EOL . PHP_EOL
