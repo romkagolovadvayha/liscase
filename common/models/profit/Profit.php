@@ -31,6 +31,7 @@ class Profit extends \common\components\base\ActiveRecord
     public const TYPE_DAILY_REWARD_LIST_BOX_SMALL = 7;
     public const TYPE_DAILY_REWARD_LIST_BOX_BIG = 8;
     public const TYPE_TASK = 9;
+    public const TYPE_TRANSFER_BALANCE = 10;
 
     /**
      * @return array
@@ -47,6 +48,7 @@ class Profit extends \common\components\base\ActiveRecord
             self::TYPE_DAILY_REWARD_LIST_BOX_BIG => Yii::t('common', 'Ежедневная награда большой бокс'),
             self::TYPE_ACHIEVEMENT => Yii::t('common', 'Достижения'),
             self::TYPE_TASK => Yii::t('common', 'Выполнение задания'),
+            self::TYPE_TRANSFER_BALANCE => Yii::t('common', 'Перенос баланса'),
         ];
     }
 

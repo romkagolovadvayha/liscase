@@ -10,6 +10,7 @@ use common\models\box\Category;
 use common\models\box\Drop;
 use common\models\box\Sets;
 use common\models\box\SetsDrop;
+use common\models\profit\Profit;
 use common\models\user\Auth;
 use common\models\user\User;
 use common\models\user\UserDrop;
@@ -70,49 +71,59 @@ class GamestoresController extends Controller
         $users = json_decode(file_get_contents(__DIR__ . "/../../players.json"), 1)['data'];
 
         foreach ($users as $user) {
-            $exist = User::find()
+            $model = User::find()
                 ->andWhere(['steam_id' => $user['steamId']])
-                ->exists();
-            if ($exist) continue;
-            sleep(1);
-
-            $model     = new User();
-            $model->email = "{$user['steamId']}@steam.com";
-            $model->username  = $user['username'];
-            $model->steam_id  = $user['steamId'];
-            $model->setPassword(\Yii::$app->security->generateRandomString());
-            $model->status = User::STATUS_ACTIVE;
-            $model->created_at = $user['registrationDate'];
-            $model->generateAuthKey();
-            $model->generateRefCode();
-            $model->generateSocketRoom();
-            $transaction = $model->getDb()->beginTransaction();
-            if ($model->save()) {
-                UserProfile::createModel($model, $user['username']);
-                try {
-                    $imageLink = \common\components\oauth\Steam::getAvatar($user['steamId']);
-                    $avatar = $this->_loadImage($imageLink, $user['steamId']);
-                    $model->userProfile->avatar = $avatar;
-                } catch (\Exception $ex) {
-//
-                }
-                $model->userProfile->save();
-                $auth = new Auth(
-                    [
-                        'user_id'   => $model->id,
-                        'source' => 'steam',
-                        'source_id' => $user['steamId'],
-                    ]
-                );
-                if ($auth->save()) {
-                    $transaction->commit();
-                }
-                else {
-                    print_r($auth->getErrors());
+                ->one();
+            if (empty($model)) {
+                sleep(1);
+                $model           = new User();
+                $model->email    = "{$user['steamId']}@steam.com";
+                $model->username = $user['username'];
+                $model->steam_id = $user['steamId'];
+                $model->setPassword(\Yii::$app->security->generateRandomString());
+                $model->status     = User::STATUS_ACTIVE;
+                $model->created_at = $user['registrationDate'];
+                $model->generateAuthKey();
+                $model->generateRefCode();
+                $model->generateSocketRoom();
+                $transaction = $model->getDb()->beginTransaction();
+                if ($model->save()) {
+                    UserProfile::createModel($model, $user['username']);
+                    try {
+                        $imageLink                  = \common\components\oauth\Steam::getAvatar($user['steamId']);
+                        $avatar                     = $this->_loadImage($imageLink, $user['steamId']);
+                        $model->userProfile->avatar = $avatar;
+                    } catch (\Exception $ex) {
+                        //
+                    }
+                    $model->userProfile->save();
+                    $auth = new Auth(
+                        [
+                            'user_id'   => $model->id,
+                            'source'    => 'steam',
+                            'source_id' => $user['steamId'],
+                        ]
+                    );
+                    if ($auth->save()) {
+                        $transaction->commit();
+                    } else {
+                        print_r($auth->getErrors());
+                    }
+                } else {
+                    print_r($model->getErrors());
                 }
             }
-            else {
-                print_r($model->getErrors());
+
+            if ($user['balance'] > 0) {
+                $profit                  = new Profit();
+                $profit->status          = 1;
+                $profit->type            = Profit::TYPE_TRANSFER_BALANCE;
+                $profit->amount          = $user['balance'];
+                $profit->user_balance_id = $model->getPersonalBalance()->id;
+                $profit->comment         = 'Перенос баланса с старого сайта';
+                $profit->created_at      = date('Y-m-d H:i:s');
+                $profit->save(false);
+                $model->getPersonalBalance()->recalculateBalance();
             }
         }
     }
