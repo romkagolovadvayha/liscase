@@ -208,6 +208,22 @@ class Deposit extends \common\components\base\ActiveRecord
      */
     public static function bonus($user, $amount)
     {
+        $amountTotalSum = Deposit::find()
+                               ->andWhere(['status' => Deposit::STATUS_SUCCESS])
+                               ->sum('amount') ?? 0;
+        $amountDaySum = Deposit::find()
+                            ->andWhere(['>=', 'created_at', date('Y-m-d') . " 00:00:01"])
+                            ->andWhere(['<=', 'created_at', date('Y-m-d') . " 23:59:59"])
+                            ->andWhere(['status' => Deposit::STATUS_SUCCESS])
+                            ->sum('amount') ?? 0;
+        $message = "<b>Пополнение баланса</b>" . PHP_EOL
+            . "Пользователь: {$user->username}" . PHP_EOL
+            . "SteamID: {$user->steam_id}" . PHP_EOL
+            . "Сумма: {$amount} RUB" . PHP_EOL . PHP_EOL
+            . "Всего за день: {$amountDaySum} RUB" . PHP_EOL
+            . "Всего за всегда: {$amountTotalSum} RUB";
+        Yii::$app->telegram->sendMessage($message);
+
         $bonus = 0;
         if ($amount >= 5000) {
             $bonus = $amount * 0.5;
