@@ -99,8 +99,6 @@ $config = [
         ],
         */
         'urlManager'    => [
-            'hostInfo' => str_replace(['http://', 'https://', '/'], '', $params['baseUrl']),
-            'baseUrl'  => $params['baseUrl'],
             'enablePrettyUrl' => true,
             'showScriptName'  => false,
             'rules'           => [
