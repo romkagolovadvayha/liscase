@@ -7,8 +7,10 @@ use common\models\servers\Servers;
 use common\models\stats\Wipe;
 use common\models\user\User;
 use common\models\user\UserDrop;
+use yii\web\JsonResponseFormatter;
 use yii\web\NotFoundHttpException;
 use Yii;
+use yii\web\Response;
 
 class ApiController extends WebController
 {
@@ -32,8 +34,14 @@ class ApiController extends WebController
 //"code": 105
 //}
     public function actionIndex($secret, $method, $steam_id = null, $item_id = null, $id = null) {
-        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-
+        header('Content-type: application/json');
+//        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+//        \Yii::$app->response->formatters = [
+//            Response::FORMAT_JSON => [
+//                'class' => JsonResponseFormatter::class,
+//                'prettyPrint' => true
+//            ]
+//        ];
         if (self::secretKey !== $secret) {
             return [
                 'result' => 'fail',
@@ -43,29 +51,29 @@ class ApiController extends WebController
         }
 
         if ($method === 'basket') {
-            return $this->methodBasket($steam_id);
+            return json_encode($this->methodBasket($steam_id),JSON_PRETTY_PRINT);
         }
         if ($method === 'take') {
-            return $this->methodTake($item_id);
+            return json_encode($this->methodTake($item_id),JSON_PRETTY_PRINT);
         }
         if ($method === 'item') {
-            return $this->methodItem($id);
+            return json_encode($this->methodItem($id),JSON_PRETTY_PRINT);
         }
         if ($method === 'gived') {
-            return $this->methodGived($id);
+            return json_encode($this->methodGived($id),JSON_PRETTY_PRINT);
         }
         if ($method === 'basket.commands.instant') {
-            return $this->methodInstant();
+            return json_encode($this->methodInstant(),JSON_PRETTY_PRINT);
         }
         if ($method === 'info') {
-            return $this->methodInfo();
+            return json_encode($this->methodInfo(),JSON_PRETTY_PRINT);
         }
 
-        return [
-            'result' => 'fail',
-            'message' => 'Метод не найден!',
-            'code' => 105,
-        ];
+        return json_encode([
+                               'result' => 'fail',
+                               'message' => 'Метод не найден!',
+                               'code' => 105,
+                           ],JSON_PRETTY_PRINT);
     }
 
     /**
