@@ -1,16 +1,35 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg id="_Слой_2" data-name="Слой 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 54.3 35">
-  <defs>
-    <style>
-      .cls-1 {
-        fill: #17171f;
-      }
-    </style>
-  </defs>
-  <g id="_Слой_1-2" data-name="Слой 1">
-    <g>
-      <path class="cls-1" d="M7.05,20.45v8.6H23.25v5.95H0V0H22.75V5.95H7.05V14.5h14.95v5.95H7.05Z"/>
-      <path class="cls-1" d="M37.45,28.8h16.85v6.2H27.25v-3.05L43.3,6.2h-15.3V0h25.55V3.05l-16.1,25.75Z"/>
-    </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" version="1">
+ <rect fill="#c2352a" width="28" height="28" x="-30" y="-30" rx="1.5" ry="1.5" transform="matrix(0,-1,-1,0,0,0)"/>
+ <path fill="#fff" opacity=".1" d="m3.5 2c-0.831 0-1.5 0.669-1.5 1.5v1c0-0.831 0.669-1.5 1.5-1.5h25c0.831 0 1.5 0.669 1.5 1.5v-1c0-0.831-0.669-1.5-1.5-1.5h-25z"/>
+ <path opacity=".2" d="m2 28.5v1c0 0.831 0.669 1.5 1.5 1.5h25c0.831 0 1.5-0.669 1.5-1.5v-1c0 0.831-0.669 1.5-1.5 1.5h-25c-0.831 0-1.5-0.669-1.5-1.5z"/>
+ <g opacity=".2" transform="translate(0 2)">
+  <rect width="1.414" height="1.414" x="22.63" y="-1.41" transform="rotate(45)"/>
+  <g>
+   <path d="m20 6-1 6h-4l-1-6z"/>
+   <path d="m15 13h4v1h-4z"/>
   </g>
+  <g transform="matrix(0,-1,1,0,1,33)">
+   <path d="m20 6-1 6h-4l-1-6z"/>
+   <path d="m15 13h4v1h-4z"/>
+  </g>
+  <g transform="matrix(-.70711 .70711 -.70711 -.70711 40.335 15.101)">
+   <path d="m20 6-1 6h-4l-1-6z"/>
+   <path d="m15 13h4v1h-4z"/>
+  </g>
+ </g>
+ <g fill="#fff" transform="translate(0 1)">
+  <rect width="1.414" height="1.414" x="22.63" y="-1.41" transform="rotate(45)"/>
+  <g>
+   <path d="m20 6-1 6h-4l-1-6z"/>
+   <path d="m15 13h4v1h-4z"/>
+  </g>
+  <g transform="matrix(0,-1,1,0,1,33)">
+   <path d="m20 6-1 6h-4l-1-6z"/>
+   <path d="m15 13h4v1h-4z"/>
+  </g>
+  <g transform="matrix(-.70711 .70711 -.70711 -.70711 40.335 15.101)">
+   <path d="m20 6-1 6h-4l-1-6z"/>
+   <path d="m15 13h4v1h-4z"/>
+  </g>
+ </g>
 </svg>
