@@ -9,10 +9,10 @@ use yii\helpers\ArrayHelper;
 /** @var $searchModel */
 /** @var $model Drop */
 
-$this->title = Yii::t('common', 'Дроп');
+$this->title = Yii::t('common', 'Предметы');
 ?>
 
-<?= Html::a(Yii::t('common', 'Добавить дроп'),
+<?= Html::a(Yii::t('common', 'Добавить предмет'),
     '/drop/create',
     ['class' => 'btn btn-success']); ?>
 <div>&nbsp;</div>
@@ -35,19 +35,19 @@ $this->title = Yii::t('common', 'Дроп');
         [
             'attribute' => 'type_id',
             'filterType'  => GridView::FILTER_SELECT2,
-            'filter'    => \common\models\box\DropType::getTypeList(),
+            'filter'    => ArrayHelper::merge(['' => 'Все'], \common\models\box\DropType::getTypeList()),
             'options'   => ['width' => '150'],
             'value'     => function (Drop $model) {
                 return $model->type->name;
             },
         ],
         [
-            'attribute' => 'price',
+            'attribute' => 'rust_id',
             'options'   => ['width' => '100'],
         ],
         [
             'class'    => 'yii\grid\ActionColumn',
-            'template' => '{delete}',
+            'template' => '{update}{delete}',
             'options'  => ['width' => '30'],
         ],
     ],

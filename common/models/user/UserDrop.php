@@ -12,6 +12,8 @@ use Yii;
  * @property int                 $user_id
  * @property int                 $drop_id
  * @property int                 $box_id
+ * @property int                 $sets_id
+ * @property int                 $count
  * @property int                 $status
  * @property int                 $auto
  * @property string              $created_at
@@ -93,29 +95,34 @@ class UserDrop extends ActiveRecord
      */
     public static function getUsersDropLast() {
         return UserDrop::find()
-            ->cache(6)
+            ->cache(30)
             ->andWhere(['IN', 'status', [UserDrop::STATUS_ACTIVE, UserDrop::STATUS_SENDED]])
             ->andWhere('box_id IS NOT NULL')
             ->orderBy(['id' => SORT_DESC])
-            ->limit(10)
+            ->limit(20)
             ->all();
     }
 
     /**
      * @throws \Exception
      */
-    public static function createRecord($userId, $dropId, $boxId = null, $status = null, $auto = false): bool
+    public static function createRecord($userId, $dropId, $boxId = null, $setsId = null, $status = null, $auto = false, $count = 1, $createdAt = null): bool
     {
         $model = new UserDrop();
         $model->user_id = $userId;
         $model->drop_id = $dropId;
         $model->box_id = $boxId;
+        $model->sets_id = $setsId;
         $model->auto = $auto;
+        $model->count = $count;
         $model->status = UserDrop::STATUS_ACTIVE;
         if (!empty($status)) {
             $model->status = $status;
         }
         $model->created_at = date('Y-m-d H:i:s');
+        if (!empty($createdAt)) {
+            $model->created_at = $createdAt;
+        }
         $model->save(false);
         return true;
     }

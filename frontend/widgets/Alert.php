@@ -32,11 +32,17 @@ class Alert extends \yii\bootstrap5\Widget
      * - value: the bootstrap alert type (i.e. danger, success, info, warning)
      */
     public $alertTypes = [
-        'error'   => 'alert-danger',
-        'danger'  => 'alert-danger',
-        'success' => 'alert-success',
-        'info'    => 'alert-info',
-        'warning' => 'alert-warning'
+        'error'   => 'error',
+        'danger'  => 'error',
+        'success' => 'success',
+        'info'    => 'info',
+        'warning' => 'warning'
+    ];
+    public $alertIcons = [
+        'error'  => 'fas fa-exclamation-circle',
+        'success' => 'fas fa-check-circle',
+        'info'    => 'fas fa-info',
+        'warning' => 'fas fa-exclamation'
     ];
     /**
      * @var array the options for rendering the close button tag.
@@ -51,20 +57,20 @@ class Alert extends \yii\bootstrap5\Widget
     public function run()
     {
         $session = Yii::$app->session;
-        $appendClass = isset($this->options['class']) ? ' ' . $this->options['class'] : '';
 
         foreach (array_keys($this->alertTypes) as $type) {
             $flash = $session->getFlash($type);
 
             foreach ((array) $flash as $i => $message) {
-                echo \yii\bootstrap5\Alert::widget([
-                    'body' => $message,
-                    'closeButton' => $this->closeButton,
-                    'options' => array_merge($this->options, [
-                        'id' => $this->getId() . '-' . $type . '-' . $i,
-                        'class' => $this->alertTypes[$type] . $appendClass,
-                    ]),
-                ]);
+                echo Notification::widget([
+                                              'type' => $this->alertTypes[$type],
+                                              'message' => "<i class='{$this->alertIcons[$this->alertTypes[$type]]}'></i><div class='toast-message_text'>$message</div>",
+                                              'options' => [
+                                                  "progressBar" => true,
+                                                  "positionClass" => Notification::POSITION_TOP_RIGHT,
+                                                  "escapeHtml " => false,
+                                              ]
+                                          ]);
             }
 
             $session->removeFlash($type);

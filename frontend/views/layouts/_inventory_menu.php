@@ -1,40 +1,43 @@
-<?php
-    $url = Yii::$app->request->url;
-    function _checkActive($urlStr)
-    {
-        return (bool)strstr(Yii::$app->request->url, $urlStr);
-    }
-?>
 <?=\yii\bootstrap5\Nav::widget([
-    'items' => [
-        [
-            'label'   => Yii::t('common', "Профиль"),
-            'url'     => '/user/profile',
-            'active' => _checkActive('/user/profile'),
-        ],
-        [
-            'label'   => Yii::t('common', "Мои вещи"),
-            'url'     => '/user/inventory',
-            'active' => _checkActive('/user/inventory'),
-        ],
-        [
-            'label'   => Yii::t('common', "Партнерская программа"),
-            'url'     => '/user/partner',
-            'active' => _checkActive('/user/partner'),
-        ],
-        [
-            'label'   => Yii::t('common', "Вывод"),
-            'url'     => '/payout/index',
-            'active' => $url == '/payout' || _checkActive('payout/index'),
-        ],
-    ],
-    'options' => ['class' =>'nav nav-tabs user-nav-light'],
-]);
+                                   'items' => [
+                                       [
+                                           'label'   => '<i class="fas fa-shopping-basket"></i> ' . Yii::t('common', 'Корзина'),
+                                           'encode' => false,
+                                           'url'     => '/user/inventory',
+                                           'active' => (bool)strstr(Yii::$app->request->url, 'user/inventory'),
+                                       ],
+                                       [
+                                           'label'   => '<i class="fas fa-history"></i> ' . Yii::t('common', 'История операций'),
+                                           'encode' => false,
+                                           'url'     => '/user/history',
+                                           'active' => (bool)strstr(Yii::$app->request->url, 'user/history'),
+                                       ],
+                                       [
+                                           'label'   => '<i class="fas fa-link"></i> ' . Yii::t('common', "Реферальная система"),
+                                           'encode' => false,
+                                           'url'     => '/user/partner',
+                                           'active' => (bool)strstr(Yii::$app->request->url, 'user/partner'),
+                                       ],
+                                       [
+                                           'label'   => '<i class="far fa-calendar-check"></i> ' . Yii::t('common', "Задания на вайп"),
+                                           'encode' => false,
+                                           'url'     => '/user/tasks',
+                                           'active' => (bool)strstr(Yii::$app->request->url, 'user/tasks'),
+                                       ],
+                                       [
+                                           'label'   => '<i class="fas fa-wallet"></i> ' . Yii::t('common', 'Пополнить баланс'),
+                                           'encode' => false,
+                                           'linkOptions' => [
+                                               'class' => 'show-modal-link',
+                                               'data-title' => 'Пополнить баланс',
+                                               'data-size' => 'modal-sm',
+                                               'data-toggl' => 'modal',
+                                               'data-href' => '/user/payment',
+                                               'data-target' => 'modal-dialog',
+                                           ],
+                                           'url'     => '#',
+                                       ],
+                                   ],
+                                   'options' => ['class' =>'profile_widget_menu'],
+                               ]);;
 ?>
-<!--<nav>-->
-<!--    <div class="nav nav-tabs user-nav-light" id="nav-tab" role="tablist">-->
-<!--        <li class="nav-link active"><a href="/user/inventory">Мои вещи</a></li>-->
-<!--        <li class="nav-link"><a href="/user/boxes">Кейсы</a></li>-->
-<!--        <li class="nav-link"><a href="/payout/index">Вывод</a></li>-->
-<!--    </div>-->
-<!--</nav>-->

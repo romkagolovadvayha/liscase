@@ -11,7 +11,7 @@ class DropSearch extends Drop
     public function rules(): array
     {
         return [
-            [['id', 'name', 'image', 'status', 'created_at'], 'required'],
+            [['id', 'name', 'image', 'status', 'created_at', 'rust_id'], 'required'],
             [['status', 'type_id'], 'integer'],
             [['name', 'image'], 'string', 'max' => 255],
             [['created_at'], 'safe'],
@@ -55,6 +55,7 @@ class DropSearch extends Drop
                 'status'     => $this->status,
                 'type_id'     => $this->type_id,
                 'price'   => $this->price,
+                'rust_id'   => $this->rust_id,
             ])
             ->andFilterWhere(['LIKE', 'name', $this->name]);
 

@@ -9,6 +9,6 @@ function updateOnlineCounter() {
             }
         });
         updateOnlineCounter();
-    }, 5000);
+    }, 20000);
 }
 updateOnlineCounter();

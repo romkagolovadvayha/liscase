@@ -4,33 +4,40 @@ namespace common\models\user;
 
 use common\components\helpers\Role;
 use common\models\auth\AuthAssignment;
-use common\models\payment\Payment;
+use common\models\invoice\Invoice;
+use common\models\invoice\Deposit;
+use common\models\profit\Profit;
 use yii\base\NotSupportedException;
 use Yii;
 use yii\web\IdentityInterface;
 use common\components\base\ActiveRecord;
 
 /**
- * @property int                 $id
- * @property string              $email
- * @property string              $password_hash
- * @property string              $auth_key
- * @property int                 $ref_code
- * @property string              $socket_room
- * @property string              $current_language
- * @property int                 $status
- * @property string              $jwt
- * @property int                 $auto
- * @property string              $created_at
+ * @property int             $id
+ * @property string          $email
+ * @property string          $steam_id
+ * @property string          $username
+ * @property string          $password_hash
+ * @property string          $auth_key
+ * @property int             $ref_code
+ * @property string          $socket_room
+ * @property string          $current_language
+ * @property int             $status
+ * @property string          $jwt
+ * @property int             $auto
+ * @property string          $created_at
  *
- * @property UserProfile         $userProfile
- * @property UserBalance[]       $userBalances
- * @property UserBox[]           $userBoxWaitOpen
- * @property UserBox[]           $userBoxOpened
- * @property UserDrop[]          $userDrop
- * @property Payment[]           $payments
- * @property UserPromocode[]     $userPromocodes
- * @property string              $currency
+ * @property UserProfile     $userProfile
+ * @property UserBalance[]   $userBalances
+ * @property Invoice[]       $invoices
+ * @property UserBox[]       $userBoxWaitOpen
+ * @property UserBox[]       $userBoxOpened
+ * @property UserDrop[]      $userDrop
+ * @property Deposit[]       $deposits
+ * @property UserPromocode[] $userPromocodes
+ * @property UserTask        $userTasks
+ * @property string          $currency
+ * @property Auth            $auth
  */
 class User extends ActiveRecord implements IdentityInterface
 {
@@ -68,6 +75,8 @@ class User extends ActiveRecord implements IdentityInterface
         return [
             'id'                  => Yii::t('common', 'ID'),
             'email'               => Yii::t('common', 'Email'),
+            'username'               => Yii::t('common', 'Ник'),
+            'steam_id'               => Yii::t('common', 'Steam ID'),
             'ref_code'            => Yii::t('common', 'Партнерский код'),
             'status'              => Yii::t('common', 'Статус'),
             'current_language'    => Yii::t('common', 'Выбранный язык'),
@@ -79,7 +88,7 @@ class User extends ActiveRecord implements IdentityInterface
     {
         return [
             [['email', 'password_hash', 'auth_key', 'ref_code', 'socket_room', 'status'], 'required'],
-            [['status', 'auto'], 'integer'],
+            [['status', 'auto', 'steam_id'], 'integer'],
             [['ref_code'], 'number'],
             [['ref_code'], 'string', 'min' => 9, 'max' => 10],
             [['email', 'password_hash'], 'string', 'max' => 255],
@@ -165,6 +174,14 @@ class User extends ActiveRecord implements IdentityInterface
     /**
      * @return \yii\db\ActiveQuery
      */
+    public function getAuth()
+    {
+        return $this->hasOne(Auth::class, ['user_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
     public function getUserBalances()
     {
         return $this->hasMany(UserBalance::class, ['user_id' => 'id']);
@@ -195,13 +212,28 @@ class User extends ActiveRecord implements IdentityInterface
     {
         return $this->hasMany(UserDrop::class, ['user_id' => 'id']);
     }
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUserTasks()
+    {
+        return $this->hasMany(UserTask::class, ['user_id' => 'id']);
+    }
 
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getPayments()
+    public function getInvoices()
     {
-        return $this->hasMany(Payment::class, ['user_id' => 'id']);
+        return $this->hasMany(Invoice::class, ['user_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getDeposits()
+    {
+        return $this->hasMany(Deposit::class, ['user_id' => 'id']);
     }
 
     /**

@@ -101,7 +101,6 @@ class MainMenu
      */
     private function _getAdminMenuItems()
     {
-
         return [
             [
                 'label' => Yii::t('common', 'Пользователи'),
@@ -121,20 +120,26 @@ class MainMenu
                 'active' => $this->_checkActive('/news/'),
             ],
             [
-                'label' => Yii::t('common', 'Кейсы'),
+                'label' => Yii::t('common', 'Товары'),
                 'icon'  => 'bi bi-gift-fill',
                 'badge' => 0,
                 'items' => [
                     [
-                        'label'  => Yii::t('common', 'Кейсы'),
+                        'label'  => Yii::t('common', 'Рулетки'),
                         'url'    => '/box/index',
                         'icon'   => 'bi bi-gift-fill',
                         'active' => $this->_checkActive('/box/'),
                     ],
                     [
-                        'label'  => Yii::t('common', 'Дроп'),
+                        'label'  => Yii::t('common', 'Сеты'),
+                        'url'    => '/sets/index',
                         'icon'   => 'bi bi-dropbox',
+                        'active' => $this->_checkActive('/sets/'),
+                    ],
+                    [
+                        'label'  => Yii::t('common', 'Предметы'),
                         'url'    => '/drop/index',
+                        'icon'   => 'bi bi-dropbox',
                         'active' => $this->_checkActive('/drop/'),
                     ],
                 ],

@@ -1,88 +1,68 @@
 <?php
 
-/** @var yii\web\View $this */
+/* @var $this \yii\web\View */
+/* @var $content string */
 
-/** @var string $content */
-
+use yii\helpers\Html;
 use common\components\widgets\ModalWidget;
-use yii\bootstrap5\Html;
-use yii\bootstrap5\Nav;
-use yii\bootstrap5\NavBar;
 
+\hail812\adminlte3\assets\FontAwesomeAsset::register($this);
+\hail812\adminlte3\assets\AdminLteAsset::register($this);
 \backend\assets\AppAsset::register($this);
+\backend\assets\BootstrapAsset::register($this);
 \common\assets\BootstrapIcons::register($this);
+$this->registerCssFile('https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback');
+
+$assetDir = Yii::$app->assetManager->getPublishedUrl('@vendor/almasaeed2010/adminlte/dist');
+
+$publishedRes = Yii::$app->assetManager->publish('@vendor/hail812/yii2-adminlte3/src/web/js');
+$this->registerJsFile($publishedRes[1].'/control_sidebar.js', ['depends' => '\hail812\adminlte3\assets\AdminLteAsset']);
+?>
+<?php $this->beginPage() ?>
+<!DOCTYPE html>
+<html lang="<?= Yii::$app->language ?>">
+<head>
+    <meta charset="<?= Yii::$app->charset ?>">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php $this->registerCsrfMetaTags() ?>
+    <title><?= Html::encode($this->title) ?></title>
+    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
+    <?php $this->head() ?>
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<?php $this->beginBody() ?>
+
+<div class="wrapper">
+    <!-- Navbar -->
+    <?= $this->render('navbar', ['assetDir' => $assetDir]) ?>
+    <!-- /.navbar -->
+
+    <!-- Main Sidebar Container -->
+    <?= $this->render('sidebar', ['assetDir' => $assetDir]) ?>
+
+    <!-- Content Wrapper. Contains page content -->
+    <?= $this->render('content', ['content' => $content, 'assetDir' => $assetDir]) ?>
+    <!-- /.content-wrapper -->
+
+    <!-- Control Sidebar -->
+    <?= $this->render('control-sidebar') ?>
+    <!-- /.control-sidebar -->
+
+    <!-- Main Footer -->
+    <?= $this->render('footer') ?>
+</div>
+
+<?php
+echo ModalWidget::widget();
+
+$secondModal          = new ModalWidget();
+$secondModal->modalId = 'modal-dialog-second';
+echo $secondModal->run();
 ?>
 
-<?php $this->beginPage() ?>
-    <!DOCTYPE html>
-    <html lang="<?= Yii::$app->language ?>">
-    <head>
-        <meta charset="<?= Yii::$app->charset ?>">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <?= Html::csrfMetaTags() ?>
-        <title><?= Html::encode($this->title) ?></title>
-        <?php $this->head() ?>
-    </head>
-    <body>
-    <?php $this->beginBody() ?>
-
-    <div class="wrap">
-        <?php
-        NavBar::begin(
-            [
-                'brandLabel'           => Yii::$app->name, 'brandUrl' => Yii::$app->homeUrl, 'options' => [
-                'class' => 'navbar-expand-md navbar-dark bg-dark',
-            ], 'innerContainerOptions' => [
-                'class' => 'container container-full',
-            ],
-            ]
-        );
-
-        $menuItems = (new \backend\components\MainMenu())->getMenuItems();
-
-        echo Nav::widget(
-            [
-                'options' => ['class' => 'navbar-nav ms-auto mb-2 mb-lg-0'], 'encodeLabels' => false,
-                'items'   => $menuItems,
-            ]
-        );
-
-        NavBar::end();
-        ?>
-        <?php if (isset($this->params['breadcrumbs'])): ?>
-        <div class="breadcrumbs_wrap">
-            <div class="container container-full">
-                <?= \yii\bootstrap5\Breadcrumbs::widget(
-                    [
-                        'links' => isset($this->params['breadcrumbs']) ? $this->params['breadcrumbs'] : [],
-                    ]
-                ) ?>
-            </div>
-        </div>
-        <?php endif; ?>
-        <main id="main" class="flex-shrink-0" role="main">
-            <div class="container container-full">
-                <div class="row">
-                    <div class="col-sm-12">
-                        <h1><?= Html::encode($this->title); ?></h1>
-                        <?= $content; ?>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-    <?php
-    echo ModalWidget::widget();
-
-    $secondModal          = new ModalWidget();
-    $secondModal->modalId = 'modal-dialog-second';
-    echo $secondModal->run();
-    ?>
-
-    <div class="page-preloader"></div>
-
-    <?php $this->endBody() ?>
-    </body>
-    </html>
+<div class="page-preloader"></div>
+<?php $this->endBody() ?>
+</body>
+</html>
 <?php $this->endPage() ?>

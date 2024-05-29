@@ -2,14 +2,13 @@
 return [
     'adminEmail'          => 'admin@example.com',
     'supportEmail'        => 'no-reply@liscase.local',
-    'baseUrl'             => 'http://liscase.local',
-    'backendUrl'          => 'http://backend.liscase.local',
+    'baseUrl'             => 'http://test.prostoj.store',
+    'backendUrl'          => 'http://backend.test.prostoj.store',
     'socketHost'          => '',
-    'cookieValidationKey' => 'XKLWOu7mNbmu4CMt061olM-LUbuv-o4D',
-    'cookieDomain'        => '.liscase.local',
+    'cookieValidationKey' => '5c4cf22fbe90065a4a8e4591cf2cea84',
+    'cookieDomain'        => '.prostoj.store',
     'dmpApiUrl'           => '',
     'idLocal'             => [],
-    'digiuFromEmail'      => 'no-reply@liscase.local',
     'sendTelegram' => true,
     'bsVersion' => '5.x',
 ];

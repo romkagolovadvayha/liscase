@@ -3,6 +3,7 @@
 namespace common\models\user;
 
 use common\components\helpers\CurrencyHelper;
+use common\models\invoice\Deposit;
 use common\models\invoice\Invoice;
 use Yii;
 use common\models\profit\Profit;
@@ -96,6 +97,14 @@ class UserBalance extends \common\components\base\ActiveRecord
     }
 
     /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getDeposits()
+    {
+        return $this->hasMany(Deposit::class, ['user_id' => 'user_id']);
+    }
+
+    /**
      *
      * @return string
      */
@@ -154,8 +163,9 @@ class UserBalance extends \common\components\base\ActiveRecord
     {
         $balance = (float)$this->getProfits()->sum('amount');
         $invoices = (float)$this->getInvoices()->sum('amount');
+        $deposits = (float)$this->getDeposits()->andWhere(['status' => Deposit::STATUS_SUCCESS])->sum('amount');
 
-        $this->balance = $balance - $invoices;
+        $this->balance = $balance + $deposits - $invoices;
         $this->save(false);
     }
 

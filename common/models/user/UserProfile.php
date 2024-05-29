@@ -14,8 +14,6 @@ use yii\helpers\ArrayHelper;
  * @property string  $name
  * @property string  $surname
  * @property string  $full_name
- * @property string  $phone
- * @property int     $phone_is_confirm
  * @property string  $avatar
  * @property int     $gender
  * @property string  $birthday
@@ -55,13 +53,11 @@ class UserProfile extends \common\components\base\ActiveRecord
             [
                 [
                     'user_id',
-                    'phone_is_confirm',
                     'gender',
                 ],
                 'integer',
             ],
             [['name', 'surname', 'trade_link', 'full_name', 'avatar'], 'string', 'max' => 255],
-            [['phone'], 'string', 'max' => 20],
             [['birthday'], 'safe'],
             [['user_id'], 'unique'],
         ];
@@ -86,8 +82,6 @@ class UserProfile extends \common\components\base\ActiveRecord
     /**
      * @param User   $user
      * @param string $name
-     * @param string $surname
-     * @param string $phone
      *
      * @return bool
      */
@@ -104,17 +98,5 @@ class UserProfile extends \common\components\base\ActiveRecord
         $model->full_name            = trim($name);
 
         return $model->save();
-    }
-
-    /**
-     * @param string $phone
-     *
-     * @return static|null
-     */
-    public static function findByPhone($phone)
-    {
-        $attributes = ['phone' => $phone];
-
-        return static::findOne($attributes);
     }
 }

@@ -11,10 +11,20 @@ use Yii;
  * @property string      $name
  * @property string      $eng_name
  * @property string      $quality
+ * @property string      $market_status
+ * @property int         $min_box
+ * @property int         $max_box
  * @property string      $description
  * @property string      $market_id
+ * @property int         $count
+ * @property int         $discount
+ * @property int         $category_id
+ * @property string      $rust_id
+ * @property string      $command
  * @property string      $type_id
  * @property float       $price
+ * @property int         $blocked_hour
+ * @property string      $blocked_at
  * @property int         $status
  * @property string      $created_at
  *
@@ -31,7 +41,19 @@ class Drop extends ActiveRecord
 
     const STATUS_NOT_ACTIVE   = 0;
     const STATUS_ACTIVE       = 1;
+    const MARKET_STATUS_NOT_ACTIVE   = 0;
+    const MARKET_STATUS_ACTIVE       = 1;
 
+    /**
+     * @return array
+     */
+    public static function getMarketStatusList(): array
+    {
+        return [
+            self::MARKET_STATUS_NOT_ACTIVE       => Yii::t('common', 'Не активный'),
+            self::MARKET_STATUS_ACTIVE       => Yii::t('common', 'Активный'),
+        ];
+    }
     /**
      * @return array
      */
@@ -63,10 +85,18 @@ class Drop extends ActiveRecord
             'quality'               => Yii::t('common', 'Качество'),
             'description'               => Yii::t('common', 'Описание'),
             'market_id'               => Yii::t('common', 'ID в маргете'),
+            'rust_id'               => Yii::t('common', 'Индитификатор'),
+            'market_status'               => Yii::t('common', 'Статус в магазине'),
+            'count'               => Yii::t('common', 'Количество в маркете'),
+            'discount'               => Yii::t('common', 'Скидка'),
+            'min_box'               => Yii::t('common', 'Минимальное кол-во в рулетке'),
+            'max_box'               => Yii::t('common', 'Максимальное кол-во в рулетке'),
             'type_id'               => Yii::t('common', 'Тип'),
+            'status'               => Yii::t('common', 'Статус'),
             'price'              => Yii::t('common', 'Цена'),
-            'status'              => Yii::t('common', 'Статус'),
             'created_at'          => Yii::t('common', 'Дата создания'),
+            'command'          => Yii::t('common', 'Команда'),
+            'blocked_hour'          => Yii::t('common', 'Вайп блок (часов)'),
         ];
     }
 
@@ -192,7 +222,7 @@ class Drop extends ActiveRecord
      */
     public function getPriceMarket()
     {
-        return ceil($this->priceCeil * 1.05);
+        return ceil($this->priceCeil);
     }
 
     /**
@@ -216,6 +246,17 @@ class Drop extends ActiveRecord
     }
 
     /**
+     *
+     * @return Drop[]
+     */
+    public static function getForMarket()
+    {
+        return Drop::find()
+                  ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
+                  ->all();
+    }
+
+    /**
      * Gets query for [Type].
      *
      * @return \yii\db\ActiveQuery
@@ -223,6 +264,11 @@ class Drop extends ActiveRecord
     public function getType()
     {
         return $this->hasOne(DropType::class, ['id' => 'type_id']);
+    }
+
+    public function getRealPrice()
+    {
+        return ceil($this->price - ($this->price * $this->discount / 100));
     }
 
     /**
@@ -238,28 +284,6 @@ class Drop extends ActiveRecord
             ->andWhere(['b.status' => Box::STATUS_ACTIVE]);
     }
 
-    /**
-     * @throws \Exception
-     */
-    public function importMarket()
-    {
-        $item = Yii::$app->marketApi->getParserItemById($this->market_id);
-        $this->name = $item['name'];
-        $this->eng_name = $item['market_hash_name'];
-        $this->price = ceil($item['min_price']/100);
-        $this->quality = $item['quality'];
-        if (empty($this->description)) {
-            $this->description = "";
-            foreach ($item['description'] as $index => $itemDesc) {
-                if ($index === 0 || empty($itemDesc['value'])) {
-                    continue;
-                }
-                $this->description .= $itemDesc['value'];
-            }
-        }
-        $this->type_id = DropType::createRecord($item['type'], $item['mtype']);
-    }
-
     public static function getList() {
         /** @var Drop[] $drops */
         $drops = Drop::find()
@@ -268,7 +292,10 @@ class Drop extends ActiveRecord
 
         $result = [];
         foreach ($drops as $item) {
-            $result[$item->id] = $item->imageOrig->getImagePubUrl();
+            $result[$item->id] = json_encode([
+                                                 'name' => $item->name,
+                                                 'image' => $item->imageOrig->getImagePubUrl(),
+                                             ]);
         }
         return $result;
     }

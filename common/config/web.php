@@ -2,6 +2,7 @@
 
 $params = require __DIR__ . '/params-local.php';
 $db = require __DIR__ . '/db-local.php';
+$dbSkindrops = require __DIR__ . '/db-skindrops-local.php';
 
 $config = [
     'id' => 'basic',
@@ -14,7 +15,7 @@ $config = [
     ],
     'language' => 'ru-RU',
     'sourceLanguage' => 'ru-RU',
-    'name'       => 'EZDROP.PRO',
+    'name'       => 'PROSTOJ.STORE',
     'vendorPath'     => dirname(dirname(__DIR__)) . '/vendor',
     'modules'        => [
         'gridview' =>  [
@@ -87,6 +88,8 @@ $config = [
             ],
         ],
         'db' => $db,
+        'db_server' => $db,
+        'db_skindrops' => $dbSkindrops,
         /*
         'urlManager' => [
             'enablePrettyUrl' => true,
@@ -96,6 +99,8 @@ $config = [
         ],
         */
         'urlManager'    => [
+            'hostInfo' => str_replace(['http://', 'https://', '/'], '', $params['baseUrl']),
+            'baseUrl'  => $params['baseUrl'],
             'enablePrettyUrl' => true,
             'showScriptName'  => false,
             'rules'           => [
@@ -115,6 +120,20 @@ $config = [
             'class' => \common\components\payments\Paypalych::class,
             'secretKey' => '',
             'shop_id' => '',
+        ],
+        'tomeApi'   => [
+            'class' => \common\components\payments\Tome::class,
+            'secretKey' => 'ec6fbK60f9I74197f644X650A4B6b76PV1SH',
+            'shop_id' => '002122',
+        ],
+        'freeKassaApi'   => [
+            'class' => \common\components\payments\FreeKassa::class,
+            'secretKey' => '3512023834c0f392047f0f2cbdd9d5a1',
+            'shop_id' => '47799',
+        ],
+        'rustTm'   => [
+            'class' => \common\components\rusttm\RustTm::class,
+            'secretKey' => '4Tctry3D0b9003d52Kv2w10BND942mX',
         ],
         'curl'          => [
             'class' => \linslin\yii2\curl\Curl::class,

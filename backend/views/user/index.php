@@ -26,7 +26,15 @@ $this->title = Yii::t('common', 'Пользователи');
                 return Html::img($model->userProfile->avatar, ['width' => '24px']);
             },
         ],
-        'email',
+        'username',
+        [
+            'attribute' => 'steam_id',
+            'options'   => ['width' => '100'],
+            'format'    => 'raw',
+            'value'          => function (UserSearch $model) {
+                return Html::a($model->steam_id, 'https://steamcommunity.com/profiles/' . $model->steam_id, ['target' => '_blank']);
+            },
+        ],
         [
             'attribute' => 'ref_code',
             'label'     => 'Реф.код',

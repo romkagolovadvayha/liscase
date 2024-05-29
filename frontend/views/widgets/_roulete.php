@@ -12,22 +12,26 @@ use common\models\box\BoxDrop;
     <div class="roulete_slider_wrap">
         <div class="roulete_main_wrap">
             <div class="slider roulete">
-                <?php foreach ($boxDropCarousel as $boxDrop): ?>
+                <?php foreach ($boxDropCarousel as $item): ?>
+                    <?php $boxDrop = $item['boxDrop']; ?>
                     <div class="roulete_item<?=' drop_card level' . $boxDrop->drop->getLevel()?>">
                         <div class="roulete_item_image">
                             <img src="<?= $boxDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $boxDrop->drop->name)?>">
                         </div>
+                        <div class="roulete_item_image_count"><?=$item['count']?></div>
                     </div>
                 <?php endforeach; ?>
             </div>
         </div>
         <div class="roulete_blur_wrap">
             <div class="slider roulete_blur">
-                <?php foreach ($boxDropCarousel as $boxDrop): ?>
+                <?php foreach ($boxDropCarousel as $item): ?>
+                    <?php $boxDrop = $item['boxDrop']; ?>
                     <div class="roulete_blur_item<?=' drop_card level' . $boxDrop->drop->getLevel()?>">
                         <div class="roulete_blur_item_image">
                             <img src="<?= $boxDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $boxDrop->drop->name)?>">
                         </div>
+                        <div class="roulete_blur_item_count"><?=$item['count']?></div>
                     </div>
                 <?php endforeach; ?>
             </div>

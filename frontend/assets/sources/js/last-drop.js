@@ -24,6 +24,6 @@ function updateLastDrops() {
             }
         });
         updateLastDrops();
-    }, 6000);
+    }, 20000);
 }
 updateLastDrops();

@@ -1,0 +1,22 @@
+<?php
+
+namespace frontend\assets;
+
+use common\assets\SlickCarouselAsset;
+use yii\bootstrap5\BootstrapPluginAsset;
+use yii\web\AssetBundle;
+
+class ModalAsset extends AssetBundle
+{
+    public $sourcePath = '@frontend/assets/sources';
+
+    public $js
+        = [
+            'js/modal.js',
+        ];
+
+    public $depends
+        = [
+            BootstrapPluginAsset::class,
+        ];
+}

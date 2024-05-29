@@ -25,6 +25,12 @@ class Profit extends \common\components\base\ActiveRecord
     const TYPE_REFERRAL         = 1;
     const TYPE_BONUS            = 2;
     const TYPE_SELL_DROP             = 3;
+    const TYPE_PROMOCODE             = 4;
+    public const TYPE_DAILY_REWARD_LIST = 5;
+    public const TYPE_ACHIEVEMENT = 6;
+    public const TYPE_DAILY_REWARD_LIST_BOX_SMALL = 7;
+    public const TYPE_DAILY_REWARD_LIST_BOX_BIG = 8;
+    public const TYPE_TASK = 9;
 
     /**
      * @return array
@@ -35,6 +41,12 @@ class Profit extends \common\components\base\ActiveRecord
             self::TYPE_REFERRAL         => Yii::t('common', 'Партнерская программа'),
             self::TYPE_BONUS            => Yii::t('common', 'Бонус'),
             self::TYPE_SELL_DROP            => Yii::t('common', 'Продажа предметов'),
+            self::TYPE_PROMOCODE            => Yii::t('common', 'Промокод'),
+            self::TYPE_DAILY_REWARD_LIST => Yii::t('common', 'Ежедневная награда'),
+            self::TYPE_DAILY_REWARD_LIST_BOX_SMALL => Yii::t('common', 'Ежедневная награда малый бокс'),
+            self::TYPE_DAILY_REWARD_LIST_BOX_BIG => Yii::t('common', 'Ежедневная награда большой бокс'),
+            self::TYPE_ACHIEVEMENT => Yii::t('common', 'Достижения'),
+            self::TYPE_TASK => Yii::t('common', 'Выполнение задания'),
         ];
     }
 
@@ -54,7 +66,6 @@ class Profit extends \common\components\base\ActiveRecord
         return [
             [['user_balance_id', 'type', 'amount'], 'required'],
             [['user_balance_id', 'type', 'status'], 'integer'],
-            [['amount'], 'number', 'min' => 0.01],
             [['created_at'], 'safe'],
             [['comment'], 'string', 'max' => 255],
         ];

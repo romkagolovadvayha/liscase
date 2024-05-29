@@ -26,6 +26,20 @@ class ProfileForm extends UserProfile
             return false;
         }
 
+        $inventoryClosed = false;
+        try {
+            $apiUrl = "https://steamcommunity.com/inventory/{$this->user->steam_id}/252490/2";
+            $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
+            if ($response['success'] !== 1) {
+                $inventoryClosed = true;
+            }
+        } catch (\Exception $ex) {
+            $inventoryClosed = true;
+        }
+        if ($inventoryClosed) {
+            $this->addError('trade_link', Yii::t('common', 'Ваш инвентарь скрыт или не доступен!'));
+            return false;
+        }
         if (strpos($this->trade_link, 'steamcommunity.com') === false) {
             $this->addError('trade_link', Yii::t('common', 'Ссылка на обмен указана неверно!'));
             return false;

@@ -7,6 +7,8 @@
 
 namespace frontend\assets;
 
+use lavrentiev\widgets\toastr\ToastrAsset;
+use yii\bootstrap5\BootstrapAsset;
 use yii\web\AssetBundle;
 
 /**
@@ -20,13 +22,24 @@ class AppAsset extends AssetBundle
     public $basePath = '@webroot';
     public $baseUrl = '@web';
     public $css = [
+//        'https://cdn.datatables.net/2.0.2/css/dataTables.dataTables.min.css',
+//        'https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css',
+//        'https://kenwheeler.github.io/slick/slick/slick-theme.css',
         'css/site.css',
         'css/main.scss',
     ];
     public $js = [
+//        'https://cdn.datatables.net/2.0.2/js/dataTables.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js',
+        'https://momentjs.com/downloads/moment.min.js',
+        'https://momentjs.com/downloads/moment-with-locales.min.js',
+        'js/clipboard.min.js',
+        'js/main.js',
+//        'https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js',
     ];
     public $depends = [
         'yii\web\YiiAsset',
-        'yii\bootstrap5\BootstrapAsset'
+        BootstrapAsset::class,
+        ToastrAsset::class,
     ];
 }

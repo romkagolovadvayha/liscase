@@ -3,6 +3,7 @@
 namespace common\controllers;
 
 use common\components\oauth\AuthAction;
+use common\models\profit\Profit;
 use common\models\user\Auth;
 use common\models\user\UserProfile;
 use common\models\user\UserTree;
@@ -93,11 +94,21 @@ class AuthController extends WebController
             if ($auth) {
                 // авторизация
                 $user = $auth->user;
+                try {
+                    $avatar = $this->_loadImage($attributes['avatar_link'], $attributes['id']);
+                    $user->userProfile->name = $attributes['username'];
+                    $user->userProfile->avatar = $avatar;
+                    $user->userProfile->save(false);
+                    $user->username = $attributes['username'];
+                    $user->save(false);
+                } catch (\Exception $ex) {}
                 Yii::$app->user->login($user,3600*24*7);
             } else {
                 // регистрация
                 $user     = new User();
                 $user->email = "{$attributes['id']}@steam.com";
+                $user->steam_id = $attributes['id'];
+                $user->username = $attributes['username'];
                 $user->setPassword(Yii::$app->security->generateRandomString());
                 $user->status = User::STATUS_ACTIVE;
                 $user->generateAuthKey();
@@ -125,6 +136,15 @@ class AuthController extends WebController
                     );
                     if ($auth->save()) {
                         $transaction->commit();
+                        $userBalance = $user->getPersonalBalance();
+                        $model = new Profit();
+                        $model->user_balance_id   = $userBalance->id;
+                        $model->amount            = 50;
+                        $model->type              = Profit::TYPE_BONUS;
+                        $model->comment           = Yii::t('common', 'Стартовый баланс', [], 'ru-RU');
+                        $model->status            = 1;
+                        $model->save();
+                        $userBalance->recalculateBalance();
                         Yii::$app->user->login($user,3600*24*7);
                     }
                     else {

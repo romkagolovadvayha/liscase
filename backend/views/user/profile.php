@@ -29,7 +29,7 @@ $userProfile = $user->userProfile;
 </style>
 <div class="row">
     <div class="text-center col-md-2">
-        <img src="<?=Yii::$app->user->identity->userProfile->avatar?>"/>
+        <img src="<?=$userProfile->avatar?>"/>
         <div class="list-group" style="margin-top: 20px; text-align: left">
             <?php if (Yii::$app->user->can(Role::ROLE_ADMIN)): ?>
                 <button type="button" class="list-group-item list-group-item-action list-group-item-info" data-bs-toggle="modal" data-bs-modal-form="role_form" data-bs-target="#modalForm">

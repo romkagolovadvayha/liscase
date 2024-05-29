@@ -53,13 +53,16 @@ class SiteController extends WebController
     {
         $promocodeForm = new PromocodeForm();
         if ($promocodeForm->load(Yii::$app->request->post())) {
-            if ($promocodeForm->setCookiePromocode()) {
-                return $this->redirect(Yii::$app->homeUrl);
+            $model = $promocodeForm->saveRecord();
+            if (!empty($model)) {
+                Yii::$app->session->addFlash('success', Yii::t('common', 'Баланс пополнен на {PARAMS_PROMSUM} RUB', [
+                    'PARAMS_PROMSUM' => $model->amount
+                ]));
+            } else {
+                Yii::$app->session->addFlash('danger', array_values($promocodeForm->getFirstErrors())[0]);
             }
         }
-        return $this->render('index', [
-            'promocodeForm' => $promocodeForm
-        ]);
+        return $this->render('index');
     }
 
     private function _botOpenBox() {
@@ -76,19 +79,78 @@ class SiteController extends WebController
 
     public function actionLastDrops()
     {
-        $this->_botOpenBox();
+        //$this->_botOpenBox();
         $this->layout = 'service';
         $result = [];
         $userDrops = UserDrop::getUsersDropLast();
+
+        /** @var \common\models\skindrops\Skindrops[] $skindrops */
+        $skindrops = \common\models\skindrops\Skindrops::find()
+                                                       ->limit(10)
+                                                       ->cache(30)
+                                                       ->orderBy(['id' => SORT_DESC])
+                                                       ->all();
+
         foreach ($userDrops as $userDrop) {
+            foreach ($userDrop->drop as $index => $drop) {
+                $item = [
+                    'id' => $userDrop->id,
+                    'image' => $drop->imageOrig->getImagePubUrl(),
+                    'name' => Yii::t('database', $drop->name),
+                    'bgImage' => $userDrop->box->imageOrig->getImagePubUrl(),
+                    'bgName' => Yii::t('database', $userDrop->box->name),
+                    'count' => "x" . $userDrop->count,
+                    'userAvatar' => $userDrop->user->userProfile->avatar,
+                    'userName' => $userDrop->user->userProfile->name,
+                    'type' => 0,
+                    'created_at' => $userDrop->created_at,
+                ];
+                $result[] = [
+                    'id' =>  $userDrop->id,
+                    'created_at' => $userDrop->created_at,
+                    'view' =>  $this->render('@frontend/views/widgets/_last_drops_item', [
+                        'item' => $item
+                    ])
+                ];
+            }
+        }
+
+        foreach ($skindrops as $item) {
+            /** @var \common\models\user\Auth $userAuth */
+            $userAuth = \common\models\user\Auth::find()
+                                                ->andWhere(['source_id' => $item->steam_id])
+                                                ->one();
+            $userAvatar = null;
+            if (!empty($userAuth)) {
+                $userAvatar = $userAuth->user->userProfile->avatar;
+            }
+            $data = [
+                'id' => $item->id,
+                'image' => $item->image,
+                'name' => $item->name,
+                'bgImage' => "/images/skindrops/skindrops.png",
+                'bgName' => "SkinDrops",
+                'count' => $item->price . " RUB",
+                'userAvatar' => $userAvatar,
+                'userName' => $item->name,
+                'type' => 1,
+                'created_at' => $item->created_at,
+            ];
             $result[] = [
-                'id' =>  $userDrop->id,
+                'id' =>  $item->id,
+                'created_at' => $item->created_at,
                 'view' =>  $this->render('@frontend/views/widgets/_last_drops_item', [
-                                'userDrop' => $userDrop,
-                                'opened' => true,
-                           ])
+                    'item' => $data
+                ])
             ];
         }
+
+        usort($result, function ($a, $b) {
+            return strcmp($b['created_at'], $a['created_at']);
+        });
+
+        $result = array_slice($result, 0, 5);
+
         header("Content-Type: application/json");
         return json_encode($result);
     }
@@ -97,6 +159,16 @@ class SiteController extends WebController
     {
         $this->layout = 'service';
         return $this->render('@frontend/views/widgets/_online_counter');
+    }
+
+    public function actionPrivacy()
+    {
+        return $this->render('privacy');
+    }
+
+    public function actionAgreement()
+    {
+        return $this->render('agreement');
     }
 
 }

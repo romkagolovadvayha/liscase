@@ -104,7 +104,7 @@ class UserBox extends ActiveRecord
                         ->one();
 
             UserBox::createRecord($user->id, $box->id, UserBox::STATUS_OPENED, true);
-            UserDrop::createRecord($user->id, $drop->drop->id, $box->id, UserDrop::STATUS_SENDED, true);
+            UserDrop::createRecord($user->id, $drop->drop->id, $box->id, null,UserDrop::STATUS_SENDED, true);
 //        } catch (\Exception $ex) {
 //
 //        }

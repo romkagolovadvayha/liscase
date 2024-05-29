@@ -19,6 +19,8 @@ class UserSearch extends User
                     'id',
                     'email',
                     'status',
+                    'username',
+                    'steam_id',
                     'ref_code',
                     'country_id',
                     'is_mailer',
@@ -70,7 +72,9 @@ class UserSearch extends User
             ->andFilterWhere([
                 't.id'              => $this->id,
                 't.status'          => $this->status,
+                't.steam_id'          => $this->steam_id,
             ])
+            ->andFilterWhere(['LIKE', 't.username', $this->username])
             ->andFilterWhere(['LIKE', 't.email', $this->email]);
 
         DateQuery::addDateCondition($query, $this, 't.created_at');

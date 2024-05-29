@@ -22,10 +22,6 @@ class AuthController extends \common\controllers\AuthController
 
             if ($user->isAccessBackend()) {
                 $url = '/user/index';
-                if ($user->getRole() == Role::ROLE_CONTENT_MANAGER) {
-                    $url = '/marketing/user/index';
-                }
-
                 return $this->redirect(Yii::$app->params['backendUrl'] . $url);
             }
 

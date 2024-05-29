@@ -7,13 +7,40 @@ use yii\web\JsExpression;
 /** @var Box $model */
 $format = <<< JS
 function(item) {
-    console.log(item);
-    return '<img class="kv-icon-image" style="width: 50px" src="' + item.text + '"/>';
+    try {
+        var model = JSON.parse(item.text);
+        return '<div class="drop-select-item"><img class="kv-icon-image" src="' + model.image + '"/><span>' + model.name + '</span></div>';
+    } catch {
+        return item.text;
+    }
 }
 JS;
 $format = new JsExpression($format);
 ?>
-
+<style>
+    .select2-results__options {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .drop-select-item {
+        padding: 5px;
+        background: #f1f1f1;
+        border-radius: 5px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: #000;
+        justify-content: flex-start;
+    }
+    .drop-select-item img {
+        display: block;
+        width: 24px;
+    }
+    .drop-select-item span {
+        display: block;
+    }
+</style>
 <?php $form = ActiveForm::begin(
     [
         'id' => 'box-form',
@@ -30,7 +57,7 @@ $format = new JsExpression($format);
         'prompt' => '...',
         'multiple' => true,
     ],
-    'showToggleAll' => false,
+    'showToggleAll' => true,
     'pluginOptions' => [
         'templateResult'       => $format,
         'templateSelection' => $format,

@@ -1,33 +1,31 @@
 <?php
-use common\models\user\UserDrop;
 use yii\web\View;
-use common\models\box\Drop;
 
 /** @var View $this */
-/** @var UserDrop $userDrop */
-/** @var bool $opened */
-
-/** @var Drop $drop **/
+/** @var array $item */
 
 ?>
-<?php foreach ($userDrop->drop as $index => $drop): ?>
-    <a href="/market/view?id=<?=$drop->id?>" class="last_drops_item<?=!empty($opened) && $opened ? ' opened' : ''?><?=' level' . $drop->getLevel()?>">
-        <div class="last_drops_item_content">
-            <div class="last_drops_item_image">
-                <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $drop->name) ?>">
-            </div>
+<div class="last_drops_item level<?= $item['type'] ?>">
+    <div class="last_drops_item_content">
+        <div class="last_drops_item_image">
+            <img src="<?= $item['image'] ?>" alt="<?= $item['name'] ?>">
+        </div>
+        <?php if (!empty($item['bgImage'])): ?>
             <div class="last_drops_item_box_image">
-                <img src="<?= $userDrop->box->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $userDrop->box->name) ?>">
+                <img src="<?= $item['bgImage'] ?>" alt="<?= $item['bgName'] ?>">
             </div>
-            <div class="last_drops_item_title"><?=$drop->getShortName()?></div>
-        </div>
-        <div class="last_drops_item_content_back">
-            <div class="last_drops_item_user">
+        <?php endif; ?>
+        <div class="last_drops_item_title"><?=$item['name']?></div>
+    </div>
+    <div class="last_drops_item_content_back">
+        <div class="last_drops_item_user">
+            <?php if (!empty($item['userAvatar'])): ?>
                 <div class="last_drops_item_user_avatar">
-                    <img src="<?= $userDrop->user->userProfile->avatar ?>" alt="<?= $userDrop->user->userProfile->name ?>">
+                    <img src="<?=$item['userAvatar']?>" alt="<?=$item['userName']?>">
                 </div>
-                <div class="last_drops_item_user_name"><?= $userDrop->user->userProfile->name ?></div>
-            </div>
+            <?php endif; ?>
+            <div class="last_drops_item_user_name"><?=$item['userName']?></div>
         </div>
-    </a>
-<?php endforeach; ?>
+        <div class="last_drops_item_user_count"><?=$item['count']?></div>
+    </div>
+</div>

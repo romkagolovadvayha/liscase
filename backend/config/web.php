@@ -15,6 +15,10 @@ $config = [
         '@npm'   => '@vendor/npm-asset',
     ],
     'components' => [
+        'urlManager'    => [
+            'hostInfo' => str_replace(['http://', 'https://', '/'], '', $params['backendUrl']),
+            'baseUrl'  => $params['backendUrl'],
+        ],
         'user'         => [
             'identityClass'   => 'common\models\user\User',
             'loginUrl'        => ['/auth/login'],

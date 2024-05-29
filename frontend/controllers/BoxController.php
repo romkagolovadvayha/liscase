@@ -5,10 +5,12 @@ namespace frontend\controllers;
 use common\controllers\WebController;
 use common\models\box\Box;
 use common\models\invoice\Invoice;
+use common\models\profit\Profit;
 use common\models\promocode\Promocode;
 use common\models\user\UserBox;
 use common\models\user\UserDrop;
 use common\models\user\UserPromocode;
+use yii\base\BaseObject;
 use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
 use Yii;
@@ -52,10 +54,6 @@ class BoxController extends WebController
                 throw new HttpException(402, Yii::t('common', 'Бесплатный кейс не доступен!'));
             }
             if ($box->getPriceFinal() > 0) {
-                $promocode = Promocode::getActivePromocode();
-                if (!empty($promocode)) {
-                    UserPromocode::createRecord($user->id, $promocode->id);
-                }
                 Invoice::createRecord($user->id, $box->getPriceFinal(), null, $box->id);
             }
             $userBoxId = UserBox::createRecord($user->id, $box->id);
@@ -63,7 +61,19 @@ class BoxController extends WebController
             [$boxDropCarousel, $number] = $userBox->box->_getDropFinal();
             $userBox->status = UserBox::STATUS_OPENED;
             $userBox->save();
-            UserDrop::createRecord($user->id, $boxDropCarousel[$number]->drop->id, $box->id, UserDrop::STATUS_ACTIVE, false);
+            if ($boxDropCarousel[$number]['boxDrop']->drop->id != 843) {
+                UserDrop::createRecord($user->id, $boxDropCarousel[$number]['boxDrop']->drop->id, $box->id, null,UserDrop::STATUS_ACTIVE, false, $boxDropCarousel[$number]['count']);
+            } else {
+                $userBalance = Yii::$app->user->identity->getPersonalBalance();
+                $profit = new Profit();
+                $profit->status = 1;
+                $profit->type = Profit::TYPE_SELL_DROP;
+                $profit->amount = $boxDropCarousel[$number]['count'];
+                $profit->user_balance_id = $userBalance->id;
+                $profit->comment = Yii::t('common', 'Выигрыш в бесплатной рулетке', [], 'ru-RU');
+                $profit->created_at = date('Y-m-d H:i:s');
+                $profit->save(false);
+            }
 
             return $this->render('../widgets/_roulete', [
                 'boxDropCarousel' => $boxDropCarousel,
@@ -80,6 +90,7 @@ class BoxController extends WebController
      */
     public function actionView($id)
     {
+        $this->layout = 'service';
         $box = Box::findOne($id);
         if (empty($box)) {
             throw new NotFoundHttpException(Yii::t('common', 'Контейнер не найден!'));

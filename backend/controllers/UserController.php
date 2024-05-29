@@ -40,16 +40,6 @@ class UserController extends CrudController
         ]);
     }
 
-    public function actions()
-    {
-        return ArrayHelper::merge(parent::actions(), [
-            'editable' => [
-                'class'      => EditableAction::class,
-                'modelClass' => User::class,
-            ],
-        ]);
-    }
-
     protected function _getSearchClassName()
     {
         return UserSearch::class;
@@ -86,23 +76,6 @@ class UserController extends CrudController
     {
         $user = User::findOne($id);
         $user->userProfile->setPhoneIsConfirmed();
-
-        return $this->redirect($this->getIndexUrl());
-    }
-
-    public function actionResetPhone($id)
-    {
-        $user = User::findOne($id);
-
-        $userProfile = $user->userProfile;
-
-        $userProfile->phone            = null;
-        $userProfile->phone_is_confirm = 0;
-        $userProfile->confirm_status   = 0;
-        $userProfile->confirm_date     = null;
-        $userProfile->save();
-
-        UserConfirmCode::deleteAll('user_id = ' . $id . ' AND type = ' . UserConfirmCode::TYPE_CONFIRM_PHONE);
 
         return $this->redirect($this->getIndexUrl());
     }

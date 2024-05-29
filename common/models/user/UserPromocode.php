@@ -3,8 +3,10 @@
 namespace common\models\user;
 
 use common\components\base\ActiveRecord;
+use common\models\profit\Profit;
 use common\models\promocode\Promocode;
 use Yii;
+use yii\base\BaseObject;
 
 /**
  * @property int                 $id
@@ -67,14 +69,25 @@ class UserPromocode extends ActiveRecord
         if (empty($promocode)) {
             return false;
         }
-        $promocode->left_count--;
-        $promocode->save(false);
-
+        $user = User::findOne($userId);
         $model = new UserPromocode();
         $model->user_id = $userId;
         $model->promocode_id = $promocodeId;
         $model->created_at = date('Y-m-d H:i:s');
         $model->save(false);
+
+        $userBalance = $user->getPersonalBalance();
+        $profit = new Profit();
+        $profit->status = 1;
+        $profit->type = Profit::TYPE_PROMOCODE;
+        $profit->amount = $promocode->amount;
+        $profit->user_balance_id = $userBalance->id;
+        $profit->comment = Yii::t('common', 'Активация промокода "{PARAMS_PROMCODE}" на {PARAMS_PROMSUM} RUB', [
+            'PARAMS_PROMCODE' => $promocode->code,
+            'PARAMS_PROMSUM' => $promocode->amount,
+        ], 'ru-RU');
+        $profit->created_at = date('Y-m-d H:i:s');
+        $profit->save(false);
         return true;
     }
 }

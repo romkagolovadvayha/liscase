@@ -92,7 +92,7 @@ class Box extends ActiveRecord
      */
     public function getBoxDrop()
     {
-        return $this->hasMany(BoxDrop::class, ['box_id' => 'id']);
+        return $this->hasMany(BoxDrop::class, ['box_id' => 'id'])->cache(300);
     }
 
     /**
@@ -109,40 +109,64 @@ class Box extends ActiveRecord
         foreach ($boxDrops as $boxDrop) {
             if ($boxDrop->drop->priceCeil < 30) {
                 for ($i = 0; $i < 5; $i++) {
-                    $result[] = $boxDrop;
+                    $result[] = [
+                        'boxDrop' => $boxDrop,
+                        'count' => rand($boxDrop->drop->min_box, $boxDrop->drop->max_box),
+                    ];
                 }
             }
             if ($boxDrop->drop->priceCeil < 50) {
                 for ($i = 0; $i < 5; $i++) {
-                    $result[] = $boxDrop;
+                    $result[] = [
+                        'boxDrop' => $boxDrop,
+                        'count' => rand($boxDrop->drop->min_box, $boxDrop->drop->max_box),
+                    ];
                 }
             }
             if ($boxDrop->drop->priceCeil < 100) {
                 for ($i = 0; $i < 5; $i++) {
-                    $result[] = $boxDrop;
+                    $result[] = [
+                        'boxDrop' => $boxDrop,
+                        'count' => rand($boxDrop->drop->min_box, $boxDrop->drop->max_box),
+                    ];
                 }
             }
             if ($boxDrop->drop->priceCeil < 300) {
                 for ($i = 0; $i < 5; $i++) {
-                    $result[] = $boxDrop;
+                    $result[] = [
+                        'boxDrop' => $boxDrop,
+                        'count' => rand($boxDrop->drop->min_box, $boxDrop->drop->max_box),
+                    ];
                 }
             }
             if ($boxDrop->drop->priceCeil < 500) {
                 for ($i = 0; $i < 5; $i++) {
-                    $result[] = $boxDrop;
+                    $result[] = [
+                        'boxDrop' => $boxDrop,
+                        'count' => rand($boxDrop->drop->min_box, $boxDrop->drop->max_box),
+                    ];
                 }
             }
             if ($boxDrop->drop->priceCeil < 1000) {
                 for ($i = 0; $i < 5; $i++) {
-                    $result[] = $boxDrop;
+                    $result[] = [
+                        'boxDrop' => $boxDrop,
+                        'count' => rand($boxDrop->drop->min_box, $boxDrop->drop->max_box),
+                    ];
                 }
             }
             if ($boxDrop->drop->priceCeil < 3000) {
                 for ($i = 0; $i < 10; $i++) {
-                    $result[] = $boxDrop;
+                    $result[] = [
+                        'boxDrop' => $boxDrop,
+                        'count' => rand($boxDrop->drop->min_box, $boxDrop->drop->max_box),
+                    ];
                 }
             }
-            $result[] = $boxDrop;
+            $result[] = [
+                'boxDrop' => $boxDrop,
+                'count' => rand($boxDrop->drop->min_box, $boxDrop->drop->max_box),
+            ];
         }
         shuffle($result);
         shuffle($result);
@@ -212,10 +236,6 @@ class Box extends ActiveRecord
      */
     public function getPriceFinal() {
         $price = $this->price;
-        $promocode = Promocode::getActivePromocode();
-        if (!empty($promocode)) {
-            $price = ceil($promocode->percent / 100 * $this->price);
-        }
         if ($this->type === Box::TYPE_FREE) {
             return 0;
         }
@@ -249,7 +269,7 @@ class Box extends ActiveRecord
             return null;
         }
         $createdDate = new \DateTime($last->created_at);
-        $createdDate->modify('+1 day');
+        $createdDate->modify('+18 hour');
 
         if ($createdDate->getTimestamp() < time()) {
             return null;
@@ -262,14 +282,7 @@ class Box extends ActiveRecord
      * @param $userBox
      */
     public function _getDropFinal() {
-        [$boxDropCarousel, $number] = $this->_getDrop();
-        if ($boxDropCarousel[$number]->drop->priceCeil > 1000) {
-            [$boxDropCarousel, $number] = $this->_getDrop();
-        }
-        if ($boxDropCarousel[$number]->drop->priceCeil > 2000) {
-            [$boxDropCarousel, $number] = $this->_getDrop();
-        }
-        return [$boxDropCarousel, $number];
+        return $this->_getDrop();
     }
 
     /**

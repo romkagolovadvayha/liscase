@@ -72,7 +72,7 @@ class DropSearch extends Drop
                 'type_id'     => $this->type_id,
                 'status'     => Drop::STATUS_ACTIVE,
             ])
-            ->andFilterWhere(['LIKE', 'quality', $this->quality])
+//            ->andFilterWhere(['LIKE', 'quality', $this->quality])
             ->andFilterWhere([
                 'OR',
                 ['LIKE', 'name', $this->name],

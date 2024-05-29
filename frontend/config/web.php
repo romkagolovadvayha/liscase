@@ -14,7 +14,7 @@ $languages = [
 $config = [
     'id' => 'basic',
     'basePath' => dirname(__DIR__),
-    'language' => 'en-US',
+    'language' => 'ru-RU',
     'bootstrap' => [
         'log',
 //        'languagepicker'
@@ -121,9 +121,9 @@ if (YII_ENV_DEV) {
     ];
 }
 
-$subDomain = explode('.', $_SERVER['HTTP_HOST'])[0];
-$subDomain = str_replace(['https://', 'http://'], '', $subDomain);
-if (in_array($subDomain, array_keys($languages))) {
-    $config['language'] = $languages[$subDomain];
-}
+//$subDomain = explode('.', $_SERVER['HTTP_HOST'])[0];
+//$subDomain = str_replace(['https://', 'http://'], '', $subDomain);
+//if (in_array($subDomain, array_keys($languages))) {
+//    $config['language'] = $languages[$subDomain];
+//}
 return $config;

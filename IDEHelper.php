@@ -20,11 +20,14 @@ Yii::$container = new yii\di\Container;
  * Class BaseApplication
  * Used for properties that are identical for both WebApplication and ConsoleApplication
  *
- * @property yii\redis\Cache                    $cache
- * @property linslin\yii2\curl\Curl             $curl
- * @property \common\components\web\User        $user
- * @property \common\components\steam\MarketApi $marketApi
+ * @property yii\redis\Cache                       $cache
+ * @property linslin\yii2\curl\Curl                $curl
+ * @property \common\components\web\User           $user
+ * @property \common\components\steam\MarketApi    $marketApi
  * @property \common\components\payments\Paypalych $paypalych
+ * @property \common\components\payments\Tome      $tomeApi
+ * @property \common\components\rusttm\RustTm      $rustTm
+ * @property \common\components\payments\FreeKassa $freeKassaApi
  */
 abstract class BaseApplication extends yii\base\Application
 {

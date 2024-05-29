@@ -71,9 +71,6 @@ class BonusForm extends Model
      */
     public function saveRecord(): bool
     {
-        if (YII_ENV_PROD) {
-            return false;
-        }
         if (!$this->validate()) {
             return false;
         }

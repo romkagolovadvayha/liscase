@@ -2,28 +2,41 @@
 
 namespace backend\forms\box;
 
-use common\components\steam\MarketApi;
+use common\models\box\Box;
+use common\models\box\BoxDrop;
+use common\models\box\BoxImage;
+use common\models\box\Drop;
 use common\models\box\DropImage;
 use Yii;
 use yii\helpers\ArrayHelper;
-use common\models\box\Drop;
+use yii\web\UploadedFile;
 
 class DropForm extends Drop
 {
-    public $market_link;
+
+    public $preview_file;
 
     public function rules(): array
     {
         return ArrayHelper::merge([
-            [['market_link'], 'trim'],
-        ], parent::rules());
+                                      [['name', 'eng_name', 'market_status', 'min_box', 'max_box', 'description', 'rust_id', 'type_id', 'price', 'count', 'discount', 'preview_file', 'command', 'blocked_hour'], 'trim'],
+                                      [['preview_file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png'],
+                                  ], parent::rules());
     }
 
     public function attributeLabels(): array
     {
         return ArrayHelper::merge(parent::attributeLabels(), [
-            'market_link' => 'Ссылка на маркете',
+            'preview_file' => 'Изображение предмета',
         ]);
+    }
+
+    public function afterFind()
+    {
+        parent::afterFind();
+        if (!empty($this->imageOrig)) {
+            $this->preview_file = $this->imageOrig->getImagePubUrl();
+        }
     }
 
     /**
@@ -31,50 +44,40 @@ class DropForm extends Drop
      */
     public function saveRecord(): bool
     {
-        if (!$this->validate()) {
-            return false;
-        }
         if ($this->isNewRecord) {
             $this->status = 1;
             $this->created_at = date('Y-m-d H:i:s');
-            $this->_parsingMarketIdFromUrl();
-            $this->importMarket();
-            $exist = Drop::find()
-                         ->andWhere(['name' => $this->name])
-                         ->exists();
-            if ($exist) {
-                throw new \Exception('Drop name exist');
-            }
+        }
+        if (!$this->validate()) {
+            return false;
         }
 
         if (!$this->save()) {
             throw new \Exception('Drop not saved');
         }
-        $dropId = Yii::$app->db->getLastInsertID();
-        $image = "https://cdn.csgo.com/item/" . urlencode($this->eng_name) . "/300.png";
-        $this->_loadImage($image, $dropId);
+
+        if (empty($this->id)) {
+            $this->id = Yii::$app->db->getLastInsertID();
+        }
+        $this->preview_file = $this->_loadImage(UploadedFile::getInstance($this, 'preview_file'), $this->id);
 
         return true;
     }
 
-    private function _parsingMarketIdFromUrl() {
-        preg_match('/https:\/\/market.csgo.com\/item\/(.*?)-(.*?)-/', $this->market_link, $match);
-        $marketId = $match[1] . "_" . $match[2];
-        if (!empty($marketId)) {
-            $this->market_id = $marketId;
+    private function _loadImage($image, $boxId) {
+        if (empty($image) || empty($image->tempName)) {
+            return null;
         }
-    }
-
-    private function _loadImage($imageUrl, $dropId) {
         $uploadDir = Yii::getAlias('@app/web/uploads');
-        if (!file_exists($uploadDir)) {
-            mkdir($uploadDir);
-            chmod($uploadDir, 0777);
-        }
-        $fileUrl = "/drop/" . $dropId . "_" . md5(time()) . ".png";
+        $fileUrl = "/drop/" . $this->id . "_" . md5(time()) . ".png";
         $filePath = $uploadDir . $fileUrl;
-        file_put_contents($filePath, file_get_contents($imageUrl));
-        DropImage::createRecord($fileUrl, DropImage::TYPE_ORIG, $dropId);
+        if (!file_exists(dirname($filePath))) {
+            mkdir(dirname($filePath));
+            chmod(dirname($filePath), 0777);
+        }
+        file_put_contents($filePath, file_get_contents($image->tempName));
+        DropImage::createRecord($fileUrl, DropImage::TYPE_ORIG, $boxId);
+        return $filePath;
     }
 
 }

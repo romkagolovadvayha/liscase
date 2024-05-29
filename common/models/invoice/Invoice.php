@@ -12,7 +12,10 @@ use yii\base\BaseObject;
  * @property int         $id
  * @property int         $user_id
  * @property int         $box_id
+ * @property int         $sets_id
+ * @property int         $drop_id
  * @property int         $type
+ * @property string      $comment
  * @property string      $amount
  * @property string      $created_at
  *
@@ -90,12 +93,15 @@ class Invoice extends \common\components\base\ActiveRecord
      *
      * @return string
      */
-    public static function createRecord($userId, $amount, $type = null, $boxId = null)
+    public static function createRecord($userId, $amount, $type = null, $boxId = null, $setsId = null, $dropId = null, $comment = "")
     {
         $model = new Invoice();
         $model->user_id = $userId;
         $model->box_id = $boxId;
+        $model->sets_id = $setsId;
+        $model->drop_id = $dropId;
         $model->amount = $amount;
+        $model->comment = $comment;
         $model->type = Invoice::TYPE_PAYMENT_BOX;
         if (!empty($type)) {
             $model->type = $type;

@@ -6,6 +6,10 @@
 //     centerMode: true,
 //     variableWidth: true
 // });
+var roulete_open_content = undefined;
+var blockedRoulete = false;
+var boxFree = false;
+// var win_drop = undefined;
 function slickRouleteInit() {
     var roulete = $('.roulete').slick({
         centerMode: true,
@@ -13,27 +17,7 @@ function slickRouleteInit() {
         speed: 9000,
         slidesToShow: 3,
         arrows: false,
-        touchMove: false,
-        // responsive: [
-        //     {
-        //         breakpoint: 768,
-        //         settings: {
-        //             arrows: false,
-        //             centerMode: true,
-        //             centerPadding: '40px',
-        //             slidesToShow: 3
-        //         }
-        //     },
-        //     {
-        //         breakpoint: 480,
-        //         settings: {
-        //             arrows: false,
-        //             centerMode: true,
-        //             centerPadding: '40px',
-        //             slidesToShow: 1
-        //         }
-        //     }
-        // ]
+        touchMove: false
     });
     $('.roulete_blur').slick({
         centerMode: true,
@@ -42,92 +26,57 @@ function slickRouleteInit() {
         slidesToShow: 7,
         arrows: false,
         touchMove: false,
-        slidesToScroll: 1,
-        // responsive: [
-        //     {
-        //         breakpoint: 768,
-        //         settings: {
-        //             arrows: false,
-        //             centerMode: true,
-        //             centerPadding: '40px',
-        //             slidesToShow: 3
-        //         }
-        //     },
-        //     {
-        //         breakpoint: 480,
-        //         settings: {
-        //             arrows: false,
-        //             centerMode: true,
-        //             centerPadding: '40px',
-        //             slidesToShow: 1
-        //         }
-        //     }
-        // ]
+        slidesToScroll: 1
     });
-
-    // $('#roulete_start').click(function () {
-    //     roulete.slick('slickGoTo', 180);
-    //     rouleteBlur.slick('slickGoTo', 180);
-    // });
 
     var stopAudio = new Audio("/audio/gambling.mp3");
     roulete.on('afterChange', function(event, slick, currentSlide, nextSlide){
-        $('.box_entity_card_actions_btn').removeClass('disabled');
+        // $('.box_entity_card_actions_btn').removeClass('disabled');
         blockedRoulete = false;
         stopAudio.play();
-        win_drop.addClass('active');
-        setTimeout(function () {
-            win_drop.removeClass('active');
-        }, 8200);
+        // win_drop.addClass('active');
+        // setTimeout(function () {
+            // win_drop.removeClass('active');
+        // }, 8200);
     });
     var startAudio = new Audio("/audio/go-new-gambling.mp3");
     roulete.on('beforeChange', function(event, slick, currentSlide, nextSlide){
         console.log('go-new-gambling.mp3');
         startAudio.play();
     });
-}
-slickRouleteInit();
 
-// var roulete_open = $('#roulete_open');
-var roulete_open_content = $('.roulete_open_content');
-var blockedRoulete = false;
-var boxFree = false;
-var openBoxModal = new bootstrap.Modal(document.getElementById('openBoxModal'));
-var notBalanceModal = new bootstrap.Modal(document.getElementById('notBalanceModal'));
-$('.box_entity_card_actions_btn').on('click', function () {
-    if (blockedRoulete) {
-        return false;
-    }
-    if (balance >= boxPrice) {
-        openBoxModal.show();
-    } else {
-        notBalanceModal.show();
-    }
-    return false;
-});
-$('.box_entity_card_actions_btn_free').on('click', function () {
-    boxFree = true;
-    return false;
-});
-var win_drop = $('#win_drop');
-$('#buy-free-container, #buy-container').on('beforeSubmit', function () {
-    if (blockedRoulete) {
-        return false;
-    }
-    if (boxFree) {
-        $('.box_entity_card_actions_btn').hide();
-        $('.box_entity_card_actions_inventory_action').show();
-    }
-    $('.box_entity_card_actions_btn').addClass('disabled');
-    blockedRoulete = true;
-    win_drop.removeClass('active');
-    var $yiiform = $(this);
-    $.ajax({
-            type: $yiiform.attr('method'),
-            url: $yiiform.attr('action'),
-            data: $yiiform.serializeArray()
+    roulete_open_content = $('.roulete_open_content');
+    blockedRoulete = false;
+    boxFree = false;
+    // win_drop = $('#win_drop');
+    $('.box_entity_card_actions_btn').on('click', function () {
+        if (blockedRoulete) {
+            return false;
         }
-    ).done(function(data) {
+    });
+    // $('.box_entity_card_actions_btn_free').on('click', function () {
+    //     boxFree = true;
+    //     return false;
+    // });
+    $('#roulete-container').on('submit', function (e) {
+        e.preventDefault();
+        if (blockedRoulete) {
+            return false;
+        }
+
+        if (boxFree) {
+            $('.box_entity_card_actions_btn').hide();
+            $('.box_entity_card_actions_inventory_action').show();
+        }
+        $('.box_entity_card_actions_btn').addClass('disabled');
+        blockedRoulete = true;
+        // win_drop.removeClass('active');
+        var $yiiform = $(this);
+        $.ajax({
+                type: $yiiform.attr('method'),
+                url: $yiiform.attr('action'),
+                data: $yiiform.serializeArray()
+        }).done(function(data) {
             roulete_open_content.html(data);
             slickRouleteInit();
             var number = $('.roulete_wrapper').data().success;
@@ -135,11 +84,15 @@ $('#buy-free-container, #buy-container').on('beforeSubmit', function () {
             $('.roulete_blur').slick('slickGoTo', number);
 
             var slickCurrent = $('.roulete_main_wrap .slick-active.slick-current').clone();
-            slickCurrent.removeClass('roulete_item drop_card slick-slide slick-current slick-active slick-center')
-            slickCurrent.addClass('win_drop_item');
+            slickCurrent.removeClass('roulete_item drop_card slick-slide slick-current slick-active slick-center');
+            // slickCurrent.addClass('win_drop_item');
+            $('.products_item_roulete').addClass('products_item_roulete_blocked');
+            $('.products_item_roulete').html('<div class="products_item_roulete_blocked_title"><i class="far fa-clock"></i> Бесплатная рулетка будет доступна <span class="products_item_roulete_blocked_title_timer">через 18 часов</span></div>');
+
             slickCurrent.removeAttr('style');
-            win_drop.html(slickCurrent);
+            // win_drop.html(slickCurrent);
             updateBalance();
-    }).fail(function () {})
-    return false;
-});
+        }).fail(function () {});
+        return false;
+    });
+}
