@@ -77,7 +77,7 @@ class ApiController extends WebController
         $result['result'] = "success";
         $result['code'] = 100;
         $result['data'] = [
-            'link' => 'a.prostoj.store',
+            'link' => 'prostoj.store',
             'default_balance' => 50,
         ];
         return $result;

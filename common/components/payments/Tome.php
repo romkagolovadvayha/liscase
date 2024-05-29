@@ -85,7 +85,7 @@ class Tome
             ],
             "confirmation" => [
                 "type" => "redirect",
-                "return_url" => "https://a.prostoj.store/user/history?depositId={$depositId}"
+                "return_url" => "https://prostoj.store/user/history?depositId={$depositId}"
             ],
             'description' => $description
         ];

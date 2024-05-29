@@ -320,7 +320,7 @@ if (!Yii::$app->user->isGuest) {
                 <br/>
                 <a class="ShopFooter-module__link" href="/site/agreement" target="_blank" rel="noreferrer">Пользовательское соглашение</a>
                 <a class="ShopFooter-module__link" href="/site/privacy" target="_blank" rel="noreferrer">Политика конфиденциальности</a>
-                <a class="ShopFooter-module__link" href="mailto:help@prostoj.store" target="_blank" rel="noreferrer">a.prostoj.store</a>
+                <a class="ShopFooter-module__link" href="mailto:help@prostoj.store" target="_blank" rel="noreferrer">prostoj.store</a>
             </div>
         </div>
     </div>
