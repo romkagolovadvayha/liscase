@@ -138,6 +138,11 @@ $config = [
             'class' => \common\components\rusttm\RustTm::class,
             'secretKey' => '4Tctry3D0b9003d52Kv2w10BND942mX',
         ],
+        'wargm'   => [
+            'class' => \common\components\wargm\WarGM::class,
+            'apiKey' => $params['wargmApiKey'],
+            'baseUrl' => 'https://api.wargm.ru/v1',
+        ],
         'curl'          => [
             'class' => \linslin\yii2\curl\Curl::class,
         ],

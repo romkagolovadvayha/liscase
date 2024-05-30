@@ -29,6 +29,7 @@ Yii::$container = new yii\di\Container;
  * @property \common\components\rusttm\RustTm      $rustTm
  * @property \common\components\payments\FreeKassa $freeKassaApi
  * @property \common\components\telegram\Telegram  $telegram
+ * @property \common\components\wargm\WarGM  $wargm
  */
 abstract class BaseApplication extends yii\base\Application
 {

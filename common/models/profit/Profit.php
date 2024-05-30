@@ -15,6 +15,7 @@ use common\models\user\UserBalance;
  * @property int         $type
  * @property string      $amount
  * @property string      $comment
+ * @property int         $service_id
  * @property int         $status
  * @property string      $created_at
  *
@@ -32,6 +33,7 @@ class Profit extends \common\components\base\ActiveRecord
     public const TYPE_DAILY_REWARD_LIST_BOX_BIG = 8;
     public const TYPE_TASK = 9;
     public const TYPE_TRANSFER_BALANCE = 10;
+    public const TYPE_WARGM_BONUS = 11;
 
     /**
      * @return array
@@ -49,6 +51,7 @@ class Profit extends \common\components\base\ActiveRecord
             self::TYPE_ACHIEVEMENT => Yii::t('common', 'Достижения'),
             self::TYPE_TASK => Yii::t('common', 'Выполнение задания'),
             self::TYPE_TRANSFER_BALANCE => Yii::t('common', 'Перенос баланса'),
+            self::TYPE_WARGM_BONUS => Yii::t('common', 'Бонус за голосование на сайте WarGM'),
         ];
     }
 

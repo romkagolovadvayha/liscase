@@ -163,6 +163,13 @@ class User extends ActiveRecord implements IdentityInterface
         return static::findOne($attributes);
     }
 
+    public static function findBySteamId($steamId)
+    {
+        return static::find()
+            ->andWhere(['steam_id' => $steamId])
+            ->one();
+    }
+
     /**
      * @return \yii\db\ActiveQuery
      */

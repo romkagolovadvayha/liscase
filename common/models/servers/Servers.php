@@ -31,6 +31,7 @@ use Yii;
  * @property string    $tag
  * @property bool    $stats_payment
  * @property bool    $skindrops
+ * @property int    $wargm_id
  * @property string    $commands
  */
 class Servers extends \common\components\base\ActiveRecord
