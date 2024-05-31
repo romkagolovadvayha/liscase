@@ -34,6 +34,7 @@ class Profit extends \common\components\base\ActiveRecord
     public const TYPE_TASK = 9;
     public const TYPE_TRANSFER_BALANCE = 10;
     public const TYPE_WARGM_BONUS = 11;
+    public const TYPE_TOP = 12;
 
     /**
      * @return array
@@ -52,6 +53,7 @@ class Profit extends \common\components\base\ActiveRecord
             self::TYPE_TASK => Yii::t('common', 'Выполнение задания'),
             self::TYPE_TRANSFER_BALANCE => Yii::t('common', 'Перенос баланса'),
             self::TYPE_WARGM_BONUS => Yii::t('common', 'Бонус за голосование на сайте WarGM'),
+            self::TYPE_TOP => Yii::t('common', 'Награда за топ сервера'),
         ];
     }
 

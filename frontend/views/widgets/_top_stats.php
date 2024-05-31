@@ -84,91 +84,107 @@ $fishing = mysqli_fetch_assoc($res_data);
     </tr>
     </thead>
     <tbody>
-    <?php if ($server != 'pve'): ?>
-        <!-- ТОП РЕЙДЕР -->
-        <tr>
-            <td class="widget_top_table_name">РЕЙДЕР</td>
-            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$reider['steamid']?>&server=<?=$server?>"><?=$reider['name']?></a></td>
-            <td><?=round($reider['total_score'])?></td>
-        </tr>
-        <!-- ТОП КИЛЛЕР -->
+    <?php if (!empty($reider)): ?>
+        <?php if ($server != 'pve'): ?>
+            <!-- ТОП РЕЙДЕР -->
+            <tr>
+                <td class="widget_top_table_name">РЕЙДЕР</td>
+                <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$reider['steamid']?>&server=<?=$server?>"><?=$reider['name']?></a></td>
+                <td><?=round($reider['total_score'])?></td>
+            </tr>
+            <!-- ТОП КИЛЛЕР -->
+            <tr>
+                <td class="widget_top_table_name">
+                    КИЛЛЕР
+                    <?php if (!in_array($server, ['pve'])): ?>
+                        <span class="widget_top_table_name_bage" title="Вознаграждение по окончанию вайпа">+500Р</span>
+                    <?php endif; ?>
+                </td>
+                <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$killer['steamid']?>&server=<?=$server?>"><?=$killer['name']?></a></td>
+                <td><?=$killer['kills']?></td>
+            </tr>
+        <?php endif; ?>
+    <?php endif; ?>
+    <!-- ТОП МИРНЫЙ -->
+    <?php if (!empty($scientists)): ?>
         <tr>
             <td class="widget_top_table_name">
-                КИЛЛЕР
+                МИРНЫЙ
                 <?php if (!in_array($server, ['pve'])): ?>
                     <span class="widget_top_table_name_bage" title="Вознаграждение по окончанию вайпа">+500Р</span>
                 <?php endif; ?>
             </td>
-            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$killer['steamid']?>&server=<?=$server?>"><?=$killer['name']?></a></td>
-            <td><?=$killer['kills']?></td>
+            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$scientists['steamid']?>&server=<?=$server?>"><?=$scientists['name']?></a></td>
+            <td><?=$scientists['scientists']?></td>
         </tr>
     <?php endif; ?>
-    <!-- ТОП МИРНЫЙ -->
-    <tr>
-        <td class="widget_top_table_name">
-            МИРНЫЙ
-            <?php if (!in_array($server, ['pve'])): ?>
-                <span class="widget_top_table_name_bage" title="Вознаграждение по окончанию вайпа">+500Р</span>
-            <?php endif; ?>
-        </td>
-        <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$scientists['steamid']?>&server=<?=$server?>"><?=$scientists['name']?></a></td>
-        <td><?=$scientists['scientists']?></td>
-    </tr>
     <!-- ТОП ОНЛАЙН -->
-    <tr>
-        <td class="widget_top_table_name">ОНЛАЙН</td>
-        <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$playtime['steamid']?>&server=<?=$server?>"><?=$playtime['name']?></a></td>
-        <td><?=\common\models\servers\Servers::getPlayTime($playtime['playtime'])?></td>
-    </tr>
+    <?php if (!empty($playtime)): ?>
+        <tr>
+            <td class="widget_top_table_name">ОНЛАЙН</td>
+            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$playtime['steamid']?>&server=<?=$server?>"><?=$playtime['name']?></a></td>
+            <td><?=\common\models\servers\Servers::getPlayTime($playtime['playtime'])?></td>
+        </tr>
+    <?php endif; ?>
     <!-- ТОП СМЕРТЕЙ -->
-    <tr>
-        <td class="widget_top_table_name">СМЕРТЕЙ</td>
-        <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$deaths['steamid']?>&server=<?=$server?>"><?=$deaths['name']?></a></td>
-        <td><?=$deaths['deaths']?></td>
-    </tr>
+    <?php if (!empty($deaths)): ?>
+        <tr>
+            <td class="widget_top_table_name">СМЕРТЕЙ</td>
+            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$deaths['steamid']?>&server=<?=$server?>"><?=$deaths['name']?></a></td>
+            <td><?=$deaths['deaths']?></td>
+        </tr>
+    <?php endif; ?>
     <!-- ТОП ОХОТНИК -->
-    <tr>
-        <td class="widget_top_table_name">
-            ОХОТНИК
-            <?php if (!in_array($server, ['pve'])): ?>
-                <span class="widget_top_table_name_bage" title="Вознаграждение по окончанию вайпа">+500Р</span>
-            <?php endif; ?>
-        </td>
-        <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$hunter['steamid']?>&server=<?=$server?>"><?=$hunter['name']?></a></td>
-        <td><?=$hunter['total_score']?></td>
-    </tr>
+    <?php if (!empty($hunter)): ?>
+        <tr>
+            <td class="widget_top_table_name">
+                ОХОТНИК
+                <?php if (!in_array($server, ['pve'])): ?>
+                    <span class="widget_top_table_name_bage" title="Вознаграждение по окончанию вайпа">+500Р</span>
+                <?php endif; ?>
+            </td>
+            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$hunter['steamid']?>&server=<?=$server?>"><?=$hunter['name']?></a></td>
+            <td><?=$hunter['total_score']?></td>
+        </tr>
+    <?php endif; ?>
     <!-- Фермер -->
-    <tr>
-        <td class="widget_top_table_name">
-            ФЕРМЕР
-            <?php if (!in_array($server, ['pve'])): ?>
-                <span class="widget_top_table_name_bage" title="Вознаграждение по окончанию вайпа">+500Р</span>
-            <?php endif; ?>
-        </td>
-        <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fermer['steamid']?>&server=<?=$server?>"><?=$fermer['name']?></a></td>
-        <td><?=number_format($fermer['total_score'])?></td>
-    </tr>
+    <?php if (!empty($fermer)): ?>
+        <tr>
+            <td class="widget_top_table_name">
+                ФЕРМЕР
+                <?php if (!in_array($server, ['pve'])): ?>
+                    <span class="widget_top_table_name_bage" title="Вознаграждение по окончанию вайпа">+500Р</span>
+                <?php endif; ?>
+            </td>
+            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fermer['steamid']?>&server=<?=$server?>"><?=$fermer['name']?></a></td>
+            <td><?=number_format($fermer['total_score'])?></td>
+        </tr>
+    <?php endif; ?>
     <!-- Фармер -->
-    <tr>
-        <td class="widget_top_table_name">
-            ФАРМЕР
-            <?php if (!in_array($server, ['pve'])): ?>
-                <span class="widget_top_table_name_bage" title="Вознаграждение по окончанию вайпа">+500Р</span>
-            <?php endif; ?>
-        </td>
-        <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$farmer['steamid']?>&server=<?=$server?>"><?=$farmer['name']?></a></td>
-        <td><?=number_format($farmer['total_score'])?></td>
-    </tr>
+    <?php if (!empty($farmer)): ?>
+        <tr>
+            <td class="widget_top_table_name">
+                ФАРМЕР
+                <?php if (!in_array($server, ['pve'])): ?>
+                    <span class="widget_top_table_name_bage" title="Вознаграждение по окончанию вайпа">+500Р</span>
+                <?php endif; ?>
+            </td>
+            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$farmer['steamid']?>&server=<?=$server?>"><?=$farmer['name']?></a></td>
+            <td><?=number_format($farmer['total_score'])?></td>
+        </tr>
+    <?php endif; ?>
     <!-- Рыбак -->
-    <tr>
-        <td class="widget_top_table_name">
-            РЫБАК
-            <?php if (!in_array($server, ['pve'])): ?>
-                <span class="widget_top_table_name_bage" title="Вознаграждение по окончанию вайпа">+500Р</span>
-            <?php endif; ?>
-        </td>
-        <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fishing['steamid']?>&server=<?=$server?>"><?=$fishing['name']?></a></td>
-        <td><?=number_format($fishing['total_score'])?></td>
-    </tr>
+    <?php if (!empty($fishing)): ?>
+        <tr>
+            <td class="widget_top_table_name">
+                РЫБАК
+                <?php if (!in_array($server, ['pve'])): ?>
+                    <span class="widget_top_table_name_bage" title="Вознаграждение по окончанию вайпа">+500Р</span>
+                <?php endif; ?>
+            </td>
+            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fishing['steamid']?>&server=<?=$server?>"><?=$fishing['name']?></a></td>
+            <td><?=number_format($fishing['total_score'])?></td>
+        </tr>
+    <?php endif; ?>
     </tbody>
 </table>
