@@ -71,7 +71,6 @@ class Task extends \common\components\base\ActiveRecord
         return [
             [['description', 'link'], 'trim'],
             [['type', 'status'], 'integer'],
-            [['bonus_digiu'], 'number'],
             [['created_at'], 'safe'],
         ];
     }
