@@ -5570,6 +5570,9 @@ header {
     position: relative;
     border: 2px solid $color_success_dark_dark;
     cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     &:hover {
       border: 2px solid $color_success;
     }
@@ -5591,9 +5594,6 @@ header {
       &_wrap {
         width: 60px;
         height: 60px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
       }
     }
     &_price {

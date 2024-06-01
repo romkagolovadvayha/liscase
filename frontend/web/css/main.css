@@ -4752,7 +4752,10 @@ header .promocode {
     padding: 5px;
     position: relative;
     border: 2px solid #131513;
-    cursor: pointer; }
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center; }
     .modal_form_product_select_item:hover {
       border: 2px solid #006c2e; }
     .modal_form_product_select_item_radio {
@@ -4768,10 +4771,7 @@ header .promocode {
       width: 100%; }
       .modal_form_product_select_item_img_wrap {
         width: 60px;
-        height: 60px;
-        display: flex;
-        justify-content: center;
-        align-items: center; }
+        height: 60px; }
     .modal_form_product_select_item_price {
       position: absolute;
       bottom: 0;
