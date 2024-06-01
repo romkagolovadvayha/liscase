@@ -253,6 +253,7 @@ class Drop extends ActiveRecord
     {
         return Drop::find()
                   ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
+                  ->orderBy(['sort' => SORT_ASC, 'id' => SORT_DESC])
                   ->all();
     }
 
