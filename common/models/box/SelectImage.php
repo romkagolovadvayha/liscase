@@ -56,6 +56,15 @@ class SelectImage extends ActiveRecord
      */
     public static function createRecord($image, $type, $SelectId): bool
     {
+        $models = self::find()
+                      ->andWhere(['select_id' => $SelectId])
+                      ->andWhere(['type' => $type])
+                      ->all();
+        if (!empty($models)) {
+            foreach ($models as $model) {
+                $model->delete();
+            }
+        }
         /** @var SelectImage $model */
         $model = SelectImage::find()
             ->andWhere(['type' => $type])

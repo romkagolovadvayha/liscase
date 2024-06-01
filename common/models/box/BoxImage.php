@@ -56,6 +56,15 @@ class BoxImage extends ActiveRecord
      */
     public static function createRecord($image, $type, $boxId): bool
     {
+        $models = self::find()
+                      ->andWhere(['box_id' => $boxId])
+                      ->andWhere(['type' => $type])
+                      ->all();
+        if (!empty($models)) {
+            foreach ($models as $model) {
+                $model->delete();
+            }
+        }
         /** @var BoxImage $model */
         $model = BoxImage::find()
             ->andWhere(['type' => $type])

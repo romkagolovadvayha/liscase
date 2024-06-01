@@ -56,6 +56,15 @@ class DropImage extends ActiveRecord
      */
     public static function createRecord($image, $type, $dropId): bool
     {
+        $models = self::find()
+            ->andWhere(['drop_id' => $dropId])
+            ->andWhere(['type' => $type])
+            ->all();
+        if (!empty($models)) {
+            foreach ($models as $model) {
+                $model->delete();
+            }
+        }
         $model = new self();
         $model->image = $image;
         $model->type = $type;

@@ -4768,7 +4768,10 @@ header .promocode {
       width: 100%; }
       .modal_form_product_select_item_img_wrap {
         width: 60px;
-        height: 60px; }
+        height: 60px;
+        display: flex;
+        justify-content: center;
+        align-items: center; }
     .modal_form_product_select_item_price {
       position: absolute;
       bottom: 0;

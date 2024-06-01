@@ -55,6 +55,15 @@ class SetsImage extends ActiveRecord
      */
     public static function createRecord($image, $type, $setsId): bool
     {
+        $models = self::find()
+                      ->andWhere(['sets_id' => $setsId])
+                      ->andWhere(['type' => $type])
+                      ->all();
+        if (!empty($models)) {
+            foreach ($models as $model) {
+                $model->delete();
+            }
+        }
         /** @var BoxImage $model */
         $model = SetsImage::find()
             ->andWhere(['type' => $type])
