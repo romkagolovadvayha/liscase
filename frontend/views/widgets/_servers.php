@@ -52,8 +52,7 @@ $servers = Servers::find()
                     <div class="servers_item_progress_wrap">
                         <?php if ($server->status === Servers::STATUS_ACTIVE): ?>
                             <div class="servers_item_progress_players_wrap" style="width: <?=$percentPlayers+$percentJoined?>%">
-                                <div class="servers_item_progress_players" style="width: <?=$percentPlayersAbsolute?>%"></div>
-                                <div class="servers_item_progress_joined" style="width: <?=$percentJoinedAbsolute?>%"></div>
+                                <div class="servers_item_progress_players" style="width: <?=$percentPlayersAbsolute + $percentJoinedAbsolute?>%"></div>
                                 <div class="servers_item_progress_queued" style="width: <?=$percentQueuedAbsolute?>%"></div>
                             </div>
                         <?php else: ?>
