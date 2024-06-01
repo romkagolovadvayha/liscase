@@ -31,7 +31,7 @@ class MonitoringController extends Controller
             $server->players = $model->players + $fakePlayers;
             $server->joined = $model->joined + $fakeJoined;
             $server->queued = $model->queued;
-            if (strtotime($model->updated_at) > time() - 60 * 5) {
+            if (strtotime($model->updated_at) > time() - 60 * 8) {
                 $server->status = Servers::STATUS_ACTIVE;
             } else {
                 $server->status = Servers::STATUS_NOACTIVE;

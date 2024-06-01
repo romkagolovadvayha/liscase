@@ -83,13 +83,23 @@ $this->registerJs($formatJs, \yii\web\View::POS_END);
                                     </div>
                                 </div>
                                 <?php
-                                $percentPlayers = ceil(100/$server->max*$server->players);
-                                $percentJoined = ceil(100/$server->max*$server->joined);
-                                $percentQueued = ceil(100/$server->max*$server->queued);
-                                $percentAbsoluteCount = 100/($percentPlayers+$percentJoined);
-                                $percentPlayersAbsolute = ceil($percentAbsoluteCount * $percentPlayers);
-                                $percentJoinedAbsolute = ceil($percentAbsoluteCount * $percentJoined);
-                                $percentQueuedAbsolute = ceil($percentAbsoluteCount * $percentQueued);
+                                if ($server->players+$server->joined > 0) {
+                                    $percentPlayers         = ceil(100 / $server->max * $server->players);
+                                    $percentJoined          = ceil(100 / $server->max * $server->joined);
+                                    $percentQueued          = ceil(100 / $server->max * $server->queued);
+                                    $percentAbsoluteCount   = 100 / ($percentPlayers + $percentJoined);
+                                    $percentPlayersAbsolute = ceil($percentAbsoluteCount * $percentPlayers);
+                                    $percentJoinedAbsolute  = ceil($percentAbsoluteCount * $percentJoined);
+                                    $percentQueuedAbsolute  = ceil($percentAbsoluteCount * $percentQueued);
+                                } else {
+                                    $percentPlayers = 0;
+                                    $percentJoined = 0;
+                                    $percentQueued = 0;
+                                    $percentAbsoluteCount = 0;
+                                    $percentPlayersAbsolute = 0;
+                                    $percentJoinedAbsolute = 0;
+                                    $percentQueuedAbsolute = 0;
+                                }
                                 ?>
                                 <div class="server_info_profile_item btn-clipboard"
                                      data-bs-toggle="tooltip"

@@ -14,6 +14,7 @@ $servers = Servers::find()
         <div class="servers_body">
             <?php foreach ($servers as $server): ?>
                 <?php
+                if ($server->players+$server->joined > 0) {
                     $percentPlayers = ceil(100/$server->max*$server->players);
                     $percentJoined = ceil(100/$server->max*$server->joined);
                     $percentQueued = ceil(100/$server->max*$server->queued);
@@ -21,6 +22,15 @@ $servers = Servers::find()
                     $percentPlayersAbsolute = ceil($percentAbsoluteCount * $percentPlayers);
                     $percentJoinedAbsolute = ceil($percentAbsoluteCount * $percentJoined);
                     $percentQueuedAbsolute = ceil($percentAbsoluteCount * $percentQueued);
+                } else {
+                    $percentPlayers = 0;
+                    $percentJoined = 0;
+                    $percentQueued = 0;
+                    $percentAbsoluteCount = 0;
+                    $percentPlayersAbsolute = 0;
+                    $percentJoinedAbsolute = 0;
+                    $percentQueuedAbsolute = 0;
+                }
                 ?>
                 <div class="servers_item btn-clipboard"
                      data-bs-toggle="tooltip"
