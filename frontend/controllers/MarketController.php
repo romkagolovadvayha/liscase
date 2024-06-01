@@ -60,7 +60,7 @@ class MarketController extends WebController
         if (!empty($_POST['buy'])) {
             $user = Yii::$app->user->identity;
             $balance = $user->getPersonalBalance();
-            if ($drop->getPriceMarket() > $balance->balanceCeil) {
+            if ($drop->getRealPrice() > $balance->balanceCeil) {
                 Yii::$app->session->addFlash('danger', Yii::t('common', 'Недостаточно средств на счете!'));
             } else {
                 $dbTransaction = Yii::$app->db->beginTransaction();
@@ -135,7 +135,7 @@ class MarketController extends WebController
                 if ($_POST['buy'] == 1) {
                     $user = Yii::$app->user->identity;
                     $balance = $user->getPersonalBalance();
-                    if ($modelForm->drop->getPriceMarket() > $balance->balanceCeil) {
+                    if ($modelForm->drop->getRealPrice() > $balance->balanceCeil) {
                         Yii::$app->session->addFlash('danger', Yii::t('common', 'Недостаточно средств на счете!'));
                     } else {
                         $dbTransaction = Yii::$app->db->beginTransaction();
