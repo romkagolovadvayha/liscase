@@ -13,7 +13,7 @@ use yii\bootstrap5\Html;
 
 <div class="modal_form_product">
     <div class="modal_form_product_image">
-        <img src="<?= $model->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $model->name) ?>" width="130px">
+        <img src="<?= $model->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $model->name) ?>" width="150px">
     </div>
     <?php if (Yii::$app->user->isGuest): ?>
         <div class="market_entity_card_alert">

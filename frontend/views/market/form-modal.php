@@ -13,7 +13,7 @@ use yii\widgets\Pjax;
 
 <div class="modal_form_product">
     <div class="modal_form_product_image">
-        <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $drop->name) ?>" width="100px">
+        <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $drop->name) ?>" width="150px">
     </div>
     <?php if (Yii::$app->user->isGuest): ?>
         <div class="market_entity_card_alert">
