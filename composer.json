@@ -38,7 +38,11 @@
         "consik/yii2-websocket": "^1.0",
         "romkagolovadvayha/php-source-query-class": "dev-master",
         "lavrentiev/yii2-toastr": "dev-master",
-        "hail812/yii2-adminlte3": "^1.1"
+        "hail812/yii2-adminlte3": "^1.1",
+        "yii2mod/yii2-comments": "^2.0",
+        "tectalic/openai": "^1.6",
+        "orhanerday/open-ai": "^5.2",
+        "batdan/midjourney-api-php": "^2.1"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",

@@ -19,34 +19,37 @@ $this->params['meta_keywords'] = Yii::t('database', $blogCategory->keywords);
 $this->params['meta_description'] = Yii::t('database', $blogCategory->description);
 ?>
 
-<main id="main" role="main">
-    <div class="content_wrapper container">
-        <div class="content">
-            <?= Alert::widget() ?>
-            <?=$this->render('_header', [
-                'dataProvider' => $dataProvider,
-                'title' => $blogCategory->name,
-                'categoryId' => $blogCategory->id,
+<div class="container-fluid mb-5">
+    <div class="main_wrap">
+        <aside>
+            <?=$this->render('../layouts/_side_category_list', [
+                'category' => $blogCategory
             ])?>
-            <?= ListView::widget([
-                'id'           => 'blog-list-view',
-                'dataProvider' => $dataProvider,
-                'layout'       => "{items}{pager}",
-                'itemView'     => '../blog/_item',
-                'itemOptions' => [
-                    'tag' => false,
-                ],
-            ]) ?>
-        </div>
-        <div class="side">
-            <div class="side_container">
-                <?=$this->render('../layouts/_side_category_list', [
-                        'category' => $blogCategory
+            <?= $this->render('@frontend/views/widgets/_servers'); ?>
+            <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
+            <?= $this->render('@frontend/views/widgets/_live'); ?>
+            <!--            --><?php //echo $this->render('@frontend/views/widgets/_bonuses'); ?>
+            <?= $this->render('@frontend/views/widgets/_banners'); ?>
+        </aside>
+        <main id="main" role="main">
+            <div class="main_child">
+                <?= Alert::widget() ?>
+                <?=$this->render('_header', [
+                    'dataProvider' => $dataProvider,
+                    'title' => $blogCategory->name,
+                    'categoryId' => $blogCategory->id,
                 ])?>
-                <?=$this->render('../layouts/_side_popular_posts')?>
-                <?=$this->render('../layouts/_side_comments_list')?>
+                <?= ListView::widget([
+                                         'id'           => 'blog-list-view',
+                                         'dataProvider' => $dataProvider,
+                                         'layout'       => "{items}{pager}",
+                                         'itemView'     => '../blog/_item',
+                                         'itemOptions' => [
+                                             'tag' => false,
+                                         ],
+                                     ]) ?>
             </div>
-        </div>
+        </main>
     </div>
-</main>
+</div>
 

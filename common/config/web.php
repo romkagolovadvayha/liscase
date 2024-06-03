@@ -36,6 +36,9 @@ $config = [
             'roles'                   => ['ADMIN'],
             'allowedIPs'              => ['*']
         ],
+        'comment' => [
+            'class' => 'yii2mod\comments\Module',
+        ],
     ],
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
@@ -154,9 +157,23 @@ $config = [
         'curl'          => [
             'class' => \linslin\yii2\curl\Curl::class,
         ],
+        'openAi'   => [
+            'class'  => \common\components\openAi\OpenAiApi::class,
+            'apiKey'      => 'sk-proj-amY8H17pQlMQYaH0b6qRT3BlbkFJ9ZKbYA0IPZs14RSAEfNb',
+        ],
+        'midjourney'   => [
+            'class'  => \common\components\midjourney\MidjourneyApi::class,
+            'discordChannelId'      => '1150211599395737601',
+            'discordUserToken'      => 'MTE1MDIxMDQ4MTI2NTU5MDI5Mg.GZhegP.iSny8xdLjtgnETPDiiYygmJr4sHVu_hjEA-5R0',
+        ],
     ],
     'params' => $params,
 ];
+
+$config = yii\helpers\ArrayHelper::merge(
+    $config,
+    require('queue.php'),
+);
 
 if (YII_ENV_DEV) {
     // configuration adjustments for 'dev' environment

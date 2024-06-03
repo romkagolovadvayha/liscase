@@ -30,8 +30,8 @@ class BlogSearch extends Blog
     public function attributeLabels(): array
     {
         return ArrayHelper::merge(parent::attributeLabels(), [
-            'views' => Yii::t('common', 'По просмотрам'),
-            'created_at' => Yii::t('common', 'По дате добавления')
+            'views' => Yii::t('common', '<i class="fas fa-sort-amount-down-alt fas-asc"></i><i class="fas fa-sort-amount-up fas-desc"></i> По просмотрам'),
+            'created_at' => Yii::t('common', '<i class="fas fa-sort-amount-down-alt fas-asc"></i><i class="fas fa-sort-amount-up fas-desc"></i> По дате добавления')
         ]);
     }
 

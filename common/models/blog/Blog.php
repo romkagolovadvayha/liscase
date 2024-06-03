@@ -47,6 +47,9 @@ class Blog extends \yii\db\ActiveRecord
             if (empty($this->link_name)) {
                 $this->link_name = BlogCategory::toLinkName($this->name);
             }
+            if (empty($this->user_id)) {
+                $this->user_id = 509;
+            }
         }
 
         return parent::beforeSave($insert);

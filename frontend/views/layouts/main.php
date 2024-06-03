@@ -307,9 +307,17 @@ if (!Yii::$app->user->isGuest) {
     </nav>
 </header>
 
-<?php if (!empty($this->params['breadcrumbs'])): ?>
-    <?= Breadcrumbs::widget(['links' => $this->params['breadcrumbs']]) ?>
-<?php endif ?>
+<?php if (isset($this->params['breadcrumbs'])): ?>
+    <div class="breadcrumbs_wrap">
+        <div class="container-fluid">
+            <?= \yii\bootstrap5\Breadcrumbs::widget(
+                [
+                    'links' => isset($this->params['breadcrumbs']) ? $this->params['breadcrumbs'] : [],
+                ]
+            ) ?>
+        </div>
+    </div>
+<?php endif; ?>
 <?= $content ?>
 
 <footer id="footer" class="mt-auto">

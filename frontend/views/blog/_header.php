@@ -1,6 +1,5 @@
 <?php
 
-use common\models\blog\BlogCategory;
 use yii\widgets\ListView;
 
 /** @var string $title */

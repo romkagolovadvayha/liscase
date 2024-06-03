@@ -7,30 +7,35 @@ use common\models\settings\Settings;
 /** @var yii\web\View $this */
 /** @var \yii\data\ActiveDataProvider $dataProvider */
 
-$this->title = Settings::getByKey('title');
+$this->title = Yii::t('common', 'Баги и новости Rust');
 
+$this->params['breadcrumbs'][] = ['label' => Yii::t('common', "Блог")];
 ?>
-<main id="main" role="main">
-    <div class="content_wrapper container">
-        <div class="content">
-            <?= Alert::widget() ?>
-            <?=$this->render('_header', [
-                'dataProvider' => $dataProvider,
-                'title' => Yii::t('common', 'Блог'),
-            ])?>
-            <?= ListView::widget([
-                'id'           => 'blog-list-view',
-                'dataProvider' => $dataProvider,
-                'layout'       => "{items}{pager}",
-                'itemView'     => '../blog/_item',
-            ]) ?>
-        </div>
-        <div class="side">
-            <div class="side_container">
-                <?=$this->render('../layouts/_side_popular_posts')?>
-                <?=$this->render('../layouts/_side_comments_list')?>
-            </div>
-        </div>
-    </div>
-</main>
 
+<div class="container-fluid mb-5">
+    <div class="main_wrap">
+        <aside>
+            <?=$this->render('../layouts/_side_category_list')?>
+            <?= $this->render('@frontend/views/widgets/_servers'); ?>
+            <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
+            <?= $this->render('@frontend/views/widgets/_live'); ?>
+            <!--            --><?php //echo $this->render('@frontend/views/widgets/_bonuses'); ?>
+            <?= $this->render('@frontend/views/widgets/_banners'); ?>
+        </aside>
+        <main id="main" role="main">
+            <div class="main_child">
+                <?= Alert::widget() ?>
+                <?=$this->render('_header', [
+                    'dataProvider' => $dataProvider,
+                    'title' => Yii::t('common', 'Блог'),
+                ])?>
+                <?= ListView::widget([
+                                         'id'           => 'blog-list-view',
+                                         'dataProvider' => $dataProvider,
+                                         'layout'       => "{items}{pager}",
+                                         'itemView'     => '../blog/_item',
+                                     ]) ?>
+            </div>
+        </main>
+    </div>
+</div>

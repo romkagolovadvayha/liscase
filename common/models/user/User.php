@@ -410,6 +410,10 @@ class User extends ActiveRecord implements IdentityInterface
         return $this->jwt;
     }
 
+    public function getAvatar() {
+        return $this->userProfile->avatar;
+    }
+
     /**
      * @param string $jwt
      *

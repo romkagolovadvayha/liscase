@@ -30,6 +30,10 @@ Yii::$container = new yii\di\Container;
  * @property \common\components\payments\FreeKassa $freeKassaApi
  * @property \common\components\telegram\Telegram  $telegram
  * @property \common\components\wargm\WarGM  $wargm
+ * @property \common\components\openAi\OpenAiApi $openAi
+ * @property \common\components\midjourney\MidjourneyApi $midjourney
+ * @property \yii\queue\redis\Queue              $queueOpenAi
+ * @property \yii\queue\redis\Queue              $queueMidjourney
  */
 abstract class BaseApplication extends yii\base\Application
 {

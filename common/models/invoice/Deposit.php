@@ -130,13 +130,13 @@ class Deposit extends \common\components\base\ActiveRecord
             self::TYPE_PAYMENT_CARD      => Yii::t('common', 'Оплата картой'),
             self::TYPE_PAYMENT_SBP       => Yii::t('common', 'Оплата по СБП'),
 //            self::TYPE_PAYMENT_TRON      => Yii::t('common', 'Оплата TRON'),
-//            self::TYPE_PAYMENT_TRC20     => Yii::t('common', 'Оплата TRC20'),
-//            self::TYPE_PAYMENT_ERC20     => Yii::t('common', 'Оплата ERC20'),
+            self::TYPE_PAYMENT_TRC20     => Yii::t('common', 'Оплата TRC20'),
+            self::TYPE_PAYMENT_ERC20     => Yii::t('common', 'Оплата ERC20'),
 //            self::TYPE_PAYMENT_YOOONEY     => Yii::t('common', 'Оплата ЮMoney'),
-//            self::TYPE_PAYMENT_STEAM_PAY     => Yii::t('common', 'Оплата Steam Pay'),
+            self::TYPE_PAYMENT_STEAM_PAY     => Yii::t('common', 'Оплата Steam Pay'),
 //            self::TYPE_PAYMENT_VISA     => Yii::t('common', 'Оплата картой Visa'),
 //            self::TYPE_PAYMENT_MIR     => Yii::t('common', 'Оплата картой МИР'),
-//            self::TYPE_PAYMENT_PERFECT_MONEY     => Yii::t('common', 'Оплата Perfect Money'),
+            self::TYPE_PAYMENT_PERFECT_MONEY     => Yii::t('common', 'Оплата Perfect Money'),
         ];
     }
 
@@ -149,13 +149,13 @@ class Deposit extends \common\components\base\ActiveRecord
             self::TYPE_PAYMENT_CARD      => '/images/payments/cards.svg',
             self::TYPE_PAYMENT_SBP       => '/images/payments/sbp.svg',
 //            self::TYPE_PAYMENT_YOOONEY     => '/images/payments/iomoney.png',
-//            self::TYPE_PAYMENT_STEAM_PAY     => '/images/payments/scp_logo.png',
+            self::TYPE_PAYMENT_STEAM_PAY     => '/images/payments/scp_logo.png',
 //            self::TYPE_PAYMENT_VISA     => '/images/payments/tron.svg',
 //            self::TYPE_PAYMENT_MIR     => '/images/payments/tron.svg',
-//            self::TYPE_PAYMENT_PERFECT_MONEY     => '/images/payments/Perfect_Money.png',
+            self::TYPE_PAYMENT_PERFECT_MONEY     => '/images/payments/Perfect_Money.png',
 //            self::TYPE_PAYMENT_TRON      => '/images/payments/tron.svg',
-//            self::TYPE_PAYMENT_TRC20     => '/images/payments/tether.svg',
-//            self::TYPE_PAYMENT_ERC20     => '/images/payments/tether.svg',
+            self::TYPE_PAYMENT_TRC20     => '/images/payments/tether.svg',
+            self::TYPE_PAYMENT_ERC20     => '/images/payments/tether.svg',
         ];
     }
 

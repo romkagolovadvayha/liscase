@@ -141,6 +141,7 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/hail812/yii2-adminlte-widgets" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/hail812/yii2-adminlte3" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/yiisoft/yii2-bootstrap4" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/carbonphp/carbon-doctrine-types" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
