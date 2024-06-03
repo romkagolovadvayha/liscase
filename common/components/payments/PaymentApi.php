@@ -28,6 +28,7 @@ class PaymentApi extends Component
             Deposit::TYPE_PAYMENT_MIR           => PaymentMir::class,
             Deposit::TYPE_PAYMENT_PERFECT_MONEY => PaymentPerfectMoney::class,
             Deposit::TYPE_PAYMENT_TRON => PaymentTron::class,
+            Deposit::TYPE_PAYMENT_CARD_UA => PaymentCardUA::class,
         ];
 
         $className = ArrayHelper::getValue($classMap, $type);
