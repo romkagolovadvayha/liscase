@@ -103,6 +103,14 @@ $config = [
             'showScriptName'  => false,
             'rules'           => [
                 '/p/<refCode:\d+>'                 => '/',
+                'posts' => 'blog/index',
+                'posts/<categoryLinkName:[a-z0-9_-]+>/post-<blogLinkName:[a-z0-9_-]+>/?' => 'blog/view',
+                'posts/<categoryLinkName:[a-z0-9_-]+>/<categoryLinkNameChild:[a-z0-9_-]+>/post-<blogLinkName:[a-z0-9_-]+>/?' => 'blog/view',
+                'posts/<categoryLinkName:[a-z0-9_-]+>/?' => 'blog/category',
+                'posts/<categoryLinkName:[a-z0-9_-]+>/<categoryLinkNameChild:[a-z0-9_-]+>/?' => 'blog/category',
+                'sitemap.xml' => 'site/sitemap',
+                'robots.txt' => 'site/robots',
+                'rss' => 'site/rss',
             ],
         ],
         'authManager'   => [
