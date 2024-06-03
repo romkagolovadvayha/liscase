@@ -26,7 +26,7 @@ class PaymentSbp
         if ($result['status'] === 'succeeded') {
             $model->status = Deposit::STATUS_SUCCESS;
             $model->save(false);
-            Deposit::bonus($model->user, $model->amount);
+            Deposit::bonus($model->user, $model->amount, $model->payment_type);
             $model->user->getPersonalBalance()->recalculateBalance();
         } elseif ($result['status'] === 'canceled') {
             $model->status = Deposit::STATUS_CANCELED;

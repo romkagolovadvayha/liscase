@@ -29,7 +29,7 @@ class PaymentSteamPay
         if ($result['orders'][0]['status'] === 1) {
             $model->status = Deposit::STATUS_SUCCESS;
             $model->save(false);
-            Deposit::bonus($model->user, $model->amount);
+            Deposit::bonus($model->user, $model->amount, $model->payment_type);
             $model->user->getPersonalBalance()->recalculateBalance();
         } elseif ($result['orders'][0]['status'] === 8 || $result['orders'][0]['status'] === 9) {
             $model->status = Deposit::STATUS_CANCELED;

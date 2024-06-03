@@ -7,6 +7,7 @@ use common\models\profit\Profit;
 use Yii;
 use common\models\user\User;
 use yii\base\BaseObject;
+use yii\helpers\ArrayHelper;
 
 /**
  * This is the model class for table "deposit".
@@ -208,10 +209,11 @@ class Deposit extends \common\components\base\ActiveRecord
     /**
      * @param User $user
      * @param $amount
+     * @param $paymentType
      *
      * @return mixed
      */
-    public static function bonus($user, $amount)
+    public static function bonus($user, $amount, $paymentType)
     {
         $amountTotalSum = Deposit::find()
                                ->andWhere(['status' => Deposit::STATUS_SUCCESS])
@@ -221,12 +223,22 @@ class Deposit extends \common\components\base\ActiveRecord
                             ->andWhere(['<=', 'created_at', date('Y-m-d') . " 23:59:59"])
                             ->andWhere(['status' => Deposit::STATUS_SUCCESS])
                             ->sum('amount') ?? 0;
+
+
         $message = "💰️ <b>Пополнение баланса</b>" . PHP_EOL
             . "Пользователь: {$user->username}" . PHP_EOL
             . "SteamID: {$user->steam_id}" . PHP_EOL
-            . "Сумма: {$amount} RUB" . PHP_EOL . PHP_EOL
+            . "Сумма: {$amount} RUB";
+
+        $paymentName = ArrayHelper::getValue(Deposit::getTypeList(), $paymentType);
+        if (!empty($paymentName)) {
+            $message .= PHP_EOL . "Метод оплаты: {$paymentName}";
+        }
+
+        $message .= PHP_EOL . PHP_EOL
             . "Всего за день: {$amountDaySum} RUB" . PHP_EOL
             . "Всего за всегда: {$amountTotalSum} RUB";
+
         Yii::$app->telegram->sendMessage($message);
 
         $bonus = 0;
