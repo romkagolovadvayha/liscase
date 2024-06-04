@@ -77,7 +77,7 @@ $servers = Servers::find()
                 <div class="page_stats_search_wrap">
                     <?=Select2::widget([
                         'name' => 'stats-search',
-                        'options' => ['placeholder' => 'Введите ник или Steam ID...'],
+                        'options' => ['placeholder' => Yii::t('common', 'Введите ник или Steam ID...')],
                         'pluginOptions' => [
                             'allowClear' => true,
                             'minimumInputLength' => 3,

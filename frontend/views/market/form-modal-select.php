@@ -26,7 +26,7 @@ use yii\bootstrap5\Html;
             </a>
         </div>
     <?php else: ?>
-        <div class="modal_form_product_description"><?=$model->description?></div>
+        <div class="modal_form_product_description"><?=Yii::t('database', $model->description)?></div>
         <?php Pjax::begin(
             [
                 'id'              => 'buy-container-pjax',
@@ -84,11 +84,11 @@ use yii\bootstrap5\Html;
                 <td><?=$model->drop->name?></td>
             </tr>
             <tr>
-                <td>Стоимость</td>
+                <td><?=Yii::t('common', 'Стоимость')?></td>
                 <td><?=$model->drop->getRealPrice()?> RUB</td>
             </tr>
         </table>
-        <div class="productModalGiveText">Чтобы получить, введите /store в чат</div>
+        <div class="productModalGiveText"><?=Yii::t('common', 'Чтобы получить, введите /store в чат')?></div>
         <input type="hidden" class="modal_form_product_buy" name="buy" value="1"/>
         <div class="modal_form_product_buttons">
             <button type="button" class="btn cancel" data-bs-dismiss="modal"><?=Yii::t('common', 'Закрыть')?></button>

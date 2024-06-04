@@ -89,7 +89,7 @@ JS
                 'encode' => false,
                 'linkOptions' => [
                         'class' => 'show-modal-link',
-                        'data-title' => 'Пополнить баланс',
+                        'data-title' => Yii::t('common', 'Пополнить баланс'),
                         'data-size' => 'modal-sm',
                         'data-toggl' => 'modal',
                         'data-href' => '/user/payment',
@@ -130,7 +130,7 @@ JS
         'encode' => false,
         'linkOptions' => [
             'class' => 'show-modal-link',
-            'data-title' => 'Пополнить баланс',
+            'data-title' => Yii::t('common', 'Пополнить баланс'),
             'data-size' => 'modal-sm',
             'data-toggl' => 'modal',
             'data-href' => '/user/payment',
@@ -177,14 +177,13 @@ if (!Yii::$app->user->isGuest) {
 ?>
 <?php $this->beginPage() ?>
 <!DOCTYPE html>
-<html lang="<?= Yii::$app->language ?>" class="h-100">
+<html lang="<?= substr(Yii::$app->language, 0, 2) ?>" class="h-100">
 <head>
     <title><?= Html::encode($this->title) ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <?php $this->head() ?>
-    <meta name="robots" content="noindex, nofollow"/>
 </head>
 <body class="d-flex flex-column h-100">
 <?php $this->beginBody() ?>
@@ -228,9 +227,9 @@ if (!Yii::$app->user->isGuest) {
 //                        'languages'  => [
 //                            'en-US' => 'EN',
 //                            'ru-RU' => 'RU',
-//                            'de-DE' => 'DE',
-//                            'uk-UA' => 'UK',
-//                            'es-ES' => 'ES',
+////                            'de-DE' => 'DE',
+////                            'uk-UA' => 'UK',
+////                            'es-ES' => 'ES',
 //                        ],
 //                        'skin' => LanguagePicker::SKIN_DROPDOWN,
 //                        'size' => LanguagePicker::SIZE_LARGE,
@@ -252,8 +251,16 @@ if (!Yii::$app->user->isGuest) {
                             ],
                         ],
                         [
-                            'label'   => '<i class="fas fa-tasks"></i> Правила',
+                            'label'   => '<i class="fas fa-tasks"></i> ' . Yii::t('common', 'Правила'),
                             'url'     => '/servers/rules?server=max3',
+                            'encode' => false,
+                            'options'     => [
+                                'class' => 'menu-rules'
+                            ],
+                        ],
+                        [
+                            'label'   => '<i class="fa-solid fa-chart-pie"></i> ' . Yii::t('common', 'Статистика'),
+                            'url'     => '/stats?server=max3',
                             'encode' => false,
                             'options'     => [
                                 'class' => 'menu-rules'
@@ -277,14 +284,14 @@ if (!Yii::$app->user->isGuest) {
                         [
                             'label'   => '<i class="fab fa-vk"></i>',
                             'encode' => false,
-                            'options' => ['class' =>'vk_social', 'title' => 'Мы в Вконтакте'],
+                            'options' => ['class' =>'vk_social', 'title' => Yii::t('common', 'Мы в Вконтакте')],
                             'url'     => 'https://vk.com/prostoj_rust',
                             'linkOptions'     => ['target' => '_blank'],
                         ],
                         [
                             'label'   => '<i class="fab fa-discord"></i>',
                             'encode' => false,
-                            'options' => ['class' =>'discord_social', 'title' => 'Мы в Discord'],
+                            'options' => ['class' =>'discord_social', 'title' => Yii::t('common', 'Мы в Discord')],
                             'url'     => 'https://discord.gg/prostoj',
                             'linkOptions'     => ['target' => '_blank'],
                         ],
@@ -324,10 +331,10 @@ if (!Yii::$app->user->isGuest) {
     <div class="container">
         <div class="row">
             <div class="col-md-12 text-center">
-                Размещенная на настоящем сайте информация носит исключительно информационный характер и ни при каких условиях не является публичной офертой, определяемой положениями ч. 2 ст. 437 Гражданского кодекса Российской Федерации.
+                <?=Yii::t('common', 'Размещенная на настоящем сайте информация носит исключительно информационный характер и ни при каких условиях не является публичной офертой, определяемой положениями ч. 2 ст. 437 Гражданского кодекса Российской Федерации.')?>
                 <br/>
-                <a class="ShopFooter-module__link" href="/site/agreement" target="_blank" rel="noreferrer">Пользовательское соглашение</a>
-                <a class="ShopFooter-module__link" href="/site/privacy" target="_blank" rel="noreferrer">Политика конфиденциальности</a>
+                <a class="ShopFooter-module__link" href="/site/agreement" target="_blank" rel="noreferrer"><?=Yii::t('common', 'Пользовательское соглашение')?></a>
+                <a class="ShopFooter-module__link" href="/site/privacy" target="_blank" rel="noreferrer"><?=Yii::t('common', 'Политика конфиденциальности')?></a>
                 <a class="ShopFooter-module__link" href="mailto:help@prostoj.store" target="_blank" rel="noreferrer">prostoj.store</a>
             </div>
         </div>

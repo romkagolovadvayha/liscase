@@ -28,7 +28,7 @@
     </div>
     <?php if ($blocked): ?>
         <div class="products_item_blocked_wrap">
-            <div class="products_item_blocked_title">Вайп блок</div>
+            <div class="products_item_blocked_title"><?=Yii::t('common', 'Вайп блок')?></div>
             <div class="products_item_blocked_timer blocked_products_timer" data-time="<?=strtotime($drop->blocked_at)?>"><?=$drop->blocked_at?></div>
         </div>
     <?php endif; ?>

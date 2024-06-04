@@ -16,11 +16,11 @@ $servers = \common\models\servers\Servers::find()
     <input class="widget_live_checkbox" id="live_page" type="radio" name="widget_live_page" value="1" checked>
     <input class="widget_live_checkbox" id="top_page" type="radio" name="widget_live_page" value="2">
     <div class="boxHeader widget_top_header">
-        <h2 id="top_title">Топ</h2>
-        <h2 id="live_title">Прямой эфир</h2>
+        <h2 id="top_title"><?=Yii::t('common', 'Топ')?></h2>
+        <h2 id="live_title"><?=Yii::t('common', 'Прямой эфир')?></h2>
         <div class="widget_live_pages">
             <label id="live_page_label" class="widget_live_servers_item" for="live_page"><i class="fa-solid fa-heart-pulse"></i> LIVE</label>
-            <label id="top_page_label" class="widget_live_servers_item" for="top_page"><i class="fa-solid fa-person-arrow-up-from-line"></i> ТОП</label>
+            <label id="top_page_label" class="widget_live_servers_item" for="top_page"><i class="fa-solid fa-person-arrow-up-from-line"></i> <?=Yii::t('common', 'Топ')?></label>
         </div>
     </div>
     <div class="widget_live_body_wrap_wrap" id="live_body">

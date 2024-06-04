@@ -25,7 +25,7 @@ use yii\widgets\Pjax;
                 <div class="modal_form_products_item_count">x<?=$setsDrop->count?></div>
                 <?php if ($blocked): ?>
                     <div class="modal_form_products_item_blocked_wrap">
-                        <div class="modal_form_products_item_blocked_title">Вайп блок</div>
+                        <div class="modal_form_products_item_blocked_title"><?=Yii::t('common', 'Вайп блок')?></div>
                         <div class="modal_form_products_item_blocked_timer blocked_products_timer" data-time="<?=strtotime($setsDrop->drop->blocked_at)?>"><?=$setsDrop->drop->blocked_at?></div>
                     </div>
                 <?php endif; ?>
@@ -43,14 +43,14 @@ use yii\widgets\Pjax;
             </a>
         </div>
     <?php else: ?>
-        <div class="modal_form_product_description"><?=$sets->description?></div>
+        <div class="modal_form_product_description"><?=Yii::t('database', $sets->description)?>></div>
         <table class="table">
             <tr>
-                <td>Стоимость</td>
+                <td><?=Yii::t('common', 'Стоимость')?></td>
                 <td><?=$sets->getRealPrice()?> RUB</td>
             </tr>
         </table>
-        <div class="productModalGiveText">Чтобы получить, введите /store в чат</div>
+        <div class="productModalGiveText"><?=Yii::t('common', 'Чтобы получить, введите /store в чат')?></div>
         <?php Pjax::begin(
             [
                 'id'              => 'buy-container-pjax',
@@ -83,6 +83,6 @@ use yii\widgets\Pjax;
     for (var i = 0; i < blocked_products.length; i++) {
         var dateTime = $(blocked_products[i]).attr('data-time');
         var left = moment.unix(dateTime);
-        $(blocked_products[i]).html(left.locale('ru').fromNow());
+        $(blocked_products[i]).html(left.locale('<?=substr(Yii::$app->language, 0, 2)?>').fromNow());
     }
 </script>

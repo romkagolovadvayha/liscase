@@ -21,7 +21,7 @@ class LanguagePicker extends \lajax\languagepicker\widgets\LanguagePicker
     {
         $subDomain = explode('.', $_SERVER['HTTP_HOST'])[0];
         $subDomain = strtolower(str_replace(['https://', 'http://'], '', $subDomain));
-        $this->currentLanguage = 'en-US';
+        $this->currentLanguage = 'ru-RU';
         if (in_array($subDomain, array_keys($this->languages))) {
             $this->currentLanguage = $this->languages[$subDomain];
             $this->subDomain = $subDomain;
@@ -52,7 +52,7 @@ class LanguagePicker extends \lajax\languagepicker\widgets\LanguagePicker
         $domain = substr(Yii::$app->params['cookieDomain'], 1);
         $protocol = explode($domain, Yii::$app->params['baseUrl'])[0];
         $languageCode = strtolower($this->languages[$language]);
-        if ($languageCode !== 'en') {
+        if ($languageCode !== 'ru') {
             $subDomain = $protocol . $languageCode . '.' . $domain;
         } else {
             $subDomain = $protocol . $domain;

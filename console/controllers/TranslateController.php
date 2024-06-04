@@ -12,6 +12,7 @@ use yii\base\BaseObject;
 use yii\console\Controller;
 use yii\helpers\ArrayHelper;
 use Yii;
+use yii\i18n\DbMessageSource;
 
 class TranslateController extends Controller
 {
@@ -29,9 +30,9 @@ class TranslateController extends Controller
 
         $languages = [
             'en' => 'en-US',
-            'de' => 'de-DE',
-            'uk' => 'uk-UA',
-            'es' => 'es-ES',
+//            'de' => 'de-DE',
+//            'uk' => 'uk-UA',
+//            'es' => 'es-ES',
         ];
 
         $google = new TranslateApi();
@@ -86,24 +87,16 @@ class TranslateController extends Controller
         $languages = [
             'ru-RU',
             'en-US',
-            'de-DE',
-            'it-IT',
-            'es-ES',
-            'fr-FR',
-            'vi-VN',
-            'id-ID',
-            'hi-IN',
-            'pt-PT',
-            'tr-TR',
-            'hr-HR'
         ];
 
         foreach ($languages as $language) {
-            $key = ['yii\\i18n\\DbMessageSource', 'common', $language];
+            $key = [DbMessageSource::class, 'common', $language];
             Yii::$app->cache->delete($key);
-            $key = ['yii\\i18n\\DbMessageSource', 'database', $language];
+            $key = [DbMessageSource::class, 'database', $language];
             Yii::$app->cache->delete($key);
         }
+
+        Yii::$app->cache->flush();
     }
 
 }

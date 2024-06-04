@@ -121,9 +121,19 @@ if (YII_ENV_DEV) {
     ];
 }
 
-//$subDomain = explode('.', $_SERVER['HTTP_HOST'])[0];
-//$subDomain = str_replace(['https://', 'http://'], '', $subDomain);
-//if (in_array($subDomain, array_keys($languages))) {
-//    $config['language'] = $languages[$subDomain];
-//}
+$languages = [
+    'en' => 'en-US',
+    'ru' => 'ru-RU',
+//    'de' => 'de-DE',
+//    'uk' => 'uk-UA',
+//    'es' => 'es-ES',
+];
+$config['params']['language'] = 'ru-RU';
+$subDomain = explode('.', $_SERVER['HTTP_HOST'])[0];
+$subDomain = str_replace(['https://', 'http://'], '', $subDomain);
+if (in_array($subDomain, array_keys($languages))) {
+    $config['language'] = $languages[$subDomain];
+    $config['params']['language'] = $languages[$subDomain];
+}
+$config['params']['homePage'] = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
 return $config;

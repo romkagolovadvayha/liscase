@@ -9,47 +9,47 @@ use common\models\servers\Servers;
 
 $hunters = [
     [
-        'name'  => 'Курицы',
+        'name'  => Yii::t('common', 'Курицы'),
         'count' => $player['chickens'],
         'icon'  => 'fa-solid fa-egg',
     ],
     [
-        'name'  => 'Кабаны',
+        'name'  => Yii::t('common', 'Кабаны'),
         'count' => $player['boars'],
         'icon'  => 'fa-solid fa-hippo',
     ],
     [
-        'name'  => 'Олени',
+        'name'  => Yii::t('common', 'Олени'),
         'count' => $player['deers'],
         'icon'  => 'fa-solid fa-leaf',
     ],
     [
-        'name'  => 'Лошади',
+        'name'  => Yii::t('common', 'Лошади'),
         'count' => $player['horses'],
         'icon'  => 'fa-solid fa-horse',
     ],
     [
-        'name'  => 'Волки',
+        'name'  => Yii::t('common', 'Волки'),
         'count' => $player['wolves'],
         'icon'  => 'fa-solid fa-bone',
     ],
     [
-        'name'  => 'Медведи',
+        'name'  => Yii::t('common', 'Медведи'),
         'count' => $player['bears'],
         'icon'  => 'fa-solid fa-paw',
     ],
     [
-        'name'  => 'Ученые',
+        'name'  => Yii::t('common', 'Ученые'),
         'count' => $player['scientists'],
         'icon'  => 'fa-solid fa-walkie-talkie',
     ],
     [
-        'name'  => 'Вертолеты',
+        'name'  => Yii::t('common', 'Вертолеты'),
         'count' => $player['helicopters'],
         'icon'  => 'fa-solid fa-helicopter',
     ],
     [
-        'name'  => 'Танки',
+        'name'  => Yii::t('common', 'Танки'),
         'count' => $player['bradleys'],
         'icon'  => 'fa-solid fa-car-burst',
     ],

@@ -145,34 +145,34 @@ while($row = mysqli_fetch_assoc($data)) {
             <img width="30px" title="<?=$row['weapon']?>" src="<?=$row['weapon_image']?>"/>
         <?php endif; ?>
         <?php if ($row['type'] === 'suicides'): ?>
-            <a title="Открыть профиль Steam" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
-            <span>совершил самоубийство</span>
+            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
+            <span><?=Yii::t('common', 'совершил самоубийство')?></span>
         <?php endif; ?>
         <?php if ($row['type'] === 'animal'): ?>
-            <a title="Открыть профиль Steam" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
-            <span>убил</span>
+            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
+            <span><?=Yii::t('common', 'убил')?></span>
             <span><?=$animals2[$row['dead']]?></span>
         <?php endif; ?>
         <?php if ($row['type'] === 'deaths'): ?>
             <span><?=$animals[$row['dead']]?></span>
-            <span>убил</span>
-            <a title="Открыть профиль Steam" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
+            <span><?=Yii::t('common', 'убил')?></span>
+            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
         <?php endif; ?>
         <?php if ($row['type'] === 'scientists'): ?>
-            <a title="Открыть профиль Steam" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
-            <span>убил</span>
+            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
+            <span><?=Yii::t('common', 'убил')?></span>
             <img width="30px" src="<?=$row['image']?>"/>
-            <span>бота</span>
+            <span><?=Yii::t('common', 'бота')?></span>
         <?php endif; ?>
         <?php if ($row['type'] === 'kill'): ?>
             <?php if (empty($row['image'])): ?>
-                <a title="Открыть профиль Steam" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
+                <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
             <?php else: ?>
-                <span>Бот</span>
+                <span><?=Yii::t('common', 'Бот')?></span>
                 <img width="30px" src="<?=$row['image']?>"/>
             <?php endif; ?>
-            <span>убил</span>
-            <a title="Открыть профиль Steam" class="link_name" target="#" href="/stats/player?steamId=<?=$row['dead']?>&server=<?=$server?>"><?=$row['dead_name']?></a>
+            <span><?=Yii::t('common', 'убил')?></span>
+            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['dead']?>&server=<?=$server?>"><?=$row['dead_name']?></a>
         <?php endif; ?>
     </div>
 <?php endforeach; ?>

@@ -136,15 +136,15 @@ class AuthController extends WebController
                     );
                     if ($auth->save()) {
                         $transaction->commit();
-                        $userBalance = $user->getPersonalBalance();
-                        $model = new Profit();
-                        $model->user_balance_id   = $userBalance->id;
-                        $model->amount            = 50;
-                        $model->type              = Profit::TYPE_BONUS;
-                        $model->comment           = Yii::t('common', 'Стартовый баланс', [], 'ru-RU');
-                        $model->status            = 1;
-                        $model->save();
-                        $userBalance->recalculateBalance();
+//                        $userBalance = $user->getPersonalBalance();
+//                        $model = new Profit();
+//                        $model->user_balance_id   = $userBalance->id;
+//                        $model->amount            = 50;
+//                        $model->type              = Profit::TYPE_BONUS;
+//                        $model->comment           = Yii::t('common', 'Стартовый баланс', [], 'ru-RU');
+//                        $model->status            = 1;
+//                        $model->save();
+//                        $userBalance->recalculateBalance();
                         Yii::$app->user->login($user,3600*24*7);
                     }
                     else {

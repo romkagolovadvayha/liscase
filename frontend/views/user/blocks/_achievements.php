@@ -30,13 +30,13 @@ $received = true;
                         <div class="achievements_body_list_items_item <?=($task['status'] === 2) ? ' disabled' : ''?>">
                             <div class="achievements_body_list_items_item_info">
                                 <div class="achievements_body_list_items_item_info_stitle">
-                                    Задание
+                                    <?=Yii::t('common', 'Задание')?>
                                 </div>
                                 <div class="achievements_body_list_items_item_info_stext">
-                                    <?=$task['description']?>
+                                    <?=Yii::t('database', $task['description'])?>
                                 </div>
                                 <div class="achievements_body_list_items_item_info_stitle">
-                                    Награда
+                                    <?=Yii::t('common', 'Награда')?>
                                 </div>
                                 <div class="achievements_body_list_items_item_info_simage">
                                     <img src="<?=$task['dropImage']?>"/>

@@ -26,18 +26,18 @@ use yii\widgets\Pjax;
             </a>
         </div>
     <?php else: ?>
-        <div class="modal_form_product_description"><?=$drop->description?></div>
+        <div class="modal_form_product_description"><?=Yii::t('database', $drop->description)?></div>
         <table class="table">
             <tr>
-                <td>Количество</td>
+                <td><?=Yii::t('common', 'Количество')?></td>
                 <td>x<?=$drop->count?></td>
             </tr>
             <tr>
-                <td>Стоимость</td>
+                <td><?=Yii::t('common', 'Стоимость')?></td>
                 <td><?=$drop->getRealPrice()?> RUB</td>
             </tr>
         </table>
-        <div class="productModalGiveText">Чтобы получить, введите /store в чат</div>
+        <div class="productModalGiveText"><?=Yii::t('common', 'Чтобы получить, введите /store в чат')?></div>
         <?php Pjax::begin(
             [
                 'id'              => 'buy-container-pjax',

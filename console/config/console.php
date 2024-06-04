@@ -11,6 +11,7 @@ $config['components']['user'] = [
     'class'         => 'common\components\console\User',
     'identityClass' => 'common\models\user\User',
 ];
+$config['components']['request'] = ['class' => 'console\components\Request'];
 $config['modules']['translateManager'] = [
     'class'                   => 'DemonDogSL\translateManager\Module',
     'root'                    => [
@@ -33,7 +34,42 @@ $config['modules']['translateManager'] = [
         [
             'connection' => 'db',
             'table' => '{{%drop}}',
-            'columns' => ['quality', 'description', 'name'],
+            'columns' => ['description', 'name'],
+        ],
+        [
+            'connection' => 'db',
+            'table' => '{{%select}}',
+            'columns' => ['description', 'name'],
+        ],
+        [
+            'connection' => 'db',
+            'table' => '{{%sets}}',
+            'columns' => ['description', 'name'],
+        ],
+        [
+            'connection' => 'db',
+            'table' => '{{%category}}',
+            'columns' => ['name'],
+        ],
+        [
+            'connection' => 'db',
+            'table' => '{{%servers}}',
+            'columns' => ['name', 'description', 'rules'],
+        ],
+        [
+            'connection' => 'db',
+            'table' => '{{%blog}}',
+            'columns' => ['name', 'description', 'keywords', 'content'],
+        ],
+        [
+            'connection' => 'db',
+            'table' => '{{%blog_category}}',
+            'columns' => ['name', 'description', 'keywords'],
+        ],
+        [
+            'connection' => 'db',
+            'table' => '{{%task}}',
+            'columns' => ['description'],
         ],
         [
             'connection' => 'db',

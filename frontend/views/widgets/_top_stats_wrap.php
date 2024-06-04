@@ -17,6 +17,6 @@ $servers = \common\models\servers\Servers::find()
         'dbPassword' => $server->db_password,
         'server' => $server->tag,
     ])?>
-<a href="/stats?server=<?=$server->tag?>" class="footer_button_stats"><i class="fa-solid fa-chart-pie"></i> Вся статистика</a>
+<a href="/stats?server=<?=$server->tag?>" class="footer_button_stats"><i class="fa-solid fa-chart-pie"></i> <?=Yii::t('common', 'Вся статистика')?></a>
 </div>
 <?php endforeach; ?>

@@ -99,12 +99,18 @@ $jobBadges = 0;
                             ],
                         ]
                     ],
-                    [
-                        'label' => 'Новости',
-                        'icon' => 'calendar-alt',
-                        'url' => ['/news/index'],
-                        'active' => _checkActive('/news'),
-                    ],
+                   [
+                       'label'  => Yii::t('common', 'Блог'),
+                       'icon'   => 'bi bi-newspaper',
+                       'url'    => '/blog',
+                       'active' => _checkActive('/blog/'),
+                   ],
+                   [
+                       'label'  => Yii::t('common', 'Переводы'),
+                       'icon'   => 'bi bi-newspaper',
+                       'url'    => '/translateManager',
+                       'active' => _checkActive('/translateManager'),
+                   ],
                     [
                         'label' => 'Промокоды',
                         'icon' => 'calendar-alt',

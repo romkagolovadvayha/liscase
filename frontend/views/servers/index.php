@@ -75,9 +75,9 @@ $this->registerJs($formatJs, \yii\web\View::POS_END);
                                     <div class="server_info_profile_server_info_online">
                                         <div class="server_info_profile_server_info_online_players">
                                             <?php if ($server->status === Servers::STATUS_ACTIVE): ?>
-                                                <span class="server_info_profile_server_info_online_players_players" title="Игроков на сервере"><?=$server->players + $server->joined?></span><span>/</span><span><?=$server->max?></span>
+                                                <span class="server_info_profile_server_info_online_players_players" title="<?=Yii::t('common', 'Игроков на сервере')?>"><?=$server->players + $server->joined?></span><span>/</span><span><?=$server->max?></span>
                                             <?php else: ?>
-                                                <span class="server_info_profile_server_info_online_players_players">Выключен</span>
+                                                <span class="server_info_profile_server_info_online_players_players"><?=Yii::t('common', 'Выключен')?></span>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -124,7 +124,7 @@ $this->registerJs($formatJs, \yii\web\View::POS_END);
                                 <a href="https://rustmaps.com/map/<?=$server->map?>" target="_blank" class="server_info_profile_link"><span><?=Yii::t('common', 'Текущая карта')?></span></a>
                             </div>
                             <div class="server_info_description">
-                                <?=Yii::t('database', $server->description)?>
+                                <?=Yii::t('database', trim($server->description))?>
                                 <?php if ($server->stats_payment): ?>
                                 <div class="server_info_description_success"><span class="server_info_description_success_icon"><i class="fas fa-check"></i></span> <?=Yii::t('common', 'Оплата за первые места в')?> <a href="/stats?server=<?=$server->tag?>"><?=Yii::t('common', 'статистике')?></a></div>
                                 <?php endif; ?>

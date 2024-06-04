@@ -60,7 +60,7 @@ $rating = $blog->getBlogRatings()->sum('weight') ?? 0;
                         <div class="blog_item_body">
                             <div class="blog_item_body_text">
                                 <?=Yii::t('database', $blog->content)?>
-                                <?=$blog->description?>
+                                <?=Yii::t('database', $blog->description)?>
                             </div>
                         </div>
                         <div class="blog_item_data">

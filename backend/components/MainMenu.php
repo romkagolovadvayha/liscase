@@ -114,10 +114,16 @@ class MainMenu
                 ],
             ],
             [
-                'label'  => Yii::t('common', 'Новости'),
+                'label'  => Yii::t('common', 'Блог'),
                 'icon'   => 'bi bi-newspaper',
-                'url'    => '/news/index',
-                'active' => $this->_checkActive('/news/'),
+                'url'    => '/blog',
+                'active' => $this->_checkActive('/blog/'),
+            ],
+            [
+                'label'  => Yii::t('common', 'Переводы'),
+                'icon'   => 'bi bi-newspaper',
+                'url'    => '/translateManager',
+                'active' => $this->_checkActive('/translateManager'),
             ],
             [
                 'label' => Yii::t('common', 'Товары'),

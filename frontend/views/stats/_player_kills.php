@@ -47,32 +47,32 @@ $animals2 = Kills::getAnimals2List();
                 <?php endif; ?>
                 <?php if ($model['type'] === 'suicides'): ?>
                     <?=$link?>
-                    <span>совершил самоубийство</span>
+                    <span><?=Yii::t('common', 'совершил самоубийство')?></span>
                 <?php endif; ?>
                 <?php if ($model['type'] === 'animal'): ?>
                     <?=$link?>
-                    <span>убил</span>
+                    <span><?=Yii::t('common', 'убил')?></span>
                     <span><?=$animals2[$model['dead']]?></span>
                 <?php endif; ?>
                 <?php if ($model['type'] === 'deaths'): ?>
                     <span><?=$animals[$model['dead']]?></span>
-                    <span>убил</span>
+                    <span><?=Yii::t('common', 'убил')?></span>
                     <?=$link?>
                 <?php endif; ?>
                 <?php if ($model['type'] === 'scientists'): ?>
                     <?=$link?>
-                    <span>убил</span>
+                    <span><?=Yii::t('common', 'убил')?></span>
                     <img width="30px" src="<?=$model['image']?>"/>
-                    <span>бота</span>
+                    <span><?=Yii::t('common', 'бота')?></span>
                 <?php endif; ?>
                 <?php if ($model['type'] === 'kill'): ?>
                     <?php if (empty($model['image'])): ?>
                         <?=$link?>
                     <?php else: ?>
-                        <span>Бот</span>
+                        <span><?=Yii::t('common', 'Бот')?></span>
                         <img width="30px" src="<?=$model['image']?>"/>
                     <?php endif; ?>
-                    <span>убил</span>
+                    <span><?=Yii::t('common', 'убил')?></span>
                     <?=$deadLink?>
                 <?php endif; ?>
             </div>

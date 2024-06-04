@@ -16,7 +16,7 @@ $reider  = [
         'desc'  => $player['c4thrown'],
     ],
     [
-        'name'  => 'Ракеты',
+        'name'  => Yii::t('common', 'Ракеты'),
         'icon'  => 'fa-solid fa-rocket',
         'image' => 'https://gamestores.app/img/games/rust/-742865266.png',
         'count' => $player['rocketsfired'],
@@ -24,7 +24,7 @@ $reider  = [
         'desc'  => $player['rocketsfired'],
     ],
     [
-        'name'  => 'Сачели',
+        'name'  => Yii::t('common', 'Сачели'),
         'icon'  => 'fa-solid fa-bomb',
         'image' => 'https://gamestores.app/img/games/rust/-1878475007.png',
         'count' => $player['satchelsthrown'],

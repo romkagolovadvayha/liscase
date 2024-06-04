@@ -29,7 +29,7 @@
                                            'encode' => false,
                                            'linkOptions' => [
                                                'class' => 'show-modal-link',
-                                               'data-title' => 'Пополнить баланс',
+                                               'data-title' => Yii::t('common', 'Пополнить баланс'),
                                                'data-size' => 'modal-sm',
                                                'data-toggl' => 'modal',
                                                'data-href' => '/user/payment',

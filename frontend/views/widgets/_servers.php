@@ -39,13 +39,13 @@ $servers = Servers::find()
                      data-clipboard-text="connect <?=$server->ip?>:<?=$server->port?>"
                      data-message="<?=Yii::t('common', 'IP адрес скопирован в буфер обмена!')?>">
                     <div class="servers_item_header">
-                        <div class="servers_item_header_name"><?=$server->name?></div>
+                        <div class="servers_item_header_name"><?=Yii::t('database', trim($server->name))?></div>
 <!--                        <div class="servers_item_header_address">--><?php //echo $server->ip?><!--:--><?php //echo $server->port?><!--</div>-->
                         <div class="servers_item_header_players">
                             <?php if ($server->status === Servers::STATUS_ACTIVE): ?>
-                                <span class="servers_item_header_players_players" title="Игроков на сервере"><?=$server->players + $server->joined?></span><span>/</span><span><?=$server->max?></span>
+                                <span class="servers_item_header_players_players" title="<?=Yii::t('common', 'Игроков на сервере')?>"><?=$server->players + $server->joined?></span><span>/</span><span><?=$server->max?></span>
                             <?php else: ?>
-                                <span class="servers_item_header_players_players">Выключен</span>
+                                <span class="servers_item_header_players_players"><?=Yii::t('common', 'Выключен')?></span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -63,7 +63,7 @@ $servers = Servers::find()
                     </div>
                 </div>
             <?php endforeach; ?>
-            <a href="/servers" class="servers_link"><span>Наши сервера</span></a>
+            <a href="/servers" class="servers_link"><span><?=Yii::t('common', 'Наши сервера')?></span></a>
         </div>
     </div>
 </div>

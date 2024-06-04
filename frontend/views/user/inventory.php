@@ -59,7 +59,7 @@ JS
                                                 </div>
                                                 <?php if ($blocked): ?>
                                                     <div class="box_cards_card_blocked_wrap">
-                                                        <div class="box_cards_card_blocked_title">Вайп блок</div>
+                                                        <div class="box_cards_card_blocked_title"><?=Yii::t('common', 'Вайп блок')?></div>
                                                         <div class="box_cards_card_blocked_timer blocked_products_timer" data-time="<?=strtotime($drop->blocked_at)?>"><?=$drop->blocked_at?></div>
                                                     </div>
                                                 <?php endif; ?>

@@ -52,13 +52,13 @@ if ($accuracy > 100) {
 }
 $items = [
     [
-        'name'  => 'Убийств',
+        'name'  => Yii::t('common', 'Убийств'),
         'icon'  => 'fa-solid fa-gun',
         'count' => $player['kills'],
         'desc'  => $player['kills'],
     ],
     [
-        'name'  => 'Смертей',
+        'name'  => Yii::t('common', 'Смертей'),
         'icon'  => 'fa-solid fa-cross',
         'count' => $player['deaths'],
         'desc'  => $player['deaths'],
@@ -70,7 +70,7 @@ $items = [
         'desc'  => $kdr,
     ],
     [
-        'name'  => 'Точность',
+        'name'  => Yii::t('common', 'Точность'),
         'icon'  => 'fa-solid fa-bullseye',
         'count' => $accuracy,
         'desc'  => $accuracy . '%',
@@ -82,7 +82,7 @@ $items = [
 <div class="container-fluid mb-5">
     <div class="stats_player_buttons">
         <a href="/stats?server=<?=$server->tag?>" class="stats_player_buttons_back">
-            <i class="fas fa-arrow-left"></i><div class="stats_player_buttons_back_title">Назад</div>
+            <i class="fas fa-arrow-left"></i><div class="stats_player_buttons_back_title"><?=Yii::t('common', 'Назад')?></div>
         </a>
     </div>
     <div class="stats_player">

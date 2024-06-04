@@ -148,7 +148,7 @@ class Deposit extends \common\components\base\ActiveRecord
      */
     public static function getIconTypeList()
     {
-        return [
+        $icons = [
             self::TYPE_PAYMENT_CARD      => '/images/payments/cards.svg',
             self::TYPE_PAYMENT_SBP       => '/images/payments/sbp.svg',
 //            self::TYPE_PAYMENT_YOOONEY     => '/images/payments/iomoney.png',
@@ -161,6 +161,14 @@ class Deposit extends \common\components\base\ActiveRecord
             self::TYPE_PAYMENT_ERC20     => '/images/payments/tether.svg',
             self::TYPE_PAYMENT_CARD_UA     => 'images/payments/cards.svg',
         ];
+
+        if (Yii::$app->language !== 'ru-RU') {
+            unset($icons[self::TYPE_PAYMENT_CARD]);
+            unset($icons[self::TYPE_PAYMENT_SBP]);
+            unset($icons[self::TYPE_PAYMENT_CARD_UA]);
+        }
+
+        return $icons;
     }
 
     /**

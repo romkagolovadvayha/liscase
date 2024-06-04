@@ -58,6 +58,7 @@ $categories = \common\models\box\Category::find()
     ->all();
 ?>
 <?php
+$locale = substr(Yii::$app->language, 0, 2);
 $this->registerJs(<<<JS
         $(document).on('change', '.modal_form_product_select_item_radio', function (e) {
             $('.modal_form_product_buy').val('0');
@@ -68,7 +69,7 @@ $this->registerJs(<<<JS
         for (var i = 0; i < blocked_products.length; i++) {
             var dateTime = $(blocked_products[i]).attr('data-time');
             var left = moment.unix(dateTime);
-            $(blocked_products[i]).html(left.locale('ru').fromNow());
+            $(blocked_products[i]).html(left.locale('{$locale}').fromNow());
         }
 JS
 );
@@ -93,7 +94,7 @@ JS
         <main id="main" role="main">
             <div class="main_child">
                 <div class="products_search">
-                    <input type="text" id="search" onkeyup="search()" placeholder="Введите название предмета.." title="Поиск по товарам сервера" class="form-control" autocomplete="off">
+                    <input type="text" id="search" onkeyup="search()" placeholder="<?=Yii::t('common', 'Введите название предмета..')?>" title="<?=Yii::t('common', 'Поиск по товарам сервера')?>" class="form-control" autocomplete="off">
                 </div>
                 <div class="products_categories">
                     <ul>
@@ -118,7 +119,7 @@ JS
                                 <div class="products_item_roulete products_item_roulete_blocked" title="Бесплатная рулетка будет доступна через указанное время" data-title="<?=Yii::t('database', $box->name)?>">
                                     <div class="products_item_roulete_blocked_title">
                                         <i class="far fa-clock"></i>
-                                        Бесплатная рулетка будет доступна <span class="products_item_roulete_blocked_title_timer" id="roulete_timer">через 18 часов</span>
+                                        <?=Yii::t('common', 'Бесплатная рулетка будет доступна')?> <span class="products_item_roulete_blocked_title_timer" id="roulete_timer"><?=Yii::t('common', 'через 18 часов')?></span>
                                     </div>
                                 </div>
                                 <?php
