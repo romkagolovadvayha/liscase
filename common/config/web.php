@@ -54,7 +54,7 @@ $config = [
                     'sourceMessageTable' => '{{%language_source}}',
                     'messageTable'       => '{{%language_translate}}',
                     'enableCaching'      => true,
-                    'cachingDuration'    => 86400,
+                    'cachingDuration'    => 60*5,
                 ],
             ],
         ],
