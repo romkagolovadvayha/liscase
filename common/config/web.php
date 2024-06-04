@@ -53,7 +53,7 @@ $config = [
                     'sourceLanguage'     => 'ru-RU',
                     'sourceMessageTable' => '{{%language_source}}',
                     'messageTable'       => '{{%language_translate}}',
-                    'enableCaching'      => false,
+                    'enableCaching'      => true,
                     'cachingDuration'    => 86400,
                 ],
             ],
