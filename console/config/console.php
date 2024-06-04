@@ -13,7 +13,7 @@ $config['components']['user'] = [
 ];
 $config['components']['request'] = ['class' => 'console\components\Request'];
 $config['modules']['translateManager'] = [
-    'class'                   => 'DemonDogSL\translateManager\Module',
+    'class'                   => \DemonDogSL\translateManager\Module::class,
     'root'                    => [
         '@backend',
         '@frontend',

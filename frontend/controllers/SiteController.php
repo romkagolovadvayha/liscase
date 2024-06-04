@@ -182,11 +182,9 @@ class SiteController extends WebController
         Yii::$app->response->headers->add('Content-Type', 'text/xml');
         $categories = BlogCategory::find()->andWhere(['status' => BlogCategory::STATUS_ACTIVE])->orderBy(['created_at' => SORT_ASC])->all();
         $articles = Blog::find()->andWhere(['status' => Blog::STATUS_ACTIVE])->orderBy(['created_at' => SORT_ASC])->all();
-        $users = User::find()->andWhere(['status' => User::STATUS_ACTIVE])->orderBy(['created_at' => SORT_ASC])->all();
         return $this->renderPartial('sitemap', [
             'articles' => $articles,
             'categories' => $categories,
-            'users' => $users,
         ]);
     }
 

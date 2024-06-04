@@ -10,9 +10,9 @@ use common\models\settings\Settings;
 echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
 <rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
     <channel>
-        <title><?php if (!empty($category)): ?><?=Yii::t('database', $category->name)?><?php else: ?><?=Settings::getByKey('title')?><?php endif; ?></title>
+        <title><?php if (!empty($category)): ?><?=Yii::t('database', $category->name)?><?php else: ?><?=Yii::t('database', 'Простой проект серверов Rust')?><?php endif; ?></title>
         <link><?=Yii::$app->params['homePage']?></link>
-        <description><?php if (!empty($category)): ?><?=Yii::t('database', $category->description)?><?php else: ?><?=Settings::getByKey('description')?><?php endif; ?></description>
+        <description><?php if (!empty($category)): ?><?=Yii::t('database', $category->description)?><?php else: ?><?=Yii::t('database', 'Сервера Rust для новичков')?><?php endif; ?></description>
         <language><?=Yii::$app->params['language']?></language>
         <?php if (!empty($articles)): ?>
             <?php foreach ($articles as $blog): ?>

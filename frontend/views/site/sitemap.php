@@ -6,7 +6,6 @@ use common\models\user\User;
 
 /** @var Blog[] $articles */
 /** @var BlogCategory[] $categories */
-/** @var User[] $users */
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
 <urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
@@ -32,13 +31,6 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
             <?php else: ?>
                 <priority>0.8</priority>
             <?php endif; ?>
-        </url>
-    <?php endforeach; ?>
-    <?php foreach ($users as $user): ?>
-        <url>
-            <loc><?=Yii::$app->params['homePage']?>/users/<?= $user->username ?></loc>
-            <lastmod><?= date('Y-m-d', strtotime($user->created_at)) ?></lastmod>
-            <priority>0.5</priority>
         </url>
     <?php endforeach; ?>
 </urlset>
