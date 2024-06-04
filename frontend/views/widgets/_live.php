@@ -33,7 +33,7 @@ $servers = \common\models\servers\Servers::find()
             <label id="pve_live_label" class="widget_live_servers_item" for="pve_live">PVE</label>
         </div>
         <div class="widget_live_body_wrap">
-            <?php if ($this->beginCache('live_stats_wrap', ['duration' => 30])): ?>
+            <?php if ($this->beginCache('live_stats_wrap' . Yii::$app->language, ['duration' => 30])): ?>
                 <?= $this->render('@frontend/views/widgets/_live_stats_wrap'); ?>
                 <?php $this->endCache(); ?>
             <?php endif; ?>
@@ -49,7 +49,7 @@ $servers = \common\models\servers\Servers::find()
             <label id="pve_top_label" class="widget_live_servers_item" for="pve_top">PVE</label>
         </div>
         <div class="widget_top_body_wrap">
-            <?php if ($this->beginCache('top_stats_wrap', ['duration' => 300])): ?>
+            <?php if ($this->beginCache('top_stats_wrap' . Yii::$app->language, ['duration' => 300])): ?>
                 <?= $this->render('@frontend/views/widgets/_top_stats_wrap'); ?>
             <?php $this->endCache(); ?>
             <?php endif; ?>

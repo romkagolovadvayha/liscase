@@ -55,7 +55,7 @@ $servers = Servers::find()
 ?>
 
 <div class="last_drops_wrapper">
-    <?php if ($this->beginCache('_last_drops', ['duration' => 10])): ?>
+    <?php if ($this->beginCache('_last_drops' . Yii::$app->language, ['duration' => 10])): ?>
         <?= $this->render('@frontend/views/widgets/_last_drops'); ?>
         <?php $this->endCache(); ?>
     <?php endif; ?>

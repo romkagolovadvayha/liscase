@@ -76,7 +76,7 @@ JS
 ?>
 
 <div class="last_drops_wrapper">
-    <?php if ($this->beginCache('_last_drops', ['duration' => 10])): ?>
+    <?php if ($this->beginCache('_last_drops' . Yii::$app->language, ['duration' => 10])): ?>
         <?= $this->render('@frontend/views/widgets/_last_drops'); ?>
         <?php $this->endCache(); ?>
     <?php endif; ?>
@@ -141,7 +141,7 @@ JS
                         </div>
                     </div>
                     <div class="products" id="products">
-                        <?php if ($this->beginCache('products', ['duration' => 30])): ?>
+                        <?php if ($this->beginCache('products' . Yii::$app->language, ['duration' => 30])): ?>
                             <?php foreach (\common\models\box\Sets::getSetsForMarket() as $sets): ?>
                                 <div data-href="/market/form-modal-set?id=<?=$sets->id?>" data-category-id="1" class="products_item show-modal-link active" data-title="<?=Yii::t('database', $sets->name)?>" data-size="modal" data-toggl="modal" data-target="modal-dialog">
                                     <div class="products_item_body">
