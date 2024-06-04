@@ -222,19 +222,19 @@ if (!Yii::$app->user->isGuest) {
                     <img src="/images/logo.png"/>
                 </a>
 
-                <div class="header-language-picker" style="display: none">
-                    <?php echo LanguagePicker::widget([
-                        'languages'  => [
-                            'en-US' => 'EN',
-                            'ru-RU' => 'RU',
-//                            'de-DE' => 'DE',
-//                            'uk-UA' => 'UK',
-//                            'es-ES' => 'ES',
-                        ],
-                        'skin' => LanguagePicker::SKIN_DROPDOWN,
-                        'size' => LanguagePicker::SIZE_LARGE,
-                    ])?>
-                </div>
+<!--                <div class="header-language-picker" style="display: none">-->
+<!--                    --><?php //echo LanguagePicker::widget([
+//                        'languages'  => [
+//                            'en-US' => 'EN',
+//                            'ru-RU' => 'RU',
+////                            'de-DE' => 'DE',
+////                            'uk-UA' => 'UK',
+////                            'es-ES' => 'ES',
+//                        ],
+//                        'skin' => LanguagePicker::SKIN_DROPDOWN,
+//                        'size' => LanguagePicker::SIZE_LARGE,
+//                    ])?>
+<!--                </div>-->
                 <?=Nav::widget([
                     'items' => [
                         [
