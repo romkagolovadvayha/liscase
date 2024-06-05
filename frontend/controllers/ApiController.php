@@ -269,8 +269,10 @@ class ApiController extends WebController
             $result['code'] = 104;
             return json_encode($result,JSON_PRETTY_PRINT);
         }
-        $result['lastWipe'] = (new \DateTime($server->wipe))->format('d.m.Y H:i');
-        $result['nextWipe'] = (new \DateTime($server->next_wipe))->format('d.m.Y H:i');
+        $lastWipe = (new \DateTime($server->wipe))->format('d.m.Y H:i');
+        $nextWipe = (new \DateTime($server->next_wipe))->format('d.m.Y H:i');
+        $result['ru'] = "Последний вайп: <color=#aaf16e>{$lastWipe} МСК</color>\nСледующий вайп: <color=#aaf16e>{$nextWipe} МСК</color>";
+        $result['en'] = "Last WIPE: <color=#aaf16e>{$lastWipe} MSK</color>\Next WIPE: <color=#aaf16e>{$nextWipe} MSK</color>";
         $result['code'] = 200;
         return json_encode($result,JSON_PRETTY_PRINT);
     }
