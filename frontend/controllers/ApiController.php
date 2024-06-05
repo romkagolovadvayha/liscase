@@ -3,6 +3,7 @@
 namespace frontend\controllers;
 
 use common\controllers\WebController;
+use common\models\promocode\Promocode;
 use common\models\servers\Servers;
 use common\models\stats\Wipe;
 use common\models\user\User;
@@ -251,5 +252,26 @@ class ApiController extends WebController
         $result['result'] = "fail";
         $result['code'] = 104;
         return $result;
+    }
+
+
+    public function actionWipeInfo($serverTag)
+    {
+        header('Content-type: application/json');
+        /** @var Servers $server */
+        $server = Servers::find()
+            ->andWhere(['tag' => $serverTag])
+            ->one();
+        $result = [];
+        if (empty($server)) {
+            $result['message'] = "Данных нет";
+            $result['result'] = "fail";
+            $result['code'] = 104;
+            return json_encode($result,JSON_PRETTY_PRINT);
+        }
+        $result['lastWipe'] = (new \DateTime($server->wipe))->format('d.m.Y H:i');
+        $result['nextWipe'] = (new \DateTime($server->next_wipe))->format('d.m.Y H:i');
+        $result['code'] = 200;
+        return json_encode($result,JSON_PRETTY_PRINT);
     }
 }
