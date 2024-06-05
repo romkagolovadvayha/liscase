@@ -133,6 +133,9 @@ $servers = Servers::find()
                                         <?php if (in_array('sil', $commands)): ?>
                                             <li><span class="rules_command">/sil URL_IMAGE</span> - <?=Yii::t('common', 'Загрузить свое изображение в фоторамку')?></li>
                                         <?php endif; ?>
+                                        <?php if (in_array('vlock', $commands)): ?>
+                                            <li><span class="rules_command">/sil URL_IMAGE</span> - <?=Yii::t('common', 'Загрузить свое изображение в фоторамку')?></li>
+                                        <?php endif; ?>
                                         <li><span class="rules_command">/help</span> - <?=Yii::t('common', 'Помощь')?></li>
                                     </ol>
                                 </li>

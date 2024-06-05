@@ -254,7 +254,6 @@ class ApiController extends WebController
         return $result;
     }
 
-
     public function actionWipeInfo($serverTag)
     {
         header('Content-type: application/json');
@@ -273,6 +272,62 @@ class ApiController extends WebController
         $nextWipe = (new \DateTime($server->next_wipe))->format('d.m.Y H:i');
         $result['ru'] = "Последний вайп: <color=#aaf16e>{$lastWipe} МСК</color>\nСледующий вайп: <color=#aaf16e>{$nextWipe} МСК</color>";
         $result['en'] = "Last WIPE: <color=#aaf16e>{$lastWipe} MSK</color>\nNext WIPE: <color=#aaf16e>{$nextWipe} MSK</color>";
+        $result['code'] = 200;
+        return json_encode($result,JSON_PRETTY_PRINT);
+    }
+
+    public function actionHelpInfo($serverTag)
+    {
+        header('Content-type: application/json');
+        /** @var Servers $server */
+        $server = Servers::find()
+            ->andWhere(['tag' => $serverTag])
+            ->one();
+        $result = [];
+        if (empty($server)) {
+            $result['message'] = "Данных нет";
+            $result['result'] = "fail";
+            $result['code'] = 104;
+            return json_encode($result,JSON_PRETTY_PRINT);
+        }
+        $result['ru'] = "<color=#aaf16e>/pop</color> - Текущий онлайн игроков" . PHP_EOL .
+        "<color=#aaf16e>/wipe</color> - Информация о вайпе" . PHP_EOL .
+        "<color=#aaf16e>/store</color> - Корзина магазина" . PHP_EOL .
+        "<color=#aaf16e>/time</color> - Текущее время на сервере" . PHP_EOL .
+        "<color=#aaf16e>/pm</color> - Отправить личное сообщение пользователю";
+
+        $result['en'] = "<color=#aaf16e>/pop</color> - Current online for server" . PHP_EOL .
+        "<color=#aaf16e>/wipe</color> - Wipe info" . PHP_EOL .
+        "<color=#aaf16e>/store</color> - Basket shop" . PHP_EOL .
+        "<color=#aaf16e>/time</color> - Current time server" . PHP_EOL .
+        "<color=#aaf16e>/pm</color> - Private message";
+
+        $commands = json_decode($server->commands, 1);
+        if (in_array('remove', $commands)) {
+            $result['ru'] .= PHP_EOL . "<color=#aaf16e>/remove</color> - Удаление обьектов";
+            $result['en'] .= PHP_EOL . "<color=#aaf16e>/remove</color> - Remove objects";
+        }
+        if (in_array('fmenu', $commands)) {
+            $result['ru'] .= PHP_EOL . "<color=#aaf16e>/fmenu</color> - Меню друзей";
+            $result['en'] .= PHP_EOL . "<color=#aaf16e>/fmenu</color> - Friends menu";
+        }
+        if (in_array('sil', $commands)) {
+            $result['ru'] .= PHP_EOL . "<color=#aaf16e>/sil URL</color> - Вставить изображение в рамку";
+            $result['en'] .= PHP_EOL . "<color=#aaf16e>/sil URL</color> - Paste image";
+        }
+        if (in_array('vlock', $commands)) {
+            $result['ru'] .= PHP_EOL . "<color=#aaf16e>/vlock</color> - Установить код на транспорт";
+            $result['en'] .= PHP_EOL . "<color=#aaf16e>/vlock</color> - Codelock for minicopter";
+        }
+
+        $result['ru'] .= PHP_EOL . PHP_EOL .
+            "Discord: <color=#feeda1>discord.gg/prostoj</color>" . PHP_EOL .
+            "Сайт: <color=#feeda1>prostoj.store</color>";
+
+        $result['en'] .= PHP_EOL . PHP_EOL .
+            "Discord: <color=#feeda1>discord.gg/prostoj</color>" . PHP_EOL .
+            "Site: <color=#feeda1>en.prostoj.store</color>";
+
         $result['code'] = 200;
         return json_encode($result,JSON_PRETTY_PRINT);
     }
