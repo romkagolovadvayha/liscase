@@ -81,7 +81,7 @@ use yii\bootstrap5\Html;
         <table class="table">
             <tr>
                 <td>Товар</td>
-                <td><?=$model->drop->name?></td>
+                <td><?=Yii::t('database', $model->drop->name)?></td>
             </tr>
             <tr>
                 <td><?=Yii::t('common', 'Стоимость')?></td>

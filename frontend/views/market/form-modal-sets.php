@@ -43,7 +43,7 @@ use yii\widgets\Pjax;
             </a>
         </div>
     <?php else: ?>
-        <div class="modal_form_product_description"><?=Yii::t('database', $sets->description)?>></div>
+        <div class="modal_form_product_description"><?=Yii::t('database', $sets->description)?></div>
         <table class="table">
             <tr>
                 <td><?=Yii::t('common', 'Стоимость')?></td>

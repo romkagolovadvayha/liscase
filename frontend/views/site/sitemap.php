@@ -6,6 +6,7 @@ use common\models\user\User;
 
 /** @var Blog[] $articles */
 /** @var BlogCategory[] $categories */
+/** @var \common\models\servers\Servers[] $servers */
 
 echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
 <urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
@@ -15,6 +16,30 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
         <changefreq>daily</changefreq>
         <lastmod><?=date('Y-m-d')?></lastmod>
     </url>
+    <url>
+        <loc><?=Yii::$app->params['homePage']?>/servers</loc>
+        <lastmod><?= date('Y-m-d') ?></lastmod>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc><?=Yii::$app->params['homePage']?>/skindrops</loc>
+        <lastmod><?= date('Y-m-d') ?></lastmod>
+        <priority>0.9</priority>
+    </url>
+    <?php foreach ($servers as $server): ?>
+        <url>
+            <loc><?=Yii::$app->params['homePage']?>/servers/rules?server=<?=$server->tag?></loc>
+            <lastmod><?= date('Y-m-d') ?></lastmod>
+            <priority>0.8</priority>
+        </url>
+    <?php endforeach; ?>
+    <?php foreach ($servers as $server): ?>
+        <url>
+            <loc><?=Yii::$app->params['homePage']?>/stats?server=<?=$server->tag?></loc>
+            <lastmod><?= date('Y-m-d') ?></lastmod>
+            <priority>0.8</priority>
+        </url>
+    <?php endforeach; ?>
     <?php foreach ($articles as $article): ?>
         <url>
             <loc><?=Yii::$app->params['homePage']?><?= $article->getUrl() ?></loc>
