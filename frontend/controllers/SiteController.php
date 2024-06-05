@@ -188,6 +188,12 @@ class SiteController extends WebController
         ]);
     }
 
+    public function actionRobots()
+    {
+        Yii::$app->response->headers->set('Content-Type','application/txt; charset=UTF-8');
+        return $this->renderPartial('robots');
+    }
+
     public function actionRss($category = null)
     {
         Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
