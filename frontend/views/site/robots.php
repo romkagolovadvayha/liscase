@@ -4,4 +4,4 @@ Disallow: /user*
 Disallow: /site/online-counter*
 Disallow: /site/last-drops*
 
-Sitemap: <?=Yii::$app->params['baseUrl']?>/sitemap.xml
+Sitemap: <?=Yii::$app->params['homePage']?>/sitemap.xml
