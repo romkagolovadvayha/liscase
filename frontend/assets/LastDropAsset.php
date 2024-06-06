@@ -10,7 +10,7 @@ class LastDropAsset extends AssetBundle
 
     public $js
         = [
-            'js/last-drop.js',
+//            'js/last-drop.js',
         ];
 
     public $depends
