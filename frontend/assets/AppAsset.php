@@ -26,7 +26,7 @@ class AppAsset extends AssetBundle
 //        'https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css',
 //        'https://kenwheeler.github.io/slick/slick/slick-theme.css',
         'css/site.css',
-        'css/main.scss',
+        'css/main.scss?v=1.0.0',
     ];
     public $js = [
 //        'https://cdn.datatables.net/2.0.2/js/dataTables.min.js',
