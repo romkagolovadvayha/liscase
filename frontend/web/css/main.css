@@ -4906,14 +4906,6 @@ header .promocode {
         .achievements_body_list_items_item.disabled {
           color: #e4dad1;
           background-color: #424242; }
-          .achievements_body_list_items_item.disabled img {
-            -webkit-filter: grayscale(100%);
-            -moz-filter: grayscale(100%);
-            -ms-filter: grayscale(100%);
-            -o-filter: grayscale(100%);
-            filter: grayscale(100%);
-            filter: gray;
-            /* IE 6-9 */ }
         .achievements_body_list_items_item_image {
           position: absolute;
           width: 200px;
@@ -4939,10 +4931,15 @@ header .promocode {
               margin-top: 20px; }
           .achievements_body_list_items_item_info_simage {
             margin-top: 5px;
-            text-align: center; }
+            text-align: center;
+            position: relative; }
             .achievements_body_list_items_item_info_simage img {
               max-height: 70px;
               display: inline-block; }
+            .achievements_body_list_items_item_info_simage_count {
+              position: absolute;
+              bottom: 0;
+              right: 0; }
           .achievements_body_list_items_item_info_btn {
             margin-top: 20px;
             border-radius: 10px;

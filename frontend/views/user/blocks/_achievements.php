@@ -38,8 +38,9 @@ $received = true;
                                 <div class="achievements_body_list_items_item_info_stitle">
                                     <?=Yii::t('common', 'Награда')?>
                                 </div>
-                                <div class="achievements_body_list_items_item_info_simage">
+                                <div title="<?=$task['dropName']?>" class="achievements_body_list_items_item_info_simage">
                                     <img src="<?=$task['dropImage']?>"/>
+                                    <div class="achievements_body_list_items_item_info_simage_count">x<?=$task['count']?></div>
                                 </div>
                                 <?php if ($task['status'] === 0): ?>
                                     <div class="achievements_body_list_items_item_info_btn disabled">

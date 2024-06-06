@@ -142,6 +142,7 @@ class Task extends \common\components\base\ActiveRecord
                 'taskImage' => $task->dropImage->imageOrig->getImagePubUrl(),
                 'dropImage' => $task->drop->imageOrig->getImagePubUrl(),
                 'drop_id' => $task->drop->id,
+                'dropName' => $task->drop->name,
                 'count' => $task->count,
                 'description' => $task->description,
             ];

@@ -5758,14 +5758,6 @@ header {
           &.disabled {
             color: $color_text;
             background-color: #424242;
-            img {
-              -webkit-filter: grayscale(100%);
-              -moz-filter: grayscale(100%);
-              -ms-filter: grayscale(100%);
-              -o-filter: grayscale(100%);
-              filter: grayscale(100%);
-              filter: gray; /* IE 6-9 */
-            }
           }
           &_image {
             position: absolute;
@@ -5813,9 +5805,15 @@ header {
             &_simage {
               margin-top: 5px;
               text-align: center;
+              position: relative;
               img {
                 max-height: 70px;
                 display: inline-block;
+              }
+              &_count {
+                position: absolute;
+                bottom: 0;
+                right: 0;
               }
             }
             &_btn {
