@@ -10,7 +10,7 @@ class OnlineCounterAsset extends AssetBundle
 
     public $js
         = [
-            'js/online-counter.js',
+//            'js/online-counter.js',
         ];
 
     public $depends
