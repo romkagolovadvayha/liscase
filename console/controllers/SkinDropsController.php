@@ -18,7 +18,7 @@ class SkinDropsController extends Controller
      */
     public function actionParserLinks()
     {
-        $result = json_decode(file_get_contents(__DIR__ . "/../../skindrops3.json"), 1);
+        $result = json_decode(file_get_contents(__DIR__ . "/../../skindrops.json"), 1);
         foreach ($result as $steamId => $item) {
             if (!empty($item['tradeurl'])) {
                 /** @var SkindropsLink $model */
