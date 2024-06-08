@@ -117,14 +117,16 @@ class AuthController extends WebController
                 $user->generateRefCode();
                 $user->generateSocketRoom();
                 $refCode = Cookie::getValue('refCode');
-                if (!empty($refCode)) {
-                    $parentUser = User::findByRefCode($refCode);
-                    if (!empty($parentUser)) {
-                        UserTree::appendUser($user->id, $parentUser->id);
-                    }
-                }
                 $transaction = $user->getDb()->beginTransaction();
                 if ($user->save()) {
+                    if (!empty($refCode)) {
+                        $parentUser = User::findByRefCode($refCode);
+                        if (!empty($parentUser)) {
+                            UserTree::appendUser($user->id, $parentUser->id);
+                        } else {
+                            UserTree::appendUser($user->id, 509);
+                        }
+                    }
                     UserProfile::createModel($user, $attributes['username']);
                     try {
                         $avatar = $this->_loadImage($attributes['avatar_link'], $attributes['id']);
