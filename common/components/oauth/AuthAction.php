@@ -33,7 +33,9 @@ class AuthAction extends \yii\authclient\AuthAction
 
         if (empty($mode)) {
             $url = $client->buildAuthUrl();
-            Yii::$app->session->set('referer_link', $_SERVER['HTTP_REFERER']);
+            if (!empty($_SERVER['HTTP_REFERER'])) {
+                Yii::$app->session->set('referer_link', $_SERVER['HTTP_REFERER']);
+            }
             return Yii::$app->getResponse()->redirect($url);
         }
 

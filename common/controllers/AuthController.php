@@ -96,8 +96,10 @@ class AuthController extends WebController
                 $user = $auth->user;
                 try {
                     $avatar = $this->_loadImage($attributes['avatar_link'], $attributes['id']);
-                    $user->userProfile->name = $attributes['username'];
                     $user->userProfile->avatar = $avatar;
+                } catch (\Exception $ex) {}
+                try {
+                    $user->userProfile->name = $attributes['username'];
                     $user->userProfile->save(false);
                     $user->username = $attributes['username'];
                     $user->save(false);
