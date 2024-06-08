@@ -5,6 +5,7 @@ namespace common\components\rusttm;
 use linslin\yii2\curl\Curl;
 use Yii;
 use yii\base\Component;
+use yii\web\NotFoundHttpException;
 
 class RustTm
 {
@@ -33,7 +34,12 @@ class RustTm
     {
         $url = $this->baseUrl . "/buy-for?key={$this->secretKey}&hash_name=$name&price={$price}&partner={$partner}&token={$token}";
         $response = Yii::$app->curl->get($url);
-        return json_decode($response, 1);
+        try {
+            return json_decode($response, 1);
+        } catch (\Exception $ex) {
+            echo $response;
+            exit;
+        }
     }
 
     /**
