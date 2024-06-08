@@ -34,7 +34,7 @@ class RustTm
     {
         $url = $this->baseUrl . "/buy-for?key={$this->secretKey}&hash_name=$name&price={$price}&partner={$partner}&token={$token}";
         $response = Yii::$app->curl->get($url);
-        Yii::info('RustTm buy: ' .  $response);
+        Yii::error('RustTm buy: ' .  $response);
         return json_decode($response, 1);
     }
 
