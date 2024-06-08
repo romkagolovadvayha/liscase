@@ -119,7 +119,9 @@ class AuthController extends WebController
                 $refCode = Cookie::getValue('refCode');
                 if (!empty($refCode)) {
                     $parentUser = User::findByRefCode($refCode);
-                    UserTree::appendUser($user->id, $parentUser->id);
+                    if (!empty($parentUser)) {
+                        UserTree::appendUser($user->id, $parentUser->id);
+                    }
                 }
                 $transaction = $user->getDb()->beginTransaction();
                 if ($user->save()) {
