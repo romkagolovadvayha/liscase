@@ -34,8 +34,6 @@ class SkinDropsController extends Controller
                     $model->partner = explode('=', $array[0])[1];
                     $model->token = explode('=', $array[1])[1];
                     $model->save(false);
-                } elseif ($model->tradeurl != $item['tradeurl']) {
-                    echo $model->tradeurl . PHP_EOL;
                 } else {
                     $model->tradeurl = $item['tradeurl'];
                     $model->save();
