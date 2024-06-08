@@ -83,6 +83,9 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                                   if (empty($link)) {
                                                       return null;
                                                   }
+                                                  if (empty($link->user)) {
+                                                      return null;
+                                                  }
                                                   return $link->user->username;
                                               },
                                           ],
