@@ -1,5 +1,6 @@
 <?php
 
+use common\models\skindrops\SkindropsLink;
 use yii\base\BaseObject;
 use yii\web\View;
 use common\models\user\UserDrop;
@@ -67,6 +68,38 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                               'format'    => 'raw',
                                               'value'          => function ($model) {
                                                   return gmdate("Y-m-d H:i:s", $model['time']);
+                                              },
+                                          ],
+                                          [
+                                              'attribute' => 'username',
+                                              'options'   => ['width' => '150'],
+                                              'label'     => Yii::t('common', "Ник"),
+                                              'format'    => 'raw',
+                                              'value'          => function ($model) {
+                                                  /** @var SkindropsLink $link */
+                                                  $link = SkindropsLink::find()
+                                                                       ->andWhere(['partner' => $model['for']])
+                                                                       ->one();
+                                                  if (empty($link)) {
+                                                      return null;
+                                                  }
+                                                  return $link->user->username;
+                                              },
+                                          ],
+                                          [
+                                              'attribute' => 'steamId',
+                                              'options'   => ['width' => '150'],
+                                              'label'     => Yii::t('common', "Steam ID"),
+                                              'format'    => 'raw',
+                                              'value'          => function ($model) {
+                                                  /** @var SkindropsLink $link */
+                                                  $link = SkindropsLink::find()
+                                                                       ->andWhere(['partner' => $model['for']])
+                                                                       ->one();
+                                                  if (empty($link)) {
+                                                      return null;
+                                                  }
+                                                  return $link->steam_id;
                                               },
                                           ],
                                           [

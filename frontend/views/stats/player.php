@@ -10,11 +10,11 @@ use yii\web\NotFoundHttpException;
 use common\models\stats\Teams;
 
 $stats = Wipe::getStats($server, $steamId);
-$player = $stats['player'];
 
-if (empty($player)) {
+if (empty($stats['player'])) {
     throw new NotFoundHttpException(Yii::t('common', 'Пользователь не найден или статистика еще не подгрузилась!'));
 }
+$player = $stats['player'];
 
 $this->title = $player['name'] . " " . Yii::t('common', 'статистика на сервере') . " " . Yii::t('database', $server->name);
 

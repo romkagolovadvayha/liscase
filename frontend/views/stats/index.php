@@ -80,7 +80,7 @@ $servers = Servers::find()
                         'options' => ['placeholder' => Yii::t('common', 'Введите ник или Steam ID...')],
                         'pluginOptions' => [
                             'allowClear' => true,
-                            'minimumInputLength' => 3,
+                            'minimumInputLength' => 1,
                             'ajax' => [
                                 'url' => "/stats/search?server={$server->tag}",
                                 'dataType' => 'json',
