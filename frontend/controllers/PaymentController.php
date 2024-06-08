@@ -11,7 +11,6 @@ use yii\web\Response;
 
 class PaymentController extends WebController
 {
-    use AuthorizedControllerTrait;
 
     /**
      * {@inheritdoc}

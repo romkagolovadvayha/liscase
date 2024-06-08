@@ -25,10 +25,14 @@ class PaymentVisa
     public function check($depositId)
     {
         $model = Deposit::findOne($depositId);
+        if ($model->status !== Deposit::STATUS_WAIT_CONFIRM) {
+            return $model->status;
+        }
         $result = Yii::$app->freeKassaApi->check($model->payment_id);
         if ($result['orders'][0]['status'] === 1) {
             $model->status = Deposit::STATUS_SUCCESS;
             $model->save(false);
+            Deposit::bonus($model->user, $model->amount, $model->payment_type);
             $model->user->getPersonalBalance()->recalculateBalance();
         } elseif ($result['orders'][0]['status'] === 8 || $result['orders'][0]['status'] === 9) {
             $model->status = Deposit::STATUS_CANCELED;
