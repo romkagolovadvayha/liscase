@@ -12,12 +12,12 @@ foreach ($usersDropsLast as $userDrop) {
         $result[] = [
             'id' => $userDrop->id,
             'image' => $drop->imageOrig->getImagePubUrl(),
-            'name' => str_replace(['<', '>'], '', Yii::t('database', $drop->name)),
+            'name' => Yii::t('database', $drop->name),
             'bgImage' => $userDrop->box->imageOrig->getImagePubUrl(),
             'bgName' => Yii::t('database', $userDrop->box->name),
             'count' => "x" . $userDrop->count,
             'userAvatar' => $userDrop->user->userProfile->avatar,
-            'userName' => $userDrop->user->username,
+            'userName' => htmlentities($userDrop->user->username),
             'type' => 0,
             'created_at' => $userDrop->created_at,
         ];
