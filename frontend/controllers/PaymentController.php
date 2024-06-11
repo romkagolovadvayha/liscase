@@ -24,6 +24,11 @@ class PaymentController extends WebController
         ];
     }
 
+    public function beforeAction($action)
+    {
+        $this->_setRefCookies();
+    }
+
     /**
      *
      * @return \yii\web\Response | string
