@@ -107,3 +107,4 @@ $this->title = Yii::t('common', "Пополнения баланса");
 <button type="submit" class="btn"><?=Yii::t('common', 'Перейти к оплате')?></button>
 <?php ActiveForm::end(); ?>
 <?php Pjax::end(); ?>
+<div class="page_preloader" id="product-loader"></div>

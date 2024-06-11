@@ -15,11 +15,11 @@ $this->title = Yii::t('common', 'Простой проект серверов д
 
 $this->registerJs(<<<JS
     $(document).on('pjax:send', function() {
-       $('#product-loader').show();
+       $('#product-loader').addClass('active');
        $('#buy_product').prop('disabled', true);
     });
     $(document).on('pjax:complete', function() {
-      $('#product-loader').hide();
+      $('#product-loader').removeClass('active');
       updateBalance();
     });
     var categories = $('.products_categories .products_categories_category');

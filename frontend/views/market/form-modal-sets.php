@@ -76,7 +76,6 @@ use yii\widgets\Pjax;
         <?php ActiveForm::end(); ?>
         <?php Pjax::end(); ?>
     <?php endif; ?>
-    <div class="page_preloader" id="product-loader"></div>
 </div>
 <script>
     var blocked_products = $('.blocked_products_timer');
@@ -86,3 +85,4 @@ use yii\widgets\Pjax;
         $(blocked_products[i]).html(left.locale('<?=substr(Yii::$app->language, 0, 2)?>').fromNow());
     }
 </script>
+<div class="page_preloader" id="product-loader"></div>

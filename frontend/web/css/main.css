@@ -2452,14 +2452,28 @@ body::after {
     margin-bottom: 10px; }
     .modal_form_product .alert .btn-close {
       display: none; }
-  .modal_form_product .page_preloader {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: none;
-    z-index: 9999; }
+
+.page_preloader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 20px;
+  background: rgba(0, 0, 0, 0.5); }
+  .page_preloader.active {
+    display: flex; }
+  .page_preloader:after {
+    background: url("/images/icons/loader2.svg");
+    height: 64px;
+    width: 64px;
+    content: '';
+    display: block; }
 
 .widget_top_table_name {
   position: relative; }

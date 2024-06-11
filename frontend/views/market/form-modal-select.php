@@ -97,5 +97,5 @@ use yii\bootstrap5\Html;
         <?php ActiveForm::end(); ?>
         <?php Pjax::end(); ?>
     <?php endif; ?>
-    <div class="page_preloader" id="product-loader"></div>
 </div>
+<div class="page_preloader" id="product-loader"></div>
