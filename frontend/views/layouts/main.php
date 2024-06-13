@@ -150,6 +150,11 @@ $mobileMenu[] = [
     'url'     => '/stats?server=max3',
 ];
 $mobileMenu[] = [
+    'label'   => '<i class="fas fa-gift"></i> ' . Yii::t('common', 'Раздача скинов'),
+    'encode' => false,
+    'url'     => '/skindrops',
+];
+$mobileMenu[] = [
     'label'   => '<i class="fab fa-discord"></i> ' . Yii::t('common', 'Мы в Discord'),
     'encode' => false,
     'url'     => 'https://discord.gg/prostoj',
@@ -261,6 +266,14 @@ if (!Yii::$app->user->isGuest) {
                         [
                             'label'   => '<i class="fa-solid fa-chart-pie"></i> ' . Yii::t('common', 'Статистика'),
                             'url'     => '/stats?server=max3',
+                            'encode' => false,
+                            'options'     => [
+                                'class' => 'menu-rules'
+                            ],
+                        ],
+                        [
+                            'label'   => '<i class="fa-solid fa-gift"></i> ' . Yii::t('common', 'Раздача скинов'),
+                            'url'     => '/skindrops',
                             'encode' => false,
                             'options'     => [
                                 'class' => 'menu-rules'

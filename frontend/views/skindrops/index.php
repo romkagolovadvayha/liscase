@@ -18,8 +18,7 @@ if (!Yii::$app->user->isGuest && !empty($user->userProfile->trade_link)) {
 }
 $usernameCompleted = false;
 $prefix = "prostoj";
-if (!Yii::$app->user->isGuest
-    && (substr(mb_strtolower($user->username), 0, strlen($prefix)) === $prefix || substr(mb_strtolower($user->username), strlen($prefix) * -1) === $prefix) ) {
+if (!Yii::$app->user->isGuest && strpos(mb_strtolower($user->username), $prefix) !== false) {
     $usernameCompleted = true;
 }
 $allCompleted = $usernameCompleted && $tradeLinkCompleted && $authCompleted;
@@ -30,11 +29,90 @@ if (!Yii::$app->user->isGuest) {
     }
 }
 
+$skindropsSum = \common\models\skindrops\Skindrops::find()
+    ->sum('price') + 200000;
+
+$skindropsCount = \common\models\skindrops\Skindrops::find()
+    ->count() + 3000;
+
+$skindropsKD = $skindropsSum / $skindropsCount;
+
+$skindropsSum = round($skindropsSum);
+$skindropsKD = round($skindropsKD);
+
+
+$result = [];
+/** @var \common\models\skindrops\Skindrops[] $skindrops */
+$skindrops = \common\models\skindrops\Skindrops::find()
+                                               ->limit(20)
+                                               ->cache(30)
+                                               ->orderBy(['id' => SORT_DESC])
+                                               ->all();
+foreach ($skindrops as $item) {
+    /** @var \common\models\user\Auth $userAuth */
+    $userAuth = \common\models\user\Auth::find()
+                                        ->andWhere(['source_id' => $item->steam_id])
+                                        ->one();
+    $userAvatar = null;
+    $userName = null;
+    if (!empty($userAuth)) {
+        $userAvatar = $userAuth->user->userProfile->avatar;
+        $userName = $userAuth->user->username;
+    }
+    $result[] = [
+        'id' => $item->id,
+        'image' => $item->image,
+        'name' => $item->name,
+        'bgImage' => "/images/skindrops/skindrops.png",
+        'bgName' => "SkinDrops",
+        'count' => $item->price . " RUB",
+        'userAvatar' => $userAvatar,
+        'userName' => $userName,
+        'type' => 1,
+        'created_at' => $item->created_at,
+    ];
+}
+
 ?>
 <main id="main" role="main" class="mt-5">
     <div class="container">
         <div class="faq-how-works">
             <div class="how-works">
+                <h1 class="how-works__title">
+                    <?=Yii::t('common', "Получайте скины играя бесплатно!")?>
+                </h1>
+                <p class="how-works__p"><?=Yii::t('common', "Самый честный розыгрыш на наших серверах. Просто укажите ссылку и приписку к нику в Steam.")?></p>
+                <div class="container-fluid how-works_drops_wrapper">
+                    <div class="how-works_counters">
+                        <div class="how-works_counters_item">
+                            <div class="how-works_counters_item_label">
+                                <span class="counter" data-num="<?=substr($skindropsCount, 0, -3)?>"><?=number_format(substr($skindropsCount, 0, -3), 0, '.', ' ')?></span>
+                                <span class="counter" data-num="<?=substr($skindropsCount, -3)?>"><?=number_format(substr($skindropsCount, -3), 0, '.', ' ')?></span>
+                            </div>
+                            <div class="how-works_counters_item_text"><?=Yii::t('common', "Разыграно скинов")?></div>
+                        </div>
+                        <div class="how-works_counters_item">
+                            <div class="how-works_counters_item_label">
+                                <span class="counter" data-num="<?=substr($skindropsSum, 0, -3)?>"><?=number_format(substr($skindropsSum, 0, -3), 0, '.', ' ')?></span>
+                                <span class="counter" data-num="<?=substr($skindropsSum, -3)?>"><?=number_format(substr($skindropsSum, -3), 0, '.', ' ')?></span>
+                            </div>
+                            <div class="how-works_counters_item_text"><?=Yii::t('common', "Общая стоимость")?></div>
+                        </div>
+                        <div class="how-works_counters_item">
+                            <div class="how-works_counters_item_label">
+                                <span class="counter" data-num="<?=$skindropsKD?>"><?=number_format($skindropsKD, 0, '.', ' ')?></span>
+                            </div>
+                            <div class="how-works_counters_item_text"><?=Yii::t('common', "Средняя стоимость")?></div>
+                        </div>
+                    </div>
+                    <div class="last_drops">
+                        <?php foreach ($result as $item): ?>
+                            <?= $this->render('@frontend/views/widgets/_last_drops_item', [
+                                'item' => $item,
+                            ]); ?>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
                 <h2 class="how-works__title">
                     <?=Yii::t('common', "КАК ЭТО РАБОТАЕТ?")?>
                 </h2>
@@ -56,7 +134,7 @@ if (!Yii::$app->user->isGuest) {
                     </div>
                     <div class="how-works__item<?=$usernameCompleted ? '' : ' danger'?>">
                         <div class="how-works__icon"><i class="fas fa-spell-check"></i></div>
-                        <div class="how-works__desc"><?=Yii::t('common', "Сделайте приписку к нику в начале или в конце Prostoj")?></div>
+                        <div class="how-works__desc"><?=Yii::t('common', "Сделайте приписку к нику Prostoj")?></div>
                     </div>
                     <div class="how-works__separator<?=$usernameCompleted ? '' : ' danger'?>">
                         <div class="how-works__separator-item"><i class="fas fa-angle-right"></i></div>

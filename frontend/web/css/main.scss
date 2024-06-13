@@ -884,6 +884,9 @@ $color_text: #e4dad1;
 }
 
 .how-works {
+  * + .how-works__title {
+    margin-top: 30px;
+  }
   &__title {
     margin-bottom: 20px;
     color: $color_text;
@@ -893,12 +896,10 @@ $color_text: #e4dad1;
     text-transform: uppercase;
   }
   &__p {
-    margin-bottom: 50px;
     color: $color_text;
     font-weight: 500;
     font-size: 14px;
     text-align: center;
-    text-transform: uppercase;
     @media (max-width: 990px) {
       margin-bottom: 10px;
     }
@@ -1038,6 +1039,44 @@ $color_text: #e4dad1;
       padding: 0;
       text-align: left;
       width: 260px;
+    }
+  }
+  &_drops_wrapper {
+    .last_drops {
+      margin-top: 20px;
+    }
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 30px;
+  }
+  &_counters {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    margin-top: 15px;
+    @media (max-width: 768px) {
+      flex-direction: column;
+    }
+    &_item {
+      &_label {
+        color: $color_success_brighter;
+        font-weight: 700;
+        font-size: 48px;
+        line-height: 48px;
+        text-align: center;
+        text-transform: uppercase;
+        display: flex;
+        gap: 5px;
+        justify-content: center;
+      }
+      &_text {
+        margin-top: 15px;
+        color: $color_text;
+        font-weight: 700;
+        font-size: 18px;
+        line-height: 18px;
+        text-align: center;
+        text-transform: uppercase;
+      }
     }
   }
 }
@@ -6739,6 +6778,45 @@ header {
       > img {
         border-color: color-mix(in srgb, $color_success_dark_dark, #fff 40%);
       }
+    }
+  }
+}
+.widget_skindrops {
+  background: #6c0000;
+  padding: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+  text-align: center;
+  &_title {
+    text-transform: uppercase;
+    font-weight: 700;
+    color: $color_text;
+  }
+  &_description {
+    margin-top: 10px;
+    &_error {
+      font-weight: 700;
+    }
+  }
+  &_link {
+    margin-top: 10px;
+    color: $color_text;
+    background-color: $color_success_dark_dark;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 12px;
+    line-height: 12px;
+    text-transform: uppercase;
+    font-weight: 500;
+    text-align: center;
+    border: none;
+    border-radius: 10px;
+    &:hover {
+      color: $color_success_brighter;
+      background: $color_success_dark_dark;
     }
   }
 }

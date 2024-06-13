@@ -44,7 +44,8 @@ class ProfileForm extends UserProfile
             $this->addError('trade_link', Yii::t('common', 'Ссылка на обмен указана неверно!'));
             return false;
         }
-
+        $this->skindrops = 1;
+        $this->skindrops_error = null;
         if (!$this->save()) {
             throw new \Exception('User not saved');
         }

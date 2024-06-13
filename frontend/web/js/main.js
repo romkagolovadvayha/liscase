@@ -12,4 +12,23 @@ $(document).ready(function () {
             new bootstrap.Tooltip(tooltipTriggerList[i]);
         }
     } catch (e) {}
+
+
+    $('[data-num]').each(function() {
+        var num = $(this).data('num');
+        counter(this, 0, num, 2000);
+    });
+    function counter(obj, start, end, duration) {
+        let current = start,
+            range = end - start,
+            increment = end > start ? 1 : -1,
+            step = Math.abs(Math.floor(duration / range)),
+            timer = setInterval(() => {
+                current += increment;
+                obj.textContent = current;
+                if (current == end) {
+                    clearInterval(timer);
+                }
+            }, step);
+    }
 });
