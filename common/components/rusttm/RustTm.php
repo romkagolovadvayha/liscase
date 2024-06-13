@@ -34,12 +34,12 @@ class RustTm
     {
         $url = $this->baseUrl . "/buy-for?key={$this->secretKey}&hash_name=$name&price={$price}&partner={$partner}&token={$token}";
         $response = Yii::$app->curl->get($url);
-        if (empty($response['price'])) {
+        if (empty($response)) {
             sleep(2);
             $url = $this->baseUrl . "/buy-for?key={$this->secretKey}&hash_name=$name&price={$price}&partner={$partner}&token={$token}";
             $response = Yii::$app->curl->get($url);
         }
-        if (empty($response['price'])) {
+        if (empty($response)) {
             sleep(2);
             $url = $this->baseUrl . "/buy-for?key={$this->secretKey}&hash_name=$name&price={$price}&partner={$partner}&token={$token}";
             $response = Yii::$app->curl->get($url);
