@@ -45,7 +45,11 @@ class ApiSkindropsController extends WebController
         $params = json_decode(Yii::$app->request->getRawBody(), 1);
 
         if (empty($params)) {
-            return null;
+            return json_encode([
+                                   'code' => 'fail',
+                                   'errorRu' => 'Не переданы параметры запроса',
+                                   'errorEn' => 'Not request params',
+            ]);
         }
 
         if ($params['onlineCount'] < $minOnline) {
