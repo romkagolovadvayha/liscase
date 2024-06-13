@@ -31,9 +31,10 @@ class ApiSkindropsController extends WebController
         header('Content-type: application/json');
         $this->layout = 'service';
 
-        print_r(Yii::$app->request->post());
+        $params = json_decode(Yii::$app->request->getRawBody(), 1);
+        print_r($params);
 exit;
-        return json_encode(Yii::$app->request->post());
+        return json_encode(Yii::$app->request->getRawBody());
     }
 
 }
