@@ -45,11 +45,11 @@ class ApiSkindropsController extends WebController
         }
 
         $usersDroped = Skindrops::find()
-            ->select(['DISTINCT steam_id'])
+            ->select('DISTINCT steam_id')
             ->andWhere(['IN', 'steam_id', $steamIds])
             ->andWhere(['>', 'created_at', date('Y-m-d 00:00:01')])
-            ->asArray()
-            ->all();
+            ->createCommand()
+            ->queryColumn();
 
         print_r($usersDroped);exit;
 
