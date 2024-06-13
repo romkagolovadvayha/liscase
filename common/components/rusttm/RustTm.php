@@ -34,23 +34,18 @@ class RustTm
     {
         $url = $this->baseUrl . "/buy-for?key={$this->secretKey}&hash_name=$name&price={$price}&partner={$partner}&token={$token}";
         $response = Yii::$app->curl->get($url);
-        Yii::error('RustTm buy: ' .  $response);
-
-        try {
-            return json_decode($response, 1);
-        } catch (\Exception $e) {
-            try {
-                sleep(1);
-                $url = $this->baseUrl . "/buy-for?key={$this->secretKey}&hash_name=$name&price={$price}&partner={$partner}&token={$token}";
-                $response = Yii::$app->curl->get($url);
-                return json_decode($response, 1);
-            } catch (\Exception $e) {
-                sleep(1);
-                $url = $this->baseUrl . "/buy-for?key={$this->secretKey}&hash_name=$name&price={$price}&partner={$partner}&token={$token}";
-                $response = Yii::$app->curl->get($url);
-                return json_decode($response, 1);
-            }
+        if (empty($response['price'])) {
+            sleep(2);
+            $url = $this->baseUrl . "/buy-for?key={$this->secretKey}&hash_name=$name&price={$price}&partner={$partner}&token={$token}";
+            $response = Yii::$app->curl->get($url);
         }
+        if (empty($response['price'])) {
+            sleep(2);
+            $url = $this->baseUrl . "/buy-for?key={$this->secretKey}&hash_name=$name&price={$price}&partner={$partner}&token={$token}";
+            $response = Yii::$app->curl->get($url);
+        }
+        Yii::error('RustTm buy: ' .  $response);
+        return json_decode($response, 1);
     }
 
     /**

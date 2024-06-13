@@ -32,6 +32,7 @@ class ApiSkindropsController extends WebController
 
     public function actionGodraw() {
         header('Content-type: application/json');
+        return '{"code":"success","winner":"76561198394504608","chat_alert":true,"chat_alert_text_ru":"Gena Gorin \u0432\u044b\u0438\u0433\u0440\u0430\u043b \u0441\u043a\u0438\u043d Kiltnana (47.1 RUB)\n\u0425\u043e\u0442\u0438\u0442\u0435 \u0442\u043e\u0436\u0435 \u043f\u043e\u043b\u0443\u0447\u0430\u0442\u044c \u0441\u043a\u0438\u043d\u044b? \u041f\u043e\u0434\u0440\u043e\u0431\u043d\u043e\u0441\u0442\u0438 \u0432 Discord: https:\/\/discord.gg\/prostoj","chat_alert_text_en":"Gena Gorin won a skin Kiltnana (0.55 $)\nDo you want to receive skins too? Details in Discord: https:\/\/discord.gg\/prostoj","chat_alert_player":true,"chat_alert_player_text_ru":"\u041f\u043e\u0437\u0434\u0440\u0430\u0432\u043b\u044f\u0435\u043c!\n\u0412\u044b \u0432\u044b\u0438\u0433\u0440\u0430\u043b\u0438 \u0441\u043a\u0438\u043d Kiltnana (47.1 RUB)\n\u0423 \u0432\u0430\u0441 \u0435\u0441\u0442\u044c 5 \u043c\u0438\u043d\u0443\u0442 \u0447\u0442\u043e\u0431\u044b \u043f\u0440\u0438\u043d\u044f\u0442\u044c \u0442\u0440\u0435\u0439\u0434","chat_alert_player_text_en":"Congratulations!\nYou have won a skin Kiltnana (0.55 $)\nYou have 5 minutes to accept the trade","sound":true,"sound_prefab":"assets\/prefabs\/misc\/easter\/painted eggs\/effects\/eggpickup.prefab"}';
         if ($this->getBearerToken() !== Yii::$app->params['skinDrops']['apiKey']) {
            return json_encode([
                             'code' => 'fail',
