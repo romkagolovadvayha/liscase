@@ -56,7 +56,6 @@ class ApiSkindropsController extends WebController
         }
 
         $steamIds = explode(',', str_replace(' ', '', $params['steamIds']));
-        $steamIds = explode(',', str_replace(' ', '', $steamIds));
         $usersDroped = Skindrops::find()
                                 ->select('DISTINCT(steam_id)')
                                 ->andWhere(['IN', 'steam_id', $steamIds])
