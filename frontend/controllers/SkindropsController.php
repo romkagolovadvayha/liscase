@@ -49,13 +49,4 @@ class SkindropsController extends WebController
         ]);
     }
 
-    public function actionGodraw() {
-        header('Content-type: application/json');
-        $this->layout = 'service';
-
-        print_r(Yii::$app->request->post());
-exit;
-        return json_encode(Yii::$app->request->post());
-    }
-
 }
