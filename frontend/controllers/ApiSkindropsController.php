@@ -41,7 +41,7 @@ class ApiSkindropsController extends WebController
         }
         $this->layout = 'service';
         $minOnline = 20;
-
+print_r(Yii::$app->request->post());
         $params = json_decode(Yii::$app->request->getRawBody(), 1);
 
         if (empty($params)) {
