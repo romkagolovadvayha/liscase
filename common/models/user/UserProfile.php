@@ -18,6 +18,8 @@ use yii\helpers\ArrayHelper;
  * @property int     $gender
  * @property string  $birthday
  * @property string  $trade_link
+ * @property bool    $skindrops
+ * @property string  $skindrops_error
  *
  * @property User    $user
  */

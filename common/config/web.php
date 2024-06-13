@@ -149,6 +149,9 @@ $config = [
             'class' => \common\components\rusttm\RustTm::class,
             'secretKey' => '4Tctry3D0b9003d52Kv2w10BND942mX',
         ],
+        'discord'   => [
+            'class' => \common\components\discord\Discord::class,
+        ],
         'wargm'   => [
             'class' => \common\components\wargm\WarGM::class,
             'apiKey' => $params['wargmApiKey'],
