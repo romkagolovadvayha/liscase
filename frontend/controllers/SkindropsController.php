@@ -49,4 +49,8 @@ class SkindropsController extends WebController
         ]);
     }
 
+    public function actionGoDraw() {
+        print_r(Yii::$app->request->post());
+    }
+
 }
