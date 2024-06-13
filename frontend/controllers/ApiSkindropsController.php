@@ -150,8 +150,8 @@ class ApiSkindropsController extends WebController
         $price = round(($response['price'] / 100) * 1.25, 2);
         $priceEn = round((($response['price'] / 100) * 1.25) / 85, 2);
 
-        $chatAlertTextRu = "{0} выиграл скин {1} ({2} RUB)\nХотите тоже получать скины? Подробности в Discord: https://discord.gg/prostoj";
-        $chatAlertTextEn = "{0} won a skin {1} ({2} $)\nDo you want to receive skins too? Details in Discord: https://discord.gg/prostoj";
+        $chatAlertTextRu = "{0} выиграл скин {1} ({2} RUB)\nХотите тоже получать скины?\nПодробности в Discord: <color=#feeda1>discord.gg/prostoj</color>";
+        $chatAlertTextEn = "{0} won a skin {1} ({2} $)\nDo you want to receive skins too?\nDetails in Discord: <color=#feeda1>discord.gg/prostoj</color>";
         $chatAlertPlayerTextRu = "Поздравляем!\nВы выиграли скин {0} ({1} RUB)\nУ вас есть 5 минут чтобы принять трейд";
         $chatAlertPlayerTextEn = "Congratulations!\nYou have won a skin {0} ({1} $)\nYou have 5 minutes to accept the trade";
 
