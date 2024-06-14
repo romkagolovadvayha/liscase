@@ -99,6 +99,9 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                               'label'     => Yii::t('common', "Steam ID"),
                                               'format'    => 'raw',
                                               'value'          => function ($model) {
+                                                  if (empty($model['for'])) {
+                                                      return null;
+                                                  }
                                                   /** @var User[] $users */
                                                   $users = User::find()
                                                                ->alias('u')
@@ -122,6 +125,9 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                               'format'    => 'raw',
                                               'value'          => function ($model) {
                                                   if ($model['stage'] == 5) {
+                                                      if (empty($model['for'])) {
+                                                          return 'for: ' . $model['for'];
+                                                      }
                                                       /** @var User[] $users */
                                                       $users = User::find()
                                                                    ->alias('u')
