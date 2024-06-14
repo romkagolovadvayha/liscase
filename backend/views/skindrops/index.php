@@ -77,6 +77,9 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                               'label'     => Yii::t('common', "Ник"),
                                               'format'    => 'raw',
                                               'value'          => function ($model) {
+                                                  if (empty($model['for'])) {
+                                                      return null;
+                                                  }
                                                   /** @var User[] $users */
                                                   $users = User::find()
                                                               ->alias('u')

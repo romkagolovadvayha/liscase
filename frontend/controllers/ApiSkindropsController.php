@@ -106,6 +106,9 @@ class ApiSkindropsController extends WebController
         $token = Skindrops::getUrlQuery($user->userProfile->trade_link, 'token');
 
         if (empty($partner) || empty($token)) {
+            $user->userProfile->skindrops = 0;
+            $user->userProfile->skindrops_error = 'Неверная ссылка для обмена';
+            $user->userProfile->save(false);
             return $this->goDrawError([
                                           'errorRu' => $params['serverCode'] . ": " . "Трейд ссылка \"{$user->username}\" указана неверно!",
                                           'errorEn' => $params['serverCode'] . ": " . "Trade link \"{$user->username}\" incorrect!",
@@ -141,13 +144,14 @@ class ApiSkindropsController extends WebController
         if (!empty($response['error'])
             && (strpos($response['error'], 'Неверная ссылка для обмена') !== false
                 || strpos($response['error'], 'инвентарь') !== false
+                || strpos($response['error'], 'проверки ссылки') !== false
                 || strpos($response['error'], 'приватност') !== false)) {
             $user->userProfile->skindrops = 0;
             $user->userProfile->skindrops_error = $response['error'];
             $user->userProfile->save(false);
-            return $this->goDrawError(['errorRu' => $params['serverCode'] . ": " . $user->username . ": " . $response['error'], 'errorEn' => $params['serverCode'] . ": " . $user->username . ": " . $response['error']]);
+            return $this->goDrawError(['errorRu' => $partner . ":" . $token . "; " . $params['serverCode'] . ": " . $user->username . ": " . $response['error'], 'errorEn' => $params['serverCode'] . ": " . $user->username . ": " . $response['error']]);
         } elseif (!empty($response['error'])) {
-            return $this->goDrawError(['errorRu' => $params['serverCode'] . ": " . $user->username . ": " . $response['error'], 'errorEn' => $params['serverCode'] . ": " . $user->username . ": " . $response['error']]);
+            return $this->goDrawError(['errorRu' => $partner . ":" . $token . "; " . $params['serverCode'] . ": " . $user->username . ": " . $response['error'], 'errorEn' => $params['serverCode'] . ": " . $user->username . ": " . $response['error']]);
         }
 
         $price = round(($response['price'] / 100) * 1.25, 2);
