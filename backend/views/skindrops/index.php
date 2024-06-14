@@ -77,16 +77,20 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                               'label'     => Yii::t('common', "Ник"),
                                               'format'    => 'raw',
                                               'value'          => function ($model) {
-                                                  /** @var User $user */
-                                                  $user = User::find()
+                                                  /** @var User[] $users */
+                                                  $users = User::find()
                                                               ->alias('u')
                                                               ->joinWith(['userProfile up'])
                                                               ->andWhere(['LIKE', 'up.trade_link', '%partner=' . $model['for'] . '%', false])
-                                                              ->one();
-                                                  if (empty($user)) {
+                                                              ->all();
+                                                  if (empty($users)) {
                                                       return null;
                                                   }
-                                                  return $user->username;
+                                                  $result = "";
+                                                  foreach ($users as $user) {
+                                                      $result .= $user->username . "<Br/>";
+                                                  }
+                                                  return $result;
                                               },
                                           ],
                                           [
@@ -95,16 +99,20 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                               'label'     => Yii::t('common', "Steam ID"),
                                               'format'    => 'raw',
                                               'value'          => function ($model) {
-                                                  /** @var User $user */
-                                                  $user = User::find()
-                                                              ->alias('u')
-                                                              ->joinWith(['userProfile up'])
-                                                              ->andWhere(['LIKE', 'up.trade_link', '%partner=' . $model['for'] . '%', false])
-                                                              ->one();
-                                                  if (empty($user)) {
+                                                  /** @var User[] $users */
+                                                  $users = User::find()
+                                                               ->alias('u')
+                                                               ->joinWith(['userProfile up'])
+                                                               ->andWhere(['LIKE', 'up.trade_link', '%partner=' . $model['for'] . '%', false])
+                                                               ->all();
+                                                  if (empty($users)) {
                                                       return null;
                                                   }
-                                                  return $user->steam_id;
+                                                  $result = "";
+                                                  foreach ($users as $user) {
+                                                      $result .= $user->steam_id . "<Br/>";
+                                                  }
+                                                  return $result;
                                               },
                                           ],
                                           [
@@ -114,7 +122,20 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                               'format'    => 'raw',
                                               'value'          => function ($model) {
                                                   if ($model['stage'] == 5) {
-                                                      return \yii\helpers\Html::a('Отправить повторно', \yii\helpers\Url::to(['/skindrops/buy', 'name' => $model['market_hash_name'], 'price' => $model['paid'] + 1000, 'partner' => $model['for']]));
+                                                      /** @var User[] $users */
+                                                      $users = User::find()
+                                                                   ->alias('u')
+                                                                   ->joinWith(['userProfile up'])
+                                                                   ->andWhere(['LIKE', 'up.trade_link', '%partner=' . $model['for'] . '%', false])
+                                                                   ->all();
+                                                      if (empty($users)) {
+                                                          return null;
+                                                      }
+                                                      $result = "";
+                                                      foreach ($users as $user) {
+                                                          $result .= \yii\helpers\Html::a('Отправить повторно', \yii\helpers\Url::to(['/skindrops/buy', 'name' => $model['market_hash_name'], 'price' => $model['paid'] + 1000, 'userId' => $user->id])) . "<Br/>";
+                                                      }
+                                                      return $result;
                                                   }
                                                   if ($model['stage'] == 2) {
                                                       return '';

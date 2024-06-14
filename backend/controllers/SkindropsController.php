@@ -39,15 +39,10 @@ class SkindropsController extends Controller
         return $this->render('report');
     }
 
-    public function actionBuy($name, $price, $partner)
+    public function actionBuy($name, $price, $userId)
     {
         /** @var User $user */
-        $user = User::find()
-                    ->alias('u')
-                    ->joinWith(['userProfile up'])
-                    ->andWhere(['LIKE', 'up.trade_link', '%partner=' . $partner . '%', false])
-                    ->one();
-
+        $user = User::findOne($userId);
         if (!empty($user)) {
             $partner = Skindrops::getUrlQuery($user->userProfile->trade_link, 'partner');
             $token = Skindrops::getUrlQuery($user->userProfile->trade_link, 'token');
