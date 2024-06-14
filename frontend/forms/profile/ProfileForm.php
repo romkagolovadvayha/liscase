@@ -2,6 +2,7 @@
 
 namespace frontend\forms\profile;
 
+use common\models\skindrops\Skindrops;
 use common\models\user\UserProfile;
 use Yii;
 
@@ -41,6 +42,16 @@ class ProfileForm extends UserProfile
             return false;
         }
         if (strpos($this->trade_link, 'steamcommunity.com') === false) {
+            $this->addError('trade_link', Yii::t('common', 'Ссылка на обмен указана неверно!'));
+            return false;
+        }
+        if (strpos($this->trade_link, 'steamcommunity.com') === false) {
+            $this->addError('trade_link', Yii::t('common', 'Ссылка на обмен указана неверно!'));
+            return false;
+        }
+        $partner = Skindrops::getUrlQuery($this->trade_link, 'partner');
+        $token = Skindrops::getUrlQuery($this->trade_link, 'token');
+        if (empty($partner) || empty($token)) {
             $this->addError('trade_link', Yii::t('common', 'Ссылка на обмен указана неверно!'));
             return false;
         }

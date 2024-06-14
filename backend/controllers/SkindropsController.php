@@ -3,7 +3,9 @@
 namespace backend\controllers;
 
 use common\components\helpers\Role;
+use common\models\skindrops\Skindrops;
 use common\models\skindrops\SkindropsLink;
+use common\models\user\User;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
@@ -39,13 +41,17 @@ class SkindropsController extends Controller
 
     public function actionBuy($name, $price, $partner)
     {
-        /** @var SkindropsLink $link */
-        $link = SkindropsLink::find()
-            ->andWhere(['partner' => $partner])
-            ->one();
+        /** @var User $user */
+        $user = User::find()
+                    ->alias('u')
+                    ->joinWith(['userProfile up'])
+                    ->andWhere(['LIKE', 'up.trade_link', '%partner=' . $partner . '%', false])
+                    ->one();
 
-        if (!empty($link) && !empty($link->token)) {
-            $response = Yii::$app->rustTm->buy($name, $price, $partner, $link->token);
+        if (!empty($user)) {
+            $partner = Skindrops::getUrlQuery($user->userProfile->trade_link, 'partner');
+            $token = Skindrops::getUrlQuery($user->userProfile->trade_link, 'token');
+            $response = Yii::$app->rustTm->buy($name, $price, $partner, $token);
             if (!empty($response['error'])) {
                 Yii::$app->session->addFlash('danger', $response['error']);
             } else {
@@ -53,7 +59,7 @@ class SkindropsController extends Controller
             }
             $this->redirect('index');
         } else {
-            throw new NotFoundHttpException('News not found');
+            throw new NotFoundHttpException('User not found');
         }
     }
 

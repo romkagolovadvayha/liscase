@@ -102,8 +102,8 @@ class ApiSkindropsController extends WebController
         /** @var User $user */
         $user = User::findBySteamId($winner);
 
-        $partner = $this->getUrlQuery($user->userProfile->trade_link, 'partner');
-        $token = $this->getUrlQuery($user->userProfile->trade_link, 'token');
+        $partner = Skindrops::getUrlQuery($user->userProfile->trade_link, 'partner');
+        $token = Skindrops::getUrlQuery($user->userProfile->trade_link, 'token');
 
         if (empty($partner) || empty($token)) {
             return $this->goDrawError([
@@ -207,20 +207,6 @@ class ApiSkindropsController extends WebController
         Yii::$app->discord->send(Yii::$app->params['skinDrops']['discordWebhookAdmin'], 'Произошла ошибка розыгрыша!', $params['errorRu']);
         $params['code'] = 'fail';
         return json_encode($params);
-    }
-
-    private function getUrlQuery($url, $key = null) {
-        $parts = parse_url($url);
-        if (!empty($parts['query'])) {
-            parse_str($parts['query'], $query);
-            if (is_null($key)) {
-                return $query;
-            } elseif (isset($query[$key])) {
-                return $query[$key];
-            }
-        }
-
-        return false;
     }
 
     /**

@@ -6,6 +6,7 @@ use yii\web\View;
 use common\models\user\UserDrop;
 use yii\widgets\ActiveForm;
 use frontend\widgets\Alert;
+use common\models\user\User;
 
 /** @var View $this */
 
@@ -76,17 +77,16 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                               'label'     => Yii::t('common', "Ник"),
                                               'format'    => 'raw',
                                               'value'          => function ($model) {
-                                                  /** @var SkindropsLink $link */
-                                                  $link = SkindropsLink::find()
-                                                                       ->andWhere(['partner' => $model['for']])
-                                                                       ->one();
-                                                  if (empty($link)) {
+                                                  /** @var User $user */
+                                                  $user = User::find()
+                                                              ->alias('u')
+                                                              ->joinWith(['userProfile up'])
+                                                              ->andWhere(['LIKE', 'up.trade_link', '%partner=' . $model['for'] . '%', false])
+                                                              ->one();
+                                                  if (empty($user)) {
                                                       return null;
                                                   }
-                                                  if (empty($link->user)) {
-                                                      return null;
-                                                  }
-                                                  return $link->user->username;
+                                                  return $user->username;
                                               },
                                           ],
                                           [
@@ -95,14 +95,16 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                               'label'     => Yii::t('common', "Steam ID"),
                                               'format'    => 'raw',
                                               'value'          => function ($model) {
-                                                  /** @var SkindropsLink $link */
-                                                  $link = SkindropsLink::find()
-                                                                       ->andWhere(['partner' => $model['for']])
-                                                                       ->one();
-                                                  if (empty($link)) {
+                                                  /** @var User $user */
+                                                  $user = User::find()
+                                                              ->alias('u')
+                                                              ->joinWith(['userProfile up'])
+                                                              ->andWhere(['LIKE', 'up.trade_link', '%partner=' . $model['for'] . '%', false])
+                                                              ->one();
+                                                  if (empty($user)) {
                                                       return null;
                                                   }
-                                                  return $link->steam_id;
+                                                  return $user->steam_id;
                                               },
                                           ],
                                           [
