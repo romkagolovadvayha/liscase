@@ -6,6 +6,7 @@ use Yii;
 use yii\filters\AccessControl;
 use yii\web\Controller;
 use backend\forms\LoginForm;
+use yii\web\ForbiddenHttpException;
 
 class AuthController extends Controller
 {
@@ -38,14 +39,8 @@ class AuthController extends Controller
 
     public function actionLogin()
     {
-        $model = new LoginForm();
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->redirect(Yii::$app->homeUrl);
-        }
-
-        return $this->render('login', [
-            'model' => $model,
-        ]);
+        $this->layout = '@common/views/layouts/blank';
+        return 'Ошибка доступа!';
     }
 
     public function actionLogout()
