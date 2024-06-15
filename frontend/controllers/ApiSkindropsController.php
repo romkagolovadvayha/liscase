@@ -142,8 +142,7 @@ class ApiSkindropsController extends WebController
         $response = Yii::$app->rustTm->buy($item['name'], $item['price'] * 100, $partner, $token);
 
         if (!empty($response['error'])
-            && (strpos($response['error'], 'Неверная ссылка для обмена') !== false
-                || strpos($response['error'], 'инвентарь') !== false
+            && (strpos($response['error'], 'инвентарь') !== false
                 || strpos($response['error'], 'проверки ссылки') !== false
                 || strpos($response['error'], 'приватност') !== false)) {
             $user->userProfile->skindrops = 0;
