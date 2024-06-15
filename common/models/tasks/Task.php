@@ -284,26 +284,24 @@ class Task extends \common\components\base\ActiveRecord
             }
         }
 
-        $nowDate = new \DateTime();
         $date = new \DateTime();
-        $date->modify('-15 day');
+        $date->modify('-29 day');
 
         $userBalance = $user->getPersonalBalance();
 
-        /** @var Profit[] $profits */
         $profits = Profit::find()
-            ->andWhere(['user_balance_id' => $userBalance->id])
-            ->andWhere(['IN', 'type', [Profit::TYPE_DAILY_REWARD_LIST, Profit::TYPE_DAILY_REWARD_LIST_BOX_SMALL, Profit::TYPE_DAILY_REWARD_LIST_BOX_BIG]])
-            ->andWhere(['>=', 'created_at', $date->format('Y-m-d 00:00:01')])
-            ->andWhere(['<=', 'created_at', $nowDate->format('Y-m-d 23:59:59')])
-            ->all();
+                         ->andWhere(['user_balance_id' => $userBalance->id])
+                         ->andWhere(['IN', 'type', [Profit::TYPE_DAILY_REWARD_LIST, Profit::TYPE_DAILY_REWARD_LIST_BOX_SMALL, Profit::TYPE_DAILY_REWARD_LIST_BOX_BIG]])
+                         ->andWhere(['>=', 'created_at', $date->format('Y-m-d 00:00:01')])
+                         ->all();
 
         $received = 0;
         $date = new \DateTime();
-        for ($i = 0; $i < 15; $i++) {
+        for ($i = 0; $i < count($profits) + 1; $i++) {
             $isReceived = false;
             foreach ($profits as $profit) {
-                if ($profit->created_at >= $date->format('Y-m-d 00:00:01') && $profit->created_at <= $date->format('Y-m-d 23:59:59')) {
+                $createdAt = new \DateTime($profit->created_at);
+                if ($createdAt->format('Y-m-d') === $date->format('Y-m-d')) {
                     $isReceived = true;
                     $received++;
                     break;
@@ -314,9 +312,16 @@ class Task extends \common\components\base\ActiveRecord
             }
             $date->modify('-1 day');
         }
-
+        $exists = Profit::find()
+                        ->andWhere(['user_balance_id' => $userBalance->id])
+                        ->andWhere(['IN', 'type', [Profit::TYPE_DAILY_REWARD_LIST, Profit::TYPE_DAILY_REWARD_LIST_BOX_SMALL, Profit::TYPE_DAILY_REWARD_LIST_BOX_BIG]])
+                        ->andWhere(['>=', 'created_at', date('Y-m-d 00:00:01')])
+                        ->exists();
         if ($received > 0) {
             $received = $received % 14;
+            if ($received === 0 && $exists) {
+                $received = 14;
+            }
         }
 
         for ($i = $received - 1; $i >= 0; $i--) {
@@ -324,12 +329,6 @@ class Task extends \common\components\base\ActiveRecord
         }
 
         if (!empty($dailyRewardList[$received]) && empty($dailyRewardList[$received]['status'])) {
-            $exists = Profit::find()
-                            ->andWhere(['user_balance_id' => $userBalance->id])
-                            ->andWhere(['IN', 'type', [Profit::TYPE_DAILY_REWARD_LIST, Profit::TYPE_DAILY_REWARD_LIST_BOX_SMALL, Profit::TYPE_DAILY_REWARD_LIST_BOX_BIG]])
-                            ->andWhere(['>=', 'created_at', (new \DateTime())->format('Y-m-d 00:00:01')])
-                            ->andWhere(['<=', 'created_at', (new \DateTime())->format('Y-m-d 23:59:59')])
-                            ->exists();
             if (!$exists) {
                 $dailyRewardList[$received]['status'] = 'available';
             }
