@@ -32,14 +32,6 @@ class Skindrops extends ActiveRecord
     /**
      * @inheritdoc
      */
-    public static function getDb()
-    {
-        return Yii::$app->db_skindrops;
-    }
-
-    /**
-     * @inheritdoc
-     */
     public function attributeLabels(): array
     {
         return [

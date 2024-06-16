@@ -2,7 +2,6 @@
 
 $params = require __DIR__ . '/params-local.php';
 $db = require __DIR__ . '/db-local.php';
-$dbSkindrops = require __DIR__ . '/db-skindrops-local.php';
 
 $config = [
     'id' => 'basic',
@@ -92,7 +91,6 @@ $config = [
         ],
         'db' => $db,
         'db_server' => $db,
-        'db_skindrops' => $dbSkindrops,
         /*
         'urlManager' => [
             'enablePrettyUrl' => true,
