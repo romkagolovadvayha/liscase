@@ -10,6 +10,8 @@ use yii\bootstrap5\ActiveForm;
 /** @var \common\models\user\User $user */
 
 $this->title = Yii::t('common', "Как получать скины в Rust бесплатно");
+$this->params['meta_description'] = Yii::t('common', "Гайд по получению скинов в Rust бесплатно. Подробные ответы на вопросы, а так же информация о последних раздачах скинов на сервере.");
+$this->params['meta_keywords'] = Yii::t('common', "раздача скинов, rust скины, бесплатные скины rust, розыгрыш скинов на сервере");
 
 $authCompleted = !Yii::$app->user->isGuest;
 $tradeLinkCompleted = false;
@@ -116,7 +118,7 @@ foreach ($skindrops as $item) {
                 <h2 class="how-works__title">
                     <?=Yii::t('common', "КАК ЭТО РАБОТАЕТ?")?>
                 </h2>
-                <p class="how-works__p"><?=Yii::t('common', "Розыгрыш скинов на серверах проходит каждые ~60 минут среди всех участников.")?></p>
+                <p class="how-works__p"><?=Yii::t('common', "Розыгрыши скинов на раст серверах проходят каждые ~60 минут среди всех участников.")?></p>
                 <div class="how-works__content">
                     <div class="how-works__item<?=$authCompleted ? '' : ' danger'?>">
                         <div class="how-works__icon"><i class="fab fa-steam-symbol"></i></div>
@@ -175,7 +177,7 @@ foreach ($skindrops as $item) {
                     </div>
                     <div aria-hidden="true" class="questions__answer-wrapper rah-static--height-zero">
                         <div class="questions__answer">
-                            <?=Yii::t('common', 'Найти свою ссылку на трейд можно в Steam Инвентарь » Предложения обмена » Кто может отправлять мне предложения обмена?')?>
+                            <?=Yii::t('common', 'Найти свою ссылку на трейд можно в <b>Steam Инвентарь</b> » <b>Предложения обмена</b> » <b>Кто может отправлять мне предложения обмена?</b>')?>
                         </div>
                     </div>
                 </li>
@@ -191,11 +193,11 @@ foreach ($skindrops as $item) {
                     </div>
                     <div aria-hidden="true" class="questions__answer-wrapper rah-static--height-zero">
                         <div class="questions__answer">
-                            -Розыгрыш скинов на серверах происходит каждые ~60 минут среди всех участников.<br/>
-                            -Розыгрыш скинов будет отменён, если на сервере нет минимум 10 онлайна.<br/>
-                            -У вас должна быть приписка в нике Prostoj (Пример: ept Prostoj)<br/>
-                            -У победителя будет 5 минут, что бы принять трейд от бота в Steam. (иногда задержка выдачи приза до 20 мин)<br/>
-                            -Если настройки приватности для получения трейда были закрыты или вы не успели принять трейд в течении 5 минут, то выдача скина повторно не проводится.
+                            <?=Yii::t('common', '-Розыгрыш скинов на серверах происходит каждые <b>~60 минут</b> среди всех участников.')?><br/>
+                            <?=Yii::t('common', '-Розыгрыш скинов будет отменён, если на сервере нет минимум <b>20 онлайн</b>.')?><br/>
+                            <?=Yii::t('common', '-У вас должна быть <b>приписка в нике Prostoj</b> (Пример: ept Prostoj)')?><br/>
+                            <?=Yii::t('common', '-У победителя будет <b>5 минут</b>, что бы принять трейд от бота в Steam.')?><br/>
+                            <?=Yii::t('common', '-Если настройки приватности для получения трейда были закрыты или вы не успели принять трейд втечении <b>5 минут</b>, то выдача скина повторно не проводится.')?>
                         </div>
                     </div>
                 </li>
@@ -211,7 +213,7 @@ foreach ($skindrops as $item) {
                     </div>
                     <div aria-hidden="true" class="questions__answer-wrapper rah-static--height-zero">
                         <div class="questions__answer">
-                            <?=Yii::t('common', 'Если скин не пришел в течении 15 минут, то напишите администратору в Discord, в течении 20 минут после выйгрыша.')?>
+                            <?=Yii::t('common', 'Если скин не пришел в течении <b>5 минут</b>, то напишите администратору в Discord, в течении <b>15 минут</b> после розыгрыша. Если напишите позже, то скин повторно не отправляем!')?>
                         </div>
                     </div>
                 </li>
@@ -227,7 +229,23 @@ foreach ($skindrops as $item) {
                     </div>
                     <div aria-hidden="true" class="questions__answer-wrapper rah-static--height-zero">
                         <div class="questions__answer">
-                            <?=Yii::t('common', 'Никак, раздача абсолютно рандомная. Цена полученного предмета всегда разная, от 10 до 120 руб')?>
+                            <?=Yii::t('common', 'Никак, раздача абсолютно рандомная. Цена полученного предмета всегда разная, <b>от 10 до 120 руб</b>')?>
+                        </div>
+                    </div>
+                </li>
+                <li class="questions__item questions__item--active">
+                    <div class="questions__question">
+                        <div class="questions__separator">
+                            <span class="questions__separator-line"></span>
+                            <span class="questions__separator-line"></span>
+                        </div>
+                        <div class="questions__question-title">
+                            <?=Yii::t('common', 'Можно ли продать этот скин в Steam?')?>
+                        </div>
+                    </div>
+                    <div aria-hidden="true" class="questions__answer-wrapper rah-static--height-zero">
+                        <div class="questions__answer">
+                            <?=Yii::t('common', 'В отличии от скинов Twitch Drops, вы можете делать с этими скинами все что угодно! Продавайте, обменивайте копите!')?>
                         </div>
                     </div>
                 </li>

@@ -150,7 +150,7 @@ $mobileMenu[] = [
     'url'     => '/stats?server=max3',
 ];
 $mobileMenu[] = [
-    'label'   => '<i class="fas fa-gift"></i> ' . Yii::t('common', 'Раздача скинов'),
+    'label'   => '<i class="fas fa-gift"></i> ' . Yii::t('common', 'Получение скинов'),
     'encode' => false,
     'url'     => '/skindrops',
 ];
@@ -272,7 +272,7 @@ if (!Yii::$app->user->isGuest) {
                             ],
                         ],
                         [
-                            'label'   => '<i class="fa-solid fa-gift"></i> ' . Yii::t('common', 'Раздача скинов'),
+                            'label'   => '<i class="fa-solid fa-gift"></i> ' . Yii::t('common', 'Получение скинов'),
                             'url'     => '/skindrops',
                             'encode' => false,
                             'options'     => [
