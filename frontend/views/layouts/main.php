@@ -346,7 +346,7 @@ if (!Yii::$app->user->isGuest) {
             <div class="col-md-12 text-center">
                 <?=Yii::t('common', 'Размещенная на настоящем сайте информация носит исключительно информационный характер и ни при каких условиях не является публичной офертой, определяемой положениями ч. 2 ст. 437 Гражданского кодекса Российской Федерации.')?>
                 <div class="footer_links">
-                    <a class="ShopFooter-module__link" href="/site/agreement" target="_blank" rel="noreferrer"><?=Yii::t('common', 'Публичная оферта')?></a>
+                    <a class="ShopFooter-module__link" href="/site/agreement" target="_blank" rel="noreferrer"><?=Yii::t('common', 'Пользовательское соглашение')?></a>
                     <a class="ShopFooter-module__link" href="/site/privacy" target="_blank" rel="noreferrer"><?=Yii::t('common', 'Политика конфиденциальности')?></a>
                     <a class="ShopFooter-module__link" href="/site/personalinformation" target="_blank" rel="noreferrer"><?=Yii::t('common', 'Обработка персональных данных')?></a>
                     <a class="ShopFooter-module__link" href="mailto:help@prostoj.store" target="_blank" rel="noreferrer">help@prostoj.store</a>
