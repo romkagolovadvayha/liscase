@@ -6850,3 +6850,12 @@ header {
     }
   }
 }
+.footer_links {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 10px;
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+}

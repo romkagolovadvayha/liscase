@@ -177,6 +177,11 @@ class SiteController extends WebController
         return $this->render('agreement');
     }
 
+    public function actionPersonalinformation()
+    {
+        return $this->render('personalinformation');
+    }
+
     public function actionSitemap()
     {
         Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
