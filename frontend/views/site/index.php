@@ -114,33 +114,42 @@ JS
                     </ul>
                 </div>
                 <div class="products_wrap">
+                    <?php if (!Yii::$app->user->isGuest): ?>
                     <div class="products_buttons">
                         <?php foreach (Box::getBoxesByType(Box::TYPE_FREE) as $box): ?>
                             <?php if (!empty($getNextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate())): ?>
-                                <div class="products_item_roulete products_item_roulete_blocked" title="Бесплатная рулетка будет доступна через указанное время" data-title="<?=Yii::t('database', $box->name)?>">
+                                <div class="products_item_roulete products_item_roulete_blocked" data-title="<?=Yii::t('common', 'Ежедневный крейт')?>">
                                     <div class="products_item_roulete_blocked_title">
                                         <i class="far fa-clock"></i>
-                                        <?=Yii::t('common', 'Бесплатная рулетка будет доступна')?> <span class="products_item_roulete_blocked_title_timer" id="roulete_timer"><?=Yii::t('common', 'через 18 часов')?></span>
+                                        <?=Yii::t('common', 'Ежедневная награда будет доступна')?> <span class="products_item_roulete_blocked_title_timer" id="roulete_timer"><?=Yii::t('common', 'через 18 часов')?></span>
                                     </div>
                                 </div>
                                 <?php
+                                $lang = substr(Yii::$app->language, 0, 2);
                                 $unixDate = strtotime($getNextOpenFreeBoxDate);
                                 $this->registerJs(<<<JS
                                 var dateRoulete = {$unixDate};
                                 var left = moment.unix(dateRoulete);
-                                $('#roulete_timer').html(left.locale('ru').fromNow());
+                                $('#roulete_timer').html(left.locale('{$lang}').fromNow());
                             JS
                                 );?>
                             <?php else: ?>
-                                <div data-href="/box/view?id=<?=$box->id?>" class="products_item_roulete show-modal-link" data-title="<?=Yii::t('database', $box->name)?>" data-size="modal-lg" data-toggl="modal" data-target="modal-dialog">
-                                    <div class="products_item_roulete_title"><?=Yii::t('database', $box->name)?></div>
-                                </div>
+                                <?php $form = \yii\widgets\ActiveForm::begin([
+                                                                    'id' => 'roulete-container',
+                                                                    'action' => '/box/buy-container?id=' . $box->id,
+                                                                ]); ?>
+                                <input type="hidden" name="buy" value="1"/>
+                                <button class="products_item_roulete" type="submit">
+                                    <?=Yii::t('common', 'Ежедневная награда')?>
+                                </button>
+                                <?php \yii\widgets\ActiveForm::end(); ?>
                             <?php endif; ?>
                         <?php endforeach; ?>
                         <div data-href="/servers/wipe-block" class="products_buttons_wipe_block show-modal-link" data-size="modal-lg" data-toggl="modal" data-target="modal-dialog" data-title="<?=Yii::t('common', 'Вайп блок')?>">
                             <div class="products_buttons_wipe_block_title"><?=Yii::t('common', 'Вайп блок')?></div>
                         </div>
                     </div>
+                    <?php endif; ?>
                     <div class="products" id="products">
                         <?php if ($this->beginCache('products' . Yii::$app->language, ['duration' => 30])): ?>
                             <?php foreach (\common\models\box\Sets::getSetsForMarket() as $sets): ?>

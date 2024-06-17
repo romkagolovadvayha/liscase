@@ -2572,11 +2572,13 @@ body {
   > main {
     flex: 1 0;
     padding: 0;
+    * + .products {
+      margin-top: 10px;
+    }
     .products {
       grid-template-columns: repeat(auto-fill, minmax(141px, 1fr));
       grid-gap: 10px;
       display: grid;
-      margin-top: 10px;
       @media (max-width: 540px) {
         grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
       }
@@ -3331,6 +3333,9 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 .modal .modal-body {
   position: relative;
 }
+#roulete-container {
+  flex: 1 0;
+}
 
 .products_item_roulete {
   color: $color_success_brighter;
@@ -3344,7 +3349,9 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   height: 50px;
   border: none;
   flex: 1 0;
+  width: 100%;
   border-radius: 10px;
+  position: relative;
   &:hover {
     color: $color_success_brighter;
     background: #00a14a;
@@ -5496,7 +5503,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     overflow: hidden;
     box-shadow: 0 0 15px rgba(0, 0, 0, .4);
     padding: 0;
-    opacity: 0.8;
+    opacity: 1;
     &.toast-success {
       background: #1f9e12;
       background-image: none !important;
@@ -6817,6 +6824,29 @@ header {
     &:hover {
       color: $color_success_brighter;
       background: $color_success_dark_dark;
+    }
+  }
+}
+
+.box_alert {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  &_image {
+    width: 60px;
+    display: block;
+    border-radius: 10px;
+  }
+  &_body {
+    &_title {
+      text-transform: uppercase;
+      font-weight: 700;
+      color: $color_text;
+    }
+    &_descrption {
+      font-weight: 400;
+      color: $color_text;
+      margin-top: 10px;
     }
   }
 }

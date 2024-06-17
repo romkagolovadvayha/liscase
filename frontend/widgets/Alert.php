@@ -35,6 +35,7 @@ class Alert extends \yii\bootstrap5\Widget
         'error'   => 'error',
         'danger'  => 'error',
         'success' => 'success',
+        'success-box' => 'success',
         'info'    => 'info',
         'warning' => 'warning'
     ];
@@ -62,9 +63,13 @@ class Alert extends \yii\bootstrap5\Widget
             $flash = $session->getFlash($type);
 
             foreach ((array) $flash as $i => $message) {
+                $text = "<i class='{$this->alertIcons[$this->alertTypes[$type]]}'></i><div class='toast-message_text'>$message</div>";
+                if ($type === 'success-box') {
+                    $text = "<div class='toast-message_text'>$message</div>";
+                }
                 echo Notification::widget([
                                               'type' => $this->alertTypes[$type],
-                                              'message' => "<i class='{$this->alertIcons[$this->alertTypes[$type]]}'></i><div class='toast-message_text'>$message</div>",
+                                              'message' => $text,
                                               'options' => [
                                                   "progressBar" => true,
                                                   "positionClass" => Notification::POSITION_TOP_RIGHT,

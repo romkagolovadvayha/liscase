@@ -4,6 +4,7 @@ namespace frontend\controllers;
 
 use common\controllers\WebController;
 use common\models\box\Box;
+use common\models\box\Drop;
 use common\models\invoice\Invoice;
 use common\models\profit\Profit;
 use common\models\promocode\Promocode;
@@ -41,17 +42,20 @@ class BoxController extends WebController
         $this->layout = 'service';
         $box = Box::findOne($id);
         if (empty($box)) {
-            throw new NotFoundHttpException(Yii::t('common', 'Контейнер не найден!'));
+            Yii::$app->session->addFlash('danger', Yii::t('common', 'Контейнер не найден!'));
+            return $this->redirect('/');
         }
         $post = Yii::$app->request->post();
         if (!empty($post['buy'])) {
             $user = Yii::$app->user->identity;
             $balance = $user->getPersonalBalance();
             if ($box->getPriceFinal() > $balance->balanceCeil) {
-                throw new HttpException(402, Yii::t('common', 'Недостаточно средств на счете!'));
+                Yii::$app->session->addFlash('danger', Yii::t('common', 'Недостаточно средств на счете!'));
+                return $this->redirect('/');
             }
             if ($box->type === Box::TYPE_FREE && !empty(Box::getNextOpenFreeBoxDate())) {
-                throw new HttpException(402, Yii::t('common', 'Бесплатный кейс не доступен!'));
+                Yii::$app->session->addFlash('danger', Yii::t('common', 'Кейс не доступен!'));
+                return $this->redirect('/');
             }
             if ($box->getPriceFinal() > 0) {
                 Invoice::createRecord($user->id, $box->getPriceFinal(), null, $box->id);
@@ -61,6 +65,10 @@ class BoxController extends WebController
             [$boxDropCarousel, $number] = $userBox->box->_getDropFinal();
             $userBox->status = UserBox::STATUS_OPENED;
             $userBox->save();
+            /** @var Drop $drop */
+            $dropName =  Yii::t('database', $boxDropCarousel[$number]['boxDrop']->drop->name);
+            $dropCount =  $boxDropCarousel[$number]['count'];
+            $dropImage =  $boxDropCarousel[$number]['boxDrop']->drop->imageOrig->getImagePubUrl();
             if ($boxDropCarousel[$number]['boxDrop']->drop->id != 843) {
                 UserDrop::createRecord($user->id, $boxDropCarousel[$number]['boxDrop']->drop->id, $box->id, null,UserDrop::STATUS_ACTIVE, false, $boxDropCarousel[$number]['count']);
             } else {
@@ -75,10 +83,17 @@ class BoxController extends WebController
                 $profit->save(false);
             }
 
-            return $this->render('../widgets/_roulete', [
-                'boxDropCarousel' => $boxDropCarousel,
-                'number' => $number,
-            ]);
+            $block = "<div class='box_alert'>" .
+                "<img class='box_alert_image' src='{$dropImage}'/>" .
+                "<div class='box_alert_body'>" .
+                "<div class='box_alert_body_title'>" . Yii::t('common', 'Награда получена') . "</div>" .
+                "<div class='box_alert_body_descrption'>{$dropName} <b>x{$dropCount}</b></div>" .
+                "</div>" .
+                "</div>";
+
+
+            Yii::$app->session->addFlash('success-box', $block);
+            return $this->redirect('/');
         }
     }
 

@@ -83,7 +83,7 @@ foreach ($skindrops as $item) {
                 <h1 class="how-works__title">
                     <?=Yii::t('common', "Получайте скины играя бесплатно!")?>
                 </h1>
-                <p class="how-works__p"><?=Yii::t('common', "Самый честный розыгрыш на наших серверах. Просто укажите ссылку и приписку к нику в Steam.")?></p>
+                <p class="how-works__p"><?=Yii::t('common', "Скины на наших серверах. Просто укажите ссылку и приписку к нику в Steam.")?></p>
                 <div class="container-fluid how-works_drops_wrapper">
                     <div class="how-works_counters">
                         <div class="how-works_counters_item">
@@ -91,7 +91,7 @@ foreach ($skindrops as $item) {
                                 <span class="counter" data-num="<?=substr($skindropsCount, 0, -3)?>"><?=number_format(substr($skindropsCount, 0, -3), 0, '.', ' ')?></span>
                                 <span class="counter" data-num="<?=substr($skindropsCount, -3)?>"><?=number_format(substr($skindropsCount, -3), 0, '.', ' ')?></span>
                             </div>
-                            <div class="how-works_counters_item_text"><?=Yii::t('common', "Разыграно скинов")?></div>
+                            <div class="how-works_counters_item_text"><?=Yii::t('common', "Выдано скинов")?></div>
                         </div>
                         <div class="how-works_counters_item">
                             <div class="how-works_counters_item_label">
@@ -118,7 +118,7 @@ foreach ($skindrops as $item) {
                 <h2 class="how-works__title">
                     <?=Yii::t('common', "КАК ЭТО РАБОТАЕТ?")?>
                 </h2>
-                <p class="how-works__p"><?=Yii::t('common', "Розыгрыши скинов на раст серверах проходят каждые ~60 минут среди всех участников.")?></p>
+                <p class="how-works__p"><?=Yii::t('common', "Выдача скинов на раст серверах проходят каждые ~60 минут среди всех участников.")?></p>
                 <div class="how-works__content">
                     <div class="how-works__item<?=$authCompleted ? '' : ' danger'?>">
                         <div class="how-works__icon"><i class="fab fa-steam-symbol"></i></div>

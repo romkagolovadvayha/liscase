@@ -21,11 +21,11 @@ JS
             <a href="https://wargm.ru/server/70688/votes" class="widget_banner_link"><?=Yii::t('common', 'Голосовать')?></a>
         </div>
     </div>
-<!--    <div>-->
-<!--        <div class="widget_banner">-->
-<!--            <div class="widget_banner_title">--><?//=Yii::t('common', 'Раздача скинов')?><!--</div>-->
-<!--            <div class="widget_banner_desctiption">--><?//=Yii::t('common', 'Хотите получать скины в Steam бесплатно?')?><!--</div>-->
-<!--            <a href="/skindrops" class="widget_banner_link">--><?//=Yii::t('common', 'Участвовать')?><!--</a>-->
-<!--        </div>-->
-<!--    </div>-->
+    <div>
+        <div class="widget_banner">
+            <div class="widget_banner_title"><?=Yii::t('common', 'Как получать скины')?></div>
+            <div class="widget_banner_desctiption"><?=Yii::t('common', 'Хотите получать скины в Steam бесплатно?')?></div>
+            <a href="/skindrops" class="widget_banner_link"><?=Yii::t('common', 'Указать трейд ссылку')?></a>
+        </div>
+    </div>
 </div>
