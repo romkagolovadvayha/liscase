@@ -86,6 +86,7 @@ class Kills extends ActiveRecord
             'grenade.f1' => '/images/weapons/grenade.beancan.128.webp',
             'grenade.beancan' => '/images/weapons/grenade.beancan.128.webp',
             'bone.club' => '/images/weapons/bone.club.128.webp',
+            'stonehatchet' => '/uploads/drop/452_38d00757bcbf2a0f05f103a6cbc35b50.png',
             'spear.stone' => '/uploads/drop/87_c3d5adbad17377b2bfc0a86147c51fa5.png',
             'mace' => '/images/weapons/mace.128.webp',
             'minigun' => '/images/weapons/minigun.128.webp',
