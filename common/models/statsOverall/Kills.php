@@ -55,6 +55,7 @@ class Kills extends ActiveRecord
             'bow.hunting' => '/images/weapons/bow.png',
             'bow.compound' => '/images/weapons/compound.png',
             'crossbow' => '/images/weapons/crossbow.png',
+            'legacy bow' => '/images/weapons/bow.png',
             'rifle.semiauto' => '/images/weapons/sar.png',
             'shotgun.pump' => '/images/weapons/pumpshotgun.png',
             'rifle.bolt' => '/images/weapons/bolt.png',
