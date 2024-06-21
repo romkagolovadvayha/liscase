@@ -34,7 +34,7 @@ $scientists = [
     'scientistnpc_heavy' => '/images/weapons/hazmatsuit_scientist_nvgm.128.webp',
 ];
 $weapons = [
-    'default' => '/images/weapons/assultrifle.png',
+    'default' => '/uploads/drop/470_0e759148112f5c49ca19601c9559f8e2.png',
     'smg.mp5' => '/images/weapons/mp5.png',
     'smg.thompson' => '/images/weapons/thompson.png',
     'rifle.ak' => '/images/weapons/assultrifle.png',
@@ -44,6 +44,7 @@ $weapons = [
     'bow.compound' => '/images/weapons/compound.png',
     'crossbow' => '/images/weapons/crossbow.png',
     'legacy bow' => '/images/weapons/bow.png',
+    'lumberjack.hatchet' => '/uploads/drop/470_0e759148112f5c49ca19601c9559f8e2.png',
     'rifle.semiauto' => '/images/weapons/sar.png',
     'shotgun.pump' => '/images/weapons/pumpshotgun.png',
     'rifle.bolt' => '/images/weapons/bolt.png',

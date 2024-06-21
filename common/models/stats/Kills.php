@@ -55,7 +55,7 @@ class Kills extends ActiveRecord
 
     public static function getWeaponsList() {
         return [
-            'default' => '/images/weapons/assultrifle.png',
+            'default' => '/uploads/drop/470_0e759148112f5c49ca19601c9559f8e2.png',
             'smg.mp5' => '/images/weapons/mp5.png',
             'smg.thompson' => '/images/weapons/thompson.png',
             'rifle.ak' => '/images/weapons/assultrifle.png',
@@ -65,6 +65,7 @@ class Kills extends ActiveRecord
             'bow.compound' => '/images/weapons/compound.png',
             'crossbow' => '/images/weapons/crossbow.png',
             'legacy bow' => '/images/weapons/bow.png',
+            'lumberjack.hatchet' => '/uploads/drop/470_0e759148112f5c49ca19601c9559f8e2.png',
             'rifle.semiauto' => '/images/weapons/sar.png',
             'shotgun.pump' => '/images/weapons/pumpshotgun.png',
             'rifle.bolt' => '/images/weapons/bolt.png',
