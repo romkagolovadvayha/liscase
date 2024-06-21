@@ -110,9 +110,7 @@ $fishing = mysqli_fetch_assoc($res_data);
         <tr>
             <td class="widget_top_table_name">
                 <?=Yii::t('common', 'МИРНЫЙ')?>
-                <?php if (!in_array($server, ['pve'])): ?>
-                    <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
-                <?php endif; ?>
+                <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
             </td>
             <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$scientists['steamid']?>&server=<?=$server?>"><?=$scientists['name']?></a></td>
             <td><?=$scientists['scientists']?></td>
@@ -143,9 +141,7 @@ $fishing = mysqli_fetch_assoc($res_data);
         <tr>
             <td class="widget_top_table_name">
                 <?=Yii::t('common', 'ОХОТНИК')?>
-                <?php if (!in_array($server, ['pve'])): ?>
-                    <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
-                <?php endif; ?>
+                <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
             </td>
             <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$hunter['steamid']?>&server=<?=$server?>"><?=$hunter['name']?></a></td>
             <td><?=$hunter['total_score']?></td>
@@ -156,9 +152,7 @@ $fishing = mysqli_fetch_assoc($res_data);
         <tr>
             <td class="widget_top_table_name">
                 <?=Yii::t('common', 'ФЕРМЕР')?>
-                <?php if (!in_array($server, ['pve'])): ?>
-                    <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
-                <?php endif; ?>
+                <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
             </td>
             <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fermer['steamid']?>&server=<?=$server?>"><?=$fermer['name']?></a></td>
             <td><?=number_format($fermer['total_score'])?></td>
@@ -169,9 +163,7 @@ $fishing = mysqli_fetch_assoc($res_data);
         <tr>
             <td class="widget_top_table_name">
                 <?=Yii::t('common', 'ФАРМЕР')?>
-                <?php if (!in_array($server, ['pve'])): ?>
-                    <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
-                <?php endif; ?>
+                <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
             </td>
             <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$farmer['steamid']?>&server=<?=$server?>"><?=$farmer['name']?></a></td>
             <td><?=number_format($farmer['total_score'])?></td>
@@ -182,9 +174,7 @@ $fishing = mysqli_fetch_assoc($res_data);
         <tr>
             <td class="widget_top_table_name">
                 <?=Yii::t('common', 'РЫБАК')?>
-                <?php if (!in_array($server, ['pve'])): ?>
-                    <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
-                <?php endif; ?>
+                <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
             </td>
             <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fishing['steamid']?>&server=<?=$server?>"><?=$fishing['name']?></a></td>
             <td><?=number_format($fishing['total_score'])?></td>

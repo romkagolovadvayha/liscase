@@ -64,7 +64,7 @@ class WipeController extends Controller
                           ->andWhere('db_host IS NOT NULL')
                           ->all();
         foreach ($servers as $server) {
-            if (!in_array($server->tag, ['max3', 'nolimit'])) {
+            if (!in_array($server->tag, ['max3', 'nolimit', 'x50', 'pve'])) {
                 continue;
             }
             Yii::$app->db_server->username = $server->db_user;
@@ -76,6 +76,9 @@ class WipeController extends Controller
                 continue;
             }
             foreach (['kills', 'scientists', 'hunter', 'fermer', 'farmer', 'fishing'] as $type) {
+                if (in_array($server->tag, ['pve']) && $type === 'kills') {
+                    continue;
+                }
                 /** @var User $user */
                 $user = User::findBySteamId($stats[$type]['players'][0]['steamid']);
                 if (!empty($user)) {
