@@ -112,6 +112,7 @@ class MarketController extends WebController
                     Yii::$app->session->addFlash('success', Yii::t('common', 'Предмет успешно приобретен!'));
                 } catch (\Exception $e) {
                     $dbTransaction->rollBack();
+                    print_r($e->getMessage());
                     Yii::$app->session->addFlash('danger', Yii::t('common', 'Произошла ошибка при оплате!'));
                 }
             }
