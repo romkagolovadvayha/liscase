@@ -2,6 +2,7 @@
 
 namespace common\controllers;
 
+use common\models\user\User;
 use Yii;
 use yii\helpers\Html;
 use yii\web\Controller;
@@ -26,6 +27,13 @@ class WebController extends Controller
             return;
         }
 
+        if (empty(Cookie::getValue('refCode'))) {
+            $user = User::findByRefCode($refCode);
+            if (!empty($user)) {
+                $user->userProfile->referral_click++;
+                $user->userProfile->save();
+            }
+        }
         Cookie::remove('refCode');
         Cookie::add('refCode', $refCode, true, 365 * 24 * 60);
     }

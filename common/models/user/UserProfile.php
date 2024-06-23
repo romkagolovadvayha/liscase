@@ -9,17 +9,22 @@ use yii\helpers\ArrayHelper;
 /**
  * This is the model class for table "user_profile".
  *
- * @property int     $id
- * @property int     $user_id
- * @property string  $name
- * @property string  $surname
- * @property string  $full_name
- * @property string  $avatar
- * @property int     $gender
- * @property string  $birthday
- * @property string  $trade_link
- * @property bool    $skindrops
- * @property string  $skindrops_error
+ * @property int    $id
+ * @property int    $user_id
+ * @property string $name
+ * @property string $surname
+ * @property string $full_name
+ * @property string $avatar
+ * @property int    $gender
+ * @property string $birthday
+ * @property string $trade_link
+ * @property bool   $skindrops
+ * @property string $skindrops_error
+ * @property int    $referral_bonus
+ * @property int    $referral_click
+ * @property string $blogger_account
+ * @property bool   $is_blogger
+ * @property bool   $parent_bonus
  *
  * @property User    $user
  */

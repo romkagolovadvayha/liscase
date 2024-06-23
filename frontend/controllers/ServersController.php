@@ -4,6 +4,7 @@ namespace frontend\controllers;
 
 use common\controllers\WebController;
 use common\models\servers\Servers;
+use common\models\stats\Teams;
 use common\models\stats\Wipe;
 use yii\web\NotFoundHttpException;
 use Yii;

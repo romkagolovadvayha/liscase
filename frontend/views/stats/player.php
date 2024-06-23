@@ -41,7 +41,7 @@ if (!empty($lastVisit)) {
         $lastVisit = Yii::t('common', '5 дней назад');
     }
 }
-
+$clan = Teams::getAllInTeams($server, $player['steamid'], $stats['models']);
 
 $kdr      = $player['deaths'] > 0 ? round($player['kills'] / $player['deaths'], 2) : $player['kills'];
 $hits     = $player['head_hits'] + $player['torso_hits'] + $player['leftarm_hits'] + $player['rightarm_hits']
@@ -91,10 +91,20 @@ $items = [
                 <div class="stats_player_profile_avatar"><img src="<?=$avatar?>" alt="<?=Yii::t('common', 'Фото игрока')?> <?=$player['name']?>" width="150px"/></div>
                 <div class="stats_player_profile_body">
                     <div class="stats_player_profile_body_name"><?=$player['name']?></div>
-                    <div class="stats_player_profile_body_item"><?=Yii::t('common', 'Онлайн за вайп')?>: <?=Servers::getPlayTime($player['playtime'])?></div>
-                    <div class="stats_player_profile_body_item"><?=Yii::t('common', 'Статус')?>: <span class="<?=$player['status'] ? 'online' : 'offline'?>"><?=$player['status'] ? Yii::t('common', 'Онлайн') : Yii::t('common', 'Офлайн') ?></span></div>
-                    <?php if (!empty($lastVisit)): ?>
-                    <div class="stats_player_profile_body_item"><?=Yii::t('common', 'Последнее посещение')?>: <?=$lastVisit?></div>
+                    <div class="stats_player_profile_body_item"><?=Yii::t('common', 'Онлайн за вайп')?>: <span style="color: #aaf16e;"><?=Servers::getPlayTime($player['playtime'])?></span></div>
+                    <div class="stats_player_profile_body_item">
+                        <?=Yii::t('common', 'Статус')?>:
+                        <span class="<?=$player['status'] ? 'online' : 'offline'?>">
+                            <?=$player['status'] ? Yii::t('common', 'Онлайн') : Yii::t('common', 'Офлайн') ?>
+                        </span>
+                        <?php if (!$player['status'] && !empty($lastVisit)): ?>
+                            <span style="font-size: 10px;vertical-align: top;font-weight: 400">(Был <?=$lastVisit?>)</span>
+                        <?php endif; ?>
+                    </div>
+                    <?php if (!empty($clan)): ?>
+                    <div class="stats_player_profile_body_item">
+                        <?=Yii::t('common', 'Количество человек в клане')?>: <span style="color: #aaf16e;"><?=count($clan)?></span>
+                    </div>
                     <?php endif; ?>
                     <div class="stats_player_profile_body_blocks">
                         <?php foreach ($items as $item): ?>
@@ -144,6 +154,13 @@ $items = [
             'data' => $stats['playtime'],
             'player' => $player,
             'server' => $server,
+        ]);?>
+        <?=$this->render('_player_clan', [
+            'player' => $player,
+            'server' => $server,
+            'clan' => $clan,
+            'models' => $stats['models'],
+            'title' => Yii::t('common', 'Участник клана'),
         ]);?>
         <?=$this->render('_player_stats_fishing', [
             'data' => $stats['playtime'],

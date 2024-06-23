@@ -9,11 +9,9 @@ use yii\base\BaseObject;
 
 /**
  * @property int                 $id
- * @property string              $name
+ * @property string              $team_author
  * @property string              $steam_id
  * @property string              $type
- * @property string              $dead
- * @property string              $weapon
  * @property string              $created_at
  */
 class Teams extends ActiveRecord
@@ -93,5 +91,61 @@ class Teams extends ActiveRecord
         }
 
         return $models;
+    }
+    public static function getAllInTeams($server, $steamId, $statsModels) {
+        $server->updateDbConfig();
+
+        /** @var Teams[] $models */
+        $models = Teams::find()
+                       ->cache(61*5)
+                        ->andWhere(['IN', 'type', ['invite_accepted', 'leaved']])
+                       ->orderBy(['id' => SORT_ASC])
+                       ->asArray()
+                       ->all();
+
+        $result = [];
+        $teamAuthor = null;
+        foreach ($models as $model) {
+            if ($model['type'] == 'invite_accepted' && in_array($steamId, [$model['steam_id'], $model['team_author']])) {
+                $teamAuthor = $model['team_author'];
+                break;
+            }
+        }
+        foreach ($models as $model) {
+            if (in_array($teamAuthor, [$model['team_author']])) {
+                if ($model['type'] == 'invite_accepted') {
+                    $result[$model['steam_id']] = self::getItemTeams($model['steam_id'], $statsModels, $model['created_at']);
+                } elseif ($model['type'] == 'leaved') {
+                    if (!empty($result[$model['steam_id']])) {
+                        unset($result[$model['steam_id']]);
+                    }
+                }
+            }
+        }
+        $newResult = [];
+        foreach ($models as $model) {
+            if ($model['type'] == 'invite_accepted' && in_array($steamId, [$model['steam_id'], $model['team_author']])) {
+                $newResult[$model['team_author']] = self::getItemTeams($model['team_author'], $statsModels, $model['created_at'], true);
+                break;
+            }
+        }
+        $newResult = array_merge($newResult, $result);
+
+        return $newResult;
+    }
+
+    public static function getItemTeams($steamId, $statsModels, $createdAt, $isTeamAuthor = false) {
+        $result = ['name' => null];
+        foreach ($statsModels as $statsModel) {
+            if ($steamId === $statsModel['steamid']) {
+                $result['name'] = $statsModel['name'];
+                break;
+            }
+        }
+        $result['steam_id'] = $steamId;
+        $result['created_at'] = $createdAt;
+        $result['team_author'] = $isTeamAuthor;
+
+        return $result;
     }
 }

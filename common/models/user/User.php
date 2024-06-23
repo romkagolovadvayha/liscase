@@ -38,6 +38,7 @@ use common\components\base\ActiveRecord;
  * @property UserTask        $userTasks
  * @property string          $currency
  * @property Auth            $auth
+ * @property UserTree        $userTree
  */
 class User extends ActiveRecord implements IdentityInterface
 {
@@ -97,7 +98,6 @@ class User extends ActiveRecord implements IdentityInterface
             [['email'], 'unique'],
         ];
     }
-
 
     /**
      * Finds an identity by the given ID.
@@ -210,6 +210,46 @@ class User extends ActiveRecord implements IdentityInterface
     {
         return $this->hasMany(UserBox::class, ['user_id' => 'id'])
                     ->andWhere(['status' => UserBox::STATUS_OPENED]);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUserTree()
+    {
+        return $this->hasOne(UserTree::class, ['user_id' => 'id']);
+    }
+
+    /**
+     * @return User|null
+     */
+    public function getParentUser()
+    {
+        if (empty($this->userTree) || $this->userTree->level == 0) {
+            return null;
+        }
+
+        return $this->userTree->parentUser;
+    }
+
+    /**
+     * @param int|null $depth
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getChildrenUserTreeQuery($depth = null)
+    {
+        $userTree = UserTree::findOne(['user_id' => $this->id]);
+
+        return $userTree->children($depth);
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasChildrenUsers()
+    {
+        return UserTree::find()->andWhere(['parent_user_id' => $this->id])->exists();
     }
 
     /**
