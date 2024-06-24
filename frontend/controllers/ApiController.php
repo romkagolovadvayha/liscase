@@ -308,8 +308,8 @@ class ApiController extends WebController
             $result['en'] .= PHP_EOL . "<color=#aaf16e>/remove</color> - Remove objects";
         }
         if (in_array('xrates', $commands)) {
-            $result['ru'] .= PHP_EOL . "<color=#aaf16e>/xrates</color> - Смотреть текущие рейты";
-            $result['en'] .= PHP_EOL . "<color=#aaf16e>/xrates</color> - Current rates";
+            $result['ru'] .= PHP_EOL . "<color=#aaf16e>/rate</color> - Смотреть текущие рейты";
+            $result['en'] .= PHP_EOL . "<color=#aaf16e>/rate</color> - Current rates";
         }
         if (in_array('fmenu', $commands)) {
             $result['ru'] .= PHP_EOL . "<color=#aaf16e>/fmenu</color> - Меню друзей";

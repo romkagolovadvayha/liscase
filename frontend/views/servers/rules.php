@@ -125,7 +125,7 @@ $servers = Servers::find()
                                             <li><span class="rules_command">/store</span> - <?=Yii::t('common', 'Открыть корзину товаров')?></li>
                                         <?php endif; ?>
                                         <?php if (in_array('xrates', $commands)): ?>
-                                            <li><span class="rules_command">/xrates</span> - <?=Yii::t('common', 'Текущие рейты')?></li>
+                                            <li><span class="rules_command">/rate</span> - <?=Yii::t('common', 'Текущие рейты')?></li>
                                         <?php endif; ?>
                                         <?php if (in_array('fmenu', $commands)): ?>
                                             <li><span class="rules_command">/fmenu</span> - <?=Yii::t('common', 'Друзья')?></li>
