@@ -98,7 +98,7 @@ class Teams extends ActiveRecord
         /** @var Teams[] $models */
         $models = Teams::find()
                        ->cache(61*5)
-                        ->andWhere(['IN', 'type', ['invite_accepted', 'leaved']])
+                       ->andWhere(['IN', 'type', ['invite_accepted', 'leaved', 'kicked']])
                        ->orderBy(['id' => SORT_ASC])
                        ->asArray()
                        ->all();
@@ -115,8 +115,10 @@ class Teams extends ActiveRecord
             if (in_array($teamAuthor, [$model['team_author']])) {
                 if ($model['type'] == 'invite_accepted') {
                     $result[$model['steam_id']] = self::getItemTeams($model['steam_id'], $statsModels, $model['created_at']);
-                } elseif ($model['type'] == 'leaved') {
-                    if (!empty($result[$model['steam_id']])) {
+                } elseif (in_array($model['type'], ['leaved', 'kicked'])) {
+                    if ($model['type'] === 'leaved' && $model['steam_id'] === $model['team_author']) {
+                        $result = [];
+                    } elseif (!empty($result[$model['steam_id']])) {
                         unset($result[$model['steam_id']]);
                     }
                 }
