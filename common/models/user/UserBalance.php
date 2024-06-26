@@ -165,7 +165,7 @@ class UserBalance extends \common\components\base\ActiveRecord
         $invoices = (float)$this->getInvoices()->sum('amount');
         $deposits = (float)$this->getDeposits()->andWhere(['status' => Deposit::STATUS_SUCCESS])->sum('amount');
 
-        $this->balance = $balance + $deposits - $invoices;
+        $this->balance = ceil($balance + $deposits - $invoices);
         $this->save(false);
     }
 
