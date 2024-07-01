@@ -182,6 +182,7 @@ class Box extends ActiveRecord
     public function getImageOrig()
     {
         return $this->hasOne(BoxImage::class, ['box_id' => 'id'])
+                    ->cache(3600)
                     ->andWhere(['type' => BoxImage::TYPE_ORIG]);
     }
 
@@ -215,7 +216,7 @@ class Box extends ActiveRecord
      */
     public function getBoxImages()
     {
-        return $this->hasMany(BoxImage::class, ['box_id' => 'id']);
+        return $this->hasMany(BoxImage::class, ['box_id' => 'id'])->cache(3600);
     }
 
     /**
@@ -226,6 +227,7 @@ class Box extends ActiveRecord
     public static function getBoxesByType($type)
     {
         return Box::find()
+                  ->cache(3600)
                   ->andWhere(['type' => $type])
                   ->andWhere(['status' => Box::STATUS_ACTIVE])
                   ->all();

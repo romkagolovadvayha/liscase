@@ -73,112 +73,242 @@ LIMIT 1";
 $res_data = mysqli_query($connection, $sql);
 $fishing = mysqli_fetch_assoc($res_data);
 
+$reiderUser = \common\models\user\User::findBySteamId($reider['steamid'], false);
+$hunterUser = \common\models\user\User::findBySteamId($hunter['steamid'], false);
+$fermerUser = \common\models\user\User::findBySteamId($fermer['steamid'], false);
+$farmerUser = \common\models\user\User::findBySteamId($farmer['steamid'], false);
+$fishingUser = \common\models\user\User::findBySteamId($fishing['steamid'], false);
+$playtimeUser = \common\models\user\User::findBySteamId($playtime['steamid'], false);
+$scientistsUser = \common\models\user\User::findBySteamId($scientists['steamid'], false);
+$killerUser = \common\models\user\User::findBySteamId($killer['steamid'], false);
+$deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false);
+
 ?>
 
-<table class="widget_top_table">
-    <thead>
-    <tr>
-        <th><?=Yii::t('common', 'КАТЕГОРИЯ')?></th>
-        <th><?=Yii::t('common', 'НИК')?></th>
-        <th><?=Yii::t('common', 'ОЧКИ')?></th>
-    </tr>
-    </thead>
-    <tbody>
+<div class="top_table">
     <?php if (!empty($reider)): ?>
         <?php if ($server != 'pve'): ?>
-            <!-- ТОП РЕЙДЕР -->
-            <tr>
-                <td class="widget_top_table_name"><?=Yii::t('common', 'РЕЙДЕР')?></td>
-                <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$reider['steamid']?>&server=<?=$server?>"><?=$reider['name']?></a></td>
-                <td><?=round($reider['total_score'])?></td>
-            </tr>
-            <!-- ТОП КИЛЛЕР -->
-            <tr>
-                <td class="widget_top_table_name">
-                    <?=Yii::t('common', 'КИЛЛЕР')?>
-                    <?php if (!in_array($server, ['pve'])): ?>
-                        <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
-                    <?php endif; ?>
-                </td>
-                <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$killer['steamid']?>&server=<?=$server?>"><?=$killer['name']?></a></td>
-                <td><?=$killer['kills']?></td>
-            </tr>
+        <div class="top_table_item">
+            <div class="top_table_item_image">
+                <img src="<?=$reiderUser->getAvatar()?>" alt="<?=$reiderUser->username?>"/>
+            </div>
+            <div class="top_table_item_wrap">
+                <div class="top_table_item_header">
+                    <div class="top_table_item_header_name">
+                        <?=Yii::t('common', 'РЕЙДЕР')?>
+                    </div>
+                    <div class="top_table_item_header_bonus" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">
+                        +500 RUB
+                    </div>
+                </div>
+                <div class="top_table_item_body">
+                    <div class="top_table_item_body_link">
+                        <a target="#" href="/stats/player?steamId=<?=$reider['steamid']?>&server=<?=$server?>"><?=$reiderUser->username?></a>
+                    </div>
+                    <div class="top_table_item_body_score">
+                        <?=round($reider['total_score'])?>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="top_table_item">
+            <div class="top_table_item_image">
+                <img src="<?=$killerUser->getAvatar()?>" alt="<?=$killerUser->username?>"/>
+            </div>
+            <div class="top_table_item_wrap">
+                <div class="top_table_item_header">
+                    <div class="top_table_item_header_name">
+                        <?=Yii::t('common', 'КИЛЛЕР')?>
+                    </div>
+                    <div class="top_table_item_header_bonus" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">
+                        +500 RUB
+                    </div>
+                </div>
+                <div class="top_table_item_body">
+                    <div class="top_table_item_body_link">
+                        <a target="#" href="/stats/player?steamId=<?=$killer['steamid']?>&server=<?=$server?>"><?=$killerUser->username?></a>
+                    </div>
+                    <div class="top_table_item_body_score">
+                        <?=$killer['kills']?>
+                    </div>
+                </div>
+            </div>
+        </div>
         <?php endif; ?>
     <?php endif; ?>
-    <!-- ТОП МИРНЫЙ -->
     <?php if (!empty($scientists)): ?>
-        <tr>
-            <td class="widget_top_table_name">
-                <?=Yii::t('common', 'МИРНЫЙ')?>
-                <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
-            </td>
-            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$scientists['steamid']?>&server=<?=$server?>"><?=$scientists['name']?></a></td>
-            <td><?=$scientists['scientists']?></td>
-        </tr>
+    <div class="top_table_item">
+        <div class="top_table_item_image">
+            <img src="<?=$scientistsUser->getAvatar()?>" alt="<?=$scientistsUser->username?>"/>
+        </div>
+        <div class="top_table_item_wrap">
+            <div class="top_table_item_header">
+                <div class="top_table_item_header_name">
+                    <?=Yii::t('common', 'МИРНЫЙ')?>
+                </div>
+                <div class="top_table_item_header_bonus" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">
+                    +500 RUB
+                </div>
+            </div>
+            <div class="top_table_item_body">
+                <div class="top_table_item_body_link">
+                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$scientists['steamid']?>&server=<?=$server?>"><?=$scientistsUser->username?></a>
+                </div>
+                <div class="top_table_item_body_score">
+                    <?=$scientists['scientists']?>
+                </div>
+            </div>
+        </div>
+    </div>
     <?php endif; ?>
-    <!-- ТОП ОНЛАЙН -->
     <?php if (!empty($playtime)): ?>
-        <tr>
-            <td class="widget_top_table_name">
-                <?=Yii::t('common', 'ОНЛАЙН')?>
-            </td>
-            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$playtime['steamid']?>&server=<?=$server?>"><?=$playtime['name']?></a></td>
-            <td><?=\common\models\servers\Servers::getPlayTime($playtime['playtime'])?></td>
-        </tr>
+    <div class="top_table_item">
+        <div class="top_table_item_image">
+            <img src="<?=$playtimeUser->getAvatar()?>" alt="<?=$playtimeUser->username?>"/>
+        </div>
+        <div class="top_table_item_wrap">
+            <div class="top_table_item_header">
+                <div class="top_table_item_header_name">
+                    <?=Yii::t('common', 'МИРНЫЙ')?>
+                </div>
+                <div class="top_table_item_header_bonus" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">
+                    +500 RUB
+                </div>
+            </div>
+            <div class="top_table_item_body">
+                <div class="top_table_item_body_link">
+                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$playtime['steamid']?>&server=<?=$server?>"><?=$playtimeUser->username?></a>
+                </div>
+                <div class="top_table_item_body_score">
+                    <?=\common\models\servers\Servers::getPlayTime($playtime['playtime'])?>
+                </div>
+            </div>
+        </div>
+    </div>
     <?php endif; ?>
-    <!-- ТОП СМЕРТЕЙ -->
     <?php if (!empty($deaths)): ?>
-        <tr>
-            <td class="widget_top_table_name">
-                <?=Yii::t('common', 'СМЕРТЕЙ')?>
-            </td>
-            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$deaths['steamid']?>&server=<?=$server?>"><?=$deaths['name']?></a></td>
-            <td><?=$deaths['deaths']?></td>
-        </tr>
+    <div class="top_table_item">
+        <div class="top_table_item_image">
+            <img src="<?=$deathsUser->getAvatar()?>" alt="<?=$deathsUser->username?>"/>
+        </div>
+        <div class="top_table_item_wrap">
+            <div class="top_table_item_header">
+                <div class="top_table_item_header_name">
+                    <?=Yii::t('common', 'СМЕРТЕЙ')?>
+                </div>
+                <div class="top_table_item_header_bonus" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">
+    <!--                +500 RUB-->
+                </div>
+            </div>
+            <div class="top_table_item_body">
+                <div class="top_table_item_body_link">
+                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$deaths['steamid']?>&server=<?=$server?>"><?=$deathsUser->username?></a>
+                </div>
+                <div class="top_table_item_body_score">
+                    <?=$deaths['deaths']?>
+                </div>
+            </div>
+        </div>
+    </div>
     <?php endif; ?>
-    <!-- ТОП ОХОТНИК -->
     <?php if (!empty($hunter)): ?>
-        <tr>
-            <td class="widget_top_table_name">
-                <?=Yii::t('common', 'ОХОТНИК')?>
-                <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
-            </td>
-            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$hunter['steamid']?>&server=<?=$server?>"><?=$hunter['name']?></a></td>
-            <td><?=$hunter['total_score']?></td>
-        </tr>
+    <div class="top_table_item">
+        <div class="top_table_item_image">
+            <img src="<?=$hunterUser->getAvatar()?>" alt="<?=$hunterUser->username?>"/>
+        </div>
+        <div class="top_table_item_wrap">
+            <div class="top_table_item_header">
+                <div class="top_table_item_header_name">
+                    <?=Yii::t('common', 'ОХОТНИК')?>
+                </div>
+                <div class="top_table_item_header_bonus" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">
+                    +500 RUB
+                </div>
+            </div>
+            <div class="top_table_item_body">
+                <div class="top_table_item_body_link">
+                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$hunter['steamid']?>&server=<?=$server?>"><?=$hunterUser->username?></a>
+                </div>
+                <div class="top_table_item_body_score">
+                    <?=$hunter['total_score']?>
+                </div>
+            </div>
+        </div>
+    </div>
     <?php endif; ?>
-    <!-- Фермер -->
     <?php if (!empty($fermer)): ?>
-        <tr>
-            <td class="widget_top_table_name">
-                <?=Yii::t('common', 'ФЕРМЕР')?>
-                <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
-            </td>
-            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fermer['steamid']?>&server=<?=$server?>"><?=$fermer['name']?></a></td>
-            <td><?=number_format($fermer['total_score'])?></td>
-        </tr>
+    <div class="top_table_item">
+        <div class="top_table_item_image">
+            <img src="<?=$fermerUser->getAvatar()?>" alt="<?=$fermerUser->username?>"/>
+        </div>
+        <div class="top_table_item_wrap">
+            <div class="top_table_item_header">
+                <div class="top_table_item_header_name">
+                    <?=Yii::t('common', 'ФЕРМЕР')?>
+                </div>
+                <div class="top_table_item_header_bonus" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">
+                    +500 RUB
+                </div>
+            </div>
+            <div class="top_table_item_body">
+                <div class="top_table_item_body_link">
+                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fermer['steamid']?>&server=<?=$server?>"><?=$fermerUser->username?></a>
+                </div>
+                <div class="top_table_item_body_score">
+                    <?=$fermer['total_score']?>
+                </div>
+            </div>
+        </div>
+    </div>
     <?php endif; ?>
-    <!-- Фармер -->
     <?php if (!empty($farmer)): ?>
-        <tr>
-            <td class="widget_top_table_name">
-                <?=Yii::t('common', 'ФАРМЕР')?>
-                <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
-            </td>
-            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$farmer['steamid']?>&server=<?=$server?>"><?=$farmer['name']?></a></td>
-            <td><?=number_format($farmer['total_score'])?></td>
-        </tr>
+    <div class="top_table_item">
+        <div class="top_table_item_image">
+            <img src="<?=$farmerUser->getAvatar()?>" alt="<?=$farmerUser->username?>"/>
+        </div>
+        <div class="top_table_item_wrap">
+            <div class="top_table_item_header">
+                <div class="top_table_item_header_name">
+                    <?=Yii::t('common', 'ФАРМЕР')?>
+                </div>
+                <div class="top_table_item_header_bonus" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">
+                    +500 RUB
+                </div>
+            </div>
+            <div class="top_table_item_body">
+                <div class="top_table_item_body_link">
+                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$farmer['steamid']?>&server=<?=$server?>"><?=$farmerUser->username?></a>
+                </div>
+                <div class="top_table_item_body_score">
+                    <?=$farmer['total_score']?>
+                </div>
+            </div>
+        </div>
+    </div>
     <?php endif; ?>
-    <!-- Рыбак -->
     <?php if (!empty($fishing)): ?>
-        <tr>
-            <td class="widget_top_table_name">
-                <?=Yii::t('common', 'РЫБАК')?>
-                <span class="widget_top_table_name_bage" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">+500 RUB</span>
-            </td>
-            <td><a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fishing['steamid']?>&server=<?=$server?>"><?=$fishing['name']?></a></td>
-            <td><?=number_format($fishing['total_score'])?></td>
-        </tr>
+    <div class="top_table_item">
+        <div class="top_table_item_image">
+            <img src="<?=$fishingUser->getAvatar()?>" alt="<?=$fishingUser->username?>"/>
+        </div>
+        <div class="top_table_item_wrap">
+            <div class="top_table_item_header">
+                <div class="top_table_item_header_name">
+                    <?=Yii::t('common', 'РЫБАК')?>
+                </div>
+                <div class="top_table_item_header_bonus" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">
+                    +500 RUB
+                </div>
+            </div>
+            <div class="top_table_item_body">
+                <div class="top_table_item_body_link">
+                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fishing['steamid']?>&server=<?=$server?>"><?=$fishingUser->username?></a>
+                </div>
+                <div class="top_table_item_body_score">
+                    <?=$fishing['total_score']?>
+                </div>
+            </div>
+        </div>
+    </div>
     <?php endif; ?>
-    </tbody>
-</table>
+</div>

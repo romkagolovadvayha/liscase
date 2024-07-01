@@ -29,7 +29,7 @@ $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => '/i
 
 $rightMenu = [
     [
-        'label'   => '<span class="auth__text">'.Yii::t('common', 'Войти через Steam').'</span>',
+        'label'   => '<i class="fab fa-steam"></i> '.Yii::t('common', 'Войти через Steam'),
         'url'     => '/auth/oauth?authclient=steam',
         'encode' => false,
         'options'     => [
@@ -40,7 +40,7 @@ $rightMenu = [
 ];
 $mobileMenu = [
     [
-        'label'   => '<i class="fab fa-steam-square"></i> ' . Yii::t('common', 'Войти через Steam'),
+        'label'   => '<i class="fab fa-steam"></i> ' . Yii::t('common', 'Войти через Steam'),
         'url'     => '/auth/oauth?authclient=steam',
         'encode' => false,
         'visible' => Yii::$app->user->isGuest,
@@ -70,17 +70,7 @@ JS
         'encode' => false,
         'items' => [
             [
-                'label'   => '<i class="fas fa-shopping-basket"></i> ' . Yii::t('common', 'Корзина'),
-                'encode' => false,
-                'url'     => '/user/inventory',
-            ],
-            [
-                'label'   => '<i class="fas fa-history"></i> ' . Yii::t('common', 'История операций'),
-                'encode' => false,
-                'url'     => '/user/history',
-            ],
-            [
-                'label'   => '<i class="far fa-calendar-check"></i> ' . Yii::t('common', "Задания на вайп"),
+                'label'   => '<i class="fas fa-shopping-basket"></i> ' . Yii::t('common', 'Профиль'),
                 'encode' => false,
                 'url'     => '/user/tasks',
             ],
@@ -198,7 +188,7 @@ if (!Yii::$app->user->isGuest) {
         <div class="container-fluid">
             <div class="header_mobile">
                 <a class="navbar-brand" href="<?=Yii::$app->homeUrl?>">
-                    <img src="/images/logo.png"/>
+                    <img src="/images/logo_new.png"/>
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Меню сайта">
                     <?php if (!Yii::$app->user->isGuest): ?>
@@ -224,22 +214,8 @@ if (!Yii::$app->user->isGuest) {
             </div>
             <div class="collapse navbar-collapse" id="navbarHeader">
                 <a class="navbar-brand" href="<?=Yii::$app->homeUrl?>">
-                    <img src="/images/logo.png"/>
+                    <img src="/images/logo_new.png"/>
                 </a>
-
-                <div class="header-language-picker" style="display: none">
-                    <?php echo LanguagePicker::widget([
-                        'languages'  => [
-                            'en-US' => 'EN',
-                            'ru-RU' => 'RU',
-//                            'de-DE' => 'DE',
-//                            'uk-UA' => 'UK',
-//                            'es-ES' => 'ES',
-                        ],
-                        'skin' => LanguagePicker::SKIN_DROPDOWN,
-                        'size' => LanguagePicker::SIZE_LARGE,
-                    ])?>
-                </div>
                 <?=Nav::widget([
                     'items' => [
                         [
@@ -256,19 +232,11 @@ if (!Yii::$app->user->isGuest) {
                             ],
                         ],
                         [
-                            'label'   => '<i class="fas fa-tasks"></i> ' . Yii::t('common', 'Правила'),
-                            'url'     => '/servers/rules?server=max3',
-                            'encode' => false,
-                            'options'     => [
-                                'class' => 'menu-rules'
-                            ],
-                        ],
-                        [
                             'label'   => '<i class="fa-solid fa-chart-pie"></i> ' . Yii::t('common', 'Статистика'),
                             'url'     => '/stats?server=max3',
                             'encode' => false,
                             'options'     => [
-                                'class' => 'menu-rules'
+                                'class' => 'menu-stats'
                             ],
                         ],
                         [
@@ -276,7 +244,7 @@ if (!Yii::$app->user->isGuest) {
                             'url'     => '/skindrops',
                             'encode' => false,
                             'options'     => [
-                                'class' => 'menu-rules'
+                                'class' => 'menu-skindrops'
                             ],
                         ],
 //                        [
@@ -312,6 +280,19 @@ if (!Yii::$app->user->isGuest) {
                     'options' => ['class' =>'navbar-nav nav-pills header-social-menu'],
                 ]);
                 ?>
+                <div class="header-language-picker">
+                    <?php echo LanguagePicker::widget([
+                                                          'languages'  => [
+                                                              'en-US' => 'EN',
+                                                              'ru-RU' => 'RU',
+                                                              //                            'de-DE' => 'DE',
+                                                              //                            'uk-UA' => 'UK',
+                                                              //                            'es-ES' => 'ES',
+                                                          ],
+                                                          'skin' => LanguagePicker::SKIN_DROPDOWN,
+                                                          'size' => LanguagePicker::SIZE_LARGE,
+                                                      ])?>
+                </div>
                 <?=Nav::widget([
                                    'items' => $mobileMenu,
                                    'options' => ['class' =>'header-mobile-menu'],
@@ -374,18 +355,34 @@ if (!Yii::$app->user->isGuest) {
 </div>
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript" >
-    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-        m[i].l=1*new Date();
-        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
-    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+    (function (d, w, c) {
+        (w[c] = w[c] || []).push(function() {
+            try {
+                w.yaCounter97456083 = new Ya.Metrika({
+                    id:97456083,
+                    clickmap:true,
+                    trackLinks:true,
+                    accurateTrackBounce:true,
+                    webvisor:true
+                });
+            } catch(e) { }
+        });
 
-    ym(97456083, "init", {
-        clickmap:true,
-        trackLinks:true,
-        accurateTrackBounce:true,
-        webvisor:true
-    });
+        var n = d.getElementsByTagName("script")[0],
+            x = "https://mc.yandex.ru/metrika/watch.js",
+            s = d.createElement("script"),
+            f = function () { n.parentNode.insertBefore(s, n); };
+        for (var i = 0; i < document.scripts.length; i++) {
+            if (document.scripts[i].src === x) { return; }
+        }
+        s.type = "text/javascript";
+        s.async = true;
+        s.src = x;
+
+        if (w.opera == "[object Opera]") {
+            d.addEventListener("DOMContentLoaded", f, false);
+        } else { f(); }
+    })(document, window, "yandex_metrika_callbacks");
 </script>
 <noscript><div><img src="https://mc.yandex.ru/watch/97456083" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->

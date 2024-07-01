@@ -26,12 +26,6 @@ $this->registerJs($formatJs, \yii\web\View::POS_END);
 <?php //echo $this->render('@frontend/views/layouts/_promocode_line', [
 //    'promocodeForm' => $promocodeForm
 //]); ?>
-<div class="last_drops_wrapper">
-    <?php if ($this->beginCache('_last_drops' . Yii::$app->language, ['duration' => 10])): ?>
-        <?= $this->render('@frontend/views/widgets/_last_drops'); ?>
-        <?php $this->endCache(); ?>
-    <?php endif; ?>
-</div>
 
 <div class="container-fluid mb-5">
     <div class="main_wrap server_info_page">

@@ -20,14 +20,45 @@ $received = true;
     </div>
     <div class="achievements_body" id="achievements_achievement_body">
         <div class="achievements_body_list">
+            <div class="achievements_body_list_item_wrap">
+                <div class="achievements_body_list_items">
+                    <div class="achievements_body_list_items_item">
+                        <div class="achievements_body_list_items_item_info">
+                            <div class="achievements_body_list_items_item_info_stext"><?=Yii::t('common', 'За каждого приглашенного скин от 20 до 120 RUB')?></div>
+                            <div title="Чистый чай на металлолом" class="achievements_body_list_items_item_info_simage">
+                                <img src="/images/skindrops/skindrops.png">
+                            </div>
+                            <a href="/user/partner" class="achievements_body_list_items_item_info_btn">
+                                <?=Yii::t('common', 'Подробнее')?>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="achievements_body_list_items_item">
+                        <div class="achievements_body_list_items_item_info">
+                            <div class="achievements_body_list_items_item_info_stext"><?=Yii::t('common', 'За каждого приглашенного 30 RUB на игровой баланс')?></div>
+                            <div title="Чистый чай на металлолом" class="achievements_body_list_items_item_info_simage">
+                                <img src="/uploads/drop/843_5e35e97a12e34fb4a96f5bafce7f8906.png">
+                            </div>
+                            <a href="/user/partner" class="achievements_body_list_items_item_info_btn">
+                                <?=Yii::t('common', 'Подробнее')?>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <?php foreach (Task::getTypeList() as $type => $title): ?>
             <div class="achievements_body_list_item_wrap">
                 <div class="achievements_body_list_item_title">
                     <?=$title?>
                 </div>
                 <div class="achievements_body_list_items">
+                    <?php $k = 1; ?>
                     <?php foreach (Task::getTasksByUser($user, $type) as $task): ?>
                         <div class="achievements_body_list_items_item <?=($task['status'] === 2) ? ' disabled' : ''?>">
+                            <div class="achievements_body_list_items_item_number"><?=$k?></div>
+                            <?php if ($k > 1): ?>
+                            <div class="achievements_body_list_items_item_arrow"><i class="fas fa-angle-right"></i></div>
+                            <?php endif; ?>
                             <div class="achievements_body_list_items_item_info">
                                 <div class="achievements_body_list_items_item_info_stitle">
                                     <?=Yii::t('common', 'Задание')?>
@@ -57,13 +88,11 @@ $received = true;
                                         <?= Yii::t('common', 'Получить'); ?>
                                     </a>
                                 <?php endif; ?>
+                                <div class="achievements_body_list_items_item_image"><img src="<?=$task['taskImage']?>"/></div>
                             </div>
-                            <div class="achievements_body_list_items_item_image"><img src="<?=$task['taskImage']?>"/></div>
                         </div>
+                        <?php $k++; ?>
                     <?php endforeach; ?>
-<!--                    <div class="achievements_body_list_items_progress_wrap">-->
-<!--                        <div class="achievements_body_list_items_progress" style="width: 0%"></div>-->
-<!--                    </div>-->
                 </div>
             </div>
             <?php endforeach; ?>

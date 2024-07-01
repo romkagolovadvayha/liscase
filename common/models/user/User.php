@@ -3,10 +3,15 @@
 namespace common\models\user;
 
 use common\components\helpers\Role;
+use common\components\oauth\Steam;
+use common\components\web\Cookie;
 use common\models\auth\AuthAssignment;
 use common\models\invoice\Invoice;
 use common\models\invoice\Deposit;
 use common\models\profit\Profit;
+use common\models\servers\Servers;
+use common\models\stats\Wipe;
+use yii\base\BaseObject;
 use yii\base\NotSupportedException;
 use Yii;
 use yii\web\IdentityInterface;
@@ -26,6 +31,7 @@ use common\components\base\ActiveRecord;
  * @property string          $jwt
  * @property int             $auto
  * @property string          $created_at
+ * @property string          $updated_at
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
@@ -163,11 +169,80 @@ class User extends ActiveRecord implements IdentityInterface
         return static::findOne($attributes);
     }
 
-    public static function findBySteamId($steamId)
+    public static function findBySteamId($steamId, $updated = false)
     {
-        return static::find()
-            ->andWhere(['steam_id' => $steamId])
-            ->one();
+        /** @var User $user */
+        $user = static::find()
+                      ->andWhere(['steam_id' => $steamId])
+                      ->one();
+
+        try {
+            if (empty($user)) {
+                $dbTransaction = Yii::$app->db->beginTransaction();
+                $infoUser       = Steam::getInfoUser($steamId);
+                if (empty($infoUser)) {
+                    $dbTransaction->rollBack();
+                    return null;
+                }
+                $user           = new User();
+                $user->email    = "{$steamId}@steam.com";
+                $user->steam_id = $steamId;
+                $user->username = $infoUser[0]['personaname'];
+                $user->setPassword(Yii::$app->security->generateRandomString());
+                $user->status = User::STATUS_ACTIVE;
+                $user->generateAuthKey();
+                $user->generateRefCode();
+                $user->generateSocketRoom();
+                if ($user->save()) {
+                    UserProfile::createModel($user, $infoUser[0]['personaname']);
+                    try {
+                        $avatar                    = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
+                        $user->userProfile->avatar = $avatar;
+                    } catch (\Exception $ex) {
+                    }
+                    $user->userProfile->save();
+                    $auth = new Auth(
+                        [
+                            'user_id'   => $user->id,
+                            'source'    => 'steam',
+                            'source_id' => (string)$steamId,
+                        ]
+                    );
+                    $auth->save();
+                    $dbTransaction->commit();
+                }
+            } elseif ($updated && (empty($user->updated_at) || strtotime($user->updated_at) + 60*60*24*7 < time())) {
+                $infoUser       = Steam::getInfoUser($steamId);
+                $user->updated_at = date('Y-m-d H:i:s');
+                $user->username = $infoUser[0]['personaname'];
+                $user->save();
+                $avatar = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
+                $user->userProfile->name = $infoUser[0]['personaname'];
+                $user->userProfile->avatar = $avatar;
+                $user->userProfile->save();
+            }
+        } catch (\Exception $e) {
+            $dbTransaction->rollBack();
+            throw new \Exception(Yii::t('common', 'Произошла ошибка, попробуйте обновить страницу!'));
+        }
+
+        return $user;
+    }
+
+    public static function _loadImage($imageUrl, $id) {
+        $uploadDir = \Yii::getAlias('@frontend/web');
+        $fileUrl = "/uploads/avatar/steam/{$id}.png";
+        $filePath = $uploadDir . $fileUrl;
+        if (!file_exists(dirname(dirname($filePath)))) {
+            mkdir(dirname(dirname($filePath)));
+            chmod(dirname(dirname($filePath)), 0777);
+        }
+        if (!file_exists(dirname($filePath))) {
+            mkdir(dirname($filePath));
+            chmod(dirname($filePath), 0777);
+        }
+        file_put_contents($filePath, file_get_contents($imageUrl));
+        return $fileUrl;
     }
 
     /**
@@ -466,5 +541,46 @@ class User extends ActiveRecord implements IdentityInterface
         }
 
         return static::findOne(['jwt' => $jwt]);
+    }
+
+    /**
+     * @param User $user
+     */
+    public static function parentBonus($user)
+    {
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->cache(30)
+                          ->andWhere('db_host IS NOT NULL')
+                          ->all();
+
+        $onlineTime = 0;
+        foreach ($servers as $server) {
+            Yii::$app->db_server->username = $server->db_user;
+            Yii::$app->db_server->password = $server->db_password;
+            Yii::$app->db_server->dsn      = "mysql:host={$server->db_host};dbname={$server->db_name}";
+            Yii::$app->db_server->pdo      = null;
+            $player                        = Wipe::getPlayer($server, $user->steam_id);
+            if (empty($player)) {
+                continue;
+            }
+            $onlineTime += $player['playtime'];
+        }
+
+        if ($onlineTime < 60) {
+            return;
+        }
+
+        $user->userProfile->parent_bonus = 1;
+        $user->userProfile->save(false);
+
+        $profit = new Profit();
+        $profit->status = 1;
+        $profit->type = Profit::TYPE_REFERRAL;
+        $profit->amount = 30;
+        $profit->user_balance_id = $user->getParentUser()->getPersonalBalance()->id;
+        $profit->comment = Yii::t('common', 'Бонус за приглашенного пользователя', 'ru-RU');
+        $profit->created_at = date('Y-m-d H:i:s');
+        $profit->save(false);
     }
 }

@@ -3,12 +3,12 @@
 use common\models\servers\Servers;
 use common\models\stats\Kills;
 
-/** @var array $player */
+/** @var \common\models\user\User $user */
 /** @var array $models */
 /** @var string $title */
 /** @var Servers $server */
 
-$models = Kills::getKills($server, $player, $models);
+$models = Kills::getKills($server, $user, $models);
 $animals = Kills::getAnimalsList();
 $animals2 = Kills::getAnimals2List();
 ?>
@@ -21,7 +21,7 @@ $animals2 = Kills::getAnimals2List();
             $deadLink = "";
             if (empty($model['dead_name'])) {
                 $deadLink = "<span class=\"stats_player_kills_name\">".Yii::t('common', 'Не известный')."</span>";
-            } elseif ($model['dead'] === $player['steamid']) {
+            } elseif ($model['dead'] === $user->steam_id) {
                 $deadLink = "<span class=\"stats_player_kills_name\">{$model['dead_name']}</span>";
             } else {
                 $deadLink = "<a title=\"" . Yii::t('common', 'Открыть профиль') . "\" class=\"link_name stats_player_kills_name\" href=\"/stats/player?steamId={$model['dead']}&server={$server->tag}\">
@@ -33,7 +33,7 @@ $animals2 = Kills::getAnimals2List();
             $link = "";
             if (empty($model['name'])) {
                 $link = "<span class=\"stats_player_kills_name\">".Yii::t('common', 'Не известный')."</span>";
-            } elseif ($model['steam_id'] === $player['steamid']) {
+            } elseif ($model['steam_id'] === $user->steam_id) {
                 $link = "<span class=\"stats_player_kills_name\">{$model['name']}</span>";
             } else {
                 $link = "<a title=\"" . Yii::t('common', 'Открыть профиль') . "\" class=\"link_name stats_player_kills_name\" href=\"/stats/player?steamId={$model['steam_id']}&server={$server->tag}\">

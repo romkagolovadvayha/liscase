@@ -4,6 +4,7 @@ use common\models\servers\Servers;
 
 /** @var Servers $server */
 /** @var array $data */
+/** @var \common\models\user\User $user */
 /** @var array $player */
 /** @var string $title */
 
@@ -19,7 +20,7 @@ $isCurrent = false;
             <?php foreach ($data['players'] as $i => $item): ?>
                 <?php
                     if (!empty($player)) {
-                        $isCurrent = $player['steamid'] == $item['steamid'];
+                        $isCurrent = $user->steam_id == $item['steamid'];
                         if (!$isCurrentTop && $isCurrent) {
                             $isCurrentTop = true;
                         }
@@ -43,7 +44,7 @@ $isCurrent = false;
                     <td><?=$data['currentPosition']?></td>
                     <td>
                         <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" href="/stats/player?steamId=<?=$player['steamid']?>&server=<?=$server->tag?>">
-                            <?=$player['name']?>
+                            <?=$user->username?>
                         </a>
                     </td>
                     <td><?=$player[$data['attrName']]?></td>

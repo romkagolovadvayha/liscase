@@ -48,7 +48,7 @@ class Auth extends ActiveRecord
      */
     public function getUser()
     {
-        return $this->hasOne(User::class, ['id' => 'user_id']);
+        return $this->hasOne(User::class, ['id' => 'user_id'])->cache(3600);
     }
 
 }

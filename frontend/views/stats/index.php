@@ -10,6 +10,8 @@ use yii\web\JsExpression;
 use common\models\servers\Servers;
 
 $this->title = Yii::t('common', 'Статистика сервера') . ' ' . Yii::t('database', $server->name);
+$this->params['meta_description'] = Yii::t('common', "Магазин игровых товаров для серверов Rust. На сайте предоставлены товары, которые можно использовать только на наших серверах.");
+$this->params['meta_keywords'] = Yii::t('common', "магазин простой, простой, сервер простой, простой раст, простой rust");
 $formatJs = <<< 'JS'
 var formatRepo = function (repo) {
     if (repo.loading) {
@@ -38,6 +40,7 @@ $player = null;
 if (!empty($stats['player'])) {
     $player = $stats['player'];
 }
+$user = \common\models\user\User::findBySteamId($steam_id);
 
 $resultsJs = <<< JS
 function (data, params) {
@@ -53,13 +56,6 @@ $servers = Servers::find()
     ->andWhere('db_host IS NOT NULL')
     ->all();
 ?>
-
-<div class="last_drops_wrapper">
-    <?php if ($this->beginCache('_last_drops' . Yii::$app->language, ['duration' => 10])): ?>
-        <?= $this->render('@frontend/views/widgets/_last_drops'); ?>
-        <?php $this->endCache(); ?>
-    <?php endif; ?>
-</div>
 
 <div class="container-fluid mb-5">
     <div class="main_wrap">
@@ -103,48 +99,56 @@ $servers = Servers::find()
                 <div class="page_stats_tops">
                     <?=$this->render('_player_item', [
                         'data' => $stats['kills'],
+                        'user' => $user,
                         'player' => $player,
                         'server' => $server,
                         'title' => Yii::t('common', 'Лучший Киллер'),
                     ]);?>
                     <?=$this->render('_player_item', [
                         'data' => $stats['playtime'],
+                        'user' => $user,
                         'player' => $player,
                         'server' => $server,
                         'title' => Yii::t('common', 'ТОП Онлайн'),
                     ]);?>
                     <?=$this->render('_player_item', [
                         'data' => $stats['reider'],
+                        'user' => $user,
                         'player' => $player,
                         'server' => $server,
                         'title' => Yii::t('common', 'Лучший Рейдер'),
                     ]);?>
                     <?=$this->render('_player_item', [
                         'data' => $stats['farmer'],
+                        'user' => $user,
                         'player' => $player,
                         'server' => $server,
                         'title' => Yii::t('common', 'Лучший Фармер'),
                     ]);?>
                     <?=$this->render('_player_item', [
                         'data' => $stats['fermer'],
+                        'user' => $user,
                         'player' => $player,
                         'server' => $server,
                         'title' => Yii::t('common', 'Лучший Фермер'),
                     ]);?>
                     <?=$this->render('_player_item', [
                         'data' => $stats['fishing'],
+                        'user' => $user,
                         'player' => $player,
                         'server' => $server,
                         'title' => Yii::t('common', 'Лучший Рыбак'),
                     ]);?>
                     <?=$this->render('_player_item', [
                         'data' => $stats['hunter'],
+                        'user' => $user,
                         'player' => $player,
                         'server' => $server,
                         'title' => Yii::t('common', 'Лучший Охотник'),
                     ]);?>
                     <?=$this->render('_player_item', [
                         'data' => $stats['scientists'],
+                        'user' => $user,
                         'player' => $player,
                         'server' => $server,
                         'title' => Yii::t('common', 'Лучший Мирный'),

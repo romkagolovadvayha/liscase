@@ -81,9 +81,9 @@ foreach ($skindrops as $item) {
         <div class="faq-how-works">
             <div class="how-works">
                 <h1 class="how-works__title">
-                    <?=Yii::t('common', "Получайте скины играя бесплатно!")?>
+                    <?=Yii::t('common', "Получайте скины Steam за игру на наших серверах!")?>
                 </h1>
-                <p class="how-works__p"><?=Yii::t('common', "Скины на наших серверах. Просто укажите ссылку и приписку к нику в Steam.")?></p>
+                <p class="how-works__p"><?=Yii::t('common', "Раздача скинов в Steam. Просто укажите трейд ссылку и сделайте приписку к нику в игре.")?></p>
                 <div class="container-fluid how-works_drops_wrapper">
                     <div class="how-works_counters">
                         <div class="how-works_counters_item">
@@ -116,9 +116,9 @@ foreach ($skindrops as $item) {
                     </div>
                 </div>
                 <h2 class="how-works__title">
-                    <?=Yii::t('common', "КАК ЭТО РАБОТАЕТ?")?>
+                    <?=Yii::t('common', "Как это работает?")?>
                 </h2>
-                <p class="how-works__p"><?=Yii::t('common', "Выдача скинов на раст серверах проходят каждые ~60 минут среди всех участников.")?></p>
+                <p class="how-works__p"><?=Yii::t('common', "Раздача скинов Rust проходит каждые ~60 минут среди всех участников которые находятся на сервере.")?></p>
                 <div class="how-works__content">
                     <div class="how-works__item<?=$authCompleted ? '' : ' danger'?>">
                         <div class="how-works__icon"><i class="fab fa-steam-symbol"></i></div>
@@ -143,7 +143,7 @@ foreach ($skindrops as $item) {
                     </div>
                     <div class="how-works__item<?=$allCompleted ? '' : ' danger'?>">
                         <div class="how-works__icon"><i class="fas fa-gamepad"></i></div>
-                        <div class="how-works__desc"><?=Yii::t('common', "Играйте на сервере и получайте скины!")?></div>
+                        <div class="how-works__desc"><?=Yii::t('common', "Играйте на сервере и выигрывайте скины!")?></div>
                     </div>
                 </div>
             </div>
@@ -229,7 +229,7 @@ foreach ($skindrops as $item) {
                     </div>
                     <div aria-hidden="true" class="questions__answer-wrapper rah-static--height-zero">
                         <div class="questions__answer">
-                            <?=Yii::t('common', 'Никак, раздача абсолютно рандомная. Цена полученного предмета всегда разная, <b>от 10 до 120 руб</b>')?>
+                            <?=Yii::t('common', 'Никак, раздача абсолютно рандомная. Цена полученного предмета всегда разная, <b>от 20 до 120 руб</b>')?>
                         </div>
                     </div>
                 </li>

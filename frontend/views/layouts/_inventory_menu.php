@@ -1,6 +1,12 @@
 <?=\yii\bootstrap5\Nav::widget([
                                    'items' => [
                                        [
+                                           'label'   => '<i class="far fa-calendar-check"></i> ' . Yii::t('common', "Задания на вайп"),
+                                           'encode' => false,
+                                           'url'     => '/user/tasks',
+                                           'active' => (bool)strstr(Yii::$app->request->url, 'user/tasks'),
+                                       ],
+                                       [
                                            'label'   => '<i class="fas fa-shopping-basket"></i> ' . Yii::t('common', 'Корзина'),
                                            'encode' => false,
                                            'url'     => '/user/inventory',
@@ -17,12 +23,6 @@
                                            'encode' => false,
                                            'url'     => '/user/partner',
                                            'active' => (bool)strstr(Yii::$app->request->url, 'user/partner'),
-                                       ],
-                                       [
-                                           'label'   => '<i class="far fa-calendar-check"></i> ' . Yii::t('common', "Задания на вайп"),
-                                           'encode' => false,
-                                           'url'     => '/user/tasks',
-                                           'active' => (bool)strstr(Yii::$app->request->url, 'user/tasks'),
                                        ],
                                        [
                                            'label'   => '<i class="fas fa-wallet"></i> ' . Yii::t('common', 'Пополнить баланс'),

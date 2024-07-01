@@ -19,9 +19,8 @@ if ($connection->connect_error) {
 $table = "main_stats_kills";
 $tableWipe = "main_stats_wipe";
 
-$sql = "SELECT k.*, w.name
+$sql = "SELECT k.*
 FROM $table k
-LEFT JOIN $tableWipe w ON w.steamid = k.steam_id 
 WHERE k.dead <> ''
 ORDER BY id DESC
 LIMIT 10
@@ -132,13 +131,6 @@ while($row = mysqli_fetch_assoc($data)) {
         if (strlen($row['steam_id']) < 10) {
             $row['image'] = $scientists['default'];
         }
-        $sql2             = "SELECT w.name FROM $tableWipe w WHERE w.steamid = {$row['dead']}";
-        $data2            = mysqli_query($connection, $sql2);
-        $wipeUser         = mysqli_fetch_assoc($data2);
-        if (empty($wipeUser['name'])) {
-            continue;
-        }
-        $row['dead_name'] = $wipeUser['name'];
     }
     $results[] = $row;
 }
@@ -150,34 +142,40 @@ while($row = mysqli_fetch_assoc($data)) {
             <img width="30px" title="<?=$row['weapon']?>" src="<?=$row['weapon_image']?>"/>
         <?php endif; ?>
         <?php if ($row['type'] === 'suicides'): ?>
-            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
+            <?php $user = \common\models\user\User::findBySteamId($row['steam_id'], false); ?>
+            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$user->username?></a>
             <span><?=Yii::t('common', 'совершил самоубийство')?></span>
         <?php endif; ?>
         <?php if ($row['type'] === 'animal'): ?>
-            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
+            <?php $user = \common\models\user\User::findBySteamId($row['steam_id'], false); ?>
+            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$user->username?></a>
             <span><?=Yii::t('common', 'убил')?></span>
             <span><?=$animals2[$row['dead']]?></span>
         <?php endif; ?>
         <?php if ($row['type'] === 'deaths'): ?>
+            <?php $user = \common\models\user\User::findBySteamId($row['steam_id'], false); ?>
             <span><?=$animals[$row['dead']]?></span>
             <span><?=Yii::t('common', 'убил')?></span>
-            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
+            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$user->username?></a>
         <?php endif; ?>
         <?php if ($row['type'] === 'scientists'): ?>
-            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
+            <?php $user = \common\models\user\User::findBySteamId($row['steam_id'], false); ?>
+            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$user->username?></a>
             <span><?=Yii::t('common', 'убил')?></span>
             <img width="30px" src="<?=$row['image']?>"/>
             <span><?=Yii::t('common', 'бота')?></span>
         <?php endif; ?>
         <?php if ($row['type'] === 'kill'): ?>
             <?php if (empty($row['image'])): ?>
-                <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$row['name']?></a>
+                <?php $user = \common\models\user\User::findBySteamId($row['steam_id'], false); ?>
+                <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['steam_id']?>&server=<?=$server?>"><?=$user->username?></a>
             <?php else: ?>
                 <span><?=Yii::t('common', 'Бот')?></span>
                 <img width="30px" src="<?=$row['image']?>"/>
             <?php endif; ?>
             <span><?=Yii::t('common', 'убил')?></span>
-            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['dead']?>&server=<?=$server?>"><?=$row['dead_name']?></a>
+            <?php $userDead = \common\models\user\User::findBySteamId($row['dead'], false); ?>
+            <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" class="link_name" target="#" href="/stats/player?steamId=<?=$row['dead']?>&server=<?=$server?>"><?=$userDead->username?></a>
         <?php endif; ?>
     </div>
 <?php endforeach; ?>

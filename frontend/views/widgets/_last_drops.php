@@ -4,25 +4,24 @@ use yii\web\View;
 
 /** @var View $this */
 
-$usersDropsLast = UserDrop::getUsersDropLast();
-
 $result = [];
-foreach ($usersDropsLast as $userDrop) {
-    foreach ($userDrop->drop as $index => $drop) {
-        $result[] = [
-            'id' => $userDrop->id,
-            'image' => $drop->imageOrig->getImagePubUrl(),
-            'name' => Yii::t('database', $drop->name),
-            'bgImage' => $userDrop->box->imageOrig->getImagePubUrl(),
-            'bgName' => Yii::t('database', $userDrop->box->name),
-            'count' => "x" . $userDrop->count,
-            'userAvatar' => $userDrop->user->userProfile->avatar,
-            'userName' => htmlentities($userDrop->user->username),
-            'type' => 0,
-            'created_at' => $userDrop->created_at,
-        ];
-    }
-}
+//$usersDropsLast = UserDrop::getUsersDropLast();
+//foreach ($usersDropsLast as $userDrop) {
+//    foreach ($userDrop->drop as $index => $drop) {
+//        $result[] = [
+//            'id' => $userDrop->id,
+//            'image' => $drop->imageOrig->getImagePubUrl(),
+//            'name' => Yii::t('database', $drop->name),
+//            'bgImage' => $userDrop->box->imageOrig->getImagePubUrl(),
+//            'bgName' => Yii::t('database', $userDrop->box->name),
+//            'count' => "x" . $userDrop->count,
+//            'userAvatar' => $userDrop->user->userProfile->avatar,
+//            'userName' => htmlentities($userDrop->user->username),
+//            'type' => 0,
+//            'created_at' => $userDrop->created_at,
+//        ];
+//    }
+//}
 
 
 /** @var \common\models\skindrops\Skindrops[] $skindrops */
@@ -33,14 +32,12 @@ $skindrops = \common\models\skindrops\Skindrops::find()
                                                ->all();
 foreach ($skindrops as $item) {
     /** @var \common\models\user\Auth $userAuth */
-    $userAuth = \common\models\user\Auth::find()
-                            ->andWhere(['source_id' => $item->steam_id])
-                            ->one();
+    $user = \common\models\user\User::findBySteamId($item->steam_id);
     $userAvatar = null;
     $userName = null;
-    if (!empty($userAuth)) {
-        $userAvatar = $userAuth->user->userProfile->avatar;
-        $userName = $userAuth->user->username;
+    if (!empty($user)) {
+        $userAvatar = $user->userProfile->avatar;
+        $userName = $user->username;
     }
     $result[] = [
         'id' => $item->id,

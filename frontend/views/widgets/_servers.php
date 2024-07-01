@@ -11,6 +11,9 @@ $servers = Servers::find()
 
 <div class="servers_wrapper">
     <div class="servers">
+        <div class="servers_header">
+            <h2><?=Yii::t('common', 'Мониторинг')?></h2>
+        </div>
         <div class="servers_body">
             <?php foreach ($servers as $server): ?>
                 <?php
@@ -63,7 +66,9 @@ $servers = Servers::find()
                     </div>
                 </div>
             <?php endforeach; ?>
-            <a href="/servers" class="servers_link"><span><?=Yii::t('common', 'Наши сервера')?></span></a>
+            <div class="servers_link_wrap">
+                <a href="/servers" class="servers_link"><span><?=Yii::t('common', 'Подробнее')?></span></a>
+            </div>
         </div>
     </div>
 </div>

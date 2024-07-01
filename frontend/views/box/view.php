@@ -31,7 +31,7 @@ JS
                     </div>
                     <div class="box_entity_card_actions">
                         <a href="/auth/oauth?authclient=steam" class="box_entity_card_actions_btn btn_steam" title="Авторизация через Steam">
-                            <span><?=Yii::t('common', 'Войти через Steam')?></span>
+                            <i class="fab fa-steam"></i> <span><?=Yii::t('common', 'Войти через Steam')?></span>
                         </a>
                     </div>
                 </div>

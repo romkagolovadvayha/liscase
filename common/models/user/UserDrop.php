@@ -67,7 +67,7 @@ class UserDrop extends ActiveRecord
      */
     public function getUser(): \yii\db\ActiveQuery
     {
-        return $this->hasOne(User::class, ['id' => 'user_id']);
+        return $this->hasOne(User::class, ['id' => 'user_id'])->cache(3600);
     }
 
     /**
@@ -77,7 +77,7 @@ class UserDrop extends ActiveRecord
      */
     public function getBox(): \yii\db\ActiveQuery
     {
-        return $this->hasOne(Box::class, ['id' => 'box_id']);
+        return $this->hasOne(Box::class, ['id' => 'box_id'])->cache(3600);
     }
 
     /**
@@ -87,7 +87,7 @@ class UserDrop extends ActiveRecord
      */
     public function getDrop(): \yii\db\ActiveQuery
     {
-        return $this->hasMany(Drop::class, ['id' => 'drop_id']);
+        return $this->hasMany(Drop::class, ['id' => 'drop_id'])->cache(3600);
     }
 
     /**

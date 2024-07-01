@@ -159,7 +159,7 @@ class Deposit extends \common\components\base\ActiveRecord
 //            self::TYPE_PAYMENT_TRON      => '/images/payments/tron.svg',
             self::TYPE_PAYMENT_TRC20     => '/images/payments/tether.svg',
             self::TYPE_PAYMENT_ERC20     => '/images/payments/tether.svg',
-            self::TYPE_PAYMENT_CARD_UA     => 'images/payments/cards.svg',
+            self::TYPE_PAYMENT_CARD_UA     => '/images/payments/cards.svg',
         ];
 
         if (Yii::$app->language !== 'ru-RU') {

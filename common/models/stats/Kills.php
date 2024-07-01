@@ -4,6 +4,7 @@ namespace common\models\stats;
 
 use common\components\base\ActiveRecord;
 use common\components\google\TranslateApi;
+use common\models\user\User;
 use Yii;
 use yii\base\BaseObject;
 
@@ -148,7 +149,14 @@ class Kills extends ActiveRecord
         ];
     }
 
-    public static function getKills($server, $player, $statsModels) {
+    /**
+     * @param $server
+     * @param User $user
+     * @param $statsModels
+     *
+     * @return Wipe[]
+     */
+    public static function getKills($server, $user, $statsModels) {
         $server->updateDbConfig();
 
         /** @var Wipe[] $models */
@@ -156,8 +164,8 @@ class Kills extends ActiveRecord
                       ->cache(60*5)
                       ->andWhere(['!=', 'dead', ''])
                       ->andWhere(['OR',
-                                  ['steam_id' => $player['steamid']],
-                                  ['dead' => $player['steamid']]
+                                  ['steam_id' => $user->steam_id],
+                                  ['dead' => $user->steam_id]
                       ])
                       ->orderBy(['id' => SORT_DESC])
                       ->asArray()
@@ -169,25 +177,19 @@ class Kills extends ActiveRecord
 
         for ($i = 0; $i < count($models); $i++) {
             $model = $models[$i];
-            if ($model['steam_id'] === $player['steamid']) {
-                $model['name'] = $player['name'];
+            if ($model['steam_id'] === $user->steam_id) {
+                $model['name'] = $user->username;
             }
-            if ($model['dead'] === $player['steamid']) {
-                $model['dead_name'] = $player['name'];
+            if ($model['dead'] === $user->steam_id) {
+                $model['dead_name'] = $user->username;
             }
-            foreach ($statsModels as $statsModel) {
-                if ($model['steam_id'] === $statsModel['steamid']) {
-                    $model['name'] = $statsModel['name'];
-                    if (!empty($model['dead_name'])) {
-                        break;
-                    }
-                }
-                if ($model['dead'] === $statsModel['steamid']) {
-                    $model['dead_name'] = $statsModel['name'];
-                    if (!empty($model['name'])) {
-                        break;
-                    }
-                }
+            if (empty($model['name']) && strlen($model['steam_id']) === 17) {
+                $_user = User::findBySteamId($model['steam_id']);
+                $model['name'] = $_user->username;
+            }
+            if (empty($model['dead_name']) && strlen($model['dead']) === 17) {
+                $_user = User::findBySteamId($model['dead']);
+                $model['dead_name'] = $_user->username;
             }
             if ($model['type'] !== 'deaths' && $model['type'] !== 'suicides') {
                 if (!empty($weapons[$model['weapon']])) {

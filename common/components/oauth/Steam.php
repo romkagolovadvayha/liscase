@@ -100,6 +100,20 @@ class Steam extends OpenId
         return $user;
     }
 
+    public static function getInfoUser($steamId) {
+        $cacheKey = 'steam_updateUser_' . $steamId;
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $key = Yii::$app->params['steamApiKey'];
+        $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$steamId}";
+        $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
+        $usersInfo = $response['response']['players'];
+        Yii::$app->cache->set($cacheKey, $usersInfo, 60);
+        return $usersInfo;
+    }
+
     /**
      * {@inheritdoc}
      */

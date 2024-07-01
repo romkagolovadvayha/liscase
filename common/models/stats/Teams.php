@@ -4,6 +4,7 @@ namespace common\models\stats;
 
 use common\components\base\ActiveRecord;
 use common\components\google\TranslateApi;
+use common\models\user\User;
 use Yii;
 use yii\base\BaseObject;
 
@@ -49,15 +50,22 @@ class Teams extends ActiveRecord
         ];
     }
 
-    public static function getTeams($server, $player, $statsModels) {
+    /**
+     * @param $server
+     * @param User $user
+     * @param $statsModels
+     *
+     * @return Teams[]
+     */
+    public static function getTeams($server, $user, $statsModels) {
         $server->updateDbConfig();
 
         /** @var Teams[] $models */
         $models = Teams::find()
                       ->cache(61*5)
                       ->andWhere(['OR',
-                                  ['team_author' => $player['steamid']],
-                                  ['steam_id' => $player['steamid']]
+                                  ['team_author' => $user->steam_id],
+                                  ['steam_id' => $user->steam_id]
                       ])
                       ->orderBy(['id' => SORT_DESC])
                       ->asArray()
@@ -65,11 +73,11 @@ class Teams extends ActiveRecord
 
         for ($i = 0; $i < count($models); $i++) {
             $model = $models[$i];
-            if ($model['steam_id'] === $player['steamid']) {
-                $model['name'] = $player['name'];
+            if ($model['steam_id'] === $user->steam_id) {
+                $model['name'] = $user->username;
             }
-            if ($model['team_author'] === $player['steamid']) {
-                $model['team_author_name'] = $player['name'];
+            if ($model['team_author'] === $user->steam_id) {
+                $model['team_author_name'] = $user->username;
             }
             if (empty($model['team_author_name']) || empty($model['name'])) {
                 foreach ($statsModels as $statsModel) {
@@ -92,6 +100,7 @@ class Teams extends ActiveRecord
 
         return $models;
     }
+
     public static function getAllInTeams($server, $steamId, $statsModels) {
         $server->updateDbConfig();
 
@@ -105,10 +114,11 @@ class Teams extends ActiveRecord
 
         $result = [];
         $teamAuthor = null;
+        $teamAuthorItem = null;
         foreach ($models as $model) {
             if ($model['type'] == 'invite_accepted' && in_array($steamId, [$model['steam_id'], $model['team_author']])) {
                 $teamAuthor = $model['team_author'];
-                break;
+                $teamAuthorItem = self::getItemTeams($model['team_author'], $statsModels, $model['created_at'], true);
             }
         }
         foreach ($models as $model) {
@@ -125,11 +135,8 @@ class Teams extends ActiveRecord
             }
         }
         $newResult = [];
-        foreach ($models as $model) {
-            if ($model['type'] == 'invite_accepted' && in_array($steamId, [$model['steam_id'], $model['team_author']])) {
-                $newResult[$model['team_author']] = self::getItemTeams($model['team_author'], $statsModels, $model['created_at'], true);
-                break;
-            }
+        if (!empty($teamAuthorItem)) {
+            $newResult[$teamAuthor] = $teamAuthorItem;
         }
         $newResult = array_merge($newResult, $result);
 
@@ -138,12 +145,8 @@ class Teams extends ActiveRecord
 
     public static function getItemTeams($steamId, $statsModels, $createdAt, $isTeamAuthor = false) {
         $result = ['name' => null];
-        foreach ($statsModels as $statsModel) {
-            if ($steamId === $statsModel['steamid']) {
-                $result['name'] = $statsModel['name'];
-                break;
-            }
-        }
+        $user = User::findBySteamId($steamId);
+        $result['name'] = $user->username;
         $result['steam_id'] = $steamId;
         $result['created_at'] = $createdAt;
         $result['team_author'] = $isTeamAuthor;

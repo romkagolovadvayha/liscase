@@ -8,19 +8,24 @@ use common\models\servers\Servers;
 use common\models\stats\Wipe;
 use yii\web\NotFoundHttpException;
 use common\models\stats\Teams;
+use common\models\user\User;
 
-$stats = Wipe::getStats($server, $steamId);
+$user = User::findBySteamId($steamId, true);
 
-if (empty($stats['player'])) {
+if (empty($user)) {
     throw new NotFoundHttpException(Yii::t('common', 'Пользователь не найден или статистика еще не подгрузилась!'));
 }
-$player = $stats['player'];
 
-$this->title = $player['name'] . " " . Yii::t('common', 'статистика на сервере') . " " . Yii::t('database', $server->name);
+$stats = Wipe::getStats($server, $steamId);
+if (!empty($stats['player'])) {
+    $player = $stats['player'];
+} else {
+    $player = Wipe::getArray();
+}
 
+$this->title = $user->username . " " . Yii::t('common', 'статистика на сервере') . " " . Yii::t('database', $server->name);
 
-$avatar = Wipe::getAvatar($player['steamid']);
-$teams = Teams::getTeams($server, $player, $stats['models']);
+$teams = Teams::getTeams($server, $user, $stats['models']);
 
 $lastVisit = $player['last_visit'];
 if (!empty($lastVisit)) {
@@ -41,7 +46,7 @@ if (!empty($lastVisit)) {
         $lastVisit = Yii::t('common', '5 дней назад');
     }
 }
-$clan = Teams::getAllInTeams($server, $player['steamid'], $stats['models']);
+$clan = Teams::getAllInTeams($server, $user->steam_id, $stats['models']);
 
 $kdr      = $player['deaths'] > 0 ? round($player['kills'] / $player['deaths'], 2) : $player['kills'];
 $hits     = $player['head_hits'] + $player['torso_hits'] + $player['leftarm_hits'] + $player['rightarm_hits']
@@ -88,9 +93,9 @@ $items = [
     <div class="stats_player">
         <div class="stats_player_profile_wrap">
             <div class="stats_player_profile">
-                <div class="stats_player_profile_avatar"><img src="<?=$avatar?>" alt="<?=Yii::t('common', 'Фото игрока')?> <?=$player['name']?>" width="150px"/></div>
+                <div class="stats_player_profile_avatar"><img src="<?=$user->getAvatar()?>" alt="<?=Yii::t('common', 'Фото игрока')?> <?=$user->username?>" width="150px"/></div>
                 <div class="stats_player_profile_body">
-                    <div class="stats_player_profile_body_name"><?=$player['name']?></div>
+                    <div class="stats_player_profile_body_name"><?=$user->username?></div>
                     <div class="stats_player_profile_body_item"><?=Yii::t('common', 'Онлайн за вайп')?>: <span style="color: #aaf16e;"><?=Servers::getPlayTime($player['playtime'])?></span></div>
                     <div class="stats_player_profile_body_item">
                         <?=Yii::t('common', 'Статус')?>:
@@ -125,7 +130,7 @@ $items = [
             'server' => $server,
         ]);?>
         <?=$this->render('_player_kills', [
-            'player' => $player,
+            'user' => $user,
             'server' => $server,
             'models' => $stats['models'],
             'title' => Yii::t('common', 'История действий'),
@@ -174,48 +179,56 @@ $items = [
         ]);?>
         <?=$this->render('_player_item', [
             'data' => $stats['kills'],
+            'user' => $user,
             'player' => $player,
             'server' => $server,
             'title' => Yii::t('common', 'Лучший Киллер'),
         ]);?>
         <?=$this->render('_player_item', [
             'data' => $stats['playtime'],
+            'user' => $user,
             'player' => $player,
             'server' => $server,
             'title' => Yii::t('common', 'ТОП Онлайн'),
         ]);?>
         <?=$this->render('_player_item', [
                 'data' => $stats['reider'],
+                'user' => $user,
                 'player' => $player,
                 'server' => $server,
                 'title' => Yii::t('common', 'Лучший Рейдер'),
         ]);?>
         <?=$this->render('_player_item', [
                 'data' => $stats['farmer'],
+                'user' => $user,
                 'player' => $player,
                 'server' => $server,
                 'title' => Yii::t('common', 'Лучший Фармер'),
         ]);?>
         <?=$this->render('_player_item', [
                 'data' => $stats['fermer'],
+                'user' => $user,
                 'player' => $player,
                 'server' => $server,
                 'title' => Yii::t('common', 'Лучший Фермер'),
         ]);?>
         <?=$this->render('_player_item', [
                 'data' => $stats['fishing'],
+                'user' => $user,
                 'player' => $player,
                 'server' => $server,
                 'title' => Yii::t('common', 'Лучший Рыбак'),
         ]);?>
         <?=$this->render('_player_item', [
                 'data' => $stats['hunter'],
+                'user' => $user,
                 'player' => $player,
                 'server' => $server,
                 'title' => Yii::t('common', 'Лучший Охотник'),
         ]);?>
         <?=$this->render('_player_item', [
                 'data' => $stats['scientists'],
+                'user' => $user,
                 'player' => $player,
                 'server' => $server,
                 'title' => Yii::t('common', 'Лучший Мирный'),

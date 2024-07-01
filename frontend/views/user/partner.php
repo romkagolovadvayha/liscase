@@ -11,12 +11,18 @@ use frontend\widgets\Alert;
 $user = Yii::$app->user->identity;
 $this->title = Yii::t('common', "Партнерская программа") . " - {$user->userProfile->name}";
 
-$serverPlay = $user->getChildrenUserTreeQuery(1)
+$serverPlay = UserTree::find()
+    ->alias('ut')
     ->joinWith(['user.userProfile up'])
+    ->andWhere(['ut.parent_user_id' => $user->id])
+    ->andWhere(['NOT IN', 'ut.user_id', [$user->id]])
     ->andWhere(['up.parent_bonus' => 1])
     ->count();
 
-$usersTree = $user->getChildrenUserTreeQuery(1)->all();
+$usersTree = UserTree::find()
+    ->andWhere(['parent_user_id' => $user->id])
+    ->andWhere(['NOT IN', 'user_id', [$user->id]])
+    ->all();
 
 $total = 0;
 /** @var User[] $users */
@@ -55,6 +61,47 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                         <?= Alert::widget() ?>
                         <div class="referal_wrap_wrap">
                             <div class="referal_wrap">
+                                <div class="referal_conditions">
+                                    <div class="referal_conditions_title">
+                                        <?=Yii::t('common', "Условия партнерской программы")?>
+                                    </div>
+                                    <div class="referal_conditions_item">
+                                        <div class="referal_conditions_item_icon">
+                                            <i class="fas fa-check"></i>
+                                        </div>
+                                        <div class="referal_conditions_item_description">
+                                            <?=Yii::t('common', "Ваш процент с донатов вам на карту")?>:
+                                        </div>
+                                        <div class="referal_conditions_item_title">
+                                            <?=$user->userProfile->referral_bonus?>%
+                                        </div>
+                                    </div>
+                                    <div class="referal_conditions_item">
+                                        <div class="referal_conditions_item_icon">
+                                            <i class="fas fa-check"></i>
+                                        </div>
+                                        <div class="referal_conditions_item_description">
+                                            <?=Yii::t('common', "Бонус за каждого приглашенного")?><span class="referal_conditions_item_description_color">*</span>:
+                                        </div>
+                                        <div class="referal_conditions_item_title">
+                                            30 RUB
+                                        </div>
+                                    </div>
+                                    <div class="referal_conditions_item">
+                                        <div class="referal_conditions_item_icon">
+                                            <i class="fas fa-check"></i>
+                                        </div>
+                                        <div class="referal_conditions_item_description">
+                                            <?=Yii::t('common', "Скин за каждого приглашенного")?><span class="referal_conditions_item_description_color">*</span>:
+                                        </div>
+                                        <div class="referal_conditions_item_title">
+                                            от 20 до 120 RUB
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="referal_description">
+                                    <span class="referal_description_color">*</span> - <?=Yii::t('common', 'Пользователь считается приглашенным в случае, если играл на любом нашем сервере более часа')?>
+                                </div>
                                 <div class="referal_link btn-clipboard"
                                      data-bs-toggle="tooltip"
                                      data-bs-placement="bottom"
@@ -71,14 +118,6 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                     </div>
                                 </div>
                                 <div class="referal_slots">
-                                    <div class="referal_slots_item">
-                                        <div class="referal_slots_item_title">
-                                            <?=$user->userProfile->referral_bonus?>%
-                                        </div>
-                                        <div class="referal_slots_item_description">
-                                            <?=Yii::t('common', "Ваш процент с донатов")?>
-                                        </div>
-                                    </div>
                                     <div class="referal_slots_item">
                                         <div class="referal_slots_item_title">
                                             <?=$user->userProfile->referral_click?>
@@ -139,7 +178,11 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                                                                   'label'     => Yii::t('common', "Более часа на сервере"),
                                                                                   'format'    => 'raw',
                                                                                   'value'          => function (UserTree $model) {
-                                                                                      return $model->user->userProfile->parent_bonus ? Yii::t('common', "Да") : Yii::t('common', "Нет");
+                                                                                      if ($model->user->userProfile->parent_bonus) {
+                                                                                          return Yii::t('common', "Да");
+                                                                                      }
+                                                                                      User::parentBonus($model->user);
+                                                                                      return Yii::t('common', "Нет");
                                                                                   },
                                                                               ],
                                                                               [

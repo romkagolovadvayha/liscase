@@ -196,7 +196,7 @@ class Drop extends ActiveRecord
      */
     public function getDropImages()
     {
-        return $this->hasMany(DropImage::class, ['drop_id' => 'id']);
+        return $this->hasMany(DropImage::class, ['drop_id' => 'id'])->cache(3600);
     }
 
     /**
@@ -242,6 +242,7 @@ class Drop extends ActiveRecord
     public function getImageOrig()
     {
         return $this->hasOne(DropImage::class, ['drop_id' => 'id'])
+            ->cache(3600)
             ->andWhere(['type' => DropImage::TYPE_ORIG]);
     }
 
