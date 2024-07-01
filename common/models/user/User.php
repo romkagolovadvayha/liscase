@@ -579,7 +579,9 @@ class User extends ActiveRecord implements IdentityInterface
         $profit->type = Profit::TYPE_REFERRAL;
         $profit->amount = 30;
         $profit->user_balance_id = $user->getParentUser()->getPersonalBalance()->id;
-        $profit->comment = Yii::t('common', 'Бонус за приглашенного пользователя', 'ru-RU');
+        $profit->comment = Yii::t('common', 'Бонус за приглашенного пользователя "{PARAMS_USER_NAME}"', [
+            'PARAMS_USER_NAME' => $user->username
+        ],'ru-RU');
         $profit->created_at = date('Y-m-d H:i:s');
         $profit->save(false);
     }
