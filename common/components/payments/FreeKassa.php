@@ -93,7 +93,7 @@ class FreeKassa
     /**
      * {@inheritdoc}
      */
-    public function check($paymentId): array
+    public function check($paymentId)
     {
         $params = [
             'orderId' => $paymentId,

@@ -29,6 +29,9 @@ class PaymentTrc20
             return $model->status;
         }
         $result = Yii::$app->freeKassaApi->check($model->payment_id);
+        if (empty($result['orders'])) {
+            return false;
+        }
         if ($result['orders'][0]['status'] === 1) {
             $model->status = Deposit::STATUS_SUCCESS;
             $model->save(false);

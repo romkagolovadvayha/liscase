@@ -128,7 +128,7 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                     </div>
                                     <div class="referal_slots_item">
                                         <div class="referal_slots_item_title">
-                                            <?=$user->getChildrenUserTreeQuery(1)->count()?>
+                                            <?=count($usersTree)?>
                                         </div>
                                         <div class="referal_slots_item_description">
                                             <?=Yii::t('common', "Зарегистрированных")?>

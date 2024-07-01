@@ -27,6 +27,9 @@ class WarGmController extends Controller
                           ->all();
         foreach ($servers as $server) {
             $votes = \Yii::$app->wargm->getVotes($server->wargm_id);
+            if (empty($votes['responce'])) {
+                continue;
+            }
             foreach ($votes['responce']['data'] as $vote) {
                 $user = User::findBySteamId($vote['user_steam_id']);
                 if (empty($user)) {

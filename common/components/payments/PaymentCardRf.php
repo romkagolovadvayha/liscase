@@ -26,6 +26,9 @@ class PaymentCardRf
             return $model->status;
         }
         $result = Yii::$app->tomeApi->check($model->payment_id);
+        if (empty($result['status'])) {
+            return false;
+        }
         if ($result['status'] === 'succeeded') {
             $model->status = Deposit::STATUS_SUCCESS;
             $model->save(false);
