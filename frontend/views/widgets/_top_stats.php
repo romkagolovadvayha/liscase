@@ -15,7 +15,6 @@ if ($connection->connect_error) {
     header('Location: /error.php?error=noconnection');
     exit();
 }
-
 $table = "main_stats_wipe";
 $sql = "SELECT * FROM `$table` WHERE steamid NOT IN (76561198394504608)  ORDER BY `kills` DESC LIMIT 1";
 $res_data = mysqli_query($connection, $sql);
@@ -73,6 +72,9 @@ LIMIT 1";
 $res_data = mysqli_query($connection, $sql);
 $fishing = mysqli_fetch_assoc($res_data);
 
+if (empty($reider)) {
+    return;
+}
 $reiderUser = \common\models\user\User::findBySteamId($reider['steamid'], false);
 $hunterUser = \common\models\user\User::findBySteamId($hunter['steamid'], false);
 $fermerUser = \common\models\user\User::findBySteamId($fermer['steamid'], false);
