@@ -48,7 +48,9 @@ $farms   = [
                     </div>
                     <div class="stats_player_stats_item_count"><?= $item['desc'] ?></div>
                     <div class="stats_player_stats_item_name"><?= $item['name'] ?></div>
-                    <div class="stats_player_stats_item_score">x<?= $item['score'] ?></div>
+                    <?php if (!empty($item['score'])): ?>
+                        <div class="stats_player_stats_item_score">x<?= $item['score'] ?></div>
+                    <?php endif; ?>
                 </div>
             </div>
         <?php endforeach; ?>

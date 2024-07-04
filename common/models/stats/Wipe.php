@@ -86,6 +86,12 @@ use Yii;
  * @property int    $troutsmall
  * @property int    $yellowperch
  * @property int    $orangeroughy
+ * @property int    $crate_open
+ * @property int    $barrel
+ * @property int    $scrap
+ * @property int    $rocket_fire
+ * @property int    $rocket_hv
+ * @property int    $ammo_explosive
  */
 class Wipe extends ActiveRecord
 {

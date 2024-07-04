@@ -3631,6 +3631,15 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
         .stats_player_stats_wrap_fishing .stats_player_stats_item_image {
           width: 85%;
           max-width: 124px; }
+      .stats_player_stats_wrap_barrel {
+        grid-row: span 1;
+        grid-column: span 1;
+        height: 98px; }
+        .stats_player_stats_wrap_barrel .stats_player_stats {
+          grid-template-columns: repeat(3, 1fr); }
+        .stats_player_stats_wrap_barrel .stats_player_stats_item_image {
+          width: 60%;
+          max-width: 114px; }
       .stats_player_stats_wrap_reider {
         grid-row: span 2;
         grid-column: span 1;
@@ -3638,11 +3647,9 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
         .stats_player_stats_wrap_reider .stats_player_stats_item {
           height: 127px; }
         .stats_player_stats_wrap_reider .stats_player_stats {
-          grid-template-columns: repeat(2, 1fr); }
+          grid-template-columns: repeat(3, 1fr); }
         .stats_player_stats_wrap_reider .stats_player_stats_item_image {
           width: 80px; }
-        .stats_player_stats_wrap_reider .stats_player_stats_item_wrap:last-of-type {
-          grid-column: span 2; }
     .stats_player_stats_item {
       background: #23221e;
       border-radius: 0;
@@ -3882,12 +3889,12 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    max-height: 378px; }
+    max-height: 265px; }
     .stats_player_clan_wrap {
       background: #23221e;
       border-radius: 0;
       overflow: hidden;
-      grid-row: span 4; }
+      grid-row: span 3; }
     .stats_player_clan_header {
       background: #131513;
       padding: 15px 20px;

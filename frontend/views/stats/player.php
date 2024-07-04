@@ -198,6 +198,11 @@ $items = [
                 'server' => $server,
                 'title' => Yii::t('common', 'Лучший Рейдер'),
         ]);?>
+        <?=$this->render('_player_stats_barrel', [
+            'data' => $stats['playtime'],
+            'player' => $player,
+            'server' => $server,
+        ]);?>
         <?=$this->render('_player_item', [
                 'data' => $stats['farmer'],
                 'user' => $user,
