@@ -4218,9 +4218,33 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   &_buttons {
     display: flex;
     align-items: center;
-    gap: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
     margin-top: 15px;
     &_back {
+      color: $color_text;
+      background-color: $color_success_dark_dark;
+      padding: 10px 20px;
+      text-transform: uppercase;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 50px;
+      gap: 15px;
+      border: none;
+      border-radius: 0;
+      font-size: 14px;
+      line-height: 14px;
+      &_title {
+        margin-top: 2px;
+      }
+      &:hover {
+        color: $color_success_brighter;
+        background-color: $color_success_dark_dark;
+      }
+    }
+    &_server {
       color: $color_text;
       background-color: $color_success_dark_dark;
       padding: 10px 20px;
@@ -4281,6 +4305,12 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
         padding-bottom: 10px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         margin-bottom: 10px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        &_steam {
+          color: #169ee7;
+        }
       }
       &_item {
         font-size: 14px;

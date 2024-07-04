@@ -82,6 +82,11 @@ $items = [
     ],
 ];
 
+/** @var Servers[] $servers */
+$servers = Servers::find()
+                  ->cache(30)
+                  ->andWhere('db_host IS NOT NULL')
+                  ->all();
 ?>
 
 <div class="container-fluid mb-5">
@@ -89,19 +94,18 @@ $items = [
         <a href="/stats?server=<?=$server->tag?>" class="stats_player_buttons_back">
             <i class="fas fa-arrow-left"></i><div class="stats_player_buttons_back_title"><?=Yii::t('common', 'Назад')?></div>
         </a>
-        <a href="/stats?server=<?=$server->tag?>" class="stats_player_buttons_back">
-            <i class="fas fa-arrow-left"></i><div class="stats_player_buttons_back_title"><?=Yii::t('common', 'Назад')?></div>
-        </a>
-        <a href="/stats?server=<?=$server->tag?>" class="stats_player_buttons_back">
-            <i class="fas fa-arrow-left"></i><div class="stats_player_buttons_back_title"><?=Yii::t('common', 'Назад')?></div>
-        </a>
+        <?php foreach ($servers as $item): ?>
+            <a href="/stats/player?steamId=<?=$user->steam_id?>&server=<?=$item->tag?>" class="stats_player_buttons_server<?=$item->tag === $server->tag ? ' page_stats_servers_item_active' : ''?>">
+                <?=Yii::t('database', $item->name)?>
+            </a>
+        <?php endforeach; ?>
     </div>
     <div class="stats_player">
         <div class="stats_player_profile_wrap">
             <div class="stats_player_profile">
                 <div class="stats_player_profile_avatar"><img src="<?=$user->getAvatar()?>" alt="<?=Yii::t('common', 'Фото игрока')?> <?=$user->username?>" width="150px"/></div>
                 <div class="stats_player_profile_body">
-                    <div class="stats_player_profile_body_name"><?=$user->username?></div>
+                    <div class="stats_player_profile_body_name"><span><?=$user->username?></span> <a href="https://steamcommunity.com/profiles/<?=$user->steam_id?>" class="stats_player_profile_body_name_steam" target="_blank" title="<?=Yii::t('common', 'Перейти в профиль Steam')?>"><i class="fab fa-steam"></i></a></div>
                     <div class="stats_player_profile_body_item"><?=Yii::t('common', 'Онлайн за вайп')?>: <span style="color: #aaf16e;"><?=Servers::getPlayTime($player['playtime'])?></span></div>
                     <div class="stats_player_profile_body_item">
                         <?=Yii::t('common', 'Статус')?>:
