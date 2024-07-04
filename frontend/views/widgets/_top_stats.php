@@ -171,7 +171,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
         <div class="top_table_item_wrap">
             <div class="top_table_item_header">
                 <div class="top_table_item_header_name">
-                    <?=Yii::t('common', 'МИРНЫЙ')?>
+                    <?=Yii::t('common', 'ОНЛАЙН')?>
                 </div>
                 <div class="top_table_item_header_bonus" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">
                     +500 RUB
