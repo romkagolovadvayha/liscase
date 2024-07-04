@@ -89,6 +89,12 @@ $items = [
         <a href="/stats?server=<?=$server->tag?>" class="stats_player_buttons_back">
             <i class="fas fa-arrow-left"></i><div class="stats_player_buttons_back_title"><?=Yii::t('common', 'Назад')?></div>
         </a>
+        <a href="/stats?server=<?=$server->tag?>" class="stats_player_buttons_back">
+            <i class="fas fa-arrow-left"></i><div class="stats_player_buttons_back_title"><?=Yii::t('common', 'Назад')?></div>
+        </a>
+        <a href="/stats?server=<?=$server->tag?>" class="stats_player_buttons_back">
+            <i class="fas fa-arrow-left"></i><div class="stats_player_buttons_back_title"><?=Yii::t('common', 'Назад')?></div>
+        </a>
     </div>
     <div class="stats_player">
         <div class="stats_player_profile_wrap">

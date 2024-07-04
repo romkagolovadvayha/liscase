@@ -33,7 +33,7 @@ $sql = "SELECT * FROM `$table` WHERE steamid NOT IN (76561198394504608) ORDER BY
 $res_data = mysqli_query($connection, $sql);
 $playtime = mysqli_fetch_assoc($res_data);
 
-$sql = "SELECT *, SUM(c4thrown + satchelsthrown * 0.2 + rocketsfired * 0.5) AS total_score 
+$sql = "SELECT *, SUM(c4thrown + satchelsthrown * 0.2 + rocketsfired * 0.5 + rocket_hv * 0.1 + rocket_fire * 0.1 + ammo_explosive * 0.01) AS total_score 
 FROM `$table` 
 GROUP BY id 
 ORDER BY total_score DESC 
