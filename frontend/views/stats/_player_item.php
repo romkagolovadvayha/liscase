@@ -25,12 +25,13 @@ $isCurrent = false;
                             $isCurrentTop = true;
                         }
                     }
+                    $_user = \common\models\user\User::findBySteamId($item['steamid']);
                 ?>
                 <tr class="stats_player_item_player<?= $isCurrent ? ' stats_player_item_player_current' : ''?>">
                     <td class="stats_player_item_player_position<?=$i + 1?>" title="<?=$i + 1?> место"><i class="fas fa-crown"></i></td>
                     <td class="stats_player_item_player_name">
                         <a title="<?=Yii::t('common', 'Открыть профиль Steam')?>" href="/stats/player?steamId=<?=$item['steamid']?>&server=<?=$server->tag?>">
-                            <?=$item['name']?>
+                            <?=$_user->username?>
                         </a>
                     </td>
                     <td class="stats_player_item_player_score"><?=$item[$data['attrName']]?></td>
