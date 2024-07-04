@@ -366,6 +366,12 @@ class Wipe extends ActiveRecord
             'fishing' => 0,
             'hunter' => 0,
             'fermer' => 0,
+            'crate_open' => 0,
+            'barrel' => 0,
+            'scrap' => 0,
+            'rocket_fire' => 0,
+            'rocket_hv' => 0,
+            'ammo_explosive' => 0,
         ];
     }
 }
