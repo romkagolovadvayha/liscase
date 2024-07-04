@@ -118,7 +118,7 @@ class AuthController extends WebController
                 $user->generateSocketRoom();
                 $refCode = Cookie::getValue('refCode');
                 $transaction = $user->getDb()->beginTransaction();
-                if ($user->save()) {
+                if ($user->save(false)) {
                     if (!empty($refCode)) {
                         $parentUser = User::findByRefCode($refCode);
                         if (!empty($parentUser)) {
@@ -140,7 +140,7 @@ class AuthController extends WebController
                             'source_id' => (string)$attributes['id'],
                         ]
                     );
-                    if ($auth->save()) {
+                    if ($auth->save(false)) {
                         $transaction->commit();
 //                        $userBalance = $user->getPersonalBalance();
 //                        $model = new Profit();
