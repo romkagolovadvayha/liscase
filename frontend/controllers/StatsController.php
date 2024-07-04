@@ -5,6 +5,7 @@ namespace frontend\controllers;
 use common\controllers\WebController;
 use common\models\servers\Servers;
 use common\models\stats\Wipe;
+use common\models\user\User;
 use yii\web\NotFoundHttpException;
 use Yii;
 
@@ -58,23 +59,23 @@ class StatsController extends WebController
             throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден!'));
         }
 
-        $stats = Wipe::getStatsOriginal($server);
         $result = [];
         $items = [];
         if (is_null($q)) {
             throw new NotFoundHttpException(Yii::t('common', 'Неверный запрос!'));
         }
-        $q = mb_strtolower($q);
-        foreach ($stats['models'] as $item) {
-            if (strrpos(mb_strtolower($item['name']), $q) !== false || strrpos($item['steamid'], $q) !== false) {
-                $items[] = [
-                    'id' => $item['id'],
-                    'name' => $item['name'],
-                    'server' => $server->tag,
-                    'strtolower' => mb_strtolower($item['name']),
-                    'steam_id' => $item['steamid'],
-                ];
-            }
+        /** @var User[] $users */
+        $users = User::find()
+                     ->andWhere(['LIKE', 'username', '%'.$q.'%', false])
+                     ->all();
+        foreach ($users as $user) {
+            $items[] = [
+                'id' => $user->id,
+                'name' => $user->username,
+                'server' => $server->tag,
+                'strtolower' => mb_strtolower($user->username),
+                'steam_id' => $user->steam_id,
+            ];
         }
         $result['items'] = $items;
         return $result;
