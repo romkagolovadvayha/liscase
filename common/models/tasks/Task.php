@@ -293,6 +293,7 @@ class Task extends \common\components\base\ActiveRecord
                          ->andWhere(['user_balance_id' => $userBalance->id])
                          ->andWhere(['IN', 'type', [Profit::TYPE_DAILY_REWARD_LIST, Profit::TYPE_DAILY_REWARD_LIST_BOX_SMALL, Profit::TYPE_DAILY_REWARD_LIST_BOX_BIG]])
                          ->andWhere(['>=', 'created_at', $date->format('Y-m-d 00:00:01')])
+                         ->orderBy(['created_at' => SORT_DESC])
                          ->all();
 
         $received = 0;
@@ -302,6 +303,13 @@ class Task extends \common\components\base\ActiveRecord
             foreach ($profits as $profit) {
                 $createdAt = new \DateTime($profit->created_at);
                 if ($createdAt->format('Y-m-d') === $date->format('Y-m-d')) {
+                    if ($profit->type == Profit::TYPE_DAILY_REWARD_LIST_BOX_BIG) {
+                        if ($createdAt->format('Y-m-d') === (new \DateTime())->format('Y-m-d')) {
+                            $received++;
+                        }
+                        $isReceived = false;
+                        break;
+                    }
                     $isReceived = true;
                     $received++;
                     break;
