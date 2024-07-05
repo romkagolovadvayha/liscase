@@ -100,7 +100,7 @@ foreach ($skindrops as $item) {
                         <div class="how-works_counters_item">
                             <div class="how-works_counters_item_label">
                                 <?php if (substr($skindropsSum, -3) < 100): ?>
-                                    <span class="counter" data-num="<?=$skindropsSum?>"><?=$skindropsSum, 0, '.', ' ')?></span>
+                                    <span class="counter" data-num="<?=$skindropsSum?>"><?=number_format($skindropsSum, 0, '.', ' ')?></span>
                                 <?php else: ?>
                                     <span class="counter" data-num="<?=substr($skindropsSum, 0, -3)?>"><?=number_format(substr($skindropsSum, 0, -3), 0, '.', ' ')?></span>
                                     <span class="counter" data-num="<?=substr($skindropsSum, -3)?>"><?=number_format(substr($skindropsSum, -3), 0, '.', ' ')?></span>
