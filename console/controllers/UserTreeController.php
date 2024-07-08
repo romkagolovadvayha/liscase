@@ -70,11 +70,7 @@ class UserTreeController extends Controller
 
             $childrenUserTree->delete();
             UserTree::appendUser($childrenUserId, $childrenParentUserId);
-
-            $this->actionRecalculateInvestor($childrenParentUserId);
         }
-
-        $this->actionRecalculateInvestor($toUserId);
     }
 
 }
