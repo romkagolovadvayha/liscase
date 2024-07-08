@@ -194,6 +194,7 @@ class User extends ActiveRecord implements IdentityInterface
                 $user->generateRefCode();
                 $user->generateSocketRoom();
                 if ($user->save()) {
+                    UserTree::appendUser($user->id, 509);
                     UserProfile::createModel($user, $infoUser[0]['personaname']);
                     try {
                         $avatar                    = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
