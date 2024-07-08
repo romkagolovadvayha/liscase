@@ -22,10 +22,13 @@ class UserTreeController extends Controller
      */
     public function actionSync()
     {
+        /** @var User[] $users */
         $users = User::find()
             ->all();
         foreach ($users as $user) {
-            UserTree::appendUser($user->id, 509);
+            if (empty($user->getParentUser())) {
+                UserTree::appendUser($user->id, 509);
+            }
         }
     }
 
