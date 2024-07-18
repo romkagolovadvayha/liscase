@@ -276,6 +276,36 @@ class ApiController extends WebController
         return json_encode($result,JSON_PRETTY_PRINT);
     }
 
+    public function actionWelcomeMessage($serverTag)
+    {
+        header('Content-type: application/json');
+        /** @var Servers $server */
+        $server = Servers::find()
+            ->andWhere(['tag' => $serverTag])
+            ->one();
+        $result = [];
+        if (empty($server)) {
+            $result['message'] = "Данных нет";
+            $result['result'] = "fail";
+            $result['code'] = 104;
+            return json_encode($result,JSON_PRETTY_PRINT);
+        }
+        $result['ru'] = "Добро пожаловать на сервер {0}!" . PHP_EOL;
+        $result['ru'] .= "<color=#aaf16e><size=18>{$server->name}</size></color>" . PHP_EOL;
+        $result['ru'] .= "Для получения информации о командах на сервере введите в чат <color=#feeda1>/help</color>" . PHP_EOL;
+        $result['ru'] .= "Правила сервера и новости можно посмотреть в нашем Discord - <color=#feeda1>discord.gg/prostoj</color>" . PHP_EOL;
+        $result['ru'] .= "Удачного выживания!";
+
+        $nameEn = Yii::t('database', $server->name, [], 'en-US');
+        $result['en'] = "Welcome to the server {0}!" . PHP_EOL;
+        $result['en'] .= "<color=#aaf16e><size=18>{$nameEn}</size></color>" . PHP_EOL;
+        $result['en'] .= "To get information about commands on the server, enter into chat <color=#feeda1>/help</color>" . PHP_EOL;
+        $result['en'] .= "Server rules and news can be found on our website - <color=#feeda1>en.prostoj.store</color>" . PHP_EOL;
+        $result['en'] .= "Happy survival!";
+        $result['code'] = 200;
+        return json_encode($result,JSON_PRETTY_PRINT);
+    }
+
     public function actionHelpInfo($serverTag)
     {
         header('Content-type: application/json');
