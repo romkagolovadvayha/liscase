@@ -2402,10 +2402,10 @@ body::after {
 #max3_top:checked ~ .widget_top_body_wrap #max3_top_body {
   display: block; }
 
-#pve_top:checked ~ .widget_top_body_wrap #pve_top_body {
+#classicx2_top:checked ~ .widget_top_body_wrap #classicx2_top_body {
   display: block; }
 
-#x50_top:checked ~ .widget_top_body_wrap #x50_top_body {
+#solo_top:checked ~ .widget_top_body_wrap #solo_top_body {
   display: block; }
 
 #nolimit_top:checked ~ .widget_top_body_wrap #nolimit_top_body {
@@ -2413,8 +2413,8 @@ body::after {
 
 #max3_top:checked ~ .widget_live_servers #max3_top_label,
 #nolimit_top:checked ~ .widget_live_servers #nolimit_top_label,
-#pve_top:checked ~ .widget_live_servers #pve_top_label,
-#x50_top:checked ~ .widget_live_servers #x50_top_label {
+#classicx2_top:checked ~ .widget_live_servers #classicx2_top_label,
+#solo_top:checked ~ .widget_live_servers #solo_top_label {
   color: #a8dc4d;
   cursor: default;
   font-weight: 700;
@@ -2504,10 +2504,10 @@ h2.widget_bonus_header {
 #max3_live:checked ~ .widget_live_body_wrap #max3_live_body {
   display: block; }
 
-#pve_live:checked ~ .widget_live_body_wrap #pve_live_body {
+#classicx2_live:checked ~ .widget_live_body_wrap #classicx2_live_body {
   display: block; }
 
-#x50_live:checked ~ .widget_live_body_wrap #x50_live_body {
+#solo_live:checked ~ .widget_live_body_wrap #solo_live_body {
   display: block; }
 
 #nolimit_live:checked ~ .widget_live_body_wrap #nolimit_live_body {
@@ -2515,8 +2515,8 @@ h2.widget_bonus_header {
 
 #max3_live:checked ~ .widget_live_servers #max3_live_label,
 #nolimit_live:checked ~ .widget_live_servers #nolimit_live_label,
-#x50_live:checked ~ .widget_live_servers #x50_live_label,
-#pve_live:checked ~ .widget_live_servers #pve_live_label {
+#solo_live:checked ~ .widget_live_servers #solo_live_label,
+#classicx2_live:checked ~ .widget_live_servers #classicx2_live_label {
   color: #a8dc4d;
   cursor: default;
   font-weight: 700;
@@ -2525,7 +2525,7 @@ h2.widget_bonus_header {
 .widget_live_servers_item:hover {
   color: #a8dc4d; }
 
-#pve_live:checked ~ #pve_live_body {
+#classicx2_live:checked ~ #classicx2_live_body {
   display: block; }
 
 .live_items_item {

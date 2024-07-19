@@ -107,15 +107,6 @@ $servers = Servers::find()
                 <div class="stats_player_profile_body">
                     <div class="stats_player_profile_body_name"><span><?=$user->username?></span> <a href="https://steamcommunity.com/profiles/<?=$user->steam_id?>" class="stats_player_profile_body_name_steam" target="_blank" title="<?=Yii::t('common', 'Перейти в профиль Steam')?>"><i class="fab fa-steam"></i></a></div>
                     <div class="stats_player_profile_body_item"><?=Yii::t('common', 'Онлайн за вайп')?>: <span style="color: #aaf16e;"><?=Servers::getPlayTime($player['playtime'])?></span></div>
-                    <div class="stats_player_profile_body_item">
-                        <?=Yii::t('common', 'Статус')?>:
-                        <span class="<?=$player['status'] ? 'online' : 'offline'?>">
-                            <?=$player['status'] ? Yii::t('common', 'Онлайн') : Yii::t('common', 'Офлайн') ?>
-                        </span>
-                        <?php if (!$player['status'] && !empty($lastVisit)): ?>
-                            <span style="font-size: 10px;vertical-align: top;font-weight: 400">(Был <?=$lastVisit?>)</span>
-                        <?php endif; ?>
-                    </div>
                     <?php if (!empty($clan)): ?>
                     <div class="stats_player_profile_body_item">
                         <?=Yii::t('common', 'Количество человек в клане')?>: <span style="color: #aaf16e;"><?=count($clan)?></span>
