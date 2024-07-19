@@ -25,8 +25,8 @@ class AppAsset extends AssetBundle
 //        'https://cdn.datatables.net/2.0.2/css/dataTables.dataTables.min.css',
 //        'https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css',
 //        'https://kenwheeler.github.io/slick/slick/slick-theme.css',
-        'css/site.css?v=1.0.3',
-        'css/main.css?v=1.0.3',
+        'css/site.css?v=1.0.4',
+        'css/main.css?v=1.0.4',
     ];
     public $js = [
 //        'https://cdn.datatables.net/2.0.2/js/dataTables.min.js',
@@ -34,7 +34,7 @@ class AppAsset extends AssetBundle
         'https://momentjs.com/downloads/moment.min.js',
         'https://momentjs.com/downloads/moment-with-locales.min.js',
         'js/clipboard.min.js',
-        'js/main.js?v=1.0.3',
+        'js/main.js?v=1.0.4',
 //        'https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js',
     ];
     public $depends = [
