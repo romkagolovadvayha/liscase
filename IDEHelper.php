@@ -29,6 +29,7 @@ Yii::$container = new yii\di\Container;
  * @property \common\components\rusttm\RustTm      $rustTm
  * @property \common\components\discord\Discord      $discord
  * @property \common\components\payments\FreeKassa $freeKassaApi
+ * @property \common\components\payments\AnyPay $anyPayApi
  * @property \common\components\telegram\Telegram  $telegram
  * @property \common\components\wargm\WarGM  $wargm
  * @property \common\components\openAi\OpenAiApi $openAi

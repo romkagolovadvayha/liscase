@@ -35,6 +35,8 @@ class Deposit extends \common\components\base\ActiveRecord
     const TYPE_PAYMENT_MIR        = 13;
     const TYPE_PAYMENT_PERFECT_MONEY        = 14;
     const TYPE_PAYMENT_CARD_UA        = 15;
+    const TYPE_PAYMENT_CARD_KZT        = 16;
+    const TYPE_PAYMENT_CARD_YM        = 17;
 
     const STATUS_WAIT_CONFIRM = 1;
     const STATUS_CANCELED     = 2;
@@ -140,6 +142,8 @@ class Deposit extends \common\components\base\ActiveRecord
 //            self::TYPE_PAYMENT_MIR     => Yii::t('common', 'Оплата картой МИР'),
             self::TYPE_PAYMENT_PERFECT_MONEY     => Yii::t('common', 'Оплата Perfect Money'),
             self::TYPE_PAYMENT_CARD_UA     => Yii::t('common', 'Оплата картой UA'),
+            self::TYPE_PAYMENT_CARD_KZT     => Yii::t('common', 'Оплата картой Казахстан'),
+            self::TYPE_PAYMENT_CARD_YM     => Yii::t('common', 'Оплата ЮMoney'),
         ];
     }
 
@@ -158,14 +162,17 @@ class Deposit extends \common\components\base\ActiveRecord
             self::TYPE_PAYMENT_PERFECT_MONEY     => '/images/payments/Perfect_Money.png',
 //            self::TYPE_PAYMENT_TRON      => '/images/payments/tron.svg',
             self::TYPE_PAYMENT_TRC20     => '/images/payments/tether.svg',
-            self::TYPE_PAYMENT_ERC20     => '/images/payments/tether.svg',
+//            self::TYPE_PAYMENT_ERC20     => '/images/payments/tether.svg',
             self::TYPE_PAYMENT_CARD_UA     => '/images/payments/cards.svg',
+            self::TYPE_PAYMENT_CARD_KZT     => '/images/payments/cards.svg',
+            self::TYPE_PAYMENT_CARD_YM     => '/images/payments/iomoney.png',
         ];
 
         if (Yii::$app->language !== 'ru-RU') {
             unset($icons[self::TYPE_PAYMENT_CARD]);
             unset($icons[self::TYPE_PAYMENT_SBP]);
             unset($icons[self::TYPE_PAYMENT_CARD_UA]);
+            unset($icons[self::TYPE_PAYMENT_CARD_KZT]);
         }
 
         return $icons;
@@ -177,10 +184,11 @@ class Deposit extends \common\components\base\ActiveRecord
     public static function getShortNameList()
     {
         return [
-            self::TYPE_PAYMENT_TRC20     => 'TRC20',
-            self::TYPE_PAYMENT_ERC20     => 'ERC20',
-            self::TYPE_PAYMENT_TRON     => 'TRX',
+//            self::TYPE_PAYMENT_TRC20     => 'TRC20',
+//            self::TYPE_PAYMENT_ERC20     => 'ERC20',
+//            self::TYPE_PAYMENT_TRON     => 'TRX',
             self::TYPE_PAYMENT_CARD_UA     => '<div style="font-size: 14px">Украина</div>',
+            self::TYPE_PAYMENT_CARD_KZT     => '<div style="font-size: 14px">Казахстан</div>',
         ];
     }
 
@@ -192,15 +200,17 @@ class Deposit extends \common\components\base\ActiveRecord
         return [
             self::TYPE_PAYMENT_CARD          => [1, 100000],
             self::TYPE_PAYMENT_SBP           => [1, 100000],
-            self::TYPE_PAYMENT_TRON          => [1000, 100000],
-            self::TYPE_PAYMENT_TRC20         => [1000, 100000],
-            self::TYPE_PAYMENT_ERC20         => [1000, 100000],
-            self::TYPE_PAYMENT_YOOONEY       => [1000, 100000],
+//            self::TYPE_PAYMENT_TRON          => [1000, 100000],
+            self::TYPE_PAYMENT_TRC20         => [300, 100000],
+//            self::TYPE_PAYMENT_ERC20         => [1000, 100000],
+            self::TYPE_PAYMENT_YOOONEY       => [300, 100000],
             self::TYPE_PAYMENT_STEAM_PAY     => [1000, 100000],
 //            self::TYPE_PAYMENT_VISA          => [1000, 100000],
 //            self::TYPE_PAYMENT_MIR           => [1000, 100000],
-            self::TYPE_PAYMENT_PERFECT_MONEY => [1000, 100000],
-            self::TYPE_PAYMENT_CARD_UA => [1000, 100000],
+            self::TYPE_PAYMENT_PERFECT_MONEY => [300, 100000],
+            self::TYPE_PAYMENT_CARD_UA => [700, 100000],
+            self::TYPE_PAYMENT_CARD_KZT => [500, 100000],
+            self::TYPE_PAYMENT_CARD_YM => [300, 100000],
         ];
     }
 

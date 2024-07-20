@@ -6,13 +6,13 @@ use common\models\invoice\Deposit;
 use Yii;
 use yii\base\Component;
 
-class PaymentCardUA
+class PaymentCardKZT
 {
 
     public function create($amount)
     {
-        $model = Deposit::createOperation(Yii::$app->user->id, $amount, Deposit::TYPE_PAYMENT_CARD_UA);
-        $result = Yii::$app->anyPayApi->create($amount, 'card', 'Пополнение баланса', $model->id, 'RUB', 'UAH');
+        $model = Deposit::createOperation(Yii::$app->user->id, $amount, Deposit::TYPE_PAYMENT_CARD_KZT);
+        $result = Yii::$app->anyPayApi->create($amount, 'card', 'Пополнение баланса', $model->id, 'RUB', 'KZT');
         $model->payment_id = $result['result']['transaction_id'];
         $model->save(false);
 
@@ -27,6 +27,10 @@ class PaymentCardUA
         }
         $result = Yii::$app->anyPayApi->check($model->payment_id);
         if (empty($result['result']) || empty($result['result']['payments']) || empty($result['result']['payments'][$model->payment_id])) {
+            if (empty($result['result']['payments'])) {
+                $model->status = Deposit::STATUS_CANCELED;
+                $model->save(false);
+            }
             return false;
         }
         $payment = $result['result']['payments'][$model->payment_id];

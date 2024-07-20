@@ -11,15 +11,12 @@ class PaymentPerfectMoney
 
     public function create($amount)
     {
-        $model = Deposit::createOperation(Yii::$app->user->id, $amount, Deposit::TYPE_PAYMENT_PERFECT_MONEY);
-        $result = Yii::$app->freeKassaApi->create($amount, 33, null, $model->id);
-        if (!empty($result['error'])) {
-            throw new \Exception($result['error'], 414);
-        }
-        $model->payment_id = $result['orderId'];
+        $model = Deposit::createOperation(Yii::$app->user->id, $amount, Deposit::TYPE_PAYMENT_CARD_UA);
+        $result = Yii::$app->anyPayApi->create($amount, 'pm', 'Пополнение баланса', $model->id, 'RUB', 'RUB');
+        $model->payment_id = $result['result']['transaction_id'];
         $model->save(false);
 
-        return $result['location'];
+        return $result['result']['payment_url'];
     }
 
     public function check($depositId)
@@ -28,13 +25,17 @@ class PaymentPerfectMoney
         if ($model->status !== Deposit::STATUS_WAIT_CONFIRM) {
             return $model->status;
         }
-        $result = Yii::$app->freeKassaApi->check($model->payment_id);
-        if ($result['orders'][0]['status'] === 1) {
+        $result = Yii::$app->anyPayApi->check($model->payment_id);
+        if (empty($result['result']) || empty($result['result']['payments']) || empty($result['result']['payments'][$model->payment_id])) {
+            return false;
+        }
+        $payment = $result['result']['payments'][$model->payment_id];
+        if ($payment['status'] === 'paid') {
             $model->status = Deposit::STATUS_SUCCESS;
             $model->save(false);
             Deposit::bonus($model->user, $model->amount, $model->payment_type);
             $model->user->getPersonalBalance()->recalculateBalance();
-        } elseif ($result['orders'][0]['status'] === 8 || $result['orders'][0]['status'] === 9) {
+        } elseif ($payment['status'] !== 'waiting' && $payment['status'] !== 'partially-paid') {
             $model->status = Deposit::STATUS_CANCELED;
             $model->save(false);
         }

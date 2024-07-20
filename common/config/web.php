@@ -143,6 +143,12 @@ $config = [
             'secretKey' => '3512023834c0f392047f0f2cbdd9d5a1',
             'shop_id' => '47799',
         ],
+        'anyPayApi'   => [
+            'class' => \common\components\payments\AnyPay::class,
+            'secretKey' => '3yhUPXUOl5Ub1k3NN5whTVQVqLYXkYqTYXVuRCj',
+            'shop_id' => '15080',
+            'api_id' => '133583606621D793DD',
+        ],
         'rustTm'   => [
             'class' => \common\components\rusttm\RustTm::class,
             'secretKey' => '4Tctry3D0b9003d52Kv2w10BND942mX',

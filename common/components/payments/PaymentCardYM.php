@@ -6,13 +6,13 @@ use common\models\invoice\Deposit;
 use Yii;
 use yii\base\Component;
 
-class PaymentCardUA
+class PaymentCardYM
 {
 
     public function create($amount)
     {
-        $model = Deposit::createOperation(Yii::$app->user->id, $amount, Deposit::TYPE_PAYMENT_CARD_UA);
-        $result = Yii::$app->anyPayApi->create($amount, 'card', 'Пополнение баланса', $model->id, 'RUB', 'UAH');
+        $model = Deposit::createOperation(Yii::$app->user->id, $amount, Deposit::TYPE_PAYMENT_CARD_YM);
+        $result = Yii::$app->anyPayApi->create($amount, 'ym', 'Пополнение баланса', $model->id, 'RUB', 'RUB');
         $model->payment_id = $result['result']['transaction_id'];
         $model->save(false);
 

@@ -51,7 +51,6 @@ class FreeKassa
     public function sendHttpRequest($method, $serviceUrl, $params = [])
     {
         $url = $this->baseUrl . $serviceUrl;
-        sleep(1);
         $params['shopId'] = $this->shop_id;
         $params['nonce'] = time() + 1;
         ksort($params);

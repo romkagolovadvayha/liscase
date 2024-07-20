@@ -23,6 +23,7 @@ class DepositController extends Controller
         $deposits = Deposit::find()
             ->andWhere(['status' => Deposit::STATUS_WAIT_CONFIRM])
             ->andWhere('payment_id is not null')
+            ->orderBy(['id' => SORT_DESC])
             ->all();
 
         foreach ($deposits as $deposit) {

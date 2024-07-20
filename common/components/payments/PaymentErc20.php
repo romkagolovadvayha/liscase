@@ -29,6 +29,11 @@ class PaymentErc20
             return $model->status;
         }
         $result = Yii::$app->freeKassaApi->check($model->payment_id);
+        if (empty($result['orders'])) {
+            $model->status = Deposit::STATUS_CANCELED;
+            $model->save(false);
+            return $model->status;
+        }
         if ($result['orders'][0]['status'] === 1) {
             $model->status = Deposit::STATUS_SUCCESS;
             $model->save(false);
