@@ -248,12 +248,18 @@ class Deposit extends \common\components\base\ActiveRecord
             . "SteamID: {$user->steam_id}" . PHP_EOL
             . "Сумма: {$amount} RUB";
 
+        $depositsSum = Deposit::find()
+            ->andWhere(['user_id' => $user->id])
+            ->andWhere(['status' => Deposit::STATUS_SUCCESS])
+            ->sum('amount') ?? 0;
+
         $paymentName = ArrayHelper::getValue(Deposit::getTypeList(), $paymentType);
         if (!empty($paymentName)) {
             $message .= PHP_EOL . "Метод оплаты: {$paymentName}";
         }
 
         $message .= PHP_EOL . PHP_EOL
+            . "Поступлений от игрока: {$depositsSum} RUB" . PHP_EOL
             . "Всего за день: {$amountDaySum} RUB" . PHP_EOL
             . "Всего за всегда: {$amountTotalSum} RUB";
 
