@@ -10,6 +10,7 @@ use Yii;
  * @property int    $id
  * @property string $name
  * @property string $wipe
+ * @property int    $wipe_type
  * @property string $next_wipe
  * @property string $global_wipe
  * @property string $description

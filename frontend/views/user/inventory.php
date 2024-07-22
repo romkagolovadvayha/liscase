@@ -17,12 +17,13 @@ $userDrops = $user->getUserDrop()
 ?>
 
 <?php
+$lang = substr(Yii::$app->language, 0, 2);
 $this->registerJs(<<<JS
         var blocked_products = $('.blocked_products_timer');
         for (var i = 0; i < blocked_products.length; i++) {
             var dateTime = $(blocked_products[i]).attr('data-time');
             var left = moment.unix(dateTime);
-            $(blocked_products[i]).html(left.locale('ru').fromNow());
+            $(blocked_products[i]).html(left.locale('{$lang}').fromNow());
         }
 JS
 );

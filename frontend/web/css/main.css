@@ -1953,62 +1953,132 @@ body {
     .main_wrap > aside .servers {
       background: #23221e; }
       .main_wrap > aside .servers_wrapper {
-        border-radius: 0;
-        overflow: hidden; }
+        border-radius: 0; }
         @media (max-width: 540px) {
           .main_wrap > aside .servers_wrapper {
             display: none; } }
       .main_wrap > aside .servers_body {
-        padding: 10px; }
-      .main_wrap > aside .servers_item + * {
-        margin-top: 15px; }
-      .main_wrap > aside .servers_item_header {
+        padding: 5px;
         display: flex;
-        justify-content: space-between; }
-        .main_wrap > aside .servers_item_header_name {
-          font-size: 14px; }
-        .main_wrap > aside .servers_item_header_address {
-          font-size: 12px; }
-        .main_wrap > aside .servers_item_header_players {
+        flex-direction: column;
+        gap: 5px; }
+      .main_wrap > aside .servers_item {
+        background: rgba(255, 255, 255, 0.06);
+        padding: 10px;
+        position: relative; }
+        .main_wrap > aside .servers_item_hover {
+          display: none;
+          position: absolute;
+          left: 100%;
+          top: 0;
+          font-size: 14px;
+          line-height: 14px;
+          padding-left: 5px; }
+          .main_wrap > aside .servers_item_hover_wrap {
+            background: #434037;
+            padding: 10px;
+            width: 180px;
+            text-align: center;
+            flex-direction: column;
+            display: flex;
+            position: relative;
+            gap: 5px; }
+            .main_wrap > aside .servers_item_hover_wrap::after {
+              content: '';
+              display: block;
+              width: 0;
+              height: 0;
+              border-right: 5px solid #434037;
+              border-bottom: 5px solid transparent;
+              border-top: 5px solid transparent;
+              position: absolute;
+              left: -5px;
+              top: 16px; }
+          .main_wrap > aside .servers_item_hover_button {
+            color: #cec5bc;
+            background-color: #575350;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            text-transform: uppercase;
+            font-weight: 400;
+            text-align: center;
+            border: none;
+            border-radius: 0; }
+            .main_wrap > aside .servers_item_hover_button_wrap {
+              display: flex;
+              flex-direction: column;
+              gap: 5px; }
+            @media (max-width: 1070px) {
+              .main_wrap > aside .servers_item_hover_button {
+                width: 100%; } }
+            .main_wrap > aside .servers_item_hover_button:hover {
+              color: #cec5bc;
+              background-color: #67625f; }
+        .main_wrap > aside .servers_item:hover .servers_item_hover {
+          display: block; }
+        .main_wrap > aside .servers_item_header {
           display: flex;
-          justify-content: flex-end;
-          gap: 2px;
-          font-size: 14px; }
-      .main_wrap > aside .servers_item_progress_wrap {
-        margin-top: 3px;
-        background: #131513;
-        padding: 3px;
-        border-radius: 0; }
-      .main_wrap > aside .servers_item_progress_players {
-        background: #5c7137;
-        height: 5px; }
-        .main_wrap > aside .servers_item_progress_players_wrap {
-          display: flex;
-          justify-content: flex-start;
-          overflow: hidden;
+          justify-content: space-between;
+          align-items: center; }
+          .main_wrap > aside .servers_item_header_content_name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #d5c9bb; }
+          .main_wrap > aside .servers_item_header_content_footer {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            line-height: 12px;
+            margin-top: 5px; }
+            .main_wrap > aside .servers_item_header_content_footer_tag {
+              background: #2d4f6a;
+              padding: 3px; }
+          .main_wrap > aside .servers_item_header_players {
+            display: flex;
+            justify-content: flex-end;
+            gap: 2px;
+            font-size: 16px;
+            color: #a5a5a5; }
+        .main_wrap > aside .servers_item_progress_wrap {
+          background: #131513;
+          padding: 3px;
           border-radius: 0;
-          position: relative;
-          max-width: 100%; }
-          .main_wrap > aside .servers_item_progress_players_wrap:after {
-            content: '';
-            display: block;
-            position: absolute;
-            left: 0;
-            right: 0;
-            top: 0;
-            bottom: 0;
-            background-image: linear-gradient(-45deg, rgba(255, 255, 255, 0.125) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.125) 50%, rgba(255, 255, 255, 0.125) 75%, transparent 75%, transparent);
-            background-size: 35px 35px;
-            animation: cssProgressActive 3s linear infinite; }
-      .main_wrap > aside .servers_item_progress_offline {
-        background: #6c0000;
-        height: 5px; }
-      .main_wrap > aside .servers_item_progress_joined {
-        background: #a8dc4d;
-        height: 5px; }
-      .main_wrap > aside .servers_item_progress_queued {
-        background: #aa6702;
-        height: 5px; }
+          margin-top: 10px; }
+        .main_wrap > aside .servers_item_progress_players {
+          background: #5c7137;
+          height: 5px; }
+          .main_wrap > aside .servers_item_progress_players_wrap {
+            display: flex;
+            justify-content: flex-start;
+            overflow: hidden;
+            border-radius: 0;
+            position: relative;
+            max-width: 100%; }
+            .main_wrap > aside .servers_item_progress_players_wrap:after {
+              content: '';
+              display: block;
+              position: absolute;
+              left: 0;
+              right: 0;
+              top: 0;
+              bottom: 0;
+              background-image: linear-gradient(-45deg, rgba(255, 255, 255, 0.125) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.125) 50%, rgba(255, 255, 255, 0.125) 75%, transparent 75%, transparent);
+              background-size: 35px 35px;
+              animation: cssProgressActive 3s linear infinite; }
+        .main_wrap > aside .servers_item_progress_offline {
+          background: #6c0000;
+          height: 5px; }
+        .main_wrap > aside .servers_item_progress_joined {
+          background: #a8dc4d;
+          height: 5px; }
+        .main_wrap > aside .servers_item_progress_queued {
+          background: #aa6702;
+          height: 5px; }
       .main_wrap > aside .servers_link {
         color: #cec5bc;
         background-color: #575350;

@@ -7,6 +7,18 @@ $servers = Servers::find()
     ->cache(30)
     ->all();
 
+$lang = substr(Yii::$app->language, 0, 2);
+$this->registerJs(
+    <<<JS
+        var timers = $('.server_timer');
+        for (var i = 0; i < timers.length; i++) {
+            var dateTime = $(timers[i]).attr('data-time');
+            var left = moment.unix(dateTime);
+            $(timers[i]).html(left.locale('{$lang}').fromNow());
+        }
+JS
+);
+
 ?>
 
 <div class="servers_wrapper">
@@ -35,15 +47,21 @@ $servers = Servers::find()
                     $percentQueuedAbsolute = 0;
                 }
                 ?>
-                <div class="servers_item btn-clipboard"
-                     data-bs-toggle="tooltip"
-                     data-bs-placement="bottom"
-                     data-bs-title="<?=Yii::t('common', 'Скопировать IP адрес')?>"
-                     data-clipboard-text="connect <?=$server->ip?>:<?=$server->port?>"
-                     data-message="<?=Yii::t('common', 'IP адрес скопирован в буфер обмена!')?>">
+                <div class="servers_item">
                     <div class="servers_item_header">
-                        <div class="servers_item_header_name"><?=Yii::t('database', trim($server->name))?></div>
-<!--                        <div class="servers_item_header_address">--><?php //echo $server->ip?><!--:--><?php //echo $server->port?><!--</div>-->
+                        <div class="servers_item_header_content">
+                            <div class="servers_item_header_content_name"><?=Yii::t('database', trim($server->name))?></div>
+                            <div class="servers_item_header_content_footer">
+                                <span class="server_timer" data-time="<?=strtotime($server->wipe)?>"><?=$server->wipe?></span>
+                                <span class="servers_item_header_content_footer_tag">
+                                    <?php if ($server->wipe_type === 7): ?>
+                                        <?=Yii::t('common', 'Еженедельно')?>
+                                    <?php elseif ($server->wipe_type === 14): ?>
+                                        <?=Yii::t('common', 'Каждые две недели')?>
+                                    <?php endif; ?>
+                                </span>
+                            </div>
+                        </div>
                         <div class="servers_item_header_players">
                             <?php if ($server->status === Servers::STATUS_ACTIVE): ?>
                                 <span class="servers_item_header_players_players" title="<?=Yii::t('common', 'Игроков на сервере')?>"><?=$server->players + $server->joined?></span><span>/</span><span><?=$server->max?></span>
@@ -63,6 +81,18 @@ $servers = Servers::find()
                                 <div class="servers_item_progress_offline" style="width: 100%"></div>
                             </div>
                         <?php endif; ?>
+                    </div>
+                    <div class="servers_item_hover">
+                        <div class="servers_item_hover_wrap">
+                            <div class="btn-clipboard"
+                                 data-clipboard-text="connect <?=$server->ip?>:<?=$server->port?>"
+                                 data-message="<?=Yii::t('common', 'IP адрес скопирован в буфер обмена!')?>">
+                                IP: <?=$server->ip?>:<?=$server->port?> <i class="fas fa-copy"></i>
+                            </div>
+                            <div><?=Yii::t('common', 'Вайп был')?> <span class="server_timer" data-time="<?=strtotime($server->wipe)?>"><?=$server->wipe?></span></div>
+                            <a class="servers_item_hover_button" href="/servers/rules?server=<?=$server->tag?>"><?=Yii::t('common', 'Правила сервера')?></a>
+                            <a class="servers_item_hover_button" href="https://rustmaps.com/map/4250_777<?=$server->map?>" target="_blank"><?=Yii::t('common', 'Текущая карта')?></a>
+                        </div>
                     </div>
                 </div>
             <?php endforeach; ?>

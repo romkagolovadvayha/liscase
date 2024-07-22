@@ -2465,32 +2465,113 @@ body {
       &_wrapper {
         //border: 1px solid rgba(19, 20, 26, 1);
         border-radius: 0;
-        overflow: hidden;
         @media (max-width: 540px) {
           display: none;
         }
       }
       &_body {
-        padding: 10px;
+        padding: 5px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
       }
       &_item {
-        + * {
-          margin-top: 15px;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 10px;
+        position: relative;
+        &_hover {
+          display: none;
+          position: absolute;
+          left: 100%;
+          top: 0;
+          font-size: 14px;
+          line-height: 14px;
+          padding-left: 5px;
+          &_wrap {
+            background: $rust_color_grey_dark;
+            padding: 10px;
+            width: 180px;
+            text-align: center;
+            flex-direction: column;
+            display: flex;
+            position: relative;
+            gap: 5px;
+            &::after {
+              content: '';
+              display: block;
+              width: 0;
+              height: 0;
+              //border-left: 10px solid transparent;
+              border-right: 5px solid $rust_color_grey_dark;
+              border-bottom: 5px solid transparent;
+              border-top: 5px solid transparent;
+              position: absolute;
+              left: -5px;
+              top: 16px;
+            }
+          }
+          &_button {
+            color: $rust_color_grey_text;
+            background-color: $rust_color_grey;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            text-transform: uppercase;
+            font-weight: 400;
+            text-align: center;
+            border: none;
+            border-radius: 0;
+            &_wrap {
+              display: flex;
+              flex-direction: column;
+              gap: 5px;
+            }
+            @media (max-width: 1070px) {
+              width: 100%;
+            }
+            &:hover {
+              color: $rust_color_grey_text;
+              background-color: lighten($rust_color_grey, 6%);
+            }
+          }
+        }
+        &:hover {
+          .servers_item_hover {
+            display: block;
+          }
         }
         &_header {
           display: flex;
           justify-content: space-between;
-          &_name {
-            font-size: 14px;
-          }
-          &_address {
-            font-size: 12px;
+          align-items: center;
+          &_content {
+            &_name {
+              font-size: 14px;
+              font-weight: 700;
+              color: #d5c9bb;
+            }
+            &_footer {
+              display: flex;
+              justify-content: flex-start;
+              align-items: center;
+              gap: 5px;
+              font-size: 12px;
+              line-height: 12px;
+              margin-top: 5px;
+              &_tag {
+                background: #2d4f6a;
+                padding: 3px;
+              }
+            }
           }
           &_players {
             display: flex;
             justify-content: flex-end;
             gap: 2px;
-            font-size: 14px;
+            font-size: 16px;
+            color: #a5a5a5;
             &_players {
               //color: #2980b9;
             }
@@ -2501,11 +2582,11 @@ body {
         }
         &_progress {
           &_wrap {
-            margin-top: 3px;
             background: $color_success_dark_dark;
             //border-radius: 0;
             padding: 3px;
             border-radius: 0;
+            margin-top: 10px;
           }
           &_players {
             background: $color_success;

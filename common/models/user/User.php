@@ -194,14 +194,6 @@ class User extends ActiveRecord implements IdentityInterface
                 $user->generateRefCode();
                 $user->generateSocketRoom();
                 if ($user->save()) {
-                    UserTree::appendUser($user->id, 509);
-                    UserProfile::createModel($user, $infoUser[0]['personaname']);
-                    try {
-                        $avatar                    = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
-                        $user->userProfile->avatar = $avatar;
-                    } catch (\Exception $ex) {
-                    }
-                    $user->userProfile->save();
                     $auth = new Auth(
                         [
                             'user_id'   => $user->id,
@@ -211,6 +203,14 @@ class User extends ActiveRecord implements IdentityInterface
                     );
                     $auth->save();
                     $dbTransaction->commit();
+                    UserTree::appendUser($user->id, 509);
+                    UserProfile::createModel($user, $infoUser[0]['personaname']);
+                    try {
+                        $avatar                    = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
+                        $user->userProfile->avatar = $avatar;
+                    } catch (\Exception $ex) {
+                    }
+                    $user->userProfile->save();
                 }
             } elseif ($updated && (empty($user->updated_at) || strtotime($user->updated_at) + 60*60*24*7 < time())) {
                 $infoUser       = Steam::getInfoUser($steamId);
