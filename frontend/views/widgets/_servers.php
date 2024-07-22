@@ -91,7 +91,7 @@ JS
                             </div>
                             <div><?=Yii::t('common', 'Вайп был')?> <span class="server_timer" data-time="<?=strtotime($server->wipe)?>"><?=$server->wipe?></span></div>
                             <a class="servers_item_hover_button" href="/servers/rules?server=<?=$server->tag?>"><?=Yii::t('common', 'Правила сервера')?></a>
-                            <a class="servers_item_hover_button" href="https://rustmaps.com/map/4250_777<?=$server->map?>" target="_blank"><?=Yii::t('common', 'Текущая карта')?></a>
+                            <a class="servers_item_hover_button" href="https://rustmaps.com/map/<?=$server->map?>" target="_blank"><?=Yii::t('common', 'Текущая карта')?></a>
                         </div>
                     </div>
                 </div>
