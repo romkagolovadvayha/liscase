@@ -4444,6 +4444,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 
 .navbar .nav-item.menu-login .nav-link,
 .navbar .nav-item.menu-stats .nav-link,
+.navbar .nav-item.menu-bildings .nav-link,
 .navbar .nav-item.menu-skindrops .nav-link {
   display: flex;
   align-items: center;
@@ -4475,6 +4476,13 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   .navbar .nav-item.menu-skindrops .nav-link:hover, .navbar .nav-item.menu-skindrops .nav-link:focus {
     background-color: #6d8641;
     color: #a8dc4d; }
+
+.navbar .nav-item.menu-bildings .nav-link {
+  color: #6b9dc1;
+  background-color: #194462; }
+  .navbar .nav-item.menu-bildings .nav-link:hover, .navbar .nav-item.menu-bildings .nav-link:focus {
+    background-color: #1f557a;
+    color: #6b9dc1; }
 
 .navbar .nav-item.menu-login .nav-link {
   color: #d9bab4;
@@ -6070,5 +6078,27 @@ button {
   margin-top: 5px; }
   .referal_description_color {
     color: #a8dc4d; }
+
+.side-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 5px; }
+  .side-menu .nav-link {
+    color: #cec5bc;
+    background-color: #575350;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    text-transform: uppercase;
+    font-weight: 700;
+    text-align: center;
+    border: none;
+    border-radius: 0;
+    width: 100%; }
+    .side-menu .nav-link:hover {
+      color: #cec5bc;
+      background-color: #67625f; }
 
 /*# sourceMappingURL=main.css.map */

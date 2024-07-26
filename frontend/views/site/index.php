@@ -89,6 +89,8 @@ JS
 <div class="container-fluid mb-5">
     <div class="main_wrap">
         <aside>
+            <?php echo $this->render('@frontend/views/widgets/_alert'); ?>
+            <?php // $this->render('@frontend/views/widgets/_buttons'); ?>
             <?= $this->render('@frontend/views/widgets/_skindrops'); ?>
             <?= $this->render('@frontend/views/widgets/_servers'); ?>
             <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>

@@ -5384,6 +5384,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 }
 .navbar .nav-item.menu-login .nav-link,
 .navbar .nav-item.menu-stats .nav-link,
+.navbar .nav-item.menu-bildings .nav-link,
 .navbar .nav-item.menu-skindrops .nav-link {
   display: flex;
   align-items: center;
@@ -5416,6 +5417,14 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   &:hover, &:focus {
     background-color: lighten($rust_color_green, 6%);
     color: $rust_color_green_text;
+  }
+}
+.navbar .nav-item.menu-bildings .nav-link {
+  color: $rust_color_blue_text;
+  background-color: $rust_color_blue;
+  &:hover, &:focus {
+    background-color: lighten($rust_color_blue, 6%);
+    color: $rust_color_blue_text;
   }
 }
 .navbar .nav-item.menu-login .nav-link {
@@ -7480,5 +7489,29 @@ button {
   margin-top: 5px;
   &_color {
     color: $rust_color_green_text;
+  }
+}
+.side-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  .nav-link {
+    color: $rust_color_grey_text;
+    background-color: $rust_color_grey;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    text-transform: uppercase;
+    font-weight: 700;
+    text-align: center;
+    border: none;
+    border-radius: 0;
+    width: 100%;
+    &:hover {
+      color: $rust_color_grey_text;
+      background-color: lighten($rust_color_grey, 6%);
+    }
   }
 }
