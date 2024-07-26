@@ -176,41 +176,46 @@ class User extends ActiveRecord implements IdentityInterface
                       ->andWhere(['steam_id' => $steamId])
                       ->one();
 
-        try {
             if (empty($user)) {
                 $dbTransaction = Yii::$app->db->beginTransaction();
-                $infoUser       = Steam::getInfoUser($steamId);
-                if (empty($infoUser)) {
-                    $dbTransaction->rollBack();
-                    return null;
-                }
-                $user           = new User();
-                $user->email    = "{$steamId}@steam.com";
-                $user->steam_id = $steamId;
-                $user->username = $infoUser[0]['personaname'];
-                $user->setPassword(Yii::$app->security->generateRandomString());
-                $user->status = User::STATUS_ACTIVE;
-                $user->generateAuthKey();
-                $user->generateRefCode();
-                $user->generateSocketRoom();
-                if ($user->save()) {
-                    $auth = new Auth(
-                        [
-                            'user_id'   => $user->id,
-                            'source'    => 'steam',
-                            'source_id' => (string)$steamId,
-                        ]
-                    );
-                    $auth->save();
-                    $dbTransaction->commit();
-                    UserTree::appendUser($user->id, 509);
-                    UserProfile::createModel($user, $infoUser[0]['personaname']);
-                    try {
-                        $avatar                    = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
-                        $user->userProfile->avatar = $avatar;
-                    } catch (\Exception $ex) {
+                try {
+                    $infoUser       = Steam::getInfoUser($steamId);
+                    if (empty($infoUser)) {
+                        $dbTransaction->rollBack();
+                        return null;
                     }
-                    $user->userProfile->save();
+                    $user           = new User();
+                    $user->email    = "{$steamId}@steam.com";
+                    $user->steam_id = $steamId;
+                    $user->username = $infoUser[0]['personaname'];
+                    $user->setPassword(Yii::$app->security->generateRandomString());
+                    $user->status = User::STATUS_ACTIVE;
+                    $user->generateAuthKey();
+                    $user->generateRefCode();
+                    $user->generateSocketRoom();
+                    if ($user->save()) {
+                        $auth = new Auth(
+                            [
+                                'user_id'   => $user->id,
+                                'source'    => 'steam',
+                                'source_id' => (string)$steamId,
+                            ]
+                        );
+                        $auth->save();
+                        $dbTransaction->commit();
+                        UserTree::appendUser($user->id, 509);
+                        UserProfile::createModel($user, $infoUser[0]['personaname']);
+                        try {
+                            $avatar                    = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
+                            $user->userProfile->avatar = $avatar;
+                        } catch (\Exception $ex) {
+                        }
+                        $user->userProfile->save();
+                    }
+                } catch (\Exception $e) {
+                    $dbTransaction->rollBack();
+                    Yii::error("User Registration: " . $e->getMessage(), 'error');
+                    throw new \Exception(Yii::t('common', 'Произошла ошибка, попробуйте обновить страницу!'));
                 }
             } elseif ($updated && (empty($user->updated_at) || strtotime($user->updated_at) + 60*60*24*7 < time())) {
                 $infoUser       = Steam::getInfoUser($steamId);
@@ -222,10 +227,6 @@ class User extends ActiveRecord implements IdentityInterface
                 $user->userProfile->avatar = $avatar;
                 $user->userProfile->save();
             }
-        } catch (\Exception $e) {
-            $dbTransaction->rollBack();
-            throw new \Exception(Yii::t('common', 'Произошла ошибка, попробуйте обновить страницу!'));
-        }
 
         return $user;
     }
