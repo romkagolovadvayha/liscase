@@ -74,12 +74,6 @@ $items = [
         'count' => $kdr,
         'desc'  => $kdr,
     ],
-    [
-        'name'  => Yii::t('common', 'Точность'),
-        'icon'  => 'fa-solid fa-bullseye',
-        'count' => $accuracy,
-        'desc'  => $accuracy . '%',
-    ],
 ];
 
 /** @var Servers[] $servers */
@@ -136,9 +130,7 @@ $servers = Servers::find()
             'models' => $stats['models'],
             'title' => Yii::t('common', 'История действий'),
         ]);?>
-        <?=$this->render('_player_hits', [
-            'player' => $player
-        ]);?>
+        <?php //$this->render('_player_hits', ['player' => $player]); ?>
         <?=$this->render('_player_teams', [
             'player' => $player,
             'server' => $server,
