@@ -183,6 +183,9 @@ class AuthController extends WebController
         $uploadDir = Yii::getAlias('@app/web');
         $fileUrl = "/uploads/avatar/steam/{$id}.png";
         $filePath = $uploadDir . $fileUrl;
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
         if (!file_exists(dirname(dirname($filePath)))) {
             mkdir(dirname(dirname($filePath)));
             chmod(dirname(dirname($filePath)), 0777);
