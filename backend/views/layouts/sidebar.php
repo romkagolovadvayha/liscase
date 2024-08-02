@@ -47,6 +47,26 @@ $jobBadges = 0;
                          'url' => ['/user'],
                          'active' => _checkActive('/user') && !_checkActive('/user-'),
                     ],
+                   [
+                       'label' => 'Отчеты',
+                       'icon' => 'user-tag',
+                       'url' => [''],
+                       'active' => _checkActive('/report/'),
+                       'items' => [
+                           [
+                               'label' => 'Товары',
+                               'icon' => 'user-nurse',
+                               'url' => ['/report/products'],
+                               'active' => _checkActive('/report/products'),
+                           ],
+                           [
+                               'label' => 'Пополнения',
+                               'icon' => 'user-tag',
+                               'url' => ['/report/deposits'],
+                               'active' => _checkActive('/report/deposits'),
+                           ],
+                       ]
+                   ],
                     [
                         'label' => 'Скины',
                         'icon' => 'user-lock',
