@@ -28,6 +28,7 @@ class ReportController extends Controller
 
     public function actionProducts()
     {
+        ini_set('memory_limit', '1024M');
         $result = [];
         $date = new \DateTime();
         for ($i = 0; $i < 3; $i++) {
@@ -94,6 +95,7 @@ class ReportController extends Controller
 
     public function actionSets()
     {
+        ini_set('memory_limit', '1024M');
         $result = [];
         $date = new \DateTime();
         for ($i = 0; $i < 3; $i++) {
@@ -160,6 +162,7 @@ class ReportController extends Controller
 
     public function actionDeposits()
     {
+        ini_set('memory_limit', '1024M');
         $data = [];
         $date = new \DateTime();
         for ($i = 0; $i < 3; $i++) {
