@@ -60,6 +60,12 @@ $jobBadges = 0;
                                'active' => _checkActive('/report/products'),
                            ],
                            [
+                               'label' => 'Сеты',
+                               'icon' => 'user-nurse',
+                               'url' => ['/report/sets'],
+                               'active' => _checkActive('/report/sets'),
+                           ],
+                           [
                                'label' => 'Пополнения',
                                'icon' => 'user-tag',
                                'url' => ['/report/deposits'],

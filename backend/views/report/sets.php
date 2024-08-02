@@ -1,7 +1,7 @@
 <?php
 
 /** @var array $data */
-/** @var \common\models\box\Drop $drop */
+/** @var \common\models\box\Sets $drop */
 
 $this->title = "Покупки";
 
@@ -21,7 +21,7 @@ $this->title = "Покупки";
                     </thead>
                     <tbody>
                     <?php foreach ($_data['products'] as $dataUser): ?>
-                        <?php $drop = \common\models\box\Drop::findOne($dataUser['drop_id']); ?>
+                        <?php $drop = \common\models\box\Sets::findOne($dataUser['sets_id']); ?>
                         <tr>
                             <th scope="row"><?=$drop->name?></th>
                             <td><?=$dataUser['count']?></td>

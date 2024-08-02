@@ -3,6 +3,7 @@
 namespace backend\controllers;
 
 use common\components\helpers\Role;
+use common\models\invoice\Invoice;
 use common\models\skindrops\Skindrops;
 use yii\web\Controller;
 use Yii;
@@ -27,7 +28,134 @@ class ReportController extends Controller
 
     public function actionProducts()
     {
-        return $this->render('products');
+        $result = [];
+        $date = new \DateTime();
+        for ($i = 0; $i < 3; $i++) {
+            $result[$date->format('Y-m-01')] = [];
+            $result[$date->format('Y-m-01')]['invoices'] = Invoice::find()
+                                                                ->andWhere(['>=', 'created_at', $date->format('Y-m-01 00:00:01')])
+                                                                ->andWhere(['<=', 'created_at', $date->format('Y-m-t 23:59:59')])
+                                                                ->andWhere('drop_id IS NOT NULL')
+                                                                ->all();
+
+            $arr = [
+                'Январь',
+                'Февраль',
+                'Март',
+                'Апрель',
+                'Май',
+                'Июнь',
+                'Июль',
+                'Август',
+                'Сентябрь',
+                'Октябрь',
+                'Ноябрь',
+                'Декабрь'
+            ];
+
+            $month = $date->format('n')-1;
+            $result[$date->format('Y-m-01')]['month'] = $arr[$month];
+            $result[$date->format('Y-m-01')]['total'] = 0;
+            $result[$date->format('Y-m-01')]['products'] = [];
+
+            $data = [];
+            $total = 0;
+            /** @var Invoice $item */
+            if (empty($result[$date->format('Y-m-01')]['invoices'])) {
+                $date->modify('-1 month');
+                continue;
+            }
+            foreach ($result[$date->format('Y-m-01')]['invoices'] as $item) {
+                if (empty($data[$item->drop_id])) {
+                    $data[$item->drop_id] = [
+                        'count' => 0,
+                        'drop_id' => $item->drop_id,
+                    ];
+                }
+                $data[$item->drop_id]['count']++;
+            }
+            usort($data, function ($a, $b) {
+                if ($a['count'] == $b['count']) {
+                    return 0;
+                }
+                return ($a['count'] > $b['count']) ? -1 : 1;
+            });
+
+            $result[$date->format('Y-m-01')]['total'] = $total;
+            $result[$date->format('Y-m-01')]['products'] = $data;
+
+            $date->modify('-1 month');
+        }
+
+        return $this->render('products', [
+            'data' => $result
+        ]);
+    }
+
+    public function actionSets()
+    {
+        $result = [];
+        $date = new \DateTime();
+        for ($i = 0; $i < 3; $i++) {
+            $result[$date->format('Y-m-01')] = [];
+            $result[$date->format('Y-m-01')]['invoices'] = Invoice::find()
+                                                                ->andWhere(['>=', 'created_at', $date->format('Y-m-01 00:00:01')])
+                                                                ->andWhere(['<=', 'created_at', $date->format('Y-m-t 23:59:59')])
+                                                                ->andWhere('sets_id IS NOT NULL')
+                                                                ->all();
+
+            $arr = [
+                'Январь',
+                'Февраль',
+                'Март',
+                'Апрель',
+                'Май',
+                'Июнь',
+                'Июль',
+                'Август',
+                'Сентябрь',
+                'Октябрь',
+                'Ноябрь',
+                'Декабрь'
+            ];
+
+            $month = $date->format('n')-1;
+            $result[$date->format('Y-m-01')]['month'] = $arr[$month];
+            $result[$date->format('Y-m-01')]['total'] = 0;
+            $result[$date->format('Y-m-01')]['products'] = [];
+
+            $data = [];
+            $total = 0;
+            /** @var Invoice $item */
+            if (empty($result[$date->format('Y-m-01')]['invoices'])) {
+                $date->modify('-1 month');
+                continue;
+            }
+            foreach ($result[$date->format('Y-m-01')]['invoices'] as $item) {
+                if (empty($data[$item->sets_id])) {
+                    $data[$item->sets_id] = [
+                        'count' => 0,
+                        'sets_id' => $item->sets_id,
+                    ];
+                }
+                $data[$item->sets_id]['count']++;
+            }
+            usort($data, function ($a, $b) {
+                if ($a['count'] == $b['count']) {
+                    return 0;
+                }
+                return ($a['count'] > $b['count']) ? -1 : 1;
+            });
+
+            $result[$date->format('Y-m-01')]['total'] = $total;
+            $result[$date->format('Y-m-01')]['products'] = $data;
+
+            $date->modify('-1 month');
+        }
+
+        return $this->render('sets', [
+            'data' => $result
+        ]);
     }
 
     public function actionDeposits()
