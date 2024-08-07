@@ -82,8 +82,8 @@ class ApiStatsController extends WebController
             $model->wipe = $wipeDate;
             $model->save();
         }
-        $server->players = $request['server']['online'] + 5;
-        $server->joined = $request['server']['join'] + 3;
+        $server->players = $request['server']['online'];
+        $server->joined = $request['server']['join'];
         $server->queued = $request['server']['queue'];
         $server->save();
     }
