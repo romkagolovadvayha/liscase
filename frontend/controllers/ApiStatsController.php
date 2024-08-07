@@ -45,6 +45,7 @@ class ApiStatsController extends WebController
                 ->andWhere(['wipe' => $wipeDate])
                 ->indexBy('key')
                 ->all();
+            $params['playtime'] = 7;
             foreach ($params as $key => $value) {
                 if (!empty($statistics[$key])) {
                     $statistics[$key]->value += $value;
