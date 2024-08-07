@@ -242,7 +242,7 @@ class Drop extends ActiveRecord
     public function getImageOrig()
     {
         return $this->hasOne(DropImage::class, ['drop_id' => 'id'])
-            ->cache(3600)
+            ->cache(30)
             ->andWhere(['type' => DropImage::TYPE_ORIG]);
     }
 
