@@ -116,7 +116,7 @@ class ApiSkindropsController extends WebController
         }
 
         $minPrice = 20;
-        $maxPrice = 50;
+        $maxPrice = 70;
         $items = [];
         $data = Yii::$app->rustTm->prices()['items'];
         shuffle($data);
