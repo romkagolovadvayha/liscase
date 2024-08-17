@@ -94,7 +94,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
 
                 $user = User::findBySteamId($item['steam_id']);
                 foreach ($wordBlackList as $word) {
-                    if (strpos($item['message'], $word) !== false) {
+                    if (strpos(mb_strtolower($item['message']), $word) !== false) {
                         $message = "💭 <b>Подозрение на оскорбление</b>" . PHP_EOL
                             . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL
                             . "Сообщение: {$item['message']}" . PHP_EOL
@@ -124,12 +124,12 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     ->count();
 
                 $stats = Statistics::find()
-                          ->andWhere(['IN', 'key', ['playtime', 'kills', 'deaths']])
+                          ->andWhere(['IN', '`key`', ['playtime', 'kills', 'deaths']])
                           ->andWhere(['steam_id' => $reportUser->steam_id])
                           ->andWhere(['server_tag' => $this->serverTag])
                           ->andWhere(['wipe' => $wipeDate])
                           ->asArray()
-                          ->groupBy('key')
+                          ->groupBy('`key`')
                           ->all();
 
                 $kills = !empty($stats['playtime']) ? $stats['playtime'] : 0;
@@ -148,7 +148,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     . "Подозреваемый: <a href=\"https://steamcommunity.com/profiles/{$reportUser->steam_id}\">{$reportUser->username}</a>" . PHP_EOL
                     . "SteamId: {$reportUser->steam_id}" . PHP_EOL
                     . "Причина: {$item['reason']}" . PHP_EOL
-                    . "Кол-во репортов на игрока: {$count}" . PHP_EOL
+                    . "Кол-во репортов на игрока: <b>{$count}</b>" . PHP_EOL
                     . "Играл за вайп: {$playHour} ч." . PHP_EOL
                     . "Убийств: {$kills}" . PHP_EOL
                     . "Смертей: {$deaths}" . PHP_EOL
