@@ -98,8 +98,8 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         $message = "💭 <b>Подозрение на оскорбление</b>" . PHP_EOL
                             . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL
                             . "Сообщение: {$item['message']}" . PHP_EOL
-                            . "Сервер: {$server->name}" . PHP_EOL
-                            . "`bcm.mute {$user->steam_id} 1h \"Оскорбления родных\"` ";
+                            . "Сервер: {$server->name}" . PHP_EOL . PHP_EOL
+                            . "bcm.mute {$user->steam_id} 1h \"Оскорбления родных\"";
 
                         Yii::$app->telegramChats->sendMessage($message);
                     }
@@ -123,12 +123,21 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     ->andWhere(['wipe' => $wipeDate])
                     ->count();
 
+                /** @var Statistics $playTime */
+                $playTime = Statistics::find()
+                          ->andWhere(['key' => 'playtime'])
+                          ->andWhere(['steam_id' => $reportUser->steam_id])
+                          ->one();
+
+                $playHour = round($playTime->value/60, 1);
+
                 $message = "⚔ <b>Новая жалоба на игрока</b>" . PHP_EOL
                     . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL . PHP_EOL
                     . "Подозреваемый: <a href=\"https://steamcommunity.com/profiles/{$reportUser->steam_id}\">{$reportUser->username}</a>" . PHP_EOL
                     . "SteamId: {$reportUser->steam_id}" . PHP_EOL
                     . "Причина: {$item['reason']}" . PHP_EOL
                     . "Кол-во репортов на игрока: {$count}" . PHP_EOL
+                    . "Играл за вайп: {$playHour} ч." . PHP_EOL
                     . "Сервер: {$server->name}";
 
                 $bans = "";
@@ -175,7 +184,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
 
                 Yii::$app->telegramReports->sendMessage($message);
             }
-            $server->players = $request['server']['online'];
+            $server->players = $request['server']['online'] + 5;
             $server->joined = $request['server']['join'];
             $server->queued = $request['server']['queue'];
             $server->save();
