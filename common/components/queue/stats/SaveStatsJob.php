@@ -98,7 +98,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                             . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL
                             . "Сообщение: {$item['message']}" . PHP_EOL
                             . "Сервер: {$server->name}" . PHP_EOL
-                            . "```bcm.mute {$user->steam_id} 1h \"Оскорбления родных\"```";
+                            . "`bcm.mute {$user->steam_id} 1h \"Оскорбления родных\"` ";
 
                         Yii::$app->telegramChats->sendMessage($message);
                     }
