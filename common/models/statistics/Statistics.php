@@ -3,6 +3,8 @@
 namespace common\models\statistics;
 
 use common\components\base\ActiveRecord;
+use common\models\servers\Servers;
+use common\models\stats\Wipe;
 use common\models\user\Auth;
 use Yii;
 
@@ -25,80 +27,101 @@ class Statistics extends ActiveRecord
         return 'statistics';
     }
 
-    /**
-     * @inheritdoc
-     */
-    public static function getDb()
-    {
-        return Yii::$app->db_server;
+    public static function getParam($allParams, $key) {
+        if (empty($allParams[$key])) {
+            return 0;
+        }
+        return $allParams[$key]->value;
     }
 
-    public static function getStats($server, $steamId = null) {
+    public static function getStats(Servers $server, $steamId = null) {
         $cacheKey = "getStats_serverId{$server->id}_{$steamId}";
-        $data = Yii::$app->cache->get($cacheKey);
+        //$data = Yii::$app->cache->get($cacheKey);
         if (empty($data)) {
-            $server->updateDbConfig();
-
+            $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
             /** @var Wipe[] $models */
-            $models = Wipe::find()
-                          ->cache(60*5)
-                          ->andWhere(['>=', 'playtime', 60])
-                          ->asArray()
-                          ->all();
+            $statistics = Statistics::find()
+                                    ->select('DISTINCT(steam_id)')
+                                    ->andWhere(['server_tag' => $server->tag])
+                                    ->andWhere(['wipe' => $wipeDate])
+                                    ->asArray()
+                                    ->indexBy('steam_id')
+                                    ->all();
 
-            for ($i = 0; $i < count($models); $i++) {
-                $item = $models[$i];
+            $steamIds = array_keys($statistics);
+            $models = [];
+            foreach ($steamIds as $_steamId) {
+                $params = Statistics::find()
+                                    ->andWhere(['steam_id' => $_steamId])
+                                    ->andWhere(['server_tag' => $server->tag])
+                                    ->andWhere(['wipe' => $wipeDate])
+                                    ->indexBy('key')
+                                    ->all();
+                if (Statistics::getParam($params, 'playtime') <= 60) {
+                    continue;
+                }
+                $item = [];
+                $item['steam_id'] = $_steamId;
+                $item['playtime'] = Statistics::getParam($params, 'playtime');
+                $item['deaths'] = Statistics::getParam($params, 'deaths');
+                $item['scientists'] = Statistics::getParam($params, 'scientists');
+                $item['kills'] = Statistics::getParam($params, 'kills');
                 //c4thrown + satchelsthrown * 0.2 + rocketsfired * 0.5
-                $item['reider'] = round($item['c4thrown']
-                                        + $item['satchelsthrown'] * 0.2
-                                        + $item['rocketsfired'] * 0.5
-                                        + $item['rocket_hv'] * 0.1
-                                        + $item['rocket_fire'] * 0.1
-                                        + $item['ammo_explosive'] * 0.01);
+                $item['reider'] = round(Statistics::getParam($params, 'c4thrown')
+                                        + Statistics::getParam($params, 'satchelsthrown') * 0.2
+                                        + Statistics::getParam($params, 'rocket_basic') * 0.5
+                                        + Statistics::getParam($params, 'rocket_hv') * 0.1
+                                        + Statistics::getParam($params, 'rocket_fire') * 0.1
+                                        + Statistics::getParam($params, 'ammo_explosive') * 0.01
+                                        + Statistics::getParam($params, 'grenade.f1.deployed') * 0.05
+                                        + Statistics::getParam($params, 'grenade.molotov.deployed') * 0.05
+                                        + Statistics::getParam($params, 'grenade.beancan.deployed') * 0.05);
                 //wood * 0.2 + stones * 0.3 + metal_ore * 0.5 + sulfur_ore
-                $item['farmer'] = round($item['wood'] * 0.2
-                                        + $item['stones'] * 0.3
-                                        + $item['metal_ore'] * 0.5
-                                        + $item['sulfur_ore']);
+                $item['farmer'] = round(Statistics::getParam($params, 'wood') * 0.2
+                                        + Statistics::getParam($params, 'stones') * 0.3
+                                        + Statistics::getParam($params, 'metal_ore') * 0.5
+                                        + Statistics::getParam($params, 'sulfur_ore'));
                 //orangeroughy * 37 + salmon * 22 + sardine * 10 + smallshark * 45 + troutsmall * 15 + yellowperch * 25
-                $item['fishing'] = round($item['anchovy'] * 10
-                                         + $item['catfish'] * 32
-                                         + $item['herring'] * 10
-                                         + $item['orangeroughy'] * 37
-                                         + $item['salmon'] * 22
-                                         + $item['sardine'] * 10
-                                         + $item['smallshark'] * 45
-                                         + $item['troutsmall'] * 15
-                                         + $item['yellowperch'] * 25);
+                $item['fishing'] = round(Statistics::getParam($params, 'f_fish.anchovy') * 10
+                                         + Statistics::getParam($params, 'f_fish.catfish') * 32
+                                         + Statistics::getParam($params, 'f_fish.herring') * 10
+                                         + Statistics::getParam($params, 'f_fish.orangeroughy') * 37
+                                         + Statistics::getParam($params, 'f_fish.salmon') * 22
+                                         + Statistics::getParam($params, 'f_fish.sardine') * 10
+                                         + Statistics::getParam($params, 'f_fish.smallshark') * 45
+                                         + Statistics::getParam($params, 'f_fish.troutsmall') * 15
+                                         + Statistics::getParam($params, 'f_fish.yellowperch') * 25);
                 //chickens + boars + deers + horses + wolves + bears
-                $item['hunter'] = $item['chickens']
-                    + $item['boars']
-                    + $item['deers']
-                    + $item['horses']
-                    + $item['wolves']
-                    + $item['bears'];
+                $item['hunter'] = Statistics::getParam($params, 'chicken')
+                    + Statistics::getParam($params, 'bear')
+                    + Statistics::getParam($params, 'boar')
+                    + Statistics::getParam($params, 'polarbear')
+                    + Statistics::getParam($params, 'deer')
+                    + Statistics::getParam($params, 'horse')
+                    + Statistics::getParam($params, 'wolf');
                 //cloth + pumpkin + corn + green_berry + blue_berry + yellow_berry + red_berry + white_berry + potato
-                $item['fermer'] = $item['cloth']
-                    + $item['pumpkin']
-                    + $item['corn']
-                    + $item['green_berry']
-                    + $item['blue_berry']
-                    + $item['yellow_berry']
-                    + $item['red_berry']
-                    + $item['white_berry']
-                    + $item['potato'];
-                $models[$i] = $item;
+                $item['fermer'] = Statistics::getParam($params, 'gathered_cloth')
+                    + Statistics::getParam($params, 'gathered_pumpkin')
+                    + Statistics::getParam($params, 'gathered_corn')
+                    + Statistics::getParam($params, 'gathered_green.berry')
+                    + Statistics::getParam($params, 'gathered_blue.berry')
+                    + Statistics::getParam($params, 'gathered_yellow.berry')
+                    + Statistics::getParam($params, 'gathered_red.berry')
+                    + Statistics::getParam($params, 'gathered_white.berry')
+                    + Statistics::getParam($params, 'gathered_black.berry')
+                    + Statistics::getParam($params, 'gathered_potato');
+                $models[] = $item;
             }
             $data = [
-                'kills' => Wipe::getTopList($models, 'kills', $steamId),
-                'scientists' => Wipe::getTopList($models, 'scientists', $steamId),
-                'playtime' => Wipe::getTopList($models, 'playtime', $steamId),
-                'reider' => Wipe::getTopList($models, 'reider', $steamId),
-                'farmer' => Wipe::getTopList($models, 'farmer', $steamId),
-                'fishing' => Wipe::getTopList($models, 'fishing', $steamId),
-                'hunter' => Wipe::getTopList($models, 'hunter', $steamId),
-                'fermer' => Wipe::getTopList($models, 'fermer', $steamId),
-                'deaths' => Wipe::getTopList($models, 'deaths', $steamId),
+                'kills' => Statistics::getTopList($models, 'kills', $steamId),
+                'scientists' => Statistics::getTopList($models, 'scientists', $steamId),
+                'playtime' => Statistics::getTopList($models, 'playtime', $steamId),
+                'reider' => Statistics::getTopList($models, 'reider', $steamId),
+                'farmer' => Statistics::getTopList($models, 'farmer', $steamId),
+                'fishing' => Statistics::getTopList($models, 'fishing', $steamId),
+                'hunter' => Statistics::getTopList($models, 'hunter', $steamId),
+                'fermer' => Statistics::getTopList($models, 'fermer', $steamId),
+                'deaths' => Statistics::getTopList($models, 'deaths', $steamId),
                 'models' => $models
             ];
             Yii::$app->cache->set($cacheKey, $data, 300);
@@ -106,7 +129,7 @@ class Statistics extends ActiveRecord
 
         if (!empty($steamId)) {
             foreach ($data['models'] as $item) {
-                if (!empty($steamId) && $item['steamid'] == $steamId) {
+                if (!empty($steamId) && $item['steam_id'] == $steamId) {
                     $data['player'] = $item;
                     break;
                 }
@@ -114,40 +137,6 @@ class Statistics extends ActiveRecord
         }
 
         return $data;
-    }
-
-    public static function getPlayer($server, $steamId = null) {
-        $server->updateDbConfig();
-
-        /** @var Wipe[] $models */
-        $models = Wipe::find()
-                      ->cache(60*5)
-                      ->andWhere(['>=', 'playtime', 60])
-                      ->asArray()
-                      ->all();
-
-        for ($i = 0; $i < count($models); $i++) {
-            if (!empty($steamId) && $models[$i]['steamid'] == $steamId) {
-                return $models[$i];
-            }
-        }
-
-        return null;
-    }
-
-    public static function getStatsOriginal($server) {
-        $server->updateDbConfig();
-
-        /** @var Wipe[] $models */
-        $models = Wipe::find()
-                      ->cache(60*5)
-                      ->andWhere(['>=', 'playtime', 60])
-                      ->asArray()
-                      ->all();
-
-        return [
-          'models' => $models,
-        ];
     }
 
     /**
@@ -165,7 +154,7 @@ class Statistics extends ActiveRecord
         if (!empty($steamId)) {
             $position = null;
             foreach ($models as $i => $model) {
-                if ($model['steamid'] == $steamId) {
+                if ($model['steam_id'] == $steamId) {
                     $position = $i + 1;
                     break;
                 }
@@ -180,119 +169,60 @@ class Statistics extends ActiveRecord
         ];
     }
 
-    /**
-     * @param $steamId
-     *
-     * @return string
-     */
-    public static function getAvatar($steamId) {
-        /** @var Auth $auth */
-        $auth = Auth::find()
-                    ->andWhere(['source_id' => $steamId])
-                    ->one();
+    public static function getRaiderItem($drops, $player, $key, $score) {
+        $result = [];
+        $key = str_replace('.deployed', '', $key);
 
-        if (!empty($auth)) {
-            return $auth->user->userProfile->avatar;
-        } else {
-            return \common\components\oauth\Steam::getAvatar($steamId);
+        if (!empty($drops[$key])) {
+            $result['image'] = $drops[$key]->imageOrig->getImagePubUrl();
+            $result['name'] = $drops[$key]->name;
         }
+        $result['count'] = Statistics::getParam($player, $key);
+        $result['desc'] = Statistics::getParam($player, $key);
+        $result['score'] = $score;
+        return $result;
     }
 
-    /**
-     *
-     */
-    public static function getArray() {
-        return [
-            'id' => 0,
-            'name' => 0,
-            'steamid' => 0,
-            'connections' => 0,
-            'playtime' => 0,
-            'kills' => 0,
-            'deaths' => 0,
-            'bfired' => 0,
-            'suicides' => 0,
-            'wounded' => 0,
-            'c4thrown' => 0,
-            'satchelsthrown' => 0,
-            'rocketsfired' => 0,
-            'tcsdestroyed' => 0,
-            'chickens' => 0,
-            'boars' => 0,
-            'deers' => 0,
-            'horses' => 0,
-            'wolves' => 0,
-            'bears' => 0,
-            'scientists' => 0,
-            'helicopters' => 0,
-            'bradleys' => 0,
-            'ak47' => 0,
-            'lr300' => 0,
-            'm39' => 0,
-            'sar' => 0,
-            'm249' => 0,
-            'hmlmg' => 0,
-            'l96' => 0,
-            'bolt' => 0,
-            'mp5' => 0,
-            'thompson' => 0,
-            'custom' => 0,
-            'pump' => 0,
-            'doublebarrel' => 0,
-            'spaz12' => 0,
-            'm92' => 0,
-            'python' => 0,
-            'semipistol' => 0,
-            'revolver' => 0,
-            'waterpipe' => 0,
-            'eoka' => 0,
-            'compound' => 0,
-            'crossbow' => 0,
-            'bow' => 0,
-            'head_hits' => 0,
-            'torso_hits' => 0,
-            'leftarm_hits' => 0,
-            'rightarm_hits' => 0,
-            'leftleg_hits' => 0,
-            'rightleg_hits' => 0,
-            'leftfoot_hits' => 0,
-            'rightfoot_hits' => 0,
-            'stones' => 0,
-            'wood' => 0,
-            'metal_ore' => 0,
-            'metal_hq_ore' => 0,
-            'sulfur_ore' => 0,
-            'cloth' => 0,
-            'pumpkin' => 0,
-            'corn' => 0,
-            'blue_berry' => 0,
-            'yellow_berry' => 0,
-            'red_berry' => 0,
-            'white_berry' => 0,
-            'potato' => 0,
-            'green_berry' => 0,
-            'anchovy' => 0,
-            'catfish' => 0,
-            'herring' => 0,
-            'salmon' => 0,
-            'sardine' => 0,
-            'smallshark' => 0,
-            'troutsmall' => 0,
-            'yellowperch' => 0,
-            'orangeroughy' => 0,
-            'status' => 0,
-            'last_visit' => null,
-            'reider' => 0,
-            'farmer' => 0,
-            'fishing' => 0,
-            'hunter' => 0,
-            'fermer' => 0,
-            'crate_open' => 0,
-            'barrel' => 0,
-            'scrap' => 0,
-            'rocket_fire' => 0,
-            'rocket_hv' => 0,
-            'ammo_explosive' => 0,
-        ];
+    public static function getFermItem($drops, $player, $key, $name) {
+        $result = [];
+
+        if (!empty($drops[$key])) {
+            $result['image'] = $drops[$key]->imageOrig->getImagePubUrl();
+        }
+        $result['name'] = $name;
+        $result['count'] = Statistics::getParam($player, $key);
+        $result['desc'] = number_format(Statistics::getParam($player, $key), 0);
+
+        return $result;
+    }
+
+    public static function getFishItem($drops, $player, $key, $name, $score) {
+        $result = [];
+
+        if (!empty($drops[$key])) {
+            $result['image'] = $drops[$key]->imageOrig->getImagePubUrl();
+        }
+        $result['name'] = $name;
+        $result['score'] = $score;
+        $result['count'] = Statistics::getParam($player, $key);
+        $result['desc'] = number_format(Statistics::getParam($player, $key), 0);
+
+        return $result;
+    }
+
+    public static function getFarmItem($drops, $player, $key, $name, $score) {
+        $result = [];
+
+        if (!empty($drops[$key])) {
+            $result['image'] = $drops[$key]->imageOrig->getImagePubUrl();
+        } else {
+            print_r($key);exit;
+        }
+        $result['name'] = $name;
+        $result['score'] = $score;
+        $result['count'] = Statistics::getParam($player, $key);
+        $result['desc'] = number_format(Statistics::getParam($player, $key), 0);
+
+        return $result;
     }
 }
