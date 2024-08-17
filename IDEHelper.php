@@ -27,14 +27,18 @@ Yii::$container = new yii\di\Container;
  * @property \common\components\payments\Paypalych $paypalych
  * @property \common\components\payments\Tome      $tomeApi
  * @property \common\components\rusttm\RustTm      $rustTm
+ * @property \common\components\rusttm\RustCheck      $rustCheck
  * @property \common\components\discord\Discord      $discord
  * @property \common\components\payments\FreeKassa $freeKassaApi
  * @property \common\components\payments\AnyPay $anyPayApi
- * @property \common\components\telegram\Telegram  $telegram
+ * @property \common\components\telegram\TelegramPayments  $telegramPayments
+ * @property \common\components\telegram\TelegramReports  $telegramReports
+ * @property \common\components\telegram\TelegramChats  $telegramChats
  * @property \common\components\wargm\WarGM  $wargm
  * @property \common\components\openAi\OpenAiApi $openAi
  * @property \common\components\midjourney\MidjourneyApi $midjourney
  * @property \yii\queue\redis\Queue              $queueOpenAi
+ * @property \yii\queue\redis\Queue              $queueStats
  * @property \yii\queue\redis\Queue              $queueMidjourney
  */
 abstract class BaseApplication extends yii\base\Application
