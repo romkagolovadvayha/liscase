@@ -89,12 +89,12 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 $model->server_tag = $this->serverTag;
                 $model->save();
 
-                $wordBlackList = ['мама', 'мамку', 'мать', 'маму', 'отец', 'отчим', 'сестр', 'админ', 'зеркал'];
+                $wordBlackList = ['мама', 'мамку', 'мать', 'маму', 'отец', 'отчим', 'сестр', 'админ', 'зеркал', 'ебал'];
 
                 $user = User::findBySteamId($item['steam_id']);
                 foreach ($wordBlackList as $word) {
                     if (strpos($item['message'], $word) !== false) {
-                        $message = "💭 <b>Подозрение ни оскорбление</b>" . PHP_EOL
+                        $message = "💭 <b>Подозрение на оскорбление</b>" . PHP_EOL
                             . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL
                             . "Сообщение: {$item['message']}" . PHP_EOL
                             . "Сервер: {$server->name}" . PHP_EOL
