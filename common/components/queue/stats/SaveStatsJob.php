@@ -127,7 +127,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     . "Подозреваемый: {$reportUser->username} ({$reportUser->steam_id})" . PHP_EOL
                     . "SteamId: {$reportUser->steam_id}" . PHP_EOL
                     . "Причина: {$item['reason']}" . PHP_EOL
-                    . "Кол-во репортов на игрока: {$count}"
+                    . "Кол-во репортов на игрока: {$count}" . PHP_EOL
                     . "Сервер: {$server->name}";
 
                 $bans = "";
