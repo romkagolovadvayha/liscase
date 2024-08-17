@@ -89,7 +89,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 $model->server_tag = $this->serverTag;
                 $model->save();
 
-                $wordBlackList = ['мама', 'мамку', 'мать', 'маму', 'отец', 'отчим', 'сестр', 'админ', 'зеркал', 'ебал'];
+                $wordBlackList = ['мама', 'мамку', 'мать', 'маму', 'отец', 'отчим', 'сестр', 'админ', 'зеркал', 'ебал', 'серв'];
 
                 $user = User::findBySteamId($item['steam_id']);
                 foreach ($wordBlackList as $word) {
