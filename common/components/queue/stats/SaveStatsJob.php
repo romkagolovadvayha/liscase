@@ -123,13 +123,25 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     ->andWhere(['wipe' => $wipeDate])
                     ->count();
 
-                /** @var Statistics $playTime */
-                $playTime = Statistics::find()
-                          ->andWhere(['key' => 'playtime'])
+                $stats = Statistics::find()
+                          ->andWhere(['IN', 'key', ['playtime', 'kills', 'deaths']])
                           ->andWhere(['steam_id' => $reportUser->steam_id])
-                          ->one();
+                          ->andWhere(['server_tag' => $this->serverTag])
+                          ->andWhere(['wipe' => $wipeDate])
+                          ->asArray()
+                          ->groupBy('key')
+                          ->all();
 
-                $playHour = round($playTime->value/60, 1);
+                $kills = !empty($stats['playtime']) ? $stats['playtime'] : 0;
+                $deaths = !empty($stats['deaths']) ? $stats['deaths'] : 0;
+                if ($deaths > 1) {
+                    $kd = $kills !== 0 ? round($kills / $deaths, 1) : 0;
+                } else {
+                    $kd = $kills;
+                }
+                $playtime = !empty($stats['playtime']) ? $stats['playtime'] : 0;
+
+                $playHour = round($playtime/60, 1);
 
                 $message = "⚔ <b>Новая жалоба на игрока</b>" . PHP_EOL
                     . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL . PHP_EOL
@@ -138,6 +150,9 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     . "Причина: {$item['reason']}" . PHP_EOL
                     . "Кол-во репортов на игрока: {$count}" . PHP_EOL
                     . "Играл за вайп: {$playHour} ч." . PHP_EOL
+                    . "Убийств: {$kills}" . PHP_EOL
+                    . "Смертей: {$deaths}" . PHP_EOL
+                    . "К/Д: {$kd}" . PHP_EOL
                     . "Сервер: {$server->name}";
 
                 $bans = "";
@@ -173,7 +188,8 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 } catch (\Exception $e) {}
 
                 if ($hoursExist) {
-                    $message .=  PHP_EOL . "Часов в Steam:" . $hours;
+                    $hours = round($hours/60, 1);
+                    $message .=  PHP_EOL . "Часов в Steam: " . $hours;
                 }
                 if ($bansExist) {
                     $message .=  PHP_EOL  . PHP_EOL . "Найдены баны на других проектах:" . PHP_EOL . $bans;
