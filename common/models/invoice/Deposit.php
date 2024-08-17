@@ -263,7 +263,7 @@ class Deposit extends \common\components\base\ActiveRecord
             . "Всего за день: {$amountDaySum} RUB" . PHP_EOL
             . "Всего за всегда: {$amountTotalSum} RUB";
 
-        Yii::$app->telegram->sendMessage($message);
+        Yii::$app->telegramPayments->sendMessage($message);
 
         $bonus = 0;
         if ($amount >= 5000) {
