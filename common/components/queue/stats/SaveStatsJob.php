@@ -2,6 +2,7 @@
 
 namespace common\components\queue\stats;
 
+use common\components\oauth\Steam;
 use common\models\servers\Servers;
 use common\models\statistics\Chats;
 use common\models\statistics\Kills;
@@ -124,7 +125,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
 
                 $message = "⚔ <b>Новая жалоба на игрока</b>" . PHP_EOL
                     . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL . PHP_EOL
-                    . "Подозреваемый: {$reportUser->username} ({$reportUser->steam_id})" . PHP_EOL
+                    . "Подозреваемый: <a href=\"https://steamcommunity.com/profiles/{$reportUser->steam_id}\">{$reportUser->username}</a>" . PHP_EOL
                     . "SteamId: {$reportUser->steam_id}" . PHP_EOL
                     . "Причина: {$item['reason']}" . PHP_EOL
                     . "Кол-во репортов на игрока: {$count}" . PHP_EOL
@@ -149,7 +150,22 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         }
                     }
                 } catch (\Exception $e) {}
+                $hoursExist = false;
+                $hours = 0;
+                try {
+                    $games = Steam::getGameInfo($reportUser->steam_id);
+                    foreach ($games as $game) {
+                        if ($game['appid'] == 252490) {
+                            $hoursExist = true;
+                            $hours = $game['playtime_forever'];
+                            break;
+                        }
+                    }
+                } catch (\Exception $e) {}
 
+                if ($hoursExist) {
+                    $message .=  PHP_EOL . "Часов в Steam:" . $hours;
+                }
                 if ($bansExist) {
                     $message .=  PHP_EOL  . PHP_EOL . "Найдены баны на других проектах:" . PHP_EOL . $bans;
                 }

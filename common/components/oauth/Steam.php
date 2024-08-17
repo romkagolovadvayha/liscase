@@ -114,6 +114,16 @@ class Steam extends OpenId
         return $usersInfo;
     }
 
+    public static function getGameInfo($steamId) {
+        $key = Yii::$app->params['steamApiKey'];
+        $apiUrl = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key={$key}&steamid={$steamId}&include_played_free_games=1";
+        $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
+        if (empty($response['response'])) {
+            return [];
+        }
+        return $response['response']['games'];
+    }
+
     /**
      * {@inheritdoc}
      */
