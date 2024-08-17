@@ -95,9 +95,9 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 foreach ($wordBlackList as $word) {
                     if (strpos($item['message'], $word) !== false) {
                         $message = "💭 <b>Подозрение ни оскорбление</b>" . PHP_EOL
-                            . "Отправил: <a href=\"https://steamcommunity.com/profiles/{$user->steam_id}\">{$user->username}</a>" . PHP_EOL
-                            . "Сообщение: {$item['message']}"
-                            . "Сервер: {$server->name}"
+                            . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL
+                            . "Сообщение: {$item['message']}" . PHP_EOL
+                            . "Сервер: {$server->name}" . PHP_EOL
                             . "```bcm.mute {$user->steam_id} 1h \"Оскорбления родных\"```";
 
                         Yii::$app->telegramChats->sendMessage($message);
@@ -123,33 +123,37 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     ->count();
 
                 $message = "⚔ <b>Новая жалоба на игрока</b>" . PHP_EOL
-                    . "Отправил: <a href=\"https://steamcommunity.com/profiles/{$user->steam_id}\">{$user->username}</a>" . PHP_EOL . PHP_EOL
-                    . "Подозреваемый: <a href=\"https://steamcommunity.com/profiles/{$reportUser->steam_id}\">{$reportUser->username}</a>" . PHP_EOL
+                    . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL . PHP_EOL
+                    . "Подозреваемый: {$reportUser->username} ({$reportUser->steam_id})" . PHP_EOL
                     . "SteamId: {$reportUser->steam_id}" . PHP_EOL
                     . "Причина: {$item['reason']}" . PHP_EOL
                     . "Кол-во репортов на игрока: {$count}"
                     . "Сервер: {$server->name}";
 
                 $bans = "";
+                $bansExist = false;
                 $lastCheck = "";
+                $lastCheckExist = false;
                 try {
                     $rustCheck = Yii::$app->rustCheck->getInfo($reportUser->steam_id);
                     if (!empty($rustCheck['bans'])) {
                         foreach ($rustCheck['bans'] as $ban) {
+                            $bansExist = true;
                             $bans .= $ban['serverName'] . ":" . $ban['reason'] . "; Дата: " . (new \DateTime($ban['banDate']))->format('Y-m-d H:i:s') . PHP_EOL;
                         }
                     }
                     if (!empty($rustCheck['last_check'])) {
                         foreach ($rustCheck['last_check'] as $_lastCheck) {
+                            $lastCheckExist = true;
                             $lastCheck .= $_lastCheck['serverName'] . "; Дата: " . (new \DateTime($_lastCheck['time']))->format('Y-m-d H:i:s') . PHP_EOL;
                         }
                     }
                 } catch (\Exception $e) {}
 
-                if (empty($bans)) {
+                if ($bansExist) {
                     $message .=  PHP_EOL  . PHP_EOL . "Найдены баны на других проектах:" . PHP_EOL . $bans;
                 }
-                if (empty($lastCheck)) {
+                if ($lastCheckExist) {
                     $message .=  PHP_EOL  . PHP_EOL . "Последние проверки игрока:" . PHP_EOL . $lastCheck;
                 }
 
