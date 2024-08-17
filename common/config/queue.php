@@ -1,11 +1,18 @@
 <?php
 
 return [
-//    'bootstrap'  => [
+    'bootstrap'  => [
+        'queueStats',
 //        'queueOpenAi',
 //        'queueMidjourney',
-//    ],
-//    'components' => [
+    ],
+    'components' => [
+        'queueStats'                => [
+            'class'   => 'yii\queue\redis\Queue',
+            'redis'   => 'redis',
+            'channel' => 'queue-stats',
+            'ttr' => 1200,
+        ],
 //        'queueOpenAi'                => [
 //            'class'   => 'yii\queue\redis\Queue',
 //            'redis'   => 'redis',
@@ -18,5 +25,5 @@ return [
 //            'channel' => 'queue-midjourney',
 //            'ttr' => 1200,
 //        ],
-//    ],
+    ],
 ];

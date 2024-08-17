@@ -123,10 +123,20 @@ $config = [
             'apiKey'      => '2gCOCfIiIu4V74f9763v5SjV7jyjT45',
             'baseUrl' => 'https://market.csgo.com/api/v2'
         ],
-        'telegram'   => [
-            'class'  => \common\components\telegram\Telegram::class,
+        'telegramPayments'   => [
+            'class'  => \common\components\telegram\TelegramPayments::class,
             'token'      => $params['tgBot']['token'],
             'chatId' => $params['tgBot']['chatId'],
+        ],
+        'telegramReports'   => [
+            'class'  => \common\components\telegram\TelegramReports::class,
+            'token'      => $params['tgBotReports']['token'],
+            'chatId' => $params['tgBotReports']['chatId'],
+        ],
+        'telegramChats'   => [
+            'class'  => \common\components\telegram\TelegramChats::class,
+            'token'      => $params['tgBotChats']['token'],
+            'chatId' => $params['tgBotChats']['chatId'],
         ],
         'paypalychApi'   => [
             'class' => \common\components\payments\Paypalych::class,
@@ -152,6 +162,10 @@ $config = [
         'rustTm'   => [
             'class' => \common\components\rusttm\RustTm::class,
             'secretKey' => '4Tctry3D0b9003d52Kv2w10BND942mX',
+        ],
+        'rustCheck'   => [
+            'class' => \common\components\rusttm\RustCheck::class,
+            'secretKey' => '9f97841bde0d594447c732dc2311a465',
         ],
         'discord'   => [
             'class' => \common\components\discord\Discord::class,
