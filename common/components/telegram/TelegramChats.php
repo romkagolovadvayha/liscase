@@ -5,7 +5,7 @@ namespace common\components\telegram;
 use Yii;
 use yii\helpers\ArrayHelper;
 
-class Telegram
+class TelegramChats
 {
     public $token;
     public $chatId;
