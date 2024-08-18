@@ -214,7 +214,7 @@ class SiteController extends WebController
             throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден!'));
         }
 
-        $command = "o.version";
+        $command = "bcm.mute {$steamId} 1h \"{$reason}\"";
         $response = shell_exec("node /var/www/www-root/data/var/www/prostoj.store/node/webrcon/src/send.js \"{$server->ip}\" {$server->rcon} \"{$server->rcon_password}\" \"{$command}\" 2>&1");
         print_r($response);
         exit;
