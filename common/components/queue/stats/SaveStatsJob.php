@@ -130,7 +130,6 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     $kd = 0;
                     $playtime = 0;
 
-                    Yii::error("SaveStatsJob LOG -: " . $item['recepient_steam_id'], 'error');
                     try {
                         $stats = Statistics::find()
                                             ->andWhere(['steam_id' => $reportUser->steam_id])
@@ -138,7 +137,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                                             ->andWhere(['wipe' => $wipeDate])
                                             ->indexBy('key')
                                             ->all();
-                        $kills = Statistics::getParam($stats, 'playtime');
+                        $kills = Statistics::getParam($stats, 'kills');
                         $deaths = Statistics::getParam($stats, 'deaths');
                         if ($deaths > 1) {
                             $kd = $kills > 0 ? round($kills / $deaths, 1) : 0;
@@ -150,7 +149,6 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
                     }
 
-                    Yii::error("SaveStatsJob LOG 21: " . $count, 'error');
                     $playHour = round($playtime/60, 1);
 
                     $message = "⚔ <b>Новая жалоба на игрока</b>" . PHP_EOL
@@ -165,7 +163,6 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         . "К/Д: {$kd}" . PHP_EOL
                         . "Сервер: {$server->name}";
 
-                    Yii::error("SaveStatsJob LOG 1: " . $message, 'error');
                     $bans = "";
                     $bansExist = false;
                     $lastCheck = "";
@@ -239,11 +236,9 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     if ($lastCheckExist) {
                         $message .=  PHP_EOL  . PHP_EOL . "Последние проверки игрока:" . PHP_EOL . $lastCheck;
                     }
-                    Yii::error("SaveStatsJob LOG: " . $message, 'error');
                     Yii::$app->telegramReports->sendMessage($message);
                 }
             } catch (\Exception $e) {
-                Yii::$app->telegramChats->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
                 Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
             }
             $server->players = $request['server']['online'] + 5;
