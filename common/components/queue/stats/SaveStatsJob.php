@@ -98,10 +98,18 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         $message = "💭 <b>Подозрение на оскорбление</b>" . PHP_EOL
                             . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL
                             . "Сообщение: {$item['message']}" . PHP_EOL
-                            . "Сервер: {$server->name}" . PHP_EOL . PHP_EOL
-                            . "bcm.mute {$user->steam_id} 1h \"Оскорбления родных\"";
+                            . "Сервер: {$server->name}";
 
-                        Yii::$app->telegramChats->sendMessage($message);
+                        Yii::$app->telegramChats->sendMessage($message, [
+                            [
+                                'text' => 'Оскорбление родных',
+                                'url' => "https://prostoj.store/site/mute?steamId={$user->steam_id}&serverTag={$server->tag}&reason=Оскорбления%20родных",
+                            ],
+                            [
+                                'text' => 'Без причины',
+                                'url' => "https://prostoj.store/site/mute?steamId={$user->steam_id}&serverTag={$server->tag}&reason=Причина%20не%20указана",
+                            ],
+                        ]);
                     }
                 }
             }

@@ -3,7 +3,6 @@
 namespace frontend\controllers;
 
 use common\controllers\WebController;
-use common\models\achievement\Achievement;
 use common\models\box\Drop;
 use common\models\invoice\Deposit;
 use common\models\profit\Profit;

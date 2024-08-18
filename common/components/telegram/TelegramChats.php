@@ -86,13 +86,21 @@ class TelegramChats
      * @return array
      * @throws \Exception
      */
-    public function sendMessage($messageText): array
+    public function sendMessage($messageText, $inlineKeyboard = []): array
     {
         $params = [
             'chat_id'      => $this->chatId,
             'text'         => $messageText,
             'parse_mode'   => 'Html',
+            'link_preview_options'   => [
+                'is_disabled' => true
+            ],
         ];
+        if (!empty($inlineKeyboard)) {
+            $params['reply_markup'] = json_encode([
+                'inline_keyboard' => [$inlineKeyboard]
+            ]);
+        }
         return $this->sendHttpRequest("sendMessage", $params);
     }
 }

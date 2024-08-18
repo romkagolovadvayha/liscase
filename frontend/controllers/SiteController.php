@@ -202,6 +202,24 @@ class SiteController extends WebController
         return $this->renderPartial('robots');
     }
 
+    public function actionMute($steamId, $serverTag)
+    {
+        /** @var Servers $server */
+        $server = Servers::find()
+                         ->cache(30)
+                         ->andWhere(['tag' => $serverTag])
+                         ->one();
+
+        if (empty($server)) {
+            throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден!'));
+        }
+
+        $command = "o.version";
+        $response = shell_exec("node ./../../node/webrcon/src/send.js \"{$server->ip}\" {$server->rcon} \"{$server->rcon_password}\" \"{$command}\" 2>&1");
+        print_r($response);
+        exit;
+    }
+
     public function actionRss($category = null)
     {
         Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;

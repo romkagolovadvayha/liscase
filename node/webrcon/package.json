@@ -1,0 +1,17 @@
+{
+  "name": "eywa-monitor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dateformat": "^5.0.3",
+    "rcon": "^1.1.0",
+    "rustrcon": "^1.0.2"
+  }
+}

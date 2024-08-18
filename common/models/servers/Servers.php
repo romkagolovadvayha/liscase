@@ -18,6 +18,8 @@ use Yii;
  * @property string $ip
  * @property int    $port
  * @property int    $query
+ * @property int    $rcon
+ * @property string $rcon_password
  * @property string $map
  * @property int    $players
  * @property int    $joined
@@ -25,15 +27,15 @@ use Yii;
  * @property int    $max
  * @property int    $team_limit
  * @property int    $status
- * @property string    $db_host
- * @property string    $db_name
- * @property string    $db_user
- * @property string    $db_password
- * @property string    $tag
- * @property bool    $stats_payment
- * @property bool    $skindrops
+ * @property string $db_host
+ * @property string $db_name
+ * @property string $db_user
+ * @property string $db_password
+ * @property string $tag
+ * @property bool   $stats_payment
+ * @property bool   $skindrops
  * @property int    $wargm_id
- * @property string    $commands
+ * @property string $commands
  */
 class Servers extends \common\components\base\ActiveRecord
 {

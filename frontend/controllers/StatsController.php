@@ -103,25 +103,5 @@ class StatsController extends WebController
             'steamId'  => $steamId,
         ]);
     }
-    /**
-     *
-     * @return \yii\web\Response | string
-     * @throws NotFoundHttpException
-     */
-    public function actionRcon()
-    {
-        return $this->render('rcon');
-    }
-
-    /**
-     * @param $id
-     *
-     * @return \yii\web\Response | string
-     * @throws NotFoundHttpException
-     */
-    public function actionView($id)
-    {
-
-    }
 
 }
