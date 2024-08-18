@@ -22,6 +22,12 @@ class DateHelper
         return $aDate;
     }
 
+    public static function numberFormat($digit, $width) {
+        while(strlen($digit) < $width)
+            $digit = '0' . $digit;
+        return $digit;
+    }
+
     /**
      * @param \DateTime $dateTime
      * @param int       $months

@@ -1,58 +1,141 @@
 <?php
 
 use common\models\servers\Servers;
+use common\models\statistics\Statistics;
 
 /** @var Servers $server */
 /** @var array $data */
 /** @var array $player */
 
-$farms   = [
+$items   = [
     [
         'name'  => Yii::t('common', 'Серная руда'),
-        'image' => '/uploads/drop/312_f1bbbd27a6a2da9e0f82b83ae1ac284a.png',
-        'count' => $player['sulfur_ore'],
+        'key' => 'sulfur.ore',
         'score' => 1,
-        'desc'  => number_format($player['sulfur_ore'], 0),
     ],
     [
         'name'  => Yii::t('common', 'Железная руда'),
-        'image' => '/uploads/drop/297_c8f416368524f23913bb208025e18f29.png',
-        'count' => $player['metal_ore'],
+        'key' => 'metal.ore',
         'score' => 0.5,
-        'desc'  => number_format($player['metal_ore'], 0),
     ],
     [
         'name'  => Yii::t('common', 'Камни'),
-        'image' => '/uploads/drop/300_2a1ca11dc57b4a22968d9a5aa8c21ec8.png',
-        'count' => $player['stones'],
+        'key' => 'stones',
         'score' => 0.3,
-        'desc'  => number_format($player['stones'], 0),
     ],
     [
         'name'  => Yii::t('common', 'Дерево'),
-        'image' => '/uploads/drop/295_f43e705790003ee29b962e8ab921eb16.png',
-        'count' => $player['wood'],
+        'key' => 'wood',
         'score' => 0.2,
-        'desc'  => number_format($player['wood'], 0),
+    ],
+    [
+        'name'  => Yii::t('common', 'Животный жир'),
+        'key' => 'fat.animal',
+        'score' => 0.2,
+    ],
+    [
+        'name'  => Yii::t('common', 'Кожа'),
+        'key' => 'leather',
+        'score' => 0.2,
+    ],
+    [
+        'name'  => Yii::t('common', 'Обломки костей'),
+        'key' => 'bone.fragments',
+        'score' => 0.1,
+    ],
+    [
+        'name'  => Yii::t('common', 'Скрап'),
+        'key' => 'scrap',
+        'score' => 1.5,
+    ],
+    [
+        'name'  => Yii::t('common', 'Разбито бочек'),
+        'key' => 'barrel',
+        'score' => 0,
+    ],
+    [
+        'name'  => Yii::t('common', 'Открыто ящиков'),
+        'key' => 'crate_open',
+        'score' => 0,
     ],
 ];
 
+$keys = [];
+foreach ($items as $item) {
+    $keys[] = $item['key'];
+}
+
+$drops = \common\models\box\Drop::find()
+                                ->andWhere(['IN', 'eng_name', $keys])
+                                ->indexBy('eng_name')
+                                ->all();
+
+$farms = [];
+foreach ($items as $item) {
+    $farms[] = Statistics::getFarmItem($drops, $player, $item['key'], $item['name'], $item['score']);
+}
+$labels = [Yii::t('common', 'Серная руда'), Yii::t('common', 'Железная руда'), Yii::t('common', 'Камни'), Yii::t('common', 'Дерево')];
+$series = [Statistics::getParam($player, "sulfur.ore"), Statistics::getParam($player, "metal.ore"), Statistics::getParam($player, "stones"), Statistics::getParam($player, "wood")];
+$labelsStr = '\'' . implode('\',\'', $labels) . '\'';
+$seriesStr = '[' . implode('],[', $series) . ']';
+$formatJs = <<< JS
+var data = {
+  labels: [{$labelsStr}],
+  series: [{$seriesStr}]
+};
+
+// Устанавливаем несколько опцией, меняя настройки по умолчанию
+var options = {
+  seriesBarDistance: 60
+};
+
+new Chartist.Bar('#chart-resources', data, options);
+JS;
+$this->registerJs($formatJs, \yii\web\View::POS_END);
+
+$labels = [Yii::t('common', 'Бочки'), Yii::t('common', 'Ящики')];
+$series = [Statistics::getParam($player, "barrel"), Statistics::getParam($player, "crate_open")];
+$labelsStr = '\'' . implode('\',\'', $labels) . '\'';
+$seriesStr = implode(',', $series);
+$formatJs = <<< JS
+var data = {
+  labels: [{$labelsStr}],
+  series: [{$seriesStr}]
+};
+
+// Устанавливаем несколько опцией, меняя настройки по умолчанию
+var options = {
+  seriesBarDistance: 120
+};
+
+new Chartist.Pie('#chart-barrel', data, options);
+JS;
+$this->registerJs($formatJs, \yii\web\View::POS_END);
 ?>
-<div class="stats_player_stats_wrap stats_player_stats_wrap_farm">
-    <div class="stats_player_stats">
+<div class="stats_player_stats_farm_wrap">
+    <div class="stats_player_stats_farm">
         <?php foreach ($farms as $item): ?>
-            <div class="stats_player_stats_item_wrap">
-                <div class="stats_player_stats_item">
-                    <div class="stats_player_stats_item_image_wrap">
-                        <img class="stats_player_stats_item_image" src="<?= $item['image'] ?>"/>
+            <div class="stats_player_stats_farm_item_wrap">
+                <div class="stats_player_stats_farm_item">
+                    <div class="stats_player_stats_farm_item_image_wrap">
+                        <img class="stats_player_stats_farm_item_image" src="<?= $item['image'] ?>"/>
                     </div>
-                    <div class="stats_player_stats_item_count"><?= $item['desc'] ?></div>
-                    <div class="stats_player_stats_item_name"><?= $item['name'] ?></div>
-                    <?php if (!empty($item['score'])): ?>
-                        <div class="stats_player_stats_item_score">x<?= $item['score'] ?></div>
-                    <?php endif; ?>
+                    <div class="stats_player_stats_farm_item_count">
+                        <span><?= $item['desc'] ?></span>
+                        <?php if (!empty($item['score'])): ?>
+                        <div class="stats_player_stats_farm_item_count_score"
+                             data-bs-toggle="tooltip"
+                             data-bs-placement="bottom"
+                             data-bs-title="<?=Yii::t('common', 'Множитель для рейтинга игроков') . " x" . $item['score']?>">x<?= $item['score'] ?></div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="stats_player_stats_farm_item_name"><?= $item['name'] ?></div>
                 </div>
             </div>
         <?php endforeach; ?>
+    </div>
+    <div class="stats_player_stats_farm_charts">
+        <div class="ct-chart ct-perfect-fourth" id="chart-resources"></div>
+        <div class="ct-chart ct-perfect-fourth" id="chart-barrel"></div>
     </div>
 </div>

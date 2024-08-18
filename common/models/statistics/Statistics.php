@@ -31,16 +31,20 @@ class Statistics extends ActiveRecord
         if (empty($allParams[$key])) {
             return 0;
         }
-        return $allParams[$key]->value;
+        if (is_object($allParams[$key])) {
+            return $allParams[$key]->value;
+        }
+        return $allParams[$key];
     }
 
     public static function getStats(Servers $server, $steamId = null) {
         $cacheKey = "getStats_serverId{$server->id}_{$steamId}";
-        //$data = Yii::$app->cache->get($cacheKey);
+        $data = Yii::$app->cache->get($cacheKey);
         if (empty($data)) {
             $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
             /** @var Wipe[] $models */
             $statistics = Statistics::find()
+                                    ->cache(180)
                                     ->select('DISTINCT(steam_id)')
                                     ->andWhere(['server_tag' => $server->tag])
                                     ->andWhere(['wipe' => $wipeDate])
@@ -192,6 +196,32 @@ class Statistics extends ActiveRecord
         $result['name'] = $name;
         $result['count'] = Statistics::getParam($player, $key);
         $result['desc'] = number_format(Statistics::getParam($player, $key), 0);
+
+        return $result;
+    }
+
+    public static function getLevelCardItem($drops, $player, $key) {
+        $result = [];
+
+        if (!empty($drops[$key])) {
+            $result['image'] = $drops[$key]->imageOrig->getImagePubUrl();
+        }
+        $result['name'] = Yii::t('database', $drops[$key]->name);
+        $result['count'] = Statistics::getParam($player, $key);
+        $result['desc'] = number_format(Statistics::getParam($player, $key), 0);
+
+        return $result;
+    }
+
+    public static function getFoodItem($drops, $player, $key) {
+        $result = [];
+
+        if (!empty($drops[$key])) {
+            $result['image'] = $drops[$key]->imageOrig->getImagePubUrl();
+        }
+        $result['name'] = Yii::t('database', $drops[$key]->name);
+        $result['count'] = Statistics::getParam($player, 'mod_' . $key);
+        $result['desc'] = number_format(Statistics::getParam($player, 'mod_' . $key), 0);
 
         return $result;
     }

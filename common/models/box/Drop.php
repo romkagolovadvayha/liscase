@@ -4,6 +4,7 @@ namespace common\models\box;
 
 use common\components\base\ActiveRecord;
 use common\components\helpers\CurrencyHelper;
+use common\models\statistics\Statistics;
 use Yii;
 
 /**
@@ -242,6 +243,7 @@ class Drop extends ActiveRecord
     public function getImageOrig()
     {
         return $this->hasOne(DropImage::class, ['drop_id' => 'id'])
+            ->cache(300)
             ->andWhere(['type' => DropImage::TYPE_ORIG]);
     }
 

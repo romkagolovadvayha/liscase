@@ -3544,13 +3544,14 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 
 /** END STATS **/
 .stats_player {
-  margin-top: 15px;
   grid-auto-flow: dense;
   display: grid;
   grid-gap: 15px;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   align-items: normal;
-  justify-items: normal; }
+  justify-items: normal;
+  margin: 0 auto;
+  margin-top: 50px; }
   @media (max-width: 1290px) {
     .stats_player {
       grid-template-columns: repeat(4, 1fr); } }
@@ -3562,32 +3563,72 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
       display: flex;
       flex-direction: column;
       gap: 15px; } }
+  .stats_player_search {
+    height: 60px; }
+    .stats_player_search_wrap {
+      height: 60px;
+      position: relative;
+      width: 700px; }
+      .stats_player_search_wrap .select2-selection.select2-selection--single {
+        height: 60px;
+        padding-left: 48px;
+        background: #131513; }
+      .stats_player_search_wrap .select2-container--open ~ .stats_player_search_icon {
+        display: none; }
+    .stats_player_search_name {
+      color: #e4dad1;
+      font-size: 13px; }
+    .stats_player_search_steam_id {
+      color: #e4dad1;
+      font-size: 11px; }
+    .stats_player_search_icon {
+      position: absolute;
+      left: 15px;
+      font-size: 22px;
+      top: 50%;
+      margin-top: -17px;
+      color: #cec5bc; }
+  .stats_player_card {
+    display: flex;
+    align-items: center; }
+    .stats_player_card_wrap {
+      border-radius: 0;
+      overflow: hidden; }
+    .stats_player_card_avatar {
+      display: flex;
+      height: 60px; }
+      .stats_player_card_avatar img {
+        margin: 0 auto;
+        border-radius: 0;
+        display: block; }
+    .stats_player_card_body {
+      flex: 1 0;
+      padding: 10px; }
+      .stats_player_card_body_name {
+        font-size: 15px;
+        line-height: 15px;
+        text-transform: uppercase;
+        font-weight: 700;
+        display: flex;
+        gap: 10px;
+        align-items: center; }
+        .stats_player_card_body_name_steam {
+          color: #169ee7; }
+      .stats_player_card_body_item {
+        font-size: 12px;
+        font-weight: 400;
+        margin-top: 5px; }
+        .stats_player_card_body_item .offline {
+          color: #f16e6e; }
+        .stats_player_card_body_item .online {
+          color: #3ce716; }
   .stats_player_buttons {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-    margin-top: 15px; }
-    .stats_player_buttons_back {
-      color: #e4dad1;
-      background-color: #131513;
-      padding: 10px 20px;
-      text-transform: uppercase;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      height: 50px;
-      gap: 15px;
-      border: none;
-      border-radius: 0;
-      font-size: 14px;
-      line-height: 14px; }
-      .stats_player_buttons_back_title {
-        margin-top: 2px; }
-      .stats_player_buttons_back:hover {
-        color: #a8dc4d;
-        background-color: #131513; }
+    margin-top: 15px;
+    justify-content: center; }
     .stats_player_buttons_server {
       color: #e4dad1;
       background-color: #131513;
@@ -3608,215 +3649,487 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
       .stats_player_buttons_server:hover {
         color: #a8dc4d;
         background-color: #131513; }
-  .stats_player_profile {
-    padding: 10px;
-    display: flex;
-    gap: 10px;
-    align-items: center; }
-    @media (max-width: 650px) {
-      .stats_player_profile {
-        flex-direction: column;
-        gap: 15px; } }
-    .stats_player_profile_wrap {
-      background: #23221e;
-      border-radius: 0;
-      overflow: hidden;
-      grid-column: span 2;
-      grid-row: span 2; }
-    .stats_player_profile_avatar img {
-      width: 179px;
-      margin: 0 auto;
-      border-radius: 0;
-      display: block; }
-    .stats_player_profile_body {
-      flex: 1 0; }
-      @media (max-width: 650px) {
-        .stats_player_profile_body {
-          width: 100%; } }
-      .stats_player_profile_body_name {
-        font-size: 22px;
-        line-height: 22px;
-        text-transform: uppercase;
-        font-weight: 700;
-        padding-bottom: 10px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        margin-bottom: 10px;
-        display: flex;
-        gap: 10px;
-        align-items: center; }
-        .stats_player_profile_body_name_steam {
-          color: #169ee7; }
-      .stats_player_profile_body_item {
-        font-size: 14px;
-        text-transform: uppercase;
-        font-weight: 700; }
-        .stats_player_profile_body_item .offline {
-          color: #f16e6e; }
-        .stats_player_profile_body_item .online {
-          color: #3ce716; }
-      .stats_player_profile_body_blocks {
-        margin-top: 10px;
-        grid-auto-flow: dense;
-        display: grid;
-        grid-gap: 3px;
-        grid-template-columns: repeat(4, 1fr);
-        align-items: normal;
-        justify-items: normal;
-        font-size: 11px;
-        text-align: center; }
-        .stats_player_profile_body_blocks_item {
-          background-color: rgba(0, 0, 0, 0.3);
-          width: 100%; }
-          .stats_player_profile_body_blocks_item_wrap {
-            background: #23221e;
-            border-radius: 0;
-            overflow: hidden;
-            grid-row: span 3;
-            display: flex; }
-          .stats_player_profile_body_blocks_item_header {
-            background: #131513;
-            padding: 3px;
-            line-height: 18px;
-            text-transform: uppercase; }
-            .stats_player_profile_body_blocks_item_header .profile-icon {
-              margin-right: 2px; }
-          .stats_player_profile_body_blocks_item_result {
-            font-size: 14px;
-            padding: 3px; }
-  .stats_player_stats {
+  .stats_player_blocks {
+    margin-top: 10px;
     grid-auto-flow: dense;
     display: grid;
     grid-gap: 3px;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     align-items: normal;
-    justify-items: normal; }
+    justify-items: normal;
+    font-size: 11px;
+    text-align: center; }
+    .stats_player_blocks_item {
+      background-color: rgba(0, 0, 0, 0.3);
+      width: 100%; }
+      .stats_player_blocks_item_wrap {
+        background: #23221e;
+        border-radius: 0;
+        overflow: hidden;
+        grid-row: span 3;
+        display: flex; }
+      .stats_player_blocks_item_header {
+        background: #131513;
+        padding: 3px;
+        line-height: 18px;
+        text-transform: uppercase; }
+        .stats_player_blocks_item_header .profile-icon {
+          margin-right: 2px; }
+      .stats_player_blocks_item_result {
+        font-size: 14px;
+        padding: 3px; }
+  .stats_player_stats {
+    grid-auto-flow: dense;
+    display: grid;
+    grid-gap: 20px;
+    grid-template-columns: repeat(6, 1fr);
+    align-items: normal;
+    justify-items: normal;
+    margin-top: 15px; }
+    .stats_player_stats_reider {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      justify-content: center;
+      text-align: center;
+      flex-wrap: wrap; }
+      .stats_player_stats_reider_wrap {
+        margin-top: 30px;
+        background: rgba(35, 34, 30, 0.5);
+        padding: 30px 20px; }
+        .stats_player_stats_reider_wrap > h2 {
+          font-size: 36px;
+          text-transform: uppercase;
+          text-align: center; }
+      .stats_player_stats_reider_kills_wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin: 0 auto;
+        margin-top: 30px;
+        justify-content: center;
+        height: 320px; }
+      .stats_player_stats_reider_kills_info {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        flex-direction: column;
+        flex-wrap: wrap;
+        height: 320px;
+        justify-content: space-between; }
+        .stats_player_stats_reider_kills_info_item {
+          border: 4px solid #20201d;
+          background: rgba(92, 113, 55, 0.1);
+          width: 95px;
+          height: 95px;
+          display: flex;
+          gap: 5px;
+          align-items: center;
+          flex-direction: column;
+          justify-content: center;
+          text-align: center; }
+          .stats_player_stats_reider_kills_info_item_count {
+            font-weight: 700;
+            font-size: 24px;
+            line-height: 24px; }
+          .stats_player_stats_reider_kills_info_item_value {
+            font-size: 12px;
+            line-height: 12px;
+            color: #a9a29b; }
+      .stats_player_stats_reider_item {
+        width: 120px; }
+        .stats_player_stats_reider_item:hover .stats_player_stats_reider_item_image {
+          filter: drop-shadow(rgba(169, 162, 155, 0.3) 1px 1px 3px) drop-shadow(rgba(169, 162, 155, 0.3) -1px -1px 3px);
+          transform: scale(1.2, 1.2);
+          transition: 0.2s; }
+        .stats_player_stats_reider_item_image {
+          height: 90px;
+          transition: 0.2s;
+          filter: drop-shadow(rgba(169, 162, 155, 0) 1px 1px 3px) drop-shadow(rgba(169, 162, 155, 0) -1px -1px 3px); }
+          .stats_player_stats_reider_item_image_wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            position: relative; }
+        .stats_player_stats_reider_item_count {
+          margin-top: 15px;
+          font-size: 16px;
+          top: 5px;
+          left: 5px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          text-align: center;
+          justify-content: center;
+          gap: 5px; }
+          .stats_player_stats_reider_item_count_score {
+            font-size: 12px;
+            color: #5c7137;
+            font-weight: 400; }
+        .stats_player_stats_reider_item_name {
+          margin-top: 5px;
+          font-size: 12px;
+          opacity: 1;
+          font-weight: 400;
+          z-index: 3;
+          text-align: center; }
+    .stats_player_stats_farm {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      justify-content: center;
+      text-align: center;
+      flex-wrap: wrap; }
+      .stats_player_stats_farm_wrap {
+        background: rgba(35, 34, 30, 0.1);
+        padding: 30px 20px; }
+        .stats_player_stats_farm_wrap > h2 {
+          font-size: 36px;
+          text-transform: uppercase;
+          text-align: center; }
+      .stats_player_stats_farm_charts {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+        justify-content: center;
+        text-align: center;
+        flex-wrap: wrap;
+        margin-top: 30px; }
+      .stats_player_stats_farm_kills_wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin: 0 auto;
+        margin-top: 30px;
+        justify-content: center;
+        height: 320px; }
+      .stats_player_stats_farm_kills_info {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        flex-direction: column;
+        flex-wrap: wrap;
+        height: 320px;
+        justify-content: space-between; }
+        .stats_player_stats_farm_kills_info_item {
+          border: 4px solid #20201d;
+          background: rgba(92, 113, 55, 0.1);
+          width: 95px;
+          height: 95px;
+          display: flex;
+          gap: 5px;
+          align-items: center;
+          flex-direction: column;
+          justify-content: center;
+          text-align: center; }
+          .stats_player_stats_farm_kills_info_item_count {
+            font-weight: 700;
+            font-size: 24px;
+            line-height: 24px; }
+          .stats_player_stats_farm_kills_info_item_value {
+            font-size: 12px;
+            line-height: 12px;
+            color: #a9a29b; }
+      .stats_player_stats_farm_item {
+        width: 120px; }
+        .stats_player_stats_farm_item:hover .stats_player_stats_farm_item_image {
+          filter: drop-shadow(rgba(169, 162, 155, 0.3) 1px 1px 3px) drop-shadow(rgba(169, 162, 155, 0.3) -1px -1px 3px);
+          transform: scale(1.2, 1.2);
+          transition: 0.2s; }
+        .stats_player_stats_farm_item_image {
+          height: 90px;
+          transition: 0.2s;
+          filter: drop-shadow(rgba(169, 162, 155, 0) 1px 1px 3px) drop-shadow(rgba(169, 162, 155, 0) -1px -1px 3px); }
+          .stats_player_stats_farm_item_image_wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            position: relative; }
+        .stats_player_stats_farm_item_count {
+          margin-top: 15px;
+          font-size: 16px;
+          top: 5px;
+          left: 5px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          text-align: center;
+          justify-content: center;
+          gap: 5px; }
+          .stats_player_stats_farm_item_count_score {
+            font-size: 12px;
+            color: #5c7137;
+            font-weight: 400; }
+        .stats_player_stats_farm_item_name {
+          margin-top: 5px;
+          font-size: 12px;
+          opacity: 1;
+          font-weight: 400;
+          z-index: 3;
+          text-align: center; }
     .stats_player_stats_wrap {
-      grid-row: span 2;
-      grid-column: span 2;
-      overflow-x: hidden;
-      overflow-y: auto;
-      height: 199px; }
-      .stats_player_stats_wrap_farm {
-        grid-row: span 2;
-        grid-column: span 1; }
-        .stats_player_stats_wrap_farm .stats_player_stats {
-          grid-template-columns: repeat(2, 1fr); }
-        .stats_player_stats_wrap_farm .stats_player_stats_item_image {
-          width: 60%;
-          max-width: 124px; }
-      .stats_player_stats_wrap_ferm {
-        grid-row: span 1;
-        grid-column: span 3;
-        height: auto; }
-        .stats_player_stats_wrap_ferm .stats_player_stats {
-          grid-template-columns: repeat(9, 1fr); }
-          @media (max-width: 626px) {
-            .stats_player_stats_wrap_ferm .stats_player_stats {
-              grid-template-columns: repeat(3, 1fr); } }
-        .stats_player_stats_wrap_ferm .stats_player_stats_item_image {
-          width: 75%;
-          max-width: 124px; }
-      .stats_player_stats_wrap_fishing {
-        grid-row: span 1;
-        grid-column: span 3;
-        height: auto; }
-        .stats_player_stats_wrap_fishing .stats_player_stats {
-          grid-template-columns: repeat(9, 1fr); }
-          @media (max-width: 626px) {
-            .stats_player_stats_wrap_fishing .stats_player_stats {
-              grid-template-columns: repeat(3, 1fr); } }
-        .stats_player_stats_wrap_fishing .stats_player_stats_item_image {
-          width: 85%;
-          max-width: 124px; }
-      .stats_player_stats_wrap_barrel {
-        grid-row: span 1;
-        grid-column: span 1;
-        height: 98px; }
-        .stats_player_stats_wrap_barrel .stats_player_stats {
-          grid-template-columns: repeat(3, 1fr); }
-        .stats_player_stats_wrap_barrel .stats_player_stats_item_image {
-          width: 60%;
-          max-width: 114px; }
-      .stats_player_stats_wrap_reider {
-        grid-row: span 2;
-        grid-column: span 1;
-        height: auto; }
-        .stats_player_stats_wrap_reider .stats_player_stats_item {
-          height: 127px; }
-        .stats_player_stats_wrap_reider .stats_player_stats {
-          grid-template-columns: repeat(3, 1fr); }
-        .stats_player_stats_wrap_reider .stats_player_stats_item_image {
-          width: 80px; }
+      margin-top: 30px; }
+      .stats_player_stats_wrap_wrap {
+        display: flex;
+        gap: 30px;
+        align-items: flex-start;
+        justify-items: center;
+        flex-direction: column;
+        margin: 0 auto;
+        margin-top: 15px;
+        max-width: 1200px; }
+      .stats_player_stats_wrap > h2 {
+        font-size: 24px;
+        text-transform: uppercase;
+        text-align: left; }
+      .stats_player_stats_wrap_hunter .stats_player_stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px; }
+        .stats_player_stats_wrap_hunter .stats_player_stats .stats_player_stats_item {
+          background: #23221e;
+          padding: 5px 10px; }
+      .stats_player_stats_wrap_level_card .stats_player_stats {
+        grid-auto-flow: dense;
+        display: grid;
+        grid-gap: 20px;
+        grid-template-columns: repeat(3, 1fr);
+        align-items: normal;
+        justify-items: normal; }
+      .stats_player_stats_wrap_medical .stats_player_stats {
+        grid-auto-flow: dense;
+        display: grid;
+        grid-gap: 20px;
+        grid-template-columns: repeat(3, 1fr);
+        align-items: normal;
+        justify-items: normal; }
+      .stats_player_stats_wrap_tea .stats_player_stats {
+        grid-auto-flow: dense;
+        display: grid;
+        grid-gap: 20px;
+        grid-template-columns: repeat(5, 1fr);
+        align-items: normal;
+        justify-items: normal; }
     .stats_player_stats_item {
-      background: #23221e;
       border-radius: 0;
-      height: 98px;
+      position: relative;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      justify-content: flex-start; }
+      .stats_player_stats_item:hover .stats_player_stats_item_image {
+        filter: drop-shadow(rgba(169, 162, 155, 0.3) 1px 1px 3px) drop-shadow(rgba(169, 162, 155, 0.3) -1px -1px 3px);
+        transform: scale(1.2, 1.2);
+        transition: 0.2s; }
+      .stats_player_stats_item_image {
+        width: 50px;
+        height: auto;
+        transition: 0.2s;
+        filter: drop-shadow(rgba(169, 162, 155, 0) 1px 1px 3px) drop-shadow(rgba(169, 162, 155, 0) -1px -1px 3px); }
+        .stats_player_stats_item_image_wrap {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 2;
+          position: relative; }
+      .stats_player_stats_item_count {
+        font-size: 18px;
+        font-weight: 700;
+        text-align: left; }
+        .stats_player_stats_item_count_wrap {
+          position: relative; }
+      .stats_player_stats_item_name {
+        font-size: 14px;
+        text-align: left;
+        font-weight: 400; }
+      .stats_player_stats_item_score {
+        position: absolute;
+        font-size: 12px;
+        bottom: 5px;
+        left: 5px;
+        color: #5c7137; }
+  .stats_player_stats_killer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 120px;
+    gap: 20px;
+    height: 271px; }
+    .stats_player_stats_killer_wrap {
+      display: flex;
+      align-items: self-start;
+      justify-content: center;
+      height: 300px;
+      margin-top: 30px; }
+      .stats_player_stats_killer_wrap .ct-chart {
+        width: 300px;
+        height: 300px; }
+    .stats_player_stats_killer_hits {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-left: 5px; }
+      .stats_player_stats_killer_hits:hover .stats_player_stats_killer_hits_info {
+        display: none; }
+      .stats_player_stats_killer_hits:hover .stats_player_stats_killer_hits_hits {
+        opacity: 1;
+        transition: 0.2s; }
+      .stats_player_stats_killer_hits:hover .stats_player_stats_killer_hits_image {
+        filter: drop-shadow(rgba(169, 162, 155, 0.2) 3px 3px 5px) drop-shadow(rgba(169, 162, 155, 0.2) -3px -3px 5px);
+        transition: 0.2s; }
+      .stats_player_stats_killer_hits_image {
+        display: block;
+        height: 290px;
+        filter: drop-shadow(rgba(169, 162, 155, 0) 3px 3px 5px) drop-shadow(rgba(169, 162, 155, 0) -3px -3px 5px);
+        transition: 0.2s; }
+      .stats_player_stats_killer_hits_hits {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        opacity: 0;
+        transition: 0.2s; }
+        .stats_player_stats_killer_hits_hits_item {
+          position: absolute;
+          background: rgba(32, 32, 29, 0.7);
+          color: #a9a29b;
+          font-size: 12px;
+          font-weight: 700;
+          padding: 3px;
+          min-width: 24px;
+          text-align: center; }
+        .stats_player_stats_killer_hits_hits_head {
+          top: 3px;
+          left: 50%;
+          margin-left: -12px; }
+        .stats_player_stats_killer_hits_hits_neck {
+          top: 55px;
+          left: 50%;
+          margin-left: -12px; }
+        .stats_player_stats_killer_hits_hits_chest {
+          top: 106px;
+          left: 50%;
+          margin-left: -12px; }
+        .stats_player_stats_killer_hits_hits_lowerspine {
+          top: 149px;
+          left: 50%;
+          margin-left: -12px; }
+        .stats_player_stats_killer_hits_hits_leftleg {
+          top: 193px;
+          left: 17%;
+          margin-left: 0; }
+        .stats_player_stats_killer_hits_hits_rightleg {
+          top: 185px;
+          left: 64%;
+          margin-left: 0; }
+        .stats_player_stats_killer_hits_hits_leftfoot {
+          top: 259px;
+          left: 16%;
+          margin-left: 0; }
+        .stats_player_stats_killer_hits_hits_rightfoot {
+          top: 237px;
+          left: 59%;
+          margin-left: 0; }
+        .stats_player_stats_killer_hits_hits_lefthand {
+          top: 95px;
+          left: 2%;
+          margin-left: 0; }
+        .stats_player_stats_killer_hits_hits_righthand {
+          top: 90px;
+          left: 84%;
+          margin-left: 0; }
+      .stats_player_stats_killer_hits_info {
+        font-size: 12px;
+        text-transform: uppercase;
+        background: rgba(0, 0, 0, 0.25);
+        text-align: center;
+        position: absolute;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 10px; }
+    .stats_player_stats_killer_item {
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center; }
-      .stats_player_stats_item_image {
-        width: 80%;
-        max-height: 100px;
-        height: auto;
-        margin-bottom: 7px; }
-        .stats_player_stats_item_image_wrap {
-          display: flex;
-          align-items: center;
-          justify-content: center; }
-      .stats_player_stats_item_count {
-        position: absolute;
-        font-size: 14px;
-        top: 5px;
-        left: 5px; }
-      .stats_player_stats_item_name {
-        position: absolute;
-        font-size: 11px;
-        bottom: 0;
-        left: 5px;
-        right: 5px;
-        text-align: center; }
-      .stats_player_stats_item_score {
-        position: absolute;
-        font-size: 11px;
-        top: 5px;
-        right: 5px;
-        color: #3ce716; }
-  .stats_player_stats_npc {
-    grid-auto-flow: dense;
-    display: grid;
-    grid-gap: 4px;
-    grid-template-columns: repeat(3, 1fr);
-    align-items: normal;
-    justify-items: normal; }
-    .stats_player_stats_npc_wrap {
-      grid-row: span 2;
-      grid-column: span 1;
-      overflow-x: hidden;
-      overflow-y: auto;
-      height: auto; }
-    .stats_player_stats_npc_item {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 59px; }
-      .stats_player_stats_npc_item_header {
-        background: #131513;
-        padding: 3px;
-        line-height: 18px;
+      .stats_player_stats_killer_item_header {
+        background: rgba(19, 21, 19, 0.5);
+        padding: 5px;
+        line-height: 16px;
         text-transform: uppercase;
-        font-size: 11px;
+        font-size: 16px;
         text-align: center; }
-        .stats_player_stats_npc_item_header .profile-icon {
+        .stats_player_stats_killer_item_header .profile-icon {
           margin-right: 2px; }
-      .stats_player_stats_npc_item_wrap {
-        background: #23221e;
+      .stats_player_stats_killer_item_wrap {
         border-radius: 0;
         overflow-x: hidden; }
-      .stats_player_stats_npc_item_count {
+      .stats_player_stats_killer_item_count {
         font-size: 26px;
         text-align: center; }
+    .stats_player_stats_killer_weapons {
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      gap: 5px;
+      height: 300px;
+      margin-left: 20px; }
+      .stats_player_stats_killer_weapons_item {
+        background: #23221e;
+        border-radius: 0;
+        position: relative;
+        display: flex;
+        width: 100px;
+        align-items: center;
+        justify-content: center; }
+        .stats_player_stats_killer_weapons_item:hover .stats_player_stats_killer_weapons_item_image {
+          filter: drop-shadow(rgba(169, 162, 155, 0.3) 1px 1px 3px) drop-shadow(rgba(169, 162, 155, 0.3) -1px -1px 3px);
+          transform: scale(1.2, 1.2);
+          transition: 0.2s; }
+        .stats_player_stats_killer_weapons_item:hover .stats_player_stats_killer_weapons_item_name {
+          opacity: 1;
+          transition: 0.2s;
+          font-weight: 700; }
+        .stats_player_stats_killer_weapons_item_image {
+          width: 80%;
+          max-height: 100px;
+          height: auto;
+          margin-bottom: 7px;
+          transition: 0.2s;
+          filter: drop-shadow(rgba(169, 162, 155, 0) 1px 1px 3px) drop-shadow(rgba(169, 162, 155, 0) -1px -1px 3px); }
+          .stats_player_stats_killer_weapons_item_image_wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            position: relative; }
+        .stats_player_stats_killer_weapons_item_count {
+          position: absolute;
+          font-size: 16px;
+          top: 5px;
+          left: 5px;
+          font-weight: 700; }
+        .stats_player_stats_killer_weapons_item_name {
+          position: absolute;
+          font-size: 11px;
+          bottom: 0;
+          left: 5px;
+          right: 5px;
+          text-align: center;
+          opacity: 0;
+          transition: 0.2s;
+          z-index: 3; }
+        .stats_player_stats_killer_weapons_item_score {
+          position: absolute;
+          font-size: 11px;
+          top: 5px;
+          right: 5px;
+          color: #3ce716; }
   .stats_player_hits {
     display: flex;
     flex-direction: column;
@@ -3910,39 +4223,72 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    max-height: 394px; }
+    max-height: 272px; }
     .stats_player_kills_wrap {
       background: #23221e;
       border-radius: 0;
       overflow: hidden;
-      grid-row: span 4; }
+      grid-row: span 4;
+      max-height: 320px; }
     .stats_player_kills_header {
       background: #131513;
       padding: 15px 20px;
       font-size: 16px;
-      line-height: 18px;
-      text-transform: uppercase; }
-    .stats_player_kills .live_items_item {
-      font-size: 11px; }
-      .stats_player_kills .live_items_item a {
-        max-width: 72px; }
-      .stats_player_kills .live_items_item .stats_player_kills_name {
+      line-height: 18px; }
+    .stats_player_kills_item {
+      display: flex;
+      gap: 5px;
+      padding: 10px;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.1);
+      color: #a9a29b;
+      position: relative;
+      font-size: 12px;
+      height: 44px; }
+      .stats_player_kills_item:nth-of-type(2n) {
+        background-color: rgba(0, 0, 0, 0.2); }
+      .stats_player_kills_item img {
+        height: 24px;
+        width: auto; }
+      .stats_player_kills_item a {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 72px;
+        max-width: 120px;
         display: block;
-        font-weight: 700; }
+        text-transform: none;
+        color: #a8dc4d; }
+      .stats_player_kills_item_name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 90px;
+        display: block;
+        font-weight: 400;
+        text-transform: none; }
+      .stats_player_kills_item_distance {
+        background: #5c7137;
+        color: #a8dc4d;
+        padding: 3px; }
   .stats_player_teams {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    max-height: 209px; }
+    max-height: 500px; }
     .stats_player_teams_wrap {
       background: #23221e;
       border-radius: 0;
       overflow: hidden;
-      grid-row: span 2; }
+      grid-row: span 2;
+      width: 320px; }
+      .stats_player_teams_wrap_wrap {
+        display: flex;
+        gap: 20px;
+        margin-top: 30px;
+        background: rgba(35, 34, 30, 0.5);
+        padding: 30px 20px;
+        justify-content: center;
+        width: 100%; }
     .stats_player_teams_header {
       background: #131513;
       padding: 15px 20px;
@@ -3974,11 +4320,11 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
-          max-width: 72px;
+          max-width: 120px;
           display: block;
           font-weight: 700; }
         .stats_player_teams_item_desc a {
-          max-width: 72px; }
+          max-width: 120px; }
       .stats_player_teams_item_date {
         font-size: 10px;
         opacity: 0.7; }
@@ -3986,12 +4332,13 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    max-height: 265px; }
+    max-height: 500px; }
     .stats_player_clan_wrap {
       background: #23221e;
       border-radius: 0;
       overflow: hidden;
-      grid-row: span 3; }
+      grid-row: span 3;
+      width: 320px; }
     .stats_player_clan_header {
       background: #131513;
       padding: 15px 20px;
@@ -6100,5 +6447,75 @@ button {
     .side-menu .nav-link:hover {
       color: #cec5bc;
       background-color: #67625f; }
+
+#chart-cd .ct-series-a .ct-bar {
+  stroke: #5c7137;
+  stroke-width: 20px; }
+#chart-cd .ct-series-b .ct-bar {
+  stroke: #af3926;
+  stroke-width: 20px; }
+#chart-cd .ct-labels .ct-label {
+  color: #a9a29b; }
+#chart-cd .ct-grids .ct-grid {
+  stroke: rgba(169, 162, 155, 0.2);
+  stroke-width: 1px;
+  stroke-dasharray: 2px; }
+
+#chart-active {
+  width: 450px; }
+  #chart-active .ct-labels .ct-label {
+    color: #a9a29b; }
+  #chart-active .ct-grids .ct-grid {
+    stroke: rgba(169, 162, 155, 0.2);
+    stroke-width: 1px;
+    stroke-dasharray: 2px; }
+  #chart-active .ct-series-a .ct-line {
+    stroke: #5c7137; }
+  #chart-active .ct-series-a .ct-point {
+    stroke: #5c7137; }
+  #chart-active .ct-series-a .ct-area {
+    fill: #5c7137; }
+  #chart-active .ct-series-b .ct-line {
+    stroke: #af3926; }
+  #chart-active .ct-series-b .ct-point {
+    stroke: #af3926; }
+  #chart-active .ct-series-b .ct-area {
+    fill: #af3926; }
+
+#chart-resources {
+  width: 300px; }
+  #chart-resources .ct-label {
+    fill: #a9a29b; }
+  #chart-resources .ct-series-a .ct-bar {
+    stroke: #5c7137;
+    stroke-width: 20px; }
+  #chart-resources .ct-series-b .ct-bar {
+    stroke: #af3926;
+    stroke-width: 20px; }
+  #chart-resources .ct-series-c .ct-bar {
+    stroke: #194462;
+    stroke-width: 20px; }
+  #chart-resources .ct-series-d .ct-bar {
+    stroke: #575350;
+    stroke-width: 20px; }
+  #chart-resources .ct-labels .ct-label {
+    color: #a9a29b; }
+  #chart-resources .ct-grids .ct-grid {
+    stroke: rgba(169, 162, 155, 0.2);
+    stroke-width: 1px;
+    stroke-dasharray: 2px; }
+
+#chart-barrel {
+  width: 300px; }
+  #chart-barrel .ct-label {
+    fill: #a9a29b; }
+  #chart-barrel .ct-series-a .ct-slice-pie {
+    fill: #5c7137; }
+  #chart-barrel .ct-series-b .ct-slice-pie {
+    fill: #af3926; }
+  #chart-barrel .ct-grids .ct-grid {
+    stroke: rgba(169, 162, 155, 0.2);
+    stroke-width: 1px;
+    stroke-dasharray: 2px; }
 
 /*# sourceMappingURL=main.css.map */

@@ -4,6 +4,7 @@ use common\models\servers\Servers;
 use common\models\stats\Teams;
 
 /** @var array $player */
+/** @var string $steam_id */
 /** @var array $models */
 /** @var string $title */
 /** @var Servers $server */
@@ -19,7 +20,7 @@ use common\models\stats\Teams;
             $link = "";
             if (empty($model['name'])) {
                 $link = "<span class=\"stats_player_clan_item_desc_name\">".Yii::t('common', 'Не известный')."</span>";
-            } elseif ($model['steam_id'] === $player['steamid']) {
+            } elseif ($model['steam_id'] === $steam_id) {
                 $link = "<span class=\"stats_player_clan_item_desc_name\">{$model['name']}</span>";
             } else {
                 $link = "<a title=\"" . Yii::t('common', 'Открыть профиль') . "\" class=\"link_name stats_player_clan_item_desc_name\" href=\"/stats/player?steamId={$model['steam_id']}&server={$server->tag}\">

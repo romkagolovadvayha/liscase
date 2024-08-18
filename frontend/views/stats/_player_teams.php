@@ -4,6 +4,7 @@ use common\models\servers\Servers;
 use common\models\stats\Teams;
 
 /** @var array $player */
+/** @var string $steam_id */
 /** @var array $models */
 /** @var string $title */
 /** @var Servers $server */
@@ -20,7 +21,7 @@ use common\models\stats\Teams;
             $_user2 = \common\models\user\User::findBySteamId($model['team_author']);
             if (empty($_user2)) {
                 $authorLink = "<span class=\"stats_player_teams_item_desc_name\">".Yii::t('common', 'Не известный')."</span>";
-            } elseif ($model['team_author'] === $player['steamid']) {
+            } elseif ($model['team_author'] === $steam_id) {
                 $authorLink = "<span class=\"stats_player_teams_item_desc_name\">{$_user2->username}</span>";
             } else {
                 $authorLink = "<a title=\"" . Yii::t('common', 'Открыть профиль') . "\" class=\"link_name stats_player_teams_item_desc_name\" href=\"/stats/player?steamId={$model['team_author']}&server={$server->tag}\">
@@ -33,7 +34,7 @@ use common\models\stats\Teams;
             $_user = \common\models\user\User::findBySteamId($model['steam_id']);
             if (empty($_user)) {
                 $link = "<span class=\"stats_player_teams_item_desc_name\">".Yii::t('common', 'Не известный')."</span>";
-            } elseif ($model['steam_id'] === $player['steamid']) {
+            } elseif ($model['steam_id'] === $steam_id) {
                 $link = "<span class=\"stats_player_teams_item_desc_name\">{$_user->username}</span>";
             } else {
                 $link = "<a title=\"" . Yii::t('common', 'Открыть профиль') . "\" class=\"link_name stats_player_teams_item_desc_name\" href=\"/stats/player?steamId={$model['steam_id']}&server={$server->tag}\">

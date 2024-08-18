@@ -66,7 +66,7 @@ class StatsController extends WebController
         }
         /** @var User[] $users */
         $users = User::find()
-                     ->andWhere(['LIKE', 'username', '%'.$q.'%', false])
+                     ->andWhere(['OR', ['LIKE', 'username', '%'.$q.'%', false], ['LIKE', 'steam_id', '%'.$q.'%', false]])
                      ->all();
         foreach ($users as $user) {
             $items[] = [

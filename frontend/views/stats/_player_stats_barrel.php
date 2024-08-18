@@ -1,6 +1,7 @@
 <?php
 
 use common\models\servers\Servers;
+use common\models\statistics\Statistics;
 
 /** @var Servers $server */
 /** @var array $data */
@@ -10,20 +11,14 @@ $farms   = [
     [
         'name'  => Yii::t('common', 'Открыто ящиков'),
         'image' => '/uploads/drop/441_522b6e2b6c99a6e2e596db57ef080be6.png',
-        'count' => $player['crate_open'],
-        'desc'  => number_format($player['crate_open'], 0),
+        'count' => Statistics::getParam($player, 'crate_open'),
+        'desc'  => number_format(Statistics::getParam($player, 'crate_open'), 0),
     ],
     [
         'name'  => Yii::t('common', 'Разбито бочек'),
         'image' => '/images/barrel.png',
-        'count' => $player['barrel'],
-        'desc'  => number_format($player['barrel'], 0),
-    ],
-    [
-        'name'  => Yii::t('common', 'Получено скрапа'),
-        'image' => '/uploads/drop/305_6949c48b05801055b644b5938b1c427c.png',
-        'count' => $player['scrap'],
-        'desc'  => number_format($player['scrap'], 0),
+        'count' => Statistics::getParam($player, 'barrel'),
+        'desc'  => number_format(Statistics::getParam($player, 'barrel'), 0),
     ],
 ];
 

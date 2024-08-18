@@ -1,67 +1,75 @@
 <?php
 
 use common\models\servers\Servers;
+use common\models\statistics\Statistics;
 
 /** @var Servers $server */
 /** @var array $data */
 /** @var array $player */
 
-$fishing = [
+$items = [
     [
         'name'  => Yii::t('common', 'Анчоус'),
-        'count' => $player['anchovy'],
+        'key' => 'f_fish.anchovy',
         'score' => 10,
-        'image' => '/images/fish/fish.anchovy.128.webp',
     ],
     [
         'name'  => Yii::t('common', 'Сом'),
-        'count' => $player['catfish'],
+        'key' => 'f_fish.catfish',
         'score' => 32,
-        'image' => '/images/fish/fish.catfish.128.webp',
     ],
     [
         'name'  => Yii::t('common', 'Cельдь'),
-        'count' => $player['herring'],
+        'key' => 'f_fish.herring',
         'score' => 10,
-        'image' => '/images/fish/fish.herring.128.webp',
     ],
     [
         'name'  => Yii::t('common', 'Большеголов'),
-        'count' => $player['orangeroughy'],
+        'key' => 'f_fish.orangeroughy',
         'score' => 37,
-        'image' => '/images/fish/fish.orangeroughy.128.webp',
     ],
     [
         'name'  => Yii::t('common', 'Лосось'),
-        'count' => $player['salmon'],
+        'key' => 'f_fish.salmon',
         'score' => 22,
-        'image' => '/images/fish/fish.salmon.128.webp',
     ],
     [
         'name'  => Yii::t('common', 'Сардина'),
-        'count' => $player['sardine'],
+        'key' => 'f_fish.sardine',
         'score' => 10,
-        'image' => '/images/fish/fish.sardine.128.webp',
     ],
     [
         'name'  => Yii::t('common', 'Акула'),
-        'count' => $player['smallshark'],
+        'key' => 'f_fish.smallshark',
         'score' => 45,
-        'image' => '/images/fish/fish.smallshark.128.webp',
     ],
     [
         'name'  => Yii::t('common', 'Форель'),
-        'count' => $player['troutsmall'],
+        'key' => 'f_fish.troutsmall',
         'score' => 15,
-        'image' => '/images/fish/fish.troutsmall.128.webp',
     ],
     [
         'name'  => Yii::t('common', 'Окунь'),
-        'count' => $player['yellowperch'],
+        'key' => 'f_fish.yellowperch',
         'score' => 25,
-        'image' => '/images/fish/fish.yellowperch.128.webp',
     ],
 ];
+
+$keys = [];
+foreach ($items as $item) {
+    $keys[] = $item['key'];
+}
+
+$drops = \common\models\box\Drop::find()
+                                ->andWhere(['IN', 'eng_name', $keys])
+                                ->indexBy('eng_name')
+                                ->all();
+
+$fishing = [];
+foreach ($items as $item) {
+    $fishing[] = Statistics::getFishItem($drops, $player, $item['key'], $item['name'], $item['score']);
+}
+
 usort(
     $fishing,
     function ($a, $b) {
@@ -71,6 +79,7 @@ usort(
 
 ?>
 <div class="stats_player_stats_wrap stats_player_stats_wrap_fishing">
+    <h2><?=Yii::t('common', 'Рыбаловство')?></h2>
     <div class="stats_player_stats">
         <?php foreach ($fishing as $item): ?>
             <div class="stats_player_stats_item_wrap">
@@ -78,9 +87,11 @@ usort(
                     <div class="stats_player_stats_item_image_wrap">
                         <img class="stats_player_stats_item_image" src="<?= $item['image'] ?>"/>
                     </div>
-                    <div class="stats_player_stats_item_count"><?= $item['count'] ?></div>
-                    <div class="stats_player_stats_item_name"><?= $item['name'] ?></div>
-                    <div class="stats_player_stats_item_score">x<?= $item['score'] ?></div>
+                    <div class="stats_player_stats_item_count_wrap">
+                        <div class="stats_player_stats_item_count"><?= $item['count'] ?></div>
+                        <div class="stats_player_stats_item_name"><?= $item['name'] ?></div>
+                        <div class="stats_player_stats_item_score">x<?= $item['score'] ?></div>
+                    </div>
                 </div>
             </div>
         <?php endforeach; ?>

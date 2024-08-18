@@ -30,6 +30,7 @@ use common\components\base\ActiveRecord;
  * @property int             $status
  * @property string          $jwt
  * @property int             $auto
+ * @property string          $server_tag
  * @property string          $created_at
  * @property string          $updated_at
  *
@@ -171,6 +172,9 @@ class User extends ActiveRecord implements IdentityInterface
 
     public static function findBySteamId($steamId, $updated = false)
     {
+        if (strlen($steamId) !== 17) {
+            return null;
+        }
         /** @var User $user */
         $user = static::find()
                       ->andWhere(['steam_id' => $steamId])
