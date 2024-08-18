@@ -124,6 +124,100 @@ class Steam extends OpenId
         return $response['response']['games'];
     }
 
+    public static function getBansGGRust($steamId) {
+        $bans = [];
+        $server = Steam::getGGRustStats('russian_banlist');
+        if (!empty($server[$steamId])) {
+            $bans[] = [
+                'reason' => $server[$steamId]['Reason'],
+                'date' => $server[$steamId]['BanDate'],
+                'expireDate' => $server[$steamId]['ExpireDate'],
+                'server' => 'GGRust Российский',
+            ];
+        }
+        $server = Steam::getGGRustStats('moscow_banlist');
+        if (!empty($server[$steamId])) {
+            $bans[] = [
+                'reason' => $server[$steamId]['Reason'],
+                'date' => $server[$steamId]['BanDate'],
+                'expireDate' => $server[$steamId]['ExpireDate'],
+                'server' => 'GGRust Московксий',
+            ];
+        }
+        $server = Steam::getGGRustStats('krasnodar_banlist');
+        if (!empty($server[$steamId])) {
+            $bans[] = [
+                'reason' => $server[$steamId]['Reason'],
+                'date' => $server[$steamId]['BanDate'],
+                'expireDate' => $server[$steamId]['ExpireDate'],
+                'server' => 'GGRust Краснодарский',
+            ];
+        }
+        $server = Steam::getGGRustStats('piter_banlist');
+        if (!empty($server[$steamId])) {
+            $bans[] = [
+                'reason' => $server[$steamId]['Reason'],
+                'date' => $server[$steamId]['BanDate'],
+                'expireDate' => $server[$steamId]['ExpireDate'],
+                'server' => 'GGRust Классика X3',
+            ];
+        }
+        $server = Steam::getGGRustStats('made_in_russia_banlist');
+        if (!empty($server[$steamId])) {
+            $bans[] = [
+                'reason' => $server[$steamId]['Reason'],
+                'date' => $server[$steamId]['BanDate'],
+                'expireDate' => $server[$steamId]['ExpireDate'],
+                'server' => 'GGRust Классика X2',
+            ];
+        }
+
+        return $bans;
+    }
+    public static function getBansRustRoom($steamId) {
+        $bans = [];
+        $list = Steam::getRustRoomBans();
+        foreach ($list as $item) {
+            if ($item['player_id'] == $steamId) {
+                $exd = 'Навсегда';
+                if ($item['duration'] > 0) {
+                    $exd = round(($item['duration'] /60/60/24)) . " д.";
+                }
+                $bans[] = [
+                    'reason' => $item['reason'],
+                    'date' => 'banned_at',
+                    'expireDate' => $exd,
+                    'server' => 'Rust Room',
+                ];
+                break;
+            }
+        }
+
+        return $bans;
+    }
+
+    public static function getGGRustStats($stable = 'russian_banlist') {
+        $cacheKey = 'steam_getGGRustStats_' . $stable;
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $apiUrl = "https://stats.ggrust.ru/serverbanlist.php?table={$stable}";
+        $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
+        return $response;
+    }
+
+    public static function getRustRoomBans() {
+        $cacheKey = 'steam_getRustRoomBans';
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $apiUrl = "https://dev.rustroom.ru/getBanList.php";
+        $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
+        return $response;
+    }
+
     /**
      * {@inheritdoc}
      */

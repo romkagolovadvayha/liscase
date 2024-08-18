@@ -44,7 +44,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                                         ->andWhere(['wipe' => $wipeDate])
                                         ->indexBy('key')
                                         ->all();
-                $params['playtime'] = 7;
+                $params['playtime'] = 3;
                 foreach ($params as $key => $value) {
                     if (!empty($statistics[$key])) {
                         $statistics[$key]->value += $value;
@@ -123,23 +123,29 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     ->andWhere(['wipe' => $wipeDate])
                     ->count();
 
-                $stats = Statistics::find()
-                          ->andWhere(['IN', '`key`', ['playtime', 'kills', 'deaths']])
-                          ->andWhere(['steam_id' => $reportUser->steam_id])
-                          ->andWhere(['server_tag' => $this->serverTag])
-                          ->andWhere(['wipe' => $wipeDate])
-                          ->asArray()
-                          ->indexBy('`key`')
-                          ->all();
+                $kills = 0;
+                $deaths = 0;
+                $kd = 0;
+                $playtime = 0;
 
-                $kills = !empty($stats['playtime']) ? $stats['playtime'] : 0;
-                $deaths = !empty($stats['deaths']) ? $stats['deaths'] : 0;
-                if ($deaths > 1) {
-                    $kd = $kills !== 0 ? round($kills / $deaths, 1) : 0;
-                } else {
-                    $kd = $kills;
-                }
-                $playtime = !empty($stats['playtime']) ? $stats['playtime'] : 0;
+                try {
+                    $stats = Statistics::find()
+                              ->andWhere(['IN', '`key`', ['playtime', 'kills', 'deaths']])
+                              ->andWhere(['steam_id' => $reportUser->steam_id])
+                              ->andWhere(['server_tag' => $this->serverTag])
+                              ->andWhere(['wipe' => $wipeDate])
+                              ->asArray()
+                              ->indexBy('key')
+                              ->all();
+                    $kills = !empty($stats['playtime']) ? $stats['playtime'] : 0;
+                    $deaths = !empty($stats['deaths']) ? $stats['deaths'] : 0;
+                    if ($deaths > 1) {
+                        $kd = $kills > 0 ? round($kills / $deaths, 1) : 0;
+                    } else {
+                        $kd = $kills;
+                    }
+                    $playtime = !empty($stats['playtime']) ? $stats['playtime'] : 0;
+                } catch (\Exception $e) {}
 
                 $playHour = round($playtime/60, 1);
 
@@ -172,6 +178,20 @@ class SaveStatsJob extends BaseObject implements JobInterface
                             $lastCheckExist = true;
                             $lastCheck .= $_lastCheck['serverName'] . "; Дата: " . (new \DateTime($_lastCheck['time']))->format('Y-m-d H:i:s') . PHP_EOL;
                         }
+                    }
+                } catch (\Exception $e) {}
+                try {
+                    $banList = Steam::getBansGGRust($reportUser->steam_id);
+                    foreach ($banList as $banItem) {
+                        $bansExist = true;
+                        $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Дата: " . (new \DateTime($ban['BanDate']))->format('Y-m-d H:i:s') . "; Срок: " . $ban['expireDate'] . PHP_EOL;
+                    }
+                } catch (\Exception $e) {}
+                try {
+                    $banList = Steam::getBansRustRoom($reportUser->steam_id);
+                    foreach ($banList as $banItem) {
+                        $bansExist = true;
+                        $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Дата: " . (new \DateTime($ban['BanDate']))->format('Y-m-d H:i:s') . "; Срок: " . $ban['expireDate'] . PHP_EOL;
                     }
                 } catch (\Exception $e) {}
                 $hoursExist = false;
