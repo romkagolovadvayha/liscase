@@ -1,6 +1,6 @@
 <?php
 
-namespace common\components\rusttm;
+namespace common\components\rustcheck;
 
 use linslin\yii2\curl\Curl;
 use Yii;

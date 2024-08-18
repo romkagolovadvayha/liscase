@@ -164,7 +164,7 @@ $config = [
             'secretKey' => '4Tctry3D0b9003d52Kv2w10BND942mX',
         ],
         'rustCheck'   => [
-            'class' => \common\components\rusttm\RustCheck::class,
+            'class' => \common\components\rustcheck\RustCheck::class,
             'secretKey' => '9f97841bde0d594447c732dc2311a465',
         ],
         'discord'   => [
