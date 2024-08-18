@@ -17,6 +17,34 @@ use Yii;
 class StatsController extends Controller
 {
     /**
+     * Обновить время на сервере
+     * stats/update-playtime
+     *
+     * @throws \Exception
+     */
+    public function actionUpdatePlaytime($serverTag = 'max3')
+    {
+        /** @var Servers $server */
+        $server = Servers::find()
+                         ->andWhere(['tag' => $serverTag])
+                         ->one();
+        $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
+        $statistics = Statistics::find()
+                                ->andWhere(['server_tag' => $serverTag])
+                                ->andWhere(['wipe' => $wipeDate])
+                                ->andWhere(['key' => 'playtime'])
+                                ->andWhere(['>', 'value', 0])
+                                ->all();
+
+        /** @var Statistics $item */
+        foreach ($statistics as $item) {
+            $item->value = round(($item->value / 7) * 3);
+            $item->save();
+        }
+
+    }
+
+    /**
      * Информация о сервере
      * stats/get-old-stats
      *
