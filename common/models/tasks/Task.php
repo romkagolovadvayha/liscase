@@ -5,6 +5,7 @@ namespace common\models\tasks;
 use common\models\box\Drop;
 use common\models\profit\Profit;
 use common\models\servers\Servers;
+use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
 use common\models\user\User;
 use common\models\user\UserTask;
@@ -136,6 +137,7 @@ class Task extends \common\components\base\ActiveRecord
         $result = [];
         $available = false;
         $disabled = false;
+
         foreach ($tasks as $task) {
             $item = [
                 'id' => $task->id,
@@ -155,15 +157,18 @@ class Task extends \common\components\base\ActiveRecord
             if (!isset($item['status']) && !$available && !$disabled) {
                 $total = 0;
                 foreach ($servers as $server) {
-                    Yii::$app->db_server->username = $server->db_user;
-                    Yii::$app->db_server->password = $server->db_password;
-                    Yii::$app->db_server->dsn = "mysql:host={$server->db_host};dbname={$server->db_name}";
-                    Yii::$app->db_server->pdo = null;
-                    $player = Wipe::getPlayer($server, $user->steam_id);
+                    $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
+                    $player = Statistics::find()
+                                        ->cache(180)
+                                        ->andWhere(['steam_id' => $user->steam_id])
+                                        ->andWhere(['server_tag' => $server->tag])
+                                        ->andWhere(['wipe' => $wipeDate])
+                                        ->indexBy('key')
+                                        ->all();
                     if (empty($player)) {
                         continue;
                     }
-                    $total += $player[$task->stat_attribute];
+                    $total += Statistics::getParam($player, $task->stat_attribute);
                 }
                 if ($total >= $task->amount) {
                     $item['status'] = 1;
