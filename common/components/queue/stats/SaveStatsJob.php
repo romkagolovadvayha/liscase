@@ -129,7 +129,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                           ->andWhere(['server_tag' => $this->serverTag])
                           ->andWhere(['wipe' => $wipeDate])
                           ->asArray()
-                          ->groupBy('`key`')
+                          ->indexBy('`key`')
                           ->all();
 
                 $kills = !empty($stats['playtime']) ? $stats['playtime'] : 0;
