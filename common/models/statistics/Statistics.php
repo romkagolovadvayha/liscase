@@ -81,8 +81,8 @@ class Statistics extends ActiveRecord
                 //wood * 0.2 + stones * 0.3 + metal_ore * 0.5 + sulfur_ore
                 $item['farmer'] = round(Statistics::getParam($params, 'wood') * 0.2
                                         + Statistics::getParam($params, 'stones') * 0.3
-                                        + Statistics::getParam($params, 'metal_ore') * 0.5
-                                        + Statistics::getParam($params, 'sulfur_ore'));
+                                        + Statistics::getParam($params, 'metal.ore') * 0.5
+                                        + Statistics::getParam($params, 'sulfur.ore'));
                 //orangeroughy * 37 + salmon * 22 + sardine * 10 + smallshark * 45 + troutsmall * 15 + yellowperch * 25
                 $item['fishing'] = round(Statistics::getParam($params, 'f_fish.anchovy') * 10
                                          + Statistics::getParam($params, 'f_fish.catfish') * 32
