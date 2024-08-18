@@ -215,7 +215,7 @@ class SiteController extends WebController
         }
 
         $command = "o.version";
-        $response = shell_exec("node ./../../node/webrcon/src/send.js \"{$server->ip}\" {$server->rcon} \"{$server->rcon_password}\" \"{$command}\" 2>&1");
+        $response = shell_exec("node /prostoj.store/node/webrcon/src/send.js \"{$server->ip}\" {$server->rcon} \"{$server->rcon_password}\" \"{$command}\" 2>&1");
         print_r($response);
         exit;
     }
