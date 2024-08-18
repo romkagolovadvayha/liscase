@@ -119,7 +119,6 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     $user = User::findBySteamId($item['steam_id']);
                     $reportUser = User::findBySteamId($item['recepient_steam_id']);
 
-                    Yii::error("SaveStatsJob LOG -: " . $item['recepient_steam_id'], 'error');
                     $count = Reports::find()
                         ->andWhere(['recepient_steam_id' => $reportUser->steam_id])
                         ->andWhere(['wipe' => $wipeDate])
@@ -131,23 +130,22 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     $kd = 0;
                     $playtime = 0;
 
+                    Yii::error("SaveStatsJob LOG -: " . $item['recepient_steam_id'], 'error');
                     try {
                         $stats = Statistics::find()
-                                  ->andWhere(['IN', '`key`', ['playtime', 'kills', 'deaths']])
-                                  ->andWhere(['steam_id' => $reportUser->steam_id])
-                                  ->andWhere(['server_tag' => $this->serverTag])
-                                  ->andWhere(['wipe' => $wipeDate])
-                                  ->asArray()
-                                  ->indexBy('key')
-                                  ->all();
-                        $kills = !empty($stats['playtime']) ? $stats['playtime'] : 0;
-                        $deaths = !empty($stats['deaths']) ? $stats['deaths'] : 0;
+                                            ->andWhere(['steam_id' => $reportUser->steam_id])
+                                            ->andWhere(['server_tag' => $this->serverTag])
+                                            ->andWhere(['wipe' => $wipeDate])
+                                            ->indexBy('key')
+                                            ->all();
+                        $kills = Statistics::getParam($stats, 'playtime');
+                        $deaths = Statistics::getParam($stats, 'deaths');
                         if ($deaths > 1) {
                             $kd = $kills > 0 ? round($kills / $deaths, 1) : 0;
                         } else {
                             $kd = $kills;
                         }
-                        $playtime = !empty($stats['playtime']) ? $stats['playtime'] : 0;
+                        $playtime = Statistics::getParam($stats, 'playtime');
                     } catch (\Exception $e) {
                         Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
                     }
