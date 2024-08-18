@@ -185,9 +185,27 @@ class Steam extends OpenId
                 }
                 $bans[] = [
                     'reason' => $item['reason'],
-                    'date' => 'banned_at',
+                    'date' => $item['banned_at'],
                     'expireDate' => $exd,
                     'server' => 'Rust Room',
+                ];
+                break;
+            }
+        }
+
+        return $bans;
+    }
+    public static function getBansMagicRust($steamId) {
+        $bans = [];
+        $list = Steam::getMagicRustBans();
+        foreach ($list as $item) {
+            if ($item['steamid'] == $steamId) {
+                $exd = 'Навсегда';
+                $bans[] = [
+                    'reason' => $item['reason'],
+                    'date' => $item['time'],
+                    'expireDate' => $exd,
+                    'server' => 'MagicRust',
                 ];
                 break;
             }
@@ -214,6 +232,17 @@ class Steam extends OpenId
         }
 
         $apiUrl = "https://dev.rustroom.ru/getBanList.php";
+        $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
+        return $response;
+    }
+
+    public static function getMagicRustBans() {
+        $cacheKey = 'steam_getMagicRustBans';
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $apiUrl = "https://vk.magicrust.ru/api/getBans";
         $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
         return $response;
     }

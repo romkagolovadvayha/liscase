@@ -184,14 +184,21 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     $banList = Steam::getBansGGRust($reportUser->steam_id);
                     foreach ($banList as $banItem) {
                         $bansExist = true;
-                        $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Дата: " . (new \DateTime($ban['BanDate']))->format('Y-m-d H:i:s') . "; Срок: " . $ban['expireDate'] . PHP_EOL;
+                        $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Дата: " . (new \DateTime($ban['date']))->format('Y-m-d H:i:s') . "; Срок: " . $ban['expireDate'] . PHP_EOL;
                     }
                 } catch (\Exception $e) {}
                 try {
                     $banList = Steam::getBansRustRoom($reportUser->steam_id);
                     foreach ($banList as $banItem) {
                         $bansExist = true;
-                        $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Дата: " . (new \DateTime($ban['BanDate']))->format('Y-m-d H:i:s') . "; Срок: " . $ban['expireDate'] . PHP_EOL;
+                        $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Дата: " . (new \DateTime($ban['date']))->format('Y-m-d H:i:s') . "; Срок: " . $ban['expireDate'] . PHP_EOL;
+                    }
+                } catch (\Exception $e) {}
+                try {
+                    $banList = Steam::getBansMagicRust($reportUser->steam_id);
+                    foreach ($banList as $banItem) {
+                        $bansExist = true;
+                        $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Дата: " . (new \DateTime($ban['date']))->format('Y-m-d H:i:s') . "; Срок: " . $ban['expireDate'] . PHP_EOL;
                     }
                 } catch (\Exception $e) {}
                 $hoursExist = false;
