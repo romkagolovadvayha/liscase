@@ -172,7 +172,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         if (!empty($rustCheck['bans'])) {
                             foreach ($rustCheck['bans'] as $ban) {
                                 $bansExist = true;
-                                $bans .= $ban['serverName'] . ":" . $ban['reason'] . "; Дата: " . (new \DateTime($ban['banDate']))->format('Y-m-d H:i:s') . PHP_EOL;
+                                $bans .= $ban['serverName'] . ":" . $ban['reason'] . PHP_EOL;
                             }
                         }
                         if (!empty($rustCheck['last_check'])) {
