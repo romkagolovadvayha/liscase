@@ -115,12 +115,11 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     $model->server_tag = $this->serverTag;
                     $model->wipe = $wipeDate;
                     $model->save();
-                    Yii::error("SaveStatsJob LOG -1: " . $message, 'error');
 
                     $user = User::findBySteamId($item['steam_id']);
                     $reportUser = User::findBySteamId($item['recepient_steam_id']);
 
-                    Yii::error("SaveStatsJob LOG -: " . $message, 'error');
+                    Yii::error("SaveStatsJob LOG -: " . $item['recepient_steam_id'], 'error');
                     $count = Reports::find()
                         ->andWhere(['recepient_steam_id' => $reportUser->steam_id])
                         ->andWhere(['wipe' => $wipeDate])
@@ -153,7 +152,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
                     }
 
-                    Yii::error("SaveStatsJob LOG 21: " . $message, 'error');
+                    Yii::error("SaveStatsJob LOG 21: " . $count, 'error');
                     $playHour = round($playtime/60, 1);
 
                     $message = "⚔ <b>Новая жалоба на игрока</b>" . PHP_EOL
