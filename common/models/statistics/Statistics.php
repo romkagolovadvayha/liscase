@@ -56,6 +56,7 @@ class Statistics extends ActiveRecord
             $models = [];
             foreach ($steamIds as $_steamId) {
                 $params = Statistics::find()
+                                    ->cache(180)
                                     ->andWhere(['steam_id' => $_steamId])
                                     ->andWhere(['server_tag' => $server->tag])
                                     ->andWhere(['wipe' => $wipeDate])
