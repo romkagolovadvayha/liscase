@@ -202,7 +202,7 @@ class SiteController extends WebController
         return $this->renderPartial('robots');
     }
 
-    public function actionMute($steamId, $serverTag)
+    public function actionMute($steamId, $serverTag, $reason)
     {
         /** @var Servers $server */
         $server = Servers::find()
