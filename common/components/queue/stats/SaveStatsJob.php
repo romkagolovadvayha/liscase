@@ -178,7 +178,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         if (!empty($rustCheck['last_check'])) {
                             foreach ($rustCheck['last_check'] as $_lastCheck) {
                                 $lastCheckExist = true;
-                                $lastCheck .= $_lastCheck['serverName'] . "; Дата: " . (new \DateTime($_lastCheck['time']))->format('Y-m-d H:i:s') . PHP_EOL;
+                                $lastCheck .= $_lastCheck['serverName'] . PHP_EOL;
                             }
                         }
                     } catch (\Exception $e) {
