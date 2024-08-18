@@ -66,6 +66,7 @@ foreach ($items as $item) {
 }
 
 $drops = \common\models\box\Drop::find()
+                                ->cache(60*60)
                                 ->andWhere(['IN', 'eng_name', $keys])
                                 ->indexBy('eng_name')
                                 ->all();

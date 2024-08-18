@@ -8,6 +8,7 @@ use common\models\statistics\Statistics;
 /** @var array $player */
 
 $keys = Statistics::find()
+    ->cache(300)
     ->select('DISTINCT(`key`) as type')
     ->andWhere(['LIKE', 'key', '%mod_%', false])
     ->asArray()
@@ -25,6 +26,7 @@ foreach ($keys as $key) {
 }
 
 $drops = \common\models\box\Drop::find()
+                                ->cache(300)
                                 ->andWhere(['IN', 'eng_name', $keyDrops])
                                 ->indexBy('eng_name')
                                 ->all();
