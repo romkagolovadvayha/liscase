@@ -122,6 +122,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     $count = Reports::find()
                         ->andWhere(['recepient_steam_id' => $reportUser->steam_id])
                         ->andWhere(['wipe' => $wipeDate])
+                        ->andWhere(['server_tag' => $this->serverTag])
                         ->count();
 
                     $kills = 0;
@@ -237,7 +238,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     if ($lastCheckExist) {
                         $message .=  PHP_EOL  . PHP_EOL . "Последние проверки игрока:" . PHP_EOL . $lastCheck;
                     }
-
+                    Yii::error("SaveStatsJob LOG: " . $message, 'error');
                     Yii::$app->telegramReports->sendMessage($message);
                 }
             } catch (\Exception $e) {
