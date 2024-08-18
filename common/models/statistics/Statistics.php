@@ -44,7 +44,7 @@ class Statistics extends ActiveRecord
             $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
             /** @var Wipe[] $models */
             $statistics = Statistics::find()
-                                    //->cache(180)
+                                    ->cache(180)
                                     ->andWhere(['server_tag' => $server->tag])
                                     ->andWhere(['wipe' => $wipeDate])
                                     ->asArray()
