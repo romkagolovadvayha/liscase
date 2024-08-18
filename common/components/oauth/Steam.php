@@ -222,6 +222,7 @@ class Steam extends OpenId
 
         $apiUrl = "https://stats.ggrust.ru/serverbanlist.php?table={$stable}";
         $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
+        Yii::$app->cache->set($cacheKey, $response, 60);
         return $response;
     }
 
@@ -233,6 +234,7 @@ class Steam extends OpenId
 
         $apiUrl = "https://dev.rustroom.ru/getBanList.php";
         $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
+        Yii::$app->cache->set($cacheKey, $response, 60);
         return $response;
     }
 
@@ -244,6 +246,7 @@ class Steam extends OpenId
 
         $apiUrl = "https://vk.magicrust.ru/api/getBans";
         $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
+        Yii::$app->cache->set($cacheKey, $response, 60);
         return $response;
     }
 

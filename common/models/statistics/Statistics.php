@@ -39,29 +39,26 @@ class Statistics extends ActiveRecord
 
     public static function getStats(Servers $server, $steamId = null) {
         $cacheKey = "getStats_serverId{$server->id}_{$steamId}";
-        $data = Yii::$app->cache->get($cacheKey);
+        //$data = Yii::$app->cache->get($cacheKey);
         if (empty($data)) {
             $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
             /** @var Wipe[] $models */
             $statistics = Statistics::find()
-                                    ->cache(180)
-                                    ->select('DISTINCT(steam_id)')
+                                    //->cache(180)
                                     ->andWhere(['server_tag' => $server->tag])
                                     ->andWhere(['wipe' => $wipeDate])
                                     ->asArray()
-                                    ->indexBy('steam_id')
                                     ->all();
 
-            $steamIds = array_keys($statistics);
+            $userList = [];
+            foreach ($statistics as $item) {
+                $userList[$item['steam_id']][$item['key']] = $item['value'];
+            }
+
+            $steamIds = array_keys($userList);
             $models = [];
             foreach ($steamIds as $_steamId) {
-                $params = Statistics::find()
-                                    ->cache(180)
-                                    ->andWhere(['steam_id' => $_steamId])
-                                    ->andWhere(['server_tag' => $server->tag])
-                                    ->andWhere(['wipe' => $wipeDate])
-                                    ->indexBy('key')
-                                    ->all();
+                $params = $userList[$_steamId];
                 if (Statistics::getParam($params, 'playtime') <= 60) {
                     continue;
                 }
