@@ -10,6 +10,7 @@ use common\models\invoice\Invoice;
 use common\models\invoice\Deposit;
 use common\models\profit\Profit;
 use common\models\servers\Servers;
+use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
 use yii\base\BaseObject;
 use yii\base\NotSupportedException;
@@ -562,15 +563,18 @@ class User extends ActiveRecord implements IdentityInterface
 
         $onlineTime = 0;
         foreach ($servers as $server) {
-            Yii::$app->db_server->username = $server->db_user;
-            Yii::$app->db_server->password = $server->db_password;
-            Yii::$app->db_server->dsn      = "mysql:host={$server->db_host};dbname={$server->db_name}";
-            Yii::$app->db_server->pdo      = null;
-            $player                        = Wipe::getPlayer($server, $user->steam_id);
+            $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
+            $player = Statistics::find()
+                                ->cache(180)
+                                ->andWhere(['steam_id' => $user->steam_id])
+                                ->andWhere(['server_tag' => $server->tag])
+                                ->andWhere(['wipe' => $wipeDate])
+                                ->indexBy('key')
+                                ->all();
             if (empty($player)) {
                 continue;
             }
-            $onlineTime += $player['playtime'];
+            $onlineTime += Statistics::getParam($player, 'playtime');
         }
 
         if ($onlineTime < 60) {
