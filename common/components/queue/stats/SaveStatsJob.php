@@ -200,7 +200,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         $banList = Steam::getBansGGRust($reportUser->steam_id);
                         foreach ($banList as $banItem) {
                             $bansExist = true;
-                            $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Дата: " . (new \DateTime($banItem['date']))->format('Y-m-d H:i:s') . "; Срок: " . $banItem['expireDate'] . PHP_EOL;
+                            $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Срок: " . $banItem['expireDate'] . PHP_EOL;
                         }
                     } catch (\Exception $e) {
                         Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
@@ -209,7 +209,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         $banList = Steam::getBansRustRoom($reportUser->steam_id);
                         foreach ($banList as $banItem) {
                             $bansExist = true;
-                            $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Дата: " . (new \DateTime($banItem['date']))->format('Y-m-d H:i:s') . "; Срок: " . $banItem['expireDate'] . PHP_EOL;
+                            $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Срок: " . $banItem['expireDate'] . PHP_EOL;
                         }
                     } catch (\Exception $e) {
                         Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
@@ -218,7 +218,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         $banList = Steam::getBansMagicRust($reportUser->steam_id);
                         foreach ($banList as $banItem) {
                             $bansExist = true;
-                            $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Дата: " . (new \DateTime($banItem['date']))->format('Y-m-d H:i:s') . "; Срок: " . $banItem['expireDate'] . PHP_EOL;
+                            $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Срок: " . $banItem['expireDate'] . PHP_EOL;
                         }
                     } catch (\Exception $e) {
                         Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
