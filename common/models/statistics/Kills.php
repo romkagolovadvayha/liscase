@@ -87,9 +87,12 @@ class Kills extends ActiveRecord
      *
      */
     public static function getKills($server, $user) {
+        $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
         $models = Kills::find()
                        ->cache(60*5)
                        ->andWhere(['!=', 'dead', ''])
+                       ->andWhere(['server_tag' => $server->tag])
+                       ->andWhere(['wipe' => $wipeDate])
                        ->andWhere(['OR',
                                    ['steam_id' => $user->steam_id],
                                    ['dead' => $user->steam_id]
