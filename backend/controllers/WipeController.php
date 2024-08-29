@@ -7,6 +7,7 @@ use common\models\box\Drop;
 use common\models\profit\Profit;
 use common\models\promocode\Promocode;
 use common\models\servers\Servers;
+use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
 use common\models\user\User;
 use common\models\user\UserPromocode;
@@ -61,33 +62,24 @@ class WipeController extends Controller
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->cache(30)
-                          ->andWhere('db_host IS NOT NULL')
                           ->all();
         foreach ($servers as $server) {
-            if (!in_array($server->tag, ['max3', 'nolimit', 'x50', 'pve'])) {
-                continue;
-            }
-            Yii::$app->db_server->username = $server->db_user;
-            Yii::$app->db_server->password = $server->db_password;
-            Yii::$app->db_server->dsn = "mysql:host={$server->db_host};dbname={$server->db_name}";
-            Yii::$app->db_server->pdo = null;
-            $stats = Wipe::getStats($server);
+            $stats = Statistics::getStats($server);
             if (empty($stats)) {
                 continue;
             }
             foreach (['kills', 'scientists', 'hunter', 'fermer', 'farmer', 'fishing', 'playtime', 'reider'] as $type) {
-                /** @var User $user */
-                $user = User::findBySteamId($stats[$type]['players'][0]['steamid']);
-                if (!empty($user)) {
+                $userStats = Statistics::getTopWidgetItem($type, $stats);
+                if (!empty($userStats) && !empty($userStats['user'])) {
                     $profit                  = new Profit();
                     $profit->status          = 1;
                     $profit->type            = Profit::TYPE_TOP;
                     $profit->amount          = 500;
-                    $profit->user_balance_id = $user->getPersonalBalance()->id;
+                    $profit->user_balance_id = $userStats['user']->getPersonalBalance()->id;
                     $profit->comment         = 'Награда за топ сервера';
                     $profit->created_at      = date('Y-m-d H:i:s');
                     $profit->save(false);
-                    $user->getPersonalBalance()->recalculateBalance();
+                    $userStats['user']->getPersonalBalance()->recalculateBalance();
                 }
             }
         }

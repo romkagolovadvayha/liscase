@@ -21,19 +21,16 @@ if (empty($user)) {
 }
 
 $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
-$player = Statistics::find()
-                    ->cache(180)
-                    ->andWhere(['steam_id' => $steamId])
-                    ->andWhere(['server_tag' => $server->tag])
-                    ->andWhere(['wipe' => $wipeDate])
-                    ->indexBy('key')
-                    ->all();
 
 $this->title = $user->username . " " . Yii::t('common', 'статистика на сервере') . " " . Yii::t('database', $server->name);
 
 $teams = Teams::getTeams($server, $user);
 $clan = Teams::getAllInTeams($server, $user->steam_id);
 $stats = \common\models\statistics\Statistics::getStats($server, $user->steam_id);
+$player = null;
+if (!empty($stats['player'])) {
+    $player = $stats['player'];
+}
 
 /** @var Servers[] $servers */
 $servers = Servers::find()

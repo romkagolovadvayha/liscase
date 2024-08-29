@@ -39,6 +39,7 @@ foreach ($items as $item) {
     $reider[] = Statistics::getRaiderItem($drops, $player, $item['key'], $item['score']);
 }
 $countKillsData = Kills::find()
+               ->cache(60*3)
                ->select(['COUNT(*) as count', 'DATE_FORMAT(created_at, "%H") as hour'])
                ->andWhere(['!=', 'dead', ''])
                ->andWhere(['steam_id' => $steamId])
@@ -48,6 +49,7 @@ $countKillsData = Kills::find()
                ->groupBy(['hour'])
                ->all();
 $countDeadsData = Kills::find()
+               ->cache(60*30)
                ->select(['COUNT(*) as count', 'DATE_FORMAT(created_at, "%H") as hour'])
                ->andWhere(['dead' => $steamId])
                ->orderBy(['id' => SORT_DESC])
@@ -172,10 +174,13 @@ $this->registerJs($formatJs, \yii\web\View::POS_END);
                 <div class="stats_player_stats_reider_kills_info_item_value"><?=Yii::t('common', 'Уничтожено танков')?></div>
             </div>
         </div>
-        <?=$this->render('_player_kills2', [
-            'user' => $user,
-            'server' => $server,
-            'title' => Yii::t('common', 'История убийств'),
-        ]);?>
+        <?php if ($this->beginCache('_player_kills2_' . $user->id . Yii::$app->language, ['duration' => 30])): ?>
+            <?=$this->render('_player_kills2', [
+                'user' => $user,
+                'server' => $server,
+                'title' => Yii::t('common', 'История убийств'),
+            ]);?>
+            <?php $this->endCache(); ?>
+        <?php endif; ?>
     </div>
 </div>

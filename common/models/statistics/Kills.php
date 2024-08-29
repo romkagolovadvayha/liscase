@@ -86,21 +86,24 @@ class Kills extends ActiveRecord
      * @param User $user
      *
      */
-    public static function getKills($server, $user) {
+    public static function getKills($server, $user = null) {
         $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
-        $models = Kills::find()
+        $query = Kills::find()
                        ->cache(60*5)
                        ->andWhere(['!=', 'dead', ''])
                        ->andWhere(['server_tag' => $server->tag])
-                       ->andWhere(['wipe' => $wipeDate])
-                       ->andWhere(['OR',
-                                   ['steam_id' => $user->steam_id],
-                                   ['dead' => $user->steam_id]
-                                  ])
-                       ->orderBy(['created_at' => SORT_DESC])
-                       ->asArray()
-                       ->limit(50)
-                       ->all();
+                       ->andWhere(['wipe' => $wipeDate]);
+
+        if (!empty($user)) {
+            $query->andWhere(['OR',
+                            ['steam_id' => $user->steam_id],
+                            ['dead' => $user->steam_id]
+                           ]);
+        }
+        $models = $query->orderBy(['created_at' => SORT_DESC])
+            ->asArray()
+            ->limit(10)
+            ->all();
 
         $weapons = [];
         foreach ($models as $model) {
@@ -119,10 +122,10 @@ class Kills extends ActiveRecord
 
         for ($i = 0; $i < count($models); $i++) {
             $model = $models[$i];
-            if ($model['steam_id'] === $user->steam_id) {
+            if (!empty($user) && $model['steam_id'] === $user->steam_id) {
                 $model['name'] = $user->username;
             }
-            if ($model['dead'] === $user->steam_id) {
+            if (!empty($user) && $model['dead'] === $user->steam_id) {
                 $model['dead_name'] = $user->username;
             }
             if (empty($model['name']) && strlen($model['steam_id']) === 17) {

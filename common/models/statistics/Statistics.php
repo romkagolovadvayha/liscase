@@ -6,6 +6,7 @@ use common\components\base\ActiveRecord;
 use common\models\servers\Servers;
 use common\models\stats\Wipe;
 use common\models\user\Auth;
+use common\models\user\User;
 use Yii;
 
 /**
@@ -139,6 +140,18 @@ class Statistics extends ActiveRecord
         }
 
         return $data;
+    }
+
+    public static function getTopWidgetItem($key, $stats) {
+        if (empty($stats[$key])) {
+            return [];
+        }
+
+        $item = $stats[$key]['players'][0];
+        $item['total_score'] = $item[$key];
+        $item['user'] = User::findBySteamId($item['steam_id']);
+
+        return $item;
     }
 
     /**

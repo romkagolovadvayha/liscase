@@ -1,89 +1,24 @@
 <?php
 
-/** @var $dbHost */
-/** @var $dbUser */
-/** @var $dbPassword */
-/** @var $dbName */
-/** @var $server */
+/** @var Servers $server */
 
-$connection = mysqli_connect($dbHost, $dbUser, $dbPassword, $dbName);
-if($connection->connect_errno) {
-    header('Location: /error.php?error=noconnection');
-    exit();
-}
-if ($connection->connect_error) {
-    header('Location: /error.php?error=noconnection');
-    exit();
-}
-$table = "main_stats_wipe";
-$sql = "SELECT * FROM `$table` WHERE steamid NOT IN (76561198394504608)  ORDER BY `kills` DESC LIMIT 1";
-$res_data = mysqli_query($connection, $sql);
-$killer = mysqli_fetch_assoc($res_data);
+use common\models\servers\Servers;
+use common\models\statistics\Statistics;
 
-$sql = "SELECT * FROM `$table` WHERE steamid NOT IN (76561198394504608)  ORDER BY `deaths` DESC LIMIT 1";
-$res_data = mysqli_query($connection, $sql);
-$deaths = mysqli_fetch_assoc($res_data);
+$stats = Statistics::getStats($server);
 
-$sql = "SELECT * FROM `$table` WHERE steamid NOT IN (76561198394504608)  ORDER BY `scientists` DESC LIMIT 1";
-$res_data = mysqli_query($connection, $sql);
-$scientists = mysqli_fetch_assoc($res_data);
-
-$sql = "SELECT * FROM `$table` WHERE steamid NOT IN (76561198394504608) ORDER BY `playtime` DESC LIMIT 1";
-$res_data = mysqli_query($connection, $sql);
-$playtime = mysqli_fetch_assoc($res_data);
-
-$sql = "SELECT *, SUM(c4thrown + satchelsthrown * 0.2 + rocketsfired * 0.5 + rocket_hv * 0.1 + rocket_fire * 0.1 + ammo_explosive * 0.01) AS total_score 
-FROM `$table` 
-GROUP BY id 
-ORDER BY total_score DESC 
-LIMIT 1";
-$res_data = mysqli_query($connection, $sql);
-$reider = mysqli_fetch_assoc($res_data);
-
-$sql = "SELECT *, SUM(chickens + boars + deers + horses + wolves + bears) AS total_score 
-FROM `$table` 
-GROUP BY id 
-ORDER BY total_score DESC 
-LIMIT 1";
-$res_data = mysqli_query($connection, $sql);
-$hunter = mysqli_fetch_assoc($res_data);
-
-$sql = "SELECT *, SUM(cloth + pumpkin + corn + green_berry + blue_berry + yellow_berry + red_berry + white_berry + potato) AS total_score 
-FROM `$table` 
-GROUP BY id 
-ORDER BY total_score DESC 
-LIMIT 1";
-$res_data = mysqli_query($connection, $sql);
-$fermer = mysqli_fetch_assoc($res_data);
-
-$sql = "SELECT *, SUM(wood * 0.2 + stones * 0.3 + metal_ore * 0.5 + sulfur_ore) AS total_score 
-FROM `$table` 
-GROUP BY id 
-ORDER BY total_score DESC 
-LIMIT 1";
-$res_data = mysqli_query($connection, $sql);
-$farmer = mysqli_fetch_assoc($res_data);
-
-$sql = "SELECT *, SUM(anchovy * 10 + catfish * 32 + herring * 10 + orangeroughy * 37 + salmon * 22 + sardine * 10 + smallshark * 45 + troutsmall * 15 + yellowperch * 25) AS total_score 
-FROM `$table` 
-GROUP BY id 
-ORDER BY total_score DESC 
-LIMIT 1";
-$res_data = mysqli_query($connection, $sql);
-$fishing = mysqli_fetch_assoc($res_data);
-
-if (empty($reider)) {
+if (empty($stats['playtime']) || empty($stats['playtime']['players'])) {
     return;
 }
-$reiderUser = \common\models\user\User::findBySteamId($reider['steamid'], false);
-$hunterUser = \common\models\user\User::findBySteamId($hunter['steamid'], false);
-$fermerUser = \common\models\user\User::findBySteamId($fermer['steamid'], false);
-$farmerUser = \common\models\user\User::findBySteamId($farmer['steamid'], false);
-$fishingUser = \common\models\user\User::findBySteamId($fishing['steamid'], false);
-$playtimeUser = \common\models\user\User::findBySteamId($playtime['steamid'], false);
-$scientistsUser = \common\models\user\User::findBySteamId($scientists['steamid'], false);
-$killerUser = \common\models\user\User::findBySteamId($killer['steamid'], false);
-$deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false);
+
+$reider = Statistics::getTopWidgetItem('reider', $stats);
+$hunter = Statistics::getTopWidgetItem('hunter', $stats);
+$fermer = Statistics::getTopWidgetItem('fermer', $stats);
+$farmer = Statistics::getTopWidgetItem('farmer', $stats);
+$fishing = Statistics::getTopWidgetItem('fishing', $stats);
+$playtime = Statistics::getTopWidgetItem('playtime', $stats);
+$scientists = Statistics::getTopWidgetItem('scientists', $stats);
+$killer = Statistics::getTopWidgetItem('kills', $stats);
 
 ?>
 
@@ -92,7 +27,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
         <?php if ($server != 'pve'): ?>
         <div class="top_table_item">
             <div class="top_table_item_image">
-                <img src="<?=$reiderUser->getAvatar()?>" alt="<?=$reiderUser->username?>"/>
+                <img src="<?=$reider['user']->getAvatar()?>" alt="<?=$reider['user']->username?>"/>
             </div>
             <div class="top_table_item_wrap">
                 <div class="top_table_item_header">
@@ -105,7 +40,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
                 </div>
                 <div class="top_table_item_body">
                     <div class="top_table_item_body_link">
-                        <a target="#" href="/stats/player?steamId=<?=$reider['steamid']?>&server=<?=$server?>"><?=$reiderUser->username?></a>
+                        <a target="#" href="/stats/player?steamId=<?=$reider['steam_id']?>&server=<?=$server->tag?>"><?=$reider['user']->username?></a>
                     </div>
                     <div class="top_table_item_body_score">
                         <?=round($reider['total_score'])?>
@@ -115,7 +50,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
         </div>
         <div class="top_table_item">
             <div class="top_table_item_image">
-                <img src="<?=$killerUser->getAvatar()?>" alt="<?=$killerUser->username?>"/>
+                <img src="<?=$killer['user']->getAvatar()?>" alt="<?=$killer['user']->username?>"/>
             </div>
             <div class="top_table_item_wrap">
                 <div class="top_table_item_header">
@@ -128,10 +63,10 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
                 </div>
                 <div class="top_table_item_body">
                     <div class="top_table_item_body_link">
-                        <a target="#" href="/stats/player?steamId=<?=$killer['steamid']?>&server=<?=$server?>"><?=$killerUser->username?></a>
+                        <a target="#" href="/stats/player?steamId=<?=$killer['steam_id']?>&server=<?=$server->tag?>"><?=$killer['user']->username?></a>
                     </div>
                     <div class="top_table_item_body_score">
-                        <?=$killer['kills']?>
+                        <?=$killer['total_score']?>
                     </div>
                 </div>
             </div>
@@ -141,7 +76,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
     <?php if (!empty($scientists)): ?>
     <div class="top_table_item">
         <div class="top_table_item_image">
-            <img src="<?=$scientistsUser->getAvatar()?>" alt="<?=$scientistsUser->username?>"/>
+            <img src="<?=$scientists['user']->getAvatar()?>" alt="<?=$scientists['user']->username?>"/>
         </div>
         <div class="top_table_item_wrap">
             <div class="top_table_item_header">
@@ -154,10 +89,10 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
             </div>
             <div class="top_table_item_body">
                 <div class="top_table_item_body_link">
-                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$scientists['steamid']?>&server=<?=$server?>"><?=$scientistsUser->username?></a>
+                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$scientists['steam_id']?>&server=<?=$server->tag?>"><?=$scientists['user']->username?></a>
                 </div>
                 <div class="top_table_item_body_score">
-                    <?=$scientists['scientists']?>
+                    <?=$scientists['total_score']?>
                 </div>
             </div>
         </div>
@@ -166,7 +101,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
     <?php if (!empty($playtime)): ?>
     <div class="top_table_item">
         <div class="top_table_item_image">
-            <img src="<?=$playtimeUser->getAvatar()?>" alt="<?=$playtimeUser->username?>"/>
+            <img src="<?=$playtime['user']->getAvatar()?>" alt="<?=$playtime['user']->username?>"/>
         </div>
         <div class="top_table_item_wrap">
             <div class="top_table_item_header">
@@ -179,35 +114,10 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
             </div>
             <div class="top_table_item_body">
                 <div class="top_table_item_body_link">
-                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$playtime['steamid']?>&server=<?=$server?>"><?=$playtimeUser->username?></a>
+                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$playtime['steam_id']?>&server=<?=$server->tag?>"><?=$playtime['user']->username?></a>
                 </div>
                 <div class="top_table_item_body_score">
-                    <?=\common\models\servers\Servers::getPlayTime($playtime['playtime'])?>
-                </div>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
-    <?php if (!empty($deaths)): ?>
-    <div class="top_table_item">
-        <div class="top_table_item_image">
-            <img src="<?=$deathsUser->getAvatar()?>" alt="<?=$deathsUser->username?>"/>
-        </div>
-        <div class="top_table_item_wrap">
-            <div class="top_table_item_header">
-                <div class="top_table_item_header_name">
-                    <?=Yii::t('common', 'СМЕРТЕЙ')?>
-                </div>
-                <div class="top_table_item_header_bonus" title="<?=Yii::t('common', 'Вознаграждение по окончанию вайпа')?>">
-    <!--                +500 RUB-->
-                </div>
-            </div>
-            <div class="top_table_item_body">
-                <div class="top_table_item_body_link">
-                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$deaths['steamid']?>&server=<?=$server?>"><?=$deathsUser->username?></a>
-                </div>
-                <div class="top_table_item_body_score">
-                    <?=$deaths['deaths']?>
+                    <?=\common\models\servers\Servers::getPlayTime($playtime['total_score'])?>
                 </div>
             </div>
         </div>
@@ -216,7 +126,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
     <?php if (!empty($hunter)): ?>
     <div class="top_table_item">
         <div class="top_table_item_image">
-            <img src="<?=$hunterUser->getAvatar()?>" alt="<?=$hunterUser->username?>"/>
+            <img src="<?=$hunter['user']->getAvatar()?>" alt="<?=$hunter['user']->username?>"/>
         </div>
         <div class="top_table_item_wrap">
             <div class="top_table_item_header">
@@ -229,7 +139,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
             </div>
             <div class="top_table_item_body">
                 <div class="top_table_item_body_link">
-                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$hunter['steamid']?>&server=<?=$server?>"><?=$hunterUser->username?></a>
+                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$hunter['steam_id']?>&server=<?=$server->tag?>"><?=$hunter['user']->username?></a>
                 </div>
                 <div class="top_table_item_body_score">
                     <?=$hunter['total_score']?>
@@ -241,7 +151,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
     <?php if (!empty($fermer)): ?>
     <div class="top_table_item">
         <div class="top_table_item_image">
-            <img src="<?=$fermerUser->getAvatar()?>" alt="<?=$fermerUser->username?>"/>
+            <img src="<?=$fermer['user']->getAvatar()?>" alt="<?=$fermer['user']->username?>"/>
         </div>
         <div class="top_table_item_wrap">
             <div class="top_table_item_header">
@@ -254,7 +164,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
             </div>
             <div class="top_table_item_body">
                 <div class="top_table_item_body_link">
-                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fermer['steamid']?>&server=<?=$server?>"><?=$fermerUser->username?></a>
+                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fermer['steam_id']?>&server=<?=$server->tag?>"><?=$fermer['user']->username?></a>
                 </div>
                 <div class="top_table_item_body_score">
                     <?=$fermer['total_score']?>
@@ -266,7 +176,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
     <?php if (!empty($farmer)): ?>
     <div class="top_table_item">
         <div class="top_table_item_image">
-            <img src="<?=$farmerUser->getAvatar()?>" alt="<?=$farmerUser->username?>"/>
+            <img src="<?=$farmer['user']->getAvatar()?>" alt="<?=$farmer['user']->username?>"/>
         </div>
         <div class="top_table_item_wrap">
             <div class="top_table_item_header">
@@ -279,7 +189,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
             </div>
             <div class="top_table_item_body">
                 <div class="top_table_item_body_link">
-                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$farmer['steamid']?>&server=<?=$server?>"><?=$farmerUser->username?></a>
+                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$farmer['steam_id']?>&server=<?=$server->tag?>"><?=$farmer['user']->username?></a>
                 </div>
                 <div class="top_table_item_body_score">
                     <?=$farmer['total_score']?>
@@ -291,7 +201,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
     <?php if (!empty($fishing)): ?>
     <div class="top_table_item">
         <div class="top_table_item_image">
-            <img src="<?=$fishingUser->getAvatar()?>" alt="<?=$fishingUser->username?>"/>
+            <img src="<?=$fishing['user']->getAvatar()?>" alt="<?=$fishing['user']->username?>"/>
         </div>
         <div class="top_table_item_wrap">
             <div class="top_table_item_header">
@@ -304,7 +214,7 @@ $deathsUser = \common\models\user\User::findBySteamId($deaths['steamid'], false)
             </div>
             <div class="top_table_item_body">
                 <div class="top_table_item_body_link">
-                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fishing['steamid']?>&server=<?=$server?>"><?=$fishingUser->username?></a>
+                    <a class="steam-profile" target="#" href="/stats/player?steamId=<?=$fishing['steam_id']?>&server=<?=$server->tag?>"><?=$fishing['user']->username?></a>
                 </div>
                 <div class="top_table_item_body_score">
                     <?=$fishing['total_score']?>

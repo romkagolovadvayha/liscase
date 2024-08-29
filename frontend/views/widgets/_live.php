@@ -6,10 +6,8 @@ use yii\web\View;
 /** @var \common\models\servers\Servers[] $servers */
 
 $servers = \common\models\servers\Servers::find()
-    ->andWhere(['!=', 'db_host', ''])
     ->cache(30)
     ->all();
-
 ?>
 
 <div class="Widgets-module__widgetWrapper widget_live">
@@ -29,7 +27,7 @@ $servers = \common\models\servers\Servers::find()
             <label id="solo_live_label" class="widget_live_servers_item" for="solo_live">SOLO</label>
         </div>
         <div class="widget_live_body_wrap">
-            <?php if ($this->beginCache('live_stats_wrap' . Yii::$app->language, ['duration' => 30])): ?>
+            <?php if ($this->beginCache('live_stats_wrap_' . Yii::$app->language, ['duration' => 30])): ?>
                 <?= $this->render('@frontend/views/widgets/_live_stats_wrap'); ?>
                 <?php $this->endCache(); ?>
             <?php endif; ?>
