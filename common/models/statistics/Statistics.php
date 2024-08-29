@@ -63,7 +63,7 @@ class Statistics extends ActiveRecord
                 if (Statistics::getParam($params, 'playtime') <= 60) {
                     continue;
                 }
-                $item = [];
+                $item = $params;
                 $item['steam_id'] = $_steamId;
                 $item['playtime'] = Statistics::getParam($params, 'playtime');
                 $item['deaths'] = Statistics::getParam($params, 'deaths');
