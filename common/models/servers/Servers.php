@@ -36,6 +36,7 @@ use Yii;
  * @property bool   $skindrops
  * @property int    $wargm_id
  * @property string $commands
+ * @property string $discord_token
  */
 class Servers extends \common\components\base\ActiveRecord
 {
