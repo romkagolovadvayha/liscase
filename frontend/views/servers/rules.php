@@ -72,6 +72,7 @@ $servers = Servers::find()
                                         <li><?=Yii::t('common', 'Запрещена любая помощь читерам и игра с ними, багоюзерам и тем кто обошел бан.')?> <span class="rules_punishment">[ban 14d]</span></li>
                                         <li><?=Yii::t('common', 'Запрещено юзать/разглашать баги!')?> <span class="rules_punishment">[mute \ ban 3d]</span></li>
                                         <li><?=Yii::t('common', 'Запрещено покупать или заказывать читеров')?> <span class="rules_punishment">[ban]</span></li>
+                                        <li><?=Yii::t('common', 'Запрещено играть у нас с действующим баном на других проектах за нечестную игру')?> <span class="rules_punishment">[ban]</span></li>
                                         <li><?=Yii::t('common', 'Запрещено оскорблять и упоминать в любом виде родных и родственников')?> <span class="rules_punishment">[mute]</span></li>
                                         <li><?=Yii::t('common', 'Запрещено разжигать межнациональные розни и ввести политические споры')?> <span class="rules_punishment">[mute]</span></li>
                                         <li><?=Yii::t('common', 'Запрещено продавать/покупать вещи за реал у игроков!')?> <span class="rules_punishment">[ban 3d]</span></li>
