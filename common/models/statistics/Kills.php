@@ -102,7 +102,6 @@ class Kills extends ActiveRecord
         }
         $models = $query->orderBy(['created_at' => SORT_DESC])
             ->asArray()
-            ->limit(10)
             ->all();
 
         $weapons = [];
