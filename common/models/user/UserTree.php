@@ -95,14 +95,15 @@ class UserTree extends ActiveRecord
             return false;
         }
 
-        $parentTree = self::findOne(['user_id' => $parentUserId]);
-
         $userTree = new self();
-
         $userTree->user_id        = $userId;
         $userTree->parent_user_id = $parentUserId;
+        $userTree->level = 1;
+        $userTree->lft = 1;
+        $userTree->rgt = 1;
+        $userTree->created_at = date('Y-m-d H:i:s');
 
-        if ($userTree->appendTo($parentTree)) {
+        if ($userTree->save()) {
             return true;
         }
 
