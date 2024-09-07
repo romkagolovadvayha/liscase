@@ -21,7 +21,6 @@ con.connect(function(err) {
                 function presence(i = 0) {
                     con.query(sql, function (err, result2) {
                         if (err) throw err;
-                        console.log(result[0].players);
                         const name = "Текущий онлайн: " + (result2[0].players + result2[0].joined);
                         client.user.setPresence({
                             activities: [
