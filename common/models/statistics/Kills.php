@@ -86,7 +86,7 @@ class Kills extends ActiveRecord
      * @param User $user
      *
      */
-    public static function getKills($server, $user = null) {
+    public static function getKills($server, $user = null, $limit = 10) {
         $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
         $query = Kills::find()
                        ->cache(60*5)
@@ -102,7 +102,7 @@ class Kills extends ActiveRecord
         }
         $models = $query->orderBy(['created_at' => SORT_DESC])
             ->asArray()
-            ->limit(10)
+            ->limit($limit)
             ->all();
 
         $weapons = [];

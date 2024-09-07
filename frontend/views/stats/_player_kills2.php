@@ -8,7 +8,7 @@ use common\models\statistics\Kills;
 /** @var string $title */
 /** @var Servers $server */
 
-$models = Kills::getKills($server, $user);
+$models = Kills::getKills($server, $user, 100);
 $animals = Kills::getAnimalsList();
 $animals2 = Kills::getAnimals2List();
 ?>

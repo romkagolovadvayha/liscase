@@ -107,13 +107,17 @@ class Teams extends ActiveRecord
                 $teamAuthor = $model['team_author'];
                 $teamAuthorItem = self::getItemTeams($model['team_author'], $model['created_at'], true);
             }
+            if (in_array($model['type'], ['leaved', 'kicked']) && $model['steam_id'] === $teamAuthor) {
+                $teamAuthor = null;
+                $teamAuthorItem = null;
+            }
         }
         foreach ($models as $model) {
             if (in_array($teamAuthor, [$model['team_author']])) {
                 if ($model['type'] == 'invite_accepted') {
                     $result[$model['steam_id']] = self::getItemTeams($model['steam_id'], $model['created_at']);
                 } elseif (in_array($model['type'], ['leaved', 'kicked'])) {
-                    if ($model['type'] === 'leaved' && $model['steam_id'] === $model['team_author']) {
+                    if ($model['steam_id'] === $model['team_author']) {
                         $result = [];
                     } elseif (!empty($result[$model['steam_id']])) {
                         unset($result[$model['steam_id']]);

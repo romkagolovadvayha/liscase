@@ -22,7 +22,7 @@ class DiscordController extends Controller
             $online = $server->players + $server->joined;
             $maxOnline = $server->max;
             $status = "Текущий онлайн: ${online}/${maxOnline}";
-            exec("node " . __DIR__ . "/../../node/discord/src/send.js \"{$status}\" \"$server->discord_token\"");
+            exec("\"C:\Program Files/nodejs/node\" " . __DIR__ . "/../../node/discord/src/send.js \"{$status}\" \"$server->discord_token\"");
         }
     }
 }
