@@ -35,7 +35,7 @@ con.connect(function(err) {
                     i++;
                     setTimeout(() => {
                         presence(i);
-                    }, 5e3);
+                    }, 30e3);
                 }
                 presence();
             }();
