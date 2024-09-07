@@ -23,13 +23,6 @@ use common\components\base\behaviors\NestedSetsBehavior;
  */
 class UserTree extends ActiveRecord
 {
-    /**
-     * @return UserTreeQuery
-     */
-    public static function find()
-    {
-        return new UserTreeQuery(get_called_class());
-    }
 
     /**
      * @inheritdoc
@@ -44,26 +37,6 @@ class UserTree extends ActiveRecord
         return [
             [['user_id', 'parent_user_id', 'lft', 'rgt', 'level'], 'integer'],
             [['created_at'], 'safe'],
-        ];
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function behaviors()
-    {
-        return ArrayHelper::merge(parent::behaviors(), [
-            [
-                'class'          => NestedSetsBehavior::class,
-                'depthAttribute' => 'level',
-            ],
-        ]);
-    }
-
-    public function transactions()
-    {
-        return [
-            self::SCENARIO_DEFAULT => self::OP_ALL,
         ];
     }
 
