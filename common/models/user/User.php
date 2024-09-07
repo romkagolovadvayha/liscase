@@ -321,9 +321,10 @@ class User extends ActiveRecord implements IdentityInterface
      */
     public function getChildrenUserTreeQuery($depth = null)
     {
-        $userTree = UserTree::findOne(['user_id' => $this->id]);
+        $userTree = UserTree::find()
+            ->andWhere(['parent_user_id' => $this->id]);
 
-        return $userTree->children($depth);
+        return $userTree;
     }
 
     /**
