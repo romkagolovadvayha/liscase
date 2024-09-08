@@ -82,7 +82,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 $model->wipe = $wipeDate;
                 $model->save();
             }
-            try {
+            /*try {
                 foreach ($request['chats'] as $item) {
                     $model = new Chats();
                     $model->steam_id = $item['steam_id'];
@@ -116,7 +116,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 }
             } catch (\Exception $e) {
                 Yii::$app->telegramChats->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
-            }
+            }*/
             try {
                 foreach ($request['reports'] as $item) {
                     $model = new Reports();
