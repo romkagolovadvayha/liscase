@@ -195,6 +195,20 @@ class Steam extends OpenId
 
         return $bans;
     }
+    public static function getBansRustUssr($steamId) {
+        $bans = [];
+        $server = Steam::getRustUssrBans();
+        if (!empty($server[$steamId])) {
+            $bans[] = [
+                'reason' => $server[$steamId]['Reason'],
+                'date' => $server[$steamId]['BanDate'],
+                'expireDate' => $server[$steamId]['ExpireDate'],
+                'server' => 'Rust USSR',
+            ];
+        }
+
+        return $bans;
+    }
     public static function getBansMagicRust($steamId) {
         $bans = [];
         $list = Steam::getMagicRustBans();
@@ -233,6 +247,18 @@ class Steam extends OpenId
         }
 
         $apiUrl = "https://dev.rustroom.ru/getBanList.php";
+        $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
+        Yii::$app->cache->set($cacheKey, $response, 60);
+        return $response;
+    }
+
+    public static function getRustUssrBans() {
+        $cacheKey = 'steam_getRustUssrBans';
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $apiUrl = "https://rustussr.ru/serverbanlist.php";
         $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
         Yii::$app->cache->set($cacheKey, $response, 60);
         return $response;
