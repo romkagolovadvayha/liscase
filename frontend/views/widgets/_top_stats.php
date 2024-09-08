@@ -98,7 +98,7 @@ $killer = Statistics::getTopWidgetItem('kills', $stats);
         </div>
     </div>
     <?php endif; ?>
-    <?php if (!empty($playtime)): ?>
+    <?php if (!empty($playtime) && !empty($playtime['user'])): ?>
     <div class="top_table_item">
         <div class="top_table_item_image">
             <img src="<?=$playtime['user']->getAvatar()?>" alt="<?=$playtime['user']->username?>"/>
