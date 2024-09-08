@@ -179,7 +179,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     $bansExist = false;
                     $lastCheck = "";
                     $lastCheckExist = false;
-                    try {
+                    /*try {
                         $rustCheck = Yii::$app->rustCheck->getInfo($reportUser->steam_id);
                         if (!empty($rustCheck['bans'])) {
                             foreach ($rustCheck['bans'] as $ban) {
@@ -195,7 +195,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         }
                     } catch (\Exception $e) {
                         Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
-                    }
+                    }*/
                     try {
                         $banList = Steam::getBansGGRust($reportUser->steam_id);
                         foreach ($banList as $banItem) {
