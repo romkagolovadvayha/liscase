@@ -223,7 +223,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     } catch (\Exception $e) {
                         Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
                     }
-                    $hoursExist = false;
+                    /*$hoursExist = false;
                     $hours = 0;
                     try {
                         $games = Steam::getGameInfo($reportUser->steam_id);
@@ -241,7 +241,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     if ($hoursExist) {
                         $hours = round($hours/60, 1);
                         $message .=  PHP_EOL . "Часов в Steam: " . $hours;
-                    }
+                    }*/
                     if ($bansExist) {
                         $message .=  PHP_EOL  . PHP_EOL . "Найдены баны на других проектах:" . PHP_EOL . $bans;
                     }
