@@ -197,7 +197,9 @@ class PersonalBotSystem extends AbstractSystem
                 'buttons' => $response['buttons'],
             ];
         }*/
-        return "Вы успешно авторизовались! Напишите /help, чтобы увидеть команды для бота. 👍👏";
+        return "✅ Вы успешно авторизовались!"
+            . PHP_EOL . "🎁 Вам начислен бонус за авторизацию в боте <b>100 РУБ</b>!"
+            . PHP_EOL . PHP_EOL . "ℹ️Напишите /help, чтобы увидеть команды для бота.";
     }
 
     /**
