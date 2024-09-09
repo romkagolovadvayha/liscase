@@ -47,6 +47,10 @@ abstract class AbstractSystem
             $answerMessage = 'Что-то пошло не так!😱 Обратитесь в тех.поддержку.';
         }
 
+        if (empty($answerMessage)) {
+            return 'Введенная команда не найдена 😏';
+        }
+
         return $answerMessage;
     }
 
