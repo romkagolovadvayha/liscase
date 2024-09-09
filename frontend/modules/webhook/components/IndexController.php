@@ -39,19 +39,17 @@ abstract class IndexController extends Controller
             $message     = ArrayHelper::getValue($callBack, 'message');
             $chat        = ArrayHelper::getValue($message, 'chat');
             $textMessage = ArrayHelper::getValue($message, 'text');
-            Yii::error('error', "textMessage: " . $textMessage);
+
             if (empty($chat) || empty($textMessage)) {
                 return false;
             }
 
             $answerMessage = $system->executeCallBack($chat['id'], $buttonValue);
 
-            Yii::error('error', "answerMessage: " . json_encode($answerMessage));
             if (!empty($answerMessage['message'])) {
                 $bot->sendMessage($chat['id'], $answerMessage['message'], $answerMessage['buttons']);
             } elseif (!empty($answerMessage)) {
-                $textMessage .= "\n\n" . $answerMessage;
-                $bot->editMessageText($chat['id'], $message['message_id'], $textMessage);
+                $bot->sendMessage($chat['id'], $answerMessage);
             }
         } else {
             $message = ArrayHelper::getValue($callBack, 'message');
