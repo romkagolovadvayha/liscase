@@ -56,6 +56,7 @@ abstract class IndexController extends Controller
         } else {
             $message = ArrayHelper::getValue($inputParams, 'message');
             $chat    = ArrayHelper::getValue($message, 'chat');
+            Yii::error('error', "message: " . json_encode($message));
             if (empty($chat)) {
                 return false;
             }
