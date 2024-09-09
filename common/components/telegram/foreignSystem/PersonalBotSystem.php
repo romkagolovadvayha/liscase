@@ -5,6 +5,7 @@ namespace common\components\telegram\foreignSystem;
 use backend\models\TelegramConstructorMessage;
 use common\components\telegram\TelegramApiHelper;
 use common\models\profit\Profit;
+use common\models\servers\Servers;
 use common\models\user\UserConfirmCode;
 use Yii;
 use yii\base\BaseObject;
@@ -44,7 +45,45 @@ class PersonalBotSystem extends AbstractSystem
             $answerMessage = $this->loginUser($message);
         }
 
+        switch ($messageText) {
+            case '/help':
+                return "<b>/pop</b> - Информация об онлайне на сервере"
+                    . "<b>/wipe</b> - Информация о вайпах на серверах";
+            case '/pop':
+                return $this->getOnline();
+            case '/wipe':
+                return $this->getWipe();
+        }
+
         return $answerMessage;
+    }
+
+    public function getWipe() {
+        $text = "<b>Вайп на серверах:</b>" . PHP_EOL;
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->all();
+
+        foreach ($servers as $server) {
+            $date = new \DateTime($server->next_wipe);
+            $text .= PHP_EOL . "{$server->name} - Следующий вайп: <b>{$date->format('d.m.Y в H:i:s МСК')}</b>";
+        }
+
+        return $text;
+    }
+
+    public function getOnline() {
+        $text = "<b>Онлайн на серверах:</b>" . PHP_EOL;
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->all();
+
+        foreach ($servers as $server) {
+            $pl = $server->players + $server->joined;
+            $text .= PHP_EOL . "{$server->name} - Текущий онлайн: <b>{$pl}</b>";
+        }
+
+        return $text;
     }
 
     /**
@@ -74,16 +113,16 @@ class PersonalBotSystem extends AbstractSystem
      */
     public function executeCallBack($chatId, $buttonValue)
     {
-        if (!empty($buttonValue) && strpos($buttonValue, 'messageId') !== false) {
+        /*if (!empty($buttonValue) && strpos($buttonValue, 'messageId') !== false) {
             $data = json_decode($buttonValue, 1);
-            /*$response = $this->getMessage($data['messageId'], $data['current_language']);
+            $response = $this->getMessage($data['messageId'], $data['current_language']);
             if (!empty($response) && !empty($response['message'])) {
                 return [
                     'message' => $response['message'],
                     'buttons' => $response['buttons'],
                 ];
-            }*/
-        }
+            }
+        }*/
         return 'Команда не найдена, попробуйте другую 😏';
     }
 
@@ -115,8 +154,8 @@ class PersonalBotSystem extends AbstractSystem
                 $profit = new Profit();
                 $profit->status = 1;
                 $profit->type = Profit::TYPE_TELEGRAM_BOT;
-                $profit->amount = 30;
-                $profit->user_balance_id = $user->getParentUser()->getPersonalBalance()->id;
+                $profit->amount = 50;
+                $profit->user_balance_id = $user->getPersonalBalance()->id;
                 $profit->comment = Yii::t('common', 'Бонус за привязку телеграм бота','ru-RU');
                 $profit->created_at = date('Y-m-d H:i:s');
                 $profit->save(false);
@@ -198,7 +237,7 @@ class PersonalBotSystem extends AbstractSystem
             ];
         }*/
         return "✅ Вы успешно авторизовались!"
-            . PHP_EOL . "🎁 Вам начислен бонус за авторизацию в боте <b>100 РУБ</b>!"
+            . PHP_EOL . "🎁 Вам начислен бонус <b>50 РУБ</b> на сайте!"
             . PHP_EOL . PHP_EOL . "ℹ️Напишите /help, чтобы увидеть команды для бота.";
     }
 
