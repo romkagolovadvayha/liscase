@@ -32,15 +32,16 @@ abstract class IndexController extends Controller
         }
 
         $data        = file_get_contents('php://input');
-        $callBack = Json::decode($data);
+        $inputParams = Json::decode($data);
+
+        $callBack = ArrayHelper::getValue($inputParams, 'callback_query', []);
 
         if (!empty($callBack)) {
-            $buttonValue = ArrayHelper::getValue($callBack, 'data') ?? [];
+            $buttonValue = ArrayHelper::getValue($callBack, 'data');
             $message     = ArrayHelper::getValue($callBack, 'message');
             $chat        = ArrayHelper::getValue($message, 'chat');
             $textMessage = ArrayHelper::getValue($message, 'text');
-
-            if (empty($chat) || empty($textMessage)) {
+            if (empty($buttonValue) || empty($chat) || empty($textMessage)) {
                 return false;
             }
 
@@ -49,12 +50,11 @@ abstract class IndexController extends Controller
             if (!empty($answerMessage['message'])) {
                 $bot->sendMessage($chat['id'], $answerMessage['message'], $answerMessage['buttons']);
             } elseif (!empty($answerMessage)) {
-                $bot->sendMessage($chat['id'], $answerMessage);
-                Yii::error('error', "id: " . $chat['id']);
-                Yii::error('error', "answerMessage: " . $answerMessage);
+                $textMessage .= "\n\n" . $answerMessage;
+                $bot->editMessageText($chat['id'], $message['message_id'], $textMessage);
             }
         } else {
-            $message = ArrayHelper::getValue($callBack, 'message');
+            $message = ArrayHelper::getValue($inputParams, 'message');
             $chat    = ArrayHelper::getValue($message, 'chat');
             if (empty($chat)) {
                 return false;
@@ -65,6 +65,8 @@ abstract class IndexController extends Controller
                 $bot->sendMessage($chat['id'], $answerMessage['message'], $answerMessage['buttons']);
             } elseif (!empty($answerMessage)) {
                 $bot->sendMessage($chat['id'], $answerMessage);
+                Yii::error('error', "id: " . $chat['id']);
+                Yii::error('error', "answerMessage: " . $answerMessage);
             }
         }
 
