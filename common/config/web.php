@@ -183,6 +183,10 @@ $config = [
             'class'  => \common\components\openAi\OpenAiApi::class,
             'apiKey'      => 'sk-proj-amY8H17pQlMQYaH0b6qRT3BlbkFJ9ZKbYA0IPZs14RSAEfNb',
         ],
+        'personalBotTelegram'               => [
+            'class'    => \common\components\telegram\TelegramApiHelper::class,
+            'botToken' => '7005949610:AAEK2H_vhym6px9mPB4EMyeZ94Hgx71sxzM', //@ProstojServerBot
+        ],
         'midjourney'   => [
             'class'  => \common\components\midjourney\MidjourneyApi::class,
             'discordChannelId'      => '1150211599395737601',
