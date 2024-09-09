@@ -48,7 +48,7 @@ class PersonalBotSystem extends AbstractSystem
         switch ($messageText) {
             case '/help':
                 return "<b>/pop</b> - Информация об онлайне на сервере"
-                    . "<b>/wipe</b> - Информация о вайпах на серверах";
+                    . PHP_EOL . "<b>/wipe</b> - Информация о вайпах на серверах";
             case '/pop':
                 return $this->getOnline();
             case '/wipe':
@@ -59,14 +59,19 @@ class PersonalBotSystem extends AbstractSystem
     }
 
     public function getWipe() {
-        $text = "<b>Вайп на серверах:</b>" . PHP_EOL;
+        $text = "<b>Вайп на серверах:</b>";
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->all();
 
         foreach ($servers as $server) {
+            $date0 = new \DateTime($server->wipe);
             $date = new \DateTime($server->next_wipe);
-            $text .= PHP_EOL . "{$server->name} - Следующий вайп: <b>{$date->format('d.m.Y в H:i:s МСК')}</b>";
+            $date2 = new \DateTime($server->global_wipe);
+            $text .= PHP_EOL . PHP_EOL . "{$server->name}:";
+            $text .= PHP_EOL . "Последний вайп: <b>{$date0->format('d.m.Y в H:i:s МСК')}</b>";
+            $text .= PHP_EOL . "Следующий вайп: <b>{$date->format('d.m.Y в H:i:s МСК')}</b>";
+            $text .= PHP_EOL . "Глобал вайп: <b>{$date2->format('d.m.Y в H:i:s МСК')}</b>";
         }
 
         return $text;
