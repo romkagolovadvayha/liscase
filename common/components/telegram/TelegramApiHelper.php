@@ -84,7 +84,7 @@ class TelegramApiHelper extends \yii\base\Component
             unset($params['text']);
         }
 
-        $url = 'https://api.telegram.org/bot' . $this->botToken . '/setWebhook' . $method .
+        $url = 'https://api.telegram.org/bot' . $this->botToken . '/' . $method .
                (!empty($getParams) ? '?' . http_build_query($getParams) : '');
 
         return [$url, $params];
