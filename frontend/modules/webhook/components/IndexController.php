@@ -35,7 +35,7 @@ abstract class IndexController extends Controller
         $inputParams = Json::decode($data);
 
         $callBack = ArrayHelper::getValue($inputParams, 'callback_query', []);
-
+Yii::error('error', "webhook: " . json_encode($callBack));
         if (!empty($callBack)) {
             $buttonValue = ArrayHelper::getValue($callBack, 'data');
             $message     = ArrayHelper::getValue($callBack, 'message');
