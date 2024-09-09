@@ -28,9 +28,6 @@ $config = [
         'webhook' => [
             'class' => 'frontend\modules\webhook\Module',
         ],
-        'api'     => [
-            'class' => 'frontend\modules\api\Module',
-        ],
     ],
     'components' => [
         'request' => [
