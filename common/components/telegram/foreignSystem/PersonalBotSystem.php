@@ -4,8 +4,10 @@ namespace common\components\telegram\foreignSystem;
 
 use backend\models\TelegramConstructorMessage;
 use common\components\telegram\TelegramApiHelper;
+use common\models\profit\Profit;
 use common\models\user\UserConfirmCode;
 use Yii;
+use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
 use common\models\user\User;
 
@@ -105,8 +107,19 @@ class PersonalBotSystem extends AbstractSystem
             $language   = ArrayHelper::getValue($userInfo, 'current_language');
             if (!empty($userId)) {
                 $user = User::findOne($userId);
+                if (!empty($user->telegram_chat_id)) {
+                    return 'Вы уже авторизованы!';
+                }
                 $user->telegram_chat_id = $chatId;
                 $user->save();
+                $profit = new Profit();
+                $profit->status = 1;
+                $profit->type = Profit::TYPE_TELEGRAM_BOT;
+                $profit->amount = 30;
+                $profit->user_balance_id = $user->getParentUser()->getPersonalBalance()->id;
+                $profit->comment = Yii::t('common', 'Бонус за привязку телеграм бота','ru-RU');
+                $profit->created_at = date('Y-m-d H:i:s');
+                $profit->save(false);
                 $answerMessage = $this->_getAfterRegisterMessage(ArrayHelper::getValue($userInfo, 'email'), $language);
             }
         }
