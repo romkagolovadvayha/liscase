@@ -32,10 +32,9 @@ abstract class IndexController extends Controller
         }
 
         $data        = file_get_contents('php://input');
-        $inputParams = Json::decode($data);
+        $callBack = Json::decode($data);
         Yii::error('error', "webhook: " . $data);
 
-        $callBack = ArrayHelper::getValue($inputParams, 'callback_query', []);
         if (!empty($callBack)) {
             $buttonValue = ArrayHelper::getValue($callBack, 'data');
             $message     = ArrayHelper::getValue($callBack, 'message');
@@ -54,7 +53,7 @@ abstract class IndexController extends Controller
                 $bot->editMessageText($chat['id'], $message['message_id'], $textMessage);
             }
         } else {
-            $message = ArrayHelper::getValue($inputParams, 'message');
+            $message = ArrayHelper::getValue($callBack, 'message');
             $chat    = ArrayHelper::getValue($message, 'chat');
             if (empty($chat)) {
                 return false;
