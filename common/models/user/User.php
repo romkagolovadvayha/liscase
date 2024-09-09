@@ -22,6 +22,7 @@ use common\components\base\ActiveRecord;
  * @property int             $id
  * @property string          $email
  * @property string          $steam_id
+ * @property int             $telegram_chat_id
  * @property string          $username
  * @property string          $password_hash
  * @property string          $auth_key
@@ -34,7 +35,6 @@ use common\components\base\ActiveRecord;
  * @property string          $server_tag
  * @property string          $created_at
  * @property string          $updated_at
- * @property int             $telegram_chat_id
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
