@@ -33,19 +33,20 @@ abstract class IndexController extends Controller
 
         $data        = file_get_contents('php://input');
         $callBack = Json::decode($data);
-        Yii::error('error', "webhook: " . $data);
 
         if (!empty($callBack)) {
-            $buttonValue = ArrayHelper::getValue($callBack, 'data');
+            $buttonValue = ArrayHelper::getValue($callBack, 'data') ?? [];
             $message     = ArrayHelper::getValue($callBack, 'message');
             $chat        = ArrayHelper::getValue($message, 'chat');
             $textMessage = ArrayHelper::getValue($message, 'text');
-            if (empty($buttonValue) || empty($chat) || empty($textMessage)) {
+            Yii::error('error', "textMessage: " . $textMessage);
+            if (empty($chat) || empty($textMessage)) {
                 return false;
             }
 
             $answerMessage = $system->executeCallBack($chat['id'], $buttonValue);
 
+            Yii::error('error', "answerMessage: " . json_encode($answerMessage));
             if (!empty($answerMessage['message'])) {
                 $bot->sendMessage($chat['id'], $answerMessage['message'], $answerMessage['buttons']);
             } elseif (!empty($answerMessage)) {
