@@ -177,13 +177,13 @@ class PersonalBotSystem extends AbstractSystem
      */
     protected function _getAfterRegisterMessage($login, $language = null)
     {
-        $response = $this->getMessage(3, $language);
+        /*$response = $this->getMessage(3, $language);
         if (!empty($response) && !empty($response['message'])) {
             return [
                 'message' => $response['message'],
                 'buttons' => $response['buttons'],
             ];
-        }
+        }*/
         return "Вы успешно авторизовались! Напишите /help, чтобы увидеть команды для бота. 👍👏";
     }
 
