@@ -50,6 +50,8 @@ abstract class IndexController extends Controller
                 $bot->sendMessage($chat['id'], $answerMessage['message'], $answerMessage['buttons']);
             } elseif (!empty($answerMessage)) {
                 $bot->sendMessage($chat['id'], $answerMessage);
+                Yii::error('error', "id: " . $chat['id']);
+                Yii::error('error', "answerMessage: " . $answerMessage);
             }
         } else {
             $message = ArrayHelper::getValue($callBack, 'message');
