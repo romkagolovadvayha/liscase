@@ -59,8 +59,14 @@ $rating = $blog->getBlogRatings()->sum('weight') ?? 0;
                         </div>
                         <div class="blog_item_body">
                             <div class="blog_item_body_text">
+                                <div class="blog_item_body_text_images">
+                                <?php foreach ($blog->blogImages as $image): ?>
+                                    <div class="blog_item_body_text_images_item">
+                                        <img src="<?="/uploads" . $image->link?>" alt="<?=$image->description?>">
+                                    </div>
+                                <?php endforeach; ?>
+                                </div>
                                 <?=Yii::t('database', $blog->content)?>
-                                <?=Yii::t('database', $blog->description)?>
                             </div>
                         </div>
                         <div class="blog_item_data">

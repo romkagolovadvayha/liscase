@@ -2,6 +2,7 @@
 
 namespace backend\controllers;
 
+use backend\forms\blog\BlogForm;
 use common\components\helpers\Role;
 use common\components\queue\openAi\GenPostJob;
 use common\components\queue\openAi\GenPostsJob;
@@ -127,7 +128,7 @@ class BlogController extends Controller
         $model = new Blog();
 
         if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
+            if ($model->load($this->request->post()) && $model->saveRecord()) {
                 return $this->redirect(['view', 'id' => $model->id]);
             }
         } else {
@@ -150,7 +151,7 @@ class BlogController extends Controller
     {
         $model = $this->findModel($id);
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
+        if ($this->request->isPost && $model->load($this->request->post()) && $model->saveRecord()) {
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
@@ -177,12 +178,12 @@ class BlogController extends Controller
      * Finds the Blog model based on its primary key value.
      * If the model is not found, a 404 HTTP exception will be thrown.
      * @param int $id ID
-     * @return Blog the loaded model
+     * @return BlogForm the loaded model
      * @throws NotFoundHttpException if the model cannot be found
      */
     protected function findModel($id)
     {
-        if (($model = Blog::findOne(['id' => $id])) !== null) {
+        if (($model = BlogForm::findOne(['id' => $id])) !== null) {
             return $model;
         }
 

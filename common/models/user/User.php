@@ -34,6 +34,7 @@ use common\components\base\ActiveRecord;
  * @property string          $server_tag
  * @property string          $created_at
  * @property string          $updated_at
+ * @property int             $telegram_chat_id
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
@@ -595,5 +596,19 @@ class User extends ActiveRecord implements IdentityInterface
         ],'ru-RU');
         $profit->created_at = date('Y-m-d H:i:s');
         $profit->save(false);
+    }
+
+    /**
+     * @param int $systemId
+     * @param int $telegramChatId
+     *
+     * @return null|static
+     */
+    public static function getUserByTelegramChat($systemId, $telegramChatId)
+    {
+        return self::findOne([
+                                 'system_id'        => $systemId,
+                                 'telegram_chat_id' => $telegramChatId,
+                             ]);
     }
 }

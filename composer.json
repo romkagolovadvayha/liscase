@@ -42,7 +42,8 @@
         "yii2mod/yii2-comments": "^2.0",
         "tectalic/openai": "^1.6",
         "orhanerday/open-ai": "^5.2",
-        "batdan/midjourney-api-php": "^2.1"
+        "batdan/midjourney-api-php": "^2.1",
+        "2amigos/yii2-tinymce-widget": "*"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",
