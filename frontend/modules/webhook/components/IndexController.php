@@ -64,12 +64,8 @@ abstract class IndexController extends Controller
             $answerMessage = $system->executeCommand($message);
             if (!empty($answerMessage['message'])) {
                 $bot->sendMessage($chat['id'], $answerMessage['message'], $answerMessage['buttons']);
-                Yii::error('error', "id: " . $chat['id']);
-                Yii::error('error', "answerMessage[message]: " . $answerMessage['message']);
             } elseif (!empty($answerMessage)) {
                 $bot->sendMessage($chat['id'], $answerMessage);
-                Yii::error('error', "id: " . $chat['id']);
-                Yii::error('error', "answerMessage: " . $answerMessage);
             }
         }
 
