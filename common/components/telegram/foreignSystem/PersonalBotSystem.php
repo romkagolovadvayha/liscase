@@ -92,13 +92,15 @@ class PersonalBotSystem extends AbstractSystem
             }
             $lineSize -= $lineGreen;
             $text .= PHP_EOL . PHP_EOL;
+            $text .= "<i>{$server->name}</i>";
+            $text .= PHP_EOL;
             for ($i = 0; $i < $lineGreen; $i++) {
                 $text .= "🟩";
             }
             for ($i = 0; $i < $lineSize; $i++) {
                 $text .= "⬜️";
             }
-            $text .= PHP_EOL . "<i>{$server->name}</i>" . PHP_EOL . "Онлайн: <b>{$pl}/{$server->max}</b>";
+            $text .= PHP_EOL . "Онлайн: <b>{$pl}/{$server->max}</b>";
         }
 
         return $text;
