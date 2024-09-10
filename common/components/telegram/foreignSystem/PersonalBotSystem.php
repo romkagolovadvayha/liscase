@@ -47,12 +47,15 @@ class PersonalBotSystem extends AbstractSystem
 
         switch ($messageText) {
             case '/help':
-                return "<b>/pop</b> - Информация об онлайне на сервере"
-                    . PHP_EOL . "<b>/wipe</b> - Информация о вайпах на серверах";
+                return "<b>/pop</b> - Онлайн на серверах"
+                    . PHP_EOL . "<b>/wipe</b> - Календарь вайпов"
+                    . PHP_EOL . "<b>/ip</b> - IP серверов";
             case '/pop':
                 return $this->getOnline();
             case '/wipe':
                 return $this->getWipe();
+            case '/ip':
+                return $this->getIp();
         }
 
         return $answerMessage;
@@ -73,9 +76,9 @@ class PersonalBotSystem extends AbstractSystem
             }
             $name = substr($server->name, strpos($server->name, '['), strripos($server->name, ']'));
             $text .= "<b>{$name}</b>";
-            $text .= PHP_EOL . "Последний: <i>{$date0->format('d.m.Y в H:i МСК')}</i>";
-            $text .= PHP_EOL . "Следующий: <i>{$date->format('d.m.Y в H:i МСК')}</i>";
-            $text .= PHP_EOL . "Глобал: <i>{$date2->format('d.m.Y в H:i МСК')}</i>";
+            $text .= PHP_EOL . "Последний: <code>{$date0->format('d.m.Y в H:i МСК')}</code>";
+            $text .= PHP_EOL . "Следующий: <code>{$date->format('d.m.Y в H:i МСК')}</code>";
+            $text .= PHP_EOL . "Глобал: <code>{$date2->format('d.m.Y в H:i МСК')}</code>";
         }
 
         return $text;
@@ -107,7 +110,25 @@ class PersonalBotSystem extends AbstractSystem
             for ($i = 0; $i < $lineSize; $i++) {
                 $text .= "⬜️";
             }
-            $text .= PHP_EOL . "Онлайн: <b>{$pl}/{$server->max}</b>";
+            $text .= PHP_EOL . "Онлайн: <code>{$pl}/{$server->max}</code>";
+        }
+
+        return $text;
+    }
+
+    public function getIp() {
+        $text = "";
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->all();
+
+        foreach ($servers as $k => $server) {
+            if ($k > 0) {
+                $text .= PHP_EOL . PHP_EOL;
+            }
+            $name = substr($server->name, strpos($server->name, '['), strripos($server->name, ']'));
+            $text .= "<b>{$name}</b>";
+            $text .= PHP_EOL . "<code>connect {$server->ip}:{$server->port}</code>";
         }
 
         return $text;
