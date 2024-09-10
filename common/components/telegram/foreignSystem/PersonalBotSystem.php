@@ -72,10 +72,10 @@ class PersonalBotSystem extends AbstractSystem
                 $text .= PHP_EOL . PHP_EOL;
             }
             $name = substr($server->name, strpos($server->name, '['), strripos($server->name, ']'));
-            $text .= "<i>{$name}</i>";
-            $text .= PHP_EOL . "Последний: <b>{$date0->format('d.m.Y в H:i МСК')}</b>";
-            $text .= PHP_EOL . "Следующий: <b>{$date->format('d.m.Y в H:i МСК')}</b>";
-            $text .= PHP_EOL . "Глобал: <b>{$date2->format('d.m.Y в H:i МСК')}</b>";
+            $text .= "<b>{$name}</b>";
+            $text .= PHP_EOL . "Последний: <i>{$date0->format('d.m.Y в H:i МСК')}</i>";
+            $text .= PHP_EOL . "Следующий: <i>{$date->format('d.m.Y в H:i МСК')}</i>";
+            $text .= PHP_EOL . "Глобал: <i>{$date2->format('d.m.Y в H:i МСК')}</i>";
         }
 
         return $text;
@@ -99,7 +99,7 @@ class PersonalBotSystem extends AbstractSystem
                 $text .= PHP_EOL . PHP_EOL;
             }
             $name = substr($server->name, strpos($server->name, '['), strripos($server->name, ']'));
-            $text .= "<i>{$name}</i>";
+            $text .= "<b>{$name}</b>";
             $text .= PHP_EOL;
             for ($i = 0; $i < $lineGreen; $i++) {
                 $text .= "🟩";
