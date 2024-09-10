@@ -59,7 +59,7 @@ class PersonalBotSystem extends AbstractSystem
     }
 
     public function getWipe() {
-        $text = "<b>Вайп на серверах:</b>";
+        $text = "<b>Календарь вайпов:</b>";
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->all();
@@ -68,24 +68,37 @@ class PersonalBotSystem extends AbstractSystem
             $date0 = new \DateTime($server->wipe);
             $date = new \DateTime($server->next_wipe);
             $date2 = new \DateTime($server->global_wipe);
-            $text .= PHP_EOL . PHP_EOL . "{$server->name}:";
-            $text .= PHP_EOL . "Последний вайп: <b>{$date0->format('d.m.Y в H:i:s МСК')}</b>";
-            $text .= PHP_EOL . "Следующий вайп: <b>{$date->format('d.m.Y в H:i:s МСК')}</b>";
-            $text .= PHP_EOL . "Глобал вайп: <b>{$date2->format('d.m.Y в H:i:s МСК')}</b>";
+            $text .= PHP_EOL . PHP_EOL . "<i>{$server->name}</i>";
+            $text .= PHP_EOL . "Последний: <b>{$date0->format('d.m.Y в H:i МСК')}</b>";
+            $text .= PHP_EOL . "Следующий: <b>{$date->format('d.m.Y в H:i МСК')}</b>";
+            $text .= PHP_EOL . "Глобал: <b>{$date2->format('d.m.Y в H:i МСК')}</b>";
         }
 
         return $text;
     }
 
     public function getOnline() {
-        $text = "<b>Онлайн на серверах:</b>" . PHP_EOL;
+        $text = "<b>Онлайн:</b>";
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->all();
 
         foreach ($servers as $server) {
+            $lineSize = 10;
             $pl = $server->players + $server->joined;
-            $text .= PHP_EOL . "{$server->name} - Текущий онлайн: <b>{$pl}</b>";
+            $lineGreen = ceil($lineSize/$server->max * (ceil($pl/10) * 10));
+            if ($lineGreen > $lineSize) {
+                $lineGreen = $lineSize;
+            }
+            $lineSize -= $lineGreen;
+            $text .= PHP_EOL . PHP_EOL;
+            for ($i = 0; $i < $lineGreen; $i++) {
+                $text .= "🟩";
+            }
+            for ($i = 0; $i < $lineSize; $i++) {
+                $text .= "⬜️";
+            }
+            $text .= PHP_EOL . "<i>{$server->name}</i>" . PHP_EOL . "Онлайн: <b>{$pl}/{$server->max}</b>";
         }
 
         return $text;
