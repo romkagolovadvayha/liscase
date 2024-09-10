@@ -64,11 +64,14 @@ class PersonalBotSystem extends AbstractSystem
         $servers = Servers::find()
                           ->all();
 
-        foreach ($servers as $server) {
+        foreach ($servers as $i => $server) {
             $date0 = new \DateTime($server->wipe);
             $date = new \DateTime($server->next_wipe);
             $date2 = new \DateTime($server->global_wipe);
-            $text .= PHP_EOL . PHP_EOL . "<i>{$server->name}</i>";
+            if ($i > 0) {
+                $text .= PHP_EOL . PHP_EOL;
+            }
+            $text .= "<i>{$server->name}</i>";
             $text .= PHP_EOL . "Последний: <b>{$date0->format('d.m.Y в H:i МСК')}</b>";
             $text .= PHP_EOL . "Следующий: <b>{$date->format('d.m.Y в H:i МСК')}</b>";
             $text .= PHP_EOL . "Глобал: <b>{$date2->format('d.m.Y в H:i МСК')}</b>";
@@ -78,12 +81,11 @@ class PersonalBotSystem extends AbstractSystem
     }
 
     public function getOnline() {
-        $text = "<b>Онлайн:</b>";
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->all();
 
-        foreach ($servers as $server) {
+        foreach ($servers as $i => $server) {
             $lineSize = 10;
             $pl = $server->players + $server->joined;
             $lineGreen = ceil($lineSize/$server->max * (ceil($pl/10) * 10));
@@ -91,7 +93,9 @@ class PersonalBotSystem extends AbstractSystem
                 $lineGreen = $lineSize;
             }
             $lineSize -= $lineGreen;
-            $text .= PHP_EOL . PHP_EOL;
+            if ($i > 0) {
+                $text .= PHP_EOL . PHP_EOL;
+            }
             $text .= "<i>{$server->name}</i>";
             $text .= PHP_EOL;
             for ($i = 0; $i < $lineGreen; $i++) {
