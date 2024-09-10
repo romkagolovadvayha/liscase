@@ -59,16 +59,16 @@ class PersonalBotSystem extends AbstractSystem
     }
 
     public function getWipe() {
-        $text = "<b>Календарь вайпов:</b>";
+        $text = "";
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->all();
 
-        foreach ($servers as $i => $server) {
+        foreach ($servers as $k => $server) {
             $date0 = new \DateTime($server->wipe);
             $date = new \DateTime($server->next_wipe);
             $date2 = new \DateTime($server->global_wipe);
-            if ($i > 0) {
+            if ($k > 0) {
                 $text .= PHP_EOL . PHP_EOL;
             }
             $text .= "<i>{$server->name}</i>";
@@ -81,11 +81,12 @@ class PersonalBotSystem extends AbstractSystem
     }
 
     public function getOnline() {
+        $text = "";
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->all();
 
-        foreach ($servers as $i => $server) {
+        foreach ($servers as $k => $server) {
             $lineSize = 10;
             $pl = $server->players + $server->joined;
             $lineGreen = ceil($lineSize/$server->max * (ceil($pl/10) * 10));
@@ -93,7 +94,7 @@ class PersonalBotSystem extends AbstractSystem
                 $lineGreen = $lineSize;
             }
             $lineSize -= $lineGreen;
-            if ($i > 0) {
+            if ($k > 0) {
                 $text .= PHP_EOL . PHP_EOL;
             }
             $text .= "<i>{$server->name}</i>";
