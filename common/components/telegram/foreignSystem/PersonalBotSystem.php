@@ -184,16 +184,12 @@ class PersonalBotSystem extends AbstractSystem
         $chatId = ArrayHelper::getValue($message, 'chat.id');
 
         $code     = $this->_getMessageText($message);
-        $userInfo = $this->getUserByAuthCode($code, $chatId);
+        $user = $this->getUserByAuthCode($code, $chatId);
 
         $answerMessage = 'Ошибка авторизации, код неверен! 🤔';
 
-        if (!empty($userInfo)) {
-            $systemId = $this->getSystemId();
-            $userId   = ArrayHelper::getValue($userInfo, 'userId');
-            $language   = ArrayHelper::getValue($userInfo, 'current_language');
+        if (!empty($user)) {
             if (!empty($userId)) {
-                $user = User::findOne($userId);
                 if (!empty($user->telegram_chat_id)) {
                     return 'Вы уже авторизованы!';
                 }
@@ -207,7 +203,7 @@ class PersonalBotSystem extends AbstractSystem
                 $profit->comment = Yii::t('common', 'Бонус за привязку телеграм бота','ru-RU');
                 $profit->created_at = date('Y-m-d H:i:s');
                 $profit->save(false);
-                $answerMessage = $this->_getAfterRegisterMessage(ArrayHelper::getValue($userInfo, 'email'), $language);
+                $answerMessage = $this->_getAfterRegisterMessage($user);
             }
         }
 
@@ -218,24 +214,20 @@ class PersonalBotSystem extends AbstractSystem
      * @param string $code
      * @param int    $chatId
      *
-     * @return array
+     * @return User
      */
     public function getUserByAuthCode($code, $chatId)
     {
         if (empty($code)) {
-            return [];
+            return null;
         }
         $user = UserConfirmCode::getUserByTelegramCode($code);
         if (empty($user)) {
-            return [];
+            return null;
         }
 
         UserConfirmCode::updateStatus($user->id, UserConfirmCode::TYPE_TELEGRAM_BOT);
-        return [
-            'userId' => $user->id,
-            'email'  => $user->email,
-            'current_language'  => $user->current_language,
-        ];
+        return $user;
     }
 
     /**
@@ -271,20 +263,13 @@ class PersonalBotSystem extends AbstractSystem
     }
 
     /**
-     * @param string $login
+     * @param User $user
      *
      * @return string|array
      */
-    protected function _getAfterRegisterMessage($login, $language = null)
+    protected function _getAfterRegisterMessage($user)
     {
-        /*$response = $this->getMessage(3, $language);
-        if (!empty($response) && !empty($response['message'])) {
-            return [
-                'message' => $response['message'],
-                'buttons' => $response['buttons'],
-            ];
-        }*/
-        return "✅ Вы успешно авторизовались!"
+        return "✅ {$user->username}, Вы успешно авторизовались!"
             . PHP_EOL . "🎁 Вам начислен бонус <b>50 РУБ</b> на сайте!"
             . PHP_EOL . PHP_EOL . "ℹ️Напишите /help, чтобы увидеть команды для бота.";
     }
