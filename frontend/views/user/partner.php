@@ -43,6 +43,10 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                                         'pageSize' => 10,
                                                     ],
                                                 ]);
+
+$payoutSum = \common\models\user\UserPayoutReferral::find()
+    ->andWhere(['user_id' => $user->id])
+    ->sum('amount') ?? 0;
 ?>
 
 <div class="container-fluid mb-5">
@@ -152,7 +156,7 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                     </div>
                                     <div class="referal_slots_item">
                                         <div class="referal_slots_item_title">
-                                            <?= $total * ($user->userProfile->referral_bonus/100) ?> <span class="referal_slots_item_title_currency"><i class="fas fa-ruble-sign"></i></span>
+                                            <?= $total * ($user->userProfile->referral_bonus/100) - $payoutSum ?> <span class="referal_slots_item_title_currency"><i class="fas fa-ruble-sign"></i></span>
                                         </div>
                                         <div class="referal_slots_item_description">
                                             <?=Yii::t('common', "Доступно к выводу")?>

@@ -39,7 +39,7 @@ class SkindropsController extends Controller
         return $this->render('report');
     }
 
-    public function actionBuy($name, $price, $userId)
+    public function actionBuy($name, $price, $userId, $childId = null)
     {
         /** @var User $user */
         $user = User::findOne($userId);
@@ -50,6 +50,12 @@ class SkindropsController extends Controller
             if (!empty($response['error'])) {
                 Yii::$app->session->addFlash('danger', $response['error']);
             } else {
+                if (!empty($childId)) {
+                    /** @var User $childUser */
+                    $childUser = User::findOne($childId);
+                    $childUser->parent_skin_send = 1;
+                    $childUser->save();
+                }
                 Yii::$app->session->addFlash('success', 'Скин успешно отправлен!');
             }
             $this->redirect('index');

@@ -31,6 +31,7 @@ use common\components\base\ActiveRecord;
  * @property string          $current_language
  * @property int             $status
  * @property string          $jwt
+ * @property bool            $parent_skin_send
  * @property int             $auto
  * @property string          $server_tag
  * @property string          $created_at
@@ -193,6 +194,7 @@ class User extends ActiveRecord implements IdentityInterface
                     $user           = new User();
                     $user->email    = "{$steamId}@steam.com";
                     $user->steam_id = $steamId;
+                    $user->auto = 1;
                     $user->username = $infoUser[0]['personaname'];
                     $user->setPassword(Yii::$app->security->generateRandomString());
                     $user->status = User::STATUS_ACTIVE;

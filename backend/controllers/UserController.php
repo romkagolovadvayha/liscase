@@ -4,10 +4,13 @@ namespace backend\controllers;
 
 use backend\forms\userProfile\BonusForm;
 use backend\forms\userProfile\PasswordForm;
+use backend\forms\userProfile\PayoutForm;
 use backend\forms\userProfile\RoleForm;
+use backend\forms\userProfile\SkinForm;
 use common\components\helpers\Role;
 use common\models\user\UserSearch;
 use Yii;
+use yii\base\BaseObject;
 use yii\filters\AccessControl;
 use yii\helpers\ArrayHelper;
 use common\models\user\User;
@@ -52,6 +55,10 @@ class UserController extends CrudController
         $roleForm->setUserId($userId);
         $bonusForm = new BonusForm();
         $bonusForm->setUserId($userId);
+        $payoutForm = new PayoutForm();
+        $payoutForm->setUserId($userId);
+        $skinForm = new SkinForm();
+        $skinForm->setUserId($userId);
         $bodyParams = Yii::$app->request->bodyParams;
         if (!empty($bodyParams['RoleForm'])
             && $roleForm->load(Yii::$app->request->post())
@@ -65,10 +72,24 @@ class UserController extends CrudController
             Yii::$app->session->addFlash('success', 'Бонус успешно начислен!');
             return $this->redirect(['profile', 'userId' => $userId]);
         }
+        if (!empty($bodyParams['PayoutForm'])
+            && $payoutForm->load(Yii::$app->request->post())
+            && $payoutForm->saveRecord()) {
+            Yii::$app->session->addFlash('success', 'Вывод успешно проведен!');
+            return $this->redirect(['profile', 'userId' => $userId]);
+        }
+        if (!empty($bodyParams['SkinForm'])
+            && $skinForm->load(Yii::$app->request->post())
+            && $skinForm->saveRecord()) {
+            Yii::$app->session->addFlash('success', 'Скин успешно отправлен!');
+            return $this->redirect(['profile', 'userId' => $userId]);
+        }
         return $this->render('profile', [
             'user' => $user,
             'roleForm' => $roleForm,
             'bonusForm' => $bonusForm,
+            'skinForm' => $skinForm,
+            'payoutForm' => $payoutForm,
         ]);
     }
 
