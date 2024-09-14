@@ -9,12 +9,14 @@ use common\models\auth\AuthAssignment;
 use common\models\invoice\Invoice;
 use common\models\invoice\Deposit;
 use common\models\profit\Profit;
+use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
 use yii\base\BaseObject;
 use yii\base\NotSupportedException;
 use Yii;
+use yii\helpers\ArrayHelper;
 use yii\web\IdentityInterface;
 use common\components\base\ActiveRecord;
 
@@ -36,6 +38,10 @@ use common\components\base\ActiveRecord;
  * @property string          $server_tag
  * @property string          $created_at
  * @property string          $updated_at
+ * @property string          $banned_at
+ * @property string          $unbanned_at
+ * @property int             $ban_reason
+ * @property int             $ban_by
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
@@ -57,6 +63,15 @@ class User extends ActiveRecord implements IdentityInterface
     const STATUS_BLOCKED      = 5;
     const STATUS_TMP_BLOCKED  = 6;
 
+    const REASON_GAME_3 = 1;
+    const REASON_CHEATING = 2;
+    const REASON_TEAM_CHEATING = 3;
+    const REASON_GAME_1 = 4;
+    const REASON_NOT_REASON = 5;
+    const REASON_MACROS = 6;
+    const REASON_MULTIACC = 7;
+    const REASON_BAN_OTHER_PROJECT = 8;
+
     /**
      * @return array
      */
@@ -67,6 +82,23 @@ class User extends ActiveRecord implements IdentityInterface
             self::STATUS_CONFIRMATION => Yii::t('common', 'Не подтвержден'),
             self::STATUS_BLOCKED      => Yii::t('common', 'Заблокирован'),
             self::STATUS_TMP_BLOCKED  => Yii::t('common', 'Временно заблокирован'),
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public static function getReasonList(): array
+    {
+        return [
+            self::REASON_GAME_3       => Yii::t('common', 'Игра 3+'),
+            self::REASON_GAME_1       => Yii::t('common', 'Игра 1+'),
+            self::REASON_CHEATING       => Yii::t('common', 'Читер'),
+            self::REASON_TEAM_CHEATING       => Yii::t('common', 'Игра с читером'),
+            self::REASON_MACROS      => Yii::t('common', 'Макросы'),
+            self::REASON_MULTIACC      => Yii::t('common', 'Мульти Аккаунт'),
+            self::REASON_BAN_OTHER_PROJECT       => Yii::t('common', 'Бан на другом проекте'),
+            self::REASON_NOT_REASON       => Yii::t('common', 'Причина не указана'),
         ];
     }
 
@@ -612,5 +644,84 @@ class User extends ActiveRecord implements IdentityInterface
                                  'system_id'        => $systemId,
                                  'telegram_chat_id' => $telegramChatId,
                              ]);
+    }
+
+    public function ban($reason, $banBy = null, $bannedAt = null) {
+        $serversBan = [];
+        $this->ban_by = $banBy;
+        $this->ban_reason = $reason;
+        $this->status = User::STATUS_BLOCKED;
+        if (empty($bannedAt)) {
+            $bannedAt = date('Y-m-d H:i:s');
+        }
+        $this->banned_at = $bannedAt;
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->cache(30)
+                          ->all();
+        if (in_array($reason, [self::REASON_GAME_3])) {
+            $serversBan = ['max3'];
+            foreach ($servers as $server) {
+                if (in_array($server->tag, $serversBan)) {
+                    $unbannedAt = $server->next_wipe;
+                    break;
+                }
+            }
+        }
+        if (in_array($reason, [self::REASON_GAME_1])) {
+            $serversBan = ['solo'];
+            foreach ($servers as $server) {
+                if (in_array($server->tag, $serversBan)) {
+                    $unbannedAt = $server->next_wipe;
+                    break;
+                }
+            }
+        }
+        if (!empty($unbannedAt)) {
+            $this->status = User::STATUS_ACTIVE;
+            $this->unbanned_at = $unbannedAt;
+        }
+        $this->save();
+
+        $reasonText = ArrayHelper::getValue(User::getReasonList(), $reason);
+        foreach ($servers as $server) {
+            if (!empty($serversBan) && !in_array($server->tag, $serversBan)) {
+                continue;
+            }
+            $rconTask = new RconTasks();
+            $rconTask->status = RconTasks::STATUS_WAIT;
+            $rconTask->command = "helper ban \"{$this->steam_id}\" \"{$reasonText}\"";
+            $rconTask->server_tag = $server->tag;
+            $rconTask->created_at = date('Y-m-d H:i:s');
+            $rconTask->save();
+        }
+        Yii::$app->rustCheck->ban($this->steam_id, $reasonText);
+
+        return true;
+    }
+
+    public function unban() {
+        $this->ban_by = null;
+        $this->ban_reason = null;
+        $this->banned_at = null;
+        $this->unbanned_at = null;
+        $this->status = User::STATUS_ACTIVE;
+        $this->save();
+
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->cache(30)
+                          ->all();
+        foreach ($servers as $server) {
+            $rconTask = new RconTasks();
+            $rconTask->status = RconTasks::STATUS_WAIT;
+            $rconTask->command = "unban \"{$this->steam_id}\"";
+            $rconTask->server_tag = $server->tag;
+            $rconTask->created_at = date('Y-m-d H:i:s');
+            $rconTask->save();
+        }
+
+        Yii::$app->rustCheck->unban($this->steam_id);
+        return true;
     }
 }

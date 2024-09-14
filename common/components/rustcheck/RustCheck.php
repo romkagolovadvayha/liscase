@@ -27,4 +27,24 @@ class RustCheck
         return json_decode($response, 1);
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function ban($steamId, $reason): array
+    {
+        $url = $this->baseUrl . "?action=addBan&key={$this->secretKey}&player={$steamId}&reason={$reason}";
+        $response = Yii::$app->curl->get($url);
+        return json_decode($response, 1);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function unban($steamId): array
+    {
+        $url = $this->baseUrl . "?action=removeBan&key={$this->secretKey}&player={$steamId}";
+        $response = Yii::$app->curl->get($url);
+        return json_decode($response, 1);
+    }
+
 }

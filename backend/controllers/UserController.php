@@ -2,6 +2,7 @@
 
 namespace backend\controllers;
 
+use backend\forms\userProfile\BanForm;
 use backend\forms\userProfile\BonusForm;
 use backend\forms\userProfile\PasswordForm;
 use backend\forms\userProfile\PayoutForm;
@@ -59,6 +60,8 @@ class UserController extends CrudController
         $payoutForm->setUserId($userId);
         $skinForm = new SkinForm();
         $skinForm->setUserId($userId);
+        $banForm = new BanForm();
+        $banForm->setUserId($userId);
         $bodyParams = Yii::$app->request->bodyParams;
         if (!empty($bodyParams['RoleForm'])
             && $roleForm->load(Yii::$app->request->post())
@@ -84,13 +87,28 @@ class UserController extends CrudController
             Yii::$app->session->addFlash('success', 'Скин успешно отправлен!');
             return $this->redirect(['profile', 'userId' => $userId]);
         }
+        if (!empty($bodyParams['BanForm'])
+            && $banForm->load(Yii::$app->request->post())
+            && $banForm->saveRecord()) {
+            Yii::$app->session->addFlash('success', 'Бан успешно выдан!');
+            return $this->redirect(['profile', 'userId' => $userId]);
+        }
         return $this->render('profile', [
             'user' => $user,
             'roleForm' => $roleForm,
             'bonusForm' => $bonusForm,
             'skinForm' => $skinForm,
+            'banForm' => $banForm,
             'payoutForm' => $payoutForm,
         ]);
+    }
+
+    public function actionUnban($userId)
+    {
+        $user = User::findOne($userId);
+        $user->unban();
+        Yii::$app->session->addFlash('success', 'Бан успешно снят!');
+        return $this->redirect('/user/profile?userId=' . $userId);
     }
 
     public function actionConfirmPhone($id)

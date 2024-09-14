@@ -1,5 +1,6 @@
 <?php
 
+use common\models\servers\Servers;
 use common\models\user\User;
 use backend\forms\userProfile\RoleForm;
 use backend\forms\userProfile\BonusForm;
@@ -9,6 +10,8 @@ use common\models\user\UserProfile;
 use common\models\user\UserTree;
 use common\models\invoice\Deposit;
 use backend\forms\userProfile\SkinForm;
+use backend\forms\userProfile\BanForm;
+use yii\bootstrap5\Html;
 use yii\web\View;
 use frontend\widgets\Alert;
 
@@ -19,6 +22,7 @@ $this->title = Yii::t('common', 'Профиль');
 /** @var BonusForm $bonusForm */
 /** @var PayoutForm $payoutForm */
 /** @var SkinForm $skinForm */
+/** @var BanForm $banForm */
 /** @var UserProfile $userProfile */
 
 $userProfile = $user->userProfile;
@@ -84,6 +88,29 @@ $dataProviderSkins = new \yii\data\ArrayDataProvider([
                                                         'pageSize' => 60,
                                                     ],
                                                 ]);
+
+$statusClass = "bg-success";
+if ($user->status === 5) {
+    $statusClass = "bg-danger";
+}
+
+
+/** @var Servers[] $servers */
+$servers = Servers::find()
+                  ->cache(30)
+                  ->all();
+
+$teams = [];
+foreach ($servers as $server) {
+    $teams = array_merge($teams, \common\models\statistics\Teams::getAllInTeams($server, $user->steam_id));
+}
+$teamsProvider2 = new \yii\data\ArrayDataProvider([
+                                                    'allModels' => $teams,
+                                                    'totalCount' => count($teams),
+                                                    'pagination' => [
+                                                        'pageSize' => 30,
+                                                    ],
+                                                ]);
 ?>
 
 <style>
@@ -112,6 +139,13 @@ $dataProviderSkins = new \yii\data\ArrayDataProvider([
                 <button type="button" class="list-group-item list-group-item-action list-group-item-warning" data-bs-toggle="modal" data-bs-modal-form="payout_form" data-bs-target="#modalForm">
                     Вывод с реф. системы
                 </button>
+                <?php if ($user->status === User::STATUS_ACTIVE): ?>
+                <button type="button" class="list-group-item list-group-item-action list-group-item-danger" data-bs-toggle="modal" data-bs-modal-form="ban_form" data-bs-target="#modalForm">
+                    Заблокировать игрока
+                </button>
+                <?php else: ?>
+                <?= Html::a('Снять бан', '/user/unban?userId=' . $user->id, ['data-confirm' => 'Вы действительно уверены?', 'class' => 'list-group-item list-group-item-action list-group-item-success']) ?>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     </div>
@@ -120,7 +154,7 @@ $dataProviderSkins = new \yii\data\ArrayDataProvider([
             <?php if ($user->auto):?>
                 <li class="list-group-item">Авторегистрация</li>
             <?php endif; ?>
-            <li class="list-group-item">Ник: <?= $user->username; ?></li>
+            <li class="list-group-item"><?= $user->username; ?> <span class="badge rounded-pill <?=$statusClass?>"><?= \yii\helpers\ArrayHelper::getValue(User::getStatusList(), $user->status); ?></span></li>
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 <?= Yii::t('common', 'Лицевой баланс'); ?>
                 <span class="badge bg-primary rounded-pill"><?= Yii::$app->formatter->asDecimal($user->getPersonalBalance()->getBalanceCeil(), 2) ?> RUB</span>
@@ -130,6 +164,25 @@ $dataProviderSkins = new \yii\data\ArrayDataProvider([
                 <span class="badge bg-primary rounded-pill"><?= Yii::$app->formatter->asDecimal($payoutTotal, 2) ?> RUB</span>
             </li>
         </ul>
+        <div class="mt-4">
+            <h3>Команда</h3>
+            <?= \kartik\grid\GridView::widget([
+                                                  'dataProvider' => $teamsProvider2,
+                                                  'layout'       => "{items} {pager}",
+                                                  'columns'      => [
+                                                      [
+                                                          'attribute' => 'name',
+                                                          'label'     => Yii::t('common', "Ник"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                              $user = User::findBySteamId($model['steam_id']);
+                                                              return "<a href=\"/user/profile?userId={$user->id}\">{$model['name']}</a>";
+                                                          },
+                                                      ],
+                                                  ],
+                                              ]);
+            ?>
+        </div>
         <div class="mt-4">
             <h3>Рефералы</h3>
             <?= \kartik\grid\GridView::widget([
@@ -188,20 +241,19 @@ $dataProviderSkins = new \yii\data\ArrayDataProvider([
 <div class="modal fade" id="modalForm" tabindex="-1" role="dialog" aria-labelledby="modalForm">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div id="role_form">
+                <?= $this->render('_form_role', compact('roleForm')); ?>
             </div>
-            <div class="modal-body">
-                <div id="role_form">
-                    <?= $this->render('_form_role', compact('roleForm')); ?>
-                </div>
-                <div id="bonus_form">
-                    <?= $this->render('_form_personal_bonus', compact('bonusForm')); ?>
-                </div>
-                <div id="payout_form">
-                    <?= $this->render('_form_payout_form', compact('payoutForm')); ?>
-                </div>
-                <?php foreach ($usersTree as $userTree): ?>
+            <div id="bonus_form">
+                <?= $this->render('_form_personal_bonus', compact('bonusForm')); ?>
+            </div>
+            <div id="payout_form">
+                <?= $this->render('_form_payout_form', compact('payoutForm')); ?>
+            </div>
+            <div id="ban_form">
+                <?= $this->render('_form_ban_form', compact('banForm')); ?>
+            </div>
+            <?php foreach ($usersTree as $userTree): ?>
                 <div id="skin_form_<?=$userTree->user->id?>">
                     <?= $this->render('_form_skin_form', [
                         'childId' => $userTree->user->id,
@@ -209,8 +261,7 @@ $dataProviderSkins = new \yii\data\ArrayDataProvider([
                         'user' => $user,
                     ]); ?>
                 </div>
-                <?php endforeach; ?>
-            </div>
+            <?php endforeach; ?>
         </div>
     </div>
 </div>
@@ -220,7 +271,7 @@ $this->registerJs(<<<JS
     $('[data-bs-modal-form]').on('click', function () {
         var form = $($(this).data().bsTarget);
         var element = $("#" + $(this).data().bsModalForm);
-        form.find('.modal-body > *').hide();
+        form.find('.modal-content > *').hide();
         element.show();
     });
 JS

@@ -9,12 +9,13 @@ use backend\forms\userProfile\PasswordForm;
 
 ?>
 
-<div class="panel panel-info">
-    <div class="panel-heading"><h3 class="panel-title">Смена пароля</h3></div>
-    <div class="panel-body">
-        <?php $form = \yii\bootstrap5\ActiveForm::begin() ?>
-        <?= $form->field($passwordForm, 'password')->passwordInput(['placeholder' => 'Введите новый пароль...']) ?>
-        <?= Html::submitButton('Сохранить', ['data-confirm' => 'Вы действительно хотите изменить пароль?', 'class' => 'btn btn-success']) ?>
-        <?php ActiveForm::end() ?>
-    </div>
+<div class="modal-header">
+    <h5 class="modal-title">Смена пароля</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body">
+    <?php $form = \yii\bootstrap5\ActiveForm::begin() ?>
+    <?= $form->field($passwordForm, 'password')->passwordInput(['placeholder' => 'Введите новый пароль...']) ?>
+    <?= Html::submitButton('Сохранить', ['data-confirm' => 'Вы действительно хотите изменить пароль?', 'class' => 'btn btn-success']) ?>
+    <?php ActiveForm::end() ?>
 </div>

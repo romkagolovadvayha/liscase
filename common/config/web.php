@@ -161,8 +161,8 @@ $config = [
         ],
         'rustTm'   => [
             'class' => \common\components\rusttm\RustTm::class,
-//            'secretKey' => '4Tctry3D0b9003d52Kv2w10BND942mX',
-            'secretKey' => 'y6aq0Jb1WmFe2nMcYy1y41Iq0V4lpq3',
+            'secretKey' => '4Tctry3D0b9003d52Kv2w10BND942mX',
+            //'secretKey' => 'y6aq0Jb1WmFe2nMcYy1y41Iq0V4lpq3',
         ],
         'rustCheck'   => [
             'class' => \common\components\rustcheck\RustCheck::class,

@@ -62,6 +62,10 @@ class PersonalBotSystem extends AbstractSystem
     }
 
     public function getWipe() {
+        $cacheKey = 'PersonalBotSystem_getWipe';
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
         $text = "";
         /** @var Servers[] $servers */
         $servers = Servers::find()
@@ -81,10 +85,15 @@ class PersonalBotSystem extends AbstractSystem
             $text .= PHP_EOL . "Глобал: <code>{$date2->format('d.m.Y в H:i МСК')}</code>";
         }
 
+        Yii::$app->cache->set($cacheKey, $text, 60);
         return $text;
     }
 
     public function getOnline() {
+        $cacheKey = 'PersonalBotSystem_getOnline';
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
         $text = "";
         /** @var Servers[] $servers */
         $servers = Servers::find()
@@ -113,10 +122,15 @@ class PersonalBotSystem extends AbstractSystem
             $text .= PHP_EOL . "Онлайн: <code>{$pl}/{$server->max}</code>";
         }
 
+        Yii::$app->cache->set($cacheKey, $text, 60);
         return $text;
     }
 
     public function getIp() {
+        $cacheKey = 'PersonalBotSystem_getIp';
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
         $text = "";
         /** @var Servers[] $servers */
         $servers = Servers::find()
@@ -131,6 +145,7 @@ class PersonalBotSystem extends AbstractSystem
             $text .= PHP_EOL . "<code>connect {$server->ip}:{$server->port}</code>";
         }
 
+        Yii::$app->cache->set($cacheKey, $text, 60);
         return $text;
     }
 
