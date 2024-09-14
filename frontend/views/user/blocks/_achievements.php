@@ -44,6 +44,19 @@ $received = true;
                             </a>
                         </div>
                     </div>
+                    <?php if (empty($user->telegram_chat_id)): ?>
+                    <div class="achievements_body_list_items_item">
+                        <div class="achievements_body_list_items_item_info">
+                            <div class="achievements_body_list_items_item_info_stext"><?=Yii::t('common', 'Подключи телеграм бота и получи 50 RUB')?></div>
+                            <div title="Чистый чай на металлолом" class="achievements_body_list_items_item_info_simage">
+                                <img src="/images/tg.png">
+                            </div>
+                            <a href="https://t.me/ProstojServerBot" class="achievements_body_list_items_item_info_btn">
+                                <?=Yii::t('common', 'Подключить')?>
+                            </a>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php foreach (Task::getTypeList() as $type => $title): ?>

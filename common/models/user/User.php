@@ -645,43 +645,42 @@ class User extends ActiveRecord implements IdentityInterface
                              ]);
     }
 
-    public function ban($reason, $banBy = null, $bannedAt = null) {
+    public function ban($reason, $banBy = null, $bannedAt = null, $rustcheck = true, $siteban = true) {
         $serversBan = [];
-        $this->ban_by = $banBy;
-        $this->ban_reason = $reason;
-        $this->status = User::STATUS_BLOCKED;
-        if (empty($bannedAt)) {
-            $bannedAt = date('Y-m-d H:i:s');
-        }
-        $this->banned_at = $bannedAt;
-        /** @var Servers[] $servers */
-        $servers = Servers::find()
-                          ->cache(30)
-                          ->all();
-        if (in_array($reason, [self::REASON_GAME_3])) {
-            $serversBan = ['max3'];
-            foreach ($servers as $server) {
-                if (in_array($server->tag, $serversBan)) {
-                    $unbannedAt = $server->next_wipe;
-                    break;
+        if ($siteban) {
+            $this->ban_by     = $banBy;
+            $this->ban_reason = $reason;
+            $this->status     = User::STATUS_BLOCKED;
+            if (empty($bannedAt)) {
+                $bannedAt = date('Y-m-d H:i:s');
+            }
+            $this->banned_at = $bannedAt;
+            /** @var Servers[] $servers */
+            $servers = Servers::find()->cache(30)->all();
+            if (in_array($reason, [self::REASON_GAME_3])) {
+                $serversBan = ['max3'];
+                foreach ($servers as $server) {
+                    if (in_array($server->tag, $serversBan)) {
+                        $unbannedAt = $server->next_wipe;
+                        break;
+                    }
                 }
             }
-        }
-        if (in_array($reason, [self::REASON_GAME_1])) {
-            $serversBan = ['solo'];
-            foreach ($servers as $server) {
-                if (in_array($server->tag, $serversBan)) {
-                    $unbannedAt = $server->next_wipe;
-                    break;
+            if (in_array($reason, [self::REASON_GAME_1])) {
+                $serversBan = ['solo'];
+                foreach ($servers as $server) {
+                    if (in_array($server->tag, $serversBan)) {
+                        $unbannedAt = $server->next_wipe;
+                        break;
+                    }
                 }
             }
+            if (!empty($unbannedAt)) {
+                $this->status      = User::STATUS_ACTIVE;
+                $this->unbanned_at = $unbannedAt;
+            }
+            $this->save();
         }
-        if (!empty($unbannedAt)) {
-            $this->status = User::STATUS_ACTIVE;
-            $this->unbanned_at = $unbannedAt;
-        }
-        $this->save();
-
         $reasonText = ArrayHelper::getValue(User::getReasonList(), $reason);
         foreach ($servers as $server) {
             if (!empty($serversBan) && !in_array($server->tag, $serversBan)) {
@@ -694,7 +693,9 @@ class User extends ActiveRecord implements IdentityInterface
             $rconTask->created_at = date('Y-m-d H:i:s');
             $rconTask->save();
         }
-        Yii::$app->rustCheck->ban($this->steam_id, $reasonText);
+        if ($rustcheck && $reason !== User::REASON_NOT_REASON) {
+            Yii::$app->rustCheck->ban($this->steam_id, $reasonText);
+        }
 
         return true;
     }
