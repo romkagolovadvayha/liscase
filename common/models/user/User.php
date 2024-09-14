@@ -133,7 +133,6 @@ class User extends ActiveRecord implements IdentityInterface
             [['email', 'password_hash', 'auth_key', 'ref_code', 'socket_room', 'status'], 'required'],
             [['status', 'auto', 'steam_id'], 'integer'],
             [['ref_code'], 'number'],
-            [['ref_code'], 'string', 'min' => 9, 'max' => 10],
             [['email', 'password_hash'], 'string', 'max' => 255],
             [['auth_key', 'socket_room'], 'string', 'max' => 32],
             [['current_language', 'created_at'], 'safe'],

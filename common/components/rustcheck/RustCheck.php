@@ -34,7 +34,6 @@ class RustCheck
     {
         $url = $this->baseUrl . "?action=addBan&key={$this->secretKey}&player={$steamId}&reason={$reason}";
         $response = Yii::$app->curl->get($url);
-        return json_decode($response, 1);
     }
 
     /**
@@ -44,7 +43,6 @@ class RustCheck
     {
         $url = $this->baseUrl . "?action=removeBan&key={$this->secretKey}&player={$steamId}";
         $response = Yii::$app->curl->get($url);
-        return json_decode($response, 1);
     }
 
 }
