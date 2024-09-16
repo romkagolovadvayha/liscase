@@ -141,16 +141,16 @@ class SaveStatsJob extends BaseObject implements JobInterface
                                                                      ->asArray()
                                                                      ->one();
 
-                    $count = Reports::find()
+                    $countQuery = Reports::find()
                         ->andWhere(['recepient_steam_id' => $reportUser->steam_id])
                         ->andWhere(['wipe' => $wipeDate])
                         ->andWhere(['server_tag' => $this->serverTag]);
 
                     if (!empty($userChecking)) {
-                        $count->andWhere(['>=', 'created_at', $userChecking['checking_at']]);
+                        $countQuery->andWhere(['>=', 'created_at', $userChecking['checking_at']]);
                     }
 
-                    $count->count();
+                    $count = $countQuery->count();
 
                     $kills = 0;
                     $deaths = 0;
