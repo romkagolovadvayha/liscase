@@ -18,6 +18,7 @@ class Role
     public const ROLE_COURSE_EDITOR = 'COURSE_EDITOR';
     const ROLE_VIDEO             = 'VIDEO';
     const ROLE_ACCOUNT_MANAGER   = 'ACCOUNT_MANAGER';
+    const ROLE_MODERATOR           = 'MODERATOR';
 
     /**
      * @return array
@@ -26,7 +27,7 @@ class Role
     {
         return [
             self::ROLE_ADMIN             => Yii::t('common', 'Администратор'),
-            self::ROLE_SUPPORT           => Yii::t('common', 'Поддержка'),
+            self::ROLE_SUPPORT           => Yii::t('common', 'Модератор'),
             self::ROLE_CONTENT_MANAGER   => Yii::t('common', 'Контент-менеджер'),
             self::ROLE_TRANSLATE_MANAGER => Yii::t('common', 'Менеджер по переводам'),
             self::ROLE_MARKETER          => Yii::t('common', 'Маркетолог'),

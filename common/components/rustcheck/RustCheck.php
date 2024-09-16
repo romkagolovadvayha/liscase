@@ -30,7 +30,7 @@ class RustCheck
     /**
      * {@inheritdoc}
      */
-    public function ban($steamId, $reason): array
+    public function ban($steamId, $reason)
     {
         $url = $this->baseUrl . "?action=addBan&key={$this->secretKey}&player={$steamId}&reason={$reason}";
         Yii::$app->curl->get($url);
@@ -39,7 +39,7 @@ class RustCheck
     /**
      * {@inheritdoc}
      */
-    public function unban($steamId): array
+    public function unban($steamId)
     {
         $url = $this->baseUrl . "?action=removeBan&key={$this->secretKey}&player={$steamId}";
         Yii::$app->curl->get($url);

@@ -45,12 +45,21 @@ $jobBadges = 0;
                          'label' => 'Пользователи',
                          'icon' => 'users',
                          'url' => ['/user'],
+                         'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR),
                          'active' => _checkActive('/user') && !_checkActive('/user-'),
+                    ],
+                   [
+                         'label' => 'Репорты',
+                         'icon' => 'user-shield',
+                         'url' => ['/reports'],
+                         'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR),
+                         'active' => _checkActive('/reports'),
                     ],
                    [
                        'label' => 'Отчеты',
                        'icon' => 'user-tag',
                        'url' => [''],
+                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
                        'active' => _checkActive('/report/'),
                        'items' => [
                            [
@@ -77,6 +86,7 @@ $jobBadges = 0;
                         'label' => 'Скины',
                         'icon' => 'user-lock',
                         'url' => ['/rbac/permission'],
+                        'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
                         'active' => _checkActive('/skindrops/'),
                         'items' => [
                             [
@@ -97,6 +107,7 @@ $jobBadges = 0;
                         'label' => 'Товары',
                         'icon' => 'user-lock',
                         'url' => ['/rbac/permission'],
+                        'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
                         'active' => _checkActive('/box/') || _checkActive('/sets/') || _checkActive('/drop/') || _checkActive('/select/'),
                         'items' => [
                             [
@@ -129,31 +140,29 @@ $jobBadges = 0;
                        'label'  => Yii::t('common', 'Блог'),
                        'icon'   => 'bi bi-newspaper',
                        'url'    => '/blog',
+                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
                        'active' => _checkActive('/blog/'),
                    ],
                    [
                        'label'  => Yii::t('common', 'Переводы'),
                        'icon'   => 'bi bi-newspaper',
                        'url'    => '/translateManager',
+                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
                        'active' => _checkActive('/translateManager'),
                    ],
                     [
                         'label' => 'Промокоды',
                         'icon' => 'calendar-alt',
                         'url' => ['/promocode'],
+                        'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
                         'active' => _checkActive('/promocode'),
                     ],
                     [
                         'label' => 'WIPE меню',
                         'icon' => 'calendar-alt',
                         'url' => ['/wipe'],
+                        'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
                         'active' => _checkActive('/wipe'),
-                    ],
-                    [
-                        'label' => 'PhpMyAdmin',
-                        'icon' => 'phpmyadmin',
-                        'url' => ['/phpmyadmin'],
-                        'active' => _checkActive('/phpmyadmin'),
                     ],
 //                    ['label' => 'Simple Link', 'icon' => 'th', 'badge' => '<span class="right badge badge-danger">New</span>'],
 //                    ['label' => 'Simple Link', 'icon' => 'th', 'badge' => '<span class="right badge badge-danger">New</span>'],

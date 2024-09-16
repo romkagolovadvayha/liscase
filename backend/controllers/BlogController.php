@@ -33,7 +33,7 @@ class BlogController extends Controller
                 'rules' => [
                     [
                         'allow' => true,
-                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_SUPPORT],
+                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
                     ],
                 ],
             ],

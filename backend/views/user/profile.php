@@ -12,6 +12,7 @@ use common\models\invoice\Deposit;
 use backend\forms\userProfile\SkinForm;
 use backend\forms\userProfile\BanForm;
 use yii\bootstrap5\Html;
+use common\models\user\UserChecking;
 use yii\web\View;
 use frontend\widgets\Alert;
 
@@ -110,7 +111,27 @@ $teamsProvider2 = new \yii\data\ArrayDataProvider([
                                                     'pagination' => [
                                                         'pageSize' => 30,
                                                     ],
-                                                ]);
+]);
+
+$checkingExist = UserChecking::find()
+    ->andWhere(['user_id' => $user->id])
+    ->andWhere(['status' => UserChecking::STATUS_CHECKING])
+    ->exists();
+
+/** @var UserChecking[] $checkings */
+$checkings = UserChecking::find()
+    ->andWhere(['user_id' => $user->id])
+    ->andWhere(['status' => UserChecking::STATUS_DONE])
+    ->orderBy(['id' => SORT_DESC])
+    ->all();
+
+$checkingProvider = new \yii\data\ArrayDataProvider([
+                                                        'allModels' => $checkings,
+                                                        'totalCount' => count($checkings),
+                                                        'pagination' => [
+                                                            'pageSize' => 30,
+                                                        ],
+                                                    ]);
 ?>
 
 <style>
@@ -128,6 +149,7 @@ $teamsProvider2 = new \yii\data\ArrayDataProvider([
     <div class="text-center col-md-2">
         <img style="border-radius: 3px;" src="<?=$userProfile->avatar?>"/>
         <h3 style="margin-top: 15px; text-align: center"><?= $user->username; ?></h3>
+        <a href="https://steamcommunity.com/profiles/<?=$user->steam_id?>" class="stats_player_card_body_name_steam" target="_blank" title="<?=Yii::t('common', 'Перейти в профиль Steam')?>"><?=$user->steam_id?></a>
         <div class="list-group" style="margin-top: 15px; text-align: left">
             <?php if (Yii::$app->user->can(Role::ROLE_ADMIN)): ?>
                 <button type="button" class="list-group-item list-group-item-action list-group-item-info" data-bs-toggle="modal" data-bs-modal-form="role_form" data-bs-target="#modalForm">
@@ -139,14 +161,19 @@ $teamsProvider2 = new \yii\data\ArrayDataProvider([
                 <button type="button" class="list-group-item list-group-item-action list-group-item-warning" data-bs-toggle="modal" data-bs-modal-form="payout_form" data-bs-target="#modalForm">
                     Вывод с реф. системы
                 </button>
-                <?php if ($user->status === User::STATUS_ACTIVE): ?>
+            <?php endif; ?>
+                <?php if ($user->status === User::STATUS_ACTIVE && empty($user->unbanned_at)): ?>
                 <button type="button" class="list-group-item list-group-item-action list-group-item-danger" data-bs-toggle="modal" data-bs-modal-form="ban_form" data-bs-target="#modalForm">
                     Заблокировать игрока
                 </button>
                 <?php else: ?>
                 <?= Html::a('Снять бан', '/user/unban?userId=' . $user->id, ['data-confirm' => 'Вы действительно уверены?', 'class' => 'list-group-item list-group-item-action list-group-item-success']) ?>
                 <?php endif; ?>
-            <?php endif; ?>
+                <?php if (!$checkingExist): ?>
+                    <?= Html::a('Вызвать на проверку', '/user/checking-start?userId=' . $user->id, ['data-confirm' => 'Вы действительно уверены?', 'class' => 'list-group-item list-group-item-action list-group-item-primary']) ?>
+                <?php else: ?>
+                    <?= Html::a('Завершить проверку', '/user/checking-stop?userId=' . $user->id, ['data-confirm' => 'Вы действительно уверены?', 'class' => 'list-group-item list-group-item-action list-group-item-success']) ?>
+                <?php endif; ?>
         </div>
     </div>
     <div class="col-md-10">
@@ -155,14 +182,18 @@ $teamsProvider2 = new \yii\data\ArrayDataProvider([
                 <li class="list-group-item">Авторегистрация</li>
             <?php endif; ?>
             <li class="list-group-item"><?= $user->username; ?> <span class="badge rounded-pill <?=$statusClass?>"><?= \yii\helpers\ArrayHelper::getValue(User::getStatusList(), $user->status); ?></span></li>
+            <?php if (Yii::$app->user->can(Role::ROLE_ADMIN)):?>
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 <?= Yii::t('common', 'Лицевой баланс'); ?>
                 <span class="badge bg-primary rounded-pill"><?= Yii::$app->formatter->asDecimal($user->getPersonalBalance()->getBalanceCeil(), 2) ?> RUB</span>
             </li>
+            <?php endif; ?>
+            <?php if (Yii::$app->user->can(Role::ROLE_ADMIN)):?>
             <li class="list-group-item d-flex justify-content-between align-items-center">
                 <?= Yii::t('common', 'Доступно к выводу'); ?>
                 <span class="badge bg-primary rounded-pill"><?= Yii::$app->formatter->asDecimal($payoutTotal, 2) ?> RUB</span>
             </li>
+            <?php endif; ?>
         </ul>
         <div class="mt-4">
             <h3>Команда</h3>
@@ -177,6 +208,41 @@ $teamsProvider2 = new \yii\data\ArrayDataProvider([
                                                           'value'          => function ($model) {
                                                               $user = User::findBySteamId($model['steam_id']);
                                                               return "<a href=\"/user/profile?userId={$user->id}\">{$model['name']}</a>";
+                                                          },
+                                                      ],
+                                                  ],
+                                              ]);
+            ?>
+        </div>
+        <div class="mt-4">
+            <h3>Проверки</h3>
+            <?= \kartik\grid\GridView::widget([
+                                                  'dataProvider' => $checkingProvider,
+                                                  'layout'       => "{items} {pager}",
+                                                  'columns'      => [
+                                                      [
+                                                          'attribute' => 'name',
+                                                          'label'     => Yii::t('common', "Кто вызывал"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function (UserChecking $model) {
+                                                              $user = User::findOne($model->checking_by);
+                                                              return "<a href=\"/user/profile?userId={$user->id}\">{$user->username}</a>";
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'created_at',
+                                                          'label'     => Yii::t('common', "Начало проверки"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function (UserChecking $model) {
+                                                              return $model->created_at;
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'done_at',
+                                                          'label'     => Yii::t('common', "Завершение проверки"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function (UserChecking $model) {
+                                                              return $model->done_at;
                                                           },
                                                       ],
                                                   ],

@@ -26,7 +26,20 @@ $this->title = Yii::t('common', 'Пользователи');
                 return Html::img($model->userProfile->avatar, ['width' => '24px']);
             },
         ],
-        'username',
+        [
+            'attribute' => 'username',
+            'label'     => 'Реф.код',
+            'format'    => 'raw',
+            'value'          => function (UserSearch $model) {
+                $isAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
+                $isModerator = Yii::$app->user->can(Role::ROLE_MODERATOR);
+                if (!$isAdmin && !$isModerator) {
+                    return $model->username;
+                }
+                $url = \yii\helpers\Url::to(['/user/profile', 'userId' => $model->id]);
+                return Html::a($model->username, $url);
+            },
+        ],
         [
             'attribute' => 'steam_id',
             'options'   => ['width' => '100'],
@@ -42,9 +55,8 @@ $this->title = Yii::t('common', 'Пользователи');
             'format'    => 'raw',
             'value'          => function (UserSearch $model) {
                 $isAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
-                $isAccountManager = Yii::$app->user->can(Role::ROLE_ACCOUNT_MANAGER);
-                $isSupport = Yii::$app->user->can(Role::ROLE_SUPPORT);
-                if (!$isAdmin && !$isAccountManager && !$isSupport) {
+                $isModerator = Yii::$app->user->can(Role::ROLE_MODERATOR);
+                if (!$isAdmin && !$isModerator) {
                     return $model->ref_code;
                 }
                 $url = \yii\helpers\Url::to(['/user/profile', 'userId' => $model->id]);
@@ -71,7 +83,7 @@ $this->title = Yii::t('common', 'Пользователи');
             'options'  => ['width' => '90'],
             'buttons'  => [
                 'switch' => function ($url, $model) {
-                    if ($model->status != UserSearch::STATUS_ACTIVE) {
+                    if ($model->status != UserSearch::STATUS_ACTIVE || !Yii::$app->user->can(Role::ROLE_ADMIN)) {
                         return null;
                     }
 

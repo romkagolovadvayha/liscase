@@ -42,6 +42,7 @@ use common\components\base\ActiveRecord;
  * @property string          $unbanned_at
  * @property int             $ban_reason
  * @property int             $ban_by
+ * @property string          $discord
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
@@ -454,6 +455,7 @@ class User extends ActiveRecord implements IdentityInterface
                                  'item_name',
                                  [
                                      Role::ROLE_ADMIN,
+                                     Role::ROLE_MODERATOR,
                                  ],
                              ])
                              ->exists();
@@ -651,6 +653,7 @@ class User extends ActiveRecord implements IdentityInterface
             $this->ban_by     = $banBy;
             $this->ban_reason = $reason;
             $this->status     = User::STATUS_BLOCKED;
+            $this->unbanned_at = null;
             if (empty($bannedAt)) {
                 $bannedAt = date('Y-m-d H:i:s');
             }
@@ -682,19 +685,21 @@ class User extends ActiveRecord implements IdentityInterface
             $this->save();
         }
         $reasonText = ArrayHelper::getValue(User::getReasonList(), $reason);
-        foreach ($servers as $server) {
-            if (!empty($serversBan) && !in_array($server->tag, $serversBan)) {
-                continue;
-            }
-            $rconTask = new RconTasks();
-            $rconTask->status = RconTasks::STATUS_WAIT;
-            $rconTask->command = "helper ban \"{$this->steam_id}\" \"{$reasonText}\"";
-            $rconTask->server_tag = $server->tag;
-            $rconTask->created_at = date('Y-m-d H:i:s');
-            $rconTask->save();
-        }
+        $command = "helper ban \"{$this->steam_id}\" \"{$reasonText}\"";
+        RconTasks::execute($command, $serversBan);
         if ($rustcheck && $reason !== User::REASON_NOT_REASON) {
             Yii::$app->rustCheck->ban($this->steam_id, $reasonText);
+        }
+
+        /** @var UserChecking $userChecking */
+        $userChecking = UserChecking::find()
+                             ->andWhere(['user_id' => $this->id])
+                             ->andWhere(['status' => UserChecking::STATUS_CHECKING])
+                             ->one();
+        if (!empty($userChecking)) {
+            $userChecking->status  = UserChecking::STATUS_DONE;
+            $userChecking->done_at = date('Y-m-d H:i:s');
+            $userChecking->save();
         }
 
         return true;
@@ -708,18 +713,8 @@ class User extends ActiveRecord implements IdentityInterface
         $this->status = User::STATUS_ACTIVE;
         $this->save();
 
-        /** @var Servers[] $servers */
-        $servers = Servers::find()
-                          ->cache(30)
-                          ->all();
-        foreach ($servers as $server) {
-            $rconTask = new RconTasks();
-            $rconTask->status = RconTasks::STATUS_WAIT;
-            $rconTask->command = "unban \"{$this->steam_id}\"";
-            $rconTask->server_tag = $server->tag;
-            $rconTask->created_at = date('Y-m-d H:i:s');
-            $rconTask->save();
-        }
+        $command = "unban \"{$this->steam_id}\"";
+        RconTasks::execute($command);
 
         Yii::$app->rustCheck->unban($this->steam_id);
         return true;

@@ -9,6 +9,8 @@ use backend\forms\userProfile\PayoutForm;
 use backend\forms\userProfile\RoleForm;
 use backend\forms\userProfile\SkinForm;
 use common\components\helpers\Role;
+use common\models\rcon\RconTasks;
+use common\models\user\UserChecking;
 use common\models\user\UserSearch;
 use Yii;
 use yii\base\BaseObject;
@@ -32,11 +34,11 @@ class UserController extends CrudController
                 'rules' => [
                     [
                         'allow' => true,
-                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_SUPPORT, Role::ROLE_ACCOUNT_MANAGER, Role::ROLE_SALES, Role::ROLE_COURSE_EDITOR],
+                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
                     ],
                     [
                         'allow' => true,
-                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_SUPPORT, Role::ROLE_ACCOUNT_MANAGER],
+                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
                         'actions' => ['profile']
                     ]
                 ],
@@ -108,6 +110,43 @@ class UserController extends CrudController
         $user = User::findOne($userId);
         $user->unban();
         Yii::$app->session->addFlash('success', 'Бан успешно снят!');
+        return $this->redirect('/user/profile?userId=' . $userId);
+    }
+
+    public function actionCheckingStart($userId)
+    {
+        $moder = Yii::$app->user->identity;
+        $user = User::findOne($userId);
+        $model = new UserChecking();
+        $model->user_id = $user->id;
+        $model->status = UserChecking::STATUS_CHECKING;
+        $model->checking_by = $moder->id;
+        $model->created_at = date('Y-m-d H:i:s');
+        $model->save();
+
+        $command = "iqrs call2 \"{$user->steam_id}\" \"{$moder->discord}\"";
+        RconTasks::execute($command);
+
+        Yii::$app->session->addFlash('success', 'Игрок вызван на проверку!');
+        return $this->redirect('/user/profile?userId=' . $userId);
+    }
+
+    public function actionCheckingStop($userId)
+    {
+        $user = User::findOne($userId);
+        /** @var UserChecking $model */
+        $model = UserChecking::find()
+            ->andWhere(['user_id' => $user->id])
+            ->andWhere(['status' => UserChecking::STATUS_CHECKING])
+            ->one();
+        $model->status = UserChecking::STATUS_DONE;
+        $model->done_at = date('Y-m-d H:i:s');
+        $model->save();
+
+        $command = "iqrs dismiss2 \"{$user->steam_id}\"";
+        RconTasks::execute($command);
+
+        Yii::$app->session->addFlash('success', 'Проверка завершена!');
         return $this->redirect('/user/profile?userId=' . $userId);
     }
 

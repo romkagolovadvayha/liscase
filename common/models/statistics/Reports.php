@@ -16,6 +16,8 @@ use yii\base\BaseObject;
  * @property string $created_at
  * @property string $server_tag
  * @property string $wipe
+ *
+ * @property User        $user
  */
 class Reports extends ActiveRecord
 {
@@ -26,6 +28,16 @@ class Reports extends ActiveRecord
     public static function tableName(): string
     {
         return 'servers_reports';
+    }
+
+    /**
+     * Gets query for [[User]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUser(): \yii\db\ActiveQuery
+    {
+        return $this->hasOne(User::class, ['steam_id' => 'recepient_steam_id']);
     }
 
     /**
