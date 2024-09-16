@@ -59,7 +59,7 @@ class SiteController extends WebController
     public function actionIndex()
     {
         if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
-            throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован!'));
+            throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован, напишите администратору в Discord, если не согласны с блокировкой!'));
         }
         $promocodeForm = new PromocodeForm();
         if ($promocodeForm->load(Yii::$app->request->post())) {
