@@ -247,6 +247,15 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     } catch (\Exception $e) {
                         Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
                     }
+                    try {
+                        $banList = Steam::getBansRust($user->steam_id);
+                        foreach ($banList as $banItem) {
+                            $bansExist = true;
+                            $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Дата: " . $banItem['date'] . "; Срок: " . $banItem['expireDate'] . PHP_EOL;
+                        }
+                    } catch (\Exception $e) {
+                        Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
+                    }
                     $hoursExist = false;
                     $hours = 0;
                     try {

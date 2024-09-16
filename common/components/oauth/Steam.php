@@ -227,6 +227,30 @@ class Steam extends OpenId
 
         return $bans;
     }
+    public static function getBansRust($steamId) {
+        $bans = [];
+        $list = Steam::getBroRustBans();
+        foreach ($list as $item) {
+            $date = new \DateTime($item['BanDate']);
+            $unbanned = 'Никогда';
+            if (!empty($item['UnBanDate'])) {
+                $date2 = new \DateTime($item['UnBanDate']);
+                $unbanned = $date2->format('d.m.Y H:i:s');
+            }
+            if ($item['UserID'] == $steamId) {
+                $exd = 'Навсегда';
+                $bans[] = [
+                    'reason' => $item['BanReason'],
+                    'date' => $date->format('d.m.Y H:i:s'),
+                    'expireDate' => $unbanned,
+                    'server' => $item['Server'],
+                ];
+                break;
+            }
+        }
+
+        return $bans;
+    }
 
     public static function getGGRustStats($stable = 'russian_banlist') {
         $cacheKey = 'steam_getGGRustStats_' . $stable;
@@ -272,6 +296,18 @@ class Steam extends OpenId
 
         $apiUrl = "https://vk.magicrust.ru/api/getBans";
         $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
+        Yii::$app->cache->set($cacheKey, $response, 60);
+        return $response;
+    }
+
+    public static function getBroRustBans() {
+        $cacheKey = 'steam_getBroRustBans';
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $apiUrl = "https://api.brorust.com/server/ban-list?page=1&linePerPage=2000";
+        $response = json_decode(Yii::$app->curl->get($apiUrl), 1)['success']['payload']['data'];
         Yii::$app->cache->set($cacheKey, $response, 60);
         return $response;
     }
