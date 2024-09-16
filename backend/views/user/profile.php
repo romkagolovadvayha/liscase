@@ -1,5 +1,6 @@
 <?php
 
+use common\components\oauth\Steam;
 use common\models\servers\Servers;
 use common\models\user\User;
 use backend\forms\userProfile\RoleForm;
@@ -128,6 +129,134 @@ $checkings = UserChecking::find()
 $checkingProvider = new \yii\data\ArrayDataProvider([
                                                         'allModels' => $checkings,
                                                         'totalCount' => count($checkings),
+                                                        'pagination' => [
+                                                            'pageSize' => 30,
+                                                        ],
+                                                    ]);
+$bans = [];
+$bansExist = false;
+$lastCheck = [];
+$lastCheckExist = false;
+try {
+    $rustCheck = Yii::$app->rustCheck->getInfo($user->steam_id);
+    if (!empty($rustCheck['bans'])) {
+        foreach ($rustCheck['bans'] as $ban) {
+            $bansExist = true;
+            $date = new DateTime();
+            $date->setTimestamp($ban['banDate']);
+            $unbannedDate = $ban['unbanDate'];
+            if (!empty($unbannedDate)) {
+                $date2 = new DateTime();
+                $date2->setTimestamp($unbannedDate);
+                $unbannedDate = $date->format('d.m.Y H:i:s');
+            } else {
+                $unbannedDate = "Никогда";
+            }
+            if (strpos($ban['serverName'], 'Без названия') !== false) {
+                $ban['serverName'] = '<i style="color: #808080">Сервер удален</i>';
+            }
+            $bans[] = [
+                'serverName' => $ban['serverName'],
+                'reason' => $ban['reason'],
+                'unbanned_date' => $unbannedDate,
+                'date' => $date->format('d.m.Y H:i:s'),
+            ];
+        }
+    }
+    if (!empty($rustCheck['last_check'])) {
+        foreach ($rustCheck['last_check'] as $_lastCheck) {
+            $lastCheckExist = true;
+            $moder = null;
+            if (!empty($_lastCheck['moderSteamID'])) {
+                $moder = User::findBySteamId($_lastCheck['moderSteamID']);
+            }
+            $date = new DateTime();
+            $date->setTimestamp($_lastCheck['time']);
+            $lastCheck[] = [
+                'serverName' => $_lastCheck['serverName'],
+                'date' => $date->format('d.m.Y H:i:s'),
+                'moder' => $moder,
+            ];
+        }
+    }
+} catch (\Exception $e) {
+    Yii::$app->telegramReports->sendMessage("Profile:" . $e->getLine() . ":" . $e->getMessage());
+}
+
+
+try {
+    $banList = Steam::getBansGGRust($user->steam_id);
+    foreach ($banList as $banItem) {
+        $bansExist = true;
+        $bans[] = [
+            'serverName' => $banItem['server'],
+            'reason' => $banItem['reason'],
+            'unbanned_date' => $banItem['expireDate'],
+            'date' => $banItem['date'],
+        ];
+    }
+} catch (\Exception $e) {
+    Yii::$app->telegramReports->sendMessage("Profile:" . $e->getLine() . ":" . $e->getMessage());
+}
+try {
+    $banList = Steam::getBansRustRoom($user->steam_id);
+    foreach ($banList as $banItem) {
+        $bansExist = true;
+        $date = new DateTime();
+        $date->setTimestamp($banItem['date']);
+        $bans[] = [
+            'serverName' => $banItem['server'],
+            'reason' => $banItem['reason'],
+            'unbanned_date' => $banItem['expireDate'],
+            'date' => $date->format('d.m.Y H:i:s'),
+        ];
+    }
+} catch (\Exception $e) {
+    Yii::$app->telegramReports->sendMessage("Profile:" . $e->getLine() . ":" . $e->getMessage());
+}
+try {
+    $banList = Steam::getBansRustUssr($user->steam_id);
+    foreach ($banList as $banItem) {
+        $bansExist = true;
+        $bans[] = [
+            'serverName' => $banItem['server'],
+            'reason' => $banItem['reason'],
+            'unbanned_date' => $banItem['expireDate'],
+            'date' =>  $banItem['date'],
+        ];
+    }
+} catch (\Exception $e) {
+    Yii::$app->telegramReports->sendMessage("Profile:" . $e->getLine() . ":" . $e->getMessage());
+}
+try {
+    $banList = Steam::getBansMagicRust($user->steam_id);
+    foreach ($banList as $banItem) {
+        $bansExist = true;
+        $date = new DateTime();
+        $date->setTimestamp($banItem['time']);
+        $bans[] = [
+            'serverName' => $banItem['server'],
+            'reason' => $banItem['reason'],
+            'unbanned_date' => $banItem['expireDate'],
+            'date' => $date->format('d.m.Y H:i:s'),
+        ];
+    }
+} catch (\Exception $e) {
+    Yii::$app->telegramReports->sendMessage("Profile:" . $e->getLine() . ":" . $e->getMessage());
+}
+
+
+
+$bansOtherProjectProvider = new \yii\data\ArrayDataProvider([
+                                                                    'allModels' => $bans,
+                                                                    'totalCount' => count($bans),
+                                                                    'pagination' => [
+                                                                        'pageSize' => 30,
+                                                                    ],
+                                                                ]);
+$checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
+                                                        'allModels' => $lastCheck,
+                                                        'totalCount' => count($lastCheck),
                                                         'pagination' => [
                                                             'pageSize' => 30,
                                                         ],
@@ -295,6 +424,85 @@ $checkingProvider = new \yii\data\ArrayDataProvider([
                                                                   return '';
                                                               }
                                                               return '<button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-modal-form="skin_form_' . $model->user->id . '" data-bs-target="#modalForm">Отправить</button>';
+                                                          },
+                                                      ],
+                                                  ],
+                                              ]);
+            ?>
+        </div>
+        <div class="mt-4">
+            <h3>Проверки на других проектах</h3>
+            <?= \kartik\grid\GridView::widget([
+                                                  'dataProvider' => $checkingOtherProjectProvider,
+                                                  'layout'       => "{items} {pager}",
+                                                  'columns'      => [
+                                                      [
+                                                          'attribute' => 'serverName',
+                                                          'label'     => Yii::t('common', "Сервер"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                              return $model['serverName'];
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'moder',
+                                                          'label'     => Yii::t('common', "Модератор"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                                if (empty($model['moder'])) {
+                                                                    return "Не указан";
+                                                                }
+                                                              return "<a href=\"https://steamcommunity.com/profiles/{$model['moder']->steam_id}\">{$model['moder']->username}</a>";
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'date',
+                                                          'label'     => Yii::t('common', "Дата"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                              return $model['date'];
+                                                          },
+                                                      ],
+                                                  ],
+                                              ]);
+            ?>
+        </div>
+        <div class="mt-4">
+            <h3>Баны на других проектах</h3>
+            <?= \kartik\grid\GridView::widget([
+                                                  'dataProvider' => $bansOtherProjectProvider,
+                                                  'layout'       => "{items} {pager}",
+                                                  'columns'      => [
+                                                      [
+                                                          'attribute' => 'serverName',
+                                                          'label'     => Yii::t('common', "Сервер"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                              return $model['serverName'];
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'reason',
+                                                          'label'     => Yii::t('common', "Причина"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                              return $model['reason'];
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'date',
+                                                          'label'     => Yii::t('common', "Дата"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                              return $model['date'];
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'date',
+                                                          'label'     => Yii::t('common', "Разбан"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                              return $model['unbanned_date'];
                                                           },
                                                       ],
                                                   ],
