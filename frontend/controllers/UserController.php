@@ -7,11 +7,13 @@ use common\models\box\Drop;
 use common\models\invoice\Deposit;
 use common\models\profit\Profit;
 use common\models\tasks\Task;
+use common\models\user\User;
 use common\models\user\UserDrop;
 use common\models\user\UserTask;
 use frontend\forms\market\PaymentForm;
 use frontend\forms\profile\ProfileForm;
 use yii\base\BaseObject;
+use yii\web\ForbiddenHttpException;
 use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
 use common\components\web\AuthorizedControllerTrait;
@@ -58,6 +60,9 @@ class UserController extends WebController
      */
     public function actionInventory()
     {
+        if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
+            throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован!'));
+        }
         $post = Yii::$app->request->post();
         if (!empty($post['sell'])) {
             $userBalance = Yii::$app->user->identity->getPersonalBalance();
@@ -81,6 +86,9 @@ class UserController extends WebController
      */
     public function actionHistory($depositId = null)
     {
+        if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
+            throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован!'));
+        }
         $post = Yii::$app->request->post();
         $user = Yii::$app->user->identity;
         if (!empty($depositId)) {
@@ -137,6 +145,9 @@ class UserController extends WebController
      */
     public function actionPartner()
     {
+        if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
+            throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован!'));
+        }
         return $this->render('partner');
     }
 
@@ -147,6 +158,9 @@ class UserController extends WebController
      */
     public function actionTasks()
     {
+        if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
+            throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован!'));
+        }
         return $this->render('tasks');
     }
 

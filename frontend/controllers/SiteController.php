@@ -9,6 +9,7 @@ use common\models\user\UserDrop;
 use frontend\forms\promocode\PromocodeForm;
 use Yii;
 use yii\filters\AccessControl;
+use yii\web\ForbiddenHttpException;
 use yii\web\Response;
 use backend\models\blog\BlogSearch;
 use common\models\blog\Blog;
@@ -57,6 +58,9 @@ class SiteController extends WebController
      */
     public function actionIndex()
     {
+        if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
+            throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован!'));
+        }
         $promocodeForm = new PromocodeForm();
         if ($promocodeForm->load(Yii::$app->request->post())) {
             $model = $promocodeForm->saveRecord();
