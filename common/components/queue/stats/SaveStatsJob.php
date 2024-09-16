@@ -131,11 +131,26 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     $user = User::findBySteamId($item['steam_id']);
                     $reportUser = User::findBySteamId($item['recepient_steam_id']);
 
+                    $userChecking = \common\models\user\UserChecking::find()
+                                                                     ->select([
+                                                                                  'checking_at' => 'created_at',
+                                                                              ])
+                                                                     ->andWhere(['user_id' => $reportUser->id])
+                                                                     ->andWhere(['>=', 'created_at', $server->wipe])
+                                                                     ->orderBy(['created_at' => SORT_DESC])
+                                                                     ->asArray()
+                                                                     ->one();
+
                     $count = Reports::find()
                         ->andWhere(['recepient_steam_id' => $reportUser->steam_id])
                         ->andWhere(['wipe' => $wipeDate])
-                        ->andWhere(['server_tag' => $this->serverTag])
-                        ->count();
+                        ->andWhere(['server_tag' => $this->serverTag]);
+
+                    if (!empty($userChecking)) {
+                        $count->andWhere(['>=', 'created_at', $userChecking['checking_at']]);
+                    }
+
+                    $count->count();
 
                     $kills = 0;
                     $deaths = 0;
