@@ -647,7 +647,7 @@ class User extends ActiveRecord implements IdentityInterface
                              ]);
     }
 
-    public function ban($reason, $banBy = null, $bannedAt = null, $rustcheck = true, $siteban = true) {
+    public function ban($reason, $banBy = null, $bannedAt = null, $rustcheck = true, $siteban = true, $task = true) {
         $serversBan = [];
         if ($siteban) {
             $this->ban_by     = $banBy;
@@ -685,8 +685,10 @@ class User extends ActiveRecord implements IdentityInterface
             $this->save();
         }
         $reasonText = ArrayHelper::getValue(User::getReasonList(), $reason);
-        $command = "helper ban \"{$this->steam_id}\" \"{$reasonText}\"";
-        RconTasks::execute($command, $serversBan);
+        if ($task) {
+            $command = "helper ban \"{$this->steam_id}\" \"{$reasonText}\"";
+            RconTasks::execute($command, $serversBan);
+        }
         if ($rustcheck && $reason !== User::REASON_NOT_REASON) {
             Yii::$app->rustCheck->ban($this->steam_id, $reasonText);
         }
