@@ -14,6 +14,7 @@ use backend\forms\userProfile\SkinForm;
 use backend\forms\userProfile\BanForm;
 use yii\bootstrap5\Html;
 use common\models\user\UserChecking;
+use backend\forms\userProfile\MuteForm;
 use yii\web\View;
 use frontend\widgets\Alert;
 
@@ -25,6 +26,7 @@ $this->title = Yii::t('common', 'Профиль');
 /** @var PayoutForm $payoutForm */
 /** @var SkinForm $skinForm */
 /** @var BanForm $banForm */
+/** @var MuteForm $muteForm */
 /** @var UserProfile $userProfile */
 
 $userProfile = $user->userProfile;
