@@ -15,10 +15,10 @@ $this->title = "Пополнения";
             <ul class="list-group">
                 <li class="list-group-item">Всего за месяц: <?=number_format($_data['total'], 0, '.', ' ')?> руб.</li>
                 <li class="list-group-item">Потрачено на скины: <?=number_format($_data['skindrops'], 0, '.', ' ')?> руб.</li>
-                <li class="list-group-item">Зарплата модератору: <?=number_format(30000, 0, '.', ' ')?> руб.</li>
+                <li class="list-group-item">Зарплата модератору: <?=number_format(60000, 0, '.', ' ')?> руб.</li>
                 <li class="list-group-item">Сервера: <?=number_format(30000, 0, '.', ' ')?> руб.</li>
                 <li class="list-group-item">Зеркалки и сайт: <?=number_format(15000, 0, '.', ' ')?> руб.</li>
-                <li class="list-group-item">Итого доход: <?=number_format($_data['total']-$_data['skindrops']-30000-30000-15000, 0, '.', ' ')?> руб.</li>
+                <li class="list-group-item">Итого доход: <?=number_format($_data['total']-$_data['skindrops']-60000-30000-15000, 0, '.', ' ')?> руб.</li>
                 <li class="list-group-item">Человек пополнило: <?=count($_data['users'])?></li>
                 <li class="list-group-item">Всего платежей: <?=count($_data['deposits'])?></li>
             </ul>
