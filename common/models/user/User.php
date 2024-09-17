@@ -73,6 +73,11 @@ class User extends ActiveRecord implements IdentityInterface
     const REASON_MULTIACC = 7;
     const REASON_BAN_OTHER_PROJECT = 8;
 
+    const REASON_MUTE_SPAM = 1;
+    const REASON_MUTE_FLUD = 2;
+    const REASON_MUTE_OSCORB = 3;
+    const REASON_MUTE_OTHER = 4;
+
     /**
      * @return array
      */
@@ -100,6 +105,19 @@ class User extends ActiveRecord implements IdentityInterface
             self::REASON_MULTIACC      => Yii::t('common', 'Мульти Аккаунт'),
             self::REASON_BAN_OTHER_PROJECT       => Yii::t('common', 'Бан на другом проекте'),
             self::REASON_NOT_REASON       => Yii::t('common', 'Причина не указана'),
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public static function getReasonMuteList(): array
+    {
+        return [
+            self::REASON_MUTE_SPAM     => Yii::t('common', 'Спам'),
+            self::REASON_MUTE_FLUD       => Yii::t('common', 'Флуд'),
+            self::REASON_MUTE_OSCORB       => Yii::t('common', 'Оскорбление родных'),
+            self::REASON_MUTE_OTHER       => Yii::t('common', 'Без причины'),
         ];
     }
 
@@ -645,6 +663,13 @@ class User extends ActiveRecord implements IdentityInterface
                                  'system_id'        => $systemId,
                                  'telegram_chat_id' => $telegramChatId,
                              ]);
+    }
+
+    public function mute($reason) {
+        $reasonText = ArrayHelper::getValue(User::getReasonMuteList(), $reason);
+        $command = "bcm.mute \"{$this->steam_id}\" 5h \"{$reasonText}\"";
+        RconTasks::execute($command);
+        return true;
     }
 
     public function ban($reason, $banBy = null, $bannedAt = null, $rustcheck = true, $siteban = true, $task = true) {

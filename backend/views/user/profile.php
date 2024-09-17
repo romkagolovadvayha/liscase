@@ -317,6 +317,9 @@ $checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
                 <?php else: ?>
                     <?= Html::a('Завершить проверку', '/user/checking-stop?userId=' . $user->id, ['data-confirm' => 'Вы действительно уверены?', 'class' => 'list-group-item list-group-item-action list-group-item-success']) ?>
                 <?php endif; ?>
+            <button type="button" class="list-group-item list-group-item-action list-group-item-danger" data-bs-toggle="modal" data-bs-modal-form="mute_form" data-bs-target="#modalForm">
+                Выдать мут игроку
+            </button>
         </div>
     </div>
     <div class="col-md-10">
@@ -540,6 +543,9 @@ $checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
             </div>
             <div id="ban_form">
                 <?= $this->render('_form_ban_form', compact('banForm')); ?>
+            </div>
+            <div id="mute_form">
+                <?= $this->render('_form_mute_form', compact('muteForm')); ?>
             </div>
             <?php foreach ($usersTree as $userTree): ?>
                 <div id="skin_form_<?=$userTree->user->id?>">

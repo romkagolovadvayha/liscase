@@ -4,6 +4,7 @@ namespace backend\controllers;
 
 use backend\forms\userProfile\BanForm;
 use backend\forms\userProfile\BonusForm;
+use backend\forms\userProfile\MuteForm;
 use backend\forms\userProfile\PasswordForm;
 use backend\forms\userProfile\PayoutForm;
 use backend\forms\userProfile\RoleForm;
@@ -64,6 +65,8 @@ class UserController extends CrudController
         $skinForm->setUserId($userId);
         $banForm = new BanForm();
         $banForm->setUserId($userId);
+        $muteForm = new MuteForm();
+        $muteForm->setUserId($userId);
         $bodyParams = Yii::$app->request->bodyParams;
         if (!empty($bodyParams['RoleForm'])
             && $roleForm->load(Yii::$app->request->post())
@@ -95,12 +98,19 @@ class UserController extends CrudController
             Yii::$app->session->addFlash('success', 'Бан успешно выдан!');
             return $this->redirect(['profile', 'userId' => $userId]);
         }
+        if (!empty($bodyParams['MuteForm'])
+            && $muteForm->load(Yii::$app->request->post())
+            && $muteForm->saveRecord()) {
+            Yii::$app->session->addFlash('success', 'Мут успешно выдан!');
+            return $this->redirect(['profile', 'userId' => $userId]);
+        }
         return $this->render('profile', [
             'user' => $user,
             'roleForm' => $roleForm,
             'bonusForm' => $bonusForm,
             'skinForm' => $skinForm,
             'banForm' => $banForm,
+            'muteForm' => $muteForm,
             'payoutForm' => $payoutForm,
         ]);
     }
