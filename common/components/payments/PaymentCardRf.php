@@ -13,6 +13,7 @@ class PaymentCardRf
     {
         $model = Deposit::createOperation(Yii::$app->user->id, $amount, Deposit::TYPE_PAYMENT_CARD);
         $result = Yii::$app->tomeApi->create($amount, 'card', 'Пополнение баланса', $model->id);
+        print_r($result);exit;
         $model->payment_id = $result['id'];
         $model->save(false);
 

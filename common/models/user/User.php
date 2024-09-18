@@ -750,4 +750,20 @@ class User extends ActiveRecord implements IdentityInterface
         Yii::$app->rustCheck->unban($this->steam_id);
         return true;
     }
+
+    /**
+     * @param array $roles
+     *
+     * @return bool
+     */
+    public function canRoles($roles = [])
+    {
+        foreach ($roles as $role) {
+            if (Yii::$app->authManager->checkAccess($this->id, $role)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

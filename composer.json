@@ -43,7 +43,9 @@
         "tectalic/openai": "^1.6",
         "orhanerday/open-ai": "^5.2",
         "batdan/midjourney-api-php": "^2.1",
-        "2amigos/yii2-tinymce-widget": "*"
+        "2amigos/yii2-tinymce-widget": "*",
+        "kartik-v/yii2-widget-fileinput": "dev-master",
+        "kartik-v/yii2-sortable": "dev-master"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",

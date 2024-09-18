@@ -56,6 +56,13 @@ $jobBadges = 0;
                          'active' => _checkActive('/reports'),
                     ],
                    [
+                       'label' => 'Рассылка сообщений',
+                       'icon' => 'user-shield',
+                       'url' => ['/telegram-constructor'],
+                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'active' => _checkActive('/telegram-constructor'),
+                   ],
+                   [
                        'label' => 'Отчеты',
                        'icon' => 'user-tag',
                        'url' => [''],

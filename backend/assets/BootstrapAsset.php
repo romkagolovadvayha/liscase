@@ -2,7 +2,10 @@
 
 namespace backend\assets;
 
+use kartik\file\SortableAsset;
+use yii\jui\Sortable;
 use yii\web\AssetBundle;
+use yii\web\JqueryAsset;
 
 /**
  * Main backend application asset bundle.

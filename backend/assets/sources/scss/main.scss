@@ -238,3 +238,253 @@ $color_text: #e4dad1;
     }
   }
 }
+
+.telegram_message_buttons_wrap {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 5px;
+}
+.telegram_message_buttons_wrap .add {
+  font-size: 14px;
+  padding: 10px 15px;
+  margin-right: 5px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border-radius: 20px;
+  position: relative;
+  border: 0;
+  text-decoration: none;
+}
+.telegram_message_buttons_wrap .add:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+.telegram_message_buttons {
+  display: flex;
+  flex-wrap: wrap;
+}
+.telegram_message_buttons_item {
+  margin-right: 5px;
+  background: rgba(0, 0, 0, 0.38);
+  color: #fff;
+  border-radius: 20px;
+  position: relative;
+  cursor: move;
+}
+.telegram_message_preview_buttons_item {
+  margin-right: 5px;
+  background: rgba(0, 0, 0, 0.38);
+  color: #fff;
+  border-radius: 20px;
+  position: relative;
+}
+.telegram_message_preview_buttons_item .telegram_message_buttons_item_title {
+  font-size: 14px;
+  padding: 10px 15px;
+}
+.telegram_message_buttons_item .telegram_message_buttons_item_title {
+  font-size: 14px;
+  padding: 10px 15px;
+  padding-right: 30px;
+}
+.telegram_message_buttons_item .telegram_message_buttons_item_action a {
+  font-size: 10px;
+  color: #fff;
+  display: none;
+}
+.telegram_message_buttons_item_delete {
+  position: absolute;
+  top: 3px;
+  right: 10px;
+  display: block;
+  color: #fff;
+  font-weight: 700;
+  line-height: 20px;
+  font-size: 20px;
+  text-decoration: none;
+}
+.telegram_message_buttons_item_update {
+  position: absolute;
+  bottom: 3px;
+  right: 10px;
+  display: block;
+  color: #fff;
+  font-weight: 700;
+  line-height: 20px;
+  font-size: 10px;
+  text-decoration: none;
+}
+.telegram_message_buttons_item_delete:hover,
+.telegram_message_buttons_item_delete:focus,
+.telegram_message_buttons_item_update:hover,
+.telegram_message_buttons_item_update:focus{
+  text-decoration: none;
+  color: #fff;
+  opacity: 0.6;
+  outline: none;
+}
+.field-telegramconstructormessageform-message .tox-tinymce {
+  border: none;
+  box-shadow: none;
+  background: none;
+}
+.tg-preview_wrap {
+  background: rgb(219,221,187);
+  background: linear-gradient(49deg, rgba(219,221,187,1) 0%, rgba(107,165,135,1) 27%, rgba(213,216,141,1) 55%, rgba(136,184,132,1) 100%);
+  width: 700px;
+  /*height: 800px;*/
+  overflow-y: scroll;
+  position: relative;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+.tg-preview {
+  padding: 20px;
+  z-index: 1;
+  position: relative;
+}
+.tg-preview_bg {
+  background: url("/images/tg-constructor/bg.png");
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: 0.3;
+  z-index: 0;
+}
+.tg-preview-image {
+  max-width: 100%;
+  display: block;
+}
+.tg-preview_message_body {
+  padding: 20px;
+  padding-bottom: 10px;
+}
+.tg-preview_message {
+  background: #fff;
+  border-radius: 20px;
+  width: 600px;
+  overflow: hidden;
+  display: none;
+}
+.tg-preview_message.active {
+  display: block;
+}
+.tg-preview_message .file-preview  {
+  padding: 0;
+  border: none;
+  margin: 0;
+}
+.tg-preview_message .file-preview .fileinput-remove {
+  top: 10px;
+  right: 10px;
+  line-height: 10px;
+  z-index: 2;
+  opacity: 1;
+}
+.tg-preview_message .file-input-ajax-new .fileinput-remove {
+  display: none;
+}
+.tg-preview_message .file-preview .file-drop-zone {
+  padding: 0;
+  border: none;
+  margin: 0;
+}
+.tg-preview_message .file-preview .file-preview-frame {
+  padding: 0;
+  border: none;
+  margin: 0;
+  box-shadow: none;
+}
+
+.tg-preview_message .file-preview .krajee-default.file-preview-frame .kv-file-content {
+  padding: 0;
+  border: none;
+  margin: 0;
+  width: auto;
+  height: auto;
+}
+.tg-preview_message .file-preview .krajee-default.file-preview-frame .file-thumbnail-footer {
+  display: none;
+}
+.tg-preview_message .file-input {
+  position: relative;
+}
+.tg-preview_message .file-caption {
+  opacity: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+.tg-preview_message .file-caption .input-group,
+.tg-preview_message .file-caption .input-group-btn,
+.tg-preview_message .file-caption .btn-file {
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  height: 100%;
+}
+.tg-preview_message #telegramconstructormessageform-image_file {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+.tg-preview_message .form-group {
+  padding: 0;
+  border: none;
+  margin: 0;
+}
+.tg-preview_message .krajee-default.file-preview-frame:not(.file-preview-error):hover {
+  padding: 0;
+  border: none;
+  margin: 0;
+  box-shadow: none;
+}
+
+.tg-preview_wrap::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tg-preview_wrap::-webkit-scrollbar-track {
+  background-color: transparent;
+  border-radius: 100px;
+}
+
+.tg-preview_wrap::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.34);
+  border-radius: 100px;
+}
+
+.counters-list {
+  margin-bottom: 10px;
+}
+.counters-list h3 {
+  margin-top: 0;
+}
+.counters-list h5 {
+  margin-top: 0;
+}
+.header-menu .navbar-nav {
+  font-size: 13px;
+}
+.header-menu .navbar-nav.nav > li > a {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.audience-info-block {
+  display: block;
+  margin-top: 5px;
+  margin-bottom: 10px;
+  color: #737373;
+}

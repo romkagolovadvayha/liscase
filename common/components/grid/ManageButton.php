@@ -59,4 +59,15 @@ class ManageButton
             'data-confirm' => $confirm,
         ]);
     }
+
+    /**
+     * @param $url
+     * @return string
+     */
+    public static function play($url): string
+    {
+        return Html::a(Yii::t('common', 'START'), $url, [
+            'class'        => self::BTN_CLASS . ' btn-default',
+        ]);
+    }
 }
