@@ -172,7 +172,6 @@ class TelegramConstructor extends \yii\db\ActiveRecord
     public static function getAudience($audienceId) {
         if ($audienceId == self::AUDIENCE_TEST) {
             return User::find()
-                                    ->cache(60 * 3)
                                     ->select('DISTINCT(u.id)')
                                     ->alias('u')
                                     ->andWhere(['u.status' => User::STATUS_ACTIVE])
@@ -183,7 +182,6 @@ class TelegramConstructor extends \yii\db\ActiveRecord
         }
         if ($audienceId == self::AUDIENCE_ALL) {
             return User::find()
-                       ->cache(60 * 3)
                        ->select('DISTINCT(u.id)')
                        ->alias('u')
                        ->andWhere(['u.status' => User::STATUS_ACTIVE])
