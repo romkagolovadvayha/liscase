@@ -22,6 +22,11 @@ $this->title = Yii::t('common', 'Предметы');
     'filterModel'  => $searchModel,
     'columns'      => [
         [
+            'attribute' => 'id',
+            'format'    => 'raw',
+            'options'   => ['width' => '70'],
+        ],
+        [
             'format'    => 'raw',
             'options'   => ['width' => '50'],
             'value'     => function (Drop $model) {

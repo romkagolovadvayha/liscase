@@ -143,6 +143,10 @@ class User extends ActiveRecord implements IdentityInterface
             'status'              => Yii::t('common', 'Статус'),
             'current_language'    => Yii::t('common', 'Выбранный язык'),
             'created_at'          => Yii::t('common', 'Дата регистрации'),
+            'banned_at'          => Yii::t('common', 'Дата Бана'),
+            'unbanned_at'          => Yii::t('common', 'Разбан'),
+            'ban_reason'          => Yii::t('common', 'Причина'),
+            'ban_by'          => Yii::t('common', 'Кем забанен'),
         ];
     }
 

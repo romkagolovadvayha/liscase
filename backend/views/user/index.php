@@ -28,7 +28,7 @@ $this->title = Yii::t('common', 'Пользователи');
         ],
         [
             'attribute' => 'username',
-            'label'     => 'Реф.код',
+            'label'     => 'Ник',
             'format'    => 'raw',
             'value'          => function (UserSearch $model) {
                 $isAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
@@ -76,6 +76,34 @@ $this->title = Yii::t('common', 'Пользователи');
         [
             'options'   => ['width' => '200'],
             'class' => \common\components\grid\DateColumn::class,
+        ],
+        [
+            'attribute'       => 'banned_at',
+            'options'   => ['width' => '200'],
+            'class' => \common\components\grid\DateColumn::class,
+        ],
+        [
+            'attribute'       => 'unbanned_at',
+            'options'   => ['width' => '200'],
+            'class' => \common\components\grid\DateColumn::class,
+        ],
+        [
+            'attribute' => 'ban_by',
+            'label'     => 'Модератор',
+            'format'    => 'raw',
+            'value'          => function (UserSearch $model) {
+                $isAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
+                $isModerator = Yii::$app->user->can(Role::ROLE_MODERATOR);
+                if (empty($model->ban_by)) {
+                    return null;
+                }
+                $moder = \common\models\user\User::findOne($model->ban_by);
+                if (!$isAdmin && !$isModerator) {
+                    return $moder->username;
+                }
+                $url = \yii\helpers\Url::to(['/user/profile', 'userId' => $moder->id]);
+                return Html::a($moder->username, $url);
+            },
         ],
         [
             'class'    => 'yii\grid\ActionColumn',
