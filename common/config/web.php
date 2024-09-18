@@ -145,7 +145,7 @@ $config = [
         ],
         'tomeApi'   => [
             'class' => \common\components\payments\Tome::class,
-            'secretKey' => 'ec6fbK60f9I74197f644X650A4B6b76PV1SH',
+            'secretKey' => 'e85QE8144b3W4Obe77109cdaGdffBV116R0e',
             'shop_id' => '001399',
         ],
         'freeKassaApi'   => [
