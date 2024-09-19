@@ -136,10 +136,10 @@ class TelegramConstructorMessage extends \yii\db\ActiveRecord
         $model->save(false);
     }
 
-    public function getTelegramMessage($language) {
+    public function getTelegramMessage($language, $photo = true) {
         $message = $this->getMessage($language);
         $message = str_replace(["<p>&nbsp;</p>", "<p>", "</p>", "<br>", "&nbsp;"], ["\n", "", "", "\n", ""], $this->makeStringUTF8($message));
-        if ($this->getImageLink($language)) {
+        if ($this->getImageLink($language) && $photo) {
             $imageLink = $this->getPubUrl('', $language);
             $message = '<a href="' . $imageLink . '">&#8205;</a>' . $message;
         }

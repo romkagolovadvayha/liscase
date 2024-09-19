@@ -151,16 +151,23 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             $cacheData = Yii::$app->cache->get($cacheKey);
             if (!empty($cacheData)) {
                 $message = $cacheData['message'];
+                $photo = $cacheData['photo'];
                 $buttons = $cacheData['buttons'];
             } else {
-                $message = $this->telegramConstructorMessage->getTelegramMessage($user->current_language);
                 $buttons = $this->telegramConstructorMessage->getTelegramButtons($user->current_language);
+                $message = $this->telegramConstructorMessage->getTelegramMessage($user->current_language, !empty($buttons));
+                $photo = $this->telegramConstructorMessage->getPubUrl('', $user->current_language);
                 Yii::$app->cache->set($cacheKey, [
                     'message' => $message,
+                    'photo' => $photo,
                     'buttons' => $buttons
                 ], 60);
             }
-            Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message, $buttons);
+            if (!empty($buttons)) {
+                Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message, $buttons);
+            } else {
+                Yii::$app->personalBotTelegram->sendPhoto($user->telegram_chat_id, $photo, $message);
+            }
         }
 
         return true;
@@ -176,7 +183,8 @@ class TelegramConstructor extends \yii\db\ActiveRecord
                                     ->alias('u')
                                     ->andWhere(['u.status' => User::STATUS_ACTIVE])
                                     ->andWhere('telegram_chat_id is NOT NULL')
-                                    ->andWhere(['IN', 'u.id', [2373, 509]])
+                                    ->andWhere(['IN', 'u.id', [509]])
+//                                    ->andWhere(['IN', 'u.id', [2373, 509]])
                                     ->createCommand()
                                     ->queryColumn();
         }
