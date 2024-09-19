@@ -4,9 +4,13 @@ namespace common\components\telegram\foreignSystem;
 
 use backend\models\TelegramConstructorMessage;
 use common\components\telegram\TelegramApiHelper;
+use common\models\box\Box;
+use common\models\box\Drop;
 use common\models\profit\Profit;
 use common\models\servers\Servers;
+use common\models\user\UserBox;
 use common\models\user\UserConfirmCode;
+use common\models\user\UserDrop;
 use Yii;
 use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
@@ -56,6 +60,8 @@ class PersonalBotSystem extends AbstractSystem
                 return $this->getWipe();
             case '/ip':
                 return $this->getIp();
+            case '/bonus':
+                return $this->getBonus($message);
         }
 
         return $answerMessage;
@@ -149,6 +155,56 @@ class PersonalBotSystem extends AbstractSystem
         return $text;
     }
 
+    public function getBonus($message) {
+        $chatId = ArrayHelper::getValue($message, 'chat.id');
+        $cacheKey = 'PersonalBotSystem_getBonus_' . $chatId;
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        $user = User::findByChatId($chatId);
+        if ($user->status === User::STATUS_BLOCKED) {
+            $return = '🔐 Ваш аккаунт заблокирован!';
+            Yii::$app->cache->set($cacheKey, $return, 60);
+            return $return;
+        }
+        $box = Box::findOne(14);
+        $nextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate();
+        if ($box->type === Box::TYPE_FREE && !empty($getNextOpenFreeBoxDate)) {
+            $date = new \DateTime($nextOpenFreeBoxDate);
+            $return = '⛔ Вы уже получали сегодня награду, следующий кейс будет доступен ' . $date->format('d.m.Y H:i:s');
+            Yii::$app->cache->set($cacheKey, $return, 60);
+            return $return;
+        }
+        $userBoxId = UserBox::createRecord($user->id, $box->id);
+        $userBox = UserBox::findOne($userBoxId);
+        [$boxDropCarousel, $number] = $userBox->box->_getDropFinal();
+        $userBox->status = UserBox::STATUS_OPENED;
+        $userBox->save();
+
+        /** @var Drop $drop */
+        $dropName =  Yii::t('database', $boxDropCarousel[$number]['boxDrop']->drop->name);
+        $dropCount =  $boxDropCarousel[$number]['count'];
+//        $dropImage =  $boxDropCarousel[$number]['boxDrop']->drop->imageOrig->getImagePubUrl();
+
+        if ($boxDropCarousel[$number]['boxDrop']->drop->id != 843) {
+            UserDrop::createRecord($user->id, $boxDropCarousel[$number]['boxDrop']->drop->id, $box->id, null,UserDrop::STATUS_ACTIVE, false, $boxDropCarousel[$number]['count']);
+        } else {
+            $userBalance = Yii::$app->user->identity->getPersonalBalance();
+            $profit = new Profit();
+            $profit->status = 1;
+            $profit->type = Profit::TYPE_SELL_DROP;
+            $profit->amount = $boxDropCarousel[$number]['count'];
+            $profit->user_balance_id = $userBalance->id;
+            $profit->comment = Yii::t('common', 'Выигрыш в бесплатной рулетке', [], 'ru-RU');
+            $profit->created_at = date('Y-m-d H:i:s');
+            $profit->save(false);
+        }
+
+        $return = "🙌 Поздравляем вы успешно получили награду {$dropName} x{$dropCount}";
+        Yii::$app->cache->set($cacheKey, $return, 60);
+        return $return;
+    }
+
     /**
      * @param string $name
      *
@@ -186,7 +242,7 @@ class PersonalBotSystem extends AbstractSystem
                 ];
             }
         }*/
-        return 'Команда не найдена, попробуйте другую 😏';
+        return '⛔ Команда не найдена, попробуйте другую';
     }
 
     /**

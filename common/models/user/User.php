@@ -227,6 +227,18 @@ class User extends ActiveRecord implements IdentityInterface
         return static::findOne($attributes);
     }
 
+    /**
+     * @param string $chatId
+     *
+     * @return static|null
+     */
+    public static function findByChatId($chatId)
+    {
+        $attributes = ['telegram_chat_id' => $chatId];
+
+        return static::findOne($attributes);
+    }
+
     public static function findBySteamId($steamId, $updated = false)
     {
         if (strlen($steamId) !== 17) {
