@@ -202,6 +202,7 @@ class TelegramApiHelper extends \yii\base\Component
             'chat_id' => $chatId,
             'photo'   => $photo,
             'caption' => $caption,
+            'parse_mode'   => 'Html',
         ]);
     }
 
