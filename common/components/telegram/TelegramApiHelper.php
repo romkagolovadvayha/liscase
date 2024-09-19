@@ -39,7 +39,7 @@ class TelegramApiHelper extends \yii\base\Component
 
         if (!empty($params)) {
 
-            $attachments = ['photo', 'sticker', 'audio', 'document', 'video'];
+            $attachments = ['sticker', 'audio', 'document', 'video'];
 
             foreach ($attachments as $attachment) {
                 if (isset($params[$attachment])) {
