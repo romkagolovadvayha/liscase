@@ -173,7 +173,7 @@ class PersonalBotSystem extends AbstractSystem
         }
         $box = Box::findOne(14);
         $nextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate($user->id);
-        if (!empty($getNextOpenFreeBoxDate)) {
+        if (!empty($nextOpenFreeBoxDate)) {
             $date = new \DateTime($nextOpenFreeBoxDate);
             $return = '⛔ Вы уже получали сегодня награду, следующий кейс будет доступен ' . $date->format('d.m.Y H:i:s');
             Yii::$app->cache->set($cacheKey, $return, 60);
