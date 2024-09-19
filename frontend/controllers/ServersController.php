@@ -63,4 +63,10 @@ class ServersController extends WebController
         return $this->renderAjax('wipe-block');
     }
 
+    public function actionBonus()
+    {
+        $this->layout = 'service';
+        return $this->renderAjax('bonus');
+    }
+
 }

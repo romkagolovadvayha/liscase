@@ -53,6 +53,7 @@ class PersonalBotSystem extends AbstractSystem
             case '/help':
                 return "<b>/pop</b> - Онлайн на серверах"
                     . PHP_EOL . "<b>/wipe</b> - Календарь вайпов"
+                    . PHP_EOL . "<b>/bonus</b> - Получить ежедневный бонус"
                     . PHP_EOL . "<b>/ip</b> - IP серверов";
             case '/pop':
                 return $this->getOnline();

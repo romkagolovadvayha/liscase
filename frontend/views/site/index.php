@@ -127,35 +127,27 @@ JS
                     <div class="products_wrap">
                         <?php if (!Yii::$app->user->isGuest): ?>
                         <div class="products_buttons">
-                            <?php foreach (Box::getBoxesByType(Box::TYPE_FREE) as $box): ?>
-                                <?php if (!empty($getNextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate())): ?>
-                                    <div class="products_item_roulete products_item_roulete_blocked" data-title="<?=Yii::t('common', 'Ежедневный крейт')?>">
-                                        <div class="products_item_roulete_blocked_title">
-                                            <i class="far fa-clock"></i>
-                                            <?=Yii::t('common', 'Ежедневная награда будет доступна')?> <span class="products_item_roulete_blocked_title_timer" id="roulete_timer"><?=Yii::t('common', 'через 18 часов')?></span>
-                                        </div>
+                            <?php if (!empty($getNextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate())): ?>
+                                <div class="products_item_roulete products_item_roulete_blocked" data-title="<?=Yii::t('common', 'Ежедневный крейт')?>">
+                                    <div class="products_item_roulete_blocked_title">
+                                        <i class="far fa-clock"></i>
+                                        <?=Yii::t('common', 'Ежедневная награда будет доступна')?> <span class="products_item_roulete_blocked_title_timer" id="roulete_timer"><?=Yii::t('common', 'через 18 часов')?></span>
                                     </div>
-                                    <?php
-                                    $lang = substr(Yii::$app->language, 0, 2);
-                                    $unixDate = strtotime($getNextOpenFreeBoxDate);
-                                    $this->registerJs(<<<JS
+                                </div>
+                                <?php
+                                $lang = substr(Yii::$app->language, 0, 2);
+                                $unixDate = strtotime($getNextOpenFreeBoxDate);
+                                $this->registerJs(<<<JS
                                     var dateRoulete = {$unixDate};
                                     var left = moment.unix(dateRoulete);
                                     $('#roulete_timer').html(left.locale('{$lang}').fromNow());
                                 JS
-                                    );?>
-                                <?php else: ?>
-                                    <?php $form = \yii\widgets\ActiveForm::begin([
-                                                                        'id' => 'roulete-container',
-                                                                        'action' => '/box/buy-container?id=' . $box->id,
-                                                                    ]); ?>
-                                    <input type="hidden" name="buy" value="1"/>
-                                    <button class="products_item_roulete" type="submit">
-                                        <?=Yii::t('common', 'Ежедневная награда')?>
-                                    </button>
-                                    <?php \yii\widgets\ActiveForm::end(); ?>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
+                                );?>
+                            <?php else: ?>
+                                <div data-href="/servers/bonus" class="products_item_roulete show-modal-link" data-size="modal-lg" data-toggl="modal" data-target="modal-dialog" data-title="<?=Yii::t('common', 'Ежедневная награда')?>">
+                                    <div class="products_buttons_wipe_block_title"><?=Yii::t('common', 'Ежедневная награда')?></div>
+                                </div>
+                            <?php endif; ?>
                             <div data-href="/servers/wipe-block" class="products_buttons_wipe_block show-modal-link" data-size="modal-lg" data-toggl="modal" data-target="modal-dialog" data-title="<?=Yii::t('common', 'Вайп блок')?>">
                                 <div class="products_buttons_wipe_block_title"><?=Yii::t('common', 'Вайп блок')?></div>
                             </div>
