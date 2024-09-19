@@ -265,8 +265,8 @@ class Box extends ActiveRecord
      * @return string|null
      * @throws \Exception
      */
-    public static function getNextOpenFreeBoxDate() {
-        $last = Box::getLastOpenFreeBox();
+    public static function getNextOpenFreeBoxDate($userId = null) {
+        $last = Box::getLastOpenFreeBox($userId);
         if (empty($last)) {
             return null;
         }
