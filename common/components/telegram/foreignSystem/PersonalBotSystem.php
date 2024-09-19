@@ -172,8 +172,8 @@ class PersonalBotSystem extends AbstractSystem
             return $return;
         }
         $box = Box::findOne(14);
-        $nextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate();
-        if ($box->type === Box::TYPE_FREE && !empty($getNextOpenFreeBoxDate)) {
+        $nextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate($user->id);
+        if (!empty($getNextOpenFreeBoxDate)) {
             $date = new \DateTime($nextOpenFreeBoxDate);
             $return = '⛔ Вы уже получали сегодня награду, следующий кейс будет доступен ' . $date->format('d.m.Y H:i:s');
             Yii::$app->cache->set($cacheKey, $return, 60);
@@ -204,7 +204,7 @@ class PersonalBotSystem extends AbstractSystem
             $profit->save(false);
         }
 
-        $return = "🙌 Поздравляем вы успешно получили награду {$dropName} x{$dropCount}";
+        $return = "🙌 Поздравляем вы успешно получили награду \"<b>{$dropName}</b>\" <b>x{$dropCount}</b>";
         Yii::$app->cache->set($cacheKey, $return, 60);
         return $return;
     }
