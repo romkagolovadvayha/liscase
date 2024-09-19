@@ -156,14 +156,17 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             } else {
                 $buttons = $this->telegramConstructorMessage->getTelegramButtons($user->current_language);
                 $message = $this->telegramConstructorMessage->getTelegramMessage($user->current_language, !empty($buttons));
-                $photo = $this->telegramConstructorMessage->getPubUrl('', $user->current_language);
+                $photo = null;
+                if (!empty($this->telegramConstructorMessage->getImageLink($user->current_language))) {
+                    $photo = $this->telegramConstructorMessage->getPubUrl('', $user->current_language);
+                }
                 Yii::$app->cache->set($cacheKey, [
                     'message' => $message,
                     'photo' => $photo,
                     'buttons' => $buttons
                 ], 60);
             }
-            if (!empty($buttons)) {
+            if (!empty($buttons) || empty($photo)) {
                 Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message, $buttons);
             } else {
                 Yii::$app->personalBotTelegram->sendPhoto($user->telegram_chat_id, $photo, $message);
