@@ -204,9 +204,7 @@ class PersonalBotSystem extends AbstractSystem
             $profit->save(false);
         }
 
-        $return = "🙌 Поздравляем вы успешно получили награду \"<b>{$dropName}</b>\" <b>x{$dropCount}</b>";
-        Yii::$app->cache->set($cacheKey, $return, 60);
-        return $return;
+        return "🙌 Поздравляем вы успешно получили награду \"<b>{$dropName}</b>\" <b>x{$dropCount}</b>";
     }
 
     /**
