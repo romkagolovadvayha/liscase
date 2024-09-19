@@ -164,7 +164,6 @@ class PersonalBotSystem extends AbstractSystem
         $user = User::findByChatId($chatId);
         if (empty($user)) {
             $return = '🔐 Авторизуйтесь, чтобы получить награду!' . PHP_EOL . "Для авторизации напишите /start";
-            Yii::$app->cache->set($cacheKey, $return, 60);
             return $return;
         }
         if ($user->status === User::STATUS_BLOCKED) {
