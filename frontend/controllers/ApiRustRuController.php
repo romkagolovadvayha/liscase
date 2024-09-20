@@ -39,10 +39,10 @@ class ApiRustRuController extends WebController
     public function actionGetUsersWaitConfirm($secret) {
         header('Content-type: application/json');
         if (self::secretKey !== $secret) {
-            return [
+            return json_encode([
                 'result' => 'fail',
                 'message' => 'Ошибка авторизации',
-            ];
+            ],JSON_PRETTY_PRINT);;
         }
 
         /** @var User[] $users */
@@ -72,18 +72,22 @@ class ApiRustRuController extends WebController
      *
      */
     public function actionScrapConfirm($secret) {
+        if (empty(Yii::$app->request->getRawBody())) {
+            return json_encode([
+                'result' => 'fail',
+                'message' => 'Доступен только POST запрос',
+            ],JSON_PRETTY_PRINT);
+        }
         header('Content-type: application/json');
-        /** @var User[] $users */
-        $users = User::find()
-                     ->andWhere(['rustru_activated' => 1])
-                     ->andWhere(['>', 'rustru_scrap_wait', 0])
-                     ->andWhere(['status' => User::STATUS_ACTIVE])
-                     ->all();
-
+        $users = json_decode(Yii::$app->request->getRawBody(), 1);
         foreach ($users as $user) {
-            $user->rustru_scrap_confirm += $user->rustru_scrap_wait;
-            $user->rustru_scrap_wait = 0;
-            $user->save(false);
+            $model = User::findBySteamId($user['steam_id']);
+            $model->rustru_scrap_confirm += $user['scrap'];
+            if ($model->rustru_scrap_wait < $user['scrap']) {
+                continue;
+            }
+            $model->rustru_scrap_wait = 0;
+            $model->save(false);
         }
 
         return json_encode([
@@ -101,10 +105,10 @@ class ApiRustRuController extends WebController
     public function actionGetUsers($secret) {
         header('Content-type: application/json');
         if (self::secretKey !== $secret) {
-            return [
+            return json_encode([
                 'result' => 'fail',
                 'message' => 'Ошибка авторизации',
-            ];
+            ],JSON_PRETTY_PRINT);
         }
 
         /** @var User[] $users */
