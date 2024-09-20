@@ -234,13 +234,17 @@ try {
     $banList = Steam::getBansMagicRust($user->steam_id);
     foreach ($banList as $banItem) {
         $bansExist = true;
-        $date = new DateTime();
-        $date->setTimestamp($banItem['time']);
+        $dateText = "Неизвестно";
+        if (!empty($banItem['time'])) {
+            $date = new DateTime();
+            $date->setTimestamp($banItem['time']);
+            $dateText = $date->format('d.m.Y H:i:s');
+        }
         $bans[] = [
             'serverName' => $banItem['server'],
             'reason' => $banItem['reason'],
             'unbanned_date' => $banItem['expireDate'],
-            'date' => $date->format('d.m.Y H:i:s'),
+            'date' => $dateText,
         ];
     }
 } catch (\Exception $e) {
