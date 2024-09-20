@@ -82,7 +82,7 @@ class ApiRustRuController extends WebController
         header('Content-type: application/json');
         $users = json_decode(Yii::$app->request->getRawBody(), 1);
         foreach ($users as $user) {
-            $model = User::findBySteamId($user['steam_id']);
+            $model = User::findBySteamId($user['steamId']);
             $model->rustru_scrap_confirm += $user['scrap'];
             if ($model->rustru_scrap_wait < $user['scrap']) {
                 continue;
