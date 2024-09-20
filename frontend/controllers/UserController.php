@@ -214,8 +214,6 @@ class UserController extends WebController
         return json_encode($result);
     }
 
-
-
     public function actionGetAchievement($type)
     {
         if (!in_array($type, array_keys(Task::getTypeList()))) {

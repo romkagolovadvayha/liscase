@@ -43,6 +43,9 @@ use common\components\base\ActiveRecord;
  * @property int             $ban_reason
  * @property int             $ban_by
  * @property string          $discord
+ * @property bool            $rustru_activated
+ * @property int             $rustru_scrap_confirm
+ * @property int             $rustru_scrap_wait
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
