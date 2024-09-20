@@ -104,12 +104,10 @@ class WipeController extends Controller
                             } elseif ($i === 2) {
                                 $text = "🥉 Награда за третье место в топе \"{$value}\" - <b>{$profit->amount} РУБ</b>";
                             }
-                            $totalText = "Вам начислены награды за ТОП на сервере " . $server->name;
-                            $totalText .= PHP_EOL . $text;
-                            if (in_array($userStats['user']->steam_id, $tgMessage)) {
-                                $tgMessage[$userStats['user']->steam_id] .= PHP_EOL . $totalText;
+                            if (!empty($tgMessage[$userStats['user']->steam_id])) {
+                                $tgMessage[$userStats['user']->steam_id] .= PHP_EOL . $text;
                             } else {
-                                $tgMessage[$userStats['user']->steam_id] = $totalText;
+                                $tgMessage[$userStats['user']->steam_id] = "Вам начислены награды за ТОП на сервере " . $server->name . PHP_EOL . $text;
                             }
                         }
                         $profit->created_at      = date('Y-m-d H:i:s');
