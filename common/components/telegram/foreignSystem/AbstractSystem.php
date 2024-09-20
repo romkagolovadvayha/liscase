@@ -28,10 +28,12 @@ abstract class AbstractSystem
                 case strpos($messageText, '/start') === 0 :
                     $chat = ArrayHelper::getValue($message, 'chat');
 
+                    $name = '';
                     $lastName  = ArrayHelper::getValue($chat, 'last_name');
                     $firstName = ArrayHelper::getValue($chat, 'first_name');
-
-                    $name = trim($lastName . ' ' . $firstName);
+                    if (!empty($firstName) && !empty($lastName)) {
+                        $name = ', ' . trim($lastName . ' ' . $firstName);
+                    }
 
                     $answerMessage = $this->_getStartMessageText($name);
 

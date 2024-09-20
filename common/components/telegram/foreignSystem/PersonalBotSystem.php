@@ -194,7 +194,7 @@ class PersonalBotSystem extends AbstractSystem
         if ($boxDropCarousel[$number]['boxDrop']->drop->id != 843) {
             UserDrop::createRecord($user->id, $boxDropCarousel[$number]['boxDrop']->drop->id, $box->id, null,UserDrop::STATUS_ACTIVE, false, $boxDropCarousel[$number]['count']);
         } else {
-            $userBalance = Yii::$app->user->identity->getPersonalBalance();
+            $userBalance = $user->getPersonalBalance();
             $profit = new Profit();
             $profit->status = 1;
             $profit->type = Profit::TYPE_SELL_DROP;
@@ -215,7 +215,7 @@ class PersonalBotSystem extends AbstractSystem
      */
     protected function _getStartMessageText($name)
     {
-        return "Приветствую, {$name}!
+        return "Приветствую{$name}!
 Для активации бота перейдите на страницу https://prostoj.store/bot/activate и скопируйте код активации в этот чат.";
     }
 
