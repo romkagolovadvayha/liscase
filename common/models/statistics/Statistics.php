@@ -142,12 +142,12 @@ class Statistics extends ActiveRecord
         return $data;
     }
 
-    public static function getTopWidgetItem($key, $stats) {
+    public static function getTopWidgetItem($key, $stats, $index = 0) {
         if (empty($stats[$key])) {
             return [];
         }
 
-        $item = $stats[$key]['players'][0];
+        $item = $stats[$key]['players'][$index];
         $item['total_score'] = $item[$key];
         $item['user'] = User::findBySteamId($item['steam_id']);
 
