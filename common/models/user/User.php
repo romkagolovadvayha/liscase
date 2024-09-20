@@ -75,6 +75,7 @@ class User extends ActiveRecord implements IdentityInterface
     const REASON_MACROS = 6;
     const REASON_MULTIACC = 7;
     const REASON_BAN_OTHER_PROJECT = 8;
+    const REASON_BAN_CANCEL_CHECK = 9;
 
     const REASON_MUTE_SPAM = 1;
     const REASON_MUTE_FLUD = 2;
@@ -107,6 +108,7 @@ class User extends ActiveRecord implements IdentityInterface
             self::REASON_MACROS      => Yii::t('common', 'Макросы'),
             self::REASON_MULTIACC      => Yii::t('common', 'Мульти Аккаунт'),
             self::REASON_BAN_OTHER_PROJECT       => Yii::t('common', 'Бан на другом проекте'),
+            self::REASON_BAN_CANCEL_CHECK       => Yii::t('common', 'Отказ от проверки'),
             self::REASON_NOT_REASON       => Yii::t('common', 'Причина не указана'),
         ];
     }
