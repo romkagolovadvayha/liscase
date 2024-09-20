@@ -78,6 +78,7 @@ class ApiRustRuController extends WebController
                 'message' => 'Доступен только POST запрос',
             ],JSON_PRETTY_PRINT);
         }
+        Yii::error("actionScrapConfirm: " . Yii::$app->request->getRawBody(), 'error');
         header('Content-type: application/json');
         $users = json_decode(Yii::$app->request->getRawBody(), 1);
         foreach ($users as $user) {
