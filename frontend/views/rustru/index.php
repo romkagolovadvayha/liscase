@@ -23,7 +23,7 @@ $this->title = Yii::t('common', "Активация бонусной прогр�
         <p class="how-works__p"><a href="https://discord.gg/rust-ru" target="_blank"><img src="/images/rustru.png"/></a></p>
 
         <div class="trade_link_form">
-            <?php if (!$user->rustru_activated): ?>
+            <?php if (Yii::$app->user->isGuest || !$user->rustru_activated): ?>
                 <?= Alert::widget() ?>
                 <?php $form = ActiveForm::begin(); ?>
                 <button type="submit" class="btn"><?=Yii::t('common', 'Участвовать в раздаче скрапа')?></button>
