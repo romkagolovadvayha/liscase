@@ -262,12 +262,12 @@ class PersonalBotSystem extends AbstractSystem
 
         $answerMessage = 'Ошибка авторизации, код неверен! 🤔';
 
-        if (!empty($user)) {
+        if (!empty($user) && !empty($chatId)) {
             if (!empty($user->telegram_chat_id)) {
                 return 'Вы уже авторизованы!';
             }
             $user->telegram_chat_id = $chatId;
-            $user->save();
+            $user->save(false);
             $profit = new Profit();
             $profit->status = 1;
             $profit->type = Profit::TYPE_TELEGRAM_BOT;
@@ -275,7 +275,7 @@ class PersonalBotSystem extends AbstractSystem
             $profit->user_balance_id = $user->getPersonalBalance()->id;
             $profit->comment = Yii::t('common', 'Бонус за привязку телеграм бота','ru-RU');
             $profit->created_at = date('Y-m-d H:i:s');
-            $profit->save(false);
+            //$profit->save(false);
             $answerMessage = $this->_getAfterRegisterMessage($user);
         }
 
@@ -342,7 +342,7 @@ class PersonalBotSystem extends AbstractSystem
     protected function _getAfterRegisterMessage($user)
     {
         return "✅ {$user->username}, Вы успешно авторизовались!"
-            . PHP_EOL . "🎁 Вам начислен бонус <b>50 РУБ</b> на сайте!"
+            //. PHP_EOL . "🎁 Вам начислен бонус <b>50 РУБ</b> на сайте!"
             . PHP_EOL . PHP_EOL . "ℹ️Напишите /help, чтобы увидеть команды для бота.";
     }
 
