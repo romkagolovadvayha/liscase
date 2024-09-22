@@ -189,7 +189,7 @@ class PersonalBotSystem extends AbstractSystem
         /** @var Drop $drop */
         $dropName =  Yii::t('database', $boxDropCarousel[$number]['boxDrop']->drop->name);
         $dropCount =  $boxDropCarousel[$number]['count'];
-//        $dropImage =  $boxDropCarousel[$number]['boxDrop']->drop->imageOrig->getImagePubUrl();
+        //        $dropImage =  $boxDropCarousel[$number]['boxDrop']->drop->imageOrig->getImagePubUrl();
 
         if ($boxDropCarousel[$number]['boxDrop']->drop->id != 843) {
             UserDrop::createRecord($user->id, $boxDropCarousel[$number]['boxDrop']->drop->id, $box->id, null,UserDrop::STATUS_ACTIVE, false, $boxDropCarousel[$number]['count']);
@@ -275,9 +275,9 @@ class PersonalBotSystem extends AbstractSystem
                 Yii::$app->telegramChats->sendMessage($error);
             }
             $existProfit = Profit::find()
-                ->andWhere(['user_id' => $user->id])
-                ->andWhere(['type' => Profit::TYPE_TELEGRAM_BOT])
-                ->exists();
+                                 ->andWhere(['user_balance_id' => $user->getPersonalBalance()->id])
+                                 ->andWhere(['type' => Profit::TYPE_TELEGRAM_BOT])
+                                 ->exists();
             if (!$existProfit) {
                 $profit                  = new Profit();
                 $profit->status          = 1;
