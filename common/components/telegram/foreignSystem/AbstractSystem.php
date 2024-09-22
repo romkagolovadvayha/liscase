@@ -46,6 +46,7 @@ abstract class AbstractSystem
             }
 
         } catch (\Exception $e) {
+            Yii::error('error', $e->getFile() . ":" . $e->getFile() . ":" . $e->getMessage());
             $answerMessage = 'Что-то пошло не так!😱 Обратитесь в тех.поддержку.';
         }
 
