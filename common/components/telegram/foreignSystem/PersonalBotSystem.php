@@ -269,7 +269,10 @@ class PersonalBotSystem extends AbstractSystem
             $user->telegram_chat_id = $chatId;
             $user->save(false);
             if (!empty($user->getErrors())) {
-                Yii::error('error', json_encode($user->getErrors()));
+                $error = "File: PersonalBotSystem"
+                    . PHP_EOL . "Method: loginUser"
+                    . PHP_EOL . json_encode($user->getErrors());
+                Yii::$app->telegramChats->sendMessage($error);
             }
             $existProfit = Profit::find()
                 ->andWhere(['user_id' => $user->id])

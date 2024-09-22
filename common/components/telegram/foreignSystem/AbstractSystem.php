@@ -46,7 +46,10 @@ abstract class AbstractSystem
             }
 
         } catch (\Exception $e) {
-            Yii::error('error', $e->getFile() . ":" . $e->getFile() . ":" . $e->getMessage());
+            $error = "File: " . $e->getFile()
+                . PHP_EOL . "Line: " . $e->getLine()
+                . PHP_EOL . "Error:" . $e->getMessage();
+            Yii::$app->telegramChats->sendMessage($error);
             $answerMessage = 'Что-то пошло не так!😱 Обратитесь в тех.поддержку.';
         }
 
