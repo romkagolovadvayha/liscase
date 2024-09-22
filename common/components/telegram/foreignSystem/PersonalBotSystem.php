@@ -268,15 +268,24 @@ class PersonalBotSystem extends AbstractSystem
             }
             $user->telegram_chat_id = $chatId;
             $user->save(false);
-            $profit = new Profit();
-            $profit->status = 1;
-            $profit->type = Profit::TYPE_TELEGRAM_BOT;
-            $profit->amount = 50;
-            $profit->user_balance_id = $user->getPersonalBalance()->id;
-            $profit->comment = Yii::t('common', 'Бонус за привязку телеграм бота','ru-RU');
-            $profit->created_at = date('Y-m-d H:i:s');
-            //$profit->save(false);
-            $answerMessage = $this->_getAfterRegisterMessage($user);
+            if (!empty($user->getErrors())) {
+                Yii::error('error', json_encode($user->getErrors()));
+            }
+            $existProfit = Profit::find()
+                ->andWhere(['user_id' => $user->id])
+                ->andWhere(['type' => Profit::TYPE_TELEGRAM_BOT])
+                ->exists();
+            if (!$existProfit) {
+                $profit                  = new Profit();
+                $profit->status          = 1;
+                $profit->type            = Profit::TYPE_TELEGRAM_BOT;
+                $profit->amount          = 50;
+                $profit->user_balance_id = $user->getPersonalBalance()->id;
+                $profit->comment         = Yii::t('common', 'Бонус за привязку телеграм бота', 'ru-RU');
+                $profit->created_at      = date('Y-m-d H:i:s');
+                $profit->save(false);
+                $answerMessage = $this->_getAfterRegisterMessage($user);
+            }
         }
 
         return $answerMessage;
@@ -342,7 +351,7 @@ class PersonalBotSystem extends AbstractSystem
     protected function _getAfterRegisterMessage($user)
     {
         return "✅ {$user->username}, Вы успешно авторизовались!"
-            //. PHP_EOL . "🎁 Вам начислен бонус <b>50 РУБ</b> на сайте!"
+            . PHP_EOL . "🎁 Вам начислен бонус <b>50 РУБ</b> на сайте!"
             . PHP_EOL . PHP_EOL . "ℹ️Напишите /help, чтобы увидеть команды для бота.";
     }
 
