@@ -1,13 +1,13 @@
 module.exports = {
     app: {
         token: process.env.DISCORD_TOKEN || 'MTI4NzUzODM3NDEzOTE4MzEyNA.GXBr_6.ucLQQppRxE2nJGB8jO0sTrwRhJ0_tbvKNV7NCU',
-        playing: 'by the Community ❤️',
+        playing: 'Prostoj.store ❤️',
         global: true,
         guild: process.env.GUILD_ID || '1199050277773385728',
         extraMessages: false,
         loopMessage: false,
         lang: 'ru',
-        enableEmojis: false,
+        enableEmojis: true,
     },
 
     emojis:{
