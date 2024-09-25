@@ -126,7 +126,7 @@ class Statistics extends ActiveRecord
                 'deaths' => Statistics::getTopList($models, 'deaths', $steamId),
                 'models' => $models
             ];
-            Yii::$app->cache->set($cacheKey, $data, 300);
+            Yii::$app->cache->set($cacheKey, $data, 60);
         }
 
         if (!empty($steamId)) {
