@@ -14,7 +14,7 @@ global.client = new Client({
     disableMentions: 'everyone',
 });
 
-client.config = require('./config');
+client.config = require('./config2');
 
 const player = new Player(client, client.config.opt.discordPlayer);
 player.extractors.loadDefault();
