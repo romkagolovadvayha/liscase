@@ -40,7 +40,7 @@ class Statistics extends ActiveRecord
 
     public static function getStats(Servers $server, $steamId = null) {
         $cacheKey = "getStats_serverId{$server->id}_{$steamId}";
-        //$data = Yii::$app->cache->get($cacheKey);
+        $data = Yii::$app->cache->get($cacheKey);
         if (empty($data)) {
             $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
             /** @var Wipe[] $models */
@@ -60,9 +60,6 @@ class Statistics extends ActiveRecord
             $models = [];
             foreach ($steamIds as $_steamId) {
                 $params = $userList[$_steamId];
-                if (Statistics::getParam($params, 'playtime') <= 60) {
-                    continue;
-                }
                 $item = $params;
                 $item['steam_id'] = $_steamId;
                 $item['playtime'] = Statistics::getParam($params, 'playtime');
