@@ -38,14 +38,13 @@ class Statistics extends ActiveRecord
         return $allParams[$key];
     }
 
-    public static function getStats(Servers $server, $steamId = null) {
+    public static function getStats(Servers $server, $steamId = null, $all = true) {
         $cacheKey = "getStats_serverId{$server->id}_{$steamId}";
         $data = Yii::$app->cache->get($cacheKey);
         if (empty($data)) {
             $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
             /** @var Wipe[] $models */
             $statistics = Statistics::find()
-                                    ->cache(180)
                                     ->andWhere(['server_tag' => $server->tag])
                                     ->andWhere(['wipe' => $wipeDate])
                                     ->asArray()
@@ -60,6 +59,9 @@ class Statistics extends ActiveRecord
             $models = [];
             foreach ($steamIds as $_steamId) {
                 $params = $userList[$_steamId];
+                if (!$all && Statistics::getParam($params, 'playtime') <= 60) {
+                    continue;
+                }
                 $item = $params;
                 $item['steam_id'] = $_steamId;
                 $item['playtime'] = Statistics::getParam($params, 'playtime');
@@ -124,6 +126,7 @@ class Statistics extends ActiveRecord
                 'deaths' => Statistics::getTopList($models, 'deaths', $steamId),
                 'models' => $models
             ];
+            Yii::$app->cache->set($cacheKey, $data, 300);
         }
 
         if (!empty($steamId)) {

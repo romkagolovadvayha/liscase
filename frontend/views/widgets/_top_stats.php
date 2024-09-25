@@ -5,7 +5,7 @@
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 
-$stats = Statistics::getStats($server);
+$stats = Statistics::getStats($server, null, false);
 
 if (empty($stats['playtime']) || empty($stats['playtime']['players'])) {
     return;
