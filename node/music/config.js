@@ -3,7 +3,7 @@ module.exports = {
         token: process.env.DISCORD_TOKEN || 'MTI4NzUzODM3NDEzOTE4MzEyNA.GXBr_6.ucLQQppRxE2nJGB8jO0sTrwRhJ0_tbvKNV7NCU',
         playing: 'Prostoj.store ❤️',
         global: true,
-        guild: process.env.GUILD_ID || '1199050277773385728',
+        guild: process.env.GUILD_ID || '1237317039396487179',
         extraMessages: false,
         loopMessage: false,
         lang: 'ru',
