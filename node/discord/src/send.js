@@ -25,7 +25,7 @@ con.connect(function(err) {
                         var status = "online";
                         if (result2[0].status != 1) {
                             name = "Скоро открытие сервера";
-                            status = "dnd";
+                            status = "idle";
                         }
                         client.user.setPresence({
                             activities: [
