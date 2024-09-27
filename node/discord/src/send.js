@@ -22,8 +22,10 @@ con.connect(function(err) {
                     con.query(sql, function (err, result2) {
                         if (err) throw err;
                         var name = "Текущий онлайн: " + (result2[0].players + result2[0].joined) + "/" + result2[0].max;
+                        var status = "online";
                         if (result2[0].status != 1) {
                             name = "Скоро открытие сервера";
+                            status = "dnd";
                         }
                         client.user.setPresence({
                             activities: [
@@ -32,7 +34,7 @@ con.connect(function(err) {
                                     type: 4
                                 }
                             ],
-                            status: 'online'
+                            status: status
                         });
                     });
                     i++;
