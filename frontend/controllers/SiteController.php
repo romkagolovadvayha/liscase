@@ -192,7 +192,7 @@ class SiteController extends WebController
         Yii::$app->response->headers->add('Content-Type', 'text/xml');
         $categories = BlogCategory::find()->andWhere(['status' => BlogCategory::STATUS_ACTIVE])->orderBy(['created_at' => SORT_ASC])->all();
         $articles = Blog::find()->andWhere(['status' => Blog::STATUS_ACTIVE])->orderBy(['created_at' => SORT_ASC])->all();
-        $servers = Servers::find()->all();
+        $servers = Servers::find()->andWhere(['status' => Servers::STATUS_ACTIVE])->all();
         return $this->renderPartial('sitemap', [
             'articles' => $articles,
             'categories' => $categories,
@@ -212,6 +212,7 @@ class SiteController extends WebController
         $server = Servers::find()
                          ->cache(30)
                          ->andWhere(['tag' => $serverTag])
+                         ->andWhere(['status' => Servers::STATUS_ACTIVE])
                          ->one();
 
         if (empty($server)) {

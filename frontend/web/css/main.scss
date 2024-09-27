@@ -2617,6 +2617,10 @@ body {
             background: #6c0000;
             height: 5px;
           }
+          &_wait {
+            background: #636363;
+            height: 5px;
+          }
           &_joined {
             background: $color_success_brighter;
             height: 5px;
@@ -6260,6 +6264,10 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
         }
         &_offline {
           background: #6c0000;
+          height: 5px;
+        }
+        &_offline {
+          background: #636363;
           height: 5px;
         }
         &_joined {

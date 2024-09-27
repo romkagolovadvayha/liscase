@@ -42,6 +42,7 @@ class Servers extends \common\components\base\ActiveRecord
 {
     const STATUS_NOACTIVE    = 0;
     const STATUS_ACTIVE  = 1;
+    const STATUS_WAIT  = 2;
 
     /**
      * @return array

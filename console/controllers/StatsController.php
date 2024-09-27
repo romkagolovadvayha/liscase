@@ -27,6 +27,7 @@ class StatsController extends Controller
         /** @var Servers $server */
         $server = Servers::find()
                          ->andWhere(['tag' => $serverTag])
+                         ->andWhere(['status' => Servers::STATUS_ACTIVE])
                          ->one();
         $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
         $statistics = Statistics::find()
@@ -55,6 +56,7 @@ class StatsController extends Controller
         /** @var Servers $server */
         $server = Servers::find()
                           ->andWhere('db_host IS NOT NULL')
+                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
                           ->andWhere(['IN', 'tag', [$serverTag]])
                           ->one();
         Yii::$app->db_server->username = $server->db_user;

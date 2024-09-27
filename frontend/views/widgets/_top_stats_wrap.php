@@ -1,9 +1,13 @@
 <?php
 
 /** @var \common\models\servers\Servers[] $servers */
+
+use common\models\servers\Servers;
+
 $servers = \common\models\servers\Servers::find()
-    ->cache(30)
-    ->all();
+                                         ->cache(30)
+                                         ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                                         ->all();
 
 ?>
 

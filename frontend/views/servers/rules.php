@@ -13,6 +13,7 @@ $commands = json_decode($server->commands, 1);
 
 /** @var Servers[] $servers */
 $servers = Servers::find()
+                  ->andWhere(['status' => Servers::STATUS_ACTIVE])
                   ->cache(30)
                   ->all();
 ?>

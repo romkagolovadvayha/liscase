@@ -52,6 +52,7 @@ class StatsController extends WebController
         /** @var Servers $server */
         $server = Servers::find()
                          ->cache(30)
+                         ->andWhere(['status' => Servers::STATUS_ACTIVE])
                          ->andWhere(['tag' => $server])
                          ->one();
 
@@ -91,6 +92,7 @@ class StatsController extends WebController
         /** @var Servers $server */
         $server = Servers::find()
                 ->cache(30)
+                ->andWhere(['status' => Servers::STATUS_ACTIVE])
                 ->andWhere(['tag' => $server])
                 ->one();
 

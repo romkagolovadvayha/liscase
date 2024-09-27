@@ -15,6 +15,7 @@ class DiscordController extends Controller
     public function actionUpdateOnline() {
         /** @var Servers[] $servers */
         $servers = Servers::find()
+                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
                           ->andWhere('discord_token IS NOT NULL')
                           ->all();
 

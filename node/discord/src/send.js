@@ -22,6 +22,9 @@ con.connect(function(err) {
                     con.query(sql, function (err, result2) {
                         if (err) throw err;
                         const name = "Текущий онлайн: " + (result2[0].players + result2[0].joined) + "/" + result2[0].max;
+                        if (result2[0].status === 2) {
+                            name = "Скоро открытие сервера";
+                        }
                         client.user.setPresence({
                             activities: [
                                 {

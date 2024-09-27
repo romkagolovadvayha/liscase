@@ -64,6 +64,7 @@ class WipeController extends Controller
         $servers = Servers::find()
                           ->cache(30)
                           ->andWhere(['IN', 'tag', $server])
+                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
                           ->all();
         foreach ($servers as $server) {
             $stats = Statistics::getStats($server, null, false);

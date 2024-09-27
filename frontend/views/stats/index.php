@@ -54,6 +54,7 @@ JS;
 $servers = Servers::find()
     ->cache(30)
     ->andWhere('db_host IS NOT NULL')
+    ->andWhere(['status' => Servers::STATUS_ACTIVE])
     ->all();
 ?>
 

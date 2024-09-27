@@ -102,6 +102,7 @@ if ($user->status === 5) {
 /** @var Servers[] $servers */
 $servers = Servers::find()
                   ->cache(30)
+                  ->andWhere(['status' => Servers::STATUS_ACTIVE])
                   ->all();
 
 $teams = [];

@@ -11,6 +11,7 @@ $this->title = Yii::t('common', 'Постройки на серверах Rust')
 
 /** @var Servers[] $servers */
 $servers = Servers::find()
+                  ->andWhere(['status' => Servers::STATUS_ACTIVE])
                   ->cache(30)
                   ->all();
 

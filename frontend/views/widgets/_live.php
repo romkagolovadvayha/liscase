@@ -1,5 +1,6 @@
 <?php
 
+use common\models\servers\Servers;
 use yii\web\View;
 
 /** @var View $this */
@@ -7,6 +8,7 @@ use yii\web\View;
 
 $servers = \common\models\servers\Servers::find()
     ->cache(30)
+    ->andWhere(['status' => Servers::STATUS_ACTIVE])
     ->all();
 ?>
 

@@ -24,6 +24,7 @@ class WarGmController extends Controller
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->andWhere('wargm_id IS NOT NULL')
+                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
                           ->all();
         foreach ($servers as $server) {
             $votes = \Yii::$app->wargm->getVotes($server->wargm_id);

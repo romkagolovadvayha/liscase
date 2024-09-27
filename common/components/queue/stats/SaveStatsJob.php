@@ -32,6 +32,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
             /** @var Servers $server */
             $server = Servers::find()
                              ->andWhere(['tag' => $this->serverTag])
+                             ->andWhere(['status' => Servers::STATUS_ACTIVE])
                              ->one();
             if (empty($server)) {
                 return;

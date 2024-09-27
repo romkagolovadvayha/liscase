@@ -5,6 +5,7 @@ use common\models\servers\Servers;
 /** @var Servers[] $servers */
 $servers = Servers::find()
     ->cache(30)
+    ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT]])
     ->all();
 
 $lang = substr(Yii::$app->language, 0, 2);
@@ -65,6 +66,8 @@ JS
                         <div class="servers_item_header_players">
                             <?php if ($server->status === Servers::STATUS_ACTIVE): ?>
                                 <span class="servers_item_header_players_players" title="<?=Yii::t('common', 'Игроков на сервере')?>"><?=$server->players + $server->joined?></span><span>/</span><span><?=$server->max?></span>
+                            <?php elseif ($server->status === Servers::STATUS_WAIT): ?>
+                                <span class="servers_item_header_players_players"><?=Yii::t('common', 'Скоро')?></span>
                             <?php else: ?>
                                 <span class="servers_item_header_players_players"><?=Yii::t('common', 'Выключен')?></span>
                             <?php endif; ?>
@@ -76,12 +79,17 @@ JS
                                 <div class="servers_item_progress_players" style="width: <?=$percentPlayersAbsolute + $percentJoinedAbsolute?>%"></div>
                                 <div class="servers_item_progress_queued" style="width: <?=$percentQueuedAbsolute?>%"></div>
                             </div>
+                        <?php elseif ($server->status === Servers::STATUS_WAIT): ?>
+                            <div class="servers_item_progress_players_wrap" style="width: 100%">
+                                <div class="servers_item_progress_wait" style="width: 100%"></div>
+                            </div>
                         <?php else: ?>
                             <div class="servers_item_progress_players_wrap" style="width: 100%">
                                 <div class="servers_item_progress_offline" style="width: 100%"></div>
                             </div>
                         <?php endif; ?>
                     </div>
+                    <?php if ($server->status === Servers::STATUS_ACTIVE): ?>
                     <div class="servers_item_hover">
                         <div class="servers_item_hover_wrap">
                             <div class="btn-clipboard"
@@ -94,6 +102,7 @@ JS
                             <a class="servers_item_hover_button" href="https://rustmaps.com/map/<?=$server->map?>" target="_blank"><?=Yii::t('common', 'Текущая карта')?></a>
                         </div>
                     </div>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
             <div class="servers_link_wrap">

@@ -45,7 +45,7 @@ class RconTasks extends \common\components\base\ActiveRecord
     public static function execute($command, $serversCommand = [])
     {
         /** @var Servers[] $servers */
-        $servers = Servers::find()->cache(30)->all();
+        $servers = Servers::find()->cache(30)->andWhere(['status' => Servers::STATUS_ACTIVE])->all();
         foreach ($servers as $server) {
             if (!empty($serversCommand) && !in_array($server->tag, $serversCommand)) {
                 continue;
