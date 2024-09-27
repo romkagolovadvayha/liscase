@@ -3,6 +3,7 @@
 return [
     'bootstrap'  => [
         'queueStats',
+        'queueTelegram',
 //        'queueOpenAi',
 //        'queueMidjourney',
     ],
@@ -11,6 +12,12 @@ return [
             'class'   => 'yii\queue\redis\Queue',
             'redis'   => 'redis',
             'channel' => 'queue-stats',
+            'ttr' => 1200,
+        ],
+        'queueTelegram'                => [
+            'class'   => 'yii\queue\redis\Queue',
+            'redis'   => 'redis',
+            'channel' => 'queue-telegram',
             'ttr' => 1200,
         ],
 //        'queueOpenAi'                => [

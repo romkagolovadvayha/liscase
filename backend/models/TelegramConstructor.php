@@ -2,6 +2,8 @@
 
 namespace backend\models;
 
+use common\components\queue\telegram\SendMessageJob;
+use common\components\queue\telegram\SendPhotoJob;
 use common\components\queue\telegram\TelegramJob;
 use common\components\queue\telegram\TelegramMassJob;
 use common\components\telegram\TelegramPersonalBot;
@@ -167,9 +169,17 @@ class TelegramConstructor extends \yii\db\ActiveRecord
                 ], 60);
             }
             if (!empty($buttons) || empty($photo)) {
-                Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message, $buttons);
+                Yii::$app->queueTelegram->push(new SendMessageJob([
+                                                                      'telegram_chat_id' => $user->telegram_chat_id,
+                                                                      'message' => $message,
+                                                                      'buttons' => $buttons,
+                ]));
             } else {
-                Yii::$app->personalBotTelegram->sendPhoto($user->telegram_chat_id, $photo, $message);
+                Yii::$app->queueTelegram->push(new SendPhotoJob([
+                                                                      'telegram_chat_id' => $user->telegram_chat_id,
+                                                                      'photo' => $photo,
+                                                                      'message' => $message,
+                                                                  ]));
             }
         }
 

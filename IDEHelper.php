@@ -39,6 +39,7 @@ Yii::$container = new yii\di\Container;
  * @property \common\components\midjourney\MidjourneyApi $midjourney
  * @property \yii\queue\redis\Queue              $queueOpenAi
  * @property \yii\queue\redis\Queue              $queueStats
+ * @property \yii\queue\redis\Queue              $queueTelegram
  * @property \yii\queue\redis\Queue              $queueMidjourney
  * @property \common\components\telegram\TelegramApiHelper $personalBotTelegram
  */
