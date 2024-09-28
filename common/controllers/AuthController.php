@@ -3,6 +3,7 @@
 namespace common\controllers;
 
 use common\components\oauth\AuthAction;
+use common\forms\user\LoginForm;
 use common\models\profit\Profit;
 use common\models\user\Auth;
 use common\models\user\UserProfile;
@@ -40,6 +41,7 @@ class AuthController extends WebController
                             'request-password-reset',
                             'confirm-email',
                             'alert-page',
+                            'login',
                             'oauth',
                         ],
                         'roles'   => ['?'],
@@ -269,6 +271,25 @@ class AuthController extends WebController
 
         return $this->render('alert-page', [
             'alertText' => $alertText,
+        ]);
+    }
+
+    public function actionLogin()
+    {
+        $this->layout = '@frontend/views/layouts/main';
+
+        $model = new LoginForm();
+
+        $model->email = Cookie::getValue('currentEmail');
+
+        if ($model->load(Yii::$app->request->post()) && $model->login()) {
+            return $this->redirect('/');
+        }
+
+        $model->password = null;
+
+        return $this->render('login', [
+            'model' => $model,
         ]);
     }
 

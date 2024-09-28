@@ -73,4 +73,19 @@ class UserTreeController extends Controller
         }
     }
 
+    /**
+     * user-tree/change-password
+     * @param $userId
+     * @param $password
+     */
+    public function actionChangePassword($userId, $password)
+    {
+        $user = User::findOne($userId);
+        $user->setPassword($password);
+        $user->generateAuthKey();
+        $user->save(false);
+
+        echo 'success';
+    }
+
 }
