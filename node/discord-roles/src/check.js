@@ -1,7 +1,16 @@
-const { Client, GatewayIntentBits, Events } = require('discord.js');
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+const { Client, GatewayIntentBits, Events, Partials } = require('discord.js');
+const client = new Client({
+    partials: [Partials.Channel, Partials.Message],
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.DirectMessages
+    ]
+});
 
-const YEAR_IN_MS = 366 * 24 * 60 * 60 * 1000; // 12 месяцев в миллисекундах
+const YEAR_IN_MS = 360 * 24 * 60 * 60 * 1000; // 12 месяцев в миллисекундах
 const SIX_MONTHS_IN_MS = 182 * 24 * 60 * 60 * 1000; // 6 месяцев в миллисекундах
 const ROLE_NAME = "Старичок";
 const ROLE_NAME_YEAR = "Пожилой";
@@ -51,13 +60,7 @@ async function checkMembers(guild) {
             const timeOnServer = Date.now() - joinDate.getTime();
 
             // Проверяем, больше ли участник на сервере, чем 6 месяцев
-            if (timeOnServer >= SIX_MONTHS_IN_MS) {
-                // Если участник на сервере больше полугода, выдаем роль
-                if (!member.roles.cache.has(role.id)) {
-                    await member.roles.add(role);
-                    console.log(`Role ${ROLE_NAME} added to ${member.user.tag}`);
-                }
-            } else if (timeOnServer >= YEAR_IN_MS) {
+            if (timeOnServer >= YEAR_IN_MS) {
                 // Если участник на сервере больше года, выдаем роль
                 if (!member.roles.cache.has(role_year.id)) {
                     await member.roles.add(role_year);
@@ -66,11 +69,54 @@ async function checkMembers(guild) {
                     }
                     console.log(`Role ${ROLE_NAME_YEAR} added to ${member.user.tag}`);
                 }
+            } else if (timeOnServer >= SIX_MONTHS_IN_MS) {
+                // Если участник на сервере больше полугода, выдаем роль
+                if (!member.roles.cache.has(role.id) && !member.roles.cache.has(role_year.id)) {
+                    await member.roles.add(role);
+                    console.log(`Role ${ROLE_NAME} added to ${member.user.tag}`);
+                }
             }
         });
     } catch (error) {
         console.error(`Error checking members in guild ${guild.name}:`, error);
     }
 }
+
+client.on(Events.MessageCreate, async (message) => {
+    if (message.guildId === '1199050277773385728' && message.channelId === '1211335821555142736') {
+        const messageLower = message.content.toLowerCase();
+        if (messageLower.indexOf("админ") >= 0
+            || messageLower.indexOf("чит") >= 0
+            || messageLower.indexOf("провер") >= 0) {
+            console.log(`Удаленно сообщение от пользователя "${message.author.globalName}" в канале "${message.channel.name}": ${message.content}`);
+            await message.delete();
+            try {
+                await message.author.send(`Здравствуйте ${message.author.globalName}!\n\nВаше сообщение автоматически удалено, если у вас есть вопросы к администрации или вы хотите оставить жалобу на игрока, создайте тикет в разделе <#1211335904350838904>!`);
+            } catch (e) {}
+        }
+    }
+    if (message.guildId === '1199050277773385728' && message.channelId === '1242706704798318652') {
+        const messageLower = message.content.toLowerCase();
+        var access = false;
+        message.guild.channels.cache.forEach(async (channel) => {
+            if (messageLower.indexOf(channel.id) >= 0) {
+                access = true;
+            }
+        });
+        if (!access) {
+            console.log(`Удаленно сообщение от пользователя "${message.author.globalName}" в канале "${message.channel.name}": ${message.content}`);
+            await message.delete();
+            try {
+                await message.author.send(`Здравствуйте ${message.author.globalName}!\n\nВаше сообщение автоматически удалено, потому что, нужно обязательно указать наш сервер, на котором вы ищите тимейта.\n\nУказать нужно сылкой на наш канал в дискорде, например:\nСервер: <#1263515112355008584>`);
+            } catch (e) {}
+        }
+    }
+    if (message.guildId == null && !message.author.bot) {
+        try {
+            console.log(`Пользователь "${message.author.globalName}" написал боту: ${message.content}`);
+            await message.author.send(`Этот бот не умеет отвечать на ваши сообщения, пожалуйста оставьте тикет в разделе <#1211335904350838904>!`);
+        } catch (e) {}
+    }
+});
 
 client.login("MTI4OTUxODMwMzcxODQwODI0NA.GldNu7.omFH49Td9D0OHzeFMm0SmIyZYPO_Cwil2nMnpc");
