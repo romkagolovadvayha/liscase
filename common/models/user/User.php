@@ -729,14 +729,14 @@ class User extends ActiveRecord implements IdentityInterface
                 $this->status      = User::STATUS_ACTIVE;
                 $this->unbanned_at = $unbannedAt;
             }
-            $this->save();
+            $this->save(false);
         }
         $reasonText = ArrayHelper::getValue(User::getReasonList(), $reason);
         if ($task) {
             $command = "helper ban \"{$this->steam_id}\" \"{$reasonText}\"";
             RconTasks::execute($command, $serversBan);
         }
-        if ($rustcheck && $reason !== User::REASON_NOT_REASON) {
+        if (YII_ENV_PROD && $rustcheck && $reason !== User::REASON_NOT_REASON) {
             Yii::$app->rustCheck->ban($this->steam_id, $reasonText);
         }
 
@@ -760,7 +760,7 @@ class User extends ActiveRecord implements IdentityInterface
         $this->banned_at = null;
         $this->unbanned_at = null;
         $this->status = User::STATUS_ACTIVE;
-        $this->save();
+        $this->save(false);
 
         $command = "unban \"{$this->steam_id}\"";
         RconTasks::execute($command);
