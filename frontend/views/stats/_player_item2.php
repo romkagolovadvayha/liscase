@@ -11,6 +11,16 @@ use common\models\statistics\Statistics;
 
 $isCurrentTop = false;
 $isCurrent = false;
+
+$currentPosition = null;
+if (!empty($player)) {
+    foreach ($data['players'] as $i => $model) {
+        if ($model['steam_id'] == $player['steam_id']) {
+            $currentPosition = $i + 1;
+            break;
+        }
+    }
+}
 ?>
 
 <div class="stats_player_item_wrap <?=$data['attrName']?>">
@@ -26,10 +36,10 @@ $isCurrent = false;
                             $isCurrentTop = true;
                         }
                     }
-                    $_user = \common\models\user\User::findBySteamId($item['steam_id']);
-                    if (empty($_user)) {
+                    if (empty($item['user'])) {
                         continue;
                     }
+                    $_user = $item['user'];
                 ?>
                 <tr class="stats_player_item_player<?= $isCurrent ? ' stats_player_item_player_current' : ''?>">
                     <td class="stats_player_item_player_position<?=$i + 1?>" title="<?=$i + 1?> место"><i class="fas fa-crown"></i></td>
@@ -40,13 +50,14 @@ $isCurrent = false;
                     </td>
                     <td class="stats_player_item_player_score"><?=$item[$data['attrName']]?></td>
                 </tr>
+                <?php if ($i >= 2) break; ?>
             <?php endforeach; ?>
             </tbody>
-            <?php if (!empty($data['currentPosition'])): ?>
+            <?php if (!empty($currentPosition)): ?>
             <tfoot>
                 <tr class="stats_player_item_player stats_player_item_player_current">
                     <?php if (!$isCurrentTop): ?>
-                    <td><?=$data['currentPosition']?></td>
+                    <td><?=$currentPosition?></td>
                     <td>
                         <a title="<?=Yii::t('common', 'Открыть статистику игрока')?>" href="/stats/player?steamId=<?=$user->steam_id?>&server=<?=$server->tag?>">
                             <?=$user->username?>
@@ -54,9 +65,9 @@ $isCurrent = false;
                     </td>
                     <td><?=Statistics::getParam($player, $data['attrName'])?></td>
                     <?php else: ?>
-                    <td colspan="3" class="PARAMS_CUR_POS stats_player_item_player_position<?=$data['currentPosition']?>">
+                    <td colspan="3" class="PARAMS_CUR_POS stats_player_item_player_position<?=$currentPosition?>">
                         <?=Yii::t('common', 'Игрок на {PARAMS_CUR_POS} месте', [
-                                'PARAMS_CUR_POS' => $data['currentPosition']
+                                'PARAMS_CUR_POS' => $currentPosition
                         ])?>
                     </td>
                     <?php endif; ?>

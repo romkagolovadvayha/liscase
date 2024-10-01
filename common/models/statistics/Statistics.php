@@ -39,7 +39,7 @@ class Statistics extends ActiveRecord
     }
 
     public static function getStats(Servers $server, $steamId = null, $all = true) {
-        $cacheKey = "getStats_serverId{$server->id}_{$steamId}";
+        $cacheKey = "getStats_data_serverId{$server->id}_" . ($all ? 1 : 0);
         $data = Yii::$app->cache->get($cacheKey);
         if (empty($data)) {
             $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
@@ -116,23 +116,24 @@ class Statistics extends ActiveRecord
                 $models[] = $item;
             }
             $data = [
-                'kills' => Statistics::getTopList($models, 'kills', $steamId),
-                'scientists' => Statistics::getTopList($models, 'scientists', $steamId),
-                'playtime' => Statistics::getTopList($models, 'playtime', $steamId),
-                'reider' => Statistics::getTopList($models, 'reider', $steamId),
-                'farmer' => Statistics::getTopList($models, 'farmer', $steamId),
-                'fishing' => Statistics::getTopList($models, 'fishing', $steamId),
-                'hunter' => Statistics::getTopList($models, 'hunter', $steamId),
-                'fermer' => Statistics::getTopList($models, 'fermer', $steamId),
-                'deaths' => Statistics::getTopList($models, 'deaths', $steamId),
+                'kills' => Statistics::getTopList($models, 'kills'),
+                'scientists' => Statistics::getTopList($models, 'scientists'),
+                'playtime' => Statistics::getTopList($models, 'playtime'),
+                'reider' => Statistics::getTopList($models, 'reider'),
+                'farmer' => Statistics::getTopList($models, 'farmer'),
+                'fishing' => Statistics::getTopList($models, 'fishing'),
+                'hunter' => Statistics::getTopList($models, 'hunter'),
+                'fermer' => Statistics::getTopList($models, 'fermer'),
+                'deaths' => Statistics::getTopList($models, 'deaths'),
                 'models' => $models
             ];
-            Yii::$app->cache->set($cacheKey, $data, 180);
+            Yii::$app->cache->set($cacheKey, $data, 15 * 60);
         }
 
         if (!empty($steamId)) {
             foreach ($data['models'] as $item) {
                 if (!empty($steamId) && $item['steam_id'] == $steamId) {
+                    $item['user'] = \common\models\user\User::findBySteamId($item['steam_id']);
                     $data['player'] = $item;
                     break;
                 }
@@ -165,22 +166,17 @@ class Statistics extends ActiveRecord
         usort($models, function ($a, $b) use ($attrName) {
             return ($b[$attrName] < $a[$attrName]) ? -1 : 1;
         });
-        $position = null;
-        if (!empty($steamId)) {
-            $position = null;
-            foreach ($models as $i => $model) {
-                if ($model['steam_id'] == $steamId) {
-                    $position = $i + 1;
-                    break;
-                }
+        $data = [];
+        foreach ($models as $i => $item) {
+            if ($i <= 2) {
+                $item['user'] = \common\models\user\User::findBySteamId($item['steam_id']);
             }
+            $data[] = $item;
         }
-        $data = array_slice($models, 0, 3);
 
         return [
             'players' => $data,
             'attrName' => $attrName,
-            'currentPosition' => $position,
         ];
     }
 
