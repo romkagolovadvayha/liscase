@@ -117,6 +117,37 @@ client.on(Events.MessageCreate, async (message) => {
             await message.author.send(`Этот бот не умеет отвечать на ваши сообщения, пожалуйста оставьте тикет в разделе <#1211335904350838904>!`);
         } catch (e) {}
     }
+    try {
+        if (message.author.bot
+            && message.channel.name.indexOf("ticket-") >= 0
+            && message.content.indexOf("Здравствуйте,") >= 0
+            && message.content.indexOf("<@") >= 0) {
+            var userName = "";
+            await message.channel.permissionOverwrites.cache.forEach(async (perm) => {
+                if (message.content.indexOf(perm.id) >= 0) {
+                    let thanos = client.users.fetch(perm.id);
+                    await thanos.then(function(result1) {
+                        userName = result1.globalName;
+                    });
+                }
+            });
+            message.channel.setName("ticket_" + userName);
+        }
+    } catch (e) {}
+    // try {
+    //     if (message.author.bot
+    //         && message.channel.name.indexOf("closed-") >= 0
+    //         && message.channel.name.indexOf("closed-") >= 0) {
+    //         message.channel.delete();
+    //     }
+    // } catch (e) {}
 });
+
+// client.on(Events.ChannelCreate, async (channel) => {
+//     if (channel.name.indexOf("ticket-") >= 0) {
+//         console.log(channel.permissionOverwrites.cache);
+//         console.log(channel.messages.cache);
+//     }
+// });
 
 client.login("MTI4OTUxODMwMzcxODQwODI0NA.GldNu7.omFH49Td9D0OHzeFMm0SmIyZYPO_Cwil2nMnpc");

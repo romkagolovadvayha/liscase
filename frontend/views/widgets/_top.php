@@ -22,7 +22,7 @@ use yii\web\View;
             <label id="solo_top_label" class="widget_live_servers_item" for="solo_top">SOLO</label>
         </div>
         <div class="widget_top_body_wrap">
-            <?php if ($this->beginCache('top_stats_wrap_' . Yii::$app->language, ['duration' => 30])): ?>
+            <?php if ($this->beginCache('top_stats_wrap_' . Yii::$app->language, ['duration' => 180])): ?>
                 <?= $this->render('@frontend/views/widgets/_top_stats_wrap'); ?>
                 <?php $this->endCache(); ?>
             <?php endif; ?>
