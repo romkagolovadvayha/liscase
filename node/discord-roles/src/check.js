@@ -85,7 +85,7 @@ async function checkMembers(guild) {
 client.on(Events.MessageCreate, async (message) => {
     if (message.guildId === '1199050277773385728' && message.channelId === '1211335821555142736') {
         const messageLower = message.content.toLowerCase();
-        if (messageLower.indexOf("сообще") >= 0 && (messageLower.indexOf("удал") >= 0) {
+        if (messageLower.indexOf("сообще") >= 0 && messageLower.indexOf("удал") >= 0) {
             console.log(`Удаленно сообщение от пользователя "${message.author.globalName}" в канале "${message.channel.name}": ${message.content}`);
             await message.delete();
             try {
