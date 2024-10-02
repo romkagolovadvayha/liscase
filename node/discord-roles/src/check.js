@@ -68,7 +68,7 @@ async function checkMembers(guild) {
                         await member.roles.remove(role);
                     }
                     try {
-                        client.channels.fetch(1237317039396487179).then(function(channel) {
+                        client.channels.fetch('1237317039396487179').then(function(channel) {
                             if (channel != null) {
                                 channel.send(`Role ${ROLE_NAME_YEAR} added to <@${member.user.id}>`);
                             }
@@ -81,7 +81,7 @@ async function checkMembers(guild) {
                 if (!member.roles.cache.has(role.id) && !member.roles.cache.has(role_year.id)) {
                     await member.roles.add(role);
                     try {
-                        client.channels.fetch(1237317039396487179).then(function(channel) {
+                        client.channels.fetch('1237317039396487179').then(function(channel) {
                             if (channel != null) {
                                 channel.send(`Role ${ROLE_NAME_YEAR} added to <@${member.user.id}>`);
                             }
@@ -109,7 +109,7 @@ client.on(Events.MessageCreate, async (message) => {
             console.log(`Удаленно сообщение от пользователя "${message.author.globalName}" в канале "${message.channel.name}": ${message.content}`);
             await message.delete();
             try {
-                client.channels.fetch(1237317039396487179).then(function(channel) {
+                client.channels.fetch('1237317039396487179').then(function(channel) {
                     channel.send(`Сообщение <@${message.author.id}> удаленно в канале "${message.channel.name}".\n\`\`\`${message.content}\`\`\``);
                 });
             } catch (e) {}
@@ -130,7 +130,7 @@ client.on(Events.MessageCreate, async (message) => {
             console.log(`Удаленно сообщение от пользователя "${message.author.globalName}" в канале "${message.channel.name}": ${message.content}`);
             await message.delete();
             try {
-                client.channels.fetch(1237317039396487179).then(function(channel) {
+                client.channels.fetch('1237317039396487179').then(function(channel) {
                     channel.send(`Сообщение <@${message.author.id}> удаленно в канале "${message.channel.name}".\n\`\`\`${message.content}\`\`\``);
                 });
             } catch (e) {}
@@ -141,7 +141,7 @@ client.on(Events.MessageCreate, async (message) => {
     }
     if (message.guildId == null && !message.author.bot) {
         try {
-            client.channels.fetch(1237317039396487179).then(function(channel) {
+            client.channels.fetch('1237317039396487179').then(function(channel) {
                 channel.send(`Пользователь "${message.author.globalName}" написал боту: ${message.content}`);
             });
         } catch (e) {}
