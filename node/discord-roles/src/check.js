@@ -67,12 +67,26 @@ async function checkMembers(guild) {
                     if (member.roles.cache.has(role.id)) {
                         await member.roles.remove(role);
                     }
+                    try {
+                        client.channels.fetch(1237317039396487179).then(function(channel) {
+                            if (channel != null) {
+                                channel.send(`Role ${ROLE_NAME_YEAR} added to <@${member.user.id}>`);
+                            }
+                        });
+                    } catch (e) {}
                     console.log(`Role ${ROLE_NAME_YEAR} added to ${member.user.tag}`);
                 }
             } else if (timeOnServer >= SIX_MONTHS_IN_MS) {
                 // Если участник на сервере больше полугода, выдаем роль
                 if (!member.roles.cache.has(role.id) && !member.roles.cache.has(role_year.id)) {
                     await member.roles.add(role);
+                    try {
+                        client.channels.fetch(1237317039396487179).then(function(channel) {
+                            if (channel != null) {
+                                channel.send(`Role ${ROLE_NAME_YEAR} added to <@${member.user.id}>`);
+                            }
+                        });
+                    } catch (e) {}
                     console.log(`Role ${ROLE_NAME} added to ${member.user.tag}`);
                 }
             }
@@ -85,20 +99,20 @@ async function checkMembers(guild) {
 client.on(Events.MessageCreate, async (message) => {
     if (message.guildId === '1199050277773385728' && message.channelId === '1211335821555142736') {
         const messageLower = message.content.toLowerCase();
-        if (messageLower.indexOf("сообще") >= 0 && messageLower.indexOf("удал") >= 0) {
-            console.log(`Удаленно сообщение от пользователя "${message.author.globalName}" в канале "${message.channel.name}": ${message.content}`);
-            await message.delete();
-            try {
-                await message.author.send(`Здравствуйте ${message.author.globalName}!\n\nВаше сообщение автоматически удалено, если у вас есть вопросы к администрации или вы хотите оставить жалобу на игрока, создайте тикет в разделе <#1211335904350838904>!`);
-            } catch (e) {}
-        } else if (messageLower.indexOf("админ") >= 0
+        if (messageLower.indexOf("админ") >= 0
             || messageLower.indexOf("пидорас") >= 0
             || messageLower.indexOf("хуесос") >= 0
             || messageLower.indexOf("модератор") >= 0
             || messageLower.indexOf("читер") >= 0
-            || messageLower.indexOf("провер") >= 0) {
+            || messageLower.indexOf("провер") >= 0
+            || (messageLower.indexOf("сообще") >= 0 && messageLower.indexOf("удал") >= 0)) {
             console.log(`Удаленно сообщение от пользователя "${message.author.globalName}" в канале "${message.channel.name}": ${message.content}`);
             await message.delete();
+            try {
+                client.channels.fetch(1237317039396487179).then(function(channel) {
+                    channel.send(`Сообщение <@${message.author.id}> удаленно в канале "${message.channel.name}".\n\`\`\`${message.content}\`\`\``);
+                });
+            } catch (e) {}
             try {
                 await message.author.send(`Здравствуйте ${message.author.globalName}!\n\nВаше сообщение автоматически удалено, если у вас есть вопросы к администрации или вы хотите оставить жалобу на игрока, создайте тикет в разделе <#1211335904350838904>!`);
             } catch (e) {}
@@ -116,11 +130,21 @@ client.on(Events.MessageCreate, async (message) => {
             console.log(`Удаленно сообщение от пользователя "${message.author.globalName}" в канале "${message.channel.name}": ${message.content}`);
             await message.delete();
             try {
+                client.channels.fetch(1237317039396487179).then(function(channel) {
+                    channel.send(`Сообщение <@${message.author.id}> удаленно в канале "${message.channel.name}".\n\`\`\`${message.content}\`\`\``);
+                });
+            } catch (e) {}
+            try {
                 await message.author.send(`Здравствуйте ${message.author.globalName}!\n\nВаше сообщение автоматически удалено, потому что, нужно обязательно указать наш сервер, на котором вы ищите тимейта.\n\nУказать нужно сылкой на наш канал в дискорде, например:\nСервер: <#1263515112355008584>`);
             } catch (e) {}
         }
     }
     if (message.guildId == null && !message.author.bot) {
+        try {
+            client.channels.fetch(1237317039396487179).then(function(channel) {
+                channel.send(`Пользователь "${message.author.globalName}" написал боту: ${message.content}`);
+            });
+        } catch (e) {}
         try {
             console.log(`Пользователь "${message.author.globalName}" написал боту: ${message.content}`);
             await message.author.send(`Этот бот не умеет отвечать на ваши сообщения, пожалуйста оставьте тикет в разделе <#1211335904350838904>!`);
