@@ -85,8 +85,17 @@ async function checkMembers(guild) {
 client.on(Events.MessageCreate, async (message) => {
     if (message.guildId === '1199050277773385728' && message.channelId === '1211335821555142736') {
         const messageLower = message.content.toLowerCase();
-        if (messageLower.indexOf("админ") >= 0
-            || messageLower.indexOf("чит") >= 0
+        if (messageLower.indexOf("сообще") >= 0 && (messageLower.indexOf("удал") >= 0) {
+            console.log(`Удаленно сообщение от пользователя "${message.author.globalName}" в канале "${message.channel.name}": ${message.content}`);
+            await message.delete();
+            try {
+                await message.author.send(`Здравствуйте ${message.author.globalName}!\n\nВаше сообщение автоматически удалено, если у вас есть вопросы к администрации или вы хотите оставить жалобу на игрока, создайте тикет в разделе <#1211335904350838904>!`);
+            } catch (e) {}
+        } else if (messageLower.indexOf("админ") >= 0
+            || messageLower.indexOf("пидорас") >= 0
+            || messageLower.indexOf("хуесос") >= 0
+            || messageLower.indexOf("модератор") >= 0
+            || messageLower.indexOf("читер") >= 0
             || messageLower.indexOf("провер") >= 0) {
             console.log(`Удаленно сообщение от пользователя "${message.author.globalName}" в канале "${message.channel.name}": ${message.content}`);
             await message.delete();
