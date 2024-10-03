@@ -59,6 +59,8 @@ JS
                                         <?=Yii::t('common', 'Еженедельно')?>
                                     <?php elseif ($server->wipe_type === 14): ?>
                                         <?=Yii::t('common', 'Каждые две недели')?>
+                                    <?php elseif ($server->wipe_type === 30): ?>
+                                        <?=Yii::t('common', 'Раз в месяц')?>
                                     <?php endif; ?>
                                 </span>
                             </div>
