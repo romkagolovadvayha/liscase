@@ -203,14 +203,14 @@ class Deposit extends \common\components\base\ActiveRecord
 //            self::TYPE_PAYMENT_TRON          => [1000, 100000],
             self::TYPE_PAYMENT_TRC20         => [300, 100000],
 //            self::TYPE_PAYMENT_ERC20         => [1000, 100000],
-            self::TYPE_PAYMENT_YOOONEY       => [300, 100000],
+            self::TYPE_PAYMENT_YOOONEY       => [1000, 100000],
             self::TYPE_PAYMENT_STEAM_PAY     => [1000, 100000],
 //            self::TYPE_PAYMENT_VISA          => [1000, 100000],
 //            self::TYPE_PAYMENT_MIR           => [1000, 100000],
-            self::TYPE_PAYMENT_PERFECT_MONEY => [300, 100000],
-            self::TYPE_PAYMENT_CARD_UA => [700, 100000],
-            self::TYPE_PAYMENT_CARD_KZT => [500, 100000],
-            self::TYPE_PAYMENT_CARD_YM => [300, 100000],
+            self::TYPE_PAYMENT_PERFECT_MONEY => [1000, 100000],
+            self::TYPE_PAYMENT_CARD_UA => [1000, 100000],
+            self::TYPE_PAYMENT_CARD_KZT => [1000, 100000],
+            self::TYPE_PAYMENT_CARD_YM => [1000, 100000],
         ];
     }
 
