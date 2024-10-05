@@ -141,7 +141,7 @@ $bansExist = false;
 $lastCheck = [];
 $lastCheckExist = false;
 try {
-    $rustCheck = Yii::$app->rustCheck->getInfo(76561198975607879);
+    $rustCheck = Yii::$app->rustCheck->getInfo($user->steam_id);
     if (!empty($rustCheck['bans'])) {
         foreach ($rustCheck['bans'] as $ban) {
             $bansExist = true;
