@@ -145,13 +145,17 @@ try {
     if (!empty($rustCheck['bans'])) {
         foreach ($rustCheck['bans'] as $ban) {
             $bansExist = true;
-            $date = new DateTime();
-            $date->setTimestamp($ban['banDate']);
             $unbannedDate = $ban['unbanDate'];
+            $banDate = "Неизвестно";
+            if (empty($ban['banDate'])) {
+                $date = new DateTime();
+                $date->setTimestamp($ban['banDate']);
+                $banDate = $date->format('d.m.Y H:i:s');
+            }
             if (!empty($unbannedDate)) {
                 $date2 = new DateTime();
                 $date2->setTimestamp($unbannedDate);
-                $unbannedDate = $date->format('d.m.Y H:i:s');
+                $unbannedDate = $date2->format('d.m.Y H:i:s');
             } else {
                 $unbannedDate = "Никогда";
             }
@@ -162,7 +166,7 @@ try {
                 'serverName' => $ban['serverName'],
                 'reason' => $ban['reason'],
                 'unbanned_date' => $unbannedDate,
-                'date' => $date->format('d.m.Y H:i:s'),
+                'date' => $banDate,
             ];
         }
     }
