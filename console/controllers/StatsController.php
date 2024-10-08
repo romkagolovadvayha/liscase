@@ -44,6 +44,7 @@ class StatsController extends Controller
                                       'steam_id' => 'steam_id'
                                    ])
                           ->andWhere(['type' => 'kill'])
+                          ->andWhere(['>', 'distance', 0])
                           ->andWhere(['server_tag' => $server->tag])
                           ->andWhere(['wipe' => $wipeDate])
                           ->asArray()
@@ -57,6 +58,7 @@ class StatsController extends Controller
                                       'dead' => 'dead'
                                    ])
                           ->andWhere(['type' => 'kill'])
+                          ->andWhere(['>', 'distance', 0])
                           ->andWhere(['server_tag' => $server->tag])
                           ->andWhere(['wipe' => $wipeDate])
                           ->asArray()

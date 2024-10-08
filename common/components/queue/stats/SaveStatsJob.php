@@ -53,6 +53,9 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         if (strlen($item['steam_id']) < 16 || strlen($item['dead']) < 16 || $item['type'] !== 'kill') {
                             continue;
                         }
+                        if (empty($item['distance'])) {
+                            continue;
+                        }
                         if ($item['steam_id'] === $steamId) {
                             $params['kills']++;
                         }
