@@ -47,27 +47,22 @@ class SaveStatsJob extends BaseObject implements JobInterface
                                         ->all();
                 $params['playtime'] = 3;
                 $params['kills'] = 0;
-                $params['deaths'] = 0;
-                try {
-                    foreach ($request['kills'] as $item) {
-                        if (strlen($item['steam_id']) < 16 || strlen($item['dead']) < 16 || $item['type'] !== 'kill') {
-                            continue;
+                if (!empty($request['kills'])) {
+                    try {
+                        foreach ($request['kills'] as $item) {
+                            if (strlen($item['steam_id']) < 16 || strlen($item['dead']) < 16 || $item['type'] != 'kill') {
+                                continue;
+                            }
+                            if ($item['steam_id'] == $steamId) {
+                                $params['kills']++;
+                            }
                         }
-                        if (empty($item['distance'])) {
-                            continue;
-                        }
-                        if ($item['steam_id'] === $steamId) {
-                            $params['kills']++;
-                        }
-                        if ($item['dead'] === $steamId) {
-                            $params['deaths']++;
-                        }
+                    } catch (\Exception $e) {
+                        Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
                     }
-                } catch (\Exception $e) {
-                    Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
                 }
                 foreach ($params as $key => $value) {
-                    if ($value <= 0) {
+                    if (empty($value)) {
                         continue;
                     }
                     if (!empty($statistics[$key])) {

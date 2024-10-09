@@ -44,7 +44,7 @@ class StatsController extends Controller
                                       'steam_id' => 'steam_id'
                                    ])
                           ->andWhere(['type' => 'kill'])
-                          ->andWhere(['>', 'distance', 0])
+//                          ->andWhere(['>', 'distance', 0])
                           ->andWhere(['server_tag' => $server->tag])
                           ->andWhere(['wipe' => $wipeDate])
                           ->asArray()
@@ -58,7 +58,7 @@ class StatsController extends Controller
                                       'dead' => 'dead'
                                    ])
                           ->andWhere(['type' => 'kill'])
-                          ->andWhere(['>', 'distance', 0])
+//                          ->andWhere(['>', 'distance', 0])
                           ->andWhere(['server_tag' => $server->tag])
                           ->andWhere(['wipe' => $wipeDate])
                           ->asArray()
@@ -70,12 +70,28 @@ class StatsController extends Controller
                 if (!empty($statisticsKills[$steamId])) {
                     $statisticsKills[$steamId]->value = $item['count'];
                     $statisticsKills[$steamId]->save();
+                } else {
+                    $model = new Statistics();
+                    $model->key = 'kills';
+                    $model->value = $item['count'];
+                    $model->steam_id = $steamId;
+                    $model->server_tag = $server->tag;
+                    $model->wipe = $wipeDate;
+                    $model->save(false);
                 }
             }
             foreach ($deadData as $steamId => $item) {
                 if (!empty($statisticsDeaths[$steamId])) {
                     $statisticsDeaths[$steamId]->value = $item['count'];
                     $statisticsDeaths[$steamId]->save();
+                } else {
+                    $model = new Statistics();
+                    $model->key = 'deaths';
+                    $model->value = $item['count'];
+                    $model->steam_id = $steamId;
+                    $model->server_tag = $server->tag;
+                    $model->wipe = $wipeDate;
+                    $model->save();
                 }
             }
         }
