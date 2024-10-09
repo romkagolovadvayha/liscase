@@ -131,14 +131,14 @@ class RustotekaBotSystem extends AbstractSystemBots
                     $language = Language::find()
                         ->andWhere(['country' => mb_strtolower($userInfo[0]['loccountrycode'])])
                         ->one();
+                    $flag = "";
+                    if (!empty($this->flags()[strtolower($userInfo[0]['loccountrycode'])])) {
+                        $flag = $this->flags()[strtolower($userInfo[0]['loccountrycode'])] . " ";
+                    }
                     if (!empty($language)) {
-                        $flag = "";
-                        if (!empty($this->flags()[$language->name_ascii])) {
-                            $flag = $this->flags()[$language->name_ascii] . " ";
-                        }
                         $message .=  PHP_EOL . "Страна: {$flag}{$language->name_ascii}";
                     } else {
-                        $message .=  PHP_EOL . "Страна: {$userInfo[0]['loccountrycode']}";
+                        $message .=  PHP_EOL . "Страна: {$flag}{$userInfo[0]['loccountrycode']}";
                     }
                 }
             }
