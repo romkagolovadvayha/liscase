@@ -2,6 +2,7 @@
 
 namespace frontend\modules\webhook\components;
 
+use common\components\telegram\foreignSystem\AbstractSystemBots;
 use Yii;
 use yii\web\Controller;
 use yii\helpers\Json;
@@ -21,7 +22,7 @@ abstract class IndexController extends Controller
     public function actionIndex($token)
     {
         $system = $this->_getSystem();
-        if (empty($system) || !($system instanceof AbstractSystem)) {
+        if (empty($system) || (!($system instanceof AbstractSystem) && !($system instanceof AbstractSystemBots))) {
             return false;
         }
 
