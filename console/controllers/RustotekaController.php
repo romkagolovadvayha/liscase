@@ -134,10 +134,10 @@ class RustotekaController extends Controller
                     $item['date'],
                     $item['expireDate'],
                 );
-                if ($count > 30) {
-                    break;
-                }
-                $count++;
+//                if ($count > 30) {
+//                    break;
+//                }
+//                $count++;
             }
         }
     }
