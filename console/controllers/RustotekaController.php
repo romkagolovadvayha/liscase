@@ -125,7 +125,6 @@ class RustotekaController extends Controller
         foreach ($projects as $project) {
             $banSystem = BanSystemApi::getInstance($project);
             $count = 0;
-            print_r($banSystem->banList());exit;
             foreach ($banSystem->banList() as $item) {
                 BanList::createModel(
                     $item['steam_id'],
