@@ -47,7 +47,7 @@ class Prostoj
      * @param $array
      */
     private function serialize($item) {
-        if (!empty($item->ban_reason)) {
+        if (!empty($item['reason'])) {
             $item['reason'] = ArrayHelper::getValue($item['reason'], User::getReasonList());
         } else {
             $item['reason'] = "Читы";
