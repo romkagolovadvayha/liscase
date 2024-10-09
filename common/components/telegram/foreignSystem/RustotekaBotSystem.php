@@ -5,6 +5,7 @@ namespace common\components\telegram\foreignSystem;
 use backend\models\TelegramConstructorMessage;
 use common\components\oauth\Steam;
 use common\components\telegram\TelegramApiHelper;
+use common\models\bansystem\BanList;
 use common\models\box\Box;
 use common\models\box\Drop;
 use common\models\profit\Profit;
@@ -14,6 +15,7 @@ use common\models\telegram\TelegramUser;
 use common\models\user\UserBox;
 use common\models\user\UserConfirmCode;
 use common\models\user\UserDrop;
+use DemonDogSL\translateManager\models\Language;
 use Yii;
 use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
@@ -48,15 +50,23 @@ class RustotekaBotSystem extends AbstractSystemBots
         $messageText = $this->_getMessageText($message);
         $chatId = ArrayHelper::getValue($message, 'chat.id');
 
+        $cacheKey = "request_kd_{$chatId}";
+        if (Yii::$app->cache->get($cacheKey)) {
+            $seconds = Yii::$app->cache->get($cacheKey) - time();
+            $secondsWord = $this->numDecline($seconds, 'секунда, секунды, секунд', false);
+            return "⛔ Вы делаете запросы слишком часто, попробуйте через <b>{$seconds}</b> {$secondsWord}.";
+        }
+        Yii::$app->cache->set($cacheKey, time() + 30, 30);
+
         if (strlen($messageText) === 17 && strlen(preg_replace('/[^0-9]/', "", $messageText)) === 17) {
-            return "SteamId: {$messageText}";
+            return $this->getCheck($messageText);
         }
         if (Steam::hasLinkProfile($messageText)) {
             $steamId = Steam::getSteamId($messageText);
             if (empty($steamId)) {
                 return "⛔ Произошла ошибка, вы неверно указали ссылку на профиль или SteamId.";
             }
-            return "SteamId: {$steamId}";
+            return $this->getCheck($steamId);
         }
 
         TelegramMessage::createModel($chatId, $messageText);
@@ -79,33 +89,113 @@ class RustotekaBotSystem extends AbstractSystemBots
         return null;
     }
 
-    public function getWipe() {
-        $cacheKey = 'PersonalBotSystem_getWipe';
-        if (Yii::$app->cache->get($cacheKey)) {
-            return Yii::$app->cache->get($cacheKey);
+    private function numDecline( $number, $titles, $show_number = true ) {
+        if( is_string( $titles ) ){
+            $titles = preg_split( '/, */', $titles );
         }
-        $text = "";
-        /** @var Servers[] $servers */
-        $servers = Servers::find()
-                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
-                          ->all();
 
-        foreach ($servers as $k => $server) {
-            $date0 = new \DateTime($server->wipe);
-            $date = new \DateTime($server->next_wipe);
-            $date2 = new \DateTime($server->global_wipe);
-            if ($k > 0) {
-                $text .= PHP_EOL . PHP_EOL;
+        // когда указано 2 элемента
+        if( empty( $titles[2] ) ){
+            $titles[2] = $titles[1];
+        }
+
+        $cases = [ 2, 0, 1, 1, 1, 2 ];
+
+        $intnum = abs( (int) strip_tags( $number ) );
+
+        $title_index = ( $intnum % 100 > 4 && $intnum % 100 < 20 )
+            ? 2
+            : $cases[ min( $intnum % 10, 5 ) ];
+
+        return ( $show_number ? "$number " : '' ) . $titles[ $title_index ];
+    }
+
+    private function flags() {
+        return [
+          'ru' => '🇷🇺',
+          'by' => '🇧🇾',
+          'ua' => '🇺🇦',
+        ];
+    }
+
+    public function getCheck($steamId) {
+        $message = "<b>Информация о игроке</b>";
+
+        try {
+            $userInfo = Steam::getInfoUser($steamId);
+            if (!empty($userInfo) && !empty($userInfo[0])) {
+                if (!empty($userInfo[0]['personaname'])) {
+                    $message .=  PHP_EOL . "Ник: {$userInfo[0]['personaname']}";
+                }
+                if (!empty($userInfo[0]['loccountrycode'])) {
+                    $language = Language::find()
+                        ->andWhere(['country' => mb_strtolower($userInfo[0]['loccountrycode'])])
+                        ->one();
+                    if (!empty($language)) {
+                        $flag = "";
+                        if (!empty($this->flags()[$language->name_asci])) {
+                            $flag = $this->flags()[$language->name_asci] . " ";
+                        }
+                        $message .=  PHP_EOL . "Страна: {$flag}{$language->name_ascii}";
+                    } else {
+                        $message .=  PHP_EOL . "Страна: {$userInfo[0]['loccountrycode']}";
+                    }
+                }
             }
-            $name = substr($server->name, strpos($server->name, '['), strripos($server->name, ']'));
-            $text .= "<b>{$name}</b>";
-            $text .= PHP_EOL . "Последний: <code>{$date0->format('d.m.Y в H:i МСК')}</code>";
-            $text .= PHP_EOL . "Следующий: <code>{$date->format('d.m.Y в H:i МСК')}</code>";
-            $text .= PHP_EOL . "Глобал: <code>{$date2->format('d.m.Y в H:i МСК')}</code>";
+        } catch (\Exception $e) {
+            Yii::$app->telegramReports->sendMessage("RustotekaBotSystem:" . $e->getLine() . ":" . $e->getMessage());
         }
 
-        Yii::$app->cache->set($cacheKey, $text, 60);
-        return $text;
+        $message .=  PHP_EOL . "SteamId: <a href=\"https://steamcommunity.com/profiles/{$steamId}\">{$steamId}</a>";
+
+        try {
+            $games = Steam::getGameInfo($steamId);
+            foreach ($games as $game) {
+                if ($game['appid'] == 252490) {
+                    $hours = $game['playtime_forever'];
+                    $message .=  PHP_EOL . "Часов в Steam: " . $hours;
+                    break;
+                }
+            }
+        } catch (\Exception $e) {
+            Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
+        }
+
+        /** @var BanList[] $banList */
+        $banList = BanList::find()
+            ->andWhere(['steam_id' => $steamId])
+            ->orderBy(['banned_at' => SORT_DESC])
+            ->all();
+
+
+        if (empty($banList)) {
+            $message .=  PHP_EOL . PHP_EOL . "Аккаунт чист, ни одного бана игрока не найдено!";
+        } else {
+            $message .=  PHP_EOL . PHP_EOL . "<b>Баны игрока:</b>";
+        }
+
+        foreach ($banList as $item) {
+            $bannedAt = new \DateTime($item->banned_at);
+            $unBannedAt = "Никогда";
+            $label = "";
+            if (!empty($item->unbanned_at)) {
+                $date = new \DateTime($item->unbanned_at);
+                $unBannedAt = $date->format('d.m.Y H:i:s');
+                if (time() < $date->getTimestamp()) {
+                    $label = " <i>Бан снят</i>";
+                }
+            }
+            $serverName = $item->server_name;
+            if (empty($serverName)) {
+                $serverName = "Бан на всех серверах проекта.";
+            }
+            $message .= PHP_EOL . PHP_EOL . "Сервер: <b>{$item->server_name}</b> {$serverName}" . $label;
+            $message .= PHP_EOL . "Дата бана: {$bannedAt->format('d.m.Y H:i:s')}";
+            $message .= PHP_EOL . "Дата разбана: {$unBannedAt}";
+            $message .= PHP_EOL . "Причина: {$item->reason}";
+        }
+
+        return $message;
     }
 
     /**
@@ -116,7 +206,7 @@ class RustotekaBotSystem extends AbstractSystemBots
     protected function _getStartMessageText($name)
     {
         return "Приветствую{$name}!
-Для активации бота перейдите на страницу https://prostoj.store/bot/activate и скопируйте код активации в этот чат.";
+Чтобы проверить игрока, просто укажите ссылку на профиль или SteamID.";
     }
 
     /**
