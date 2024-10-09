@@ -22,6 +22,7 @@ class Slabiy
 
     private function serverBans($serverTag, $serverName, $projectName) {
         $server = $this->query($serverTag);
+        $count = 0;
         foreach ($server as $steamId => $item) {
             $this->_banList[] = $this->serialize([
                 'steam_id' => $steamId,
@@ -31,6 +32,10 @@ class Slabiy
                 'server' => $serverName,
                 'project' => $projectName,
             ]);
+            if ($count > 30) {
+                break;
+            }
+            $count++;
         }
     }
 

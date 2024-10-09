@@ -21,6 +21,7 @@ class GrandRust
     private function serverBans($projectName) {
         $server = $this->query();
         $serversNames = $this->serverList();
+        $count = 0;
         foreach ($server as $item) {
             $serverName = "Все сервера";
             if (!empty($item['serverID']) && !empty($serversNames[$item['serverID']])) {
@@ -34,6 +35,10 @@ class GrandRust
                 'server' => $serverName,
                 'project' => $projectName,
             ]);
+            if ($count > 30) {
+                break;
+            }
+            $count++;
         }
     }
 

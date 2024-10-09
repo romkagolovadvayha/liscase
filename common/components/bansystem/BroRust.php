@@ -59,7 +59,7 @@ class BroRust
             return Yii::$app->cache->get($cacheKey);
         }
         try {
-            $apiUrl = "https://api.brorust.com/server/ban-list?page=1&linePerPage=2000";
+            $apiUrl = "https://api.brorust.com/server/ban-list?page=1&linePerPage=30";
             $response = json_decode(file_get_contents(__DIR__ . '/files/broRust.json'), 1)['success']['payload']['data'];
             Yii::$app->cache->set($cacheKey, $response, 3 * 60 * 60);
             return $response;

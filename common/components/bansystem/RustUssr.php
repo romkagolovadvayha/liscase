@@ -20,6 +20,7 @@ class RustUssr
 
     private function serverBans($serverName, $projectName) {
         $server = $this->query();
+        $count = 0;
         foreach ($server as $steamId => $item) {
             $this->_banList[] = $this->serialize([
                 'steam_id' => $steamId,
@@ -29,6 +30,10 @@ class RustUssr
                 'server' => $serverName,
                 'project' => $projectName,
             ]);
+            if ($count > 30) {
+                break;
+            }
+            $count++;
         }
     }
 

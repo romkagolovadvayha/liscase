@@ -20,6 +20,7 @@ class MagicRust
 
     private function serverBans($serverName, $projectName) {
         $server = $this->query();
+        $count = 0;
         foreach ($server as $item) {
             $this->_banList[] = $this->serialize([
                 'steam_id' => $item['steamid'],
@@ -29,6 +30,10 @@ class MagicRust
                 'server' => $serverName,
                 'project' => $projectName,
             ]);
+            if ($count > 30) {
+                break;
+            }
+            $count++;
         }
     }
 
