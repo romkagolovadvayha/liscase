@@ -109,16 +109,16 @@ class RustotekaController extends Controller
      */
     public function actionBanImport() {
         $projects = [
-//            BanSystemApi::TYPE_GGRUST,
-//            BanSystemApi::TYPE_RUSTROOM,
-//            BanSystemApi::TYPE_RUSTUSSR,
-//            BanSystemApi::TYPE_MAGICRUST,
-////            BanSystemApi::TYPE_BRORUST,
-//            BanSystemApi::TYPE_GRANDRUST,
-////            BanSystemApi::TYPE_MOSKOV77,
-//            BanSystemApi::TYPE_SLABIYRUST,
-////            BanSystemApi::TYPE_JOKERRUST,
-//            BanSystemApi::TYPE_RUSTCHEATCHECK,
+            BanSystemApi::TYPE_GGRUST,
+            BanSystemApi::TYPE_RUSTROOM,
+            BanSystemApi::TYPE_RUSTUSSR,
+            BanSystemApi::TYPE_MAGICRUST,
+//            BanSystemApi::TYPE_BRORUST,
+            BanSystemApi::TYPE_GRANDRUST,
+//            BanSystemApi::TYPE_MOSKOV77,
+            BanSystemApi::TYPE_SLABIYRUST,
+//            BanSystemApi::TYPE_JOKERRUST,
+            BanSystemApi::TYPE_RUSTCHEATCHECK,
             BanSystemApi::TYPE_PROSTOJ,
         ];
 
@@ -134,10 +134,10 @@ class RustotekaController extends Controller
                     $item['date'],
                     $item['expireDate'],
                 );
-//                if ($count > 30) {
-//                    break;
-//                }
-//                $count++;
+                if ($count > 30) {
+                    break;
+                }
+                $count++;
             }
         }
     }

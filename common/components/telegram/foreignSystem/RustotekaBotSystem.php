@@ -189,7 +189,7 @@ class RustotekaBotSystem extends AbstractSystemBots
             if (empty($serverName)) {
                 $serverName = "Бан на всех серверах проекта.";
             }
-            $message .= PHP_EOL . PHP_EOL . "Сервер: <b>{$item->project_name}</b> {$serverName}" . $label;
+            $message .= PHP_EOL . PHP_EOL . "Сервер: <b>{$item->project_name}</b> - {$serverName}" . $label;
             $message .= PHP_EOL . "Дата бана: {$bannedAt->format('d.m.Y H:i:s')}";
             $message .= PHP_EOL . "Дата разбана: {$unBannedAt}";
             $message .= PHP_EOL . "Причина: {$item->reason}";
