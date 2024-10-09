@@ -80,6 +80,27 @@ class Steam extends OpenId
         return $avatar;
     }
 
+    public static function hasLinkProfile($link) {
+        return strpos($link, 'steamcommunity.com') !== false && (strpos($link,'/profiles/') !== false || strpos($link,'/id/') !== false);
+    }
+
+    public static function getSteamId($text) {
+        if (strpos($text,'/profiles/') !== false) {
+            return preg_replace('/[^0-9]/', "", substr($text, strpos($text,'/profiles/')));
+        }
+        $response = Yii::$app->curl->get($text . "?xml=1");
+        if (empty($response)) {
+            return null;
+        }
+        $xml = new \SimpleXMLElement($response);
+        $json = json_encode($xml, JSON_FORCE_OBJECT);
+        $array = json_decode($json,TRUE);
+        if (empty($array['steamID64'])) {
+            return null;
+        }
+        return $array['steamID64'];
+    }
+
     public static function updateUser($id) {
         $cacheKey = 'steam_updateUser_' . $id;
         if (Yii::$app->cache->get($cacheKey)) {

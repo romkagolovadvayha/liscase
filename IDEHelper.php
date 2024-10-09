@@ -42,6 +42,7 @@ Yii::$container = new yii\di\Container;
  * @property \yii\queue\redis\Queue              $queueTelegram
  * @property \yii\queue\redis\Queue              $queueMidjourney
  * @property \common\components\telegram\TelegramApiHelper $personalBotTelegram
+ * @property \common\components\telegram\TelegramApiHelper $rustotekaBotTelegram
  */
 abstract class BaseApplication extends yii\base\Application
 {

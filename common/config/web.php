@@ -187,6 +187,10 @@ $config = [
             'class'    => \common\components\telegram\TelegramApiHelper::class,
             'botToken' => '7005949610:AAEK2H_vhym6px9mPB4EMyeZ94Hgx71sxzM', //@ProstojServerBot
         ],
+        'rustotekaBotTelegram'               => [
+            'class'    => \common\components\telegram\TelegramApiHelper::class,
+            'botToken' => '7494504343:AAFL_vGF1V7o5a4SRWvniY-R7NZ6pUqYa8M', //@rustoteka_bot
+        ],
         'midjourney'   => [
             'class'  => \common\components\midjourney\MidjourneyApi::class,
             'discordChannelId'      => '1150211599395737601',
