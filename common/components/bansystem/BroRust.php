@@ -61,7 +61,7 @@ class BroRust
         try {
             $apiUrl = "https://api.brorust.com/server/ban-list?page=1&linePerPage=30";
             $response = json_decode(file_get_contents(__DIR__ . '/files/broRust.json'), 1)['success']['payload']['data'];
-            Yii::$app->cache->set($cacheKey, $response, 3 * 60 * 60);
+            Yii::$app->cache->set($cacheKey, $response, 59);
             return $response;
         } catch (\Exception $e) {
             Yii::$app->telegramReports->sendMessage("{$cacheKey}:" . $e->getLine() . ":" . $e->getMessage());

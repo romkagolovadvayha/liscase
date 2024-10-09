@@ -68,7 +68,7 @@ class Slabiy
         try {
             $apiUrl = "https://rustaria.ru/slabiy/serverbanlist.php?table={$stable}";
             $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
-            Yii::$app->cache->set($cacheKey, $response, 3 * 60 * 60);
+            Yii::$app->cache->set($cacheKey, $response, 59);
             return $response;
         } catch (\Exception $e) {
             Yii::$app->telegramReports->sendMessage("{$cacheKey}:" . $e->getLine() . ":" . $e->getMessage());

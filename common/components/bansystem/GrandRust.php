@@ -103,7 +103,7 @@ class GrandRust
                 $servers[$item['id']] = str_replace("Grand Rust ", "", $item['hostname']);
             }
 
-            Yii::$app->cache->set($cacheKey, $servers, 12 * 60 * 60);
+            Yii::$app->cache->set($cacheKey, $servers, 59);
             return $servers;
         } catch (\Exception $e) {
             Yii::$app->telegramReports->sendMessage("{$cacheKey}:" . $e->getLine() . ":" . $e->getMessage());

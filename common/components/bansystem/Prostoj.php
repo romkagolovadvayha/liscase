@@ -24,9 +24,10 @@ class Prostoj
         /** @var User[] $users */
         $users = User::find()
             ->andWhere('banned_at IS NOT NULL')
+            ->orderBy(['banned_at' => SORT_DESC])
+            ->limit(30)
             ->all();
 
-        $count = 0;
         foreach ($users as $item) {
             $this->_banList[] = $this->serialize([
                                                      'steam_id' => $item->steam_id,
@@ -36,10 +37,6 @@ class Prostoj
                                                      'server' => null,
                                                      'project' => 'Простой',
                                                  ]);
-//            if ($count > 30) {
-//                break;
-//            }
-//            $count++;
         }
     }
 
