@@ -56,7 +56,7 @@ class RustotekaBotSystem extends AbstractSystemBots
             $secondsWord = $this->numDecline($seconds, 'секунда, секунды, секунд', false);
             return "⛔ Вы делаете запросы слишком часто, попробуйте через <b>{$seconds}</b> {$secondsWord}.";
         }
-        Yii::$app->cache->set($cacheKey, time() + 30, 30);
+        Yii::$app->cache->set($cacheKey, time() + 10, 10);
 
         if (strlen($messageText) === 17 && strlen(preg_replace('/[^0-9]/', "", $messageText)) === 17) {
             return $this->getCheck($messageText);
@@ -133,8 +133,8 @@ class RustotekaBotSystem extends AbstractSystemBots
                         ->one();
                     if (!empty($language)) {
                         $flag = "";
-                        if (!empty($this->flags()[$language->name_asci])) {
-                            $flag = $this->flags()[$language->name_asci] . " ";
+                        if (!empty($this->flags()[$language->name_ascii])) {
+                            $flag = $this->flags()[$language->name_ascii] . " ";
                         }
                         $message .=  PHP_EOL . "Страна: {$flag}{$language->name_ascii}";
                     } else {
