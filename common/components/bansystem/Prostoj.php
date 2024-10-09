@@ -48,7 +48,7 @@ class Prostoj
      */
     private function serialize($item) {
         if (!empty($item['reason'])) {
-            $item['reason'] = ArrayHelper::getValue($item['reason'], User::getReasonList());
+            $item['reason'] = ArrayHelper::getValue(User::getReasonList(), $item['reason']);
         } else {
             $item['reason'] = "Читы";
         }
