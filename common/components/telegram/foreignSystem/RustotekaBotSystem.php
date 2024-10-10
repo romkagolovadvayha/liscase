@@ -181,8 +181,8 @@ class RustotekaBotSystem extends AbstractSystemBots
             if (!empty($item->unbanned_at)) {
                 $date = new \DateTime($item->unbanned_at);
                 $unBannedAt = $date->format('d.m.Y H:i:s');
-                if (time() < $date->getTimestamp()) {
-                    $label = " <i>Бан снят</i>";
+                if ($date->getTimestamp() < time()) {
+                    $label = " <i>(Бан снят)</i>";
                 }
             }
             $serverName = $item->server_name;
