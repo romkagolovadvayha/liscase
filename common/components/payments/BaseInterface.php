@@ -20,4 +20,11 @@ interface BaseInterface
      */
     public function check($paymentId);
 
+    /**
+     * @param      $paymentId
+     *
+     * @return mixed
+     */
+    public function debugCheck($paymentId);
+
 }

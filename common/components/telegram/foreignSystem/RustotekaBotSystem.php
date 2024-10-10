@@ -112,9 +112,22 @@ class RustotekaBotSystem extends AbstractSystemBots
 
     private function flags() {
         return [
-          'ru' => '🇷🇺',
-          'by' => '🇧🇾',
-          'ua' => '🇺🇦',
+          'ru' => [
+              'icon' => '🇷🇺',
+              'name' => 'Россия',
+          ],
+          'by' => [
+              'icon' => '🇧🇾',
+              'name' => 'Баларусь',
+          ],
+          'kz' => [
+              'icon' => '🇰🇿',
+              'name' => 'Казахстан',
+          ],
+          'ua' => [
+              'icon' => '🇺🇦',
+              'name' => 'Украина',
+          ],
         ];
     }
 
@@ -128,17 +141,20 @@ class RustotekaBotSystem extends AbstractSystemBots
                     $message .=  PHP_EOL . "Ник: {$userInfo[0]['personaname']}";
                 }
                 if (!empty($userInfo[0]['loccountrycode'])) {
-                    $language = Language::find()
-                        ->andWhere(['country' => mb_strtolower($userInfo[0]['loccountrycode'])])
-                        ->one();
-                    $flag = "";
-                    if (!empty($this->flags()[strtolower($userInfo[0]['loccountrycode'])])) {
-                        $flag = $this->flags()[strtolower($userInfo[0]['loccountrycode'])] . " ";
-                    }
-                    if (!empty($language)) {
-                        $message .=  PHP_EOL . "Страна: {$flag}{$language->name_ascii}";
+                    $countryName = "";
+                    $flagItem = $this->flags()[strtolower($userInfo[0]['loccountrycode'])];
+                    if (!empty($flagItem)) {
+                        $countryName = "{$flagItem['icon']} {$flagItem['name']}";
                     } else {
-                        $message .=  PHP_EOL . "Страна: {$flag}{$userInfo[0]['loccountrycode']}";
+                        $countryName = $userInfo[0]['loccountrycode'];
+                    }
+                    if (empty($flagItem)) {
+                        $language = Language::find()
+                                            ->andWhere(['country' => mb_strtolower($userInfo[0]['loccountrycode'])])
+                                            ->one();
+                        $message .=  PHP_EOL . "Страна: {$language->name_ascii}";
+                    } else {
+                        $message .=  PHP_EOL . "Страна: {$countryName}";
                     }
                 }
             }

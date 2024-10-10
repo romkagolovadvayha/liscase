@@ -41,4 +41,9 @@ class PaymentMir
         return $model->status;
     }
 
+    public function debugCheck($depositId)
+    {
+        return 'not support';
+    }
+
 }

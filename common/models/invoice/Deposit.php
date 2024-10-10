@@ -225,6 +225,16 @@ class Deposit extends \common\components\base\ActiveRecord
     }
 
     /**
+     * @return mixed
+     * @throws \Exception
+     */
+    public function debugCheck()
+    {
+        $paymentApi = PaymentApi::getInstance($this->payment_type);
+        return $paymentApi->debugCheck($this->id);
+    }
+
+    /**
      * @param User $user
      * @param $amount
      * @param $paymentType

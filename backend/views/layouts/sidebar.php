@@ -67,7 +67,7 @@ $jobBadges = 0;
                        'icon' => 'user-tag',
                        'url' => [''],
                        'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
-                       'active' => _checkActive('/report/'),
+                       'active' => _checkActive('/report/') || _checkActive('/deposit'),
                        'items' => [
                            [
                                'label' => 'Товары',
@@ -86,6 +86,12 @@ $jobBadges = 0;
                                'icon' => 'user-tag',
                                'url' => ['/report/deposits'],
                                'active' => _checkActive('/report/deposits'),
+                           ],
+                           [
+                               'label' => 'Депозиты',
+                               'icon' => 'user-tag',
+                               'url' => ['/deposit'],
+                               'active' => _checkActive('/deposit'),
                            ],
                        ]
                    ],

@@ -42,4 +42,18 @@ class PaymentCardRf
         return $model->status;
     }
 
+    public function debugCheck($depositId)
+    {
+        $model = Deposit::findOne($depositId);
+        if ($model->status !== Deposit::STATUS_WAIT_CONFIRM) {
+            return $model->status;
+        }
+        $result = Yii::$app->tomeApi->check($model->payment_id);
+        if (empty($result['status'])) {
+            return 'not result';
+        }
+
+        return $result['status'];
+    }
+
 }
