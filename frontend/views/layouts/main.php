@@ -386,7 +386,6 @@ if (!Yii::$app->user->isGuest) {
 </script>
 <noscript><div><img src="https://mc.yandex.ru/watch/97456083" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
-<iframe width="1" height="1" src="https://player.twitch.tv/?channel=eatgolden&amp;muted=true&amp;parent=rustjoker.ru" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"></iframe>
 <?php $this->endBody() ?>
 </body>
 </html>
