@@ -14,9 +14,9 @@ $this->title = Yii::t('common', 'Предметы');
 
 <?= Html::a(Yii::t('common', 'Добавить предмет'),
     '/drop/create',
-    ['class' => 'btn btn-success']); ?>
-<div>&nbsp;</div>
-
+    ['class' => 'btn btn-success']); ?> <?= Html::a(Yii::t('common', 'Сортировать'),
+    '/drop/sort',
+    ['class' => 'btn btn-primary']); ?>
 <?= GridView::widget([
     'dataProvider' => $dataProvider,
     'filterModel'  => $searchModel,
@@ -38,16 +38,16 @@ $this->title = Yii::t('common', 'Предметы');
         ],
         'name',
         [
-            'attribute' => 'type_id',
+            'attribute' => 'category_id',
             'filterType'  => GridView::FILTER_SELECT2,
-            'filter'    => ArrayHelper::merge(['' => 'Все'], \common\models\box\DropType::getTypeList()),
+            'filter'    => ArrayHelper::merge(['' => 'Все'], \common\models\box\Category::getCategoryList()),
             'options'   => ['width' => '150'],
             'value'     => function (Drop $model) {
                 return $model->type->name;
             },
         ],
         [
-            'attribute' => 'rust_id',
+            'attribute' => 'sort',
             'options'   => ['width' => '100'],
         ],
         [

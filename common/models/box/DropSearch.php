@@ -12,7 +12,7 @@ class DropSearch extends Drop
     {
         return [
             [['id', 'name', 'image', 'status', 'created_at', 'rust_id'], 'required'],
-            [['status', 'type_id'], 'integer'],
+            [['status', 'type_id', 'category_id', 'sort'], 'integer'],
             [['name', 'image'], 'string', 'max' => 255],
             [['created_at'], 'safe'],
         ];
@@ -30,6 +30,8 @@ class DropSearch extends Drop
             'image'            => Yii::t('common', 'Изображение'),
             'price'              => Yii::t('common', 'Цена'),
             'status'              => Yii::t('common', 'Статус'),
+            'category_id'              => Yii::t('common', 'Категория'),
+            'sort'              => Yii::t('common', 'Позиция'),
             'created_at'          => Yii::t('common', 'Дата создания'),
         ];
     }
@@ -53,7 +55,8 @@ class DropSearch extends Drop
             ->andFilterWhere([
                 'id'       => $this->id,
                 'status'     => $this->status,
-                'type_id'     => $this->type_id,
+                'category_id'     => $this->category_id,
+                'sort'     => $this->sort,
                 'price'   => $this->price,
                 'rust_id'   => $this->rust_id,
             ])

@@ -93,4 +93,31 @@ class DropController extends \backend\components\CrudController
         }
         echo json_encode($result);
     }
+
+    /**
+     * @throws \yii\db\StaleObjectException
+     * @throws \Throwable
+     */
+    public function actionSort()
+    {
+        if (!empty($_POST)) {
+            $sort = 0;
+            foreach ($_POST['items'] as $itemId) {
+                $drop = Drop::findOne($itemId);
+                $drop->sort = $sort;
+                $drop->save();
+                $sort++;
+            }
+        }
+
+        /** @var Drop[] $drops */
+        $drops = Drop::find()
+            ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        return $this->render('sort', [
+            'items' => $drops
+        ]);
+    }
 }

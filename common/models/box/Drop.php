@@ -28,6 +28,7 @@ use Yii;
  * @property string      $blocked_at
  * @property int         $status
  * @property string      $created_at
+ * @property int         $sort
  *
  * @property DropImage[] $dropImages
  * @property DropImage   $imageOrig
@@ -85,6 +86,7 @@ class Drop extends ActiveRecord
             'eng_name'               => Yii::t('common', 'Название'),
             'quality'               => Yii::t('common', 'Качество'),
             'description'               => Yii::t('common', 'Описание'),
+            'category_id'               => Yii::t('common', 'Категория'),
             'market_id'               => Yii::t('common', 'ID в маргете'),
             'rust_id'               => Yii::t('common', 'Индитификатор'),
             'market_status'               => Yii::t('common', 'Статус в магазине'),
@@ -98,6 +100,7 @@ class Drop extends ActiveRecord
             'created_at'          => Yii::t('common', 'Дата создания'),
             'command'          => Yii::t('common', 'Команда'),
             'blocked_hour'          => Yii::t('common', 'Вайп блок (часов)'),
+            'sort'          => Yii::t('common', 'Сортировка'),
         ];
     }
 
@@ -169,7 +172,7 @@ class Drop extends ActiveRecord
     public function rules(): array
     {
         return [
-            [['status', 'type_id'], 'integer'],
+            [['status', 'type_id', 'category_id', 'sort'], 'integer'],
             [['name', 'market_id', 'eng_name', 'quality'], 'string', 'max' => 255],
             [['description'], 'string'],
             [['created_at','price'], 'safe'],

@@ -157,6 +157,13 @@ $jobBadges = 0;
                        'active' => _checkActive('/blog/'),
                    ],
                    [
+                       'label'  => Yii::t('common', 'Задания'),
+                       'icon'   => 'bi bi-newspaper',
+                       'url'    => '/task',
+                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'active' => _checkActive('/task'),
+                   ],
+                   [
                        'label'  => Yii::t('common', 'Переводы'),
                        'icon'   => 'bi bi-newspaper',
                        'url'    => '/translateManager',

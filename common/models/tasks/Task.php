@@ -70,8 +70,8 @@ class Task extends \common\components\base\ActiveRecord
     public function rules()
     {
         return [
-            [['description', 'link'], 'trim'],
-            [['type', 'status'], 'integer'],
+            [['description', 'stat_attribute'], 'trim'],
+            [['type', 'sort', 'drop_id_image', 'drop_id', 'count', 'amount'], 'integer'],
             [['created_at'], 'safe'],
         ];
     }
@@ -84,6 +84,11 @@ class Task extends \common\components\base\ActiveRecord
         return [
             'id'          => 'ID',
             'description'       => Yii::t('common', 'Описание'),
+            'amount'       => Yii::t('common', 'Сколько нужно выполнить?'),
+            'drop_id'       => Yii::t('common', 'ID предмета награды'),
+            'count'       => Yii::t('common', 'Количество наград'),
+            'drop_id_image'       => Yii::t('common', 'ID предмета для изображения'),
+            'stat_attribute'       => Yii::t('common', 'Какой показатель статистики учитывать?'),
             'type' => Yii::t('common', 'Тип'),
             'created_at'  => Yii::t('common', 'Дата создания'),
         ];
