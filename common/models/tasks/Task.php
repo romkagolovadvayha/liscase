@@ -214,33 +214,33 @@ class Task extends \common\components\base\ActiveRecord
         $dailyRewardList = [
             [
                 'name' => Yii::t('common', '1 день'),
-                'amount' => 1,
-                'drop_id' => 658,
+                'amount' => 10,
+                'drop_id' => 570,
             ],
             [
                 'name' => Yii::t('common', '2 день'),
                 'amount' => 3000,
-                'drop_id' => 300
+                'drop_id' => 295
             ],
             [
                 'name' => Yii::t('common', '3 день'),
-                'amount' => 2,
-                'drop_id' => 199
+                'amount' => 3000,
+                'drop_id' => 300
             ],
             [
                 'name' => Yii::t('common', '4 день'),
-                'amount' => 1,
-                'drop_id' => 278
-            ],
-            [
-                'name' => Yii::t('common', '5 день'),
                 'amount' => 100,
                 'drop_id' => 316
             ],
             [
-                'name' => Yii::t('common', '6 день'),
+                'name' => Yii::t('common', '5 день'),
                 'amount' => 1,
-                'drop_id' => 844
+                'drop_id' => 868
+            ],
+            [
+                'name' => Yii::t('common', '6 день'),
+                'amount' => 100,
+                'drop_id' => 305
             ],
             [
                 'name' => Yii::t('common', '7 день'),
@@ -250,8 +250,8 @@ class Task extends \common\components\base\ActiveRecord
             ],
             [
                 'name' => Yii::t('common', '8 день'),
-                'amount' => 1,
-                'drop_id' => 325
+                'amount' => 2,
+                'drop_id' => 203
             ],
             [
                 'name' => Yii::t('common', '9 день'),
@@ -261,22 +261,22 @@ class Task extends \common\components\base\ActiveRecord
             [
                 'name' => Yii::t('common', '10 день'),
                 'amount' => 1,
-                'drop_id' => 355
+                'drop_id' => 869
             ],
             [
                 'name' => Yii::t('common', '11 день'),
-                'amount' => 5,
-                'drop_id' => 756
+                'amount' => 1,
+                'drop_id' => 867
             ],
             [
                 'name' => Yii::t('common', '12 день'),
                 'amount' => 1,
-                'drop_id' => 800
+                'drop_id' => 864
             ],
             [
                 'name' => Yii::t('common', '13 день'),
-                'amount' => 1,
-                'drop_id' => 770
+                'amount' => 1000,
+                'drop_id' => 320
             ],
             [
                 'name' => Yii::t('common', '14 день'),
