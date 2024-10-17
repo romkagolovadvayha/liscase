@@ -154,7 +154,7 @@ JS
                         </div>
                         <?php endif; ?>
                         <div class="products" id="products">
-                            <?php if ($this->beginCache('products' . Yii::$app->language, ['duration' => 1])): ?>
+                            <?php if ($this->beginCache('products' . Yii::$app->language, ['duration' => 300])): ?>
                                 <?php foreach (\common\models\box\Sets::getSetsForMarket() as $sets): ?>
                                     <div data-href="/market/form-modal-set?id=<?=$sets->id?>" data-category-id="1" class="products_item show-modal-link active" data-title="<?=Yii::t('database', $sets->name)?>" data-size="modal" data-toggl="modal" data-target="modal-dialog">
                                         <div class="products_item_body">
