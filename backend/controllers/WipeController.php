@@ -68,7 +68,7 @@ class WipeController extends Controller
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
                           ->all();
         foreach ($servers as $server) {
-            $stats = Statistics::getStats($server, null, false, '2024-10-03/2024-10-18');
+            $stats = Statistics::getStats($server, null, false);
             if (empty($stats)) {
                 continue;
             }
