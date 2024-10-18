@@ -120,7 +120,7 @@ class WipeController extends Controller
             if (YII_ENV_PROD) {
                 foreach ($tgMessage as $steamId => $message) {
                     $user = User::findBySteamId($steamId);
-                    //Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message);
+                    Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message);
                 }
             }
         }
