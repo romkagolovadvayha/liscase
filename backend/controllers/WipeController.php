@@ -67,7 +67,7 @@ class WipeController extends Controller
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
                           ->all();
         foreach ($servers as $server) {
-            $stats = Statistics::getStats($server, null, false);
+            $stats = Statistics::getStats($server, null, false, '2024-10-03/2024-10-18');
             if (empty($stats)) {
                 continue;
             }
@@ -120,7 +120,7 @@ class WipeController extends Controller
             if (YII_ENV_PROD) {
                 foreach ($tgMessage as $steamId => $message) {
                     $user = User::findBySteamId($steamId);
-                    Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message);
+                    //Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message);
                 }
             }
         }

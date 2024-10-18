@@ -38,11 +38,18 @@ class Statistics extends ActiveRecord
         return $allParams[$key];
     }
 
-    public static function getStats(Servers $server, $steamId = null, $all = true) {
+    public static function getStats(Servers $server, $steamId = null, $all = true, $wipeDate = null, $cache = true) {
         $cacheKey = "getStats_data_serverId{$server->id}_" . ($all ? 1 : 0);
-        $data = Yii::$app->cache->get($cacheKey);
+        $data = null;
+        if ($cache) {
+            $data = Yii::$app->cache->get($cacheKey);
+        }
         if (empty($data)) {
-            $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
+            if (empty($wipeDate)) {
+                $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime(
+                        $server->next_wipe
+                    ))->format('Y-m-d');
+            }
             /** @var Wipe[] $models */
             $statistics = Statistics::find()
                                     ->cache(3*60)
