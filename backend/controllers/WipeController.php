@@ -60,7 +60,7 @@ class WipeController extends Controller
 
     public function actionTop($server)
     {
-        ini_set('memory_limit', '128M');
+        ini_set('memory_limit', '512M');
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->cache(30)
