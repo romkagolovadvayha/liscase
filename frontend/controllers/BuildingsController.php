@@ -35,7 +35,7 @@ class BuildingsController extends Controller
                     ],
                     [
                         'allow' => true,
-                        'roles' => [Role::ROLE_USER],
+                        'roles' => ['@'],
                         'actions' => ['create', 'like', 'delete']
                     ]
                 ],
