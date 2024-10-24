@@ -5968,7 +5968,8 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 .navbar .nav-item.menu-login .nav-link,
 .navbar .nav-item.menu-stats .nav-link,
 .navbar .nav-item.menu-bildings .nav-link,
-.navbar .nav-item.menu-skindrops .nav-link {
+.navbar .nav-item.menu-skindrops .nav-link,
+.navbar .nav-item.menu-buildings .nav-link {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -6000,6 +6001,14 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   &:hover, &:focus {
     background-color: lighten($rust_color_green, 6%);
     color: $rust_color_green_text;
+  }
+}
+.navbar .nav-item.menu-buildings .nav-link {
+  color: $rust_color_red_text;
+  background-color: $rust_color_red;
+  &:hover, &:focus {
+    background-color: lighten($rust_color_red, 6%);
+    color: $rust_color_red_text;
   }
 }
 .navbar .nav-item.menu-bildings .nav-link {

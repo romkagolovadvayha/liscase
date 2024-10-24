@@ -145,6 +145,11 @@ $mobileMenu[] = [
     'url'     => '/skindrops',
 ];
 $mobileMenu[] = [
+    'label'   => '<i class="fa-solid fa-house"></i> ' . Yii::t('common', 'Постройки'),
+    'encode' => false,
+    'url'     => '/buildings',
+];
+$mobileMenu[] = [
     'label'   => '<i class="fab fa-discord"></i> ' . Yii::t('common', 'Мы в Discord'),
     'encode' => false,
     'url'     => 'https://discord.gg/prostoj',
@@ -245,6 +250,14 @@ if (!Yii::$app->user->isGuest) {
                             'encode' => false,
                             'options'     => [
                                 'class' => 'menu-skindrops'
+                            ],
+                        ],
+                        [
+                            'label'   => '<i class="fa-solid fa-house"></i> ' . Yii::t('common', 'Постройки'),
+                            'url'     => '/buildings',
+                            'encode' => false,
+                            'options'     => [
+                                'class' => 'menu-buildings'
                             ],
                         ],
 //                        [

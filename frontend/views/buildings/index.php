@@ -23,7 +23,7 @@ $userLikes = \common\models\building\BuildingLike::find()
 
 BuildingsAsset::register($this);
 
-$this->title = Yii::t('common', 'Постройки');
+$this->title = Yii::t('common', 'Постройки игроков');
 ?>
 
 <div class="container-fluid mb-5">
