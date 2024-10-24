@@ -39,6 +39,9 @@ class SaveStatsJob extends BaseObject implements JobInterface
             }
             $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
             foreach ($request['users'] as $steamId => $params) {
+                try {
+                    User::findBySteamId($steamId);
+                } catch (\Exception $ex) {}
                 $statistics = Statistics::find()
                                         ->andWhere(['steam_id' => $steamId])
                                         ->andWhere(['server_tag' => $this->serverTag])
@@ -80,6 +83,12 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 }
             }
             foreach ($request['kills'] as $item) {
+                try {
+                    User::findBySteamId($item['steam_id']);
+                    if (strlen($item['dead']) >= 16) {
+                        User::findBySteamId($item['dead']);
+                    }
+                } catch (\Exception $ex) {}
                 $model = new Kills();
                 $model->steam_id = $item['steam_id'];
                 $model->type = $item['type'];
@@ -92,6 +101,9 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 $model->save();
             }
             foreach ($request['teams'] as $item) {
+                try {
+                    User::findBySteamId($item['steam_id']);
+                } catch (\Exception $ex) {}
                 $model = new Teams();
                 $model->steam_id = $item['steam_id'];
                 $model->type = $item['type'];
