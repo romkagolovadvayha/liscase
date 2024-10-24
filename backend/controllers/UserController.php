@@ -5,7 +5,6 @@ namespace backend\controllers;
 use backend\forms\userProfile\BanForm;
 use backend\forms\userProfile\BonusForm;
 use backend\forms\userProfile\MuteForm;
-use backend\forms\userProfile\PasswordForm;
 use backend\forms\userProfile\PayoutForm;
 use backend\forms\userProfile\RoleForm;
 use backend\forms\userProfile\SkinForm;

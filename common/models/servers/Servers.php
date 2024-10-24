@@ -2,6 +2,7 @@
 
 namespace common\models\servers;
 
+use common\models\blog\BlogCategory;
 use Yii;
 
 /**
@@ -81,6 +82,20 @@ class Servers extends \common\components\base\ActiveRecord
         Yii::$app->db_server->username = $this->db_user;
         Yii::$app->db_server->password = $this->db_password;
         Yii::$app->db_server->dsn = "mysql:host={$this->db_host};dbname={$this->db_name}";
+    }
+    /**
+     * @return array
+     */
+    public static function getServers() {
+        /** @var Servers[] $models */
+        $models = Servers::find()->andWhere(['status' => Servers::STATUS_ACTIVE])->all();
+
+        $result = [];
+        foreach ($models as $model) {
+            $result[$model->tag] = $model->name;
+        }
+
+        return $result;
     }
 
 }

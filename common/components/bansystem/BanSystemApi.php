@@ -21,6 +21,7 @@ class BanSystemApi extends Component
     const TYPE_SLABIYRUST = 9;
     const TYPE_RUSTCHEATCHECK = 10;
     const TYPE_PROSTOJ = 11;
+    const TYPE_RUSTAPP = 12;
 
     /**
      * @param int $type
@@ -42,6 +43,7 @@ class BanSystemApi extends Component
             BanSystemApi::TYPE_SLABIYRUST          => Slabiy::class,
             BanSystemApi::TYPE_RUSTCHEATCHECK          => RustCheatCheck::class,
             BanSystemApi::TYPE_PROSTOJ          => Prostoj::class,
+            BanSystemApi::TYPE_RUSTAPP          => RustApp::class,
         ];
 
         $className = ArrayHelper::getValue($classMap, $type);

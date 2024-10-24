@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f6d75d93882f94772edc8c5753b1d313",
+    "content-hash": "2d0e4affc8587824d0dc9de4bbb7e688",
     "packages": [
         {
             "name": "2amigos/yii2-tinymce-widget",
@@ -307,6 +307,24 @@
             "license": [
                 "MIT"
             ]
+        },
+        {
+            "name": "bower-asset/magnific-popup",
+            "version": "1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/dimsemenov/Magnific-Popup.git",
+                "reference": "6b7a8088783cbce01034414c1fd2d8e1889093ae"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/dimsemenov/Magnific-Popup/zipball/6b7a8088783cbce01034414c1fd2d8e1889093ae",
+                "reference": "6b7a8088783cbce01034414c1fd2d8e1889093ae"
+            },
+            "require": {
+                "bower-asset/jquery": ">=1.8.0"
+            },
+            "type": "bower-asset"
         },
         {
             "name": "bower-asset/punycode",
@@ -2262,6 +2280,68 @@
             "time": "2023-10-23T05:58:30+00:00"
         },
         {
+            "name": "imagine/imagine",
+            "version": "1.3.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-imagine/Imagine.git",
+                "reference": "7151d553edec4dc2bbac60419f7a74ff34700e7f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-imagine/Imagine/zipball/7151d553edec4dc2bbac60419f7a74ff34700e7f",
+                "reference": "7151d553edec4dc2bbac60419f7a74ff34700e7f",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.5"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^4.8 || ^5.7 || ^6.5 || ^7.5 || ^8.4 || ^9.3"
+            },
+            "suggest": {
+                "ext-exif": "to read EXIF metadata",
+                "ext-gd": "to use the GD implementation",
+                "ext-gmagick": "to use the Gmagick implementation",
+                "ext-imagick": "to use the Imagick implementation"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-develop": "1.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Imagine\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Bulat Shakirzyanov",
+                    "email": "mallluhuct@gmail.com",
+                    "homepage": "http://avalanche123.com"
+                }
+            ],
+            "description": "Image processing for PHP 5.3",
+            "homepage": "http://imagine.readthedocs.org/",
+            "keywords": [
+                "drawing",
+                "graphics",
+                "image manipulation",
+                "image processing"
+            ],
+            "support": {
+                "issues": "https://github.com/php-imagine/Imagine/issues",
+                "source": "https://github.com/php-imagine/Imagine/tree/1.3.5"
+            },
+            "time": "2023-06-07T14:49:52+00:00"
+        },
+        {
             "name": "kartik-v/bootstrap-fileinput",
             "version": "v5.5.4",
             "source": {
@@ -3022,6 +3102,54 @@
                 "source": "https://github.com/linslin/Yii2-Curl/tree/1.5.0"
             },
             "time": "2021-02-20T10:10:56+00:00"
+        },
+        {
+            "name": "loveorigami/yii2-magnific-popup",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/loveorigami/yii2-magnific-popup.git",
+                "reference": "19d4e0a610e80d03175fd14dc91ff597dbea3cff"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/loveorigami/yii2-magnific-popup/zipball/19d4e0a610e80d03175fd14dc91ff597dbea3cff",
+                "reference": "19d4e0a610e80d03175fd14dc91ff597dbea3cff",
+                "shasum": ""
+            },
+            "require": {
+                "bower-asset/magnific-popup": "1.1.*",
+                "yiisoft/yii2": "*"
+            },
+            "default-branch": true,
+            "type": "yii2-extension",
+            "autoload": {
+                "psr-4": {
+                    "lo\\widgets\\magnific\\": "/src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Lukyanov Andrey",
+                    "homepage": "http://loveorigami.info"
+                }
+            ],
+            "description": "This widget is wrapper for awesome jQuery plugin Magnific Popup",
+            "homepage": "https://github.com/loveorigami/yii2-magnific-popup",
+            "keywords": [
+                "magnific-popup",
+                "widget",
+                "yii2"
+            ],
+            "support": {
+                "issues": "https://github.com/loveorigami/yii2-magnific-popup/issues",
+                "source": "https://github.com/loveorigami/yii2-magnific-popup/tree/1.0"
+            },
+            "time": "2016-10-06T09:47:03+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -7166,6 +7294,89 @@
             "time": "2023-05-22T18:32:24+00:00"
         },
         {
+            "name": "yiisoft/yii2-imagine",
+            "version": "2.3.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/yiisoft/yii2-imagine.git",
+                "reference": "7ec4332dc25893aec5a7cf084722b162b3a4d55d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/yiisoft/yii2-imagine/zipball/7ec4332dc25893aec5a7cf084722b162b3a4d55d",
+                "reference": "7ec4332dc25893aec5a7cf084722b162b3a4d55d",
+                "shasum": ""
+            },
+            "require": {
+                "imagine/imagine": "^1.0",
+                "yiisoft/yii2": "~2.0.0"
+            },
+            "require-dev": {
+                "cweagans/composer-patches": "^1.7",
+                "phpunit/phpunit": "4.8.34"
+            },
+            "type": "yii2-extension",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "2.0.x-dev"
+                },
+                "composer-exit-on-patch-failure": true,
+                "patches": {
+                    "phpunit/phpunit-mock-objects": {
+                        "Fix PHP 7 and 8 compatibility": "https://yiisoft.github.io/phpunit-patches/phpunit_mock_objects.patch"
+                    },
+                    "phpunit/phpunit": {
+                        "Fix PHP 7 compatibility": "https://yiisoft.github.io/phpunit-patches/phpunit_php7.patch",
+                        "Fix PHP 8 compatibility": "https://yiisoft.github.io/phpunit-patches/phpunit_php8.patch"
+                    }
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "yii\\imagine\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Antonio Ramirez",
+                    "email": "amigo.cobos@gmail.com"
+                }
+            ],
+            "description": "The Imagine integration for the Yii framework",
+            "keywords": [
+                "helper",
+                "image",
+                "imagine",
+                "yii2"
+            ],
+            "support": {
+                "forum": "http://www.yiiframework.com/forum/",
+                "irc": "irc://irc.freenode.net/yii",
+                "issues": "https://github.com/yiisoft/yii2-imagine/issues",
+                "source": "https://github.com/yiisoft/yii2-imagine",
+                "wiki": "http://www.yiiframework.com/wiki/"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/yiisoft",
+                    "type": "github"
+                },
+                {
+                    "url": "https://opencollective.com/yiisoft",
+                    "type": "open_collective"
+                },
+                {
+                    "url": "https://tidelift.com/funding/github/packagist/yiisoft/yii2-imagine",
+                    "type": "tidelift"
+                }
+            ],
+            "time": "2022-09-04T10:06:40+00:00"
+        },
+        {
             "name": "yiisoft/yii2-jui",
             "version": "2.0.7",
             "source": {
@@ -8107,7 +8318,8 @@
         "romkagolovadvayha/php-source-query-class": 20,
         "lavrentiev/yii2-toastr": 20,
         "kartik-v/yii2-widget-fileinput": 20,
-        "kartik-v/yii2-sortable": 20
+        "kartik-v/yii2-sortable": 20,
+        "loveorigami/yii2-magnific-popup": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,

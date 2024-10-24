@@ -45,7 +45,9 @@
         "batdan/midjourney-api-php": "^2.1",
         "2amigos/yii2-tinymce-widget": "*",
         "kartik-v/yii2-widget-fileinput": "dev-master",
-        "kartik-v/yii2-sortable": "dev-master"
+        "kartik-v/yii2-sortable": "dev-master",
+        "yiisoft/yii2-imagine": "^2.3",
+        "loveorigami/yii2-magnific-popup": "@dev"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",

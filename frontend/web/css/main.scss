@@ -1221,7 +1221,7 @@ $color_text: #e4dad1;
   }
 }
 
-input.form-control {
+textarea.form-control, input.form-control {
   width: 100%;
   padding: 17px 20px;
   font-size: 15px;
@@ -1244,6 +1244,24 @@ input.form-control {
     color: $color_text;
   }
 }
+select.form-control {
+  width: 100%;
+  padding: 17px 20px;
+  color: #c2c7d7;
+  font-size: 15px;
+  text-align: left;
+  background-color: #252530;
+  border-radius: 0;
+  border: none;
+  outline: none;
+  transition: background-color .3s ease;
+  &:focus {
+    background-color: #2c2c38;
+    color: #c2c7d7;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
 select.form-select {
   width: 100%;
   padding: 17px 20px;
@@ -1251,7 +1269,24 @@ select.form-select {
   font-size: 13px;
   text-align: left;
   background-color: #252530;
-  border-radius: 8px;
+  border-radius: 0;
+  border: none;
+  outline: none;
+  transition: background-color .3s ease;
+  &:focus {
+    background-color: #2c2c38;
+    color: #c2c7d7;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
+.file-caption {
+  width: 100%;
+  color: #c2c7d7;
+  font-size: 15px;
+  text-align: left;
+  background-color: #252530;
+  border-radius: 0;
   border: none;
   outline: none;
   transition: background-color .3s ease;
@@ -4312,6 +4347,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
         height: 60px;
         padding-left: 48px;
         background: $color_success_dark_dark;
+        background-image: none !important;
       }
       .select2-container--open {
         ~ .stats_player_search_icon {
@@ -5546,6 +5582,17 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   padding: 15px 20px;
   border-radius: 0;
   height: auto;
+  background-image: none !important;
+}
+.select2-selection.select2-selection--multiple {
+  background: $color_success_dark_dark;
+  color: $color_text;
+  border: none;
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  border-radius: 0;
+  height: auto;
 }
 .select2-container--krajee-bs5.select2-container--open:not(.select2-container--disabled) .select2-selection, .select2-container--krajee-bs5:not(.select2-container--disabled) .select2-selection:focus {
   border-color: #000000;
@@ -5555,7 +5602,6 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   border-color: #000000;
   box-shadow: 0 0.375rem 0.75rem 0.2rem rgba(0, 0, 0, 0.25);
   overflow-x: hidden;
-  margin-top: -39px;
 }
 .select2-dropdown, .select2-results__options {
   background: $color_success_dark_dark;
@@ -5586,10 +5632,18 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 .select2-container--krajee-bs5 .select2-selection--single .select2-selection__rendered {
   color: $color_text;
 }
+.select2-container--krajee-bs5 .select2-selection--multiple .select2-selection__rendered {
+  color: $color_text;
+}
 .select2-selection__clear {
   display: none;
 }
 .select2-container--krajee-bs5 .select2-selection--single .select2-selection__rendered {
+  opacity: 0.5;
+  font-weight: 300;
+  color: $color_text;
+}
+.select2-container--krajee-bs5 .select2-selection--multiple .select2-selection__rendered {
   opacity: 0.5;
   font-weight: 300;
   color: $color_text;
@@ -8145,4 +8199,326 @@ button {
     stroke-width: 1px;
     stroke-dasharray: 2px;
   }
+}
+
+.building_form {
+  padding: 10px;
+  background: $rust_bg;
+  form {
+    > div + div {
+      margin-top: 20px;
+    }
+  }
+  .form-group {
+    .control-label {
+      font-size: 16px;
+      line-height: 16px;
+      color: $rust_color_text;
+      + * {
+        margin-top: 5px;
+      }
+    }
+    .help-block {
+      font-size: 14px;
+      line-height: 14px;
+      margin-top: 5px;
+      color: $rust_color_red;
+    }
+  }
+}
+
+.buildings {
+  &_buttons {
+    margin-bottom: 20px;
+    .btn {
+      position: relative;
+      height: 100%;
+      padding: 10px 20px;
+      font-weight: 700;
+      font-size: 13px;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 0;
+      transition: background-color .3s ease,color .3s ease;
+      color: $rust_color_green_text;
+      background-color: $rust_color_green;
+      &:hover, &:focus {
+        background-color: lighten($rust_color_green, 6%);
+        color: $rust_color_green_text;
+      }
+    }
+  }
+  &_content {
+    //padding: 10px;
+    //background: $rust_bg;
+    &_moderation {
+      color: #a1975f;
+      background: #443f27;
+      border: 1px dashed #787355;
+      padding: 15px;
+      border-radius: 0;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .summary {
+      display: none;
+    }
+    &_list {
+      .pagination {
+        margin-top: 20px;
+      }
+      &_items {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      &_item {
+        background: $rust_bg;
+        width: 220px;
+        padding: 10px;
+        position: relative;
+        > a {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          font-size: 0;
+          opacity: 0;
+          color: transparent;
+          z-index: 1;
+        }
+        &_images {
+          position: relative;
+          > img {
+            width: 100%;
+            display: block;
+          }
+          &_like {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            align-self: flex-start;
+            background-color: $rust_color_green;
+            color: $rust_color_green_text;
+            display: inline-flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            padding: 0 12px 0 0;
+            transition: all .2s ease;
+            z-index: 10;
+            cursor: pointer;
+            .icon_active {
+              display: none;
+            }
+            .icon_noactive {
+              display: block;
+            }
+            &.active {
+              background-color: $rust_color_blue;
+              color: $rust_color_blue_text;
+              .icon_active {
+                display: block;
+              }
+              .icon_noactive {
+                display: none;
+              }
+            }
+            &:hover {
+              opacity: 0.8;
+            }
+            &_count {
+              text-shadow: 0 1px 0 rgba(0, 0, 0, .2);
+              background-color: rgba(0, 0, 0, .2);
+              margin-right: 12px;
+              padding: 4px 10px;
+            }
+            &_icon {
+              text-shadow: 0 1px 0 rgba(0, 0, 0, .2);
+              padding-top: 1px;
+            }
+          }
+          &_name {
+            text-align: center;
+            max-width: 186px;
+            overflow: hidden;
+            color: $rust_color_green_text;
+            line-height: 12px;
+            font-size: 12px;
+            white-space: nowrap;
+            text-transform: uppercase;
+            text-overflow: ellipsis;
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background: $rust_color_green;
+            padding: 5px;
+          }
+          &_server {
+            overflow: hidden;
+            color: $rust_color_red_text;
+            line-height: 12px;
+            font-size: 12px;
+            text-transform: uppercase;
+            position: absolute;
+            bottom: 30px;
+            right: 5px;
+            background: $rust_color_red;
+            padding: 5px;
+          }
+        }
+        &_footer {
+          margin-top: 10px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          &_profile {
+            background-color: #4f6131;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            padding: 2px;
+            position: relative;
+            z-index: 5;
+            &:hover {
+              opacity: 0.8;
+            }
+            > img {
+              width: 22px;
+              display: block;
+            }
+            &_name {
+              display: block;
+              color: #8ec62f;
+              text-shadow: 0 1px 0 rgba(0, 0, 0, .2);
+              text-align: center;
+              max-width: 105px;
+              padding: 0 5px 0 0;
+              overflow: hidden;
+              line-height: 12px;
+              white-space: nowrap;
+              text-transform: uppercase;
+              text-overflow: ellipsis;
+            }
+          }
+          &_date {
+            display: block;
+            color: #b6b6b6;
+            text-align: center;
+            overflow: hidden;
+            line-height: 14px;
+            font-size: 14px;
+            white-space: nowrap;
+            text-transform: uppercase;
+          }
+        }
+      }
+    }
+  }
+}
+
+.buildings_profile {
+  &_users {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+    &_item {
+      background-color: #4f6131;
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      padding: 2px;
+      position: relative;
+      z-index: 5;
+      &:hover {
+        opacity: 0.8;
+      }
+      > img {
+        width: 25px;
+        display: block;
+      }
+      &_name {
+        display: block;
+        color: #8ec62f;
+        text-shadow: 0 1px 0 rgba(0, 0, 0, .2);
+        text-align: center;
+        max-width: 105px;
+        padding: 0 5px 0 0;
+        overflow: hidden;
+        line-height: 12px;
+        white-space: nowrap;
+        text-transform: uppercase;
+        text-overflow: ellipsis;
+      }
+    }
+    .buildings_content_list_item_images_like {
+      position: relative;
+      top: 0;
+      right: 0;
+    }
+  }
+  &_content {
+    flex: 1 0;
+    > h1 {
+      color: #e8e9f3;
+      font-weight: 700;
+      font-size: 32px;
+      text-align: left;
+      margin-bottom: 30px;
+    }
+    h2 {
+      color: $rust_color_text;
+      font-weight: 700;
+      font-size: 22px;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    * + h2 {
+      margin-top: 20px;
+    }
+    p {
+      color: #828393;
+      font-weight: 500;
+      font-size: 12px;
+      margin-bottom: 0;
+      text-align: left;
+    }
+  }
+  &_side {
+    //background: $rust_bg;
+    //padding: 5px;
+    position: relative;
+    margin-top: 10px;
+    &_images {
+      display: flex;
+      gap: 5px;
+       a {
+         width: 100px;
+         transition: 0.3s;
+         border: 2px solid $rust_color;
+         &:hover {
+           transform: scale(1.02);
+           box-shadow: 0 5px 30px rgba(0, 0, 0, .5);
+         }
+         img {
+           display: block;
+           max-width: 100%;
+         }
+       }
+    }
+  }
+}
+.select2-selection.select2-selection--multiple {
+  height: 60px;
+  color: #fff;
+  background: $color_success_dark_dark;
+}
+#select2-buildingform-residents-results {
+   margin-top: 0;
+}
+.select2-search__field {
+  color: #fff;
 }
