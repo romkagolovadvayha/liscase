@@ -2,41 +2,60 @@
 
 use common\models\building\Building;
 use yii\helpers\Html;
+use kartik\grid\GridView;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
-use yii\grid\GridView;
+use backend\models\building\BuildingSearch;
 
 /** @var yii\web\View $this */
 /** @var backend\models\building\BuildingSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-$this->title = 'Buildings';
+$this->title = 'Постройки';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="building-index">
-
-    <h1><?= Html::encode($this->title) ?></h1>
-
-    <p>
-        <?= Html::a('Create Building', ['create'], ['class' => 'btn btn-success']) ?>
-    </p>
-
-    <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
-
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'columns' => [
-            ['class' => 'yii\grid\SerialColumn'],
-
-            'id',
-            'user_id',
+            [
+                'attribute' => 'id',
+                'options'   => ['width' => '60'],
+            ],
+            [
+                'attribute' => 'user_id',
+                'options'   => ['width' => '150'],
+                'format'    => 'raw',
+                'value'          => function (Building $model) {
+                    return "<a href=\"/user/profile?userId={$model->user->id}\">{$model->user->username}</a>";
+                },
+            ],
             'name',
-            'description',
-            'location',
-            //'status',
-            //'server_tag',
-            //'created_at',
+            [
+                'attribute'       => 'status',
+                'options'   => ['width' => '140'],
+                'filterType'  => GridView::FILTER_SELECT2,
+                'filter'          => \yii\helpers\ArrayHelper::merge(['' => 'Любой'], Building::getStatusList()),
+                'value'           => function (Building $model) {
+                    $statusList = Building::getStatusList();
+                    return \yii\helpers\ArrayHelper::getValue($statusList, $model->status);
+                },
+            ],
+            [
+                'attribute'       => 'server_tag',
+                'options'   => ['width' => '180'],
+                'filterType'  => GridView::FILTER_SELECT2,
+                'filter'          => \yii\helpers\ArrayHelper::merge(['' => 'Любой'], \common\models\servers\Servers::getServers()),
+                'value'           => function (Building $model) {
+                    $statusList = \common\models\servers\Servers::getServers();
+                    return \yii\helpers\ArrayHelper::getValue($statusList, $model->server_tag);
+                },
+            ],
+            [
+                'options'   => ['width' => '200'],
+                'class' => \common\components\grid\DateColumn::class,
+            ],
             [
                 'class' => ActionColumn::className(),
                 'urlCreator' => function ($action, Building $model, $key, $index, $column) {

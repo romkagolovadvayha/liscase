@@ -30,7 +30,7 @@ class Menu extends \hail812\adminlte\widgets\Menu
     /**
      * @var string
      */
-    public static $iconStyleDefault = 'fas';
+    public static $iconStyleDefault = '';
 
     /**
      * @inheritdoc
@@ -111,7 +111,7 @@ class Menu extends \hail812\adminlte\widgets\Menu
         } else {
             $iconStyle = $item['iconStyle'] ?? static::$iconStyleDefault;
             $icon = $item['icon'] ?? static::$iconDefault;
-            $iconClassArr = ['nav-icon', $iconStyle, 'fa-'.$icon];
+            $iconClassArr = ['nav-icon', $iconStyle, $icon];
             isset($item['iconClassAdded']) && $iconClassArr[] = $item['iconClassAdded'];
             $iconClass = implode(' ', $iconClassArr);
         }

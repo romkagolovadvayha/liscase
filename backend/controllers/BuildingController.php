@@ -103,6 +103,40 @@ class BuildingController extends Controller
         ]);
     }
 
+    public function actionSuccess($id)
+    {
+        $model = $this->findModel($id);
+
+        $model->status = Building::STATUS_ACTIVE;
+        if ($model->save()) {
+            if (!empty($model->user->telegram_chat_id)) {
+                Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '🏠 Ваша постройка успешно прошла модерацию!');
+            }
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        return $this->render('view', [
+            'model' => $model,
+        ]);
+    }
+
+    public function actionReject($id)
+    {
+        $model = $this->findModel($id);
+
+        $model->status = Building::STATUS_REJECT;
+        if ($model->save()) {
+            if (!empty($model->user->telegram_chat_id)) {
+                Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '🏠 Ваша постройка не прошла модерацию!');
+            }
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        return $this->render('view', [
+            'model' => $model,
+        ]);
+    }
+
     /**
      * Deletes an existing Building model.
      * If deletion is successful, the browser will be redirected to the 'index' page.

@@ -6,7 +6,7 @@
 use yii\helpers\Html;
 use common\components\widgets\ModalWidget;
 
-\hail812\adminlte3\assets\FontAwesomeAsset::register($this);
+\backend\assets\FontAwesomeAsset::register($this);
 \hail812\adminlte3\assets\AdminLteAsset::register($this);
 \backend\assets\AppAsset::register($this);
 \backend\assets\BootstrapAsset::register($this);

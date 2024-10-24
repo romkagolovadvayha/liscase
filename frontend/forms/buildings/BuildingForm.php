@@ -93,7 +93,7 @@ class BuildingForm extends Building
         }
 
         $this->_loadImages($_FILES['BuildingForm']['tmp_name']['image'], $this->id);
-
+        Yii::$app->telegramChats->sendMessage("🏠 Новая постройка отправлена на модерацию!");
         return true;
     }
 
