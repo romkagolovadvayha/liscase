@@ -14,6 +14,7 @@ use Yii;
 use yii\base\BaseObject;
 use yii\imagine\Image;
 use yii\helpers\ArrayHelper;
+use yii\validators\ImageValidator;
 use yii\web\UploadedFile;
 
 class BuildingForm extends Building
@@ -25,6 +26,8 @@ class BuildingForm extends Building
     {
         return ArrayHelper::merge([
             [['image', 'residents'], 'required'],
+            [['image'], 'safe'],
+            [['image'], 'file','skipOnEmpty' => true, 'extensions' => 'jpeg, jpg, png, gif', 'checkExtensionByMimeType' => true, 'maxFiles' => 5],
         ], parent::rules());
     }
 
@@ -72,6 +75,23 @@ class BuildingForm extends Building
             return false;
         }
 
+        $validator = new ImageValidator([
+                                            'mimeTypes'   => [
+                                                'image/jpeg',
+                                                'image/png',
+                                                'image/gif'
+                                            ],
+                                            'maxWidth'    => 6000,
+                                            'maxHeight'   => 6000,
+                                            'skipOnEmpty' => true,
+                                        ]);
+        foreach (UploadedFile::getInstances($this, 'image') as $img) {
+            if (!$validator->validate($img, $error)) {
+                $this->addError('image', Yii::t('common', 'Разрешено загружать только файлы PNG, JPEG, GIF'));
+                return false;
+            }
+        }
+
         if (!$this->save()) {
             throw new \Exception(Yii::t('common', 'Произошла ошибка при сохрании, напишите пожалуйста администратору сайта'));
         }
@@ -92,7 +112,7 @@ class BuildingForm extends Building
             }
         }
 
-        $this->_loadImages($_FILES['BuildingForm']['tmp_name']['image'], $this->id);
+        $this->_loadImages(UploadedFile::getInstances($this, 'image'), $this->id);
         Yii::$app->telegramChats->sendMessage("🏠 Новая постройка отправлена на модерацию!");
         return true;
     }
@@ -102,6 +122,9 @@ class BuildingForm extends Building
             return null;
         }
         foreach ($images as $i => $image) {
+            if (empty($image->tempName)) {
+                continue;
+            }
             $uploadDir = Yii::getAlias('@app/web/uploads');
             $fileName = "" . $this->id . "_" . md5(time() . $i) . ".png";
             $filePath = $uploadDir . "/buildings/" . $fileName;
@@ -110,7 +133,7 @@ class BuildingForm extends Building
                 mkdir(dirname($filePath));
                 chmod(dirname($filePath), 0777);
             }
-            file_put_contents($filePath, file_get_contents($image));
+            file_put_contents($filePath, file_get_contents($image->tempName));
             $model = new BuildingImage();
             $model->building_id = $id;
             $model->image = $fileName;

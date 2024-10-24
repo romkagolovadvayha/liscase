@@ -41,7 +41,7 @@ JS;
 
 <div class="building_form">
 
-    <?php $form = ActiveForm::begin(); ?>
+    <?php $form = ActiveForm::begin(['options' => ['enctype' => 'multipart/form-data']]); ?>
 
     <?= $form->field($model, 'name')->textInput(['maxlength' => true]) ?>
 
@@ -79,7 +79,7 @@ JS;
         </div>
     </div>
 
-    <?=$form->field($model, 'image')->widget(FileInput::CLASS, [
+    <?=$form->field($model, 'image[]')->widget(FileInput::CLASS, [
         'model' => $model,
         'options' => ['multiple' => true, 'accept' => 'image/png, image/gif, image/jpeg'],
         'language' => 'ru',
