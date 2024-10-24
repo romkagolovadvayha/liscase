@@ -12,6 +12,14 @@ function _checkActive($urlStr)
 }
 
 $jobBadges = 0;
+$buildingBadge = \common\models\building\Building::find()
+    ->andWhere(['status' => \common\models\building\Building::STATUS_WAIT])
+    ->count();
+
+$usersBadge = \common\models\user\User::find()
+                                                 ->andWhere(['>=', 'created_at', date('Y-m-d 00:00:01')])
+                                                 ->andWhere(['<=', 'created_at', date('Y-m-d 23:59:59')])
+                                                 ->count();
 ?>
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <a href="<?=Yii::$app->params['baseUrl']?>" class="brand-link" style="display: block; text-align: center">
@@ -44,6 +52,7 @@ $jobBadges = 0;
                    [
                          'label' => 'Пользователи',
                          'icon' => 'fa-solid fa-users',
+                         'badgeSuccess' => $usersBadge,
                          'url' => ['/user'],
                          'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR),
                          'active' => _checkActive('/user') && !_checkActive('/user-'),
@@ -65,9 +74,10 @@ $jobBadges = 0;
                    [
                        'label' => 'Постройки',
                        'icon' => 'fa-solid fa-house',
+                       'badgeDanger' => $buildingBadge,
                        'url' => ['/building'],
                        'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR),
-                       'active' => _checkActive('/telegram-constructor'),
+                       'active' => _checkActive('/building'),
                    ],
                    [
                        'label' => 'Отчеты',
