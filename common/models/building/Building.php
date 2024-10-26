@@ -129,6 +129,7 @@ class Building extends \yii\db\ActiveRecord
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
     }
+
     /**
      * Gets query for [[Servers]].
      *

@@ -8531,3 +8531,42 @@ button {
 .select2-search__field {
   color: #fff;
 }
+
+.support_messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  &_item {
+    display: flex;
+    gap: 10px;
+    &_profile {
+      &_avatar {
+        img {
+          display: block;
+          width: 32px;
+          border-radius: 50%;
+        }
+      }
+    }
+    &_message {
+      &_username {
+        font-weight: 700;
+        &.admin {
+          color: $rust_color_green_text;
+        }
+        &.moder {
+          color: $rust_color_blue_text;
+        }
+      }
+      &_content {
+        font-weight: 700;
+      }
+    }
+  }
+}
+.support_chat_writed {
+  display: none;
+  &.active {
+    display: block;
+  }
+}

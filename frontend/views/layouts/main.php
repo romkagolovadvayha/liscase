@@ -4,6 +4,7 @@
 /** @var string $content */
 
 use frontend\assets\AppAsset;
+use frontend\assets\SocketAsset;
 use frontend\widgets\Alert;
 use yii\bootstrap5\Breadcrumbs;
 use common\components\web\LanguagePicker;
@@ -12,6 +13,7 @@ use yii\bootstrap5\Nav;
 use yii\bootstrap5\NavBar;
 use common\models\user\UserBalance;
 
+SocketAsset::register($this);
 AppAsset::register($this);
 \frontend\assets\OnlineCounterAsset::register($this);
 if (!Yii::$app->user->isGuest) {
@@ -187,6 +189,15 @@ if (!Yii::$app->user->isGuest) {
 </head>
 <body class="d-flex flex-column h-100">
 <?php $this->beginBody() ?>
+<script>
+<?php if (Yii::$app->user->isGuest):?>
+    var steam_id = undefined;
+    var token = undefined;
+<?php else: ?>
+    var steam_id = "<?=Yii::$app->user->identity->steam_id?>";
+    var token = "<?=Yii::$app->user->identity->getJwtToken()?>";
+<?php endif; ?>
+</script>
 
 <header id="header">
     <nav class="navbar-expand-md navbar-dark bg-dark navbar">
