@@ -10,7 +10,7 @@ class SupportAsset extends AssetBundle
 
     public $js
         = [
-            'js/support.js',
+            'js/support.js?v=1.0.111',
         ];
 
     public $depends

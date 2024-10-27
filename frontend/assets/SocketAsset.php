@@ -10,7 +10,7 @@ class SocketAsset extends AssetBundle
 
     public $js
         = [
-            'js/socket.js',
+            'js/socket.js?v=1.0.111',
         ];
 
     public $depends
