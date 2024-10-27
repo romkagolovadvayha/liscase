@@ -58,42 +58,48 @@ class ChatServer extends WebSocketServer
 
     public function commandChatFocus(ConnectionInterface $client, $msg)
     {
-        $request = json_decode($msg, true);
-        $result = ['message' => ''];
+        try {
+            $result = ['message' => ''];
 
-        if (empty($client->chat)) {
-            $client->send( json_encode($result) );
-        }
-        if (!empty($client->user)) {
-            foreach ($this->clients as $chatClient) {
-                if ($chatClient->chat !== $client->chat || $client->user->id === $chatClient->user->id) {
-                    continue;
-                }
-                $chatClient->send(json_encode([
-                                                  'type' => 'chatFocus',
-                                                  'content' => "Пользователь {$client->user->username} печатает сообщение...",
-                                              ]));
+            if (empty($client->chat)) {
+                $client->send( json_encode($result) );
             }
+            if (!empty($client->user)) {
+                foreach ($this->clients as $chatClient) {
+                    if ($chatClient->chat !== $client->chat || $client->user->id === $chatClient->user->id) {
+                        continue;
+                    }
+                    $chatClient->send(json_encode([
+                                                      'type' => 'chatFocus',
+                                                      'content' => "Пользователь {$client->user->username} печатает сообщение...",
+                                                  ]));
+                }
+            }
+        } catch (\Exception $e) {
+            echo "commandChatFocus:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
         }
     }
 
     public function commandChatBlur(ConnectionInterface $client, $msg)
     {
-        $request = json_decode($msg, true);
-        $result = ['message' => ''];
+        try {
+            $result = ['message' => ''];
 
-        if (empty($client->chat)) {
-            $client->send( json_encode($result) );
-        }
-        if (!empty($client->user)) {
-            foreach ($this->clients as $chatClient) {
-                if ($chatClient->chat !== $client->chat || $client->user->id === $chatClient->user->id) {
-                    continue;
-                }
-                $chatClient->send(json_encode([
-                                                  'type' => 'chatBlur',
-                                              ]));
+            if (empty($client->chat)) {
+                $client->send( json_encode($result) );
             }
+            if (!empty($client->user)) {
+                foreach ($this->clients as $chatClient) {
+                    if ($chatClient->chat !== $client->chat || $client->user->id === $chatClient->user->id) {
+                        continue;
+                    }
+                    $chatClient->send(json_encode([
+                                                      'type' => 'chatBlur',
+                                                  ]));
+                }
+            }
+        } catch (\Exception $e) {
+            echo "commandChatFocus:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
         }
     }
 
