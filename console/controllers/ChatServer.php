@@ -58,12 +58,13 @@ class ChatServer extends WebSocketServer
 
     public function commandChatFocus(ConnectionInterface $client, $msg)
     {
-        try {
-            $result = ['message' => ''];
+        $result = ['message' => ''];
 
-            if (empty($client->chat)) {
-                $client->send( json_encode($result) );
-            }
+        if (empty($client->chat)) {
+            $client->send( json_encode($result) );
+            return;
+        }
+        try {
             if (!empty($client->user)) {
                 foreach ($this->clients as $chatClient) {
                     if ($chatClient->chat !== $client->chat || $client->user->id === $chatClient->user->id) {
@@ -74,20 +75,23 @@ class ChatServer extends WebSocketServer
                                                       'content' => "Пользователь {$client->user->username} печатает сообщение...",
                                                   ]));
                 }
+                return;
             }
         } catch (\Exception $e) {
             echo "commandChatFocus:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
         }
+        $client->send( json_encode($result) );
     }
 
     public function commandChatBlur(ConnectionInterface $client, $msg)
     {
-        try {
-            $result = ['message' => ''];
+        $result = ['message' => ''];
 
-            if (empty($client->chat)) {
-                $client->send( json_encode($result) );
-            }
+        if (empty($client->chat)) {
+            $client->send( json_encode($result) );
+            return;
+        }
+        try {
             if (!empty($client->user)) {
                 foreach ($this->clients as $chatClient) {
                     if ($chatClient->chat !== $client->chat || $client->user->id === $chatClient->user->id) {
@@ -97,10 +101,12 @@ class ChatServer extends WebSocketServer
                                                       'type' => 'chatBlur',
                                                   ]));
                 }
+                return;
             }
         } catch (\Exception $e) {
             echo "commandChatFocus:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
         }
+        $client->send( json_encode($result) );
     }
 
     public function commandChat(ConnectionInterface $client, $msg)
