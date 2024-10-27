@@ -2,7 +2,10 @@
 
 namespace frontend\controllers;
 
+use common\components\helpers\Role;
+use Yii;
 use common\models\support\Support;
+use common\models\support\SupportMessage;
 use frontend\forms\buildings\BuildingForm;
 use frontend\forms\support\SupportForm;
 use frontend\models\support\SupportSearch;
@@ -61,6 +64,17 @@ class SupportController extends Controller
         return $this->render('view', [
             'model' => $this->findModel($id),
             'user' => $user,
+        ]);
+    }
+
+    public function actionGetMessage($id)
+    {
+        $message = SupportMessage::findOne($id);
+        if (empty($message) || (!Yii::$app->user->identity->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR]) && $message->support->user->id !== Yii::$app->user->id)) {
+            throw new NotFoundHttpException('Not found');
+        }
+        return $this->renderAjax('_message', [
+            'model' => $message
         ]);
     }
 

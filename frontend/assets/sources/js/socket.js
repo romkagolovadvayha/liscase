@@ -1,5 +1,5 @@
-var chat = new WebSocket('wss://ws.prostoj.store/ws/');
-
+var chat = new WebSocket('ws://localhost:4888');
+chat.binaryData = "blob";
 chat.onmessage = function(e) {
     var response = JSON.parse(e.data);
     if (response.type && response.type === 'chat') {

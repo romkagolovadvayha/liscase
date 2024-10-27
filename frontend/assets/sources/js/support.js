@@ -1,13 +1,14 @@
+$('.support_messages_wrap').scrollTop($('#chat').height());
 function supportChat(response) {
-    $('#chat').append('<div class="support_messages_item">\n' +
-        '                            <div class="support_messages_item_profile">\n' +
-        '                                <div class="support_messages_item_profile_avatar"><img src="' + response.avatar + '"></div>\n' +
-        '                            </div>\n' +
-        '                            <div class="support_messages_item_message">' +
-                                        '<div class="support_messages_item_message_username ' + response.usernameClass + '">' + response.username + '</div>' +
-                                        '<div class="support_messages_item_message_content">' + response.message + '</div>' +
-                                    '</div>\n' +
-        '                        </div>');
+    $.ajax({
+        url: '/support/get-message?id=' + response.messageId,
+        success: function (res) {
+            if (res) {
+                $('#chat').append(res);
+                $('.support_messages_wrap').scrollTop($('#chat').height());
+            }
+        }
+    });
 }
 function supportChatFocus(response) {
     $('#supportChatWrited').addClass('active');
@@ -16,16 +17,34 @@ function supportChatFocus(response) {
 function supportChatBlur(response) {
     $('#supportChatWrited').removeClass('active');
 }
-$('#btnSend').click(function() {
-    if ($('#message').val()) {
-        chat.send( JSON.stringify({'action' : 'chat', 'message' : $('#message').val()}) );
-    } else {
-        alert('Enter the message')
+$(document).keydown(function(e) {
+    if(e.keyCode === 13) {
+        var el = $('#supportMessage');
+        if (el.val()) {
+            chat.send( JSON.stringify({'action' : 'chat', 'message' : el.val(), 'chatId': chatId}) );
+            el.val('');
+        }
     }
 });
-$('#message').on('focus', function () {
-    chat.send( JSON.stringify({'action' : 'chatFocus'}) );
+async function sendFile() {
+    var file = document.getElementById('supportMessageFile').files[0];
+    let blob = new Blob([file, {type: file.type}]);
+    var reader = new FileReader();
+    reader.loadend = function() {
+        alert("the File has been transferred.");
+    }
+    reader.onload = function(e) {
+        var rawData = e.target.result;
+        chat.send( JSON.stringify({'action' : 'chatFile', 'data': rawData, 'filename': file.name, 'type': file.type, 'chatId': chatId}) );
+    }
+    reader.readAsDataURL(blob);
+}
+$('#supportMessageFile').on('change', function () {
+    sendFile();
 });
-$('#message').on('blur', function () {
-    chat.send( JSON.stringify({'action' : 'chatBlur'}) );
+$('#supportMessage').on('focus', function () {
+    chat.send( JSON.stringify({'action' : 'chatFocus', 'chatId': chatId}) );
+});
+$('#supportMessage').on('blur', function () {
+    chat.send( JSON.stringify({'action' : 'chatBlur', 'chatId': chatId}) );
 });

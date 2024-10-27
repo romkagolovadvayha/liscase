@@ -10,6 +10,8 @@ use Yii;
  * @property int $id
  * @property int $support_message_id
  * @property string $file
+ * @property string $filename
+ * @property string $mimetype
  * @property string|null $created_at
  *
  * @property SupportMessage $supportMessage
