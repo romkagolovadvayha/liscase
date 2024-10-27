@@ -146,6 +146,9 @@ class ChatServer extends WebSocketServer
             $model->created_at = date('Y-m-d H:i:s');
             $model->save();
             foreach ($this->clients as $chatClient) {
+                if (empty($chatClient) || empty($chatClient->chat)) {
+                    continue;
+                }
                 if ($chatClient->chat !== $client->chat) {
                     continue;
                 }
