@@ -1,4 +1,4 @@
-var chat = new WebSocket('wss://ws.prostoj.store');
+var chat = new WebSocket('wss://ws.prostoj.store/ws/');
 
 chat.onmessage = function(e) {
     var response = JSON.parse(e.data);
