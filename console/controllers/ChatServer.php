@@ -67,6 +67,9 @@ class ChatServer extends WebSocketServer
         try {
             if (!empty($client->user)) {
                 foreach ($this->clients as $chatClient) {
+                    if (empty($chatClient) || empty($chatClient->chat)) {
+                        continue;
+                    }
                     if ($chatClient->chat !== $client->chat || $client->user->id === $chatClient->user->id) {
                         continue;
                     }
@@ -94,6 +97,13 @@ class ChatServer extends WebSocketServer
         try {
             if (!empty($client->user)) {
                 foreach ($this->clients as $chatClient) {
+                    try {
+                        if (empty($chatClient) || empty($chatClient->chat)) {
+                            continue;
+                        }
+                    } catch (\Exception $e) {
+                        echo "commandChatBlur1:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
+                    }
                     if ($chatClient->chat !== $client->chat || $client->user->id === $chatClient->user->id) {
                         continue;
                     }
@@ -104,7 +114,7 @@ class ChatServer extends WebSocketServer
                 return;
             }
         } catch (\Exception $e) {
-            echo "commandChatFocus:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
+            echo "commandChatBlur:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
         }
         $client->send( json_encode($result) );
     }
