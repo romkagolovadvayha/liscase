@@ -614,7 +614,7 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     public function getAvatar() {
-        return $this->userProfile->avatar;
+        return Yii::$app->params['cdnUrl'] . $this->userProfile->avatar;
     }
 
     /**

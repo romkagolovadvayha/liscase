@@ -377,6 +377,7 @@ if (!Yii::$app->user->isGuest) {
         </div>
     </div>
 </div>
+<?php if (YII_ENV_PROD): ?>
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript" >
     (function (d, w, c) {
@@ -410,6 +411,7 @@ if (!Yii::$app->user->isGuest) {
 </script>
 <noscript><div><img src="https://mc.yandex.ru/watch/97456083" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
+<?php endif; ?>
 <?php $this->endBody() ?>
 </body>
 </html>

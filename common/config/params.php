@@ -11,4 +11,5 @@ return [
     'idLocal'             => [],
     'sendTelegram' => true,
     'bsVersion' => '5.x',
+    'cdnUrl' => 'https://cdn.prostoj.store',
 ];

@@ -48,7 +48,7 @@ class SelectImage extends ActiveRecord
     }
 
     public function getImagePubUrl() {
-        return "/uploads" . $this->image;
+        return Yii::$app->params['cdnUrl'] . "/uploads" . $this->image;
     }
 
     /**

@@ -301,7 +301,7 @@ $checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
 <?=\frontend\widgets\Alert::widget()?>
 <div class="row">
     <div class="text-center col-md-2">
-        <img style="border-radius: 3px;" src="<?=$userProfile->avatar?>"/>
+        <img style="border-radius: 3px;" src="<?=$user->getAvatar()?>"/>
         <h3 style="margin-top: 15px; text-align: center"><?= $user->username; ?></h3>
         <a href="https://steamcommunity.com/profiles/<?=$user->steam_id?>" class="stats_player_card_body_name_steam" target="_blank" title="<?=Yii::t('common', 'Перейти в профиль Steam')?>"><?=$user->steam_id?></a>
         <div class="list-group" style="margin-top: 15px; text-align: left">
