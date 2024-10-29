@@ -23,7 +23,7 @@ $usersBadge = \common\models\user\User::find()
 ?>
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <a href="<?=Yii::$app->params['baseUrl']?>" class="brand-link" style="display: block; text-align: center">
-        <img src="<?=Yii::$app->params['baseUrl']?>/images/logo.png" alt="Prostoj Logo" style="display: inline-block; width: 120px; max-width: 100%">
+        <img src="<?=Yii::$app->params['cdnUrl']?>/images/logo.png" alt="Prostoj Logo" style="display: inline-block; width: 120px; max-width: 100%">
     </a>
 
     <!-- Sidebar -->
