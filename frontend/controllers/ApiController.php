@@ -218,7 +218,7 @@ class ApiController extends WebController
                 'id' => $userDrop->id,
                 'amount' => $userDrop->count,
                 'name' => $userDrop->drop[0]->name,
-                'img' => Yii::$app->params['baseUrl'] . $userDrop->drop[0]->imageOrig->getImagePubUrl(),
+                'img' => $userDrop->drop[0]->imageOrig->getImagePubUrl(),
                 'blocked' => false,
                 'block_date' => null,
             ];
