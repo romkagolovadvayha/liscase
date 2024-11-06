@@ -23,7 +23,7 @@ function checkCommand(rcon, server, i = 0) {
     i++;
     setTimeout(() => {
         checkCommand(rcon, server, i);
-    }, 30e3);
+    }, 3e3);
 }
 function connectWebRcon(ip, port, password, server) {
     const rcon = new Client({
