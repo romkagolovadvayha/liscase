@@ -26,15 +26,6 @@ class SupportForm extends Support
      */
     public function saveRecord(): bool
     {
-        /** @var Servers $server */
-        $server = Servers::find()
-            ->andWhere(['tag' => $this->server_tag])
-            ->one();
-
-        if (empty($server)) {
-            throw new \Exception(Yii::t('common', 'Произошла ошибка при сохрании, напишите пожалуйста администратору сайта'));
-        }
-
         $this->user_id = Yii::$app->user->id;
         $this->status = Support::STATUS_OPEN;
         $this->updated_at = date('Y-m-d H:i:s');

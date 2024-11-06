@@ -47,7 +47,8 @@
         "kartik-v/yii2-widget-fileinput": "dev-master",
         "kartik-v/yii2-sortable": "dev-master",
         "yiisoft/yii2-imagine": "^2.3",
-        "loveorigami/yii2-magnific-popup": "@dev"
+        "loveorigami/yii2-magnific-popup": "@dev",
+        "aws/aws-sdk-php": "^3.324"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",

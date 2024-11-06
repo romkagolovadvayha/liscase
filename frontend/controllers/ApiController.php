@@ -58,7 +58,7 @@ class ApiController extends WebController
             return json_encode($this->methodTake($item_id),JSON_PRETTY_PRINT);
         }
         if ($method === 'item') {
-            return json_encode($this->methodItem($id),JSON_PRETTY_PRINT);
+            return json_encode($this->methodItem($id, $steam_id),JSON_PRETTY_PRINT);
         }
         if ($method === 'gived') {
             return json_encode($this->methodGived($id),JSON_PRETTY_PRINT);
@@ -120,13 +120,21 @@ class ApiController extends WebController
      *
      * @return array
      */
-    private function methodItem($item_id) {
+    private function methodItem($item_id, $steam_id = null) {
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
         if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
             return [
                 'result' => 'fail',
                 'message' => "Предмет уже получен/продан",
+                'code' => 107,
+            ];
+        }
+
+        if (!empty($steam_id) && $steam_id != $userDrop->user->steam_id) {
+            return [
+                'result' => 'fail',
+                'message' => "Товар вам не пренадлежит!",
                 'code' => 107,
             ];
         }

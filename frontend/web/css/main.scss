@@ -8537,15 +8537,39 @@ button {
   flex-direction: column;
   gap: 10px;
   &_wrap {
-    max-height: 500px;
+    height: 500px;
     overflow-y: auto;
     background-color: darken($rust_color, 3%);
     position: relative;
+    padding-top: 10px;
     padding-bottom: 90px;
     &_wrap {
       position: relative;
       overflow: hidden;
       border-radius: 12px;
+      box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.30), 0 4px 16px 0 rgba(0, 0, 0, 0.30);
+      width: 400px;
+    }
+  }
+  &_header {
+    padding: 15px 20px;
+    font-size: 18px;
+    margin: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: $color_background_body_back;
+    &_name {
+      color: $rust_color_text;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    &_close {
+      color: $rust_color_text;
+      cursor: pointer;
+      &:hover {
+        opacity: 0.9;
+      }
     }
   }
   &_form {
@@ -8625,7 +8649,7 @@ button {
         &_item {
           &_preview {
             img {
-              height: 100px;
+              width: 150px;
               border-radius: 12px;
               display: block;
             }
@@ -8633,6 +8657,17 @@ button {
               margin-top: 10px;
               display: block;
             }
+          }
+          &_video {
+            width: 250px;
+            border: 4px solid $rust_color_green;
+            display: block;
+          }
+          &_button {
+            font-weight: 700;
+            font-size: 13px;
+            margin-top: 10px;
+            display: block;
           }
         }
       }
@@ -8660,6 +8695,63 @@ button {
       &_content {
         font-weight: 700;
       }
+    }
+  }
+}
+.widget_chat {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  padding: 20px;
+  max-width: 100%;
+  &_body {
+    display: none;
+  }
+  &_button {
+    flex: 1 0;
+    color: $rust_color_green_text;
+    background: $rust_color_green;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    text-align: center;
+    padding: 10px 30px;
+    display: flex;
+    gap: 10px;
+    border-radius: 8px;
+    align-items: center;
+    position: relative;
+    box-shadow: 0 4px 15px #00000099;
+    &_name {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 16.1px;
+      text-transform: uppercase;
+    }
+    &_badge {
+      color: $rust_color_red_text;
+      background: $rust_color_red;
+      font-size: 12px;
+      padding: 10px;
+      font-weight: 600;
+      width: 26px;
+      height: 26px;
+      line-height: 7px;
+      position: absolute;
+      top: -7px;
+      right: -7px;
+      border-radius: 50%;
+      box-shadow: 0 4px 15px #00000099;
+    }
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+  &.active {
+    .widget_chat_body {
+      display: block;
+    }
+    .widget_chat_button {
+      display: none;
     }
   }
 }

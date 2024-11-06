@@ -12,4 +12,5 @@ return [
     'sendTelegram' => true,
     'bsVersion' => '5.x',
     'cdnUrl' => 'https://cdn.prostoj.store',
+    's3Url' => 'https://storage.prostoj.store',
 ];

@@ -216,7 +216,7 @@ if (!Yii::$app->user->isGuest) {
                                 <span class="balance_count"><?=$balanceStr?></span>
                             </div>
                         </div>
-                        <?=Html::img(Yii::$app->user->identity->userProfile->avatar, ['width' => '40px'])?>
+                        <?=Html::img(Yii::$app->user->identity->getAvatar(), ['width' => '40px'])?>
                         <div class="bars_icon">
                             <i class="fas fa-bars"></i>
                         </div>
@@ -360,7 +360,7 @@ if (!Yii::$app->user->isGuest) {
         </div>
     </div>
 </footer>
-
+<?php //echo $this->render('@frontend/views/widgets/_support'); ?>
 
 <div class="modal modal-alert fade" id="modal-dialog" tabindex="-1" aria-labelledby="modal-dialog" aria-hidden="true">
     <div class="modal-dialog">

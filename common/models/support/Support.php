@@ -65,11 +65,11 @@ class Support extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['user_id', 'status', 'server_tag'], 'required'],
+            [['user_id', 'status'], 'required'],
             [['user_id', 'status'], 'integer'],
             [['created_at'], 'safe'],
             [['server_tag'], 'string', 'max' => 11],
-            [['server_tag'], 'exist', 'skipOnError' => true, 'targetClass' => Servers::class, 'targetAttribute' => ['server_tag' => 'tag']],
+            [['server_tag'], 'exist', 'skipOnEmpty' => true, 'skipOnError' => true, 'targetClass' => Servers::class, 'targetAttribute' => ['server_tag' => 'tag']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
             [['suspect_user_id'], 'exist', 'skipOnEmpty' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
         ];

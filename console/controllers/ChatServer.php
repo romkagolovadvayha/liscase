@@ -1,8 +1,10 @@
 <?php
 namespace console\controllers;
 
+use common\models\rcon\RconTasks;
 use common\models\support\SupportFile;
 use common\models\support\SupportMessage;
+use common\models\user\UserDrop;
 use Yii;
 use common\components\helpers\Role;
 use common\models\support\Support;
@@ -97,14 +99,8 @@ class ChatServer extends WebSocketServer
                 return;
             }
             $decodedData = file_get_contents($request['data']);
-            $uploadDir = Yii::getAlias('@frontend/web/uploads');
             $newFileName = $request['chatId'] . "_" . md5(time()) . ".{$exp}";
-            $filePath = $uploadDir . "/chat/" . $newFileName;
-            if (!file_exists(dirname($filePath))) {
-                mkdir(dirname($filePath));
-                chmod(dirname($filePath), 0777);
-            }
-            file_put_contents($filePath, $decodedData);
+            Yii::$app->s3Api->uploadFile('support/' . $newFileName, $decodedData);
             $chat = Support::findByNumber($request['chatId']);
             $message = new SupportMessage();
             $message->user_id = $client->user->id;
@@ -153,6 +149,38 @@ class ChatServer extends WebSocketServer
            $ticket = Support::findByNumber($request['chat']);
            if (Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR) || $ticket->user_id == $client->user->id) {
                $client->chat = $request['chat'];
+           }
+        }
+
+        $client->send( json_encode($result) );
+    }
+
+    public function commandGetDrop(ConnectionInterface $client, $msg)
+    {
+        $request = json_decode($msg, true);
+        $result = ['message' => ''];
+
+        if (!empty($client->user) && !empty($request['id'])) {
+           $model = UserDrop::findOne($request['id']);
+           if ($client->user->id != $model->user->id) {
+               $client->send(json_encode([
+                    'type' => 'store.take',
+                    'code' => 500,
+                    'message' => Yii::t('common', "Товар вам не пренадлежит!", [], $client->user->current_language),
+                    'id' => $model->id,
+               ]));
+               return;
+           }
+           if (Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR) || $model->user_id == $client->user->id) {
+                $command = "store.take {$model->user->steam_id} {$model->id}";
+                RconTasks::execute($command);
+               $client->send(json_encode([
+                'type' => 'store.take',
+                'code' => 200,
+                'message' => Yii::t('common', "Товар успешно получен!", [], $client->user->current_language),
+                'id' => $model->id,
+               ]));
+               return;
            }
         }
 

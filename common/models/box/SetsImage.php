@@ -46,10 +46,12 @@ class SetsImage extends ActiveRecord
         ];
     }
 
-    public function getImagePubUrl() {
-        return Yii::$app->params['cdnUrl'] . "/uploads" . $this->image;
+    public function getImagePubUrl($cdn = true) {
+        if ($cdn) {
+            return Yii::$app->params['cdnUrl'] . "/uploads" . $this->image;
+        }
+        return "/uploads" . $this->image;
     }
-
     /**
      * @throws \Exception
      */

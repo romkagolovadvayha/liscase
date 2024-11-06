@@ -9,6 +9,7 @@ use common\models\support\SupportMessage;
 use frontend\forms\buildings\BuildingForm;
 use frontend\forms\support\SupportForm;
 use frontend\models\support\SupportSearch;
+use yii\base\BaseObject;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -61,7 +62,7 @@ class SupportController extends Controller
     public function actionTicket($id)
     {
         $user = \Yii::$app->user->identity;
-        return $this->render('view', [
+        return $this->renderAjax('view', [
             'model' => $this->findModel($id),
             'user' => $user,
         ]);
@@ -83,23 +84,19 @@ class SupportController extends Controller
      * If creation is successful, the browser will be redirected to the 'view' page.
      * @return string|\yii\web\Response
      */
-    public function actionCreate()
+    public function actionChat()
     {
+        /** @var Support $ticket */
+        $ticket = Support::find()
+                         ->andWhere(['user_id' => \Yii::$app->user->id])
+                         ->andWhere(['status' => Support::STATUS_OPEN])
+                         ->one();
+        if (!empty($ticket)) {
+            return $this->redirect(['ticket', 'id' => $ticket->getNumber()]);
+        }
         $model = new SupportForm();
-
-        if ($this->request->isPost) {
-            $ticket = Support::find()
-                ->andWhere(['user_id' => \Yii::$app->user->id])
-                ->andWhere(['status' => Support::STATUS_OPEN])
-                ->one();
-            if (!empty($ticket)) {
-                return $this->redirect(['ticket', 'id' => $ticket->id]);
-            }
-            if ($model->load($this->request->post()) && $model->saveRecord()) {
-                return $this->redirect(['ticket', 'id' => $model->id]);
-            }
-        } else {
-            $model->loadDefaultValues();
+        if ($model->saveRecord()) {
+            return $this->redirect(['ticket', 'chatId' => $model->getNumber()]);
         }
 
         return $this->renderAjax('create', [

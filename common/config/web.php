@@ -199,6 +199,16 @@ $config = [
             'discordChannelId'      => '1150211599395737601',
             'discordUserToken'      => 'MTE1MDIxMDQ4MTI2NTU5MDI5Mg.GZhegP.iSny8xdLjtgnETPDiiYygmJr4sHVu_hjEA-5R0',
         ],
+        's3Api'   => [
+            'class'  => \common\components\storage\S3Api::class,
+            'baseUrl'      => 'https://s3.timeweb.cloud',
+            'accessKey'      => 'N6NBZ5Y5B4O28MRGS1FJ',
+            'secretAccessKey'      => 'iN1mkKooMdqTlClrvMDRnEw70ms9tzrNIHeRSsia',
+            'swift'      => 'https://swift.timeweb.cloud',
+            'swiftSecretAccessKey'      => 'X5wkuU5OMu9Xl7gJ1TJu0YbLCsMUaKq5uD1AgTuM',
+            'uid'      => '66961113-07e73532-2c3b-4dfb-8909-6eb71b2c6593',
+            'region'      => 'ru-1',
+        ],
     ],
     'params' => $params,
 ];
@@ -208,21 +218,21 @@ $config = yii\helpers\ArrayHelper::merge(
     require('queue.php'),
 );
 
-if (YII_ENV_DEV) {
-    // configuration adjustments for 'dev' environment
-    $config['bootstrap'][] = 'debug';
-    $config['modules']['debug'] = [
-        'class' => 'yii\debug\Module',
-        // uncomment the following to add your IP if you are not connecting from localhost.
-        //'allowedIPs' => ['127.0.0.1', '::1'],
-    ];
-
-    $config['bootstrap'][] = 'gii';
-    $config['modules']['gii'] = [
-        'class' => 'yii\gii\Module',
-        // uncomment the following to add your IP if you are not connecting from localhost.
-        //'allowedIPs' => ['127.0.0.1', '::1'],
-    ];
-}
+//if (YII_ENV_DEV) {
+//    // configuration adjustments for 'dev' environment
+//    $config['bootstrap'][] = 'debug';
+//    $config['modules']['debug'] = [
+//        'class' => 'yii\debug\Module',
+//        // uncomment the following to add your IP if you are not connecting from localhost.
+//        //'allowedIPs' => ['127.0.0.1', '::1'],
+//    ];
+//
+//    $config['bootstrap'][] = 'gii';
+//    $config['modules']['gii'] = [
+//        'class' => 'yii\gii\Module',
+//        // uncomment the following to add your IP if you are not connecting from localhost.
+//        //'allowedIPs' => ['127.0.0.1', '::1'],
+//    ];
+//}
 
 return $config;

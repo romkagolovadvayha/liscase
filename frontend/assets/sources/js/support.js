@@ -1,4 +1,29 @@
-$('.support_messages_wrap').scrollTop($('#chat').height());
+function initChat() {
+    $('#widget_chat').addClass('active');
+    chat.send(JSON.stringify({'action': 'subscription', 'chat': chatId}));
+    $('.support_messages_wrap').scrollTop($('#chat').height());
+    $(document).keydown(function(e) {
+        if(e.keyCode === 13) {
+            var el = $('#supportMessage');
+            if (el.val()) {
+                chat.send( JSON.stringify({'action' : 'chat', 'message' : el.val(), 'chatId': chatId}) );
+                el.val('');
+            }
+        }
+    });
+    $('#supportMessageFile').on('change', function () {
+        sendFile();
+    });
+    $('#supportMessage').on('focus', function () {
+        chat.send( JSON.stringify({'action' : 'chatFocus', 'chatId': chatId}) );
+    });
+    $('#supportMessage').on('blur', function () {
+        chat.send( JSON.stringify({'action' : 'chatBlur', 'chatId': chatId}) );
+    });
+    $('.support_messages_header_close').on('click', function () {
+        closeChat();
+    });
+}
 function supportChat(response) {
     $.ajax({
         url: '/support/get-message?id=' + response.messageId,
@@ -6,6 +31,9 @@ function supportChat(response) {
             if (res) {
                 $('#chat').append(res);
                 $('.support_messages_wrap').scrollTop($('#chat').height());
+                setTimeout(function () {
+                    $('.support_messages_wrap').scrollTop($('#chat').height());
+                }, 400);
             }
         }
     });
@@ -17,15 +45,6 @@ function supportChatFocus(response) {
 function supportChatBlur(response) {
     $('#supportChatWrited').removeClass('active');
 }
-$(document).keydown(function(e) {
-    if(e.keyCode === 13) {
-        var el = $('#supportMessage');
-        if (el.val()) {
-            chat.send( JSON.stringify({'action' : 'chat', 'message' : el.val(), 'chatId': chatId}) );
-            el.val('');
-        }
-    }
-});
 async function sendFile() {
     var file = document.getElementById('supportMessageFile').files[0];
     let blob = new Blob([file, {type: file.type}]);
@@ -39,12 +58,3 @@ async function sendFile() {
     }
     reader.readAsDataURL(blob);
 }
-$('#supportMessageFile').on('change', function () {
-    sendFile();
-});
-$('#supportMessage').on('focus', function () {
-    chat.send( JSON.stringify({'action' : 'chatFocus', 'chatId': chatId}) );
-});
-$('#supportMessage').on('blur', function () {
-    chat.send( JSON.stringify({'action' : 'chatBlur', 'chatId': chatId}) );
-});

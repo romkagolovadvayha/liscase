@@ -1,0 +1,196 @@
+$rust_color: #25251c;
+$rust_color_text: #a9a29b;
+$rust_color_blue: #1b3f5b;
+$rust_color_blue_text: #439edf;
+$rust_color_grey: #575350;
+$rust_color_grey_text: #cec5bc;
+$rust_color_grey_dark: #434037;
+$rust_color_grey_dark_text: #dacfc6;
+$rust_color_green: #5c7137;
+$rust_color_green_text: #a8dc4d;
+$rust_color_blue: #194462;
+$rust_color_blue_text: #6b9dc1;
+$rust_color_red: #af3926;
+$rust_color_red_dark: #402824;
+$rust_color_red_text: #d9bab4;
+$rust_color_red_text2: #dd6e5b;
+$rust_bg: #23221e;
+$rust_logo: #8d2e1f;
+$rust_logo_text: #b0b0b0;
+$rust_logo_bg: #20201d;
+$color_text: #20201d;
+
+body {
+  background-color: #1f1f1f;
+  background-size: cover;
+  background-attachment: fixed;
+  font-family: "Roboto Condensed", sans-serif;
+  color: $color_text;
+  padding: 5px;
+  &::after {
+    background-image: url(https://files.facepunch.com/garry/1b1011b1/test.png?1=);
+    content: " ";
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    pointer-events: none;
+    opacity: 1;
+  }
+}
+.store_launcher {
+  width: 100%;
+  &_cards {
+    grid-template-columns: repeat(auto-fill, minmax(141px, 1fr));
+    grid-gap: 5px;
+    display: grid;
+    color: #e4dad1;
+    &_item {
+      background: rgba(0, 0, 0, 0.4);
+      border: 2px solid $rust_color_green;
+      position: relative;
+      flex: 1 0;
+      &:hover {
+        opacity: 0.7;
+        cursor: pointer;
+      }
+      &_wrap {
+        aspect-ratio: 1 / 1;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+      &_title {
+        max-width: 100px;
+        overflow: hidden;
+        color: #a8dc4d;
+        line-height: 12px;
+        font-size: 12px;
+        white-space: nowrap;
+        text-transform: uppercase;
+        text-overflow: ellipsis;
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: #5c7137;
+        padding: 5px;
+      }
+      &_count {
+        overflow: hidden;
+        color: #d9bab4;
+        line-height: 11px;
+        font-size: 11px;
+        text-transform: uppercase;
+        position: absolute;
+        //top: 30px;
+        top: 5px;
+        right: 5px;
+        background: $rust_color_red;
+        padding: 5px;
+      }
+      &_image {
+        position: absolute;
+        z-index: 0;
+        top: 5px;
+        left: 5px;
+        right: 5px;
+        bottom: 40px;
+        text-align: center;
+        img {
+          height: 100%;
+        }
+      }
+      &_button {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        border-radius: 0;
+        font-weight: 700;
+        font-size: 16px;
+        padding: 10px;
+        text-transform: uppercase;
+        background-color: #4f6131;
+        color: #8ec62f;
+        text-shadow: 0 1px 0 rgba(0, 0, 0, .2);
+        border: 0;
+        display: block;
+        transition: background-color .3s ease,color .3s ease;
+        line-height: 20px;
+        text-align: center;
+        &:hover {
+          background-color: #4f6131;
+        }
+        &.blocked {
+          color: $rust_color_red_text;
+          background-color: $rust_color_red;
+        }
+      }
+      &_blocked {
+        &_wrap {
+          position: absolute;
+          top: 0;
+          left: 0;
+          bottom: 0;
+          right: 0;
+          display: flex;
+          align-items: center;
+          text-align: center;
+          justify-content: center;
+          flex-direction: column;
+          background: rgba(108, 0, 0, 0.5);
+          box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.71);
+          border: 2px solid $rust_color_red;
+          border-radius: 0;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 5px;
+          z-index: 2;
+        }
+      }
+    }
+  }
+}
+
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+  background-color: #4b4b4b;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #000000;
+  border-radius: 0;
+}
+#toast-container {
+  > .toast {
+    border-radius: 0;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(0, 0, 0, .4);
+    padding: 0;
+    opacity: 1;
+    &.toast-success {
+      background: $rust_color_green;
+      color: $rust_color_green_text;
+      background-image: none !important;
+    }
+    &.toast-error {
+      background: $rust_color_red;
+      color: $rust_color_red_text;
+      background-image: none !important;
+    }
+    .toast-message {
+      padding: 10px;
+      display: flex;
+      font-size: 28px;
+      line-height: 28px;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 15px;
+      &_text {
+        font-size: 14px;
+        line-height: 14px;
+      }
+    }
+  }
+}

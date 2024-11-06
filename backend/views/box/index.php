@@ -28,7 +28,7 @@ $this->title = Yii::t('common', 'Кейсы');
                 if (empty($model->imageOrig)) {
                     return null;
                 }
-                return Html::img($model->imageOrig->getImagePubUrl(), ['width' => '40px']);
+                return Html::img($model->imageOrig->getImagePubUrl(false), ['width' => '40px']);
             },
         ],
         'name',
