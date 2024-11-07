@@ -365,7 +365,7 @@ class ApiController extends WebController
 
         $result['ru'] .= PHP_EOL . PHP_EOL .
             "Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL .
-            "Сайт: <color=#feeda1>" . Yii::$app->params['domain'] . "e</color>";
+            "Сайт: <color=#feeda1>" . Yii::$app->params['domain'] . "</color>";
 
         $result['en'] .= PHP_EOL . PHP_EOL .
             "Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL .
