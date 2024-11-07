@@ -25,4 +25,5 @@ return [
     'logo' => '/images/logo_new.png',
     'tgPersonalBot' => 'ProstojServerBot',
     'statisticsServerDefault' => 'max3',
+    'css' => '/css/main.min.css?v=1.0.111',
 ];

@@ -194,6 +194,7 @@ if (!Yii::$app->user->isGuest) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <?php $this->head() ?>
+    <link href="<?=Yii::$app->params['css']?>" rel="stylesheet">
 </head>
 <body class="d-flex flex-column h-100">
 <?php $this->beginBody() ?>
