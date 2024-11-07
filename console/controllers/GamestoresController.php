@@ -75,7 +75,7 @@ class GamestoresController extends Controller
                 ->andWhere(['steam_id' => $user['steamId']])
                 ->one();
             if (empty($model)) {
-                sleep(1);
+                usleep(300);
                 $model           = new User();
                 $model->email    = "{$user['steamId']}@steam.com";
                 $model->username = $user['username'];
