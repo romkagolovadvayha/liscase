@@ -21,6 +21,7 @@ return [
     'referral' => true,
     'title' => 'Простой проект серверов для Rust',
     'discord' => 'https://discord.gg/prostoj',
+    'discordText' => 'discord.gg/prostoj',
     'vk' => 'https://vk.com/prostoj_rust',
     'logo' => '/images/logo_new.png',
     'tgPersonalBot' => 'ProstojServerBot',

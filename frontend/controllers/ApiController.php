@@ -302,7 +302,7 @@ class ApiController extends WebController
         $result['ru'] = "Добро пожаловать на сервер {0}!" . PHP_EOL;
         $result['ru'] .= "<color=#aaf16e><size=18>{$server->name}</size></color>" . PHP_EOL;
         $result['ru'] .= "Для получения информации о командах на сервере введите в чат <color=#feeda1>/help</color>" . PHP_EOL;
-        $result['ru'] .= "Правила сервера и новости можно посмотреть в нашем Discord - <color=#feeda1>discord.gg/prostoj</color>" . PHP_EOL;
+        $result['ru'] .= "Правила сервера и новости можно посмотреть в нашем Discord - <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
         $result['ru'] .= "Удачного выживания!";
 
         $nameEn = Yii::t('database', $server->name, [], 'en-US');
@@ -364,11 +364,11 @@ class ApiController extends WebController
         }
 
         $result['ru'] .= PHP_EOL . PHP_EOL .
-            "Discord: <color=#feeda1>discord.gg/prostoj</color>" . PHP_EOL .
+            "Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL .
             "Сайт: <color=#feeda1>" . Yii::$app->params['domain'] . "e</color>";
 
         $result['en'] .= PHP_EOL . PHP_EOL .
-            "Discord: <color=#feeda1>discord.gg/prostoj</color>" . PHP_EOL .
+            "Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL .
             "Site: <color=#feeda1>en." . Yii::$app->params['domain'] . "</color>";
 
         $result['code'] = 200;
