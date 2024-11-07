@@ -39,7 +39,7 @@ $this->title = Yii::t('common', 'Код активации');
                         </div>
 
                         <?php
-                        $botLink = Html::a('@ProstojServerBot', 'https://t.me/ProstojServerBot', ['target' => '_blank']);
+                        $botLink = Html::a('@' . Yii::$app->params['tgPersonalBot'], 'https://t.me/' . Yii::$app->params['tgPersonalBot'], ['target' => '_blank']);
                         ?>
 
                         <p class="mt-2">

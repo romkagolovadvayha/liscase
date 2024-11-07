@@ -37,7 +37,7 @@ class RustotekaBotSystem extends AbstractSystemBots
      */
     public function getSystemName()
     {
-        return 'prostoj.store';
+        return Yii::$app->params['domain'];
     }
 
     /**
@@ -312,6 +312,6 @@ class RustotekaBotSystem extends AbstractSystemBots
      */
     protected function _getUrl($method)
     {
-        return 'https://prostoj.store/api/telegram-personal-bot/' . $method;
+        return 'https://' . Yii::$app->params['domain'] . '/api/telegram-personal-bot/' . $method;
     }
 }

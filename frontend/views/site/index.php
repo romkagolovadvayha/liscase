@@ -8,7 +8,7 @@ use common\models\box\Box;
 use common\models\box\Drop;
 use common\models\box\Select;
 
-$this->title = Yii::t('common', 'Простой проект серверов для Rust');
+$this->title = Yii::t('common', Yii::$app->params['title']);
 
 \frontend\assets\LastDropAsset::register($this);
 \frontend\assets\UserBoxAsset::register($this);

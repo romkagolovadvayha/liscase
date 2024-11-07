@@ -86,7 +86,7 @@ class ApiController extends WebController
         $result['result'] = "success";
         $result['code'] = 100;
         $result['data'] = [
-            'link' => 'prostoj.store',
+            'link' => Yii::$app->params['domain'],
             'default_balance' => 50,
         ];
         return $result;
@@ -309,7 +309,7 @@ class ApiController extends WebController
         $result['en'] = "Welcome to the server {0}!" . PHP_EOL;
         $result['en'] .= "<color=#aaf16e><size=18>{$nameEn}</size></color>" . PHP_EOL;
         $result['en'] .= "To get information about commands on the server, enter into chat <color=#feeda1>/help</color>" . PHP_EOL;
-        $result['en'] .= "Server rules and news can be found on our website - <color=#feeda1>en.prostoj.store</color>" . PHP_EOL;
+        $result['en'] .= "Server rules and news can be found on our website - <color=#feeda1>en." . Yii::$app->params['domain'] . "</color>" . PHP_EOL;
         $result['en'] .= "Happy survival!";
         $result['code'] = 200;
         return json_encode($result,JSON_PRETTY_PRINT);
@@ -365,11 +365,11 @@ class ApiController extends WebController
 
         $result['ru'] .= PHP_EOL . PHP_EOL .
             "Discord: <color=#feeda1>discord.gg/prostoj</color>" . PHP_EOL .
-            "Сайт: <color=#feeda1>prostoj.store</color>";
+            "Сайт: <color=#feeda1>" . Yii::$app->params['domain'] . "e</color>";
 
         $result['en'] .= PHP_EOL . PHP_EOL .
             "Discord: <color=#feeda1>discord.gg/prostoj</color>" . PHP_EOL .
-            "Site: <color=#feeda1>en.prostoj.store</color>";
+            "Site: <color=#feeda1>en." . Yii::$app->params['domain'] . "</color>";
 
         $result['code'] = 200;
         return json_encode($result,JSON_PRETTY_PRINT);

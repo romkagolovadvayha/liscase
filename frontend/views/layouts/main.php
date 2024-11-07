@@ -48,7 +48,11 @@ $mobileMenu = [
         'visible' => Yii::$app->user->isGuest,
     ]
 ];
-
+$baseUrl = Yii::$app->params['domain'];
+$this->registerJs(<<<JS
+    var baseUrl = '{$baseUrl}';
+JS
+    , \yii\web\View::POS_BEGIN);
 if (!Yii::$app->user->isGuest) {
     $balanceStr = Yii::$app->user->identity->getPersonalBalance()->getBalanceFormat();
     $balance = Yii::$app->user->identity->getPersonalBalance()->balanceCeil;
@@ -139,28 +143,32 @@ $mobileMenu[] = [
 $mobileMenu[] = [
     'label'   => '<i class="fas fa-chart-pie"></i> ' . Yii::t('common', 'Статистика'),
     'encode' => false,
-    'url'     => '/stats?server=max3',
+    'url'     => '/stats?server=' . Yii::$app->params['statisticsServerDefault'],
 ];
-$mobileMenu[] = [
-    'label'   => '<i class="fas fa-exchange-alt"></i> ' . Yii::t('common', 'Как получать скины?'),
-    'encode' => false,
-    'url'     => '/skindrops',
-];
-$mobileMenu[] = [
-    'label'   => '<i class="fa-solid fa-house"></i> ' . Yii::t('common', 'Постройки'),
-    'encode' => false,
-    'url'     => '/buildings',
-];
+if (Yii::$app->params['skindrops']) {
+    $mobileMenu[] = [
+        'label'   => '<i class="fas fa-exchange-alt"></i> ' . Yii::t('common', 'Как получать скины?'),
+        'encode' => false,
+        'url'     => '/skindrops',
+    ];
+}
+if (Yii::$app->params['buildings']) {
+    $mobileMenu[] = [
+        'label'   => '<i class="fa-solid fa-house"></i> ' . Yii::t('common', 'Постройки'),
+        'encode' => false,
+        'url'     => '/buildings',
+    ];
+}
 $mobileMenu[] = [
     'label'   => '<i class="fab fa-discord"></i> ' . Yii::t('common', 'Мы в Discord'),
     'encode' => false,
-    'url'     => 'https://discord.gg/prostoj',
+    'url'     => Yii::$app->params['discord'],
     'linkOptions'     => ['target' => '_blank'],
 ];
 $mobileMenu[] = [
     'label'   => '<i class="fab fa-vk"></i> ' . Yii::t('common', 'Мы в Вконтакте'),
     'encode' => false,
-    'url'     => 'https://vk.com/prostoj_rust',
+    'url'     => Yii::$app->params['vk'],
     'linkOptions'     => ['target' => '_blank'],
 ];
 if (!Yii::$app->user->isGuest) {
@@ -204,7 +212,7 @@ if (!Yii::$app->user->isGuest) {
         <div class="container-fluid">
             <div class="header_mobile">
                 <a class="navbar-brand" href="<?=Yii::$app->homeUrl?>">
-                    <img src="<?=Yii::$app->params['cdnUrl']?>/images/logo_new.png"/>
+                    <img src="<?=Yii::$app->params['logo']?>"/>
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Меню сайта">
                     <?php if (!Yii::$app->user->isGuest): ?>
@@ -230,7 +238,7 @@ if (!Yii::$app->user->isGuest) {
             </div>
             <div class="collapse navbar-collapse" id="navbarHeader">
                 <a class="navbar-brand" href="<?=Yii::$app->homeUrl?>">
-                    <img src="<?=Yii::$app->params['cdnUrl']?>/images/logo_new.png"/>
+                    <img src="<?=Yii::$app->params['logo']?>"/>
                 </a>
                 <?=Nav::widget([
                     'items' => [
@@ -249,7 +257,7 @@ if (!Yii::$app->user->isGuest) {
                         ],
                         [
                             'label'   => '<i class="fa-solid fa-chart-pie"></i> ' . Yii::t('common', 'Статистика'),
-                            'url'     => '/stats?server=max3',
+                            'url'     => '/stats?server=' . Yii::$app->params['statisticsServerDefault'],
                             'encode' => false,
                             'options'     => [
                                 'class' => 'menu-stats'
@@ -259,6 +267,7 @@ if (!Yii::$app->user->isGuest) {
                             'label'   => '<i class="fa-solid fa-exchange-alt"></i> ' . Yii::t('common', 'Как получать скины?'),
                             'url'     => '/skindrops',
                             'encode' => false,
+                            'visible' => Yii::$app->params['skindrops'],
                             'options'     => [
                                 'class' => 'menu-skindrops'
                             ],
@@ -266,6 +275,7 @@ if (!Yii::$app->user->isGuest) {
                         [
                             'label'   => '<i class="fa-solid fa-house"></i> ' . Yii::t('common', 'Постройки'),
                             'url'     => '/buildings',
+                            'visible' => Yii::$app->params['buildings'],
                             'encode' => false,
                             'options'     => [
                                 'class' => 'menu-buildings'
@@ -290,14 +300,14 @@ if (!Yii::$app->user->isGuest) {
                             'label'   => '<i class="fab fa-vk"></i>',
                             'encode' => false,
                             'options' => ['class' =>'vk_social', 'title' => Yii::t('common', 'Мы в Вконтакте')],
-                            'url'     => 'https://vk.com/prostoj_rust',
+                            'url'     => Yii::$app->params['vk'],
                             'linkOptions'     => ['target' => '_blank'],
                         ],
                         [
                             'label'   => '<i class="fab fa-discord"></i>',
                             'encode' => false,
                             'options' => ['class' =>'discord_social', 'title' => Yii::t('common', 'Мы в Discord')],
-                            'url'     => 'https://discord.gg/prostoj',
+                            'url'     => Yii::$app->params['discord'],
                             'linkOptions'     => ['target' => '_blank'],
                         ],
                     ],
@@ -354,7 +364,7 @@ if (!Yii::$app->user->isGuest) {
                     <a class="ShopFooter-module__link" href="/site/agreement" target="_blank" rel="noreferrer"><?=Yii::t('common', 'Пользовательское соглашение')?></a>
                     <a class="ShopFooter-module__link" href="/site/privacy" target="_blank" rel="noreferrer"><?=Yii::t('common', 'Политика конфиденциальности')?></a>
                     <a class="ShopFooter-module__link" href="/site/personalinformation" target="_blank" rel="noreferrer"><?=Yii::t('common', 'Обработка персональных данных')?></a>
-                    <a class="ShopFooter-module__link" href="mailto:help@prostoj.store" target="_blank" rel="noreferrer">help@prostoj.store</a>
+                    <a class="ShopFooter-module__link" href="mailto:<?=Yii::$app->params['email']?>" target="_blank" rel="noreferrer"><?=Yii::$app->params['email']?></a>
                 </div>
             </div>
         </div>

@@ -9,6 +9,10 @@ use yii\bootstrap5\ActiveForm;
 /** @var RustruForm $model */
 /** @var \common\models\user\User $user */
 
+if (!Yii::$app->params['rustru']) {
+    return;
+}
+
 $this->title = Yii::t('common', "Активация бонусной программы RustRu");
 
 ?>

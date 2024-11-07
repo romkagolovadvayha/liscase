@@ -22,6 +22,7 @@ $received = true;
         <div class="achievements_body_list">
             <div class="achievements_body_list_item_wrap">
                 <div class="achievements_body_list_items">
+                    <?php if (Yii::$app->params['referral']): ?>
                     <div class="achievements_body_list_items_item">
                         <div class="achievements_body_list_items_item_info">
                             <div class="achievements_body_list_items_item_info_stext"><?=Yii::t('common', 'За каждого приглашенного скин от 20 до 120 RUB')?></div>
@@ -33,6 +34,8 @@ $received = true;
                             </a>
                         </div>
                     </div>
+                    <?php endif; ?>
+                    <?php if (Yii::$app->params['referral']): ?>
                     <div class="achievements_body_list_items_item">
                         <div class="achievements_body_list_items_item_info">
                             <div class="achievements_body_list_items_item_info_stext"><?=Yii::t('common', 'За каждого приглашенного 30 RUB на игровой баланс')?></div>
@@ -44,6 +47,7 @@ $received = true;
                             </a>
                         </div>
                     </div>
+                    <?php endif; ?>
                     <?php if (empty($user->telegram_chat_id)): ?>
                     <div class="achievements_body_list_items_item">
                         <div class="achievements_body_list_items_item_info">
@@ -51,7 +55,7 @@ $received = true;
                             <div title="Чистый чай на металлолом" class="achievements_body_list_items_item_info_simage">
                                 <img src="/images/tg.png">
                             </div>
-                            <a href="https://t.me/ProstojServerBot" class="achievements_body_list_items_item_info_btn">
+                            <a href="https://t.me/<?=Yii::$app->params['tgPersonalBot']?>" class="achievements_body_list_items_item_info_btn">
                                 <?=Yii::t('common', 'Подключить')?>
                             </a>
                         </div>

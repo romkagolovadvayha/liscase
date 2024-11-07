@@ -32,7 +32,7 @@ class PersonalBotSystem extends AbstractSystem
      */
     public function getSystemName()
     {
-        return 'prostoj.store';
+        return Yii::$app->params['domain'];
     }
 
     /**
@@ -219,7 +219,7 @@ class PersonalBotSystem extends AbstractSystem
     protected function _getStartMessageText($name)
     {
         return "Приветствую{$name}!
-Для активации бота перейдите на страницу https://prostoj.store/bot/activate и скопируйте код активации в этот чат.";
+Для активации бота перейдите на страницу https://" . Yii::$app->params['domain'] . "/bot/activate и скопируйте код активации в этот чат.";
     }
 
     /**
@@ -368,6 +368,6 @@ class PersonalBotSystem extends AbstractSystem
      */
     protected function _getUrl($method)
     {
-        return 'https://prostoj.store/api/telegram-personal-bot/' . $method;
+        return 'https://' . Yii::$app->params['domain'] . '/api/telegram-personal-bot/' . $method;
     }
 }

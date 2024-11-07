@@ -21,6 +21,7 @@
                                        [
                                            'label'   => '<i class="fas fa-link"></i> ' . Yii::t('common', "Реферальная система"),
                                            'encode' => false,
+                                           'visible' => Yii::$app->params['referral'],
                                            'url'     => '/user/partner',
                                            'active' => (bool)strstr(Yii::$app->request->url, 'user/partner'),
                                        ],

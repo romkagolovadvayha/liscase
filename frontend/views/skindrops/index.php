@@ -9,6 +9,10 @@ use yii\bootstrap5\ActiveForm;
 /** @var ProfileForm $model */
 /** @var \common\models\user\User $user */
 
+if (!Yii::$app->params['skindrops']) {
+    return;
+}
+
 $this->title = Yii::t('common', "Как получать скины в Rust бесплатно");
 $this->params['meta_description'] = Yii::t('common', "Гайд по получению скинов в Rust бесплатно. Подробные ответы на вопросы, а так же информация о последних раздачах скинов на сервере.");
 $this->params['meta_keywords'] = Yii::t('common', "раздача скинов, rust скины, бесплатные скины rust, розыгрыш скинов на сервере");

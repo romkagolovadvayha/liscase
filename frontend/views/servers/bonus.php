@@ -15,7 +15,7 @@
 </style>
 <div class="servers_daily_bonus">
     <p>Связи с тем, что платежные системы против размещения на сайте ежедневного крейта.</p>
-    <p>Ежедневный бонус мы перенесли в наш телеграм бот <a href="https://t.me/ProstojServerBot" target="_blank">@ProstojServerBot</a></p>
+    <p>Ежедневный бонус мы перенесли в наш телеграм бот <a href="https://t.me/<?=Yii::$app->params['tgPersonalBot']?>" target="_blank">@<?=Yii::$app->params['tgPersonalBot']?></a></p>
     <div class="servers_daily_bonus_commands">
         Напишите <span class="servers_daily_bonus_command"><b>/bonus</b></span> ТГ боту, чтобы получить награду
     </div>

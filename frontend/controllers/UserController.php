@@ -145,6 +145,9 @@ class UserController extends WebController
      */
     public function actionPartner()
     {
+        if (!Yii::$app->params['referral']) {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
         if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
             throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован!'));
         }

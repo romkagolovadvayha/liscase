@@ -56,6 +56,9 @@ class BuildingsController extends Controller
      */
     public function actionIndex()
     {
+        if (!Yii::$app->params['buildings']) {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
         $searchModel = new BuildingSearch();
         $dataProvider = $searchModel->search($this->request->queryParams);
 
@@ -72,6 +75,9 @@ class BuildingsController extends Controller
      */
     public function actionView($id)
     {
+        if (!Yii::$app->params['buildings']) {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
         return $this->render('view', [
             'model' => $this->findModel($id),
         ]);
@@ -79,6 +85,9 @@ class BuildingsController extends Controller
 
     public function actionLike($id)
     {
+        if (!Yii::$app->params['buildings']) {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
         if (Yii::$app->request->method !== 'POST') {
             return "{'status': 'success'}";
         }
@@ -117,6 +126,9 @@ class BuildingsController extends Controller
      */
     public function actionCreate()
     {
+        if (!Yii::$app->params['buildings']) {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
         $userBuildingsWait = Building::find()
             ->andWhere(['user_id' => Yii::$app->user->id])
             ->andWhere(['status' => Building::STATUS_WAIT])

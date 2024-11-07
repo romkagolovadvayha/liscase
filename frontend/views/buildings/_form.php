@@ -54,7 +54,7 @@ JS;
                 'allowClear' => true,
                 'minimumInputLength' => 1,
                 'ajax' => [
-                    'url' => "/stats/search?server=max3",
+                    'url' => "/stats/search?server=" . Yii::$app->params['statisticsServerDefault'],
                     'dataType' => 'json',
                     'delay' => 250,
                     'data' => new JsExpression('function(params) { return {q:params.term}; }'),
