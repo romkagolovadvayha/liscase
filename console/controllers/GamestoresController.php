@@ -86,8 +86,8 @@ class GamestoresController extends Controller
                 $model->generateAuthKey();
                 $model->generateRefCode();
                 $model->generateSocketRoom();
-                $transaction = $model->getDb()->beginTransaction();
                 if ($model->save()) {
+                    $transaction = $model->getDb()->beginTransaction();
                     UserProfile::createModel($model, $user['username']);
                     try {
                         $imageLink                  = \common\components\oauth\Steam::getAvatar($user['steamId']);
