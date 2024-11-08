@@ -9,7 +9,10 @@ use common\models\statistics\Statistics;
 
 $kdr      = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam($player, 'kills') / Statistics::getParam($player, 'deaths'), 2) : Statistics::getParam($player, 'kills');
 
-
+$wolf = Statistics::getParam($player, 'wolf');
+if (empty($wolf)) {
+    $wolf = Statistics::getParam($player, 'skull.wolf');
+}
 $hunters = [
     [
         'name'  => Yii::t('common', 'Кабаны'),
@@ -23,7 +26,7 @@ $hunters = [
     ],
     [
         'name'  => Yii::t('common', 'Волки'),
-        'count' => Statistics::getParam($player, 'wolf'),
+        'count' => $wolf,
         'icon'  => 'fa-solid fa-bone',
     ],
     [

@@ -108,6 +108,7 @@ class Statistics extends ActiveRecord
                     + Statistics::getParam($params, 'polarbear')
                     + Statistics::getParam($params, 'deer')
                     + Statistics::getParam($params, 'horse')
+                    + Statistics::getParam($params, 'skull.wolf')
                     + Statistics::getParam($params, 'wolf');
                 //cloth + pumpkin + corn + green_berry + blue_berry + yellow_berry + red_berry + white_berry + potato
                 $item['fermer'] = Statistics::getParam($params, 'gathered_cloth')
