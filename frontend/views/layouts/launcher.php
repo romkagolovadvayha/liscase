@@ -18,6 +18,11 @@ $this->registerMetaTag(['charset' => Yii::$app->charset], 'charset');
 $this->registerMetaTag(['name' => 'viewport', 'content' => 'width=device-width, initial-scale=1, shrink-to-fit=no']);
 $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => '/images/favicon.svg']);
 
+$baseUrl = Yii::$app->params['domain'];
+$this->registerJs(<<<JS
+    var baseUrl = '{$baseUrl}';
+JS
+    , \yii\web\View::POS_BEGIN);
 ?>
 <?php $this->beginPage() ?>
 <!DOCTYPE html>
