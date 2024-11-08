@@ -88,7 +88,13 @@ use yii\bootstrap5\Html;
                 <td><?=$model->drop->getRealPrice()?> RUB</td>
             </tr>
         </table>
-        <div class="productModalGiveText"><?=Yii::t('common', 'Чтобы получить, введите /store в чат')?></div>
+        <div class="productModalGiveText">
+            <?php if (!Yii::$app->params['basketSite']): ?>
+                <?=Yii::t('common', 'Чтобы получить, введите /store в чат')?>
+            <?php else: ?>
+                <?=Yii::t('common', 'Чтобы получить, перейдите на эту страницу')?> <a href="/store" target="_blank"><?=Yii::$app->params['domain']?>/store</a>
+            <?php endif; ?>
+        </div>
         <input type="hidden" class="modal_form_product_buy" name="buy" value="1"/>
         <div class="modal_form_product_buttons">
             <button type="button" class="btn cancel" data-bs-dismiss="modal"><?=Yii::t('common', 'Закрыть')?></button>
