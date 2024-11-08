@@ -50,7 +50,13 @@ use yii\widgets\Pjax;
                 <td><?=$sets->getRealPrice()?> RUB</td>
             </tr>
         </table>
-        <div class="productModalGiveText"><?=Yii::t('common', 'Чтобы получить, введите /store в чат')?></div>
+        <div class="productModalGiveText">
+            <?php if (!Yii::$app->params['basketSite']): ?>
+                <?=Yii::t('common', 'Чтобы получить, введите /store в чат')?>
+            <?php else: ?>
+                <?=Yii::t('common', 'Чтобы получить, перейдите на эту страницу')?> <a href="/store" target="_blank"><?=Yii::$app->params['domain']?>/store</a>
+            <?php endif; ?>
+        </div>
         <?php Pjax::begin(
             [
                 'id'              => 'buy-container-pjax',

@@ -27,4 +27,6 @@ return [
     'tgPersonalBot' => 'ProstojServerBot',
     'statisticsServerDefault' => 'max3',
     'css' => '/css/main.min.css?v=1.0.111',
+    'basketSite' => false,
+    'skinpayment' => 'https://t.me/skinspayment',
 ];

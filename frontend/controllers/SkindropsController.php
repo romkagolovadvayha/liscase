@@ -29,7 +29,7 @@ class SkindropsController extends WebController
      */
     public function actionIndex()
     {
-        if (!Yii::$app->params['buildings']) {
+        if (!Yii::$app->params['skindrops']) {
             throw new NotFoundHttpException('The requested page does not exist.');
         }
         $model = null;

@@ -159,6 +159,16 @@ if (Yii::$app->params['buildings']) {
         'url'     => '/buildings',
     ];
 }
+if (Yii::$app->params['basketSite']) {
+    $mobileMenu[] = [
+        'label'   => '<i class="fa-solid fa-basket-shopping"></i> ' . Yii::t('common', 'Вывод предметов'),
+        'encode' => false,
+        'url'     => '/store',
+        'linkOptions' => [
+            'target' => '_blank',
+        ],
+    ];
+}
 $mobileMenu[] = [
     'label'   => '<i class="fab fa-discord"></i> ' . Yii::t('common', 'Мы в Discord'),
     'encode' => false,
@@ -280,6 +290,18 @@ if (!Yii::$app->user->isGuest) {
                             'encode' => false,
                             'options'     => [
                                 'class' => 'menu-buildings'
+                            ],
+                        ],
+                        [
+                            'label'   => '<i class="fa-solid fa-basket-shopping"></i> ' . Yii::t('common', 'Вывод предметов'),
+                            'url'     => '/store',
+                            'visible' => Yii::$app->params['basketSite'],
+                            'encode' => false,
+                            'options'     => [
+                                'class' => 'menu-skindrops',
+                            ],
+                            'linkOptions' => [
+                                'target' => '_blank',
                             ],
                         ],
 //                        [

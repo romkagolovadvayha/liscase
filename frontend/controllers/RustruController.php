@@ -29,7 +29,7 @@ class RustruController extends WebController
      */
     public function actionIndex()
     {
-        if (!Yii::$app->params['buildings']) {
+        if (!Yii::$app->params['rustru']) {
             throw new NotFoundHttpException('The requested page does not exist.');
         }
         $model = null;
