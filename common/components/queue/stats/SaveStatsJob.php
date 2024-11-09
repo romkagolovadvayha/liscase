@@ -317,7 +317,10 @@ class SaveStatsJob extends BaseObject implements JobInterface
             } catch (\Exception $e) {
                 Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
             }
-            $server->players = $request['server']['online'] + 5;
+            $server->players = $request['server']['online'];
+            if ($request['server']['online'] > 50) {
+                $server->players = $request['server']['online'] + 5;
+            }
             $server->joined = $request['server']['join'];
             $server->queued = $request['server']['queue'];
             $server->save();
