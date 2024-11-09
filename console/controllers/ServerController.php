@@ -20,7 +20,7 @@ class ServerController extends Controller
             ->joinWith(['user u'])
             ->andWhere(['u.is_gamer' => 0])
             ->andWhere(['s.key' => 'playtime'])
-            ->andWhere(['>=', 's.value', 60])
+            ->andWhere(['>=', 's.value', 90])
             ->limit(20)
             ->all();
 

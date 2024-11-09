@@ -33,43 +33,51 @@ JS
 ?>
 <div class="store_launcher">
     <?= Alert::widget() ?>
-    <?php if (!empty($userDrops)):?>
-        <div class="store_launcher_cards">
-            <?php foreach ($userDrops as $userDrop): ?>
-                <?php foreach ($userDrop->drop as $drop): ?>
-                    <?php $blocked = !empty($drop->blocked_at) && strtotime($drop->blocked_at) > time(); ?>
-                    <div class="store_launcher_cards_item_wrap">
-                        <div class="store_launcher_cards_item" data-id="<?=$userDrop->id?>">
-                            <div class="store_launcher_cards_item_image">
-                                <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $drop->name)?>">
-                            </div>
-    <!--                        <div class="store_launcher_cards_item_title">--><?php //echo Yii::t('database', $drop->name)?><!--</div>-->
-                            <?php if ($userDrop->count > 1): ?>
-                            <div class="store_launcher_cards_item_count">
-                                x<?= $userDrop->count ?>
-                            </div>
-                            <?php endif; ?>
-                            <div class="store_launcher_cards_item_button<?=$blocked ? ' blocked' : ''?>">
-                                <?php if ($blocked): ?>
-                                    <?=Yii::t('common', 'Недоступно')?>
-                                <?php else: ?>
-                                    <?=Yii::t('common', 'Получить')?>
+    <h1><?=Yii::t('common', 'Корзина сервера')?></h1>
+    <p><?=Yii::t('common', 'Это ваша корзина с покупками, вы можете забрать их в любой момент')?></p>
+    <?php if (Yii::$app->user->identity->is_gamer == 1):?>
+        <?php if (!empty($userDrops)):?>
+            <div class="store_launcher_cards">
+                <?php foreach ($userDrops as $userDrop): ?>
+                    <?php foreach ($userDrop->drop as $drop): ?>
+                        <?php $blocked = !empty($drop->blocked_at) && strtotime($drop->blocked_at) > time(); ?>
+                        <div class="store_launcher_cards_item_wrap">
+                            <div class="store_launcher_cards_item" data-id="<?=$userDrop->id?>">
+                                <div class="store_launcher_cards_item_image">
+                                    <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $drop->name)?>">
+                                </div>
+        <!--                        <div class="store_launcher_cards_item_title">--><?php //echo Yii::t('database', $drop->name)?><!--</div>-->
+                                <?php if ($userDrop->count > 1): ?>
+                                <div class="store_launcher_cards_item_count">
+                                    x<?= $userDrop->count ?>
+                                </div>
                                 <?php endif; ?>
+                                <div class="store_launcher_cards_item_button<?=$blocked ? ' blocked' : ''?>">
+                                    <?php if ($blocked): ?>
+                                        <?=Yii::t('common', 'Недоступно')?>
+                                    <?php else: ?>
+                                        <?=Yii::t('common', 'Получить')?>
+                                    <?php endif; ?>
+                                </div>
                             </div>
+                            <?php if ($blocked): ?>
+                                <div class="store_launcher_cards_item_blocked_wrap">
+                                    <div class="store_launcher_cards_item_blocked_title"><?=Yii::t('common', 'Вайп блок')?></div>
+                                    <div class="store_launcher_cards_item_blocked_timer blocked_products_timer" data-time="<?=strtotime($drop->blocked_at)?>"><?=$drop->blocked_at?></div>
+                                </div>
+                            <?php endif; ?>
                         </div>
-                        <?php if ($blocked): ?>
-                            <div class="store_launcher_cards_item_blocked_wrap">
-                                <div class="store_launcher_cards_item_blocked_title"><?=Yii::t('common', 'Вайп блок')?></div>
-                                <div class="store_launcher_cards_item_blocked_timer blocked_products_timer" data-time="<?=strtotime($drop->blocked_at)?>"><?=$drop->blocked_at?></div>
-                            </div>
-                        <?php endif; ?>
-                    </div>
+                    <?php endforeach; ?>
                 <?php endforeach; ?>
-            <?php endforeach; ?>
+            </div>
+        <?php else:?>
+            <div class="content_text">
+                <?=Yii::t('common', 'В вашем инвентаре пока нет вещей')?>
+            </div>
+        <?php endif;?>
+    <?php else: ?>
+        <div class="content_text">
+            <?=Yii::t('common', 'Магазин на сервере котором вы находитесь, недоступен!')?>
         </div>
-    <?php else:?>
-        <p class="mt-4">
-            <?=Yii::t('common', 'В вашем инвентаре пока нет вещей')?>
-        </p>
     <?php endif;?>
 </div>
