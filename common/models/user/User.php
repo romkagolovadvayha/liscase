@@ -46,6 +46,7 @@ use common\components\base\ActiveRecord;
  * @property bool            $rustru_activated
  * @property int             $rustru_scrap_confirm
  * @property int             $rustru_scrap_wait
+ * @property int             $is_gamer
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances

@@ -16,6 +16,8 @@ use Yii;
  * @property int    $value
  * @property string $server_tag
  * @property string $wipe
+ *
+ * @property User    $user
  */
 class Statistics extends ActiveRecord
 {
@@ -26,6 +28,14 @@ class Statistics extends ActiveRecord
     public static function tableName(): string
     {
         return 'statistics';
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUser()
+    {
+        return $this->hasOne(User::class, ['steam_id' => 'steam_id']);
     }
 
     public static function getParam($allParams, $key) {
