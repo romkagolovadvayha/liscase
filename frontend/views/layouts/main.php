@@ -159,6 +159,13 @@ if (Yii::$app->params['buildings']) {
         'url'     => '/buildings',
     ];
 }
+if (Yii::$app->params['blog']) {
+    $mobileMenu[] = [
+        'label'   => '<i class="far fa-newspaper"></i> ' . Yii::t('common', 'Блог'),
+        'encode' => false,
+        'url'     => '/posts',
+    ];
+}
 if (Yii::$app->params['basketSite']) {
     $mobileMenu[] = [
         'label'   => '<i class="fa-solid fa-basket-shopping"></i> ' . Yii::t('common', 'Вывод предметов'),
@@ -287,6 +294,15 @@ if (!Yii::$app->user->isGuest) {
                             'label'   => '<i class="fa-solid fa-house"></i> ' . Yii::t('common', 'Постройки'),
                             'url'     => '/buildings',
                             'visible' => Yii::$app->params['buildings'],
+                            'encode' => false,
+                            'options'     => [
+                                'class' => 'menu-buildings'
+                            ],
+                        ],
+                        [
+                            'label'   => '<i class="far fa-newspaper"></i> ' . Yii::t('common', 'Блог'),
+                            'url'     => '/posts',
+                            'visible' => Yii::$app->params['blog'],
                             'encode' => false,
                             'options'     => [
                                 'class' => 'menu-buildings'
