@@ -192,7 +192,9 @@ class Blog extends \yii\db\ActiveRecord
             }
             $similars[] = ['id' => $model->id, 'proc' => $similar_counter * 100 / $count];
         }
-        usort($similars, create_function('$a,$b', 'return -($a["proc"] - $b["proc"]);'));
+        if (!empty($similars)) {
+            usort($similars, create_function('$a,$b', 'return -($a["proc"] - $b["proc"]);'));
+        }
         $results = [];
         foreach ($similars as $item) {
             $results[] = Blog::findOne($item['id']);
