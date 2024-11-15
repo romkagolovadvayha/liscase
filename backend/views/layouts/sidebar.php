@@ -72,7 +72,7 @@ $usersBadge = \common\models\user\User::find()
                        'active' => _checkActive('/telegram-constructor'),
                    ],
                    [
-                       'label' => 'Постройки',
+                       'label' =>  Yii::t('common', 'Постройки'),
                        'icon' => 'fa-solid fa-house',
                        'badgeDanger' => $buildingBadge,
                        'url' => ['/building'],

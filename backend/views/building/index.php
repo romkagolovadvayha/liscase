@@ -11,7 +11,7 @@ use backend\models\building\BuildingSearch;
 /** @var backend\models\building\BuildingSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-$this->title = 'Постройки';
+$this->title =  Yii::t('common', 'Постройки');
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="building-index">
