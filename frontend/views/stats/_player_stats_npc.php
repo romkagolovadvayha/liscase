@@ -121,7 +121,7 @@ $this->registerJs($formatJs, \yii\web\View::POS_END);
             <div class="stats_player_stats_killer_weapons_item_wrap"
                  data-bs-toggle="tooltip"
                  data-bs-placement="bottom"
-                 data-bs-title="<?= $weapon['name'] ?>">
+                 data-bs-title="<?= Yii::t('database', $weapon['name']) ?>">
                 <div class="stats_player_stats_killer_weapons_item">
                     <div class="stats_player_stats_killer_weapons_item_image_wrap">
                         <img class="stats_player_stats_killer_weapons_item_image" src="<?= $weapon['weapon'] ?>"/>
