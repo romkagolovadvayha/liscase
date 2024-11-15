@@ -184,7 +184,7 @@ $config = [
         ],
         'openAi'   => [
             'class'  => \common\components\openAi\OpenAiApi::class,
-            'apiKey'      => 'sk-proj-amY8H17pQlMQYaH0b6qRT3BlbkFJ9ZKbYA0IPZs14RSAEfNb',
+            'apiKey'      => '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',
         ],
         'personalBotTelegram'               => [
             'class'    => \common\components\telegram\TelegramApiHelper::class,

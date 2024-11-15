@@ -21,6 +21,7 @@ use yii2mod\comments\models\CommentModel;
  * @property string $link_name
  * @property int $status
  * @property string $created_at
+ * @property string $news_id
  *
  * @property BlogCategory $blogCategory
  * @property BlogImage[] $blogImages

@@ -43,7 +43,7 @@ class ChatServer extends WebSocketServer
         return !empty($request['action']) ? $request['action'] : parent::getCommand($from, $msg);
     }
 
-    function mime2ext($mime) {
+    private function mime2ext($mime) {
         $mime_map = [
             'application/x-compressed'                                                  => '7zip',
             'video/x-f4v'                                                               => 'f4v',

@@ -30,7 +30,10 @@ $rating = $model->getBlogRatings()->sum('weight') ?? 0;
         <div class="blog_item_body">
             <?php if (!empty($model->blogImages[0])): ?>
             <div class="blog_item_body_cover">
-                <img src="<?="/uploads" . $model->blogImages[0]->link?>" alt="<?=$model->blogImages[0]->description?>">
+                <?=$this->render('_file', [
+                    'url' => $model->blogImages[0]->getPublicUrl(),
+                    'name' => $model->blogImages[0]->link
+                ]); ?>
             </div>
             <?php endif; ?>
             <div class="blog_item_body_text">

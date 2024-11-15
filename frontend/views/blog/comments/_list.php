@@ -15,7 +15,7 @@ use yii2mod\editable\Editable;
         </div>
         <div class="comment-details">
             <div class="comment-action-buttons">
-                <?php if (Yii::$app->getUser()->can('admin')) : ?>
+                <?php if (Yii::$app->getUser()->can(\common\components\helpers\Role::ROLE_ADMIN)) : ?>
                     <?php echo Html::a('<span class="glyphicon glyphicon-trash"></span> ' . Yii::t('common', 'Удалить'), '#', ['class' => 'delete-comment-btn', 'data' => ['action' => 'delete', 'url' => Url::to(['/comment/default/delete', 'id' => $model->id]), 'comment-id' => $model->id]]); ?>
                 <?php endif; ?>
                 <?php if (!Yii::$app->user->isGuest && ($model->level < $maxLevel || is_null($maxLevel))) : ?>
@@ -23,7 +23,7 @@ use yii2mod\editable\Editable;
                 <?php endif; ?>
             </div>
             <div class="">
-                <span><a href="/users/<?=$model->getAuthorName()?>"><?=$model->getAuthorName();?></a></span>
+                <span><a href="/stats/player?steamId=<?=$model->author->steam_id?>&server=max3"><?=$model->getAuthorName();?></a></span>
                 <?php echo Html::a($model->getPostedDate(), $model->getAnchorUrl(), ['class' => 'comment-date']); ?>
             </div>
             <div class="comment-body">

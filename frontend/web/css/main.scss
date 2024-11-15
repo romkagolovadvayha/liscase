@@ -7221,7 +7221,6 @@ header {
       margin-bottom: 20px;
       max-width: 100%;
       object-fit: cover;
-      height: 400px;
       position: relative;
       width: 100%;
       > img {
@@ -8752,6 +8751,41 @@ button {
     }
     .widget_chat_button {
       display: none;
+    }
+  }
+}
+.blog_item_body_text_images {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  + p {
+    margin-top: 30px;
+  }
+}
+.comment-wrapper .comments .comment-author-avatar>img {
+  max-width: 100%;
+}
+.blog_item_body_text_images_item {
+  &_preview {
+    display: inline-block;
+    border: solid 4px $rust_color_green;
+    > img {
+      display: block;
+      height: 250px;
+      max-width: 100%;
+    }
+    &_wrap {
+    }
+  }
+  &_video {
+    height: 250px;
+    max-width: 100%;
+    display: block;
+    + .blog_item_body_text_images_item_button {
+      margin-top: 20px;
+      display: block;
     }
   }
 }

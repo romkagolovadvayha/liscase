@@ -19,6 +19,8 @@ return [
     'skindrops' => true,
     'rustru' => true,
     'referral' => true,
+    'blog' => false,
+    'metrika' => true,
     'title' => 'Простой проект серверов для Rust',
     'discord' => 'https://discord.gg/prostoj',
     'discordText' => 'discord.gg/prostoj',

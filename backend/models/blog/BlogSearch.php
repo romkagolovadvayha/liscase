@@ -63,7 +63,7 @@ class BlogSearch extends Blog
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'pagination' => [
-                'pageSize' => 20,
+                'pageSize' => 10,
             ],
             'sort'  => [
                 'defaultOrder' => ['created_at' => SORT_DESC],

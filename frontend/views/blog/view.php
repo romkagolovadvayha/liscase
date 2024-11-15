@@ -61,12 +61,13 @@ $rating = $blog->getBlogRatings()->sum('weight') ?? 0;
                             <div class="blog_item_body_text">
                                 <div class="blog_item_body_text_images">
                                 <?php foreach ($blog->blogImages as $image): ?>
-                                    <div class="blog_item_body_text_images_item">
-                                        <img src="<?="/uploads" . $image->link?>" alt="<?=$image->description?>">
-                                    </div>
+                                    <?=$this->render('_file', [
+                                        'url' => $image->getPublicUrl(),
+                                        'name' => $image->link
+                                    ]); ?>
                                 <?php endforeach; ?>
                                 </div>
-                                <?=Yii::t('database', $blog->content)?>
+                                <p><?=Yii::t('database', $blog->content)?></p>
                             </div>
                         </div>
                         <div class="blog_item_data">
@@ -100,3 +101,15 @@ $rating = $blog->getBlogRatings()->sum('weight') ?? 0;
         </main>
     </div>
 </div>
+<?=\lo\widgets\magnific\MagnificPopup::widget(
+    [
+        'target' => '.blog_item_body_text_images_item_preview_wrap',
+        'options' => [
+            'delegate'=> 'a',
+            'gallery' => [
+                'enabled' => true
+            ],
+        ],
+        'effect' => 'with-zoom' //for zoom effect
+    ]
+);?>

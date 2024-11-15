@@ -68,6 +68,11 @@ $config['modules']['translateManager'] = [
         ],
         [
             'connection' => 'db',
+            'table' => '{{%comment}}',
+            'columns' => ['content'],
+        ],
+        [
+            'connection' => 'db',
             'table' => '{{%task}}',
             'columns' => ['description'],
         ],

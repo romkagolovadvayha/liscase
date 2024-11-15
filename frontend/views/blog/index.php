@@ -39,3 +39,15 @@ $this->params['breadcrumbs'][] = ['label' => Yii::t('common', "Блог")];
         </main>
     </div>
 </div>
+<?=\lo\widgets\magnific\MagnificPopup::widget(
+    [
+        'target' => '.blog_item_body_text_images_item_preview_wrap',
+        'options' => [
+            'delegate'=> 'a',
+            'gallery' => [
+                'enabled' => true
+            ],
+        ],
+        'effect' => 'with-zoom' //for zoom effect
+    ]
+);?>

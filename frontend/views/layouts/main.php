@@ -410,7 +410,8 @@ if (!Yii::$app->user->isGuest) {
         </div>
     </div>
 </div>
-<?php if (YII_ENV_PROD): ?>
+<?php if (YII_ENV_PROD && Yii::$app->params['metrika']): ?>
+<?php if (Yii::$app->language == 'ru-RU'): ?>
 <!-- Yandex.Metrika counter -->
 <script type="text/javascript" >
     (function (d, w, c) {
@@ -444,6 +445,24 @@ if (!Yii::$app->user->isGuest) {
 </script>
 <noscript><div><img src="https://mc.yandex.ru/watch/97456083" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
+<?php else: ?>
+        <!-- Yandex.Metrika counter -->
+        <script type="text/javascript" >
+            (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+                m[i].l=1*new Date();
+                for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+                k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+            (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+            ym(98935165, "init", {
+                clickmap:true,
+                trackLinks:true,
+                accurateTrackBounce:true
+            });
+        </script>
+        <noscript><div><img src="https://mc.yandex.ru/watch/98935165" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+        <!-- /Yandex.Metrika counter -->
+<?php endif; ?>
 <?php endif; ?>
 <?php $this->endBody() ?>
 </body>
