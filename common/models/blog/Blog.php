@@ -193,7 +193,9 @@ class Blog extends \yii\db\ActiveRecord
             $similars[] = ['id' => $model->id, 'proc' => $similar_counter * 100 / $count];
         }
         if (!empty($similars)) {
-            usort($similars, create_function('$a,$b', 'return -($a["proc"] - $b["proc"]);'));
+            usort($similars, function ($a, $b) {
+                return -($a["proc"] - $b["proc"]);
+            });
         }
         $results = [];
         foreach ($similars as $item) {
