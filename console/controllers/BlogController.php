@@ -237,38 +237,42 @@ class BlogController extends Controller
         $news = $this->getNewsRustRu(3000);
         $count = 0;
         foreach ($news as $item) {
-            /** @var Blog $_item */
-            $_item = Blog::find()->andWhere(['news_id' => trim($item['newsId'])])->one();
-            if (empty($_item)) {
-                continue;
-            }
-            if (!empty($item['comments'])) {
-                foreach ($item['comments'] as $comment) {
-                    if (empty($comment['steamId'])) {
-                        continue;
-                    }
-                    if (empty(trim($comment['text']))) {
-                        continue;
-                    }
-                    if (Comment::find()->andWhere(['content' => trim($comment['text'])])->exists()) {
-                        continue;
-                    }
-                    $date = new \DateTime($comment['date']);
-                    $user = User::findBySteamId($comment['steamId']);
-                    $model = new Comment();
-                    $model->entity = hash('crc32', get_class($_item));
-                    $model->entityId = $_item->id;
-                    $model->content = trim($comment['text']);
-                    $model->parentId = null;
-                    $model->level = 1;
-                    $model->url = $_item->getUrl();
-                    $model->status = 1;
-                    $model->createdBy = $user->id;
-                    $model->updatedBy = $user->id;
-                    $model->createdAt = $date->getTimestamp();
-                    $model->updatedAt = $date->getTimestamp();
-                    $model->save();
+            try {
+                /** @var Blog $_item */
+                $_item = Blog::find()->andWhere(['news_id' => trim($item['newsId'])])->one();
+                if (empty($_item)) {
+                    continue;
                 }
+                if (!empty($item['comments'])) {
+                    foreach ($item['comments'] as $comment) {
+                        if (empty($comment['steamId'])) {
+                            continue;
+                        }
+                        if (empty(trim($comment['text']))) {
+                            continue;
+                        }
+                        if (Comment::find()->andWhere(['content' => trim($comment['text'])])->exists()) {
+                            continue;
+                        }
+                        $date = new \DateTime($comment['date']);
+                        $user = User::findBySteamId($comment['steamId']);
+                        $model = new Comment();
+                        $model->entity = hash('crc32', get_class($_item));
+                        $model->entityId = $_item->id;
+                        $model->content = trim($comment['text']);
+                        $model->parentId = null;
+                        $model->level = 1;
+                        $model->url = $_item->getUrl();
+                        $model->status = 1;
+                        $model->createdBy = $user->id;
+                        $model->updatedBy = $user->id;
+                        $model->createdAt = $date->getTimestamp();
+                        $model->updatedAt = $date->getTimestamp();
+                        $model->save();
+                    }
+                }
+            } catch (\Exception $e) {
+                echo $e->getMessage() . PHP_EOL;
             }
         }
         echo $count;
