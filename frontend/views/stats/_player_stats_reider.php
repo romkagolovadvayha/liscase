@@ -141,7 +141,7 @@ $this->registerJs($formatJs, \yii\web\View::POS_END);
                              data-bs-placement="bottom"
                              data-bs-title="<?=Yii::t('common', 'Множитель для рейтинга игроков') . " x" . $item['score']?>">x<?= $item['score'] ?></div>
                     </div>
-                    <div class="stats_player_stats_reider_item_name"><?= $item['name'] ?></div>
+                    <div class="stats_player_stats_reider_item_name"><?= Yii::t('database', $item['name']) ?></div>
                 </div>
             </div>
         <?php endforeach; ?>
