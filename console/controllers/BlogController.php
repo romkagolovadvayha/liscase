@@ -254,6 +254,7 @@ class BlogController extends Controller
                         if (Comment::find()->andWhere(['content' => trim($comment['text'])])->exists()) {
                             continue;
                         }
+                        usleep(300);
                         $date = new \DateTime($comment['date']);
                         $user = User::findBySteamId($comment['steamId']);
                         $model = new Comment();
