@@ -268,7 +268,6 @@ class BlogController extends Controller
                     $model->createdAt = $date->getTimestamp();
                     $model->updatedAt = $date->getTimestamp();
                     $model->save();
-                    break;
                 }
             }
         }
