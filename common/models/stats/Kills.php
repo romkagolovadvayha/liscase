@@ -132,6 +132,7 @@ class Kills extends ActiveRecord
             'chicken' => 'курица',
             'horse' => 'лошадь',
             'wolf' => 'волк',
+            'wolf2' => 'волк',
             'skull.wolf' => 'волк',
             'stag' => 'олень',
             'autoturret_deployed' => 'турель',
@@ -146,6 +147,7 @@ class Kills extends ActiveRecord
             'chicken' => 'курицу',
             'horse' => 'лошадь',
             'wolf' => 'волка',
+            'wolf2' => 'волка',
             'skull.wolf' => 'волка',
             'stag' => 'оленя',
         ];

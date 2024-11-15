@@ -11,7 +11,7 @@ $kdr      = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getP
 
 $wolf = Statistics::getParam($player, 'wolf');
 if (empty($wolf)) {
-    $wolf = Statistics::getParam($player, 'skull.wolf');
+    $wolf = Statistics::getParam($player, 'wolf2') + Statistics::getParam($player, 'wolf');
 }
 $hunters = [
     [
