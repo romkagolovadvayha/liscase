@@ -65,6 +65,9 @@ $rating = $blog->getBlogRatings()->sum('weight') ?? 0;
                                 <?php endforeach; ?>
                                 </div>
                                 <p><?=Yii::t('database', $blog->content)?></p>
+                                <p>
+                                    <?=Yii::t('common', 'Поставщик новостей')?>: <a href="https://discord.gg/rust-ru" rel="nofollow" target="_blank">RustRu</a>
+                                </p>
                             </div>
                         </div>
                         <div class="blog_item_data">
