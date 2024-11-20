@@ -31,11 +31,8 @@ $rating = $blog->getBlogRatings()->sum('weight') ?? 0;
             <?=$this->render('../layouts/_side_category_list', [
                 'category' => $blog->blogCategory
             ])?>
+            <?=$this->render('../layouts/_side_comments_list')?>
             <?= $this->render('@frontend/views/widgets/_servers'); ?>
-            <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
-            <?= $this->render('@frontend/views/widgets/_live'); ?>
-            <!--            --><?php //echo $this->render('@frontend/views/widgets/_bonuses'); ?>
-            <?= $this->render('@frontend/views/widgets/_banners'); ?>
         </aside>
         <main id="main" role="main">
             <div class="main_child">

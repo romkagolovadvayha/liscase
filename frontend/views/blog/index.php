@@ -16,11 +16,8 @@ $this->params['breadcrumbs'][] = ['label' => Yii::t('common', "Блог")];
     <div class="main_wrap">
         <aside>
             <?=$this->render('../layouts/_side_category_list')?>
+            <?=$this->render('../layouts/_side_comments_list')?>
             <?= $this->render('@frontend/views/widgets/_servers'); ?>
-            <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
-            <?= $this->render('@frontend/views/widgets/_live'); ?>
-            <!--            --><?php //echo $this->render('@frontend/views/widgets/_bonuses'); ?>
-            <?= $this->render('@frontend/views/widgets/_banners'); ?>
         </aside>
         <main id="main" role="main">
             <div class="main_child">

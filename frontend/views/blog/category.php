@@ -26,10 +26,7 @@ $this->params['meta_description'] = Yii::t('database', $blogCategory->descriptio
                 'category' => $blogCategory
             ])?>
             <?= $this->render('@frontend/views/widgets/_servers'); ?>
-            <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
-            <?= $this->render('@frontend/views/widgets/_live'); ?>
-            <!--            --><?php //echo $this->render('@frontend/views/widgets/_bonuses'); ?>
-            <?= $this->render('@frontend/views/widgets/_banners'); ?>
+            <?=$this->render('../layouts/_side_comments_list')?>
         </aside>
         <main id="main" role="main">
             <div class="main_child">
