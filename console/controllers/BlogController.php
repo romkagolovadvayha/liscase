@@ -395,7 +395,7 @@ class BlogController extends Controller
     private function getNewsRustRu($limit = 10) {
         $cacheKey = 'steam_getNewsRustRu_' . $limit;
         if (Yii::$app->cache->get($cacheKey)) {
-            return Yii::$app->cache->get($cacheKey);
+            //return Yii::$app->cache->get($cacheKey);
         }
 
         $apiUrl = "http://94.23.218.161:5000/api/v2/News?limit=" . $limit;
