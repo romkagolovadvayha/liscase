@@ -251,7 +251,10 @@ class BlogController extends Controller
                         if (empty(trim($comment['text']))) {
                             continue;
                         }
-                        if (Comment::find()->andWhere(['content' => trim($comment['text'])])->exists()) {
+                        if (Comment::find()
+                                   ->andWhere(['content' => trim($comment['text'])])
+                                   ->andWhere(['url' => $_item->getUrl()])
+                                   ->exists()) {
                             continue;
                         }
                         usleep(300);
