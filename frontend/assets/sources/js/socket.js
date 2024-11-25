@@ -11,11 +11,13 @@ chat.onmessage = function(e) {
     if (response.type && response.type === 'chatBlur') {
         supportChatBlur(response);
     }
-    if (response.type && response.type === 'store.take') {
-        storeTake(response);
-    }
-    if (response.type && response.type === 'store.get.items') {
-        storeGetItems(response);
+    if ($('.store_launcher')) {
+        if (response.type && response.type === 'store.take') {
+            storeTake(response);
+        }
+        if (response.type && response.type === 'store.get.items') {
+            storeGetItems(response);
+        }
     }
 };
 chat.onopen = function(e) {
