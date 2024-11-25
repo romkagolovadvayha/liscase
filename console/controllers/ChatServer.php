@@ -195,6 +195,9 @@ class ChatServer extends WebSocketServer
         if (!empty($request['id'])) {
            $model = UserDrop::findOne($request['id']);
            foreach ($this->clients as $chatClient) {
+               if (empty($chatClient->user)) {
+                   continue;
+               }
                if ($chatClient->user->id == $model->user->id) {
                    if ($request['code'] == 200) {
                        $chatClient->send(
