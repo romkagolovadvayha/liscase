@@ -14,6 +14,11 @@ class ServerController extends Controller
      * server/check-gamer
      */
     public function actionCheckGamer($group = true) {
+        $limit = 20;
+        if (!$group) {
+            $limit = 1000;
+        }
+
         /** @var Statistics[] $statistics */
         $statistics = Statistics::find()
             ->alias('s')
@@ -21,7 +26,7 @@ class ServerController extends Controller
             ->andWhere(['u.is_gamer' => 0])
             ->andWhere(['s.key' => 'playtime'])
             ->andWhere(['>=', 's.value', 90])
-            ->limit(20)
+            ->limit($limit)
             ->all();
 
         foreach ($statistics as $model) {
