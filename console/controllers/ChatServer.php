@@ -189,7 +189,6 @@ class ChatServer extends WebSocketServer
 
     public function commandActivatedDrop(ConnectionInterface $client, $msg)
     {
-        echo $msg . PHP_EOL;
         $request = json_decode($msg, true);
         $result = ['message' => ''];
 
@@ -197,7 +196,6 @@ class ChatServer extends WebSocketServer
            $model = UserDrop::findOne($request['id']);
            foreach ($this->clients as $chatClient) {
                if ($chatClient->user->id == $model->user->id) {
-                   echo $chatClient->user->id . " === " . $model->user->id . PHP_EOL;
                    if ($request['code'] == 200) {
                        $chatClient->send(
                            json_encode(
