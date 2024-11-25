@@ -189,6 +189,7 @@ class ChatServer extends WebSocketServer
 
     public function commandActivatedDrop(ConnectionInterface $client, $msg)
     {
+        echo $msg . PHP_EOL;
         $request = json_decode($msg, true);
         $result = ['message' => ''];
 
