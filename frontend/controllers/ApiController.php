@@ -128,6 +128,12 @@ class ApiController extends WebController
                         [
                             'action' => 'activatedDrop',
                             'code'   => 500,
+                            'message'   => Yii::t(
+                                'common',
+                                "Произошла ошибка при получении товара, попробуйте позже!",
+                                [],
+                                $userDrop->user->current_language
+                            ),
                             'id'     => $userDrop->id,
                         ]
                     )

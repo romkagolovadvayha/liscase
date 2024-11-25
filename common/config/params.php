@@ -31,5 +31,5 @@ return [
     'css' => '/css/main.min.css?v=1.0.111',
     'basketSite' => false,
     'skinpayment' => 'https://t.me/skinspayment',
-    'ws' => 'https://ws.moscow77.store/ws/',
+    'ws' => 'wss://ws.moscow77.store/ws/',
 ];
