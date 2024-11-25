@@ -76,6 +76,31 @@ body {
         position: relative;
         display: flex;
         flex-direction: column;
+        &.loader {
+          &:after {
+            position: absolute;
+            content: "";
+            z-index: 2;
+            background: url("/images/icons/loader2.svg");
+            height: 64px;
+            width: 64px;
+            display: block;
+            top: 50%;
+            left: 50%;
+            margin-left: -32px;
+            margin-top: -32px;
+          }
+          &:before {
+            content: "";
+            position: absolute;
+            z-index: 1;
+            background: rgba(0, 0, 0, 0.7);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+          }
+        }
       }
       &_title {
         max-width: 100px;

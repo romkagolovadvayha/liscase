@@ -2,6 +2,7 @@
 namespace console\controllers;
 
 use yii\console\Controller;
+use WebSocket\Client;
 
 class ServerWsController extends Controller
 {
@@ -15,5 +16,20 @@ class ServerWsController extends Controller
             $server->port = $port;
         }
         $server->start();
+    }
+
+    /**
+     * server-ws/test-client
+     */
+    public function actionTestClient($port = null)
+    {
+        $client = new Client(\Yii::$app->params['ws']);
+        $client->send(json_encode([
+            'action' => 'activatedDrop',
+            'code' => 200,
+            'message' => 'Товар успешно выдан!',
+            'id' => 257513,
+        ]));
+
     }
 }

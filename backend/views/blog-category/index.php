@@ -23,14 +23,14 @@ $cacheData = Yii::$app->cache->get('actionGenerate');
     <p>
         <?= Html::a('Добавить категорию', ['create'], ['class' => 'btn btn-success']) ?>
 
-        <?php if (empty($cacheData)): ?>
+        <!--<?php if (empty($cacheData)): ?>
             <?= Html::a('Генерация категорий', ['generate'], ['class' => 'btn btn-primary', 'data' => [
                 'confirm' => 'Вы уверены?',
                 'method' => 'post',
             ]]) ?>
         <?php else: ?>
             <?= Html::a('Идет процес генерации', [''], ['class' => 'btn btn-default disabled']) ?>
-        <?php endif; ?>
+        <?php endif; ?>-->
     </p>
 
     <?= GridView::widget([

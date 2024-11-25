@@ -92,7 +92,7 @@ class Blog extends \yii\db\ActiveRecord
             'content' => 'Текст',
             'description' => 'Описание',
             'blog_category_id' => 'Категория',
-            'link_name' => 'Code',
+            'link_name' => 'ЧПУ',
             'status' => 'Статус',
             'keywords' => 'Ключевые слова',
             'created_at' => 'Дата создания',

@@ -19,8 +19,10 @@ $this->registerMetaTag(['name' => 'viewport', 'content' => 'width=device-width, 
 $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => '/images/favicon.svg']);
 
 $baseUrl = Yii::$app->params['domain'];
+$ws = Yii::$app->params['ws'];
 $this->registerJs(<<<JS
     var baseUrl = '{$baseUrl}';
+    var ws = '{$ws}';
 JS
     , \yii\web\View::POS_BEGIN);
 ?>

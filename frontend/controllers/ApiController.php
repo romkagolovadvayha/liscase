@@ -8,6 +8,7 @@ use common\models\servers\Servers;
 use common\models\stats\Wipe;
 use common\models\user\User;
 use common\models\user\UserDrop;
+use WebSocket\Client;
 use yii\web\JsonResponseFormatter;
 use yii\web\NotFoundHttpException;
 use Yii;
@@ -108,7 +109,21 @@ class ApiController extends WebController
         }
 
         $userDrop->status = UserDrop::STATUS_SENDED;
-        $userDrop->save();
+
+        $client = new Client(Yii::$app->params['ws']);
+        if ($userDrop->save()) {
+            $client->send(json_encode([
+                                          'action' => 'activatedDrop',
+                                          'code' => 200,
+                                          'id' => $userDrop->id,
+                                      ]));
+        } else {
+            $client->send(json_encode([
+                                          'action' => 'activatedDrop',
+                                          'code' => 500,
+                                          'id' => $userDrop->id,
+                                      ]));
+        }
 
         $result = [];
         $result['result'] = "success";

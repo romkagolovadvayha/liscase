@@ -187,6 +187,50 @@ class ChatServer extends WebSocketServer
         $client->send( json_encode($result) );
     }
 
+    public function commandActivatedDrop(ConnectionInterface $client, $msg)
+    {
+        $request = json_decode($msg, true);
+        $result = ['message' => ''];
+
+        if (!empty($request['id'])) {
+           $model = UserDrop::findOne($request['id']);
+           foreach ($this->clients as $chatClient) {
+               if ($chatClient->user->id == $model->user->id) {
+                   if ($request['code'] == 200) {
+                       $chatClient->send(
+                           json_encode(
+                               [
+                                   'type'    => 'store.get.items',
+                                   'code'    => 200,
+                                   'message' => Yii::t(
+                                       'common',
+                                       "Товар успешно получен!",
+                                       [],
+                                       $chatClient->user->current_language
+                                   ),
+                                   'id'      => $request['id'],
+                               ]
+                           )
+                       );
+                   } else {
+                       $chatClient->send(
+                           json_encode(
+                               [
+                                   'type'    => 'store.get.items',
+                                   'code'    => 500,
+                                   'message' => $request['message'],
+                                   'id'      => $request['id'],
+                               ]
+                           )
+                       );
+                   }
+               }
+           }
+        }
+
+        $client->send( json_encode($result) );
+    }
+
     public function commandChatFocus(ConnectionInterface $client, $msg)
     {
         $result = ['message' => ''];

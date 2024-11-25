@@ -3,6 +3,7 @@
 namespace backend\forms\blog;
 
 use common\models\blog\Blog;
+use common\models\blog\BlogCategory;
 use common\models\blog\BlogImage;
 use Yii;
 use yii\base\BaseObject;
@@ -11,22 +12,6 @@ use yii\web\UploadedFile;
 
 class BlogForm extends Blog
 {
-    public $preview_file;
-
-    public function rules(): array
-    {
-        return ArrayHelper::merge([
-                                      [['preview_file'], 'trim'],
-                                      [['preview_file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png,jpg'],
-                                  ], parent::rules());
-    }
-
-    public function attributeLabels(): array
-    {
-        return ArrayHelper::merge(parent::attributeLabels(), [
-            'preview_file' => 'Изображение',
-        ]);
-    }
 
     /**
      * @return bool
@@ -37,40 +22,31 @@ class BlogForm extends Blog
             $this->status = 1;
             $this->created_at = date('Y-m-d H:i:s');
         }
+        if (empty($this->link_name)) {
+            $this->link_name = BlogCategory::toLinkName($this->name);
+        }
         if (!$this->validate()) {
             return false;
         }
+        
+        if (empty($this->keywords)) {
+            $description = Yii::$app->openAi->getPostMeta($this->name, ' Сейчас содержание статьи такое: "' . $this->content . '". Ты должен переписать статью более удобно для читателя.', $this->blogCategory->name, $this->blogCategory->description);
+            preg_match_all('#<keywords>(.+?)</keywords>#is', $description, $keywords);
+            preg_match_all('#<descriptionShort>(.+?)</descriptionShort>#is', $description, $descriptionShort);
+
+            $this->keywords = $keywords[1][0];
+            $this->description = $descriptionShort[1][0];
+        }
 
         if (!$this->save()) {
-            throw new \Exception('Box not saved');
+            throw new \Exception('Blog not saved');
         }
 
         if (empty($this->id)) {
             $this->id = Yii::$app->db->getLastInsertID();
         }
-        $this->preview_file = $this->_loadImage(UploadedFile::getInstance($this, 'preview_file'), $this->id);
 
         return true;
-    }
-
-    private function _loadImage($image, $boxId) {
-        if (empty($image) || empty($image->tempName)) {
-            return null;
-        }
-        $uploadDir = Yii::getAlias('@app/web/uploads');
-        $fileUrl = "/blog/" . $this->id . "_" . md5(time()) . ".png";
-        $filePath = $uploadDir . $fileUrl;
-        if (!file_exists(dirname($filePath))) {
-            mkdir(dirname($filePath));
-            chmod(dirname($filePath), 0777);
-        }
-        file_put_contents($filePath, file_get_contents($image->tempName));
-        $image = new BlogImage();
-        $image->link = $fileUrl;
-        $image->blog_id = $boxId;
-        $image->description = $this->name;
-        $image->save();
-        return $filePath;
     }
 
 }

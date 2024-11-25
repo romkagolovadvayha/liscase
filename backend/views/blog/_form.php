@@ -15,8 +15,9 @@ use yii\web\JsExpression;
     <?php $form = ActiveForm::begin(); ?>
 
     <?= $form->field($model, 'name')->textInput() ?>
-    <?= $form->field($model, 'preview_file')->fileInput(); ?>
 
+    <?php if (!empty($model->keywords)): ?>
+    <?= $form->field($model, 'keywords')->textInput() ?>
     <?= $form->field($model, 'description')->widget(\dosamigos\tinymce\TinyMce::className(), [
         'options' => ['rows' => 6],
         'language' => 'es',
@@ -29,6 +30,7 @@ use yii\web\JsExpression;
             'toolbar' => "undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image"
         ]
     ]);?>
+    <?php endif; ?>
 
     <?= $form->field($model, 'content')->widget(\dosamigos\tinymce\TinyMce::className(), [
         'options' => ['rows' => 12],
@@ -42,7 +44,9 @@ use yii\web\JsExpression;
             'toolbar' => "undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image"
         ]
     ]);?>
-    <?= $form->field($model, 'link_name')->textInput() ?>
+    <?php if (!empty($model->link_name)): ?>
+        <?= $form->field($model, 'link_name')->textInput() ?>
+    <?php endif; ?>
 
     <?= $form->field($model, 'blog_category_id')->dropDownList(\common\models\blog\BlogCategory::getChildsCategories(), [
         'prompt' => Yii::t('common', 'Не выбрано...'),

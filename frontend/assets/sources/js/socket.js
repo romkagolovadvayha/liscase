@@ -1,4 +1,4 @@
-var chat = new WebSocket('wss://ws.' + baseUrl + '/ws/');
+var chat = new WebSocket(ws);
 
 chat.onmessage = function(e) {
     var response = JSON.parse(e.data);
@@ -13,6 +13,9 @@ chat.onmessage = function(e) {
     }
     if (response.type && response.type === 'store.take') {
         storeTake(response);
+    }
+    if (response.type && response.type === 'store.get.items') {
+        storeGetItems(response);
     }
 };
 chat.onopen = function(e) {

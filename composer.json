@@ -48,7 +48,8 @@
         "kartik-v/yii2-sortable": "dev-master",
         "yiisoft/yii2-imagine": "^2.3",
         "loveorigami/yii2-magnific-popup": "@dev",
-        "aws/aws-sdk-php": "^3.324"
+        "aws/aws-sdk-php": "^3.324",
+        "textalk/websocket": "^1.6"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",

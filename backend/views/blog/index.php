@@ -19,15 +19,6 @@ $cacheData = Yii::$app->cache->get('actionGeneratePosts');
     <p>
         <?= Html::a('Добавить пост', ['create'], ['class' => 'btn btn-success']) ?>
         <?= Html::a('Категории', ['/blog-category'], ['class' => 'btn btn-success']) ?>
-
-        <?php if (empty($cacheData)): ?>
-            <?= Html::a('Генерация постов', ['/blog/generate'], ['class' => 'btn btn-success', 'data' => [
-                'confirm' => 'Вы уверены?',
-                'method' => 'post',
-            ]]) ?>
-        <?php else: ?>
-            <?= Html::a('Идет процес генерации', [''], ['class' => 'btn btn-default disabled']) ?>
-        <?php endif; ?>
     </p>
 
     <?= GridView::widget([

@@ -49,8 +49,10 @@ $mobileMenu = [
     ]
 ];
 $baseUrl = Yii::$app->params['domain'];
+$ws = Yii::$app->params['ws'];
 $this->registerJs(<<<JS
     var baseUrl = '{$baseUrl}';
+    var ws = '{$ws}';
 JS
     , \yii\web\View::POS_BEGIN);
 if (!Yii::$app->user->isGuest) {

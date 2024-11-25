@@ -125,7 +125,7 @@ class BlogController extends Controller
      */
     public function actionCreate()
     {
-        $model = new Blog();
+        $model = new BlogForm();
 
         if ($this->request->isPost) {
             if ($model->load($this->request->post()) && $model->saveRecord()) {
