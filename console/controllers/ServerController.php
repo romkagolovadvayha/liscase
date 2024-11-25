@@ -13,7 +13,7 @@ class ServerController extends Controller
     /**
      * server/check-gamer
      */
-    public function actionCheckGamer() {
+    public function actionCheckGamer($group = true) {
         /** @var Statistics[] $statistics */
         $statistics = Statistics::find()
             ->alias('s')
@@ -26,7 +26,7 @@ class ServerController extends Controller
 
         foreach ($statistics as $model) {
             $model->user->is_gamer = 1;
-            if ($model->user->save()) {
+            if ($model->user->save() && $group) {
                 $command = "o.usergroup add \"{$model->user->steam_id}\" gamer";
                 RconTasks::execute($command);
             }
