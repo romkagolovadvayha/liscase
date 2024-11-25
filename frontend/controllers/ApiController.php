@@ -110,19 +110,31 @@ class ApiController extends WebController
 
         $userDrop->status = UserDrop::STATUS_SENDED;
 
-        $client = new Client(Yii::$app->params['ws']);
-        if ($userDrop->save()) {
-            $client->send(json_encode([
-                                          'action' => 'activatedDrop',
-                                          'code' => 200,
-                                          'id' => $userDrop->id,
-                                      ]));
-        } else {
-            $client->send(json_encode([
-                                          'action' => 'activatedDrop',
-                                          'code' => 500,
-                                          'id' => $userDrop->id,
-                                      ]));
+        try {
+            $client = new Client(Yii::$app->params['ws']);
+            if ($userDrop->save()) {
+                $client->send(
+                    json_encode(
+                        [
+                            'action' => 'activatedDrop',
+                            'code'   => 200,
+                            'id'     => $userDrop->id,
+                        ]
+                    )
+                );
+            } else {
+                $client->send(
+                    json_encode(
+                        [
+                            'action' => 'activatedDrop',
+                            'code'   => 500,
+                            'id'     => $userDrop->id,
+                        ]
+                    )
+                );
+            }
+        } catch (\Exception $ex) {
+            Yii::$app->telegramChats->sendMessage('ApiController: ' . $ex->getMessage());
         }
 
         $result = [];
