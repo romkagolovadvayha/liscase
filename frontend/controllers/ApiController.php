@@ -113,7 +113,7 @@ class ApiController extends WebController
         try {
             $client = new Client(Yii::$app->params['ws']);
             if ($userDrop->save()) {
-                Yii::$app->telegramChats->sendMessage('ApiController: sended');
+                Yii::$app->telegramChats->sendMessage("{$userDrop->user->username} вывел из магазина {$userDrop->drop->name} x{$userDrop->count}");
                 $client->send(
                     json_encode(
                         [
