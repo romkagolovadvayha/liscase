@@ -14,7 +14,7 @@ class ServerController extends Controller
      * server/check-gamer
      */
     public function actionCheckGamer($group = true) {
-        $limit = 20;
+        $limit = 50;
         if (!$group) {
             $limit = 1000;
         }
@@ -34,6 +34,11 @@ class ServerController extends Controller
             if ($model->user->save() && $group) {
                 $command = "o.usergroup add \"{$model->user->steam_id}\" gamer";
                 RconTasks::execute($command);
+            } else {
+                if (!empty($model->user->getErrors())) {
+                    print_r($model->user->getErrors());
+                    exit;
+                }
             }
         }
     }
