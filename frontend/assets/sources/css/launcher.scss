@@ -18,18 +18,25 @@ $rust_bg: #23221e;
 $rust_logo: #8d2e1f;
 $rust_logo_text: #b0b0b0;
 $rust_logo_bg: #20201d;
-$color_text: #20201d;
+$color_text: #232323;
 
 h1 {
   text-align: center;
   color: $rust_logo_text;
   font-size: 48px;
   text-transform: uppercase;
+  @media (max-width: 500px) {
+    font-size: 24px;
+    display: none;
+  }
 }
 h1 + p {
   margin-top: 5px;
   text-align: center;
   color: $rust_logo_text;
+  @media (max-width: 500px) {
+    display: none;
+  }
 }
 .content_text {
   text-align: center;
@@ -57,15 +64,102 @@ body {
 }
 .store_launcher {
   width: 100%;
+  &_categories {
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: minmax(60px, auto);
+    @media (max-width: 800px) {
+      padding: 10px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: $rust_logo_bg;
+      z-index: 10;
+    }
+    @media (max-width: 400px) {
+      padding: 5px;
+      gap: 5px;
+      grid-auto-rows: minmax(40px, auto);
+      grid-template-columns: repeat(4, 1fr);
+    }
+    &_category {
+      position: relative;
+      cursor: pointer;
+      color: $rust_color_text;
+      flex: 1 0;
+      background-color: #181818;
+      border-radius: 10px;
+      border-width: 1px;
+      text-align: center;
+      transition: all .15s ease;
+      &.active {
+        background-color: $rust_color_green;
+        color: $rust_color_green_text;
+      }
+      &:hover, &:focus {
+        background-color: $rust_color_green;
+        color: $rust_color_green_text;
+      }
+      &_name {
+        z-index: 2;
+        position: absolute;
+        font-size: 18px;
+        line-height: 18px;
+        margin-top: -9px;
+        top: 50%;
+        left: 10px;
+        right: 10px;
+        color: #fff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-transform: uppercase;
+        font-weight: 400;
+        @media (max-width: 500px) {
+          top: 5px;
+          font-size: 12px;
+          line-height: 12px;
+          margin-top: 0;
+          left: 5px;
+          right: 5px;
+          text-align: left;
+        }
+      }
+      &_image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1;
+        background-size: contain;
+        background-position: right bottom;
+        background-repeat: no-repeat;
+      }
+    }
+  }
   &_cards {
     grid-template-columns: repeat(auto-fill, minmax(141px, 1fr));
     grid-gap: 5px;
     display: grid;
     color: #e4dad1;
+    margin-top: 20px;
+    @media (max-width: 500px) {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+    @media (max-width: 800px) {
+      margin-top: 0;
+    }
     &_item {
       background: rgba(0, 0, 0, 0.4);
-      border: 2px solid $rust_color_green;
+      border: 1px solid #000;
       position: relative;
+      border-radius: 10px;
       flex: 1 0;
       &:hover {
         opacity: 0.7;
@@ -76,6 +170,8 @@ body {
         position: relative;
         display: flex;
         flex-direction: column;
+        border-radius: 10px;
+        overflow: hidden;
         &.loader {
           &:after {
             position: absolute;
@@ -129,6 +225,7 @@ body {
         right: 5px;
         background: $rust_color_red;
         padding: 5px;
+        border-radius: 10px;
       }
       &_image {
         position: absolute;
@@ -136,7 +233,7 @@ body {
         top: 5px;
         left: 5px;
         right: 5px;
-        bottom: 40px;
+        bottom: 45px;
         text-align: center;
         img {
           height: 100%;
@@ -144,10 +241,10 @@ body {
       }
       &_button {
         position: absolute;
-        bottom: 0;
-        right: 0;
-        left: 0;
-        border-radius: 0;
+        bottom: 5px;
+        right: 5px;
+        left: 5px;
+        border-radius: 10px;
         font-weight: 700;
         font-size: 16px;
         padding: 10px;
@@ -182,13 +279,13 @@ body {
           flex-direction: column;
           background: rgba(108, 0, 0, 0.5);
           box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.71);
-          border: 2px solid $rust_color_red;
-          border-radius: 0;
+          border: 1px solid $rust_color_red;
           font-size: 12px;
           font-weight: 700;
           text-transform: uppercase;
           padding: 5px;
           z-index: 2;
+          border-radius: 10px;
         }
       }
     }
@@ -207,11 +304,11 @@ body {
 }
 #toast-container {
   > .toast {
-    border-radius: 0;
     overflow: hidden;
     box-shadow: 0 0 15px rgba(0, 0, 0, .4);
     padding: 0;
     opacity: 1;
+    border-radius: 10px;
     &.toast-success {
       background: $rust_color_green;
       color: $rust_color_green_text;

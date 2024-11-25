@@ -11,7 +11,8 @@ use yii\base\BaseObject;
  * @property int                 $id
  * @property string              $name
  * @property string              $tag
- * @property int              $sort
+ * @property string              $image
+ * @property int                 $sort
  * @property string              $created_at
  */
 class Category extends ActiveRecord

@@ -18,7 +18,7 @@ use Yii;
  * @property int                 $auto
  * @property string              $created_at
  *
- * @property Drop $drop
+ * @property Drop[] $drop
  * @property User $user
  * @property Box  $box
  */

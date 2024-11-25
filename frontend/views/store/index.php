@@ -16,6 +16,43 @@ $userDrops = $user->getUserDrop()
     ->orderBy(['id' => SORT_DESC])
     ->all();
 
+/** @var \common\models\box\Category[] $categories */
+$categories = \common\models\box\Category::find()
+                                         ->orderBy(['sort' => SORT_ASC])
+                                         ->all();
+
+$this->registerJs(<<<JS
+    var categories = $('.store_launcher_categories .store_launcher_categories_category');
+    window.currentCategoryId = '';
+    window.search = function() {
+        var input, filter, ul, li, a, i, txtValue, categoryId;
+        ul = document.getElementById("products");
+        li = ul.querySelectorAll(".store_launcher_cards_item_wrap");
+        for (i = 0; i < li.length; i++) {
+            txtValue = $(li[i]).attr('data-title');
+            categoryId = $(li[i]).attr('data-category-id');
+            if ( (currentCategoryId === '' || currentCategoryId === undefined || categoryId == currentCategoryId)) {
+                li[i].style.display = "";
+            } else {
+                li[i].style.display = "none";
+            }
+        }
+    }
+    categories.click(function () {
+        if ($(this).hasClass('active')) {
+            window.currentCategoryId = '';
+            $(this).removeClass('active');
+            search();
+            return;
+        }
+        var categories = $('.store_launcher_categories .store_launcher_categories_category.active');
+        categories.removeClass('active');
+        $(this).addClass('active');
+        window.currentCategoryId = $(this).attr('data-id');
+        search();
+    });
+JS
+);
 \frontend\assets\LauncherAsset::register($this);
 ?>
 
@@ -37,11 +74,20 @@ JS
     <p><?=Yii::t('common', 'Это ваша корзина с покупками, вы можете забрать их в любой момент')?></p>
     <?php if (Yii::$app->user->identity->is_gamer == 1):?>
         <?php if (!empty($userDrops)):?>
-            <div class="store_launcher_cards">
+            <div class="store_launcher_categories">
+                <?php foreach ($categories as $category): ?>
+                    <?php if ($category->id === 1) continue; ?>
+                    <div class="store_launcher_categories_category" data-id="<?=$category->id?>">
+                        <div class="store_launcher_categories_category_name"><?=Yii::t('database', $category->name)?></div>
+                        <div class="store_launcher_categories_category_image" style="background-image: url('<?=$category->image?>');"></div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <div class="store_launcher_cards" id="products">
                 <?php foreach ($userDrops as $userDrop): ?>
                     <?php foreach ($userDrop->drop as $drop): ?>
                         <?php $blocked = !empty($drop->blocked_at) && strtotime($drop->blocked_at) > time(); ?>
-                        <div class="store_launcher_cards_item_wrap">
+                        <div class="store_launcher_cards_item_wrap" data-category-id="<?=$userDrop->drop[0]->category_id?>">
                             <div class="store_launcher_cards_item" data-id="<?=$userDrop->id?>">
                                 <div class="store_launcher_cards_item_image">
                                     <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $drop->name)?>">
