@@ -52,7 +52,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
 
                 try {
                     if (!empty($user) && isset($request['hasGroupGaimer']) && !$request['hasGroupGaimer'] && in_array($this->serverTag, ['nolimit', 'max3'])) {
-                        if (!empty($statistics['playtime']) && $statistics['playtime']->value > 60) {
+                        if (!empty($statistics['playtime']) && $statistics['playtime']->value > 120) {
                             $command = "o.usergroup add \"{$user->steam_id}\" gamer";
                             RconTasks::execute($command);
                         }
