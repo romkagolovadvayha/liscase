@@ -28,7 +28,7 @@ return [
     'logo' => '/images/logo_new.png',
     'tgPersonalBot' => 'ProstojServerBot',
     'statisticsServerDefault' => 'max3',
-    'css' => '/css/main.min.css?v=1.0.111',
+    'css' => '/css/main.min.css?v=1.0.112',
     'basketSite' => false,
     'skinpayment' => 'https://t.me/skinspayment',
     'ws' => 'wss://ws.moscow77.store/ws/',
