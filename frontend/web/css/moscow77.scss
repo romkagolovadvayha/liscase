@@ -8769,3 +8769,59 @@ button {
     }
   }
 }
+.server_status0 {
+  .progress_js {
+    transition: 0.3s;
+    width: 100% !important;
+  }
+  .wait_js {
+    transition: 0.3s;
+    display: none;
+  }
+  .players_wrap_js {
+    transition: 0.3s;
+    display: none;
+  }
+  .players_progress_js {
+    transition: 0.3s;
+    background: #6c0000 !important;
+    width: 100% !important;
+  }
+  .queued_progress_js {
+    transition: 0.3s;
+    display: none;
+  }
+}
+.server_status1 {
+  .wait_js {
+    transition: 0.3s;
+    display: none;
+  }
+  .offline_js {
+    transition: 0.3s;
+    display: none;
+  }
+}
+.server_status2 {
+  .progress_js {
+    transition: 0.3s;
+    width: 100% !important;
+  }
+  .offline_js {
+    transition: 0.3s;
+    display: none;
+  }
+  .players_wrap_js {
+    transition: 0.3s;
+    display: none;
+  }
+  .players_progress_js {
+    transition: 0.3s;
+    background: #636363 !important;
+    width: 100% !important;
+  }
+  .queued_progress_js {
+    transition: 0.3s;
+    display: none;
+  }
+}
