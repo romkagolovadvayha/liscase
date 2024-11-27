@@ -326,7 +326,6 @@ class SaveStatsJob extends BaseObject implements JobInterface
             $server->joined = $request['server']['join'];
             $server->queued = $request['server']['queue'];
             $server->save();
-            $server->notify();
         } catch (\Exception $e) {
             Yii::error("SaveStatsJob: " . $e->getMessage(), 'error');
             Yii::$app->cache->delete('usersTop');
