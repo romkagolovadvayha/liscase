@@ -3,6 +3,7 @@
 namespace common\components\queue\stats;
 
 use common\components\oauth\Steam;
+use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
 use common\models\statistics\Chats;
 use common\models\statistics\Kills;
@@ -40,7 +41,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
             $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
             foreach ($request['users'] as $steamId => $params) {
                 try {
-                    User::findBySteamId($steamId);
+                    $user = User::findBySteamId($steamId);
                 } catch (\Exception $ex) {}
                 $statistics = Statistics::find()
                                         ->andWhere(['steam_id' => $steamId])
@@ -48,6 +49,18 @@ class SaveStatsJob extends BaseObject implements JobInterface
                                         ->andWhere(['wipe' => $wipeDate])
                                         ->indexBy('key')
                                         ->all();
+
+                try {
+                    if (!empty($user) && isset($request['hasGroupGaimer']) && !$request['hasGroupGaimer'] && in_array($this->serverTag, ['nolimit', 'max3'])) {
+                        if (!empty($statistics['playtime']) && $statistics['playtime']->value > 60) {
+                            $command = "o.usergroup add \"{$user->steam_id}\" gamer";
+                            RconTasks::execute($command);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Yii::$app->telegramReports->sendMessage("SaveStatsJob HasGroupGaimer:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                }
+
                 $params['playtime'] = 3;
                 $params['kills'] = 0;
                 if (!empty($request['kills'])) {
