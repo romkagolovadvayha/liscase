@@ -40,6 +40,21 @@ class ServerController extends Controller
                     $command = "o.usergroup add \"{$model->user->steam_id}\" gamer";
                     RconTasks::execute($command);
                 }
+                /** @var user[] $_users */
+                $_users = User::find()
+                              ->andWhere(['steam_id' => $model->user->steam_id])
+                              ->all();
+                if (count($_users) > 1) {
+                    foreach ($_users as $_user) {
+                        if ($model->user->id == $_user->id) {
+                            continue;
+                        }
+                        $_user->is_gamer = 1;
+                        $_user->save(false);
+                    }
+                }
+                echo $model->user->id . PHP_EOL;
+                break;
             } else {
                 if (!empty($model->user->getErrors())) {
                     print_r($model->user->getErrors());
@@ -48,22 +63,5 @@ class ServerController extends Controller
             }
         }
         echo "is_gamer: " . $count . PHP_EOL;
-
-        /** @var user[] $users */
-        $users = User::find()
-            ->andWhere(['is_gamer' => 1])
-            ->all();
-        foreach ($users as $user) {
-            /** @var user[] $_users */
-            $_users = User::find()
-                         ->andWhere(['steam_id' => $user->steam_id])
-                        ->all();
-            if (count($_users) > 1) {
-                foreach ($_users as $_user) {
-                    $_user->is_gamer = 1;
-                    $_user->save(false);
-                }
-            }
-        }
     }
 }
