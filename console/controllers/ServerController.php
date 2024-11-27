@@ -53,8 +53,6 @@ class ServerController extends Controller
                         $_user->save(false);
                     }
                 }
-                echo $model->user->id . PHP_EOL;
-                break;
             } else {
                 if (!empty($model->user->getErrors())) {
                     print_r($model->user->getErrors());
