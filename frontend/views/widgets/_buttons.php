@@ -1,6 +1,13 @@
 <?php
 
 use yii\bootstrap5\Nav;
+if (Yii::$app->params['buildings']) {
+    $mobileMenu[] = [
+        'label'   => '<i class="fa-solid fa-house"></i> ' . Yii::t('common', 'Постройки'),
+        'encode' => false,
+        'url'     => '/buildings',
+    ];
+}
 ?>
 <?=Nav::widget([
                    'items' => [
@@ -8,12 +15,30 @@ use yii\bootstrap5\Nav;
                            'label'   => '<i class="fab fa-steam"></i> ' . Yii::t('common', 'Пополнение скинами Steam'),
                            'url'     => Yii::$app->params['skinpayment'],
                            'encode' => false,
-                           'v' => !empty(Yii::$app->params['skinpayment']),
+                           'visible' => !empty(Yii::$app->params['skinpayment']),
                            'options'     => [
                                'class' => 'menu-bildings'
                            ],
                            'linkOptions' => [
                                'target' => '_blank',
+                           ],
+                       ],
+                       [
+                           'label'   => '<i class="fa-solid fa-house"></i> ' . Yii::t('common', 'Постройки'),
+                           'url'     => '/buildings',
+                           'encode' => false,
+                           'visible' => Yii::$app->params['buildings'],
+                           'options'     => [
+                               'class' => 'menu-bildings'
+                           ],
+                       ],
+                       [
+                           'label'   => '<i class="far fa-newspaper"></i> ' . Yii::t('common', 'Блог'),
+                           'url'     => '/posts',
+                           'encode' => false,
+                           'visible' => Yii::$app->params['blog'],
+                           'options'     => [
+                               'class' => 'menu-bildings'
                            ],
                        ],
                    ],

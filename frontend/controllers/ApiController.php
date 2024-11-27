@@ -364,13 +364,13 @@ class ApiController extends WebController
         }
         $result['ru'] = "<color=#aaf16e>/pop</color> - Текущий онлайн игроков" . PHP_EOL .
         "<color=#aaf16e>/wipe</color> - Информация о вайпе" . PHP_EOL .
-        "<color=#aaf16e>/store</color> - Корзина магазина" . PHP_EOL .
+        "<color=#aaf16e>/store</color> - Корзина сервера" . PHP_EOL .
         "<color=#aaf16e>/time</color> - Текущее время на сервере" . PHP_EOL .
         "<color=#aaf16e>/pm</color> - Отправить личное сообщение пользователю";
 
         $result['en'] = "<color=#aaf16e>/pop</color> - Current online for server" . PHP_EOL .
         "<color=#aaf16e>/wipe</color> - Wipe info" . PHP_EOL .
-        "<color=#aaf16e>/store</color> - Basket shop" . PHP_EOL .
+        "<color=#aaf16e>/store</color> - Basket server" . PHP_EOL .
         "<color=#aaf16e>/time</color> - Current time server" . PHP_EOL .
         "<color=#aaf16e>/pm</color> - Private message";
 

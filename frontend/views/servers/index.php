@@ -32,7 +32,7 @@ $this->registerJs($formatJs, \yii\web\View::POS_END);
     <div class="main_wrap server_info_page">
         <aside>
             <?php echo $this->render('@frontend/views/widgets/_alert'); ?>
-            <?php // $this->render('@frontend/views/widgets/_buttons'); ?>
+            <?=$this->render('@frontend/views/widgets/_buttons'); ?>
             <?= $this->render('@frontend/views/widgets/_servers'); ?>
             <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
             <?= $this->render('@frontend/views/widgets/_live'); ?>

@@ -11,6 +11,7 @@ $this->title = Yii::t('common', 'Новая постройка');
     <div class="main_wrap server_info_page">
         <aside>
             <?php echo $this->render('@frontend/views/widgets/_alert'); ?>
+            <?=$this->render('@frontend/views/widgets/_buttons'); ?>
             <?= $this->render('@frontend/views/widgets/_servers'); ?>
         </aside>
         <main id="main" role="main">

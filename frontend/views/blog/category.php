@@ -25,6 +25,7 @@ $this->params['meta_description'] = Yii::t('database', $blogCategory->descriptio
             <?=$this->render('../layouts/_side_category_list', [
                 'category' => $blogCategory
             ])?>
+            <?=$this->render('@frontend/views/widgets/_buttons'); ?>
             <?= $this->render('@frontend/views/widgets/_servers'); ?>
             <?=$this->render('../layouts/_side_comments_list')?>
         </aside>

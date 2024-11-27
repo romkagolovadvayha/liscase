@@ -32,6 +32,7 @@ $rating = $blog->getBlogRatings()->sum('weight') ?? 0;
                 'category' => $blog->blogCategory
             ])?>
             <?=$this->render('../layouts/_side_comments_list')?>
+            <?=$this->render('@frontend/views/widgets/_buttons'); ?>
             <?= $this->render('@frontend/views/widgets/_servers'); ?>
         </aside>
         <main id="main" role="main">

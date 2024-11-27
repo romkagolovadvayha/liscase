@@ -17,6 +17,7 @@ $this->params['breadcrumbs'][] = ['label' => Yii::t('common', "Блог")];
         <aside>
             <?=$this->render('../layouts/_side_category_list')?>
             <?=$this->render('../layouts/_side_comments_list')?>
+            <?=$this->render('@frontend/views/widgets/_buttons'); ?>
             <?= $this->render('@frontend/views/widgets/_servers'); ?>
         </aside>
         <main id="main" role="main">

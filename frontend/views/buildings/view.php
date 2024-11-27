@@ -23,6 +23,7 @@ $isActive = BuildingLike::find()
     <div class="main_wrap server_info_page">
         <aside>
             <?php echo $this->render('@frontend/views/widgets/_alert'); ?>
+            <?=$this->render('@frontend/views/widgets/_buttons'); ?>
             <?= $this->render('@frontend/views/widgets/_servers'); ?>
             <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
             <?= $this->render('@frontend/views/widgets/_live'); ?>

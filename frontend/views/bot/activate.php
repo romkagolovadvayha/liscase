@@ -10,6 +10,7 @@ $this->title = Yii::t('common', 'Код активации');
 <div class="container-fluid mb-5">
     <div class="main_wrap server_info_page">
         <aside>
+            <?=$this->render('@frontend/views/widgets/_buttons'); ?>
             <?= $this->render('@frontend/views/widgets/_servers'); ?>
             <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
             <?= $this->render('@frontend/views/widgets/_live'); ?>
