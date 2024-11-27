@@ -234,6 +234,62 @@ class ChatServer extends WebSocketServer
         $client->send( json_encode($result) );
     }
 
+    public function commandUpdatedBalance(ConnectionInterface $client, $msg)
+    {
+        $request = json_decode($msg, true);
+        $result = ['message' => ''];
+
+        if (!empty($request['user_id'])) {
+           foreach ($this->clients as $chatClient) {
+               if (empty($chatClient->user)) {
+                   continue;
+               }
+               echo $chatClient->user->id . PHP_EOL;
+               echo $request['user_id'] . PHP_EOL;
+               if ($chatClient->user->id == $request['user_id']) {
+                   if ($request['code'] == 200) {
+                       echo 'update.balance' . PHP_EOL;
+                       $chatClient->send(
+                           json_encode(
+                               [
+                                   'type'    => 'update.balance',
+                                   'code'    => 200,
+                                   'balanceStr'    => $request['balanceStr'],
+                                   'balance'    => $request['balance'],
+                               ]
+                           )
+                       );
+                   }
+               }
+           }
+        }
+
+        $client->send( json_encode($result) );
+    }
+
+    public function commandUpdatedOnline(ConnectionInterface $client, $msg)
+    {
+        $request = json_decode($msg, true);
+        $result = ['message' => ''];
+
+        foreach ($this->clients as $chatClient) {
+            if ($request['code'] == 200) {
+                $chatClient->send(
+                    json_encode(
+                        [
+                            'type'      => 'update.online',
+                            'code'      => 200,
+                            'servers'    => $request['servers'],
+                            'total' => $request['total'],
+                        ]
+                    )
+                );
+            }
+        }
+
+        $client->send( json_encode($result) );
+    }
+
     public function commandChatFocus(ConnectionInterface $client, $msg)
     {
         $result = ['message' => ''];

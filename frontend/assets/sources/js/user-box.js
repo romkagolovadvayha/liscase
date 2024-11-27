@@ -91,7 +91,6 @@ function slickRouleteInit() {
 
             slickCurrent.removeAttr('style');
             // win_drop.html(slickCurrent);
-            updateBalance();
         }).fail(function () {});
         return false;
     });

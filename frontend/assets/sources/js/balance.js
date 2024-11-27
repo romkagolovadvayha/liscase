@@ -1,23 +1,7 @@
-function loopUpdateBalance() {
-    setTimeout(() => {
-        updateBalance();
-        loopUpdateBalance();
-    }, 10000);
-}
-loopUpdateBalance();
-
-function updateBalance() {
-    $.ajax({
-        url: '/user/get-balance',
-        success: function (res) {
-            if (res) {
-                var data = JSON.parse(res);
-                balanceStr = data.balanceStr;
-                balance = data.balance;
-                $('.balance_count').html(balanceStr);
-            }
-        }
-    });
+function updateBalance(response) {
+    balanceStr = response.balanceStr;
+    balance = response.balance;
+    $('.balance_count').html(balanceStr);
 }
 
 if ($('#achievements_achievement_btn').length) {

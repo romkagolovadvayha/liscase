@@ -3,6 +3,7 @@
 namespace common\models\servers;
 
 use common\models\blog\BlogCategory;
+use WebSocket\Client;
 use Yii;
 
 /**
@@ -98,4 +99,62 @@ class Servers extends \common\components\base\ActiveRecord
         return $result;
     }
 
+    public static function notify() {
+        /** @var Servers[] $servers */
+        $servers = \common\models\servers\Servers::find()->all();
+        $client = new Client(Yii::$app->params['ws']);
+        $total = \common\models\servers\Servers::find()->andWhere(
+            ['status' => Servers::STATUS_ACTIVE]
+        )->sum('players');
+
+        $serversData = [];
+        foreach ($servers as $server) {
+            if ($server->players+$server->joined > 0) {
+                $percentPlayers = ceil(100/$server->max*$server->players);
+                $percentJoined = ceil(100/$server->max*$server->joined);
+                $percentQueued = ceil(100/$server->max*$server->queued);
+                $percentAbsoluteCount = 100/($percentPlayers+$percentJoined);
+                $percentPlayersAbsolute = ceil($percentAbsoluteCount * $percentPlayers);
+                $percentJoinedAbsolute = ceil($percentAbsoluteCount * $percentJoined);
+                $percentQueuedAbsolute = ceil($percentAbsoluteCount * $percentQueued);
+            } else {
+                $percentPlayers = 0;
+                $percentJoined = 0;
+                $percentQueued = 0;
+                $percentAbsoluteCount = 0;
+                $percentPlayersAbsolute = 0;
+                $percentJoinedAbsolute = 0;
+                $percentQueuedAbsolute = 0;
+            }
+            $serversData[] = [
+                'server_id' => $server->id,
+                'status' => $server->status,
+                'players' => $server->players,
+                'joined' => $server->joined,
+                'queued' => $server->queued,
+                'percentPlayers' => $percentPlayers,
+                'percentJoined' => $percentJoined,
+                'percentQueued' => $percentQueued,
+                'percentAbsoluteCount' => $percentAbsoluteCount,
+                'percentPlayersAbsolute' => $percentPlayersAbsolute,
+                'percentJoinedAbsolute' => $percentJoinedAbsolute,
+                'percentQueuedAbsolute' => $percentQueuedAbsolute,
+            ];
+        }
+
+        try {
+            $client->send(
+                json_encode(
+                    [
+                        'action' => 'updatedOnline',
+                        'code' => 200,
+                        'total' => $total,
+                        'servers' => $serversData,
+                    ]
+                )
+            );
+        } catch (\Exception $ex) {
+            Yii::$app->telegramChats->sendMessage('Servers notify: ' . $ex->getMessage());
+        }
+    }
 }

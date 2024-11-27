@@ -5,7 +5,7 @@ use common\models\servers\Servers;
 /** @var Servers[] $servers */
 $servers = Servers::find()
     ->cache(30)
-    ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT]])
+    ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
     ->all();
 
 $lang = substr(Yii::$app->language, 0, 2);
@@ -48,7 +48,7 @@ JS
                     $percentQueuedAbsolute = 0;
                 }
                 ?>
-                <div class="servers_item">
+                <div class="servers_item server_item_js server_status<?=$server->status?>" data-server-id="<?=$server->id?>">
                     <div class="servers_item_header">
                         <div class="servers_item_header_content">
                             <div class="servers_item_header_content_name"><?=Yii::t('database', trim($server->name))?></div>
@@ -66,32 +66,17 @@ JS
                             </div>
                         </div>
                         <div class="servers_item_header_players">
-                            <?php if ($server->status === Servers::STATUS_ACTIVE): ?>
-                                <span class="servers_item_header_players_players" title="<?=Yii::t('common', 'Игроков на сервере')?>"><?=$server->players + $server->joined?></span><span>/</span><span><?=$server->max?></span>
-                            <?php elseif ($server->status === Servers::STATUS_WAIT): ?>
-                                <span class="servers_item_header_players_players"><?=Yii::t('common', 'Скоро')?></span>
-                            <?php else: ?>
-                                <span class="servers_item_header_players_players"><?=Yii::t('common', 'Выключен')?></span>
-                            <?php endif; ?>
+                            <span class="players_wrap_js"><span class="servers_item_header_players_players players_js" title="<?=Yii::t('common', 'Игроков на сервере')?>"><?=$server->players + $server->joined?></span><span>/</span><span><?=$server->max?></span></span>
+                            <span class="servers_item_header_players_players wait_js"><?=Yii::t('common', 'Скоро')?></span>
+                            <span class="servers_item_header_players_players offline_js"><?=Yii::t('common', 'Выключен')?></span>
                         </div>
                     </div>
                     <div class="servers_item_progress_wrap">
-                        <?php if ($server->status === Servers::STATUS_ACTIVE): ?>
-                            <div class="servers_item_progress_players_wrap" style="width: <?=$percentPlayers+$percentJoined?>%">
-                                <div class="servers_item_progress_players" style="width: <?=$percentPlayersAbsolute + $percentJoinedAbsolute?>%"></div>
-                                <div class="servers_item_progress_queued" style="width: <?=$percentQueuedAbsolute?>%"></div>
-                            </div>
-                        <?php elseif ($server->status === Servers::STATUS_WAIT): ?>
-                            <div class="servers_item_progress_players_wrap" style="width: 100%">
-                                <div class="servers_item_progress_wait" style="width: 100%"></div>
-                            </div>
-                        <?php else: ?>
-                            <div class="servers_item_progress_players_wrap" style="width: 100%">
-                                <div class="servers_item_progress_offline" style="width: 100%"></div>
-                            </div>
-                        <?php endif; ?>
+                        <div class="servers_item_progress_players_wrap progress_js" style="width: <?=$percentPlayers+$percentJoined?>%">
+                            <div class="servers_item_progress_players players_progress_js" style="width: <?=$percentPlayersAbsolute + $percentJoinedAbsolute?>%"></div>
+                            <div class="servers_item_progress_queued queued_progress_js" style="width: <?=$percentQueuedAbsolute?>%"></div>
+                        </div>
                     </div>
-                    <?php if ($server->status === Servers::STATUS_ACTIVE): ?>
                     <div class="servers_item_hover">
                         <div class="servers_item_hover_wrap">
                             <div class="btn-clipboard"
@@ -104,7 +89,6 @@ JS
                             <a class="servers_item_hover_button" href="https://rustmaps.com/map/<?=$server->map?>" target="_blank"><?=Yii::t('common', 'Текущая карта')?></a>
                         </div>
                     </div>
-                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
             <div class="servers_link_wrap">

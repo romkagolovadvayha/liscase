@@ -1,6 +1,8 @@
 <?php
 namespace console\controllers;
 
+use common\models\servers\Servers;
+use yii\base\BaseObject;
 use yii\console\Controller;
 use WebSocket\Client;
 
@@ -16,6 +18,14 @@ class ServerWsController extends Controller
             $server->port = $port;
         }
         $server->start();
+    }
+
+    /**
+     * server-ws/online
+     */
+    public function actionOnline()
+    {
+        Servers::notify();
     }
 
     /**

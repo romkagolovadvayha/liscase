@@ -5,6 +5,7 @@ namespace common\models\user;
 use common\components\helpers\CurrencyHelper;
 use common\models\invoice\Deposit;
 use common\models\invoice\Invoice;
+use WebSocket\Client;
 use Yii;
 use common\models\profit\Profit;
 use yii\base\BaseObject;
@@ -167,6 +168,25 @@ class UserBalance extends \common\components\base\ActiveRecord
 
         $this->balance = ceil($balance + $deposits - $invoices);
         $this->save(false);
+
+        try {
+            if ($this->type === self::TYPE_PERSONAL) {
+                $client = new Client(Yii::$app->params['ws']);
+                $client->send(
+                    json_encode(
+                        [
+                            'action'     => 'updatedBalance',
+                            'code'       => 200,
+                            'balanceStr' => $this->getBalanceFormat(),
+                            'balance'    => $this->balanceCeil,
+                            'user_id'    => $this->user_id,
+                        ]
+                    )
+                );
+            }
+        } catch (\Exception $ex) {
+            Yii::$app->telegramChats->sendMessage('UserBalance recalculateBalance: ' . $ex->getMessage());
+        }
     }
 
     /**

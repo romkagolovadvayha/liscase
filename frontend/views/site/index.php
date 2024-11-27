@@ -20,7 +20,6 @@ $this->registerJs(<<<JS
     });
     $(document).on('pjax:complete', function() {
       $('#product-loader').removeClass('active');
-      updateBalance();
     });
     var categories = $('.products_categories .products_categories_category');
     var categoriesRight = $('.products_wrap_wrap > .categories .categories_item');

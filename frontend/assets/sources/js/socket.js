@@ -19,7 +19,18 @@ chat.onmessage = function(e) {
             storeGetItems(response);
         }
     }
+    if ($('.balance_count')) {
+        if (response.type && response.type === 'update.balance') {
+            updateBalance(response);
+        }
+    }
+    if ($('.players_js')) {
+        if (response.type && response.type === 'update.online') {
+            updateOnline(response);
+        }
+    }
 };
+
 chat.onopen = function(e) {
     if (token !== undefined) {
         chat.send( JSON.stringify({'action' : 'auth', 'token' : token, 'steam_id' : steam_id}) );
@@ -46,4 +57,20 @@ function openChat(href) {
 }
 function closeChat() {
     $('#widget_chat').removeClass('active');
+}
+
+function updateOnline(response) {
+    $('.online_counter').html(response.total);
+    for (var i = 0; i < response.servers.length; i++) {
+        var item = response.servers[i];
+        var serverItem = $('.server_item_js[data-server-id=' + item.server_id + ']');
+        serverItem.removeClass('server_status0');
+        serverItem.removeClass('server_status1');
+        serverItem.removeClass('server_status2');
+        serverItem.addClass('server_status' + item.status);
+        serverItem.find('.players_js').html(item.players + item.joined);
+        serverItem.find('.progress_js').animate({ width: (item.percentPlayers + item.percentJoined) + "%" });
+        serverItem.find('.players_progress_js').animate({ width: (item.percentPlayersAbsolute + item.percentJoinedAbsolute) + "%" });
+        serverItem.find('.queued_progress_js').animate({ width: (item.percentQueuedAbsolute) + "%" });
+    }
 }
