@@ -3,6 +3,7 @@ namespace console\controllers;
 
 use common\models\rcon\RconTasks;
 use common\models\statistics\Statistics;
+use common\models\user\User;
 use consik\yii2websocket\WebSocketServer;
 use console\daemons\Battle;
 use Ratchet\App;
@@ -47,5 +48,22 @@ class ServerController extends Controller
             }
         }
         echo "is_gamer: " . $count . PHP_EOL;
+
+        /** @var user[] $users */
+        $users = User::find()
+            ->andWhere(['is_gamer' => 1])
+            ->all();
+        foreach ($users as $user) {
+            /** @var user[] $_users */
+            $_users = User::find()
+                         ->andWhere(['steam_id' => $user->steam_id])
+                        ->all();
+            if (count($_users) > 1) {
+                foreach ($_users as $_user) {
+                    $_user->is_gamer = 1;
+                    $_user->save(false);
+                }
+            }
+        }
     }
 }
