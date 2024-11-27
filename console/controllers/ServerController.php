@@ -29,11 +29,16 @@ class ServerController extends Controller
             ->limit($limit)
             ->all();
 
+        echo "count: " . count($statistics) . PHP_EOL;
+        $count = 0;
         foreach ($statistics as $model) {
             $model->user->is_gamer = 1;
-            if ($model->user->save() && $group) {
-                $command = "o.usergroup add \"{$model->user->steam_id}\" gamer";
-                RconTasks::execute($command);
+            if ($model->user->save(false)) {
+                $count++;
+                if ($group) {
+                    $command = "o.usergroup add \"{$model->user->steam_id}\" gamer";
+                    RconTasks::execute($command);
+                }
             } else {
                 if (!empty($model->user->getErrors())) {
                     print_r($model->user->getErrors());
@@ -41,5 +46,6 @@ class ServerController extends Controller
                 }
             }
         }
+        echo "is_gamer: " . $count . PHP_EOL;
     }
 }
