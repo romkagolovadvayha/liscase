@@ -1,4 +1,7 @@
 <?php
+    if (!Yii::$app->params['skindrops']) {
+        return;
+    }
     $user = Yii::$app->user->identity;
     $usernameCompleted = false;
     $prefix = "prostoj";
