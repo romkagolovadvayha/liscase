@@ -80,16 +80,16 @@
         // clearInterval(intervalRewind);
         mouseover = true;
         videoPlayer.currentTime = 0;
-        videoPlayer.playbackRate = 5.0;
+        videoPlayer.playbackRate = 1.0;
         videoPlayer.play();
     });
     videoPlayer.addEventListener('mouseout', () => {
         mouseover = false;
-        videoPlayer.playbackRate = 5.0;
+        videoPlayer.playbackRate = 1.0;
         videoPlayer.play();
     });
     videoPlayer.addEventListener('timeupdate', (e) => {
-        if (mouseover && videoPlayer.currentTime >= 0.2) {
+        if (mouseover && videoPlayer.currentTime >= 1) {
             videoPlayer.pause();
         }
     });
