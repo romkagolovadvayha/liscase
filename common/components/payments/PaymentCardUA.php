@@ -26,6 +26,7 @@ class PaymentCardUA
             return $model->status;
         }
         $result = Yii::$app->anyPayApi->check($model->payment_id);
+        Yii::$app->telegramChats->sendMessage(json_encode($result));
         if (empty($result['result']) || empty($result['result']['payments']) || empty($result['result']['payments'][$model->payment_id])) {
             return false;
         }
