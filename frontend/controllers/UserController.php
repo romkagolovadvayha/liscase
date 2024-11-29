@@ -187,6 +187,7 @@ class UserController extends WebController
                 if ($e->getCode() === 414) {
                     $modelForm->addError('amount', $e->getMessage());
                 } else {
+                    Yii::$app->telegramChats->sendMessage($e->getMessage());
                     $modelForm->addError('amount', Yii::t('common', 'Произошла ошибка при оплате!'));
                 }
             }
