@@ -79,6 +79,7 @@ class AnyPay
             $response = $curl->setGetParams($params)->get($url);
         }
 
+        Yii::$app->telegramChats->sendMessage($response);
         if (empty($response)) {
             return [];
         }

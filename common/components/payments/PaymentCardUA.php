@@ -13,7 +13,6 @@ class PaymentCardUA
     {
         $model = Deposit::createOperation(Yii::$app->user->id, $amount, Deposit::TYPE_PAYMENT_CARD_UA);
         $result = Yii::$app->anyPayApi->create($amount, 'card', 'Пополнение баланса', $model->id, 'RUB', 'UAH');
-        Yii::$app->telegramChats->sendMessage(json_encode($result));
         $model->payment_id = $result['result']['transaction_id'];
         $model->save(false);
 
