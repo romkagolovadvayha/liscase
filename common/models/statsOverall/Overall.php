@@ -120,7 +120,7 @@ class Overall extends ActiveRecord
                                         + $item['rocket_fire'] * 0.1
                                         + $item['ammo_explosive'] * 0.01);
                 //wood * 0.2 + stones * 0.3 + metal_ore * 0.5 + sulfur_ore
-                $item['farmer'] = round($item['wood'] * 0.2
+                $item['farmer'] = round($item['wood'] * 0.05
                                         + $item['stones'] * 0.3
                                         + $item['metal_ore'] * 0.5
                                         + $item['sulfur_ore']);
@@ -142,15 +142,16 @@ class Overall extends ActiveRecord
                     + $item['wolves']
                     + $item['bears'];
                 //cloth + pumpkin + corn + green_berry + blue_berry + yellow_berry + red_berry + white_berry + potato
-                $item['fermer'] = $item['cloth']
-                    + $item['pumpkin']
-                    + $item['corn']
-                    + $item['green_berry']
-                    + $item['blue_berry']
-                    + $item['yellow_berry']
-                    + $item['red_berry']
-                    + $item['white_berry']
-                    + $item['potato'];
+                $item['fermer'] = $item['cloth'] * 0.05
+                    + $item['pumpkin'] * 0.5
+                    + $item['potato'] * 0.4
+                    + $item['corn'] * 0.3
+                    + $item['green_berry'] * 0.5
+                    + $item['blue_berry'] * 0.5
+                    + $item['yellow_berry'] * 0.5
+                    + $item['red_berry'] * 0.5
+                    + $item['white_berry'] * 0.5
+                    + $item['black_berry'] * 0.5;
                 $models[$i] = $item;
             }
             $data = [

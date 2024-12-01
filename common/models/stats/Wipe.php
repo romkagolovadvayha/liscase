@@ -135,7 +135,7 @@ class Wipe extends ActiveRecord
                                         + $item['rocket_fire'] * 0.1
                                         + $item['ammo_explosive'] * 0.01);
                 //wood * 0.2 + stones * 0.3 + metal_ore * 0.5 + sulfur_ore
-                $item['farmer'] = round($item['wood'] * 0.2
+                $item['farmer'] = round($item['wood'] * 0.05
                                         + $item['stones'] * 0.3
                                         + $item['metal_ore'] * 0.5
                                         + $item['sulfur_ore']);

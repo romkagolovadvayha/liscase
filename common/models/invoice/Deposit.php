@@ -159,13 +159,13 @@ class Deposit extends \common\components\base\ActiveRecord
 //            self::TYPE_PAYMENT_STEAM_PAY     => '/images/payments/scp_logo.png',
 //            self::TYPE_PAYMENT_VISA     => '/images/payments/tron.svg',
 //            self::TYPE_PAYMENT_MIR     => '/images/payments/tron.svg',
-//            self::TYPE_PAYMENT_PERFECT_MONEY     => '/images/payments/Perfect_Money.png',
+            self::TYPE_PAYMENT_PERFECT_MONEY     => '/images/payments/Perfect_Money.png',
 //            self::TYPE_PAYMENT_TRON      => '/images/payments/tron.svg',
-//            self::TYPE_PAYMENT_TRC20     => '/images/payments/tether.svg',
+            self::TYPE_PAYMENT_TRC20     => '/images/payments/tether.svg',
 //            self::TYPE_PAYMENT_ERC20     => '/images/payments/tether.svg',
-//            self::TYPE_PAYMENT_CARD_UA     => '/images/payments/cards.svg',
-//            self::TYPE_PAYMENT_CARD_KZT     => '/images/payments/cards.svg',
-//            self::TYPE_PAYMENT_CARD_YM     => '/images/payments/iomoney.png',
+            self::TYPE_PAYMENT_CARD_UA     => '/images/payments/cards.svg',
+            self::TYPE_PAYMENT_CARD_KZT     => '/images/payments/cards.svg',
+            self::TYPE_PAYMENT_CARD_YM     => '/images/payments/iomoney.png',
         ];
 
         if (Yii::$app->language !== 'ru-RU') {

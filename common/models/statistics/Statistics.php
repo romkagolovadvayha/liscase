@@ -97,7 +97,7 @@ class Statistics extends ActiveRecord
                                         + Statistics::getParam($params, 'grenade.molotov.deployed') * 0.05
                                         + Statistics::getParam($params, 'grenade.beancan.deployed') * 0.05);
                 //wood * 0.2 + stones * 0.3 + metal_ore * 0.5 + sulfur_ore
-                $item['farmer'] = round(Statistics::getParam($params, 'wood') * 0.2
+                $item['farmer'] = round(Statistics::getParam($params, 'wood') * 0.05
                                         + Statistics::getParam($params, 'stones') * 0.3
                                         + Statistics::getParam($params, 'metal.ore') * 0.5
                                         + Statistics::getParam($params, 'sulfur.ore'));
@@ -121,16 +121,16 @@ class Statistics extends ActiveRecord
                     + Statistics::getParam($params, 'wolf2')
                     + Statistics::getParam($params, 'wolf');
                 //cloth + pumpkin + corn + green_berry + blue_berry + yellow_berry + red_berry + white_berry + potato
-                $item['fermer'] = Statistics::getParam($params, 'gathered_cloth')
-                    + Statistics::getParam($params, 'gathered_pumpkin')
-                    + Statistics::getParam($params, 'gathered_corn')
-                    + Statistics::getParam($params, 'gathered_green.berry')
-                    + Statistics::getParam($params, 'gathered_blue.berry')
-                    + Statistics::getParam($params, 'gathered_yellow.berry')
-                    + Statistics::getParam($params, 'gathered_red.berry')
-                    + Statistics::getParam($params, 'gathered_white.berry')
-                    + Statistics::getParam($params, 'gathered_black.berry')
-                    + Statistics::getParam($params, 'gathered_potato');
+                $item['fermer'] = Statistics::getParam($params, 'gathered_cloth') * 0.05
+                    + Statistics::getParam($params, 'gathered_pumpkin') * 0.5
+                    + Statistics::getParam($params, 'gathered_corn') * 0.3
+                    + Statistics::getParam($params, 'gathered_green.berry') * 0.5
+                    + Statistics::getParam($params, 'gathered_blue.berry') * 0.5
+                    + Statistics::getParam($params, 'gathered_yellow.berry') * 0.5
+                    + Statistics::getParam($params, 'gathered_red.berry') * 0.5
+                    + Statistics::getParam($params, 'gathered_white.berry') * 0.5
+                    + Statistics::getParam($params, 'gathered_black.berry') * 1
+                    + Statistics::getParam($params, 'gathered_potato') * 0.4;
                 $models[] = $item;
             }
             $data = [
@@ -212,13 +212,14 @@ class Statistics extends ActiveRecord
         return $result;
     }
 
-    public static function getFermItem($drops, $player, $key, $name) {
+    public static function getFermItem($drops, $player, $key, $name, $score) {
         $result = [];
 
         if (!empty($drops[$key])) {
             $result['image'] = $drops[$key]->imageOrig->getImagePubUrl();
         }
         $result['name'] = $name;
+        $result['score'] = $score;
         $result['count'] = Statistics::getParam($player, $key);
         $result['desc'] = number_format(Statistics::getParam($player, $key), 0);
 

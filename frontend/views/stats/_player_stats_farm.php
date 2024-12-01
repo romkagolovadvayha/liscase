@@ -26,27 +26,27 @@ $items   = [
     [
         'name'  => Yii::t('common', 'Дерево'),
         'key' => 'wood',
-        'score' => 0.2,
+        'score' => 0.05,
     ],
     [
         'name'  => Yii::t('common', 'Животный жир'),
         'key' => 'fat.animal',
-        'score' => 0.2,
+        'score' => 0,
     ],
     [
         'name'  => Yii::t('common', 'Кожа'),
         'key' => 'leather',
-        'score' => 0.2,
+        'score' => 0,
     ],
     [
         'name'  => Yii::t('common', 'Обломки костей'),
         'key' => 'bone.fragments',
-        'score' => 0.1,
+        'score' => 0,
     ],
     [
         'name'  => Yii::t('common', 'Скрап'),
         'key' => 'scrap',
-        'score' => 1.5,
+        'score' => 0,
     ],
     [
         'name'  => Yii::t('common', 'Разбито бочек'),

@@ -8,16 +8,16 @@ use common\models\statistics\Statistics;
 /** @var array $player */
 
 $items = [
-    ['key' => 'gathered_cloth', 'name' => Yii::t('common', 'Ткань')],
-    ['key' => 'gathered_pumpkin', 'name' => Yii::t('common', 'Тыква')],
-    ['key' => 'gathered_corn', 'name' => Yii::t('common', 'Кукуруза')],
-    ['key' => 'gathered_potato', 'name' => Yii::t('common', 'Картофель')],
-    ['key' => 'gathered_blue.berry', 'name' => Yii::t('common', 'Синие ягоды')],
-    ['key' => 'gathered_yellow.berry', 'name' => Yii::t('common', 'Желтые ягоды')],
-    ['key' => 'gathered_red.berry', 'name' => Yii::t('common', 'Красные ягоды')],
-    ['key' => 'gathered_white.berry', 'name' => Yii::t('common', 'Белые ягоды')],
-    ['key' => 'gathered_green.berry', 'name' => Yii::t('common', 'Зеленые ягоды')],
-    ['key' => 'gathered_black.berry', 'name' => Yii::t('common', 'Черные ягоды')],
+    ['key' => 'gathered_cloth', 'name' => Yii::t('common', 'Ткань'), 'score' => 0.05],
+    ['key' => 'gathered_corn', 'name' => Yii::t('common', 'Кукуруза'), 'score' => 0.3],
+    ['key' => 'gathered_potato', 'name' => Yii::t('common', 'Картофель'), 'score' => 0.4],
+    ['key' => 'gathered_pumpkin', 'name' => Yii::t('common', 'Тыква'), 'score' => 0.5],
+    ['key' => 'gathered_blue.berry', 'name' => Yii::t('common', 'Синие ягоды'), 'score' => 0.5],
+    ['key' => 'gathered_yellow.berry', 'name' => Yii::t('common', 'Желтые ягоды'), 'score' => 0.5],
+    ['key' => 'gathered_red.berry', 'name' => Yii::t('common', 'Красные ягоды'), 'score' => 0.5],
+    ['key' => 'gathered_white.berry', 'name' => Yii::t('common', 'Белые ягоды'), 'score' => 0.5],
+    ['key' => 'gathered_green.berry', 'name' => Yii::t('common', 'Зеленые ягоды'), 'score' => 0.5],
+    ['key' => 'gathered_black.berry', 'name' => Yii::t('common', 'Черные ягоды'), 'score' => 1],
 ];
 
 $keys = [];
@@ -33,7 +33,7 @@ $drops = \common\models\box\Drop::find()
 
 $fermers = [];
 foreach ($items as $item) {
-    $fermers[] = Statistics::getFermItem($drops, $player, $item['key'], $item['name']);
+    $fermers[] = Statistics::getFermItem($drops, $player, $item['key'], $item['name'], $item['score']);
 }
 
 /*usort(
@@ -54,7 +54,10 @@ foreach ($items as $item) {
                         <img class="stats_player_stats_item_image" src="<?= $item['image'] ?>"/>
                     </div>
                     <div class="stats_player_stats_item_count_wrap">
-                        <div class="stats_player_stats_item_count"><?= $item['desc'] ?></div>
+                        <div class="stats_player_stats_item_count">
+                            <?= $item['desc'] ?>
+                            <div class="stats_player_stats_item_score">x<?= $item['score'] ?></div>
+                        </div>
                         <div class="stats_player_stats_item_name"><?= $item['name'] ?></div>
                     </div>
                 </div>

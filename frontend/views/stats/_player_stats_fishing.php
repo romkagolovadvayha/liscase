@@ -89,9 +89,11 @@ usort(
                         <img class="stats_player_stats_item_image" src="<?= $item['image'] ?>"/>
                     </div>
                     <div class="stats_player_stats_item_count_wrap">
-                        <div class="stats_player_stats_item_count"><?= $item['count'] ?></div>
+                        <div class="stats_player_stats_item_count">
+                            <?= $item['count'] ?>
+                            <div class="stats_player_stats_item_score">x<?= $item['score'] ?></div>
+                        </div>
                         <div class="stats_player_stats_item_name"><?= $item['name'] ?></div>
-                        <div class="stats_player_stats_item_score">x<?= $item['score'] ?></div>
                     </div>
                 </div>
             </div>
