@@ -100,7 +100,7 @@ class Team extends \yii\db\ActiveRecord
         switch ($item->type) {
             case 'invite_accepted':
                 self::inviteAccepted($item, $server, $wipeDate);
-            break;
+                break;
             case 'leaved':
                 self::leaved($item, $server, $wipeDate);
                 break;
