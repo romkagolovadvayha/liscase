@@ -58,7 +58,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                             RconTasks::execute($command);
                         }
                     }
-                    if (!empty($user) && $user->server_id !== $server->id) {
+                    if (!empty($user)) {
                         $user->server_id = $server->id;
                         $user->last_visit_server_at = date('Y-m-d H:i:s');
                         $user->save();
