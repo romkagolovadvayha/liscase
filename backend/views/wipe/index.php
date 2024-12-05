@@ -28,7 +28,7 @@ $this->title = Yii::t('common', 'Вайп');
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->cache(30)
-                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                          ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
                           ->orderBy(['sort' => SORT_ASC])
                           ->all();
         ?>
