@@ -45,31 +45,13 @@ $this->params['breadcrumbs'][] = $this->title;
                     return $model->next_wipe;
                 },
             ],
-            //'global_wipe',
-            //'description:ntext',
-            //'rules:ntext',
-            //'ip:ntext',
-            //'port',
-            //'query',
-            //'rcon',
-            //'rcon_password',
-            //'map:ntext',
-            //'players',
-            //'joined',
-            //'queued',
-            //'team_limit',
-            //'max',
-            //'status',
-            //'db_host:ntext',
-            //'db_name:ntext',
-            //'db_user:ntext',
-            //'db_password:ntext',
-            //'tag:ntext',
-            //'stats_payment',
-            //'skindrops',
-            //'wargm_id',
-            //'commands:ntext',
-            //'discord_token',
+            [
+                'attribute'       => 'global_wipe',
+                'options'   => ['width' => '200'],
+                'value'     => function (Servers $model) {
+                    return $model->global_wipe;
+                },
+            ],
             [
                 'attribute' => 'status',
                 'filterType'  => GridView::FILTER_SELECT2,
@@ -81,6 +63,8 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
             [
                 'class' => ActionColumn::className(),
+                'options'   => ['width' => '40'],
+                'template' => '{update}',
                 'urlCreator' => function ($action, Servers $model, $key, $index, $column) {
                     return Url::toRoute([$action, 'id' => $model->id]);
                  }

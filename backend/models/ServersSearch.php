@@ -17,8 +17,8 @@ class ServersSearch extends Servers
     public function rules()
     {
         return [
-            [['id', 'wipe_type', 'port', 'query', 'rcon', 'players', 'joined', 'queued', 'team_limit', 'max', 'status', 'stats_payment', 'skindrops', 'wargm_id'], 'integer'],
-            [['name', 'wipe', 'next_wipe', 'global_wipe', 'description', 'rules', 'ip', 'rcon_password', 'map', 'db_host', 'db_name', 'db_user', 'db_password', 'tag', 'commands', 'discord_token'], 'safe'],
+            [['id', 'status'], 'integer'],
+            [['name'], 'safe'],
         ];
     }
 

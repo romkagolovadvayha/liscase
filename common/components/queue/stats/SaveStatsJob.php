@@ -66,7 +66,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     Yii::$app->telegramReports->sendMessage("SaveStatsJob HasGroupGaimer:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                 }
 
-                $params['playtime'] = 3;
+                $params['playtime'] = 1;
                 $params['kills'] = 0;
                 if (!empty($request['kills'])) {
                     try {
