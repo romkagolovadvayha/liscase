@@ -56,7 +56,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute'       => 'updated_at',
                 'options'   => ['width' => '200'],
                 'value'     => function (Servers $model) {
-                    return $model->updated_at;
+                    return time() - strtotime($model->updated_at) . " сек. назад";
                 },
             ],
             [
