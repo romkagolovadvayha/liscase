@@ -103,7 +103,7 @@ class Servers extends \common\components\base\ActiveRecord
     public function rules()
     {
         return [
-            [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'team_limit', 'max', 'tag'], 'required'],
+            [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag'], 'required'],
             [['description', 'name', 'ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag'], 'string'],
             [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'team_limit', 'max', 'wargm_id'], 'integer'],
             [['wipe', 'next_wipe', 'global_wipe'], 'safe'],
