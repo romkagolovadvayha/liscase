@@ -5,6 +5,7 @@ $this->title = Yii::t('common', 'Репорты');
 /** @var \common\models\servers\Servers $servers */
 $servers = \common\models\servers\Servers::find()
                                          ->cache(30)
+                                         ->orderBy(['sort' => SORT_ASC])
                                          ->all();
 $users = [];
 foreach ($servers as $server) {

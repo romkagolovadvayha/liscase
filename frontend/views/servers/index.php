@@ -13,6 +13,7 @@ $this->title = Yii::t('common', 'Сервера для Rust');
 $servers = Servers::find()
                   ->andWhere(['status' => Servers::STATUS_ACTIVE])
                   ->cache(30)
+                  ->orderBy(['sort' => SORT_ASC])
                   ->all();
 
 $formatJs = <<< 'JS'

@@ -29,6 +29,7 @@ $this->title = Yii::t('common', 'Вайп');
         $servers = Servers::find()
                           ->cache(30)
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                          ->orderBy(['sort' => SORT_ASC])
                           ->all();
         ?>
         <?php foreach ($servers as $server): ?>

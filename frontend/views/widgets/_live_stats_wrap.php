@@ -6,7 +6,8 @@ use common\models\servers\Servers;
 
 $servers = \common\models\servers\Servers::find()
                                          ->cache(30)
-    ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                                         ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                                         ->orderBy(['sort' => SORT_ASC])
                                          ->all();
 
 ?>

@@ -651,7 +651,7 @@ class User extends ActiveRecord implements IdentityInterface
         $servers = Servers::find()
                           ->cache(30)
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
-                          ->andWhere('db_host IS NOT NULL')
+                          ->orderBy(['sort' => SORT_ASC])
                           ->all();
 
         $onlineTime = 0;
@@ -722,7 +722,11 @@ class User extends ActiveRecord implements IdentityInterface
             }
             $this->banned_at = $bannedAt;
             /** @var Servers[] $servers */
-            $servers = Servers::find()->cache(30)->andWhere(['status' => Servers::STATUS_ACTIVE])->all();
+            $servers = Servers::find()
+                              ->cache(30)
+                              ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                              ->orderBy(['sort' => SORT_ASC])
+                              ->all();
             if (in_array($reason, [self::REASON_GAME_3])) {
                 $serversBan = ['max3'];
                 foreach ($servers as $server) {

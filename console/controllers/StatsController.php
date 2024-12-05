@@ -21,6 +21,7 @@ class StatsController extends Controller
         /** @var Servers[] $servers */
         $servers = Servers::find()
                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                         ->orderBy(['sort' => SORT_ASC])
                          ->all();
 
         foreach ($servers as $server) {

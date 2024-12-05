@@ -17,6 +17,7 @@ class DiscordController extends Controller
         $servers = Servers::find()
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
                           ->andWhere('discord_token IS NOT NULL')
+                          ->orderBy(['sort' => SORT_ASC])
                           ->all();
 
         foreach ($servers as $server) {

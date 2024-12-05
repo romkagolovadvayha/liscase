@@ -103,6 +103,7 @@ if ($user->status === 5) {
 $servers = Servers::find()
                   ->cache(30)
                   ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                  ->orderBy(['sort' => SORT_ASC])
                   ->all();
 
 $teams = [];

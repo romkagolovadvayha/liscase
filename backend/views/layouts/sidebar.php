@@ -58,6 +58,13 @@ $usersBadge = \common\models\user\User::find()
                          'active' => _checkActive('/user') && !_checkActive('/user-'),
                     ],
                    [
+                       'label' => 'Сервера',
+                       'icon' => 'fas fa-gamepad',
+                       'url' => ['/servers'],
+                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'active' => _checkActive('/servers'),
+                   ],
+                   [
                          'label' => 'Репорты',
                          'icon' => 'fa-solid fa-flag',
                          'url' => ['/reports'],

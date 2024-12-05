@@ -6,6 +6,7 @@ use common\models\servers\Servers;
 $servers = Servers::find()
     ->cache(30)
     ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+    ->orderBy(['sort' => SORT_ASC])
     ->all();
 
 $lang = substr(Yii::$app->language, 0, 2);

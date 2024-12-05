@@ -39,12 +39,14 @@ use Yii;
  * @property int    $wargm_id
  * @property string $commands
  * @property string $discord_token
+ * @property int    $sort
  */
 class Servers extends \common\components\base\ActiveRecord
 {
     const STATUS_NOACTIVE    = 0;
     const STATUS_ACTIVE  = 1;
     const STATUS_WAIT  = 2;
+    const STATUS_CLOSED  = 3;
 
     /**
      * @return array
@@ -54,6 +56,8 @@ class Servers extends \common\components\base\ActiveRecord
         return [
             self::STATUS_NOACTIVE       => Yii::t('common', 'Выключен'),
             self::STATUS_ACTIVE      => Yii::t('common', 'Включен'),
+            self::STATUS_WAIT      => Yii::t('common', 'Скоро откроется'),
+            self::STATUS_CLOSED      => Yii::t('common', 'Закрыт'),
         ];
     }
 
@@ -63,6 +67,47 @@ class Servers extends \common\components\base\ActiveRecord
     public static function tableName()
     {
         return 'servers';
+    }
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels(): array
+    {
+        return [
+            'id'                  => Yii::t('common', 'ID'),
+            'name'               => Yii::t('common', 'Название'),
+            'description'               => Yii::t('common', 'Описание'),
+            'status'               => Yii::t('common', 'Статус'),
+            'wipe'          => Yii::t('common', 'Последний вайп'),
+            'next_wipe'          => Yii::t('common', 'Следующий вайп'),
+            'global_wipe'          => Yii::t('common', 'Глобальный вайп'),
+            'wipe_type'          => Yii::t('common', 'Глобальный вайп'),
+            'sort'          => Yii::t('common', 'Сортировка'),
+            'ip'          => Yii::t('common', 'IP адрес'),
+            'port'          => Yii::t('common', 'Порт'),
+            'query'          => Yii::t('common', 'Query порт'),
+            'rcon'          => Yii::t('common', 'Rcon порт'),
+            'rcon_password'          => Yii::t('common', 'Rcon пароль'),
+            'commands'          => Yii::t('common', 'Команды доступные на сервере'),
+            'skindrops'          => Yii::t('common', 'Раздача скинов'),
+            'discord_token'          => Yii::t('common', 'Токен бота Discord'),
+            'rules'          => Yii::t('common', 'Правила'),
+            'map'          => Yii::t('common', 'Карта на сервере'),
+            'team_limit'          => Yii::t('common', 'Лимит команды'),
+            'max'          => Yii::t('common', 'Кол-во слотов'),
+            'tag'          => Yii::t('common', 'Тег сервера'),
+            'wargm_id'          => Yii::t('common', 'WarGM ID'),
+        ];
+    }
+
+    public function rules()
+    {
+        return [
+            [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'team_limit', 'max', 'tag'], 'required'],
+            [['description', 'name', 'ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag'], 'string'],
+            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'team_limit', 'max', 'wargm_id'], 'integer'],
+            [['wipe', 'next_wipe', 'global_wipe'], 'safe'],
+        ];
     }
 
     public static function getPlayTime($minutes) {
@@ -89,7 +134,7 @@ class Servers extends \common\components\base\ActiveRecord
      */
     public static function getServers() {
         /** @var Servers[] $models */
-        $models = Servers::find()->andWhere(['status' => Servers::STATUS_ACTIVE])->all();
+        $models = Servers::find()->andWhere(['status' => Servers::STATUS_ACTIVE])->orderBy(['sort' => SORT_ASC])->all();
 
         $result = [];
         foreach ($models as $model) {
@@ -101,7 +146,7 @@ class Servers extends \common\components\base\ActiveRecord
 
     public static function notify() {
         /** @var Servers[] $servers */
-        $servers = \common\models\servers\Servers::find()->all();
+        $servers = \common\models\servers\Servers::find()->orderBy(['sort' => SORT_ASC])->all();
         $client = new Client(Yii::$app->params['ws']);
         $total = \common\models\servers\Servers::find()->andWhere(
             ['status' => Servers::STATUS_ACTIVE]

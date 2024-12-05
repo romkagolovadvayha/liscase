@@ -19,7 +19,10 @@ class MonitoringController extends Controller
     public function actionGetServers()
     {
         /** @var Servers[] $servers */
-        $servers = Servers::find()->andWhere(['status' => Servers::STATUS_ACTIVE])->andWhere('db_host IS NOT NULL')->all();
+        $servers = Servers::find()
+                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
         foreach ($servers as $server) {
             $model = Info::getInfo($server);
             $fakePlayers = 0;

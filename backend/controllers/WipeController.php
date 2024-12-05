@@ -66,6 +66,7 @@ class WipeController extends Controller
                           ->cache(30)
                           ->andWhere(['IN', 'tag', $server])
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                          ->orderBy(['sort' => SORT_ASC])
                           ->all();
         foreach ($servers as $server) {
             $stats = Statistics::getStats($server, null, false);

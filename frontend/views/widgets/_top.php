@@ -8,6 +8,7 @@ use yii\web\View;
 $servers = \common\models\servers\Servers::find()
                                          ->cache(30)
                                          ->andWhere(['status' => \common\models\servers\Servers::STATUS_ACTIVE])
+                                         ->orderBy(['sort' => SORT_ASC])
                                          ->all();
 ?>
 

@@ -127,7 +127,7 @@ class Task extends \common\components\base\ActiveRecord
         $servers = Servers::find()
                           ->cache(30)
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
-                          ->andWhere('db_host IS NOT NULL')
+                          ->orderBy(['sort' => SORT_ASC])
                           ->all();
 
         /** @var Task[] $tasks */

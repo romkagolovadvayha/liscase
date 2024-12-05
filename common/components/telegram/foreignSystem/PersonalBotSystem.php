@@ -77,6 +77,7 @@ class PersonalBotSystem extends AbstractSystem
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                          ->orderBy(['sort' => SORT_ASC])
                           ->all();
 
         foreach ($servers as $k => $server) {
@@ -106,6 +107,7 @@ class PersonalBotSystem extends AbstractSystem
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                          ->orderBy(['sort' => SORT_ASC])
                           ->all();
 
         foreach ($servers as $k => $server) {
@@ -144,6 +146,7 @@ class PersonalBotSystem extends AbstractSystem
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                          ->orderBy(['sort' => SORT_ASC])
                           ->all();
 
         foreach ($servers as $k => $server) {
