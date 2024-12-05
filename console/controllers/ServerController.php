@@ -2,6 +2,7 @@
 namespace console\controllers;
 
 use common\models\rcon\RconTasks;
+use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use common\models\user\User;
 use consik\yii2websocket\WebSocketServer;
@@ -61,5 +62,22 @@ class ServerController extends Controller
             }
         }
         echo "is_gamer: " . $count . PHP_EOL;
+    }
+
+    /**
+     * server/check-status
+     */
+    public function actionCheckStatus() {
+        /** @var Servers $server */
+        $servers = Servers::find()
+                         ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                         ->all();
+
+        foreach ($servers as $server) {
+            if (time() - strtotime($server->updated_at) > 65) {
+                $server->status = Servers::STATUS_NOACTIVE;
+                $server->save();
+            }
+        }
     }
 }
