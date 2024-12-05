@@ -258,6 +258,10 @@ class Deposit extends \common\components\base\ActiveRecord
             . "SteamID: {$user->steam_id}" . PHP_EOL
             . "Сумма: {$amount} RUB";
 
+        if (!empty($user->server)) {
+            $message .= PHP_EOL . "Сервер: {$user->server->name}";
+        }
+
         $depositsSum = Deposit::find()
             ->andWhere(['user_id' => $user->id])
             ->andWhere(['status' => Deposit::STATUS_SUCCESS])
