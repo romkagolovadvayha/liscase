@@ -38,6 +38,7 @@ use common\components\base\ActiveRecord;
  * @property string          $server_tag
  * @property string          $created_at
  * @property string          $updated_at
+ * @property string          $last_visit_server_at
  * @property string          $banned_at
  * @property string          $unbanned_at
  * @property int             $ban_reason
