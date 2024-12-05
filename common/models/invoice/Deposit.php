@@ -253,10 +253,11 @@ class Deposit extends \common\components\base\ActiveRecord
                             ->sum('amount') ?? 0;
 
 
+        $amountStr = number_format($amount, 0, '.', ' ');
         $message = "💰️ <b>Пополнение баланса</b>" . PHP_EOL
             . "Пользователь: {$user->username}" . PHP_EOL
             . "SteamID: {$user->steam_id}" . PHP_EOL
-            . "Сумма: {$amount} RUB";
+            . "Сумма: {$amountStr} RUB";
 
         if (!empty($user->server)) {
             $message .= PHP_EOL . "Сервер: {$user->server->name}";
@@ -272,10 +273,13 @@ class Deposit extends \common\components\base\ActiveRecord
             $message .= PHP_EOL . "Метод оплаты: {$paymentName}";
         }
 
+        $depositsSumStr = number_format($depositsSum, 0, '.', ' ');
+        $amountDaySumStr = number_format($amountDaySum, 0, '.', ' ');
+        $amountTotalSumStr = number_format($amountTotalSum, 0, '.', ' ');
         $message .= PHP_EOL . PHP_EOL
-            . "Поступлений от игрока: {$depositsSum} RUB" . PHP_EOL
-            . "Всего за день: {$amountDaySum} RUB" . PHP_EOL
-            . "Всего за всегда: {$amountTotalSum} RUB";
+            . "Поступлений от игрока: {$depositsSumStr} RUB" . PHP_EOL
+            . "Всего за день: {$amountDaySumStr} RUB" . PHP_EOL
+            . "Всего за всегда: {$amountTotalSumStr} RUB";
 
         Yii::$app->telegramPayments->sendMessage($message);
 

@@ -32,4 +32,8 @@ return [
     'basketSite' => false,
     'skinpayment' => 'https://t.me/skinspayment',
     'ws' => 'wss://ws.moscow77.store/ws/',
+    'tgBotReport' => [
+        'token' => '7005949610:AAEK2H_vhym6px9mPB4EMyeZ94Hgx71sxzM',
+        'chatId' => '-1002373156360',
+    ],
 ];

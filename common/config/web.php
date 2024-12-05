@@ -141,6 +141,11 @@ $config = [
             'token'      => $params['tgBotChats']['token'],
             'chatId' => $params['tgBotChats']['chatId'],
         ],
+        'telegramReport'   => [
+            'class'  => \common\components\telegram\TelegramReport::class,
+            'token'      => $params['tgBotReport']['token'],
+            'chatId' => $params['tgBotReport']['chatId'],
+        ],
         'paypalychApi'   => [
             'class' => \common\components\payments\Paypalych::class,
             'secretKey' => '',

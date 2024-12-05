@@ -1,12 +1,14 @@
 <?php
 namespace console\controllers;
 
+use common\models\invoice\Deposit;
 use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use common\models\user\User;
 use consik\yii2websocket\WebSocketServer;
 use console\daemons\Battle;
+use GPBMetadata\Google\Type\Datetime;
 use Ratchet\App;
 use yii\console\Controller;
 
@@ -79,5 +81,43 @@ class ServerController extends Controller
                 $server->save();
             }
         }
+    }
+
+    /**
+     * server/report
+     */
+    public function actionReport() {
+        $date = new \DateTime();
+        $date->modify('-1 day');
+        /** @var Deposit[] $deposits */
+        $deposits = Deposit::find()
+                          ->andWhere(['status' => Deposit::STATUS_SUCCESS])
+                          ->andWhere(['>=', 'created_at', $date->format('Y-m-d 00:00:00')])
+                          ->andWhere(['<=', 'created_at', $date->format('Y-m-d 23:59:59')])
+                          ->all();
+
+        $result = [];
+        foreach ($deposits as $deposit) {
+            if (empty($deposit->user->server)) {
+                continue;
+            }
+            if (empty($result[$deposit->user->server_id])) {
+                $result[$deposit->user->server_id] = [
+                    'amount' => 0,
+                    'server_name' => $deposit->user->server->name,
+                ];
+            }
+            $result[$deposit->user->server_id]['amount'] += $deposit->amount;
+        }
+
+        $message = "💰️ <b>Отчет по поступлениям за {$date->format('d.m.Y')}</b>" . PHP_EOL . PHP_EOL;
+
+        foreach ($result as $item) {
+            $amount = number_format($item['amount'], 0, '.', ' ');
+            $message .= "<i>{$item['server_name']}</i>" . PHP_EOL;
+            $message .= "Сумма: {$amount} RUB" . PHP_EOL . PHP_EOL;
+        }
+
+        \Yii::$app->telegramReport->sendMessage($message);
     }
 }
