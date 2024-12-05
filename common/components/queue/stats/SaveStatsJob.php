@@ -343,6 +343,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
             }
             $server->joined = $request['server']['join'];
             $server->queued = $request['server']['queue'];
+            $server->updated_at = date('Y-m-d H:i:s');
             $server->save();
         } catch (\Exception $e) {
             Yii::error("SaveStatsJob: " . $e->getMessage(), 'error');

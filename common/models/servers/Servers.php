@@ -40,6 +40,7 @@ use Yii;
  * @property string $commands
  * @property string $discord_token
  * @property int    $sort
+ * @property string $updated_at
  */
 class Servers extends \common\components\base\ActiveRecord
 {
@@ -97,6 +98,7 @@ class Servers extends \common\components\base\ActiveRecord
             'max'          => Yii::t('common', 'Кол-во слотов'),
             'tag'          => Yii::t('common', 'Тег сервера'),
             'wargm_id'          => Yii::t('common', 'WarGM ID'),
+            'updated_at'          => Yii::t('common', 'Последнее обновление'),
         ];
     }
 

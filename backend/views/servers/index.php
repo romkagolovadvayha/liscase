@@ -28,7 +28,7 @@ $this->params['breadcrumbs'][] = $this->title;
             [
                 'attribute' => 'id',
                 'format'    => 'raw',
-                'options'   => ['width' => '70'],
+                'options'   => ['width' => '40'],
             ],
             'name:ntext',
             [
@@ -53,10 +53,17 @@ $this->params['breadcrumbs'][] = $this->title;
                 },
             ],
             [
+                'attribute'       => 'updated_at',
+                'options'   => ['width' => '200'],
+                'value'     => function (Servers $model) {
+                    return $model->updated_at;
+                },
+            ],
+            [
                 'attribute' => 'status',
                 'filterType'  => GridView::FILTER_SELECT2,
                 'filter'    => ArrayHelper::merge(['' => 'Все'], Servers::getStatusList()),
-                'options'   => ['width' => '150'],
+                'options'   => ['width' => '100'],
                 'value'     => function (Servers $model) {
                     return ArrayHelper::getValue(Servers::getStatusList(), $model->status);
                 },
