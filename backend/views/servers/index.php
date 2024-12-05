@@ -56,6 +56,9 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute'       => 'updated_at',
                 'options'   => ['width' => '200'],
                 'value'     => function (Servers $model) {
+                    if ($model->status != Servers::STATUS_ACTIVE) {
+                        return '';
+                    }
                     return time() - strtotime($model->updated_at) . " сек. назад";
                 },
             ],
