@@ -57,6 +57,10 @@ class SaveStatsJob extends BaseObject implements JobInterface
                             RconTasks::execute($command);
                         }
                     }
+                    if (!empty($user)) {
+                        $user->server_id = $server->id;
+                        $user->save();
+                    }
                 } catch (\Exception $e) {
                     Yii::$app->telegramReports->sendMessage("SaveStatsJob HasGroupGaimer:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                 }

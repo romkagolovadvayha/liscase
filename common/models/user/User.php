@@ -47,6 +47,7 @@ use common\components\base\ActiveRecord;
  * @property int             $rustru_scrap_confirm
  * @property int             $rustru_scrap_wait
  * @property int             $is_gamer
+ * @property int             $server_id
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
@@ -60,6 +61,7 @@ use common\components\base\ActiveRecord;
  * @property string          $currency
  * @property Auth            $auth
  * @property UserTree        $userTree
+ * @property Servers         $server
  */
 class User extends ActiveRecord implements IdentityInterface
 {
@@ -428,6 +430,14 @@ class User extends ActiveRecord implements IdentityInterface
     public function getUserTasks()
     {
         return $this->hasMany(UserTask::class, ['user_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getServer()
+    {
+        return $this->hasOne(Servers::class, ['id' => 'server_id']);
     }
 
     /**
