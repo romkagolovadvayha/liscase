@@ -166,11 +166,10 @@ class ServerController extends Controller
                 'playtime' => 'Онлайн',
                 'reider' => 'Рейдер',
             ];
-            $i = 0;
-            foreach ($tops as $type => $value) {
-                foreach ($steamIds as $_steamId) {
-                    $params = $userList[$_steamId];
-                    $user = User::findBySteamId($_steamId);
+            foreach ($steamIds as $_steamId) {
+                $params = $userList[$_steamId];
+                $user = User::findBySteamId($_steamId);
+                foreach ($tops as $type => $value) {
                     /** @var UserTop $userTop */
                     $userTop = UserTop::find()
                                       ->andWhere(['user_id' => $user->id])
@@ -190,6 +189,10 @@ class ServerController extends Controller
 
                     foreach (UserTop::getRaiting()[$type] as $k => $v) {
                         $userTop->value += Statistics::getParam($params, $k) * $v;
+                    }
+
+                    if ($userTop->key != 'kills' && $userTop->value < 10) {
+                        continue;
                     }
 
                     $userTop->save();
