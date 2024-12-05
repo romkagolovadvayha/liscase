@@ -5,11 +5,14 @@ use common\models\invoice\Deposit;
 use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
+use common\models\stats\Wipe;
 use common\models\user\User;
+use common\models\user\UserTop;
 use consik\yii2websocket\WebSocketServer;
 use console\daemons\Battle;
 use GPBMetadata\Google\Type\Datetime;
 use Ratchet\App;
+use yii\base\BaseObject;
 use yii\console\Controller;
 
 class ServerController extends Controller
@@ -97,7 +100,9 @@ class ServerController extends Controller
                           ->all();
 
         $result = [];
+        $total = 0;
         foreach ($deposits as $deposit) {
+            $total += $deposit->amount;
             if (empty($deposit->user->server)) {
                 continue;
             }
@@ -118,6 +123,78 @@ class ServerController extends Controller
             $message .= "Сумма: {$amount} RUB" . PHP_EOL . PHP_EOL;
         }
 
+        $totalStr = number_format($total, 0, '.', ' ');
+        $message = "Всего: {$totalStr} RUB";
+
         \Yii::$app->telegramReport->sendMessage($message);
+    }
+
+    /**
+     * server/recalculate-top
+     */
+    public function actionRecalculateTop() {
+        ini_set('memory_limit', '512M');
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->cache(30)
+                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+        foreach ($servers as $server) {
+            $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
+            /** @var Wipe[] $models */
+            $statistics = Statistics::find()
+                                    ->cache(3*60)
+                                    ->andWhere(['server_tag' => $server->tag])
+                                    ->andWhere(['wipe' => $wipeDate])
+                                    ->asArray()
+                                    ->all();
+
+            $userList = [];
+            foreach ($statistics as $item) {
+                $userList[$item['steam_id']][$item['key']] = $item['value'];
+            }
+
+            $steamIds = array_keys($userList);
+            $tops = [
+                'kills' => 'Киллер',
+                'scientists' => 'Мирный',
+                'hunter' => 'Охотник',
+                'fermer' => 'Фермер',
+                'farmer' => 'Фармер',
+                'fishing' => 'Рыбак',
+                'playtime' => 'Онлайн',
+                'reider' => 'Рейдер',
+            ];
+            $i = 0;
+            foreach ($tops as $type => $value) {
+                foreach ($steamIds as $_steamId) {
+                    $params = $userList[$_steamId];
+                    $user = User::findBySteamId($_steamId);
+                    /** @var UserTop $userTop */
+                    $userTop = UserTop::find()
+                                      ->andWhere(['user_id' => $user->id])
+                                      ->andWhere(['key' => $type])
+                                      ->andWhere(['server_id' => $server->id])
+                                      ->andWhere(['wipe' => $wipeDate])
+                                      ->one();
+
+                    if (empty($userTop)) {
+                        $userTop = new UserTop();
+                        $userTop->user_id = $user->id;
+                        $userTop->key = $type;
+                        $userTop->value = 0;
+                        $userTop->server_id = $server->id;
+                        $userTop->wipe = $wipeDate;
+                    }
+
+                    foreach (UserTop::getRaiting()[$type] as $k => $v) {
+                        $userTop->value += Statistics::getParam($params, $k) * $v;
+                    }
+
+                    $userTop->save();
+                }
+            }
+        }
     }
 }

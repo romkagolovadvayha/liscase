@@ -10,7 +10,9 @@ use common\models\statistics\Kills;
 use common\models\statistics\Reports;
 use common\models\statistics\Statistics;
 use common\models\statistics\Teams;
+use common\models\team\Team;
 use common\models\user\User;
+use common\models\user\UserTop;
 use Yii;
 use yii\base\BaseObject;
 use yii\queue\JobInterface;
@@ -84,6 +86,11 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     if (empty($value)) {
                         continue;
                     }
+                    try {
+                        UserTop::updateTop($user, $key, $value, $server, $wipeDate);
+                    } catch (\Exception $ex) {
+                        Yii::$app->telegramChats->sendMessage("UserTop::updateTop(user, key, value, server, wipeDate): " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                    }
                     if (!empty($statistics[$key])) {
                         $statistics[$key]->value += $value;
                         $statistics[$key]->save();
@@ -128,6 +135,11 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 $model->server_tag = $this->serverTag;
                 $model->wipe = $wipeDate;
                 $model->save();
+                try {
+                    Team::updateTeam($model, $server, $wipeDate);
+                } catch (\Exception $ex) {
+                    Yii::$app->telegramChats->sendMessage("Team::updateTeam(model, server, wipeDate): " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                }
             }
             /*try {
                 foreach ($request['chats'] as $item) {
