@@ -124,7 +124,7 @@ class ServerController extends Controller
         }
 
         $totalStr = number_format($total, 0, '.', ' ');
-        $message = "Всего: {$totalStr} RUB";
+        $message .= "Всего: {$totalStr} RUB";
 
         \Yii::$app->telegramReport->sendMessage($message);
     }
