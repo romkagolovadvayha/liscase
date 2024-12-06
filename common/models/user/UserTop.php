@@ -20,6 +20,16 @@ use Yii;
  */
 class UserTop extends \yii\db\ActiveRecord
 {
+
+    const TYPE_REIDER = 'reider';
+    const TYPE_KILLS = 'kills';
+    const TYPE_SCIENTISTS = 'scientists';
+    const TYPE_PLAYTIME = 'playtime';
+    const TYPE_FARMER = 'farmer';
+    const TYPE_FISHING = 'fishing';
+    const TYPE_HUNTER = 'hunter';
+    const TYPE_FERMER = 'fermer';
+
     /**
      * {@inheritdoc}
      */
@@ -85,13 +95,13 @@ class UserTop extends \yii\db\ActiveRecord
      * @param Servers $server
      * @param string $wipeDate
      */
-    public static function updateTop($user, $param, $value, $server, $wipeDate) {
+    public static function updateTop($userId, $param, $value, $serverId, $wipeDate) {
         foreach (self::getRaiting() as $key => $item) {
             if (empty($item[$param])) {
                 continue;
             }
             $amount = $item[$param] * $value;
-            UserTop::setTop($user, $key, $amount, $server, $wipeDate);
+            UserTop::setTop($userId, $key, $amount, $serverId, $wipeDate);
         }
     }
 
@@ -102,12 +112,12 @@ class UserTop extends \yii\db\ActiveRecord
      * @param Servers $server
      * @param string $wipeDate
      */
-    public static function setTop($user, $key, $value, $server, $wipeDate) {
+    public static function setTop($userId, $key, $value, $serverId, $wipeDate) {
         /** @var UserTop $userTop */
         $userTop = UserTop::find()
-            ->andWhere(['user_id' => $user->id])
+            ->andWhere(['user_id' => $userId])
             ->andWhere(['key' => $key])
-            ->andWhere(['server_id' => $server->id])
+            ->andWhere(['server_id' => $serverId])
             ->andWhere(['wipe' => $wipeDate])
             ->one();
 
@@ -118,17 +128,30 @@ class UserTop extends \yii\db\ActiveRecord
         }
 
         $userTop = new UserTop();
-        $userTop->user_id = $user->id;
+        $userTop->user_id = $userId;
         $userTop->key = $key;
         $userTop->value = $value;
-        $userTop->server_id = $server->id;
+        $userTop->server_id = $serverId;
         $userTop->wipe = $wipeDate;
         $userTop->save();
     }
 
+    public static function getRaitingLabel() {
+        return [
+            UserTop::TYPE_REIDER => Yii::t('common', 'Рейдер'),
+            UserTop::TYPE_KILLS => Yii::t('common', 'Убийств'),
+            UserTop::TYPE_SCIENTISTS => Yii::t('common', 'Мирный'),
+            UserTop::TYPE_PLAYTIME => Yii::t('common', 'Онлайн'),
+            UserTop::TYPE_FARMER => Yii::t('common', 'Фармер'),
+            UserTop::TYPE_FISHING => Yii::t('common', 'Рыбак'),
+            UserTop::TYPE_HUNTER => Yii::t('common', 'Охотник'),
+            UserTop::TYPE_FERMER => Yii::t('common', 'Фермер'),
+        ];
+    }
+
     public static function getRaiting() {
         return [
-          'reider' => [
+          UserTop::TYPE_REIDER => [
             'c4thrown' => 1,
             'satchelsthrown' => 0.2,
             'rocket_basic' => 0.5,
@@ -139,25 +162,22 @@ class UserTop extends \yii\db\ActiveRecord
             'grenade.molotov.deployed' => 0.05,
             'grenade.beancan.deployed' => 0.05,
           ],
-          'kills' => [
+          UserTop::TYPE_KILLS => [
             'kills' => 1,
           ],
-          'scientists' => [
+          UserTop::TYPE_SCIENTISTS => [
             'scientists' => 1,
           ],
-          'deaths' => [
-            'deaths' => 1,
-          ],
-          'playtime' => [
+          UserTop::TYPE_PLAYTIME => [
             'playtime' => 1,
           ],
-          'farmer' => [
+          UserTop::TYPE_FARMER => [
             'wood' => 0.05,
             'stones' => 0.3,
             'metal.ore' => 0.5,
             'sulfur.ore' => 1,
           ],
-          'fishing' => [
+          UserTop::TYPE_FISHING => [
             'f_fish.anchovy' => 10,
             'f_fish.catfish' => 32,
             'f_fish.herring' => 10,
@@ -168,7 +188,7 @@ class UserTop extends \yii\db\ActiveRecord
             'f_fish.troutsmall' => 15,
             'f_fish.yellowperch' => 25,
           ],
-          'hunter' => [
+          UserTop::TYPE_HUNTER => [
               'chicken' => 1,
               'bear' => 1,
               'boar' => 1,
@@ -178,7 +198,7 @@ class UserTop extends \yii\db\ActiveRecord
               'wolf2' => 1,
               'wolf' => 1,
           ],
-          'fermer' => [
+          UserTop::TYPE_FERMER => [
               'gathered_cloth' => 0.05,
               'gathered_pumpkin' => 0.5,
               'gathered_corn' => 0.3,
