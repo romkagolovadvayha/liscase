@@ -34,6 +34,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
             $request = json_decode($this->data, 1);
             /** @var Servers $server */
             $server = Servers::find()
+                             ->cache(60)
                              ->andWhere(['tag' => $this->serverTag])
                              ->one();
             if (empty($server)) {
@@ -124,7 +125,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         'wipeDate' => $wipeDate,
                     ]));
                 } catch (\Exception $e) {
-                    Yii::$app->telegramChats->sendMessage("SaveStatsJob::updateTop(user, key, value, server, wipeDate): " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                    Yii::$app->telegramChats->sendMessage("SaveStatsJob::queueKills: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                 }
             }
             foreach ($request['teams'] as $item) {
