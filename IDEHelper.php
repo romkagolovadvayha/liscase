@@ -43,6 +43,7 @@ Yii::$container = new yii\di\Container;
  * @property \yii\queue\redis\Queue              $queueTop
  * @property \yii\queue\redis\Queue              $queueReport
  * @property \yii\queue\redis\Queue              $queueTeam
+ * @property \yii\queue\redis\Queue              $queueKills
  * @property \yii\queue\redis\Queue              $queueTelegram
  * @property \yii\queue\redis\Queue              $queueMidjourney
  * @property \common\components\telegram\TelegramApiHelper $personalBotTelegram

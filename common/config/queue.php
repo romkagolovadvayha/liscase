@@ -3,6 +3,7 @@
 return [
     'bootstrap'  => [
         'queueStats',
+        'queueKills',
         'queueTop',
         'queueReport',
         'queueTeam',
@@ -15,6 +16,12 @@ return [
             'class'   => 'yii\queue\redis\Queue',
             'redis'   => 'redis',
             'channel' => 'queue-stats',
+            'ttr' => 1200,
+        ],
+        'queueKills'                => [
+            'class'   => 'yii\queue\redis\Queue',
+            'redis'   => 'redis',
+            'channel' => 'queue-kills',
             'ttr' => 1200,
         ],
         'queueTop'                => [

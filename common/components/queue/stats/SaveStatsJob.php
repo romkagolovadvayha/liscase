@@ -118,21 +118,14 @@ class SaveStatsJob extends BaseObject implements JobInterface
             }
             foreach ($request['kills'] as $item) {
                 try {
-                    User::findBySteamId($item['steam_id']);
-                    if (strlen($item['dead']) >= 16) {
-                        User::findBySteamId($item['dead']);
-                    }
-                } catch (\Exception $ex) {}
-                $model = new Kills();
-                $model->steam_id = $item['steam_id'];
-                $model->type = $item['type'];
-                $model->dead = $item['dead'];
-                $model->weapon = $item['weapon'];
-                $model->distance = $item['distance'];
-                $model->created_at = $item['date'];
-                $model->server_tag = $this->serverTag;
-                $model->wipe = $wipeDate;
-                $model->save();
+                    Yii::$app->queueKills->push(new UpdateKillsJob([
+                        'item' => $item,
+                        'serverTag' => $this->serverTag,
+                        'wipeDate' => $wipeDate,
+                    ]));
+                } catch (\Exception $e) {
+                    Yii::$app->telegramChats->sendMessage("SaveStatsJob::updateTop(user, key, value, server, wipeDate): " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                }
             }
             foreach ($request['teams'] as $item) {
                 try {
