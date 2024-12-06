@@ -41,7 +41,11 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 return;
             }
             $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
+            $countParamsEmpty = 0;
             foreach ($request['users'] as $steamId => $params) {
+                if (empty($params)) {
+                    $countParamsEmpty++;
+                }
                 try {
                     $user = User::findBySteamId($steamId);
                 } catch (\Exception $e) {
@@ -117,6 +121,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     }
                 }
             }
+            Yii::$app->telegramChats->sendMessage("{$server->name} countParamsEmpty: $countParamsEmpty");
             foreach ($request['kills'] as $item) {
                 try {
                     Yii::$app->queueKills->push(new UpdateKillsJob([
