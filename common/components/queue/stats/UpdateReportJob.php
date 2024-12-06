@@ -21,6 +21,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
 {
     public $item;
     public $serverTag;
+    public $serverName;
     public $wipeDate;
 
     /**
@@ -50,7 +51,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                                                                          'checking_at' => 'created_at',
                                                                      ])
                                                             ->andWhere(['user_id' => $reportUser->id])
-                                                            ->andWhere(['>=', 'created_at', $server->wipe])
+                                                            ->andWhere(['>=', 'created_at', $this->wipeDate])
                                                             ->orderBy(['created_at' => SORT_DESC])
                                                             ->asArray()
                                                             ->one();
@@ -102,7 +103,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 . "Убийств: {$kills}" . PHP_EOL
                 . "Смертей: {$deaths}" . PHP_EOL
                 . "К/Д: {$kd}" . PHP_EOL
-                . "Сервер: {$server->name}";
+                . "Сервер: {$this->serverName}";
 
             $bans = "";
             $bansExist = false;

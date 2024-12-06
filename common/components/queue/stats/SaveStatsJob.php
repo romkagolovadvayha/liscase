@@ -198,6 +198,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         Yii::$app->queueReport->push(new UpdateReportJob([
                             'item' => $item,
                             'serverTag' => $this->serverTag,
+                            'serverName' => $server->name,
                             'wipeDate' => $wipeDate,
                         ]));
                     } catch (\Exception $e) {
