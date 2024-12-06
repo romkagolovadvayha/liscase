@@ -23,6 +23,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
     public $serverTag;
     public $serverName;
     public $wipeDate;
+    public $wipe;
 
     /**
      * @param \yii\queue\Queue $queue
@@ -51,7 +52,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                                                                          'checking_at' => 'created_at',
                                                                      ])
                                                             ->andWhere(['user_id' => $reportUser->id])
-                                                            ->andWhere(['>=', 'created_at', $this->wipeDate])
+                                                            ->andWhere(['>=', 'created_at', $this->wipe])
                                                             ->orderBy(['created_at' => SORT_DESC])
                                                             ->asArray()
                                                             ->one();

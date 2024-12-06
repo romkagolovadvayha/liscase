@@ -194,6 +194,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                             'serverTag' => $this->serverTag,
                             'serverName' => $server->name,
                             'wipeDate' => $wipeDate,
+                            'wipe' => $server->wipe,
                         ]));
                     } catch (\Exception $e) {
                         Yii::$app->telegramChats->sendMessage("SaveStatsJob::updateTeam: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
