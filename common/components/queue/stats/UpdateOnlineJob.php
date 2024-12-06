@@ -80,6 +80,9 @@ class UpdateOnlineJob extends BaseObject implements JobInterface
                         $model->wipe = $this->wipeDate;
                         $model->save();
                     }
+                    $user->server_id = $this->serverId;
+                    $user->last_visit_server_at = date('Y-m-d H:i:s');
+                    $user->save();
                 }
                 Yii::$app->cache->delete($cacheKey);
             } else {
