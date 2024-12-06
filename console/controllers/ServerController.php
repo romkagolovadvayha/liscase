@@ -79,7 +79,7 @@ class ServerController extends Controller
                          ->all();
 
         foreach ($servers as $server) {
-            if (time() - strtotime($server->updated_at) > 65) {
+            if (time() - strtotime($server->updated_at) > 185) {
                 $server->status = Servers::STATUS_NOACTIVE;
                 $server->save();
             }
