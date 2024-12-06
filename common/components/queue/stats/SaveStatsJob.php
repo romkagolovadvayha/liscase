@@ -41,10 +41,19 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 return;
             }
             $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
-            $countParamsEmpty = 0;
+            try {
+                Yii::$app->queueOnline->push(new UpdateOnlineJob([
+                    'steam_ids' => array_keys($request['users']),
+                    'serverId' => $server->id,
+                    'serverTag' => $this->serverTag,
+                    'wipeDate' => $wipeDate,
+                ]));
+            } catch (\Exception $e) {
+                Yii::$app->telegramChats->sendMessage("SaveStatsJob::UpdateOnlineJob: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+            }
             foreach ($request['users'] as $steamId => $params) {
                 if (empty($params)) {
-                    $countParamsEmpty++;
+                    continue;
                 }
                 try {
                     $user = User::findBySteamId($steamId);
@@ -76,7 +85,6 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     Yii::$app->telegramReports->sendMessage("SaveStatsJob HasGroupGaimer:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                 }
 
-                $params['playtime'] = 1;
                 $params['kills'] = 0;
                 if (!empty($request['kills'])) {
                     try {
@@ -121,7 +129,6 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     }
                 }
             }
-            Yii::$app->telegramChats->sendMessage("{$server->name} countParamsEmpty: $countParamsEmpty");
             foreach ($request['kills'] as $item) {
                 try {
                     Yii::$app->queueKills->push(new UpdateKillsJob([
