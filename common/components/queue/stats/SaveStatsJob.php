@@ -43,7 +43,9 @@ class SaveStatsJob extends BaseObject implements JobInterface
             foreach ($request['users'] as $steamId => $params) {
                 try {
                     $user = User::findBySteamId($steamId);
-                } catch (\Exception $ex) {}
+                } catch (\Exception $e) {
+                    Yii::$app->telegramReports->sendMessage("SaveStatsJob findBySteamId:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                }
                 $statistics = Statistics::find()
                                         ->andWhere(['steam_id' => $steamId])
                                         ->andWhere(['server_tag' => $this->serverTag])
@@ -97,7 +99,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                             'serverId' => $server->id,
                             'wipeDate' => $wipeDate,
                         ]));
-                    } catch (\Exception $ex) {
+                    } catch (\Exception $e) {
                         Yii::$app->telegramChats->sendMessage("SaveStatsJob::updateTop(user, key, value, server, wipeDate): " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                     }
                     if (!empty($statistics[$key])) {
@@ -151,7 +153,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         'server' => $server,
                         'wipeDate' => $wipeDate,
                     ]));
-                } catch (\Exception $ex) {
+                } catch (\Exception $e) {
                     Yii::$app->telegramChats->sendMessage("SaveStatsJob::updateTeam: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                 }
             }
@@ -198,7 +200,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                             'serverTag' => $this->serverTag,
                             'wipeDate' => $wipeDate,
                         ]));
-                    } catch (\Exception $ex) {
+                    } catch (\Exception $e) {
                         Yii::$app->telegramChats->sendMessage("SaveStatsJob::updateTeam: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                     }
                 }
