@@ -58,7 +58,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 try {
                     $user = User::findBySteamId($steamId);
                 } catch (\Exception $e) {
-                    Yii::$app->telegramReports->sendMessage("SaveStatsJob findBySteamId:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                    Yii::$app->telegramChats->sendMessage("SaveStatsJob findBySteamId:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                 }
                 $statistics = Statistics::find()
                                         ->andWhere(['steam_id' => $steamId])

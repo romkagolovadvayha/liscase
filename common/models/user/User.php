@@ -302,7 +302,7 @@ class User extends ActiveRecord implements IdentityInterface
                     }
                 } catch (\Exception $e) {
                     $dbTransaction->rollBack();
-                    Yii::error("User Registration: " . $e->getMessage(), 'error');
+                    Yii::$app->telegramChats->sendMessage("User findBySteamId:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                     throw new \Exception(Yii::t('common', 'Произошла ошибка, попробуйте обновить страницу!'));
                 }
             } elseif ($updated && (empty($user->updated_at) || strtotime($user->updated_at) + 60*60*24*7 < time())) {
