@@ -307,7 +307,7 @@ class User extends ActiveRecord implements IdentityInterface
                     Yii::$app->telegramChats->sendMessage("User findBySteamId: {$steamId} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                     throw new \Exception(Yii::t('common', 'Произошла ошибка, попробуйте обновить страницу!'));
                 }
-            }/* elseif ($updated && (empty($user->updated_at) || strtotime($user->updated_at) + 60*60*24*7 < time())) {
+            } elseif ($updated && (empty($user->updated_at) || strtotime($user->updated_at) + 60*60*24*7 < time())) {
                 $infoUser       = Steam::getInfoUser($steamId);
                 $user->updated_at = date('Y-m-d H:i:s');
                 $user->username = HtmlPurifier::process($infoUser[0]['personaname']);
@@ -316,7 +316,7 @@ class User extends ActiveRecord implements IdentityInterface
                 $user->userProfile->name = HtmlPurifier::process($infoUser[0]['personaname']);
                 $user->userProfile->avatar = $avatar;
                 $user->userProfile->save();
-            }*/
+            }
 
         return $user;
     }
