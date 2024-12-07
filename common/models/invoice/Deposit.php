@@ -209,7 +209,7 @@ class Deposit extends \common\components\base\ActiveRecord
 //            self::TYPE_PAYMENT_MIR           => [1000, 100000],
             self::TYPE_PAYMENT_PERFECT_MONEY => [1000, 100000],
             self::TYPE_PAYMENT_CARD_UA => [1000, 100000],
-            self::TYPE_PAYMENT_CARD_KZT => [1000, 100000],
+            self::TYPE_PAYMENT_CARD_KZT => [1, 100000],
             self::TYPE_PAYMENT_CARD_YM => [1000, 100000],
         ];
     }

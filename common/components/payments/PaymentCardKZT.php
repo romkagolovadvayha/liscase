@@ -12,7 +12,7 @@ class PaymentCardKZT
     public function create($amount)
     {
         $model = Deposit::createOperation(Yii::$app->user->id, $amount, Deposit::TYPE_PAYMENT_CARD_KZT);
-        $result = Yii::$app->anyPayApi->create($amount, 'card', 'Пополнение баланса', $model->id, 'RUB', 'KZT');
+        $result = Yii::$app->anyPayApi->create($amount, 'card', 'Пополнение баланса', $model->id, 'RUB', 'RUB');
         $model->payment_id = $result['result']['transaction_id'];
         $model->save(false);
 
