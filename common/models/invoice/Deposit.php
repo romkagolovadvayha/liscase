@@ -324,6 +324,13 @@ class Deposit extends \common\components\base\ActiveRecord
                   'id' => $data['object']['id'],
                   'status' => $status
                 ];
+            case 'anypay':
+                $status = 'NO AVAILABLE';
+                $transactionId = !empty($data['transaction_id']) ? $data['transaction_id'] : $data['result']['transaction_id'];
+                return [
+                    'id' => $transactionId,
+                    'status' => $status
+                ];
             break;
         }
     }
