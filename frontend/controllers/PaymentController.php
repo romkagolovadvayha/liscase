@@ -49,8 +49,8 @@ class PaymentController extends WebController
         Yii::$app->response->statusCode = 200;
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
+        Yii::$app->telegramChats->sendMessage(Yii::$app->request->getRawBody());
         $response = Deposit::responseAdapter(Yii::$app->request->getRawBody(), $payment);
-        Yii::$app->telegramChats->sendMessage(json_encode($response));
         /** @var Deposit[] $deposits */
         $deposit = Deposit::find()
                            ->andWhere(['status' => Deposit::STATUS_WAIT_CONFIRM])
