@@ -48,7 +48,7 @@ class PaymentController extends WebController
     public function actionCallback()
     {
         header('Content-type: application/json');
-
+        Yii::$app->telegramChats->sendMessage(Yii::$app->request->getRawBody());
         /** @var Deposit[] $deposits */
         $deposits = Deposit::find()
                            ->andWhere(['status' => Deposit::STATUS_WAIT_CONFIRM])
