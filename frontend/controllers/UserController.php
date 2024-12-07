@@ -168,7 +168,7 @@ class UserController extends WebController
     }
 
     /**
-     * @return string
+     * @return Response
      */
     public function actionPayment()
     {
