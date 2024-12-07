@@ -308,4 +308,24 @@ class Deposit extends \common\components\base\ActiveRecord
         }
         return true;
     }
+
+    public static function responseAdapter($response, $payment) {
+        $data = json_decode($response, 1);
+        $status = null;
+        switch ($payment) {
+            case 'tome':
+                if ($data['event'] == 'payment.succeeded') {
+                    $status = 'SUCCESS';
+                }
+                if ($data['event'] == 'payment.canceled') {
+                    $status = 'CANCEL';
+                }
+                return [
+                  'id' => $data['object']['id'],
+                  'status' => $status
+                ];
+            break;
+        }
+    }
+
 }

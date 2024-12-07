@@ -44,21 +44,23 @@ class PaymentController extends WebController
      * @return int[]
      * @throws \Exception
      */
-    public function actionCallback()
+    public function actionCallback($payment)
     {
         Yii::$app->response->statusCode = 200;
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-        Yii::$app->telegramChats->sendMessage(Yii::$app->request->getRawBody());
+
+        $response = Deposit::responseAdapter(Yii::$app->request->getRawBody(), $payment);
+        Yii::$app->telegramChats->sendMessage(json_encode($response));
         /** @var Deposit[] $deposits */
-//        $deposits = Deposit::find()
-//                           ->andWhere(['status' => Deposit::STATUS_WAIT_CONFIRM])
-//                           ->andWhere('payment_id is not null')
-//                           ->all();
-//
-//        foreach ($deposits as $deposit) {
-//            $deposit->check();
-//        }
-//
+        $deposit = Deposit::find()
+                           ->andWhere(['status' => Deposit::STATUS_WAIT_CONFIRM])
+                           ->andWhere(['payment_id' => $response['id']])
+                           ->one();
+
+        if (!empty($deposit)) {
+            $deposit->check();
+        }
+
         return [
             'code' => 200,
         ];
