@@ -9,12 +9,16 @@ use yii\base\Component;
 class PaymentTrc20
 {
 
-    public function create($amount)
+    /**
+     * @param Deposit $deposit
+     *
+     * @return mixed
+     */
+    public function create($deposit)
     {
-        $model = Deposit::createOperation(Yii::$app->user->id, $amount, Deposit::TYPE_PAYMENT_TRC20);
-        $result = Yii::$app->anyPayApi->create($amount, 'usdt', 'Пополнение баланса', $model->id, 'RUB', 'RUB');
-        $model->payment_id = $result['result']['transaction_id'];
-        $model->save(false);
+        $result = Yii::$app->anyPayApi->create($deposit->amount, 'usdt', 'Пополнение баланса', $deposit->id, 'RUB', 'RUB');
+        $deposit->payment_id = $result['result']['transaction_id'];
+        $deposit->save(false);
 
         return $result['result']['payment_url'];
     }

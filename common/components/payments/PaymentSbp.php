@@ -8,13 +8,16 @@ use yii\base\Component;
 
 class PaymentSbp
 {
-
-    public function create($amount)
+    /**
+     * @param Deposit $deposit
+     *
+     * @return mixed
+     */
+    public function create($deposit)
     {
-        $model = Deposit::createOperation(Yii::$app->user->id, $amount, Deposit::TYPE_PAYMENT_SBP);
-        $result = Yii::$app->tomeApi->create($amount, 'sbp', 'Пополнение баланса', $model->id);
-        $model->payment_id = $result['id'];
-        $model->save(false);
+        $result = Yii::$app->tomeApi->create($deposit->amount, 'sbp', 'Пополнение баланса', $deposit->id);
+        $deposit->payment_id = $result['id'];
+        $deposit->save(false);
 
         return $result['confirmation']['confirmation_url'];
     }

@@ -78,7 +78,14 @@ class PaymentForm extends Model
         }
 
         $paymentApi = PaymentApi::getInstance($this->payment_id);
-        $urlConfirm = $paymentApi->create($this->amount);
+        $deposit = Deposit::createOperation(Yii::$app->user->id, $this->amount, $this->payment_id);
+        try {
+            $urlConfirm = $paymentApi->create($deposit);
+        } catch (\Exception $ex) {
+            $deposit->status = Deposit::STATUS_CANCELED;
+            $deposit->save();
+            Yii::$app->session->addFlash('danger', Yii::t('common', 'Платежная система не доступна в данный момент, попробуйте позже.'));
+        }
 
         return $urlConfirm;
     }
