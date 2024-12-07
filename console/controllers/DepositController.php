@@ -19,6 +19,7 @@ class DepositController extends Controller
      */
     public function actionSync()
     {
+        exit;
         /** @var Deposit[] $deposits */
         $deposits = Deposit::find()
             ->andWhere(['status' => Deposit::STATUS_WAIT_CONFIRM])
