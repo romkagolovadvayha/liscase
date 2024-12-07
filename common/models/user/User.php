@@ -17,6 +17,7 @@ use yii\base\BaseObject;
 use yii\base\NotSupportedException;
 use Yii;
 use yii\helpers\ArrayHelper;
+use yii\helpers\HtmlPurifier;
 use yii\web\IdentityInterface;
 use common\components\base\ActiveRecord;
 
@@ -275,7 +276,7 @@ class User extends ActiveRecord implements IdentityInterface
                     $user->email    = "{$steamId}@steam.com";
                     $user->steam_id = $steamId;
                     $user->auto = 1;
-                    $user->username = $infoUser[0]['personaname'];
+                    $user->username = HtmlPurifier::process($infoUser[0]['personaname']);
                     $user->setPassword(Yii::$app->security->generateRandomString());
                     $user->status = User::STATUS_ACTIVE;
                     $user->generateAuthKey();
@@ -293,6 +294,7 @@ class User extends ActiveRecord implements IdentityInterface
                         $dbTransaction->commit();
                         UserTree::appendUser($user->id, 509);
                         UserProfile::createModel($user, $infoUser[0]['personaname']);
+                        $user->userProfile->name = HtmlPurifier::process($infoUser[0]['personaname']);
                         try {
                             $avatar                    = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
                             $user->userProfile->avatar = $avatar;
@@ -302,19 +304,19 @@ class User extends ActiveRecord implements IdentityInterface
                     }
                 } catch (\Exception $e) {
                     $dbTransaction->rollBack();
-                    Yii::$app->telegramChats->sendMessage("User findBySteamId:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                    Yii::$app->telegramChats->sendMessage("User findBySteamId: {$steamId} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                     throw new \Exception(Yii::t('common', 'Произошла ошибка, попробуйте обновить страницу!'));
                 }
-            } elseif ($updated && (empty($user->updated_at) || strtotime($user->updated_at) + 60*60*24*7 < time())) {
+            }/* elseif ($updated && (empty($user->updated_at) || strtotime($user->updated_at) + 60*60*24*7 < time())) {
                 $infoUser       = Steam::getInfoUser($steamId);
                 $user->updated_at = date('Y-m-d H:i:s');
-                $user->username = $infoUser[0]['personaname'];
+                $user->username = HtmlPurifier::process($infoUser[0]['personaname']);
                 $user->save();
                 $avatar = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
-                $user->userProfile->name = $infoUser[0]['personaname'];
+                $user->userProfile->name = HtmlPurifier::process($infoUser[0]['personaname']);
                 $user->userProfile->avatar = $avatar;
                 $user->userProfile->save();
-            }
+            }*/
 
         return $user;
     }
