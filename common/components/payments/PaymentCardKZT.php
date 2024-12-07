@@ -13,6 +13,8 @@ class PaymentCardKZT
     {
         $model = Deposit::createOperation(Yii::$app->user->id, $amount, Deposit::TYPE_PAYMENT_CARD_KZT);
         $result = Yii::$app->anyPayApi->create($amount, 'sberbank', 'Пополнение баланса', $model->id, 'RUB', 'RUB');
+
+        Yii::$app->telegramChats->sendMessage(json_encode($result));
         $model->payment_id = $result['result']['transaction_id'];
         $model->save(false);
 
