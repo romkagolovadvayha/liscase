@@ -86,10 +86,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 . "SteamId: <code>{$reportUser->steam_id}</code>" . PHP_EOL
                 . "Причина: <b>{$reason}</b>" . PHP_EOL
                 . "Кол-во репортов на игрока: <b>{$count}</b>" . PHP_EOL
-                . "Играл за вайп: {$playHour} ч." . PHP_EOL
-                . "Убийств: {$kills}" . PHP_EOL
-                . "Смертей: {$deaths}" . PHP_EOL
-                . "К/Д: {$kd}";
+                . "Играл за вайп: {$playHour} ч." . PHP_EOL;
 
 
             $hoursExist = false;
@@ -110,6 +107,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 $hours = round($hours/60, 1);
                 $message .=  PHP_EOL . "Часов в Steam: " . number_format($hours, 0, '.', ' ') . " ч.";
             }
+            $message .=  PHP_EOL . "Килы: {$kills}/{$deaths} (К/Д: {$kd})";
             $message .=  PHP_EOL . "Сервер: {$this->serverName}";
 
             $bans = "";
