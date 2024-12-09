@@ -81,9 +81,9 @@ class UpdateReportJob extends BaseObject implements JobInterface
             $playHour = round($playtime/60, 1);
 
             $message = "⚔ <b>Новая жалоба на игрока</b>" . PHP_EOL
-                . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL . PHP_EOL
+                . "Отправил: {$user->username} (<code>{$user->steam_id}</code>)" . PHP_EOL . PHP_EOL
                 . "Подозреваемый: <a href=\"https://steamcommunity.com/profiles/{$reportUser->steam_id}\">{$reportUser->username}</a>" . PHP_EOL
-                . "SteamId: {$reportUser->steam_id}" . PHP_EOL
+                . "SteamId: <code>{$reportUser->steam_id}</code>" . PHP_EOL
                 . "Причина: {$item['reason']}" . PHP_EOL
                 . "Кол-во репортов на игрока: <b>{$count}</b>" . PHP_EOL
                 . "Играл за вайп: {$playHour} ч." . PHP_EOL
