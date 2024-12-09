@@ -80,7 +80,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
             $playHour = round($playtime/60, 1);
             $reason = !empty($item['reason']) ? $item['reason'] : 'Не указана';
-            $message = "⚔ <b>Новая жалоба на игрока</b>" . PHP_EOL
+            $message = "⚔ <b>{$this->serverName}</b>" . PHP_EOL
                 . "Отправил: {$user->username} (<code>{$user->steam_id}</code>)" . PHP_EOL . PHP_EOL
                 . "Подозреваемый: <a href=\"https://steamcommunity.com/profiles/{$reportUser->steam_id}\">{$reportUser->username}</a>" . PHP_EOL
                 . "SteamId: <code>{$reportUser->steam_id}</code>" . PHP_EOL
@@ -108,7 +108,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 $message .=  PHP_EOL . "Часов в Steam: " . number_format($hours, 0, '.', ' ') . " ч.";
             }
             $message .=  PHP_EOL . "Килы: {$kills}/{$deaths} (К/Д: {$kd})";
-            $message .=  PHP_EOL . "Сервер: {$this->serverName}";
 
             $bans = "";
             $bansExist = false;
