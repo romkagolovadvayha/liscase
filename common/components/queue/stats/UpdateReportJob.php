@@ -89,8 +89,28 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 . "Играл за вайп: {$playHour} ч." . PHP_EOL
                 . "Убийств: {$kills}" . PHP_EOL
                 . "Смертей: {$deaths}" . PHP_EOL
-                . "К/Д: {$kd}" . PHP_EOL
-                . "Сервер: {$this->serverName}";
+                . "К/Д: {$kd}";
+
+
+            $hoursExist = false;
+            $hours = 0;
+            try {
+                $games = Steam::getGameInfo($reportUser->steam_id);
+                foreach ($games as $game) {
+                    if ($game['appid'] == 252490) {
+                        $hoursExist = true;
+                        $hours = $game['playtime_forever'];
+                        break;
+                    }
+                }
+            } catch (\Exception $e) {
+                Yii::$app->telegramChats->sendMessage("UpdateReportJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+            }
+            if ($hoursExist) {
+                $hours = round($hours/60, 1);
+                $message .=  PHP_EOL . "Часов в Steam: " . number_format($hours, 0, '.', ' ') . " ч.";
+            }
+            $message .=  PHP_EOL . "Сервер: {$this->serverName}";
 
             $bans = "";
             $bansExist = false;
@@ -158,25 +178,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
             } catch (\Exception $e) {
                 Yii::$app->telegramChats->sendMessage("UpdateReportJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             }
-            $hoursExist = false;
-            $hours = 0;
-            try {
-                $games = Steam::getGameInfo($reportUser->steam_id);
-                foreach ($games as $game) {
-                    if ($game['appid'] == 252490) {
-                        $hoursExist = true;
-                        $hours = $game['playtime_forever'];
-                        break;
-                    }
-                }
-            } catch (\Exception $e) {
-                Yii::$app->telegramChats->sendMessage("UpdateReportJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
-            }
 
-            if ($hoursExist) {
-                $hours = round($hours/60, 1);
-                $message .=  PHP_EOL . "Часов в Steam: " . number_format($hours, 0, '.', ' ') . " ч.";
-            }
             if ($bansExist) {
                 $message .=  PHP_EOL  . PHP_EOL . "Найдены баны на других проектах:" . PHP_EOL . $bans;
             }
