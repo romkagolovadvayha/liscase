@@ -84,7 +84,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 . "Отправил: {$user->username} (<code>{$user->steam_id}</code>)" . PHP_EOL . PHP_EOL
                 . "Подозреваемый: <a href=\"https://steamcommunity.com/profiles/{$reportUser->steam_id}\">{$reportUser->username}</a>" . PHP_EOL
                 . "SteamId: <code>{$reportUser->steam_id}</code>" . PHP_EOL
-                . "Причина: {$item['reason']}" . PHP_EOL
+                . "Причина: <b>{$reason}</b>" . PHP_EOL
                 . "Кол-во репортов на игрока: <b>{$count}</b>" . PHP_EOL
                 . "Играл за вайп: {$playHour} ч." . PHP_EOL
                 . "Убийств: {$kills}" . PHP_EOL
