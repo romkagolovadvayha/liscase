@@ -23,7 +23,7 @@ class RustCheck
      * @return array|null
      * @throws \Exception
      */
-    public function getInfo($steamId): array
+    public function getInfo($steamId)
     {
         $url = $this->baseUrl . "?action=getInfo&key={$this->secretKey}&player={$steamId}";
         $response = Yii::$app->curl->get($url);
