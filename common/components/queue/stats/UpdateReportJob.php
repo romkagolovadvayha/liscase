@@ -113,7 +113,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
             } catch (\Exception $e) {
                 Yii::$app->telegramChats->sendMessage("UpdateReportJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             }
-            Yii::$app->telegramChats->sendMessage("UpdateReportJob: 4");
             try {
                 $banList = Steam::getBansGGRust($reportUser->steam_id);
                 foreach ($banList as $banItem) {
@@ -150,7 +149,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
             } catch (\Exception $e) {
                 Yii::$app->telegramChats->sendMessage("UpdateReportJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             }
-            Yii::$app->telegramChats->sendMessage("UpdateReportJob: 5");
             try {
                 $banList = Steam::getBansRust($user->steam_id);
                 foreach ($banList as $banItem) {
@@ -185,7 +183,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
             if ($lastCheckExist) {
                 $message .=  PHP_EOL  . PHP_EOL . "Последние проверки игрока:" . PHP_EOL . $lastCheck;
             }
-            Yii::$app->telegramChats->sendMessage("UpdateReportJob: 6");
             Yii::$app->telegramReports->sendMessage($message);
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage("UpdateReportJob" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
