@@ -89,7 +89,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 }
                 $playtime = Statistics::getParam($stats, 'playtime');
             } catch (\Exception $e) {
-                Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                Yii::$app->telegramChats->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             }
 
             $playHour = round($playtime/60, 1);
@@ -125,7 +125,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                     }
                 }
             } catch (\Exception $e) {
-                Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                Yii::$app->telegramChats->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             }
             try {
                 $banList = Steam::getBansGGRust($reportUser->steam_id);
@@ -134,7 +134,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                     $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Срок: " . $banItem['expireDate'] . PHP_EOL;
                 }
             } catch (\Exception $e) {
-                Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                Yii::$app->telegramChats->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             }
             try {
                 $banList = Steam::getBansRustRoom($reportUser->steam_id);
@@ -143,7 +143,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                     $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Срок: " . $banItem['expireDate'] . PHP_EOL;
                 }
             } catch (\Exception $e) {
-                Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                Yii::$app->telegramChats->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             }
             try {
                 $banList = Steam::getBansRustUssr($reportUser->steam_id);
@@ -152,7 +152,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                     $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Срок: " . $banItem['expireDate'] . PHP_EOL;
                 }
             } catch (\Exception $e) {
-                Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                Yii::$app->telegramChats->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             }
             try {
                 $banList = Steam::getBansMagicRust($reportUser->steam_id);
@@ -161,7 +161,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                     $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Срок: " . $banItem['expireDate'] . PHP_EOL;
                 }
             } catch (\Exception $e) {
-                Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                Yii::$app->telegramChats->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             }
             try {
                 $banList = Steam::getBansRust($user->steam_id);
@@ -170,7 +170,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                     $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Дата: " . $banItem['date'] . "; Срок: " . $banItem['expireDate'] . PHP_EOL;
                 }
             } catch (\Exception $e) {
-                Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                Yii::$app->telegramChats->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             }
             $hoursExist = false;
             $hours = 0;
@@ -184,7 +184,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                     }
                 }
             } catch (\Exception $e) {
-                Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                Yii::$app->telegramChats->sendMessage("SaveStatsJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             }
 
             if ($hoursExist) {
