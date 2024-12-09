@@ -43,7 +43,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
             $model->server_tag = $this->serverTag;
             $model->wipe = $this->wipeDate;
             $model->save();
-            Yii::$app->telegramChats->sendMessage("UpdateReportJob: 1");
 
             $user = User::findBySteamId($item['steam_id']);
             $reportUser = User::findBySteamId($item['recepient_steam_id']);
@@ -53,7 +52,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
                                  ->andWhere(['wipe' => $this->wipeDate])
                                  ->andWhere(['server_tag' => $this->serverTag]);
 
-            Yii::$app->telegramChats->sendMessage("UpdateReportJob: 2");
             $count = $countQuery->count();
 
             $kills = 0;
@@ -61,7 +59,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
             $kd = 0;
             $playtime = 0;
 
-            Yii::$app->telegramChats->sendMessage("UpdateReportJob: 3");
             try {
                 $stats = Statistics::find()
                                    ->andWhere(['steam_id' => $reportUser->steam_id])

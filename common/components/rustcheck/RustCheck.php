@@ -18,12 +18,18 @@ class RustCheck
     public $baseUrl = 'https://rustcheatcheck.ru/panel/api';
 
     /**
-     * {@inheritdoc}
+     * @param $steamId
+     *
+     * @return array|null
+     * @throws \Exception
      */
     public function getInfo($steamId): array
     {
         $url = $this->baseUrl . "?action=getInfo&key={$this->secretKey}&player={$steamId}";
         $response = Yii::$app->curl->get($url);
+        if (empty($response)) {
+            return [];
+        }
         return json_decode($response, 1);
     }
 
