@@ -175,7 +175,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
             if ($hoursExist) {
                 $hours = round($hours/60, 1);
-                $message .=  PHP_EOL . "Часов в Steam: " . $hours;
+                $message .=  PHP_EOL . "Часов в Steam: " . number_format($hours, 0, '.', ' ') . " ч.";
             }
             if ($bansExist) {
                 $message .=  PHP_EOL  . PHP_EOL . "Найдены баны на других проектах:" . PHP_EOL . $bans;
