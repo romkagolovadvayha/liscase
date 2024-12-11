@@ -4,6 +4,7 @@ namespace common\models\skindrops;
 
 use common\components\base\ActiveRecord;
 use common\components\google\TranslateApi;
+use common\models\user\User;
 use Yii;
 use yii\base\BaseObject;
 
@@ -59,6 +60,49 @@ class Skindrops extends ActiveRecord
         }
 
         return false;
+    }
+
+    public static function sendSkin($user) {
+        $partner = Skindrops::getUrlQuery($user->userProfile->trade_link, 'partner');
+        $token = Skindrops::getUrlQuery($user->userProfile->trade_link, 'token');
+
+        if (empty($partner) || empty($token)) {
+            $user->userProfile->skindrops = 0;
+            $user->userProfile->skindrops_error = 'Неверная ссылка для обмена';
+            $user->userProfile->save(false);
+            return false;
+        }
+
+        $minPrice = 20;
+        $maxPrice = 50;
+        $items = [];
+        $data = Yii::$app->rustTm->prices()['items'];
+        shuffle($data);
+        foreach ($data as $item) {
+            if ($item['price'] > $item['avg_price'] + 5) {
+                continue;
+            }
+            if ($item['price'] > $maxPrice || $item['price'] < $minPrice) {
+                continue;
+            }
+            $items[] = [
+                "name" => $item['market_hash_name'],
+                "price" => $item['price'] + 10,
+                "image" => "https://cdn.rust.tm/item/" . urlencode($item['market_hash_name']) . "/100.png",
+                "image300" => "https://cdn.rust.tm/item/" . urlencode($item['market_hash_name']) . "/300.png"
+            ];
+            if (count($items) > 40) {
+                break;
+            }
+        }
+        $item = $items[0];
+
+        $response = Yii::$app->rustTm->buy($item['name'], $item['price'] * 100, $partner, $token);
+
+        return [
+            'response' => $response,
+            'item' => $item,
+        ];
     }
 
 }

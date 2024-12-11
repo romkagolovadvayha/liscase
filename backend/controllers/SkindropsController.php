@@ -48,6 +48,17 @@ class SkindropsController extends Controller
             $token = Skindrops::getUrlQuery($user->userProfile->trade_link, 'token');
             $response = Yii::$app->rustTm->buy($name, $price, $partner, $token);
             if (!empty($response['error'])) {
+                if ($response['error'] === "Не найден предмет по указанной цене или ниже") {
+                    $data = Skindrops::sendSkin($user);
+                    $response = $data['response'];
+                    if (!empty($response['error'])) {
+                        Yii::$app->session->addFlash('danger', $response['error']);
+                    } else {
+                        Yii::$app->session->addFlash('success', 'Скин успешно отправлен!');
+                    }
+                    $this->redirect('index');
+                    return;
+                }
                 Yii::$app->session->addFlash('danger', $response['error']);
             } else {
                 if (!empty($childId)) {

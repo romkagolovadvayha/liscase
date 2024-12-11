@@ -98,48 +98,18 @@ class ApiSkindropsController extends WebController
         }
 
         $winner = $members[0];
-
         /** @var User $user */
         $user = User::findBySteamId($winner);
 
-        $partner = Skindrops::getUrlQuery($user->userProfile->trade_link, 'partner');
-        $token = Skindrops::getUrlQuery($user->userProfile->trade_link, 'token');
-
-        if (empty($partner) || empty($token)) {
-            $user->userProfile->skindrops = 0;
-            $user->userProfile->skindrops_error = 'Неверная ссылка для обмена';
-            $user->userProfile->save(false);
-            return $this->goDrawError([
-                                          'errorRu' => $params['serverCode'] . ": " . "Трейд ссылка \"{$user->username}\" указана неверно!",
-                                          'errorEn' => $params['serverCode'] . ": " . "Trade link \"{$user->username}\" incorrect!",
-                                      ]);
-        }
-
-        $minPrice = 20;
-        $maxPrice = 50;
-        $items = [];
-        $data = Yii::$app->rustTm->prices()['items'];
-        shuffle($data);
-        foreach ($data as $item) {
-            if ($item['price'] > $item['avg_price'] + 5) {
-                continue;
-            }
-            if ($item['price'] > $maxPrice || $item['price'] < $minPrice) {
-                continue;
-            }
-            $items[] = [
-                "name" => $item['market_hash_name'],
-                "price" => $item['price'] + 10,
-                "image" => "https://cdn.rust.tm/item/" . urlencode($item['market_hash_name']) . "/100.png",
-                "image300" => "https://cdn.rust.tm/item/" . urlencode($item['market_hash_name']) . "/300.png"
-            ];
-            if (count($items) > 40) {
-                break;
-            }
-        }
-        $item = $items[0];
-
-        $response = Yii::$app->rustTm->buy($item['name'], $item['price'] * 100, $partner, $token);
+       $data = Skindrops::sendSkin($user);
+        $response = $data['response'];
+        $item = $data['item'];
+       if (!$response) {
+           $this->goDrawError([
+                                  'errorRu' => $params['serverCode'] . ": " . "Трейд ссылка \"{$user->username}\" указана неверно!",
+                                  'errorEn' => $params['serverCode'] . ": " . "Trade link \"{$user->username}\" incorrect!",
+                              ]);
+       }
 
         if (!empty($response['error'])
             && (strpos($response['error'], 'инвентарь') !== false
@@ -148,9 +118,9 @@ class ApiSkindropsController extends WebController
             $user->userProfile->skindrops = 0;
             $user->userProfile->skindrops_error = $response['error'];
             $user->userProfile->save(false);
-            return $this->goDrawError(['errorRu' => $partner . ":" . $token . "; " . $params['serverCode'] . ": " . $user->username . ": " . $response['error'], 'errorEn' => $params['serverCode'] . ": " . $user->username . ": " . $response['error']]);
+            return $this->goDrawError(['errorRu' => $params['serverCode'] . ": " . $user->username . ": " . $response['error'], 'errorEn' => $params['serverCode'] . ": " . $user->username . ": " . $response['error']]);
         } elseif (!empty($response['error'])) {
-            return $this->goDrawError(['errorRu' => $partner . ":" . $token . "; " . $params['serverCode'] . ": " . $user->username . ": " . $response['error'], 'errorEn' => $params['serverCode'] . ": " . $user->username . ": " . $response['error']]);
+            return $this->goDrawError(['errorRu' => $params['serverCode'] . ": " . $user->username . ": " . $response['error'], 'errorEn' => $params['serverCode'] . ": " . $user->username . ": " . $response['error']]);
         }
 
         $price = round(($response['price'] / 100) * 1.25, 2);
