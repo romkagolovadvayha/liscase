@@ -52,6 +52,17 @@ class SkindropsController extends Controller
                     $data = Skindrops::sendSkin($user);
                     $response = $data['response'];
                     if (!empty($response['error'])) {
+                        if ($response['error'] === "Не найден предмет по указанной цене или ниже") {
+                            $data = Skindrops::sendSkin($user);
+                            $response = $data['response'];
+                            if (!empty($response['error'])) {
+                                Yii::$app->session->addFlash('danger', $response['error']);
+                            } else {
+                                Yii::$app->session->addFlash('success', 'Скин успешно отправлен!');
+                            }
+                            $this->redirect('index');
+                            return;
+                        }
                         Yii::$app->session->addFlash('danger', $response['error']);
                     } else {
                         Yii::$app->session->addFlash('success', 'Скин успешно отправлен!');
