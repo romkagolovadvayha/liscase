@@ -35,7 +35,5 @@ class ApiStatsController extends WebController
             'data' => Yii::$app->request->getRawBody(),
             'serverTag' => $serverTag,
         ]));
-        Yii::$app->telegramChats->sendMessage(Yii::$app->request->getRawBody());
-        Yii::$app->telegramChats->sendMessage($serverTag);
     }
 }
