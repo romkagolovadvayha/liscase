@@ -70,6 +70,12 @@ class SaveRaidJob extends BaseObject implements JobInterface
                             if (!empty($explosives)) {
                                 $keys = [];
                                 foreach ($explosives as $key) {
+                                    if ($key === 'explosive.satchel.deployed') {
+                                        $key = 'satchelsthrown';
+                                    }
+                                    if ($key === 'explosive.timed.deployed') {
+                                        $key = 'c4thrown';
+                                    }
                                     $keys[] = str_replace('.deployed', '', $key);
                                 }
                                 $drops = \common\models\box\Drop::find()
