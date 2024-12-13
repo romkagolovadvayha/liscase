@@ -40,12 +40,12 @@ class SaveRaidJob extends BaseObject implements JobInterface
             if (!empty($request['raids'])) {
                 foreach ($request['raids'] as $item) {
                     try {
-                        $steamId = $request['steam_id'];
+                        $steamId = $item['steam_id'];
                         $user = User::findBySteamId($steamId);
-                        $location = $request['entityLocation'];
-                        $explosives = $request['explosiveUsed'];
-                        $owners = $request['owners'];
-                        $createdAt = $request['created_at'];
+                        $location = $item['entityLocation'];
+                        $explosives = $item['explosiveUsed'];
+                        $owners = $item['owners'];
+                        $createdAt = $item['created_at'];
 
                         $model = new UserRaid();
                         $model->user_id = $user->id;
