@@ -102,12 +102,14 @@ class SaveRaidJob extends BaseObject implements JobInterface
                             }
                         }
                     } catch (\Exception $e) {
-                        Yii::error("SaveRaidJob foreach: " . $e->getLine() . ":" . $e->getMessage(), 'error');
+                        Yii::$app->telegramChats->sendMessage($this->data);
+                        Yii::$app->telegramChats->sendMessage("SaveRaidJob foreach: " . $e->getLine() . ":" . $e->getMessage());
                     }
                 }
             }
         } catch (\Exception $e) {
-            Yii::error("SaveRaidJob: " . $e->getLine() . ":" . $e->getMessage(), 'error');
+            Yii::$app->telegramChats->sendMessage($this->data);
+            Yii::$app->telegramChats->sendMessage("SaveRaidJob: " . $e->getLine() . ":" . $e->getMessage());
         }
     }
 }
