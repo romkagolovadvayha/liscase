@@ -25,7 +25,6 @@ class SaveRaidJob extends BaseObject implements JobInterface
     {
         try {
             $request = json_decode($this->data, 1);
-            Yii::$app->telegramChats->sendMessage($this->data);
             /** @var Servers $server */
             $server = Servers::find()
                              ->cache(60)
