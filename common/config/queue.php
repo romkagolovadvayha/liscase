@@ -2,6 +2,7 @@
 
 return [
     'bootstrap'  => [
+        'queueRaid',
         'queueStats',
         'queueOnline',
         'queueKills',
@@ -17,6 +18,12 @@ return [
             'class'   => 'yii\queue\redis\Queue',
             'redis'   => 'redis',
             'channel' => 'queue-stats',
+            'ttr' => 1200,
+        ],
+        'queueRaid'                => [
+            'class'   => 'yii\queue\redis\Queue',
+            'redis'   => 'redis',
+            'channel' => 'queue-raid',
             'ttr' => 1200,
         ],
         'queueOnline'                => [

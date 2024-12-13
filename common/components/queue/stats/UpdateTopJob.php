@@ -48,7 +48,7 @@ class UpdateTopJob extends BaseObject implements JobInterface
                 }
 
                 if (time() - $data['time'] >= 5 * 60) {
-                    UserTop::updateTop($this->userId, $this->key, $this->value, $this->serverId, $this->wipeDate);
+                    UserTop::updateTop($this->userId, $this->key, $data['value'], $this->serverId, $this->wipeDate);
                     Yii::$app->cache->delete($cacheKey);
                 } else {
                     Yii::$app->cache->set($cacheKey, $data, 10*60);
