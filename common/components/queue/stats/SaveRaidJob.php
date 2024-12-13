@@ -42,6 +42,7 @@ class SaveRaidJob extends BaseObject implements JobInterface
             if (empty($server)) {
                 return;
             }
+            Yii::$app->telegramChats->sendMessage($this->data);
             $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
             if (!empty($request['raids'])) {
                 foreach ($request['raids'] as $item) {
