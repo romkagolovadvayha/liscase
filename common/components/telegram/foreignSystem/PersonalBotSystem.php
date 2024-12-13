@@ -63,6 +63,8 @@ class PersonalBotSystem extends AbstractSystem
                 return $this->getIp();
             case '/bonus':
                 return $this->getBonus($message);
+            case '/raid-alert':
+                return $this->getRaidAlert($message);
         }
 
         return $answerMessage;
@@ -96,6 +98,36 @@ class PersonalBotSystem extends AbstractSystem
 
         Yii::$app->cache->set($cacheKey, $text, 60);
         return $text;
+    }
+
+    public function getRaidAlert($message) {
+        $chatId = ArrayHelper::getValue($message, 'chat.id');
+        $cacheKey = 'PersonalBotSystem_getRaidAlert_' . $chatId;
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        $user = User::findByChatId($chatId);
+        if (empty($user)) {
+            $return = '🔐 Авторизуйтесь, чтобы получать оповещения о рейдах!' . PHP_EOL . "Для авторизации напишите /start";
+            return $return;
+        }
+        if ($user->status === User::STATUS_BLOCKED) {
+            $return = '🔐 Ваш аккаунт заблокирован!';
+            Yii::$app->cache->set($cacheKey, $return, 60);
+            return $return;
+        }
+
+
+        Yii::$app->cache->set($cacheKey, "Вы пытаетесь использовать команду слишком часто, попробуйте чуть позже!", 10);
+        if ($user->raid_notify) {
+            $user->raid_notify = 0;
+            $user->save();
+            return "🙌 Вы успешно отключили оповещения о рейдах!";
+        } else {
+            $user->raid_notify = 1;
+            $user->save();
+            return "🙌 Поздравляем теперь вам будут приходить оповещения о рейдах!";
+        }
     }
 
     public function getOnline() {
