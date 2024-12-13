@@ -84,12 +84,8 @@ class SaveRaidJob extends BaseObject implements JobInterface
                                                                 ->indexBy('eng_name')
                                                                 ->all();
                                 $names = [];
-                                foreach ($explosives as $explosive) {
-                                    $key = str_replace('.deployed', '', $explosive);
-                                    if (empty($drops[$key])) {
-                                        continue;
-                                    }
-                                    $names[] = $drops[$key]->name;
+                                foreach ($drops as $drop) {
+                                    $names[] = $drop->name;
                                 }
 
                                 if (!empty($names)) {
