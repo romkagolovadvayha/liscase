@@ -91,6 +91,7 @@ class SaveRaidJob extends BaseObject implements JobInterface
                                 }
                             }
                             $model->notify = 1;
+                            Yii::$app->telegramChats->sendMessage($message);
                             foreach ($users as $owner) {
                                 Yii::$app->queueTelegram->push(new SendMessageJob([
                                     'telegram_chat_id' => $owner->telegram_chat_id,
