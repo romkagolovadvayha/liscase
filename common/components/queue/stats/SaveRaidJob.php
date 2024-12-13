@@ -2,19 +2,10 @@
 
 namespace common\components\queue\stats;
 
-use common\components\oauth\Steam;
 use common\components\queue\telegram\SendMessageJob;
-use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
-use common\models\statistics\Chats;
-use common\models\statistics\Kills;
-use common\models\statistics\Reports;
-use common\models\statistics\Statistics;
-use common\models\statistics\Teams;
-use common\models\team\Team;
 use common\models\user\User;
 use common\models\user\UserRaid;
-use common\models\user\UserTop;
 use Yii;
 use yii\base\BaseObject;
 use yii\queue\JobInterface;
@@ -77,10 +68,9 @@ class SaveRaidJob extends BaseObject implements JobInterface
 
                         foreach ($users as $owner) {
                             if ($owner->raid_notify) {
-                                $message = "⚠️ <b>Внимание!</b> Ваша постройка в квадрате {$location} атакована!";
+                                $message = "⚠️ <b>Внимание!</b> Ваша постройка в квадрате {$location} атакована!" . PHP_EOL . PHP_EOL;
+                                $message .= "Сервер: {$server->name}";
                                 if (!empty($explosives)) {
-                                    $message .= "⚠️ Для нанесения урона было использовано: ";
-
                                     $keys = [];
                                     foreach ($explosives as $key) {
                                         $keys[] = str_replace('.deployed', '', $key);
@@ -99,7 +89,9 @@ class SaveRaidJob extends BaseObject implements JobInterface
                                         $names[] = $drops[$key]->name;
                                     }
 
-                                    $message .= implode(',', $names) . ".";
+                                    if (!empty($names)) {
+                                        $message .= PHP_EOL . "Для нанесения урона было использовано: " . implode(',', $names) . ".";
+                                    }
                                 }
                                 Yii::$app->queueTelegram->push(new SendMessageJob([
                                     'telegram_chat_id' => $owner->telegram_chat_id,
