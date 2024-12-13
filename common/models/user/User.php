@@ -50,6 +50,7 @@ use common\components\base\ActiveRecord;
  * @property int             $rustru_scrap_wait
  * @property int             $is_gamer
  * @property int             $server_id
+ * @property bool            $raid_notify
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
