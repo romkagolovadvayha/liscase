@@ -61,7 +61,11 @@ class SaveRaidJob extends BaseObject implements JobInterface
                         $model->created_at = $createdAt;
                         $model->server_id = $server->id;
                         $model->wipe = $wipeDate;
-                        $model->save();
+                        $model->save(false);
+
+                        if (!empty($model->getErrors())) {
+                            Yii::$app->telegramChats->sendMessage("SaveRaidJob save UserRaid: " . json_encode($model->getErrors()));
+                        }
 
                         /** @var User[] $users */
                         $users = User::find()
