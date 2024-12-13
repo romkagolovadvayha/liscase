@@ -17,7 +17,7 @@ class m241213_151447_raid extends Migration
             'user_id'    => self::INT_FIELD_NOT_NULL,
             'location'   => self::VARCHAR_FIELD,
             'explosives' => 'VARCHAR(255) DEFAULT "[]"',
-            'owners'     => 'JSON DEFAULT "[]"',
+            'owners'     => 'LONGTEXT DEFAULT NULL',
             'notify'     => self::TINYINT_1_FIELD,
             'created_at' => self::TIMESTAMP_FIELD,
             'server_id'     => 'INT(11) NOT NULL',
