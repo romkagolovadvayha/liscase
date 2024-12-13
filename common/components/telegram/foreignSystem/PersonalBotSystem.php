@@ -63,7 +63,7 @@ class PersonalBotSystem extends AbstractSystem
                 return $this->getIp();
             case '/bonus':
                 return $this->getBonus($message);
-            case '/raid-alert':
+            case '/raid_alert':
                 return $this->getRaidAlert($message);
         }
 
