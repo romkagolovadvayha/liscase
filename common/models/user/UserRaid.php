@@ -2,6 +2,7 @@
 
 namespace common\models\user;
 
+use common\models\servers\Servers;
 use Yii;
 
 /**

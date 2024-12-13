@@ -64,6 +64,21 @@ class SaveRaidJob extends BaseObject implements JobInterface
                             ->all();
 
                         if (!empty($users)) {
+                            $date = new \DateTime();
+                            $endDate = $date->format('Y-m-d H:i:s');
+                            $date->modify('-1 hour');
+                            $startDate = $date->format('Y-m-d H:i:s');
+                            $exists = UserRaid::find()
+                                ->andWhere(['LIKE', 'key', '%' . $users[0]->steam_id . '%', false])
+                                ->andWhere(['notify' => 1])
+                                ->andWhere(['>=', 'created_at', $startDate])
+                                ->andWhere(['<=', 'created_at', $endDate])
+                                ->exists();
+
+                            if ($exists) {
+                                continue;
+                            }
+
                             $message = "⚠️ <b>Внимание!</b> Ваша постройка в квадрате {$location} атакована!" . PHP_EOL . PHP_EOL;
                             $message .= "Сервер: {$server->name}";
                             if (!empty($explosives)) {
