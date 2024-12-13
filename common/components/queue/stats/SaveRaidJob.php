@@ -23,7 +23,6 @@ class SaveRaidJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
-        Yii::$app->telegramChats->sendMessage(123);
         try {
             $request = json_decode($this->data, 1);
             Yii::$app->telegramChats->sendMessage($this->data);
@@ -35,7 +34,6 @@ class SaveRaidJob extends BaseObject implements JobInterface
             if (empty($server)) {
                 return;
             }
-            Yii::$app->telegramChats->sendMessage($this->data);
             $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
             if (!empty($request['raids'])) {
                 foreach ($request['raids'] as $item) {
@@ -55,7 +53,6 @@ class SaveRaidJob extends BaseObject implements JobInterface
                         $model->created_at = $createdAt;
                         $model->server_id = $server->id;
                         $model->wipe = $wipeDate;
-                        $model->save(false);
 
                         if (!empty($model->getErrors())) {
                             Yii::$app->telegramChats->sendMessage("SaveRaidJob save UserRaid: " . json_encode($model->getErrors()));
@@ -64,35 +61,37 @@ class SaveRaidJob extends BaseObject implements JobInterface
                         /** @var User[] $users */
                         $users = User::find()
                             ->andWhere(['IN', 'steam_id', $owners])
+                            ->andWhere(['raid_notify' => 1])
                             ->all();
 
-                        foreach ($users as $owner) {
-                            if ($owner->raid_notify) {
-                                $message = "⚠️ <b>Внимание!</b> Ваша постройка в квадрате {$location} атакована!" . PHP_EOL . PHP_EOL;
-                                $message .= "Сервер: {$server->name}";
-                                if (!empty($explosives)) {
-                                    $keys = [];
-                                    foreach ($explosives as $key) {
-                                        $keys[] = str_replace('.deployed', '', $key);
-                                    }
-                                    $drops = \common\models\box\Drop::find()
-                                                                    ->cache(60*60)
-                                                                    ->andWhere(['IN', 'eng_name', $keys])
-                                                                    ->indexBy('eng_name')
-                                                                    ->all();
-                                    $names = [];
-                                    foreach ($explosives as $explosive) {
-                                        $key = str_replace('.deployed', '', $explosive);
-                                        if (empty($drops[$key])) {
-                                            continue;
-                                        }
-                                        $names[] = $drops[$key]->name;
-                                    }
-
-                                    if (!empty($names)) {
-                                        $message .= PHP_EOL . "Для нанесения урона было использовано: " . implode(',', $names) . ".";
-                                    }
+                        if (!empty($users)) {
+                            $message = "⚠️ <b>Внимание!</b> Ваша постройка в квадрате {$location} атакована!" . PHP_EOL . PHP_EOL;
+                            $message .= "Сервер: {$server->name}";
+                            if (!empty($explosives)) {
+                                $keys = [];
+                                foreach ($explosives as $key) {
+                                    $keys[] = str_replace('.deployed', '', $key);
                                 }
+                                $drops = \common\models\box\Drop::find()
+                                                                ->cache(60*60)
+                                                                ->andWhere(['IN', 'eng_name', $keys])
+                                                                ->indexBy('eng_name')
+                                                                ->all();
+                                $names = [];
+                                foreach ($explosives as $explosive) {
+                                    $key = str_replace('.deployed', '', $explosive);
+                                    if (empty($drops[$key])) {
+                                        continue;
+                                    }
+                                    $names[] = $drops[$key]->name;
+                                }
+
+                                if (!empty($names)) {
+                                    $message .= PHP_EOL . "Для нанесения урона было использовано: " . implode(',', $names) . ".";
+                                }
+                            }
+                            $model->notify = 1;
+                            foreach ($users as $owner) {
                                 Yii::$app->queueTelegram->push(new SendMessageJob([
                                     'telegram_chat_id' => $owner->telegram_chat_id,
                                     'message' => $message,
@@ -100,6 +99,7 @@ class SaveRaidJob extends BaseObject implements JobInterface
                                 ]));
                             }
                         }
+                        $model->save(false);
                     } catch (\Exception $e) {
                         Yii::$app->telegramChats->sendMessage($this->data);
                         Yii::$app->telegramChats->sendMessage("SaveRaidJob foreach: " . $e->getLine() . ":" . $e->getMessage());
