@@ -54,10 +54,10 @@ $servers = \common\models\servers\Servers::find()
             <?php endforeach; ?>
         </div>
         <div class="widget_top_body_wrap">
-            <?php if ($this->beginCache('top_stats_wrap_' . Yii::$app->language, ['duration' => 180])): ?>
+<!--            --><?php //if ($this->beginCache('top_stats_wrap_' . Yii::$app->language, ['duration' => 180])): ?>
                 <?= $this->render('@frontend/views/widgets/_top_stats_wrap'); ?>
-                <?php $this->endCache(); ?>
-            <?php endif; ?>
+<!--                --><?php //$this->endCache(); ?>
+<!--            --><?php //endif; ?>
         </div>
     </div>
 </div>

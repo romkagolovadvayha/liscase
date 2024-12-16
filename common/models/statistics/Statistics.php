@@ -7,6 +7,7 @@ use common\models\servers\Servers;
 use common\models\stats\Wipe;
 use common\models\user\Auth;
 use common\models\user\User;
+use common\models\user\UserTop;
 use Yii;
 
 /**
@@ -46,6 +47,53 @@ class Statistics extends ActiveRecord
             return $allParams[$key]->value;
         }
         return $allParams[$key];
+    }
+    public static function getTop(Servers $server, $userId = null, $limit = 3) {
+        if (empty($wipeDate)) {
+            $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
+        }
+
+        $result = [];
+        $top = [];
+        foreach (UserTop::getRaiting() as $key => $item) {
+            $top[$key] = UserTop::find()
+                                      ->cache(30)
+                                      ->andWhere(['server_id' => $server->id])
+                                      ->andWhere(['wipe' => $wipeDate])
+                                      ->andWhere(['key' => $key])
+                                      ->orderBy(['value' => SORT_DESC])
+                                      ->limit($limit)
+                                      ->all();
+        }
+        $result['top'] = $top;
+
+        if (!empty($userId)) {
+            /** @var UserTop[] $myTops */
+            $userTop = UserTop::find()
+                             ->andWhere(['server_id' => $server->id])
+                             ->andWhere(['wipe' => $wipeDate])
+                             ->andWhere(['user_id' => $userId])
+                             ->indexBy('key')
+                             ->asArray()
+                             ->all();
+
+            $userTopsResult = [];
+            foreach ($userTop as $item) {
+                $count = UserTop::find()
+                                ->andWhere(['server_id' => $server->id])
+                                ->andWhere(['wipe' => $wipeDate])
+                                ->andWhere(['key' => $item['key']])
+                                ->andWhere(['>', 'value', $item['value']])
+                                ->count();
+                $userTopsResult[$item['key']] = [
+                    'score' => $item['value'],
+                    'position' => $count + 1
+                ];
+            }
+            $result['user_top'] = $userTopsResult;
+        }
+
+        return $result;
     }
 
     public static function getStats(Servers $server, $steamId = null, $all = true, $wipeDate = null, $cache = true) {
@@ -161,7 +209,7 @@ class Statistics extends ActiveRecord
         return $data;
     }
 
-    public static function getTopWidgetItem($key, $stats, $index = 0) {
+    public static function getTopWidgetItem($key) {
         if (empty($stats[$key])) {
             return [];
         }
