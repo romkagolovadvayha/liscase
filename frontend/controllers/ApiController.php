@@ -398,13 +398,25 @@ class ApiController extends WebController
             $result['en'] .= PHP_EOL . "<color=#aaf16e>/store</color> - Basket server";
         }
 
-        $result['ru'] .= PHP_EOL . PHP_EOL .
-            "Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL .
-            "Сайт: <color=#feeda1>" . Yii::$app->params['domain'] . "</color>";
+        $result['ru'] .= PHP_EOL . PHP_EOL;
 
-        $result['en'] .= PHP_EOL . PHP_EOL .
-            "Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL .
-            "Site: <color=#feeda1>en." . Yii::$app->params['domain'] . "</color>";
+        if (!empty(Yii::$app->params['discordText'])) {
+            $result['ru'] .= "Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
+        } else {
+            $result['ru'] .= "VK: <color=#feeda1>" . Yii::$app->params['vkText'] . "</color>" . PHP_EOL;
+        }
+
+        $result['ru'] .= "Сайт: <color=#feeda1>" . Yii::$app->params['domain'] . "</color>";
+
+        $result['en'] .= PHP_EOL . PHP_EOL;
+
+        if (!empty(Yii::$app->params['discordText'])) {
+            $result['en'] .= "Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
+        } else {
+            $result['en'] .= "VK: <color=#feeda1>" . Yii::$app->params['vkText'] . "</color>" . PHP_EOL;
+        }
+
+        $result['en'] .= "Site: <color=#feeda1>en." . Yii::$app->params['domain'] . "</color>";
 
         $result['code'] = 200;
         return json_encode($result,JSON_PRETTY_PRINT);

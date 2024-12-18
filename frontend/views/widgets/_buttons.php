@@ -8,6 +8,9 @@ if (Yii::$app->params['buildings']) {
         'url'     => '/buildings',
     ];
 }
+if (empty(Yii::$app->params['skinpayment']) && !Yii::$app->params['buildings'] && !Yii::$app->params['blog']) {
+    return;
+}
 ?>
 <?=Nav::widget([
                    'items' => [

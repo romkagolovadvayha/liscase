@@ -126,8 +126,15 @@ class ApiSkindropsController extends WebController
         $price = round(($response['price'] / 100) * 1.25, 2);
         $priceEn = round((($response['price'] / 100) * 1.25) / 85, 2);
 
-        $chatAlertTextRu = "<color=#aaf16e>{0}</color> выиграл скин <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} RUB</color>)\nХочешь тоже получать скины?\nПодробности в Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>";
-        $chatAlertTextEn = "<color=#aaf16e>{0}</color> won a skin <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} $</color>)\nDo you want to receive skins too?\nDetails in Site: <color=#feeda1>en." . Yii::$app->params['domain'] . "/skindrops</color>";
+        $chatAlertTextRu = "<color=#aaf16e>{0}</color> выиграл скин <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} RUB</color>)\nХочешь тоже получать скины?\nПодробности в ";
+        $chatAlertTextEn = "<color=#aaf16e>{0}</color> won a skin <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} $</color>)\nDo you want to receive skins too?\nDetails in ";
+        if (!empty(Yii::$app->params['discordText'])) {
+            $chatAlertTextRu .= "Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>";
+            $chatAlertTextEn .= "Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>";
+        } else {
+            $chatAlertTextRu .= "VK: <color=#feeda1>" . Yii::$app->params['vkText'] . "</color>";
+            $chatAlertTextEn .= "Site: <color=#feeda1>en." . Yii::$app->params['domain'] . "/skindrops</color>";
+        }
         $chatAlertPlayerTextRu = "Поздравляем!\nВы выиграли скин <color=#aaf16e>{0}</color> (<color=#aaf16e>{1} RUB</color>)\nУ вас есть 5 минут чтобы принять трейд";
         $chatAlertPlayerTextEn = "Congratulations!\nYou have won a skin <color=#aaf16e>{0}</color> (<color=#aaf16e>{1} $</color>)\nYou have 5 minutes to accept the trade";
 

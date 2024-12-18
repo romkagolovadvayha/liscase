@@ -169,6 +169,7 @@ $mobileMenu[] = [
     'encode' => false,
     'url'     => Yii::$app->params['discord'],
     'linkOptions'     => ['target' => '_blank'],
+    'visible' => !empty(Yii::$app->params['discord']),
 ];
 $mobileMenu[] = [
     'label'   => '<i class="fab fa-vk"></i> ' . Yii::t('common', 'Мы в Вконтакте'),
@@ -318,6 +319,7 @@ if (!Yii::$app->user->isGuest) {
                             'options' => ['class' =>'discord_social', 'title' => Yii::t('common', 'Мы в Discord')],
                             'url'     => Yii::$app->params['discord'],
                             'linkOptions'     => ['target' => '_blank'],
+                            'visible' => !empty(Yii::$app->params['discord']),
                         ],
                     ],
                     'options' => ['class' =>'navbar-nav nav-pills header-social-menu'],
