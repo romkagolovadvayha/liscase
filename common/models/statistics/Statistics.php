@@ -49,11 +49,9 @@ class Statistics extends ActiveRecord
     }
 
     public static function getStats(Servers $server, $steamId = null, $all = true, $wipeDate = null, $cache = true) {
+        ini_set('memory_limit', '512M');
         $cacheKey = "getStats_data_serverId{$server->id}_" . ($all ? 1 : 0);
         $data = null;
-        if ($server->tag == 'nolimit2') {
-            $cache = false;
-        }
         if ($cache) {
             $data = Yii::$app->cache->get($cacheKey);
         }
