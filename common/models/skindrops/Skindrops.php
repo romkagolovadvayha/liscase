@@ -87,7 +87,7 @@ class Skindrops extends ActiveRecord
             }
             $items[] = [
                 "name" => $item['market_hash_name'],
-                "price" => $item['price'] + 10,
+                "price" => $item['price'] + 15,
                 "image" => "https://cdn.rust.tm/item/" . urlencode($item['market_hash_name']) . "/100.png",
                 "image300" => "https://cdn.rust.tm/item/" . urlencode($item['market_hash_name']) . "/300.png"
             ];
