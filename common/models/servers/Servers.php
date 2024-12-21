@@ -36,6 +36,7 @@ use Yii;
  * @property string $tag
  * @property bool   $stats_payment
  * @property bool   $skindrops
+ * @property bool   $is_store
  * @property int    $wargm_id
  * @property string $commands
  * @property string $discord_token
@@ -98,6 +99,7 @@ class Servers extends \common\components\base\ActiveRecord
             'max'          => Yii::t('common', 'Кол-во слотов'),
             'tag'          => Yii::t('common', 'Тег сервера'),
             'wargm_id'          => Yii::t('common', 'WarGM ID'),
+            'is_store'          => Yii::t('common', 'Магазин на сервере'),
             'updated_at'          => Yii::t('common', 'Последнее обновление'),
         ];
     }
@@ -107,7 +109,7 @@ class Servers extends \common\components\base\ActiveRecord
         return [
             [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag'], 'required'],
             [['description', 'name', 'ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag'], 'string'],
-            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'team_limit', 'max', 'wargm_id'], 'integer'],
+            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id'], 'integer'],
             [['wipe', 'next_wipe', 'global_wipe'], 'safe'],
         ];
     }

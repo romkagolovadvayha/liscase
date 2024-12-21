@@ -69,6 +69,10 @@ use yii\widgets\ActiveForm;
                                                             0       => Yii::t('common', 'Нет'),
                                                             1      => Yii::t('common', 'Да'),
                                                         ], []) ?>
+    <?= $form->field($model, 'is_store')->dropDownList([
+                                                            0       => Yii::t('common', 'Нет'),
+                                                            1      => Yii::t('common', 'Да'),
+                                                        ], []) ?>
 
     <?= $form->field($model, 'commands')->textInput() ?>
 

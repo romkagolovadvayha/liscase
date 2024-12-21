@@ -123,6 +123,9 @@ $this->registerJs($formatJs, \yii\web\View::POS_END);
                             </div>
                             <div class="server_info_description">
                                 <?=Yii::t('database', trim($server->description))?>
+                                <?php if (!empty($user) && !empty($user->server) && !$user->server->is_store): ?>
+                                <div class="server_info_description_success"><span class="server_info_description_success_icon"><i class="fas fa-check"></i></span> <?=Yii::t('common', 'Сервер без доната')?></div>
+                                <?php endif; ?>
                                 <?php if ($server->stats_payment): ?>
                                 <div class="server_info_description_success"><span class="server_info_description_success_icon"><i class="fas fa-check"></i></span> <?=Yii::t('common', 'Оплата за первые места в')?> <a href="/stats?server=<?=$server->tag?>"><?=Yii::t('common', 'статистике')?></a></div>
                                 <?php endif; ?>

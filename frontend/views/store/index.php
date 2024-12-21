@@ -72,7 +72,7 @@ JS
     <?= Alert::widget() ?>
     <h1><?=Yii::t('common', 'Корзина сервера')?></h1>
     <p><?=Yii::t('common', 'Это ваша корзина с покупками, вы можете забрать их в любой момент')?></p>
-    <?php if (true || Yii::$app->user->identity->is_gamer == 1):?>
+    <?php if (empty($user->server) || $user->server->is_store): ?>
         <?php if (!empty($userDrops)):?>
             <div class="store_launcher_categories">
                 <?php foreach ($categories as $category): ?>
