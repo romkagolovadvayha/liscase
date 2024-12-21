@@ -30,15 +30,16 @@ var formatRepoSelection = function (repo) {
 }
 JS;
 $this->registerJs($formatJs, View::POS_HEAD);
-if ($server->tag == 'nolimit2') {
-    return;
-}
+
 $steam_id = null;
 if (!Yii::$app->user->isGuest) {
     $steam_id = Yii::$app->user->identity->auth->source_id;
 }
 
 $stats = \common\models\statistics\Statistics::getStats($server, $steam_id);
+if ($server->tag == 'nolimit2') {
+    return;
+}
 $player = null;
 if (!empty($stats['player'])) {
     $player = $stats['player'];
