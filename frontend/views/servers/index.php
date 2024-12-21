@@ -24,10 +24,6 @@ for (var i = 0; i < wipes.length; i++) {
 }
 JS;
 $this->registerJs($formatJs, \yii\web\View::POS_END);
-$user = null;
-if (!Yii::$app->user->isGuest) {
-    $user = Yii::$app->user->identity;
-}
 ?>
 <?php //echo $this->render('@frontend/views/layouts/_promocode_line', [
 //    'promocodeForm' => $promocodeForm
@@ -127,7 +123,7 @@ if (!Yii::$app->user->isGuest) {
                             </div>
                             <div class="server_info_description">
                                 <?=Yii::t('database', trim($server->description))?>
-                                <?php if (!empty($user) && !empty($user->server) && !$user->server->is_store): ?>
+                                <?php if (!$server->is_store): ?>
                                 <div class="server_info_description_success"><span class="server_info_description_success_icon"><i class="fas fa-check"></i></span> <?=Yii::t('common', 'Сервер без доната')?></div>
                                 <?php endif; ?>
                                 <?php if ($server->stats_payment): ?>
