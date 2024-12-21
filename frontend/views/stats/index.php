@@ -56,6 +56,10 @@ $servers = Servers::find()
     ->andWhere(['status' => Servers::STATUS_ACTIVE])
     ->orderBy(['sort' => SORT_ASC])
     ->all();
+
+if ($server->tag == 'nolimit2') {
+    return;
+}
 ?>
 
 <div class="container-fluid mb-5">
