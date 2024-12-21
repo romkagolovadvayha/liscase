@@ -24,6 +24,10 @@ for (var i = 0; i < wipes.length; i++) {
 }
 JS;
 $this->registerJs($formatJs, \yii\web\View::POS_END);
+$user = null;
+if (!Yii::$app->user->isGuest) {
+    $user = Yii::$app->user->identity;
+}
 ?>
 <?php //echo $this->render('@frontend/views/layouts/_promocode_line', [
 //    'promocodeForm' => $promocodeForm
