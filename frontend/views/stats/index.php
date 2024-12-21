@@ -98,7 +98,62 @@ $servers = Servers::find()
                     ]);?>
                 </div>
                 <div class="page_stats_tops">
-
+                    <?=$this->render('_player_item2', [
+                        'data' => $stats['kills'],
+                        'user' => $user,
+                        'player' => $player,
+                        'server' => $server,
+                        'title' => Yii::t('common', 'Лучший Киллер'),
+                    ]);?>
+                    <?=$this->render('_player_item2', [
+                        'data' => $stats['playtime'],
+                        'user' => $user,
+                        'player' => $player,
+                        'server' => $server,
+                        'title' => Yii::t('common', 'ТОП Онлайн'),
+                    ]);?>
+                    <?=$this->render('_player_item2', [
+                        'data' => $stats['reider'],
+                        'user' => $user,
+                        'player' => $player,
+                        'server' => $server,
+                        'title' => Yii::t('common', 'Лучший Рейдер'),
+                    ]);?>
+                    <?=$this->render('_player_item2', [
+                        'data' => $stats['farmer'],
+                        'user' => $user,
+                        'player' => $player,
+                        'server' => $server,
+                        'title' => Yii::t('common', 'Лучший Фармер'),
+                    ]);?>
+                    <?=$this->render('_player_item2', [
+                        'data' => $stats['fermer'],
+                        'user' => $user,
+                        'player' => $player,
+                        'server' => $server,
+                        'title' => Yii::t('common', 'Лучший Фермер'),
+                    ]);?>
+                    <?=$this->render('_player_item2', [
+                        'data' => $stats['fishing'],
+                        'user' => $user,
+                        'player' => $player,
+                        'server' => $server,
+                        'title' => Yii::t('common', 'Лучший Рыбак'),
+                    ]);?>
+                    <?=$this->render('_player_item2', [
+                        'data' => $stats['hunter'],
+                        'user' => $user,
+                        'player' => $player,
+                        'server' => $server,
+                        'title' => Yii::t('common', 'Лучший Охотник'),
+                    ]);?>
+                    <?=$this->render('_player_item2', [
+                        'data' => $stats['scientists'],
+                        'user' => $user,
+                        'player' => $player,
+                        'server' => $server,
+                        'title' => Yii::t('common', 'Лучший Мирный'),
+                    ]);?>
                 </div>
             </div>
         </main>
