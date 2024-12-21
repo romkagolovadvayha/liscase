@@ -44,43 +44,47 @@ class SkindropsController extends Controller
         /** @var User $user */
         $user = User::findOne($userId);
         if (!empty($user)) {
-            $partner = Skindrops::getUrlQuery($user->userProfile->trade_link, 'partner');
-            $token = Skindrops::getUrlQuery($user->userProfile->trade_link, 'token');
-            $response = Yii::$app->rustTm->buy($name, $price, $partner, $token);
-            if (!empty($response['error'])) {
-                if ($response['error'] === "Не найден предмет по указанной цене или ниже") {
-                    $data = Skindrops::sendSkin($user);
-                    $response = $data['response'];
-                    if (!empty($response['error'])) {
-                        if ($response['error'] === "Не найден предмет по указанной цене или ниже") {
-                            $data = Skindrops::sendSkin($user);
-                            $response = $data['response'];
-                            if (!empty($response['error'])) {
-                                Yii::$app->session->addFlash('danger', $response['error']);
-                            } else {
-                                Yii::$app->session->addFlash('success', 'Скин успешно отправлен!');
+            try {
+                $partner = Skindrops::getUrlQuery($user->userProfile->trade_link, 'partner');
+                $token = Skindrops::getUrlQuery($user->userProfile->trade_link, 'token');
+                $response = Yii::$app->rustTm->buy($name, $price, $partner, $token);
+                if (!empty($response['error'])) {
+                    if ($response['error'] === "Не найден предмет по указанной цене или ниже") {
+                        $data = Skindrops::sendSkin($user);
+                        $response = $data['response'];
+                        if (!empty($response['error'])) {
+                            if ($response['error'] === "Не найден предмет по указанной цене или ниже") {
+                                $data = Skindrops::sendSkin($user);
+                                $response = $data['response'];
+                                if (!empty($response['error'])) {
+                                    Yii::$app->session->addFlash('danger', $response['error']);
+                                } else {
+                                    Yii::$app->session->addFlash('success', 'Скин успешно отправлен!');
+                                }
+                                $this->redirect('index');
+                                return;
                             }
-                            $this->redirect('index');
-                            return;
+                            Yii::$app->session->addFlash('danger', $response['error']);
+                        } else {
+                            Yii::$app->session->addFlash('success', 'Скин успешно отправлен!');
                         }
-                        Yii::$app->session->addFlash('danger', $response['error']);
-                    } else {
-                        Yii::$app->session->addFlash('success', 'Скин успешно отправлен!');
+                        $this->redirect('index');
+                        return;
                     }
-                    $this->redirect('index');
-                    return;
+                    Yii::$app->session->addFlash('danger', $response['error']);
+                } else {
+                    if (!empty($childId)) {
+                        /** @var User $childUser */
+                        $childUser = User::findOne($childId);
+                        $childUser->parent_skin_send = 1;
+                        $childUser->save();
+                    }
+                    Yii::$app->session->addFlash('success', 'Скин успешно отправлен!');
                 }
-                Yii::$app->session->addFlash('danger', $response['error']);
-            } else {
-                if (!empty($childId)) {
-                    /** @var User $childUser */
-                    $childUser = User::findOne($childId);
-                    $childUser->parent_skin_send = 1;
-                    $childUser->save();
-                }
-                Yii::$app->session->addFlash('success', 'Скин успешно отправлен!');
+                $this->redirect('index');
+            } catch (\Exception $e) {
+                Yii::$app->telegramChats->sendMessage($e->getFile() . ":" . $e->getLine() . "; " . $e->getMessage());
             }
-            $this->redirect('index');
         } else {
             throw new NotFoundHttpException('User not found');
         }
