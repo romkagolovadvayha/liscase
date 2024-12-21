@@ -55,6 +55,9 @@ class Statistics extends ActiveRecord
             $data = Yii::$app->cache->get($cacheKey);
         }
         try {
+            if ($server->tag == 'nolimit2') {
+               echo 123;exit;
+            }
             if (empty($data)) {
                 if (empty($wipeDate)) {
                     $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime(
