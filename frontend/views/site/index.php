@@ -94,11 +94,7 @@ JS
             <?= $this->render('@frontend/views/widgets/_servers'); ?>
             <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
             <?php
-                try {
-                    echo $this->render('@frontend/views/widgets/_top');
-                } catch (\Exception $e) {
-                    Yii::$app->telegramChats->sendMessage("@frontend/views/widgets/_top: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
-                }
+//                    echo $this->render('@frontend/views/widgets/_top');
             ?>
             <?= $this->render('@frontend/views/widgets/_live'); ?>
 <!--            --><?php //echo $this->render('@frontend/views/widgets/_bonuses'); ?>
