@@ -9,12 +9,12 @@ use yii\web\View;
 use yii\web\JsExpression;
 use common\models\servers\Servers;
 
-if ($server->tag == 'nolimit2') {
-    return;
-}
 $this->title = Yii::t('common', 'Статистика сервера') . ' ' . Yii::t('database', $server->name);
 $this->params['meta_description'] = Yii::t('common', "Статистика игроков Rust.");
 $this->params['meta_keywords'] = Yii::t('common', "стастистика игроков, статистика сервера, статистика rust");
+if ($server->tag == 'nolimit2') {
+    return;
+}
 $formatJs = <<< 'JS'
 var formatRepo = function (repo) {
     if (repo.loading) {
