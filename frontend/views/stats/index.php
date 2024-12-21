@@ -12,9 +12,7 @@ use common\models\servers\Servers;
 $this->title = Yii::t('common', 'Статистика сервера') . ' ' . Yii::t('database', $server->name);
 $this->params['meta_description'] = Yii::t('common', "Статистика игроков Rust.");
 $this->params['meta_keywords'] = Yii::t('common', "стастистика игроков, статистика сервера, статистика rust");
-if ($server->tag == 'nolimit2') {
-    return;
-}
+
 $formatJs = <<< 'JS'
 var formatRepo = function (repo) {
     if (repo.loading) {
@@ -32,7 +30,9 @@ var formatRepoSelection = function (repo) {
 }
 JS;
 $this->registerJs($formatJs, View::POS_HEAD);
-
+if ($server->tag == 'nolimit2') {
+    return;
+}
 $steam_id = null;
 if (!Yii::$app->user->isGuest) {
     $steam_id = Yii::$app->user->identity->auth->source_id;
