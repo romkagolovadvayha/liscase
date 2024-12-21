@@ -51,13 +51,16 @@ class Statistics extends ActiveRecord
     public static function getStats(Servers $server, $steamId = null, $all = true, $wipeDate = null, $cache = true) {
         $cacheKey = "getStats_data_serverId{$server->id}_" . ($all ? 1 : 0);
         $data = null;
+        if ($server->tag == 'nolimit2') {
+            $cache = false;
+        }
         if ($cache) {
             $data = Yii::$app->cache->get($cacheKey);
         }
+        if ($server->tag == 'nolimit2') {
+            echo 123;exit;
+        }
         try {
-            if ($server->tag == 'nolimit2') {
-               echo 123;exit;
-            }
             if (empty($data)) {
                 if (empty($wipeDate)) {
                     $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime(
