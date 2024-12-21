@@ -94,7 +94,7 @@ JS
             <?= $this->render('@frontend/views/widgets/_servers'); ?>
             <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
             <?php
-//                    echo $this->render('@frontend/views/widgets/_top');
+                    echo $this->render('@frontend/views/widgets/_top');
             ?>
             <?= $this->render('@frontend/views/widgets/_live'); ?>
 <!--            --><?php //echo $this->render('@frontend/views/widgets/_bonuses'); ?>

@@ -10,6 +10,8 @@ $servers = \common\models\servers\Servers::find()
                                          ->andWhere(['status' => \common\models\servers\Servers::STATUS_ACTIVE])
                                          ->orderBy(['sort' => SORT_ASC])
                                          ->all();
+
+ini_set('memory_limit', '512M');
 ?>
 
 <div class="Widgets-module__widgetWrapper widget_live">
