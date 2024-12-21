@@ -15,7 +15,7 @@ if (!Yii::$app->user->isGuest) {
 <?php if (!empty($user) && !empty($user->server) && !$user->server->is_store): ?>
 <div class="widget_skindrops">
     <div class="widget_skindrops_title"><?=Yii::t('common', 'Вы играете на сервере без доната!')?></div>
-    <div class="widget_skindrops_description"><?=Yii::t('common', 'Корзина на сервере котором вы играете отключена!')?></div>
+    <div class="widget_skindrops_description"><?=Yii::t('common', 'Корзина на сервере не доступна!')?></div>
     <a href="/servers" class="widget_skindrops_link"><?=Yii::t('common', 'Подробнее о сервере')?></a>
 </div>
 <?php endif; ?>

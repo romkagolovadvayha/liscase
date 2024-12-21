@@ -12,7 +12,7 @@ class m241221_183847_not_donat_server extends Migration
      */
     public function safeUp()
     {
-        $this->addColumn('servers','is_store', 'TINYINT(1) UNSIGNED NOT NULL DEFAULT 0');
+        $this->addColumn('servers','is_store', 'TINYINT(1) UNSIGNED NOT NULL DEFAULT 1');
     }
 
     /**
