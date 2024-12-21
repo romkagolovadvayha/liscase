@@ -37,9 +37,7 @@ if (!Yii::$app->user->isGuest) {
 }
 
 $stats = \common\models\statistics\Statistics::getStats($server, $steam_id);
-if ($server->tag == 'nolimit2') {
-    return;
-}
+
 $player = null;
 if (!empty($stats['player'])) {
     $player = $stats['player'];
