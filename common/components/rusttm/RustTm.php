@@ -34,7 +34,7 @@ class RustTm
     {
         $url = $this->baseUrl . "/buy-for?key={$this->secretKey}&hash_name=".urlencode($name)."&price={$price}&partner={$partner}&token={$token}";
         $response = Yii::$app->curl->get($url);
-        Yii::error('RustTm buy: ' .  $response);
+        Yii::$app->telegramChats->sendMessage($response);
         if (empty($response)) {
             sleep(2);
             $response = Yii::$app->curl->get($url);
