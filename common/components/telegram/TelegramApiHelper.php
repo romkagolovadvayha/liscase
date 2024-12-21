@@ -27,9 +27,6 @@ class TelegramApiHelper extends \yii\base\Component
     private function _sendRequest($method, $params = [])
     {
         list($url, $params) = $this->_getUrl($method, $params);
-        Yii::error('error', "method: " . $method);
-        Yii::error('error', "params: " . json_encode($params));
-        Yii::error('error', "url: " . $url);
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
