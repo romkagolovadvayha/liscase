@@ -58,14 +58,7 @@ class SaveRaidJob extends BaseObject implements JobInterface
                         }
                         Yii::$app->telegramChats->sendMessage("OWNERS: " . json_encode($owners));
 
-                        /** @var User[] $users */
-                        $users = User::find()
-                            ->andWhere(['IN', 'steam_id', $owners])
-                            ->andWhere(['raid_notify' => 1])
-                            ->all();
-
-                        Yii::$app->telegramChats->sendMessage("USER OWNERS: " . count($users));
-                        if (!empty($users)) {
+                        if (!empty($owners)) {
                             $date = new \DateTime();
                             $endDate = $date->format('Y-m-d H:i:s');
                             $date->modify('-1 hour');
@@ -111,12 +104,19 @@ class SaveRaidJob extends BaseObject implements JobInterface
                             }
                             $model->notify = 1;
                             Yii::$app->telegramChats->sendMessage($message);
-                            foreach ($users as $owner) {
-                                Yii::$app->queueTelegram->push(new SendMessageJob([
-                                    'telegram_chat_id' => $owner->telegram_chat_id,
-                                    'message' => $message,
-                                    'buttons' => [],
-                                ]));
+                            foreach ($owners as $owner) {
+                                /** @var User $userOwner */
+                                $userOwner = User::find()
+                                             ->andWhere(['steam_id' => $owner])
+                                             ->andWhere(['raid_notify' => 1])
+                                             ->one();
+                                if (!empty($userOwner)) {
+                                    Yii::$app->queueTelegram->push(new SendMessageJob([
+                                                                                          'telegram_chat_id' => $userOwner->telegram_chat_id,
+                                                                                          'message' => $message,
+                                                                                          'buttons' => [],
+                                                                                      ]));
+                                }
                             }
                         }
                         $model->save(false);
