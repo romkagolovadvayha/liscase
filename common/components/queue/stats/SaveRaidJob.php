@@ -56,14 +56,12 @@ class SaveRaidJob extends BaseObject implements JobInterface
                         if (!empty($model->getErrors())) {
                             Yii::$app->telegramChats->sendMessage("SaveRaidJob save UserRaid: " . json_encode($model->getErrors()));
                         }
-                        Yii::$app->telegramChats->sendMessage("OWNERS: " . json_encode($owners));
 
                         if (!empty($owners)) {
                             $date = new \DateTime();
                             $endDate = $date->format('Y-m-d H:i:s');
                             $date->modify('-1 hour');
                             $startDate = $date->format('Y-m-d H:i:s');
-                            Yii::$app->telegramChats->sendMessage("RAID EXIST");
                             $exists = UserRaid::find()
                                 ->andWhere(['LIKE', 'owners', '%' . $owners[0] . '%', false])
                                 ->andWhere(['notify' => 1])
@@ -71,7 +69,6 @@ class SaveRaidJob extends BaseObject implements JobInterface
                                 ->andWhere(['<=', 'created_at', $endDate])
                                 ->exists();
 
-                            Yii::$app->telegramChats->sendMessage("RAID EXIST: " . $exists ? 1 : 0);
                             if ($exists) {
                                 continue;
                             }
