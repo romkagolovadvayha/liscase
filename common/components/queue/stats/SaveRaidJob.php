@@ -63,8 +63,9 @@ class SaveRaidJob extends BaseObject implements JobInterface
                             $endDate = $date->format('Y-m-d H:i:s');
                             $date->modify('-1 hour');
                             $startDate = $date->format('Y-m-d H:i:s');
+                            Yii::$app->telegramChats->sendMessage("RAID EXIST");
                             $exists = UserRaid::find()
-                                ->andWhere(['LIKE', 'key', '%' . $owners[0] . '%', false])
+                                ->andWhere(['LIKE', 'owners', '%' . $owners[0] . '%', false])
                                 ->andWhere(['notify' => 1])
                                 ->andWhere(['>=', 'created_at', $startDate])
                                 ->andWhere(['<=', 'created_at', $endDate])
