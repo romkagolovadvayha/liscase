@@ -56,6 +56,7 @@ class SaveRaidJob extends BaseObject implements JobInterface
                         if (!empty($model->getErrors())) {
                             Yii::$app->telegramChats->sendMessage("SaveRaidJob save UserRaid: " . json_encode($model->getErrors()));
                         }
+                        Yii::$app->telegramChats->sendMessage("OWNERS: " . json_encode($owners));
 
                         /** @var User[] $users */
                         $users = User::find()
@@ -63,18 +64,20 @@ class SaveRaidJob extends BaseObject implements JobInterface
                             ->andWhere(['raid_notify' => 1])
                             ->all();
 
+                        Yii::$app->telegramChats->sendMessage("USER OWNERS: " . count($users));
                         if (!empty($users)) {
                             $date = new \DateTime();
                             $endDate = $date->format('Y-m-d H:i:s');
                             $date->modify('-1 hour');
                             $startDate = $date->format('Y-m-d H:i:s');
                             $exists = UserRaid::find()
-                                ->andWhere(['LIKE', 'key', '%' . $users[0]->steam_id . '%', false])
+                                ->andWhere(['LIKE', 'key', '%' . $owners[0] . '%', false])
                                 ->andWhere(['notify' => 1])
                                 ->andWhere(['>=', 'created_at', $startDate])
                                 ->andWhere(['<=', 'created_at', $endDate])
                                 ->exists();
 
+                            Yii::$app->telegramChats->sendMessage("RAID EXIST: " . $exists ? 1 : 0);
                             if ($exists) {
                                 continue;
                             }
