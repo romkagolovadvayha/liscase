@@ -62,6 +62,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                                                                      'serverTag' => $this->serverTag,
                                                                      'serverId' => $server->id,
                                                                      'wipeDate' => $wipeDate,
+                                                                     'request' => $request,
                                                                  ]));
 
             }
