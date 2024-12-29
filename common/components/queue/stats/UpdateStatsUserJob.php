@@ -24,6 +24,7 @@ class UpdateStatsUserJob extends BaseObject implements JobInterface
     public $serverTag;
     public $serverId;
     public $wipeDate;
+    public $request;
 
     /**
      * @param \yii\queue\Queue $queue
