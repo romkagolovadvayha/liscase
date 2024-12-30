@@ -111,10 +111,11 @@ class StatsController extends Controller
 
         $users = [];
         foreach ($servers as $server) {
+            $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
             /** @var Statistics[] $statisticsPlaytime */
             $statisticsPlaytime = Statistics::find()
                                           ->andWhere(['server_tag' => $server->tag])
-                                          ->andWhere(['wipe' => $server->currentWipe()])
+                                          ->andWhere(['wipe' => $wipeDate])
                                           ->andWhere(['key' => 'playtime'])
                                           ->andWhere(['>=', 'value', 10*60])
                                           ->indexBy('steam_id')
@@ -130,7 +131,7 @@ class StatsController extends Controller
                 }
                 $countQuery = Reports::find()
                                      ->andWhere(['recepient_steam_id' => $item->steam_id])
-                                     ->andWhere(['wipe' => $server->currentWipe()])
+                                     ->andWhere(['wipe' => $wipeDate])
                                      ->andWhere(['server_tag' => $server->tag]);
 
                 $count = $countQuery->count();
