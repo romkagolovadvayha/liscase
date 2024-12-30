@@ -38,6 +38,7 @@ class UpdateStatsUserJob extends BaseObject implements JobInterface
             $steamId = $this->steam_id;
             $wipeDate = $this->wipeDate;
             $params = $this->params;
+            $request = $this->request;
             $user = User::findBySteamId($steamId);
             $statistics = Statistics::find()
                                     ->andWhere(['steam_id' => $steamId])
