@@ -49,6 +49,7 @@ class TelegramConstructor extends \yii\db\ActiveRecord
 
     public const AUDIENCE_TEST = 1;
     public const AUDIENCE_ALL = 2;
+    public const AUDIENCE_WINNER = 3;
 
     /**
      * {@inheritdoc}
@@ -121,6 +122,7 @@ class TelegramConstructor extends \yii\db\ActiveRecord
         return [
             self::AUDIENCE_TEST => 'Тестовая аудитория',
             self::AUDIENCE_ALL => 'Все пользователи',
+            self::AUDIENCE_WINNER => 'Победители',
         ];
     }
 
@@ -206,6 +208,14 @@ class TelegramConstructor extends \yii\db\ActiveRecord
                        ->select('DISTINCT(u.id)')
                        ->alias('u')
                        ->andWhere(['u.status' => User::STATUS_ACTIVE])
+                       ->andWhere('telegram_chat_id is NOT NULL')
+                       ->createCommand()
+                       ->queryColumn();
+        }
+        if ($audienceId == self::AUDIENCE_WINNER) {
+            return User::find()
+                       ->select('DISTINCT(u.id)')
+                       ->andWhere(['IN', 'steam_id', [76561198166483284, 76561198162114176, 76561199729196379, 76561198071379438, 76561199070076939]])
                        ->andWhere('telegram_chat_id is NOT NULL')
                        ->createCommand()
                        ->queryColumn();
