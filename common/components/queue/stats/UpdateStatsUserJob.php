@@ -48,7 +48,7 @@ class UpdateStatsUserJob extends BaseObject implements JobInterface
                                     ->all();
 
             $params['kills'] = 0;
-            if (!empty($request['kills'])) {
+            if (!empty($request) && !empty($request['kills'])) {
                 try {
                     foreach ($request['kills'] as $item) {
                         if (strlen($item['steam_id']) < 16 || strlen($item['dead']) < 16 || $item['type'] != 'kill') {
