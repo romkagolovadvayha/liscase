@@ -1,0 +1,27 @@
+.vape-block {
+  @extend .p-8, .relative, .text-center, .bg-background-teritiary, .rounded-8;
+  max-width: 100%;
+  min-width: 56px;
+  transition:
+    box-shadow 0.25s ease-in-out,
+    background-color 0.25s ease-in-out,
+    transform 0.25s ease-in-out;
+
+  &__list {
+    @extend .grid, .justify-flex-start, .gap-x-8, .gap-y-8, .w-full;
+    grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+  }
+
+  &__image {
+    @extend .object-contain, .transition-transform, .relative;
+    @include range(40, 40, "px");
+  }
+
+  &:hover {
+    box-shadow: var(--shadow-card);
+
+    & .vape-block__image {
+      transform: scale(1.1) rotate(10deg);
+    }
+  }
+}

@@ -28,10 +28,12 @@ use Yii;
  * @property string      $blocked_at
  * @property int         $status
  * @property string      $created_at
+ * @property bool        $show_main_block
  * @property int         $sort
  *
  * @property DropImage[] $dropImages
  * @property DropImage   $imageOrig
+ * @property DropImage   $imageOrig2
  * @property DropType    $type
  * @property string      $priceCeil
  * @property string      $priceMarket
@@ -100,6 +102,7 @@ class Drop extends ActiveRecord
             'created_at'          => Yii::t('common', 'Дата создания'),
             'command'          => Yii::t('common', 'Команда'),
             'blocked_hour'          => Yii::t('common', 'Вайп блок (часов)'),
+            'show_main_block'              => Yii::t('common', 'Показывать в главном блоке главной страницы'),
             'sort'          => Yii::t('common', 'Сортировка'),
         ];
     }
@@ -172,7 +175,7 @@ class Drop extends ActiveRecord
     public function rules(): array
     {
         return [
-            [['status', 'type_id', 'category_id', 'sort'], 'integer'],
+            [['status', 'type_id', 'category_id', 'sort', 'show_main_block'], 'integer'],
             [['name', 'market_id', 'eng_name', 'quality'], 'string', 'max' => 255],
             [['description'], 'string'],
             [['created_at','price'], 'safe'],
@@ -251,14 +254,28 @@ class Drop extends ActiveRecord
     }
 
     /**
+     * Gets query for [ImageOrig2].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getImageOrig2()
+    {
+        return $this->hasOne(DropImage::class, ['drop_id' => 'id'])
+            ->cache(300)
+            ->andWhere(['type' => DropImage::TYPE_ORIG_2]);
+    }
+
+    /**
      *
      * @return Drop[]
      */
-    public static function getForMarket()
+    public static function getForMarket($mainBlock = false)
     {
         return Drop::find()
                   ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
+                  ->andWhere(['show_main_block' => $mainBlock])
                   ->orderBy(['sort' => SORT_ASC])
+                  ->cache(60)
                   ->all();
     }
 
@@ -304,5 +321,24 @@ class Drop extends ActiveRecord
                                              ]);
         }
         return $result;
+    }
+
+    public function blocked() {
+        return !empty($this->blocked_at) && strtotime($this->blocked_at) > time();
+    }
+
+    public function blockedTime() {
+        return strtotime($this->blocked_at);
+    }
+
+    public function image() {
+        return $this->imageOrig->getImagePubUrl();
+    }
+
+    public function image2() {
+        if (empty($this->imageOrig2)) {
+            return $this->image();
+        }
+        return $this->imageOrig2->getImagePubUrl();
     }
 }

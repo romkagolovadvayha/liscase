@@ -9,45 +9,61 @@ $(document).ready(function () {
             $(this).data('target'),
             $(this).data('size'),
             $(this).data('title'),
-            href
+            href,
+            $(this).data('top-image'),
+            $(this).data('content-overflow'),
+            $(this).data('top-class')
         );
         return false;
     });
 
 });
 
-function openModal(modalId, size, title, href) {
+function openModal(modalId, size, title, href, topImage, contentOverflow, topClass) {
     var mQ = $('#' + modalId);
     if (!modalId || !mQ.length) {
         modalId = 'modal-dialog';
     }
 
+    $('#loader').addClass('active');
     var modal = new bootstrap.Modal(document.getElementById(modalId), {});
-    modal.show();
     mQ.removeClass('modal-lg');
     mQ.removeClass('modal-sm');
-
     var modalEl = document.getElementById('modal-dialog');
-    var modalBody = $(modalEl).find('.modal-body');
+    $(modalEl).find('.modal-backdrop-image').removeClass('active');
+    $(modalEl).find('.modal-content').css('overflow', 'hidden');
+    $(modalEl).removeClass('with-image');
+    var modalBody = $(modalEl).find('.modal-body-js');
+    if (title) {
+        $(modalEl).find('.modal-title-js').html(title);
+    }
+    if (size) {
+        $(modalEl).addClass(size);
+    }
+    if (topImage) {
+        $(modalEl).addClass('with-image');
+        $(modalEl).find('.modal-backdrop-image').addClass('active');
+        $(modalEl).find('.modal-backdrop-image').attr('src', topImage);
+    }
+    if (topClass) {
+        $(modalEl).addClass('with-image');
+        $(modalEl).find('.modal-backdrop-image').attr('class', 'modal-backdrop-image ' + topClass);
+    }
+    if (contentOverflow) {
+        $(modalEl).find('.modal-content').css('overflow', contentOverflow);
+    }
+
     modalBody.load(href, function () {
-        if (title) {
-            $(modalEl).find('.modal-header .modal-title').html(title);
-        }
-        if (size) {
-            $(modalEl).addClass(size);
-        }
-        if ($('.roulete').length && $('.roulete_blur').length) {
-            slickRouleteInit();
-        }
-        // setTimeout(function () {
-        //
-        // }, 500);
+        $('#loader').removeClass('active');
+        modal.show();
+        modalEl.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((tooltip) => {
+            new bootstrap.Tooltip(tooltip);
+        });
     });
 
     modalEl.addEventListener('shown.bs.modal', () => {
         // myInput.focus()
     });
-
 
 
     // let modalBody = modal.find('.modal-body');

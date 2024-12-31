@@ -1,0 +1,4 @@
+.social-network {
+  @extend .flex, .p-0, .m-0, .items-center, .justify-flex-start, .gap-x-12;
+  list-style-type: none;
+}

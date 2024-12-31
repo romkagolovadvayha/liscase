@@ -298,4 +298,8 @@ class Box extends ActiveRecord
 
         return [$boxDropCarousel, $number];
     }
+
+    public function image() {
+        return $this->imageOrig->getImagePubUrl();
+    }
 }

@@ -1,0 +1,7 @@
+$names: "relative", "absolute", "sticky", "fixed";
+
+@each $name in $names {
+  .#{$name} {
+    position: #{$name};
+  }
+}

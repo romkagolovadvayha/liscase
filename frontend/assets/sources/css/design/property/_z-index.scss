@@ -1,0 +1,10 @@
+$values: 0, 1, 2;
+
+@each $value in $values {
+    .z-#{$value} {
+      z-index: #{$value};
+    }
+}
+.-z-1 {
+  z-index: -1;
+}

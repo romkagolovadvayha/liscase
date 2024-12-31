@@ -10,6 +10,7 @@ use common\models\stats\Wipe;
 use common\models\user\User;
 use common\models\user\UserTask;
 use Yii;
+use yii\helpers\ArrayHelper;
 
 /**
  * This is the model class for table "task".
@@ -38,6 +39,7 @@ class Task extends \common\components\base\ActiveRecord
     const TYPE_KILLER  = 5;
     const TYPE_NPC     = 6;
     const TYPE_ANIMAL  = 7;
+    const TYPE_All  = 'all';
 
 
     /**
@@ -53,6 +55,7 @@ class Task extends \common\components\base\ActiveRecord
             self::TYPE_KILLER => Yii::t('common', 'Киллер'),
             self::TYPE_NPC => Yii::t('common', 'Мирный'),
             self::TYPE_ANIMAL => Yii::t('common', 'Охотник'),
+            self::TYPE_All => Yii::t('common', 'Выполнил все задания'),
         ];
     }
 
@@ -355,4 +358,58 @@ class Task extends \common\components\base\ActiveRecord
 
         return $dailyRewardList;
     }
+
+//    const TYPE_FERMER  = 1;
+//    const TYPE_REIDER  = 2;
+//    const TYPE_FARMER  = 3;
+//    const TYPE_FISHING = 4;
+//    const TYPE_KILLER  = 5;
+//    const TYPE_NPC     = 6;
+//    const TYPE_ANIMAL  = 7;
+    public static function awardImage($type = 'all') {
+        $images = [
+          self::TYPE_FERMER => '/images/awards/fermer.png',
+          self::TYPE_FARMER => '/images/awards/farmer.png',
+          self::TYPE_FISHING => '/images/awards/fish.png',
+          self::TYPE_REIDER => '/images/awards/reyder.png',
+          self::TYPE_ANIMAL => '/images/awards/hunt.png',
+          self::TYPE_KILLER => '/images/awards/killer.png',
+          self::TYPE_NPC => '/images/awards/mirny.png',
+          self::TYPE_All  => '/images/awards/all.png',
+        ];
+
+        return !empty($images[$type]) ? $images[$type] : '';
+    }
+
+    public static function awards($userId) {
+        $result = [];
+        $awards = UserTask::find()
+                        ->cache(60)
+                        ->alias('ut')
+                        ->joinWith('task t')
+                        ->select(['t.type'])
+                        ->andWhere(['t.drop_id' => 843])
+                        ->andWhere(['ut.user_id' => $userId])
+                        ->asArray()
+                        ->groupBy('type')
+                        ->indexBy('type')
+                        ->all();
+
+        foreach ($awards as $award) {
+            $result[] = [
+              'image' => self::awardImage($award['type']),
+              'name' => ArrayHelper::getValue(self::getTypeList(), $award['type'])
+            ];
+        }
+
+        if (count($result) == 7) {
+            $result[] = [
+                'image' => self::awardImage(self::TYPE_All),
+                'name' => ArrayHelper::getValue(self::getTypeList(), self::TYPE_All)
+            ];
+        }
+
+        return $result;
+    }
+
 }

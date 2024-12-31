@@ -1,0 +1,7 @@
+$names: "center", "baseline", "flex-start";
+
+@each $name in $names {
+  .items-#{$name} {
+    align-items: #{$name};
+  }
+}

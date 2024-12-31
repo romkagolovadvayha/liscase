@@ -1,0 +1,139 @@
+{{ use('common/components/widgets') }}
+
+<aside class="menu" id="main-menu" {% if MENU_HIDDEN %}style="width: 102px;"{% endif %}>
+    <button class="menu__button" id="menu-toggle-button" type="button">
+        <span class="icons icons_16px icons_16px_arrow_left" id="menu-button-arrow-left"></span>
+        <span class="icons icons_16px icons_16px_arrow_right" id="menu-button-arrow-right"></span>
+    </button>
+
+    <nav>
+        <!-- СОЦИАЛЬНЫЕ СЕТИ -->
+        <div class="menu__social-network_wrap"{% if MENU_HIDDEN %} style="display: none"{% endif %}>
+            {{ nav_menu_widget({
+                'options': {
+                    'class': 'menu__social-network social-network',
+                },
+                'activateItems': false,
+                'items': [
+                    {
+                        'label': '',
+                        'url': '/stats',
+                        'iconClass': 'icons icons_hover icons_32px icons_32px_telegram',
+                        'options': {'class': ''},
+                        'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "Telegram"}
+                    },
+                    {
+                        'label': '',
+                        'url': '/stats',
+                        'iconClass': 'icons icons_hover icons_32px icons_32px_vk',
+                        'options': {'class': ''},
+                        'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "VK"}
+                    },
+                    {
+                        'label': '',
+                        'url': '/stats',
+                        'iconClass': 'icons icons_hover icons_32px icons_32px_discord',
+                        'options': {'class': ''},
+                        'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "Discord"}
+                    },
+                ]
+            })
+            }}
+        </div>
+
+        <div class="menu__list_wrap"{% if MENU_HIDDEN %} style="margin-top: 40px"{% endif %}>
+        <!-- РАЗДЕЛЫ -->
+        {{ nav_menu_widget({
+            'options': {
+                'class': 'menu__list',
+            },
+            'menuHidden': MENU_HIDDEN,
+            'items': [
+                {
+                    'label': t('common', 'Статистика'),
+                    'url': '/stats',
+                    'iconClass': 'icons icons_32px icons_32px_statistics',
+                    'activeClass': 'menu__item_active',
+                    'spanClass': 'main-menu-text',
+                    'options': {'class': 'menu__item'},
+                },
+                {
+                    'label': t('common', 'Бан-лист'),
+                    'url': '/banlist',
+                    'iconClass': 'icons icons_32px icons_32px_ban',
+                    'activeClass': 'menu__item_active',
+                    'spanClass': 'main-menu-text',
+                    'notification': 4,
+                    'options': {'class': 'menu__item'},
+                },
+                {
+                    'label': t('common', 'Наши сервера'),
+                    'url': '/servers',
+                    'iconClass': 'icons icons_32px icons_32px_servers',
+                    'activeClass': 'menu__item_active',
+                    'spanClass': 'main-menu-text',
+                    'options': {'class': 'menu__item'},
+                },
+                {
+                    'label': t('common', 'Постройки'),
+                    'url': '/buildings',
+                    'iconClass': 'icons icons_32px icons_32px_buildings',
+                    'activeClass': 'menu__item_active',
+                    'spanClass': 'main-menu-text',
+                    'notification': 2,
+                    'options': {'class': 'menu__item'},
+                },
+                {
+                    'label': t('common', 'Рейтинг кланов'),
+                    'url': '/clans',
+                    'iconClass': 'icons icons_32px icons_32px_rate',
+                    'activeClass': 'menu__item_active',
+                    'spanClass': 'main-menu-text',
+                    'options': {'class': 'menu__item'},
+                },
+                {
+                    'label': t('common', 'Правила серверов'),
+                    'url': '/rules',
+                    'iconClass': 'icons icons_32px icons_32px_rules',
+                    'activeClass': 'menu__item_active',
+                    'spanClass': 'main-menu-text',
+                    'options': {'class': 'menu__item'},
+                },
+                {
+                    'label': t('common', 'Как получать скины'),
+                    'url': '/skindrops',
+                    'iconClass': 'icons icons_32px icons_32px_rate',
+                    'activeClass': 'menu__item_active',
+                    'spanClass': 'main-menu-text',
+                    'options': {'class': 'menu__item'},
+                },
+                {
+                    'label': t('common', 'Промокоды'),
+                    'url': '/promocodes',
+                    'iconClass': 'icons icons_32px icons_32px_promo',
+                    'activeClass': 'menu__item_active',
+                    'spanClass': 'main-menu-text',
+                    'options': {'class': 'menu__item'},
+                },
+                {
+                    'label': t('common', 'Поддержка'),
+                    'url': '/support',
+                    'iconClass': 'icons icons_32px icons_32px_support',
+                    'activeClass': 'menu__item_active',
+                    'spanClass': 'main-menu-text',
+                    'options': {'class': 'menu__item'},
+                },
+                {
+                    'label': t('common', 'FAQ'),
+                    'url': '/faq',
+                    'iconClass': 'icons icons_32px icons_32px_faq',
+                    'activeClass': 'menu__item_active',
+                    'spanClass': 'main-menu-text',
+                    'options': {'class': 'menu__item'},
+                },
+            ]
+        })
+        }}
+        </div>
+    </nav>
+</aside>

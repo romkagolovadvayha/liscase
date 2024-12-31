@@ -11,12 +11,13 @@ use yii\web\UploadedFile;
 class SetsForm extends Sets
 {
     public $preview_file;
+    public $preview_file_open;
 
     public function rules(): array
     {
         return ArrayHelper::merge([
-            [['preview_file'], 'trim'],
-            [['preview_file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png'],
+            [['preview_file', 'preview_file_open'], 'trim'],
+            [['preview_file', 'preview_file_open'], 'file', 'skipOnEmpty' => true, 'extensions' => ['svg', 'jpg', 'png']],
         ], parent::rules());
     }
 
@@ -24,6 +25,7 @@ class SetsForm extends Sets
     {
         return ArrayHelper::merge(parent::attributeLabels(), [
             'preview_file' => 'Изображение кейса',
+            'preview_file_open' => 'Доп. изображение (Не обязательно)',
         ]);
     }
 
@@ -32,6 +34,9 @@ class SetsForm extends Sets
         parent::afterFind();
         if (!empty($this->imageOrig)) {
             $this->preview_file = $this->imageOrig->getImagePubUrl();
+        }
+        if (!empty($this->imageOrig2)) {
+            $this->preview_file_open = $this->imageOrig2->getImagePubUrl();
         }
     }
 
@@ -55,24 +60,25 @@ class SetsForm extends Sets
         if (empty($this->id)) {
             $this->id = Yii::$app->db->getLastInsertID();
         }
-        $this->preview_file = $this->_loadImage(UploadedFile::getInstance($this, 'preview_file'), $this->id);
+        $this->preview_file = $this->_loadImage(UploadedFile::getInstance($this, 'preview_file'), $this->id, SetsImage::TYPE_ORIG);
+        $this->preview_file_open = $this->_loadImage(UploadedFile::getInstance($this, 'preview_file_open'), $this->id, SetsImage::TYPE_ORIG_2);
 
         return true;
     }
 
-    private function _loadImage($image, $setsId) {
+    private function _loadImage($image, $setsId, $type) {
         if (empty($image) || empty($image->tempName)) {
             return null;
         }
         $uploadDir = Yii::getAlias('@app/web/uploads');
-        $fileUrl = "/sets/" . $this->id . "_" . md5(time()) . ".png";
+        $fileUrl = "/sets/" . $this->id . "_" . $type . "_" . md5(time()) . ".png";
         $filePath = $uploadDir . $fileUrl;
         if (!file_exists(dirname($filePath))) {
             mkdir(dirname($filePath));
             chmod(dirname($filePath), 0777);
         }
         file_put_contents($filePath, file_get_contents($image->tempName));
-        SetsImage::createRecord($fileUrl, SetsImage::TYPE_ORIG, $setsId);
+        SetsImage::createRecord($fileUrl, $type, $setsId);
         return $filePath;
     }
 

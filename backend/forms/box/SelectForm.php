@@ -13,12 +13,13 @@ class SelectForm extends Select
 {
     public $drop;
     public $preview_file;
+    public $preview_file_open;
 
     public function rules(): array
     {
         return ArrayHelper::merge([
             [['drop', 'preview_file'], 'trim'],
-            [['preview_file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png'],
+            [['preview_file', 'preview_file_open'], 'file', 'skipOnEmpty' => true, 'extensions' => ['svg', 'jpg', 'png']],
         ], parent::rules());
     }
 
@@ -27,6 +28,7 @@ class SelectForm extends Select
         return ArrayHelper::merge(parent::attributeLabels(), [
             'drop' => 'Содержимое кейса',
             'preview_file' => 'Изображение кейса',
+            'preview_file_open' => 'Доп. изображение (Не обязательно)',
         ]);
     }
 
@@ -39,6 +41,9 @@ class SelectForm extends Select
         }
         if (!empty($this->imageOrig)) {
             $this->preview_file = $this->imageOrig->getImagePubUrl();
+        }
+        if (!empty($this->imageOrig2)) {
+            $this->preview_file_open = $this->imageOrig2->getImagePubUrl();
         }
     }
 
@@ -64,24 +69,25 @@ class SelectForm extends Select
         if (empty($this->id)) {
             $this->id = Yii::$app->db->getLastInsertID();
         }
-        $this->preview_file = $this->_loadImage(UploadedFile::getInstance($this, 'preview_file'), $this->id);
+        $this->preview_file = $this->_loadImage(UploadedFile::getInstance($this, 'preview_file'), $this->id, SelectImage::TYPE_ORIG);
+        $this->preview_file_open = $this->_loadImage(UploadedFile::getInstance($this, 'preview_file_open'), $this->id, SelectImage::TYPE_ORIG_2);
 
         return true;
     }
 
-    private function _loadImage($image, $selectId) {
+    private function _loadImage($image, $selectId, $type) {
         if (empty($image) || empty($image->tempName)) {
             return null;
         }
         $uploadDir = Yii::getAlias('@app/web/uploads');
-        $fileUrl = "/select/" . $this->id . "_" . md5(time()) . ".png";
+        $fileUrl = "/select/" . $this->id . "_" . $type . "_" . md5(time()) . ".png";
         $filePath = $uploadDir . $fileUrl;
         if (!file_exists(dirname($filePath))) {
             mkdir(dirname($filePath));
             chmod(dirname($filePath), 0777);
         }
         file_put_contents($filePath, file_get_contents($image->tempName));
-        SelectImage::createRecord($fileUrl, SelectImage::TYPE_ORIG, $selectId);
+        SelectImage::createRecord($fileUrl, $type, $selectId);
         return $filePath;
     }
 

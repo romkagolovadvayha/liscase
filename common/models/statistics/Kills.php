@@ -5,6 +5,7 @@ namespace common\models\statistics;
 use common\components\base\ActiveRecord;
 use common\components\google\TranslateApi;
 use common\models\box\Drop;
+use common\models\servers\Servers;
 use common\models\user\User;
 use Yii;
 use yii\base\BaseObject;
@@ -88,17 +89,16 @@ class Kills extends ActiveRecord
     }
 
     /**
-     * @param $server
+     * @param Servers $server
      * @param User $user
      *
      */
     public static function getKills($server, $user = null, $limit = 10) {
-        $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
         $query = Kills::find()
-                       ->cache(60*5)
+                       ->cache(60)
                        ->andWhere(['!=', 'dead', ''])
                        ->andWhere(['server_tag' => $server->tag])
-                       ->andWhere(['wipe' => $wipeDate]);
+                       ->andWhere(['wipe' => $server->currentWipe()]);
 
         if (!empty($user)) {
             $query->andWhere(['OR',
@@ -128,6 +128,7 @@ class Kills extends ActiveRecord
 
         for ($i = 0; $i < count($models); $i++) {
             $model = $models[$i];
+            $model['bot'] = false;
             if (!empty($user) && $model['steam_id'] === $user->steam_id) {
                 $model['name'] = $user->username;
             }
@@ -151,11 +152,13 @@ class Kills extends ActiveRecord
             if ($model['type'] === 'scientists') {
                 if (!empty($scientists[$model['dead']])) {
                     $model['image'] = $scientists[$model['dead']];
+                    $model['bot'] = true;
                 }
             }
             if ($model['type'] === 'kill') {
                 if (strlen($model['steam_id']) < 10) {
                     $model['image'] = $scientists['default'];
+                    $model['bot'] = true;
                 }
             }
             $models[$i] = $model;

@@ -1,0 +1,47 @@
+<div class="category__cards">
+    {% for item in PRODUCT_DROPS_SETS %}
+        {% include 'product.twig'
+            with {
+            'URL': "/market/form-modal-set?id=#{item.id}",
+            'PRICE': item.price,
+            'PRICE_REAL': item.getRealPrice(),
+            'CURRENCY': 'RUB',
+            'NAME': item.name,
+            'CATEGORY_ID': 1,
+            'IMAGE': item.image(),
+            'BLOCKED': false,
+        }
+        %}
+    {% endfor %}
+    {% for item in PRODUCT_DROPS_SELECT %}
+        {% include 'product.twig'
+            with {
+            'URL': "/market/form-modal-select?id=#{item.id}",
+            'PRICE': item.price,
+            'PRICE_REAL': item.getRealPrice(),
+            'CURRENCY': 'RUB',
+            'NAME': item.name,
+            'CATEGORY_ID': 1,
+            'IMAGE': item.image(),
+            'BLOCKED': false,
+        }
+        %}
+    {% endfor %}
+    {% for item in PRODUCT_DROPS %}
+        {% include 'product.twig'
+            with {
+            'URL': "/market/form-modal?id=#{item.id}",
+            'PRICE': item.price,
+            'PRICE_REAL': item.getRealPrice(),
+            'CURRENCY': 'RUB',
+            'NAME': item.name,
+            'CATEGORY_ID': item.category_id,
+            'IMAGE': item.image(),
+            'COUNT': item.count,
+            'BLOCKED': item.blocked(),
+            'BLOCKED_AT': item.blocked_at,
+            'BLOCKED_TIME': item.blockedTime(),
+        }
+        %}
+    {% endfor %}
+</div>

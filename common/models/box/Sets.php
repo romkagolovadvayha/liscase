@@ -14,10 +14,12 @@ use common\components\base\ActiveRecord;
  * @property float      $price
  * @property int        $status
  * @property int        $sort
+ * @property bool       $show_main_block
  * @property string     $created_at
  *
  * @property SetsDrop[]  $setsDrop
  * @property SetsImage   $imageOrig
+ * @property SetsImage   $imageOrig2
  */
 class Sets extends ActiveRecord
 {
@@ -55,6 +57,7 @@ class Sets extends ActiveRecord
             'discount'    => Yii::t('common', 'Скидка'),
             'price'       => Yii::t('common', 'Цена'),
             'status'      => Yii::t('common', 'Статус'),
+            'show_main_block'              => Yii::t('common', 'Показывать в главном блоке главной страницы'),
             'created_at'  => Yii::t('common', 'Дата создания'),
         ];
     }
@@ -63,7 +66,7 @@ class Sets extends ActiveRecord
     {
         return [
             [['name', 'price', 'status', 'created_at'], 'required'],
-            [['status', 'discount'], 'integer'],
+            [['status', 'discount', 'show_main_block'], 'integer'],
             [['name'], 'string', 'max' => 255],
             [['created_at'], 'safe'],
         ];
@@ -89,6 +92,16 @@ class Sets extends ActiveRecord
     {
         return $this->hasOne(SetsImage::class, ['sets_id' => 'id'])
                     ->andWhere(['type' => SetsImage::TYPE_ORIG]);
+    }
+    /**
+     * Gets query for [imageOrig2].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getImageOrig2()
+    {
+        return $this->hasOne(SetsImage::class, ['sets_id' => 'id'])
+                    ->andWhere(['type' => SetsImage::TYPE_ORIG_2]);
     }
 
     /**
@@ -127,11 +140,23 @@ class Sets extends ActiveRecord
      *
      * @return Sets[]
      */
-    public static function getSetsForMarket()
+    public static function getSetsForMarket($mainBlock = false)
     {
         return Sets::find()
                    ->andWhere(['status' => Drop::STATUS_ACTIVE])
+                   ->andWhere(['show_main_block' => $mainBlock])
+                   ->cache(60)
                    ->all();
     }
 
+    public function image() {
+        return $this->imageOrig->getImagePubUrl();
+    }
+
+    public function image2() {
+        if (empty($this->imageOrig2)) {
+            return $this->image();
+        }
+        return $this->imageOrig2->getImagePubUrl();
+    }
 }

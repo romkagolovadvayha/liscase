@@ -1,0 +1,30 @@
+<section class="stats-aside__stat-block stat-block">
+    <h4 class="stat-block__title">{{ t('common', 'Прямой эфир') }}</h4>
+
+    <ul class="nav nav-tabs mb-20" id="myTab" role="tablist">
+        {% for SERVER in SERVERS %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link{% if USER.SERVER_ACTIVE_ID == SERVER.id %} active{% endif %}" id="{{ SERVER.tag }}-tab" data-bs-toggle="tab" data-bs-target="#live_{{ SERVER.tag }}" type="button" role="tab" aria-controls="{{ SERVER.tag }}-tab-pane" aria-selected="{% if SERVER_ACTIVE_ID == SERVER.id %}true{% else %}false{% endif %}">
+                {{ SERVER.monitoring_name }}
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+    <div class="tab-content mb-8">
+        {% for SERVER in SERVERS %}
+        <div id="live_{{ SERVER.tag }}" class="tab-pane{% if USER.SERVER_ACTIVE_ID == SERVER.id %} active{% else %} fade{% endif %}" role="tabpanel" aria-labelledby="#{{ SERVER.tag }}-tab">
+            <ul class="stat-block__list">
+                {% for ITEM in KILLS[SERVER.id] %}
+                    {% include 'live_item.twig'
+                        with {
+                            'ITEM': ITEM,
+                        }
+                    %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+
+    <button class="button-secondary w-full">{{ t('common', 'Смотреть статистику') }}</button>
+</section>

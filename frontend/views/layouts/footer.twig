@@ -1,0 +1,75 @@
+<footer class="footer">
+    <div class="footer__main-links">
+        <a href="{{ HOME_URL }}" class="mb-48">
+            <img src="{{ LOGO_IMAGE }}" alt="" />
+        </a>
+
+        <a href="mailto:{{ EMAIL }}" class="mb-24 p1">{{ EMAIL }}</a>
+
+        <ul class="footer__social-network social-network">
+            <li class="social-network__item">
+                <a
+                        href="/"
+                        target="_blank"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="bottom"
+                        data-bs-title="Telegram"
+                >
+                    <span class="icons icons_hover icons_32px icons_32px_telegram"></span>
+                </a>
+            </li>
+            <li class="social-network__item">
+                <a
+                        href="/"
+                        target="_blank"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="bottom"
+                        data-bs-title="VK"
+                >
+                    <span class="icons icons_hover icons_32px icons_32px_vk"></span>
+                </a>
+            </li>
+            <li class="social-network__item">
+                <a
+                        href="/"
+                        target="_blank"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="bottom"
+                        data-bs-title="Discord"
+                >
+                    <span class="icons icons_hover icons_32px icons_32px_discord"></span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <nav class="footer__menu-links">
+        <ul>
+            <li><a href="" class="text-text-teritiary">Статистика</a></li>
+            <li><a href="" class="text-text-teritiary">Бан-лист</a></li>
+            <li><a href="" class="text-text-teritiary">Наши сервера</a></li>
+            <li><a href="" class="text-text-teritiary">Постройки</a></li>
+            <li><a href="" class="text-text-teritiary">Рейтинг кланов</a></li>
+        </ul>
+        <ul>
+            <li><a href="" class="text-text-teritiary">Правила серверов</a></li>
+            <li><a href="" class="text-text-teritiary">Как получать скины</a></li>
+            <li><a href="" class="text-text-teritiary">Промокоды</a></li>
+            <li><a href="" class="text-text-teritiary">Поддержка</a></li>
+            <li><a href="" class="text-text-teritiary">{{ t('common', 'FAQ') }}</a></li>
+        </ul>
+        <ul>
+            <li><a href="/site/agreement" class="text-text-teritiary">{{ t('common', 'Пользовательское соглашение') }}</a></li>
+            <li><a href="/site/privacy" class="text-text-teritiary">{{ t('common', 'Политика конфиденциальности') }}</a></li>
+            <li><a href="/site/personalinformation" class="text-text-teritiary">{{ t('common', 'Обработка персональных данных') }}</a></li>
+        </ul>
+    </nav>
+
+    <div class="footer__rules">
+        <p class="p3 text-text-secondary mb-56">
+            {{ t('common', 'Размещенная на настоящем сайте информация носит исключительно информационный характер и ни при каких условиях не является публичной офертой, определяемой положениями ч. 2 ст. 437 Гражданского кодекса Российской Федерации.') }}
+        </p>
+
+        <p class="p3 text-text-secondary">© 2024 {{ DOMAIN }}</p>
+    </div>
+</footer>

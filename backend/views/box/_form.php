@@ -51,6 +51,7 @@ $format = new JsExpression($format);
 <?= $form->field($model, 'price')->textInput(); ?>
 <?= $form->field($model, 'type')->dropDownList(Box::getTypeList(), []) ?>
 <?= $form->field($model, 'preview_file')->fileInput(); ?>
+<?= $form->field($model, 'preview_file_open')->fileInput(); ?>
 <?= $form->field($model, 'drop')->widget(\kartik\select2\Select2::class, [
     'data'    => \common\models\box\Drop::getList(),
     'options' => [

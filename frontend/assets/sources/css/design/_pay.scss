@@ -1,0 +1,129 @@
+.pay {
+  &__list {
+    @extend .grid, .justify-flex-start, .gap-x-8, .gap-y-8, .w-full;
+    grid-template-columns: repeat(auto-fit, minmax(129px, 1fr));
+  }
+
+  &__button {
+    @extend .bg-background-main,
+      .rounded-8,
+      .px-8,
+      .py-6,
+      .border-solid,
+      .border-1,
+      .border-transparent,
+      .relative,
+      .flex,
+      .justify-center,
+      .items-center,
+      .gap-x-8;
+    transition:
+      border-color 0.25s ease-in-out,
+      transform 0.25s ease-in-out;
+    min-width: 129px;
+
+    &:before {
+      @extend .absolute, .transition-all, .rounded-8, .border-solid, .border-1, .border-transparent;
+      content: "";
+      opacity: 0;
+      inset: -1px;
+      background-image: var(--base-linear-gradiend);
+      mask:
+        linear-gradient(#fff 0 0) padding-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      background-size: 101% 100%;
+      background-position: center;
+    }
+
+    &:hover {
+      @extend .border-border-color-hover;
+    }
+
+    &:active,
+    &_active {
+      @extend .transform-click;
+
+      &:before {
+        opacity: 100;
+      }
+    }
+  }
+
+  &__conditions {
+    @extend .flex, .items-flex-start, .gap-x-12, .user-select-none, .cursor-pointer;
+
+    & [type="checkbox"] {
+      & + span {
+        & > .icons_24px_checkbox {
+          display: none;
+        }
+        & > .icons_24px_checkbox_outline {
+          display: block;
+        }
+      }
+
+      &:checked + span {
+        & > .icons_24px_checkbox {
+          display: block;
+        }
+        & > .icons_24px_checkbox_outline {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+.pay-card {
+  &__list {
+    @extend .grid, .justify-flex-start, .gap-x-8, .gap-y-8, .w-full;
+    grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+  }
+
+  &__button {
+    @extend .bg-background-teritiary,
+      .rounded-8,
+      .px-5,
+      .py-10,
+      .border-solid,
+      .border-1,
+      .border-transparent,
+      .relative,
+      .flex,
+      .flex-column,
+      .justify-center,
+      .items-center;
+    transition:
+      border-color 0.25s ease-in-out,
+      transform 0.25s ease-in-out;
+    min-width: 95px;
+
+    &:before {
+      @extend .absolute, .transition-all, .rounded-8, .border-solid, .border-1, .border-transparent;
+      content: "";
+      opacity: 0;
+      inset: -1px;
+      background-image: var(--base-linear-gradiend);
+      mask:
+        linear-gradient(#fff 0 0) padding-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      background-size: 101% 100%;
+      background-position: center;
+    }
+
+    &:hover {
+      @extend .border-border-color-hover;
+    }
+
+    &:active,
+    &_active {
+      @extend .transform-click;
+
+      &:before {
+        opacity: 100;
+      }
+    }
+  }
+}

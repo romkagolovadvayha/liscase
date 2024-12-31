@@ -39,6 +39,14 @@ class Statistics extends ActiveRecord
     }
 
     public static function getParam($allParams, $key) {
+        if ($key == 'kd') {
+            $kills = Statistics::getParam($allParams, 'kills');
+            $deaths = Statistics::getParam($allParams, 'deaths');
+            if ($kills == 0 || $deaths == 0) {
+                return 0;
+            }
+            return $kills / $deaths;
+        }
         if (empty($allParams[$key])) {
             return 0;
         }
@@ -283,6 +291,26 @@ class Statistics extends ActiveRecord
         $result['score'] = $score;
         $result['count'] = Statistics::getParam($player, $key);
         $result['desc'] = number_format(Statistics::getParam($player, $key), 0);
+
+        return $result;
+    }
+
+    public static function projectStats() {
+        $result = [];
+
+        $result['users'] = User::find()
+            ->cache(60)
+            ->count();
+
+        $result['online'] = Servers::find()
+            ->cache(60)
+            ->sum('players + joined') ?? 0;
+
+        $result['servers'] = Servers::find()
+            ->cache(60)
+            ->andWhere(['NOT IN', 'status', [Servers::STATUS_CLOSED]])
+            ->count();
+
 
         return $result;
     }

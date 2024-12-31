@@ -16,6 +16,7 @@ use Yii;
 class DropImage extends ActiveRecord
 {
     const TYPE_ORIG = 1;
+    const TYPE_ORIG_2 = 2;
 
     /**
      * @inheritdoc

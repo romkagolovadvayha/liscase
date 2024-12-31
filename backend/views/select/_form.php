@@ -50,6 +50,8 @@ $format = new JsExpression($format);
 <?= $form->field($model, 'name')->textInput(); ?>
 <?= $form->field($model, 'description')->textarea(); ?>
 <?= $form->field($model, 'preview_file')->fileInput(); ?>
+<?= $form->field($model, 'preview_file_open')->fileInput(); ?>
+<?= $form->field($model, 'show_main_block')->dropDownList([0 => 'Нет', 1 => 'Да'], []); ?>
 <?= $form->field($model, 'drop')->widget(\kartik\select2\Select2::class, [
     'data'    => \common\models\box\Drop::getList(),
     'options' => [

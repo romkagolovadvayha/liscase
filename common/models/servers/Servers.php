@@ -42,6 +42,8 @@ use Yii;
  * @property string $discord_token
  * @property int    $sort
  * @property string $updated_at
+ * @property string $monitoring_name
+ * @property string $monitoring_description
  */
 class Servers extends \common\components\base\ActiveRecord
 {
@@ -101,14 +103,16 @@ class Servers extends \common\components\base\ActiveRecord
             'wargm_id'          => Yii::t('common', 'WarGM ID'),
             'is_store'          => Yii::t('common', 'Магазин на сервере'),
             'updated_at'          => Yii::t('common', 'Последнее обновление'),
+            'monitoring_name'          => Yii::t('common', 'Название в мониторинге'),
+            'monitoring_description'          => Yii::t('common', 'Доп. название в мониторинге'),
         ];
     }
 
     public function rules()
     {
         return [
-            [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag'], 'required'],
-            [['description', 'name', 'ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag'], 'string'],
+            [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description'], 'required'],
+            [['description', 'name', 'ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description'], 'string'],
             [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id'], 'integer'],
             [['wipe', 'next_wipe', 'global_wipe'], 'safe'],
         ];
@@ -206,4 +210,49 @@ class Servers extends \common\components\base\ActiveRecord
             Yii::$app->telegramChats->sendMessage('Servers notify: ' . $ex->getMessage());
         }
     }
+
+    public function monitoring() {
+        $result = [];
+        if ($this->players + $this->joined > 0) {
+            $result['percentPlayers']         = ceil(100 / $this->max * $this->players);
+            $result['percentJoined']          = ceil(100 / $this->max * $this->joined);
+            $result['percentQueued']          = ceil(100 / $this->max * $this->queued);
+            $result['percentAbsoluteCount']   = 100 / ($result['percentPlayers'] + $result['percentJoined']);
+            $result['percentPlayersAbsolute'] = ceil($result['percentAbsoluteCount'] * $result['percentPlayers']);
+            $result['percentJoinedAbsolute']  = ceil($result['percentAbsoluteCount'] * $result['percentJoined']);
+            $result['percentQueuedAbsolute']  = ceil($result['percentAbsoluteCount'] * $result['percentQueued']);
+        } else {
+            $result['percentPlayers']         = 0;
+            $result['percentJoined']          = 0;
+            $result['percentQueued']           = 0;
+            $result['percentAbsoluteCount']   = 0;
+            $result['percentPlayersAbsolute'] = 0;
+            $result['percentJoinedAbsolute']  = 0;
+            $result['percentQueuedAbsolute']  = 0;
+        }
+
+        return $result;
+    }
+
+    public function wipeTypeText() {
+        if ($this->wipe_type === 7) {
+            return Yii::t('common', 'Еженедельно');
+        }
+        if ($this->wipe_type === 14) {
+            return Yii::t('common', 'Каждые две недели');
+        }
+        if ($this->wipe_type === 30) {
+            return Yii::t('common', 'Раз в месяц');
+        }
+        return null;
+    }
+
+    public function nextWipeTime() {
+      return strtotime($this->next_wipe);
+    }
+
+    public function currentWipe() {
+      return (new \DateTime($this->wipe))->format('Y-m-d') . "/" . (new \DateTime($this->next_wipe))->format('Y-m-d');
+    }
+
 }

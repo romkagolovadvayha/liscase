@@ -1,0 +1,46 @@
+<section class="stats-aside__stat-block stat-block">
+    <h4 class="stat-block__title flex items-center justify-space-between">
+        <span>{{ t('common', 'Наши сервера') }}</span>
+        <span class="p1 flex items-center gap-x-4">
+              <span class="icons icons_indicator mr-4"></span>
+              <span class="font-bold text-primary-colors-secondary">{{ PROJECT_STATS.online|number_format(0, '', ' ') }}</span>
+              <span class="text-text-secondary">{{ t('common', 'онлайн') }}</span>
+        </span>
+    </h4>
+
+    <div class="stat-block__list mb-8">
+        {% for SERVER in SERVERS %}
+        <article class="stat-block__server server server_status{{ SERVER.status }}" data-server-id="{{ SERVER.id }}">
+            <header class="server__header">
+                <h5 class="server__title">{{ t('database', SERVER.monitoring_name) }}</h5>
+                <span class="server__status">{{ SERVER.wipeTypeText() }}</span>
+            </header>
+
+            <p class="server__link">
+                <a href="/servers/{{ SERVER.tag }}">{{ t('database', SERVER.monitoring_description) }}</a>
+                <span>{{ t('common', 'вайп') }} <span class="server_timer" data-time="{{ SERVER.nextWipeTime() }}">{{ SERVER.next_wipe }}</span></span>
+            </p>
+
+            <div class="server__progress-wrapper">
+                <div class="server__progress">
+                    <div style="width: {{ SERVER.monitoring().percentPlayers }}%"></div>
+                </div>
+                <span class="server__progress-value">{{ SERVER.players + SERVER.joined }}/{{ SERVER.max }}</span>
+
+                <button
+                        class="server__button-copy btn-clipboard"
+                        data-clipboard-text="connect {{ SERVER.ip }}:{{ SERVER.port }}"
+                        data-message="{{ t('common', 'IP адрес скопирован в буфер обмена!') }}"
+                        data-bs-toggle="tooltip"
+                        data-bs-title="{{ t('common', 'Скопировать IP') }}"
+                >
+                    <span class="icons icons_16px icons_16px_link"></span>
+                </button>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    <button data-href="/servers/wipe-block" data-top-class="active" class="button-secondary w-full show-modal-link" data-size="modal-lg" data-content-overflow="unset" data-top-image="/images/design/modal/stop.png" data-toggl="modal" data-target="modal-dialog" data-title="{{ t('common', 'Вайп-блок') }}">
+        {{ t('common', 'Вайп-блок') }}
+    </button>
+</section>

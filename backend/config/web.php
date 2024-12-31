@@ -19,9 +19,12 @@ $config = [
             'hostInfo' => str_replace(['http://', 'https://', '/'], '', $params['backendUrl']),
             'baseUrl'  => $params['backendUrl'],
         ],
-        'user'         => [
+        'cache' => [
+            'class' => 'yii\caching\FileCache',
+        ],
+        'user' => [
             'identityClass'   => 'common\models\user\User',
-            'loginUrl'        => ['/auth/login'],
+            'loginUrl'        => ['auth/oauth?authclient=steam'],
             'enableAutoLogin' => true,
             'identityCookie'  => [
                 'name'   => '_identity',

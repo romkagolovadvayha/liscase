@@ -1,0 +1,125 @@
+.menu {
+  @extend .flex, .pt-20, .relative, .transition-width, .bg-background-secondary;
+  width: 241px;
+  // width: 46px;
+  height: 100%;
+  container-type: size;
+  overflow: hidden;
+
+  &__button {
+    @extend .absolute,
+      .flex,
+      .bg-background-main,
+      .items-center,
+      .justify-center,
+      .transition-bg-color;
+    top: 24px;
+    right: 0;
+    width: 24px;
+    height: 24px;
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+    border: none;
+    z-index: 1;
+
+    &:hover {
+      @extend .bg-background-teritiary;
+      cursor: pointer;
+    }
+
+    & #menu-button-arrow-right {
+      display: none !important;
+    }
+  }
+
+  @container (max-width: 240px) {
+    & .menu__button {
+      #menu-button-arrow-left {
+        display: none !important;
+      }
+      & #menu-button-arrow-right {
+        display: block !important;
+      }
+    }
+  }
+
+  & > nav {
+    width: 100%;
+  }
+
+  &__social-network {
+    @extend .pl-30, .relative, .mb-26, .transition-opacity;
+    opacity: 1;
+  }
+
+  &__list {
+    @extend .p-0;
+    list-style-type: none;
+  }
+
+  &__item {
+    transition:
+      background-color 0.25s ease-in-out,
+      border-right-color 0.25s ease-in-out;
+    cursor: pointer;
+    border-right: 3px solid transparent;
+
+    & > a {
+      @extend .flex, .pt-8, .pr-12, .pb-8, .pl-32, .text-text-teritiary, .items-center, .gap-x-12, .relative;
+      width: 100%;
+      transition:
+        color 0.25s ease-in-out,
+        transform 0.25s ease-in-out;
+
+      & .main-menu-text {
+        @extend .transition-opacity;
+        white-space: nowrap;
+        opacity: 1;
+      }
+
+      & .main-menu-notification {
+        @extend .rounded-full,
+          .bg-primary-colors-main,
+          .flex,
+          .items-center,
+          .justify-center,
+          .w-20,
+          .h-20,
+          .text-primary-colors-white,
+          .font-medium;
+        font-size: 10px;
+        line-height: 15px;
+
+        &.mini-notification {
+          @extend .absolute;
+          @include range(6, 6, "px");
+          font-size: 0;
+          right: 32px;
+          top: 6px;
+        }
+      }
+    }
+
+    &:hover {
+      @extend .bg-background-teritiary;
+
+      & > a {
+        @extend .text-text-main;
+      }
+    }
+
+    &_active,
+    &:active {
+      @extend .bg-background-teritiary;
+      border-right-color: var(--status-text-color);
+
+      & > a {
+        @extend .text-text-main;
+      }
+
+      & .icons_32px {
+        @extend .bg-text-main, .transition-bg-color;
+      }
+    }
+  }
+}

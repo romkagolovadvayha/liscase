@@ -8,6 +8,7 @@ use common\models\user\UserBox;
 use common\models\user\UserDrop;
 use frontend\forms\promocode\PromocodeForm;
 use Yii;
+use yii\base\BaseObject;
 use yii\filters\AccessControl;
 use yii\web\ForbiddenHttpException;
 use yii\web\Response;
@@ -16,6 +17,7 @@ use common\models\blog\Blog;
 use common\models\blog\BlogCategory;
 use common\models\user\User;
 use yii\web\NotFoundHttpException;
+use common\components\web\Cookie;
 
 class SiteController extends WebController
 {
@@ -60,17 +62,6 @@ class SiteController extends WebController
     {
         if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
             throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован, напишите администратору в Discord, если не согласны с блокировкой!'));
-        }
-        $promocodeForm = new PromocodeForm();
-        if ($promocodeForm->load(Yii::$app->request->post())) {
-            $model = $promocodeForm->saveRecord();
-            if (!empty($model)) {
-                Yii::$app->session->addFlash('success', Yii::t('common', 'Баланс пополнен на {PARAMS_PROMSUM} RUB', [
-                    'PARAMS_PROMSUM' => $model->amount
-                ]));
-            } else {
-                Yii::$app->session->addFlash('danger', array_values($promocodeForm->getFirstErrors())[0]);
-            }
         }
         return $this->render('index');
     }
@@ -201,6 +192,30 @@ class SiteController extends WebController
             'categories' => $categories,
             'servers' => $servers,
         ]);
+    }
+
+    public function actionMenuToggle()
+    {
+        header("Content-Type: application/json");
+        $hide = Cookie::getValue('isMenuHide') == 'true';
+        Cookie::add('isMenuHide', !$hide, true, 60*60*24*365*5);
+        return json_encode(['success' => true]);
+    }
+
+    public function actionPromocode()
+    {
+        $promocodeForm = new PromocodeForm();
+        if ($promocodeForm->load(Yii::$app->request->post())) {
+            $model = $promocodeForm->saveRecord();
+            if (!empty($model)) {
+                Yii::$app->session->addFlash('success', Yii::t('common', 'Баланс пополнен на {PARAMS_PROMSUM} RUB', [
+                    'PARAMS_PROMSUM' => $model->amount
+                ]));
+            } else {
+                Yii::$app->session->addFlash('danger', array_values($promocodeForm->getFirstErrors())[0]);
+            }
+        }
+        return $this->renderAjax('promocode');
     }
 
     public function actionRobots()

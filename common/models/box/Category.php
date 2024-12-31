@@ -13,6 +13,7 @@ use yii\base\BaseObject;
  * @property string              $tag
  * @property string              $image
  * @property int                 $sort
+ * @property bool                $show_main_block
  * @property string              $created_at
  */
 class Category extends ActiveRecord
@@ -36,6 +37,7 @@ class Category extends ActiveRecord
             'name'               => Yii::t('common', 'Название'),
             'tag'              => Yii::t('common', 'Тэг'),
             'sort'              => Yii::t('common', 'Сортировка'),
+            'show_main_block'              => Yii::t('common', 'Показывать на главной странице'),
             'created_at'              => Yii::t('common', 'Тип'),
         ];
     }
@@ -44,7 +46,7 @@ class Category extends ActiveRecord
     {
         return [
             [['name'], 'required'],
-            [['sort'], 'integer'],
+            [['sort', 'show_main_block'], 'integer'],
             [['name', 'tag', 'created_at'], 'string', 'max' => 255],
         ];
     }

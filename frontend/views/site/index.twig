@@ -1,0 +1,47 @@
+{{ STATISTICS|raw }}
+{{ PRODUCTS_MAIN_BLOCK|raw }}
+<input placeholder="Введите название предмета" type="text" class="search" />
+<section class="categories">
+{{ CATEGORIES|raw }}
+{{ PRODUCTS|raw }}
+</section>
+{#<div class="main_child main_index">#}
+{#    <div class="products_search">#}
+{#        <div class="products_search_icon">#}
+{#            <i class="fas fa-search"></i>#}
+{#        </div>#}
+{#        <input type="text" id="search" onkeyup="search()" placeholder="{{ t('common', 'Введите название предмета...') }}" title="{{ t('common', 'Поиск по товарам сервера') }}" class="form-control" autocomplete="off">#}
+{#    </div>#}
+{#    <div class="products_categories">#}
+{#        {{ CATEGORIES|raw }}#}
+{#    </div>#}
+{#    <div class="products_wrap_wrap">#}
+{#        <div class="products_wrap">#}
+{#            {% if USER_GUEST %}#}
+{#            <div class="products_buttons">#}
+{#                {% if ROULETTE_ACCESS %}#}
+{#                <div class="products_item_roulete products_item_roulete_blocked" data-title="{{ t('common', 'Ежедневный крейт') }}">#}
+{#                    <div class="products_item_roulete_blocked_title">#}
+{#                        <i class="far fa-clock"></i>#}
+{#                        {{ t('common', 'Ежедневная награда будет доступна') }} <span class="products_item_roulete_blocked_title_timer" id="roulete_timer">{{ t('common', 'через 18 часов') }}</span>#}
+{#                    </div>#}
+{#                </div>#}
+{#                {% else %}#}
+{#                <div data-href="/servers/bonus" class="products_item_roulete show-modal-link" data-size="modal-lg" data-toggl="modal" data-target="modal-dialog" data-title="{{ t('common', 'Ежедневная награда') }}>">#}
+{#                    <div class="products_buttons_wipe_block_title">{{ t('common', 'Ежедневная награда') }}</div>#}
+{#                </div>#}
+{#                {% endif %}#}
+{#                <div data-href="/servers/wipe-block" class="products_buttons_wipe_block show-modal-link" data-size="modal-lg" data-toggl="modal" data-target="modal-dialog" data-title="{{ t('common', 'Вайп блок') }}">#}
+{#                    <div class="products_buttons_wipe_block_title">{{ t('common', 'Вайп блок') }}</div>#}
+{#                </div>#}
+{#            </div>#}
+{#            {% endif %}#}
+{#            <div class="products" id="products">#}
+
+{#            </div>#}
+{#        </div>#}
+{#        <div class="categories">#}
+{#            {{ CATEGORIES|raw }}#}
+{#        </div>#}
+{#    </div>#}
+{#</div>#}

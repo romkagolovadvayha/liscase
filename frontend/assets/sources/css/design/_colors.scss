@@ -1,0 +1,65 @@
+$primary-colors-main: #eb0c35;
+$primary-colors-secondary: #ff6134;
+$primary-colors-secondary-opacity: rgba(255, 97, 52, 0.15);
+$primary-colors-white: #ffffff;
+$primary-colors-main-opacity: rgba(235, 12, 53, 0.4);
+
+$background-main: #080224;
+$background-secondary: #19102d;
+$background-teritiary: #2e1a3b;
+
+$text-main: #ece4f3;
+$text-secondary: #7f718c;
+$text-teritiary: #bfb1cc;
+$text-disabled: rgba(236, 228, 243, 0.2);
+
+$icon-main: #564a66;
+$icon-hover: $text-secondary;
+$icon-mini: $primary-colors-secondary;
+$icon-in-button: $text-main;
+
+$status-text-color: $text-main;
+$status-background-opacity: rgba(236, 228, 243, 0.15);
+$status-radius: 20px;
+
+$tooltip-background: #272140;
+$tooltip-text-color: $text-main;
+
+$badge-text-color: $text-main;
+$badge-background: $primary-colors-main;
+
+$border-color-default: #3e3249;
+$border-color-hover: $icon-hover;
+$border-color-active: $icon-in-button;
+
+$link-color-default: $primary-colors-secondary;
+$link-color-hover: #ff7834;
+$link-color-disabled: #67504a;
+
+$button-radius: 6px;
+$button-disabled: rgba(255, 255, 255, 0.2);
+
+$old-price-color: rgba(236, 228, 243, 0.8);
+
+$button-main-new-price-color-default: $text-main;
+$button-main-old-price-color-default: $old-price-color;
+$button-main-radius: $button-radius;
+
+$button-secondary-text-color-default: $text-main;
+$button-secondary-border-color-default: $border-color-default;
+$button-secondary-radius: $button-radius;
+
+$button-teritiary-new-price-color-default: $text-main;
+$button-teritiary-old-price-color-hover: $old-price-color;
+$button-teritiary-background: $background-teritiary;
+$button-teritiary-radius: $button-radius;
+
+$system-colors-success-color: #009136;
+
+$shadow-card: 4px 4px 4px 0px rgba(0, 0, 0, 0.25);
+
+$progress-step-color: #ff7d58;
+
+$system-colors-gold: #f8b34d;
+$system-colors-silver: #b4b4b4;
+$system-colors-bronze: #af7355;

@@ -1,0 +1,35 @@
+<div
+        data-href="{{ URL }}"
+        data-category-id="{{ CATEGORY_ID }}"
+        class="set show-modal-link"
+        data-title="{{ t('database', NAME) }}"
+        data-size="modal"
+        data-toggl="modal"
+        data-target="modal-dialog"
+        {% if BLOCKED %}aria-disabled="true"{% endif %}>
+    <div class="block relative set__image-wrap">
+        <img
+                src="{{ IMAGE }}"
+                alt="farmer"
+                class="set__image set__image_default"
+        />
+        <img
+                src="{{ IMAGE2 }}"
+                alt="farmer"
+                class="set__image set__image_hover"
+        />
+    </div>
+    <p class="set__title">{{ t('database', NAME) }}</p>
+    <button class="button-primary" {% if BLOCKED %}disabled{% endif %}>
+                <span class="button__text">
+                    {% if PRICE %}
+                    {% if PRICE_REAL != PRICE %}
+                        <span class="old-price">{{ PRICE }} ₽</span>
+                    {% endif %}
+                    <span>{{ PRICE_REAL }} ₽</span>
+                    {% else %}
+                        {{ t('common', 'Купить') }}
+                    {% endif %}
+                </span>
+    </button>
+</div>

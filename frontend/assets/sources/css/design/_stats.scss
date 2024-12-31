@@ -1,0 +1,128 @@
+.stats-aside {
+  @extend .mt-32, .flex, .flex-column, .transition-width, .gap-y-12;
+  width: 335px;
+  min-width: 100%;
+  max-width: 395px;
+
+  &__stat-block.stat-block {
+    @extend .pt-20,
+      .px-16,
+      .pb-16,
+      .bg-background-secondary,
+      .transition-all,
+      .rounded-16,
+      .content-visibility-auto;
+
+    & .stat-block {
+      &__title {
+        @extend .mb-20, .text-text-main;
+      }
+
+      &__list {
+        @extend .grid, .gap-y-8;
+
+        & .stat-block__server {
+          @extend .py-12, .px-16, .bg-background-teritiary, .transition-box-shadow, .rounded-8;
+
+          &:hover {
+            box-shadow: var(--shadow-card);
+          }
+
+          & .server {
+            &__header {
+              @extend .flex, .mb-5, .items-center, .justify-space-between;
+            }
+
+            &__title {
+              @extend .text-text-main;
+            }
+
+            &__status {
+              @extend .p3, .py-2, .px-8, .text-status-text-color, .bg-status-background-opacity;
+              border-radius: var(--status-radius);
+            }
+
+            &__link {
+              @extend .flex, .mb-3, .items-center, .justify-space-between;
+
+              & span {
+                @extend .p3, .text-text-secondary;
+              }
+            }
+
+            &__progress-wrapper {
+              @extend .flex, .items-baseline;
+            }
+
+            &__progress-value {
+              @extend .p2, .text-text-main;
+            }
+
+            &__progress {
+              @extend .flex,
+                .p-3,
+                .mr-16,
+                .bg-background-main,
+                .items-center,
+                .justify-space-between,
+                .rounded-12;
+              width: 100%;
+              height: 12px;
+
+              & > div {
+                @extend .block, .rounded-4;
+                height: 6px;
+                background: var(--base-linear-gradiend);
+              }
+            }
+
+            &__button-copy {
+              @extend .p-0, .relative, .ml-8;
+              background-color: transparent;
+              border: none;
+              top: 4px;
+
+              &:hover > span {
+                @extend .bg-link-color-hover;
+              }
+            }
+          }
+        }
+
+        & .gamer {
+          @extend .flex,
+            .items-center,
+            .bg-background-teritiary,
+            .py-14,
+            .px-16,
+            .rounded-8,
+            .gap-x-8,
+            .relative,
+            .transition-all;
+
+          &:before {
+            @extend .absolute, .transition-all;
+            content: "";
+            opacity: 0;
+            inset: -1px;
+            border-radius: var(--button-secondary-radius);
+            border: 1px solid transparent;
+            background-image: var(--base-linear-gradiend);
+            mask:
+              linear-gradient(#fff 0 0) padding-box,
+              linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            background-size: 101% 100%;
+            background-position: center;
+          }
+
+          &.active {
+            &:before {
+              opacity: 100;
+            }
+          }
+        }
+      }
+    }
+  }
+}

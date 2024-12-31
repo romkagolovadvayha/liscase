@@ -22,17 +22,19 @@ foreach ($drops as $drop) {
 }
 
 ?>
-<div class="wipe_block">
-    <?php foreach ($results as $blockedHour => $items): ?>
-    <div class="wipe_block_title"><?=$blockedHour?> <?= Yii::t('common', "часа") ?></div>
-    <div class="wipe_block_list">
-        <?php foreach ($items as $drop): ?>
-            <div class="wipe_block_list_item">
-                <div class="wipe_block_list_item_image">
-                    <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $drop->name) ?>">
+<div class="grid gap-y-24 px-24 mb-24">
+    <div class="relative z-1 grid gap-y-32">
+        <?php foreach ($results as $blockedHour => $items): ?>
+            <article>
+                <h5 class="mb-12"><?=$blockedHour?> <?= Yii::t('common', "часа") ?></h5>
+                <div class="vape-block__list mb-10">
+                    <?php foreach ($items as $drop): ?>
+                        <div class="vape-block" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="<?= Yii::t('database', $drop->name) ?>">
+                            <img class="vape-block__image" src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $drop->name) ?>">
+                        </div>
+                    <?php endforeach; ?>
                 </div>
-            </div>
+            </article>
         <?php endforeach; ?>
     </div>
-    <?php endforeach; ?>
 </div>

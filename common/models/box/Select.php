@@ -11,12 +11,14 @@ use common\components\base\ActiveRecord;
  * @property string     $name
  * @property string     $description
  * @property int        $status
+ * @property bool       $show_main_block
  * @property string     $created_at
  *
  * @property SelectDrop[]  $selectDrop
  * @property SelectDrop[]  $selectDropCarousel
  * @property SelectImage[] $SelectImages
  * @property SelectImage   $imageOrig
+ * @property SelectImage   $imageOrig2
  */
 class Select extends ActiveRecord
 {
@@ -54,6 +56,7 @@ class Select extends ActiveRecord
             'id'                  => Yii::t('common', 'ID'),
             'name'               => Yii::t('common', 'Название'),
             'status'              => Yii::t('common', 'Статус'),
+            'show_main_block'              => Yii::t('common', 'Показывать в главном блоке главной страницы'),
             'created_at'          => Yii::t('common', 'Дата создания'),
         ];
     }
@@ -62,7 +65,7 @@ class Select extends ActiveRecord
     {
         return [
             [['name', 'status', 'created_at'], 'required'],
-            [['status'], 'integer'],
+            [['status', 'show_main_block'], 'integer'],
             [['description'], 'trim'],
             [['name'], 'string', 'max' => 255],
             [['created_at'], 'safe'],
@@ -89,6 +92,17 @@ class Select extends ActiveRecord
     {
         return $this->hasOne(SelectImage::class, ['select_id' => 'id'])
                     ->andWhere(['type' => SelectImage::TYPE_ORIG]);
+    }
+
+    /**
+     * Gets query for [ImageOrig2].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getImageOrig2()
+    {
+        return $this->hasOne(SelectImage::class, ['select_id' => 'id'])
+                    ->andWhere(['type' => SelectImage::TYPE_ORIG_2]);
     }
 
     /**
@@ -128,11 +142,23 @@ class Select extends ActiveRecord
      *
      * @return Select[]
      */
-    public static function getForMarket()
+    public static function getForMarket($mainBlock = false)
     {
         return Select::find()
                    ->andWhere(['status' => Select::STATUS_ACTIVE])
+                   ->andWhere(['show_main_block' => $mainBlock])
+                   ->cache(60)
                    ->all();
     }
 
+    public function image() {
+        return $this->imageOrig->getImagePubUrl();
+    }
+
+    public function image2() {
+        if (empty($this->imageOrig2)) {
+            return $this->image();
+        }
+        return $this->imageOrig2->getImagePubUrl();
+    }
 }

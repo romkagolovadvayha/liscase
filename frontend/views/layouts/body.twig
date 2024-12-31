@@ -1,0 +1,29 @@
+{{ HEADER|raw }}
+
+{% if breadcrumbs %}
+    <div class="breadcrumbs_wrap">
+        <div class="container-fluid">{{ breadcrumbs|raw }}</div>
+    </div>
+{% endif %}
+
+<main class="main{% if MENU_HIDDEN %} main_menu_hide{% endif %}">
+    <!-- МЕНЮ -->
+    {{ MENU|raw }}
+    <!-- КОНТЕНТ -->
+    <section class="container main-content">
+        {{ content|raw }}
+    </section>
+    <!-- ВИДЖЕТЫ -->
+    <aside class="stats-aside">
+{#        {{ ALERT_MESSAGE|raw }}#}
+{#        {{ SKINDROPS_BLOCK|raw }}#}
+        {{ SERVERS_BLOCK|raw }}
+{#        {{ PROMOCODE_FORM|raw }}#}
+{#        {{ TOP_BLOCK|raw }}#}
+{#        {{ LIVE_BLOCK|raw }}#}
+    </aside>
+</main>
+
+{{ FOOTER|raw }}
+{{ MODAL|raw }}
+<div class="loader" id="loader"></div>

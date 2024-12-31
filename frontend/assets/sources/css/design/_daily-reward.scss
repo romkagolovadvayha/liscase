@@ -1,0 +1,66 @@
+.daily-reward {
+  @extend .pt-52, .px-40, .pb-40, .relative, .bg-background-secondary, .rounded-16;
+  min-width: 420px;
+  width: 420px;
+  min-height: 390px;
+  overflow: hidden;
+  container-type: size;
+
+  @media (max-width: 1785px) {
+    min-width: 100%;
+  }
+
+  &:before {
+    @extend .block, .absolute;
+    @include range(286, 286, "px");
+    content: "";
+    background: url("/images/design/user/light.svg");
+    right: 0;
+    bottom: 0;
+    background-repeat: no-repeat;
+    background-size: 286px 286px;
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
+  }
+
+  &__title {
+    @extend .mb-32, .text-text-main;
+  }
+  &__description {
+    @extend .grid, .relative, .text-text-main, .gap-y-16;
+    z-index: 1;
+  }
+
+  &__image {
+    @extend .absolute, .object-contain;
+    width: 198px;
+    height: 198px;
+    right: -35px;
+    bottom: -23px;
+  }
+
+  & .button {
+    position: absolute !important;
+    bottom: 40px;
+    left: 40px;
+  }
+
+  @container (max-height: 290px) {
+    .daily-reward__image {
+      right: -34px;
+      bottom: -75px;
+    }
+  }
+  @container (min-height: 290px) {
+    .daily-reward__image {
+      right: -35px;
+      bottom: -23px;
+    }
+  }
+  @container (min-width: 421px) {
+    .daily-reward__image {
+      right: -35px;
+      bottom: -23px;
+    }
+  }
+}

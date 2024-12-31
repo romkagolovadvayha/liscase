@@ -3,6 +3,7 @@
 /** @var yii\web\View $this */
 /** @var \frontend\forms\promocode\PromocodeForm $promocodeForm */
 
+use common\models\statistics\Statistics;
 use yii\bootstrap5\Html;
 use common\models\box\Box;
 use common\models\box\Drop;
@@ -16,10 +17,10 @@ $this->title = Yii::t('common', Yii::$app->params['title']);
 $this->registerJs(<<<JS
     $(document).on('pjax:send', function() {
        $('#product-loader').addClass('active');
-       $('#buy_product').prop('disabled', true);
+       $('#buy_product').attr('aria-disabled', true);
     });
     $(document).on('pjax:complete', function() {
-      $('#product-loader').removeClass('active');
+       $('#product-loader').removeClass('active');
     });
     var categories = $('.products_categories .products_categories_category');
     var categoriesRight = $('.products_wrap_wrap > .categories .categories_item');
@@ -63,7 +64,8 @@ JS
 
 /** @var \common\models\box\Category[] $categories */
 $categories = \common\models\box\Category::find()
-    ->cache(3600)
+    ->andWhere(['show_main_block' => true])
+    ->cache(60)
     ->all();
 ?>
 <?php
@@ -82,163 +84,65 @@ $this->registerJs(<<<JS
         }
 JS
 );
+//$getNextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate();
+$userData = [];
+$awards = [];
+$projectStats = Statistics::projectStats();
+$userStats = null;
+if (!Yii::$app->user->isGuest) {
+    $user = Yii::$app->user->identity;
+    $userData = [
+        'username' => $user->username,
+        'steam_id' => $user->steam_id,
+    ];
+    if (!empty($user->server)) {
+        $userStats = Statistics::find()
+                               ->andWhere(['steam_id' => $user->steam_id])
+                               ->andWhere(['server_tag' => $user->server->tag])
+                               ->andWhere(['wipe' => $user->server->currentWipe()])
+                               ->indexBy('key')
+                               ->cache(60)
+                               ->all();
+    }
+    $awards = \common\models\tasks\Task::awards($user->id);
+}
+
 ?>
 
+<?php //if (!empty($getNextOpenFreeBoxDate)) {
+//    $lang = substr(Yii::$app->language, 0, 2);
+//    $unixDate = strtotime($getNextOpenFreeBoxDate);
+//    $this->registerJs(<<<JS
+//                        var dateRoulete = {$unixDate};
+//                        var left = moment.unix(dateRoulete);
+//                        $('#roulete_timer').html(left.locale('{$lang}').fromNow());
+//                JS
+//    );
+//} ?>
+<?=Yii::$app->view->render('index.twig', [
+//    'ROULETTE_ACCESS' => !empty($getNextOpenFreeBoxDate),
+    'USER_GUEST' => Yii::$app->user->isGuest,
+    'PRODUCTS_MAIN_BLOCK' => Yii::$app->view->render('products_main.twig', [
+        'PRODUCT_DROPS_SETS' => \common\models\box\Sets::getSetsForMarket(true),
+        'PRODUCT_DROPS_SELECT' => Select::getForMarket(true),
+        'PRODUCT_DROPS' => Drop::getForMarket(true),
+    ]),
+    'PRODUCTS' => Yii::$app->view->render('products.twig', [
+        'PRODUCT_DROPS_SETS' => \common\models\box\Sets::getSetsForMarket(),
+        'PRODUCT_DROPS_SELECT' => Select::getForMarket(),
+        'PRODUCT_DROPS' => Drop::getForMarket(),
+    ]),
+    'CATEGORIES' => Yii::$app->view->render('categories.twig', [
+        'ITEMS' => $categories,
+    ]),
+    'STATISTICS' => Yii::$app->view->render('statistics.twig', [
+        'USER_GUEST' => Yii::$app->user->isGuest,
+        'PROJECT_STATS' => $projectStats,
+        'USER' => $userData,
+        'BOT_LINK' => "https://t.me/" . Yii::$app->params['tgPersonalBot'],
+        'USER_STATS' => $userStats,
+        'STATS' => new Statistics(),
+        'AWARDS' => $awards,
+    ]),
+]);?>
 
-<div class="container-fluid mb-5">
-    <div class="main_wrap">
-        <aside>
-            <?php echo $this->render('@frontend/views/widgets/_alert'); ?>
-            <?= $this->render('@frontend/views/widgets/_skindrops'); ?>
-            <?=$this->render('@frontend/views/widgets/_buttons'); ?>
-            <?= $this->render('@frontend/views/widgets/_servers'); ?>
-            <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
-            <?php
-                    echo $this->render('@frontend/views/widgets/_top');
-            ?>
-            <?= $this->render('@frontend/views/widgets/_live'); ?>
-<!--            --><?php //echo $this->render('@frontend/views/widgets/_bonuses'); ?>
-<!--            --><?php //echo $this->render('@frontend/views/widgets/_banners'); ?>
-        </aside>
-        <main id="main" role="main" class="products">
-            <div class="main_child main_index">
-                <div class="products_search">
-                    <div class="products_search_icon">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <input type="text" id="search" onkeyup="search()" placeholder="<?=Yii::t('common', 'Введите название предмета..')?>" title="<?=Yii::t('common', 'Поиск по товарам сервера')?>" class="form-control" autocomplete="off">
-                </div>
-                <div class="products_categories">
-                    <ul>
-                        <li>
-                            <div class="products_categories_category" data-id="">
-                                <?=Yii::t('common', 'Все')?>
-                            </div>
-                        </li>
-                        <?php foreach ($categories as $category): ?>
-                            <li>
-                                <div class="products_categories_category" data-id="<?=$category->id?>">
-                                    <?=Yii::t('database', $category->name)?>
-                                </div>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
-                <div class="products_wrap_wrap">
-                    <div class="products_wrap">
-                        <?php if (!Yii::$app->user->isGuest): ?>
-                        <div class="products_buttons">
-                            <?php if (!empty($getNextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate())): ?>
-                                <div class="products_item_roulete products_item_roulete_blocked" data-title="<?=Yii::t('common', 'Ежедневный крейт')?>">
-                                    <div class="products_item_roulete_blocked_title">
-                                        <i class="far fa-clock"></i>
-                                        <?=Yii::t('common', 'Ежедневная награда будет доступна')?> <span class="products_item_roulete_blocked_title_timer" id="roulete_timer"><?=Yii::t('common', 'через 18 часов')?></span>
-                                    </div>
-                                </div>
-                                <?php
-                                $lang = substr(Yii::$app->language, 0, 2);
-                                $unixDate = strtotime($getNextOpenFreeBoxDate);
-                                $this->registerJs(<<<JS
-                                    var dateRoulete = {$unixDate};
-                                    var left = moment.unix(dateRoulete);
-                                    $('#roulete_timer').html(left.locale('{$lang}').fromNow());
-                                JS
-                                );?>
-                            <?php else: ?>
-                                <div data-href="/servers/bonus" class="products_item_roulete show-modal-link" data-size="modal-lg" data-toggl="modal" data-target="modal-dialog" data-title="<?=Yii::t('common', 'Ежедневная награда')?>">
-                                    <div class="products_buttons_wipe_block_title"><?=Yii::t('common', 'Ежедневная награда')?></div>
-                                </div>
-                            <?php endif; ?>
-                            <div data-href="/servers/wipe-block" class="products_buttons_wipe_block show-modal-link" data-size="modal-lg" data-toggl="modal" data-target="modal-dialog" data-title="<?=Yii::t('common', 'Вайп блок')?>">
-                                <div class="products_buttons_wipe_block_title"><?=Yii::t('common', 'Вайп блок')?></div>
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                        <div class="products" id="products">
-                            <?php if ($this->beginCache('products' . Yii::$app->language, ['duration' => 300])): ?>
-                                <?php foreach (\common\models\box\Sets::getSetsForMarket() as $sets): ?>
-                                    <div data-href="/market/form-modal-set?id=<?=$sets->id?>" data-category-id="1" class="products_item show-modal-link active" data-title="<?=Yii::t('database', $sets->name)?>" data-size="modal" data-toggl="modal" data-target="modal-dialog">
-                                        <div class="products_item_body">
-                                            <div class="products_item_image">
-                                                <img src="<?= $sets->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $sets->name)?>" width="100px">
-                                            </div>
-                                            <div class="products_item_price">
-                                                <?php if ($sets->discount > 0 && ceil($sets->price) != $sets->getRealPrice()): ?>
-                                                    <span class="products_item_price_old"><?=ceil($sets->price)?></span>
-                                                <?php endif; ?>
-                                                <span class="products_item_price_current"><?=$sets->getRealPrice()?></span>
-                                                <span class="products_item_price_currency">RUB</span>
-                                            </div>
-                                        </div>
-                                        <div class="products_item_body_hover">
-                                            <div class="products_item_title">
-                                                <span><?=Yii::t('database', $sets->name)?></span>
-                                            </div>
-                                            <div class="products_item_title">
-                                                <span class="products_item_price_current"><?=$sets->getRealPrice()?></span>
-                                                <span class="products_item_price_currency">RUB</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                                <?php foreach (Select::getForMarket() as $item): ?>
-                                    <div data-href="/market/form-modal-select?id=<?=$item->id?>" data-category-id="1" class="products_item show-modal-link active" data-title="<?=Yii::t('database', $item->name)?>" data-size="modal-sm" data-toggl="modal" data-target="modal-dialog">
-                                        <div class="products_item_body">
-                                            <div class="products_item_image">
-                                                <img src="<?= $item->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $item->name)?>" width="100px">
-                                            </div>
-                                        </div>
-                                        <div class="products_item_body_hover">
-                                            <div class="products_item_title">
-                                                <span><?=Yii::t('database', $item->name)?></span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                                <?php foreach (Drop::getForMarket() as $drop): ?>
-                                    <?php
-                                        $blocked = !empty($drop->blocked_at) && strtotime($drop->blocked_at) > time();
-                                        if ($blocked) {
-                                            continue;
-                                        }
-                                    ?>
-                                    <?= $this->render('_product', [
-                                            'drop' => $drop
-                                    ]); ?>
-                                <?php endforeach; ?>
-                                <?php foreach (Drop::getForMarket() as $drop): ?>
-                                    <?php
-                                    $blocked = !empty($drop->blocked_at) && strtotime($drop->blocked_at) > time();
-                                    if (!$blocked) {
-                                        continue;
-                                    }
-                                    ?>
-                                    <?= $this->render('_product', [
-                                        'drop' => $drop
-                                    ]); ?>
-                                <?php endforeach; ?>
-                                <?php $this->endCache(); ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <div class="categories">
-                        <ul>
-                            <li>
-                                <div class="categories_item" data-id="">
-                                    <?=Yii::t('common', 'Все')?>
-                                </div>
-                            </li>
-                            <?php foreach ($categories as $category): ?>
-                                <li>
-                                    <div class="categories_item" data-id="<?=$category->id?>">
-                                        <?=Yii::t('database', $category->name)?>
-                                    </div>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-</div>

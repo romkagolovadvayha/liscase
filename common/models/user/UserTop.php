@@ -3,7 +3,9 @@
 namespace common\models\user;
 
 use common\models\servers\Servers;
+use common\models\statistics\Statistics;
 use Yii;
+use yii\helpers\ArrayHelper;
 
 /**
  * This is the model class for table "user_top".
@@ -211,5 +213,18 @@ class UserTop extends \yii\db\ActiveRecord
               'gathered_potato' => 0.4,
           ],
         ];
+    }
+
+    public function keyName()
+    {
+        return ArrayHelper::getValue(UserTop::getRaitingLabel(), $this->key);
+    }
+
+    public function valueFormat()
+    {
+        if ($this->key == UserTop::TYPE_PLAYTIME) {
+            return Servers::getPlayTime($this->value);
+        }
+        return number_format($this->value, 0, '.', ' ');
     }
 }

@@ -1,0 +1,71 @@
+<header class="header">
+    <a href="{{ HOME_URL }}">
+        <img src="{{ LOGO_IMAGE }}" alt="" />
+    </a>
+
+    <div class="header__actions">
+        <!-- Язык -->
+        <div class="language">
+            <div class="language__select">
+                <span class="icons icons_flag icons_flag_ru" id="selected_language_ru" style="display: none;"></span>
+                <span class="icons icons_flag icons_flag_en" id="selected_language_en" style=""></span>
+                <span class="icons icons_16px icons_16px_arrow_down"></span>
+            </div>
+            <ul class="language__list">
+                <li id="item_language_ru">
+                    <span class="icons icons_flag icons_flag_ru"></span>
+                    <span class="p3 uppercase font-medium">RU</span>
+                </li>
+                <li id="item_language_en">
+                    <span class="icons icons_flag icons_flag_en"></span>
+                    <span class="p3 uppercase font-medium">EN</span>
+                </li>
+            </ul>
+        </div>
+        {% if USER_GUEST %}
+            <button class="button-primary button-size__s h-36" style="padding-top: 6px; padding-bottom: 6px">
+              <span class="button__text">
+                {{ t('common', 'Войти через Steam') }}
+                <span class="icons icons_24px icons_24px_steam bg-white"></span>
+              </span>
+            </button>
+        {% else %}
+            <button class="button-secondary button-size__s h-36 show-modal-link"
+                    style="padding-top: 6px; padding-bottom: 6px"
+                    data-href="/site/promocode"
+                    data-size="modal-sm"
+                    data-content-overflow="unset"
+                    data-top-image="/images/design/modal/promo.png"
+                    data-top-class="modal-backdrop-image_promo active"
+                    data-toggl="modal"
+                    data-target="modal-dialog"
+                    data-title="{{ t('common', 'Промокод') }}">
+                <span class="button__text">{{ t('common', 'Промокод') }}</span>
+            </button>
+            <!-- Уведомления -->
+            <button class="button-secondary button-size__s h-36 w-36" style="padding: 0; padding-top: 3px; z-index: 2">
+                <span class="icons icons_16px icons_16px_bell"></span>
+            </button>
+
+            <!-- Меню действий -->
+            <div class="menu-actions">
+                <div class="menu-actions__balance-photo">
+                    <span>{{ user.balance|number_format(0, '', ' ') }}</span>
+                    <span class="icons icons_16px icons_16px_coin"></span>
+
+                    <img src="{{ user.avatar }}" alt="avatar">
+                </div>
+                <ul class="menu-actions__list">
+                    <li>
+                        <span class="icons icons_16px icons_16px_user"></span>
+                        <span class="p3 uppercase font-medium">{{ t('common', 'Мой профиль') }}</span>
+                    </li>
+                    <li>
+                        <span class="icons icons_16px icons_16px_exit"></span>
+                        <span class="p3 uppercase font-medium">{{ t('common', 'Выйти') }}</span>
+                    </li>
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+</header>

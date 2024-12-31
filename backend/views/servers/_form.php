@@ -12,7 +12,17 @@ use yii\widgets\ActiveForm;
 
     <?php $form = ActiveForm::begin(); ?>
 
-    <?= $form->field($model, 'name')->textInput() ?>
+    <div class="row">
+        <div class="col-md-4">
+            <?= $form->field($model, 'name')->textInput() ?>
+        </div>
+        <div class="col-md-4">
+            <?= $form->field($model, 'monitoring_name')->textInput() ?>
+        </div>
+        <div class="col-md-4">
+            <?= $form->field($model, 'monitoring_description')->textInput() ?>
+        </div>
+    </div>
 
     <div class="row">
         <div class="col-md-3">
