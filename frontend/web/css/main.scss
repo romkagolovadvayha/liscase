@@ -1,32 +1,70 @@
-$rust_color: #25251c;
-$rust_color_text: #a9a29b;
-$rust_color_blue: #1b3f5b;
-$rust_color_blue_text: #439edf;
-$rust_color_grey: #575350;
-$rust_color_grey_text: #cec5bc;
+// Новогодние синие цвета
+$holiday_dark_blue_dark: #01173e; // Темно-синий
+$holiday_dark_blue: #003366; // Темно-синий
+$holiday_sky_blue: #87CEEB; // Небесно-голубой
+$holiday_aqua: #00FFFF; // Аквамариновый
+$holiday_white: #FFFFFF; // Белый
+$holiday_light_blue: #ADD8E6; // Светло-голубой
+
+$blue: #5088c4;
+$blue_dark: darken($blue, 20%);
+$blue_dark_dark: darken($blue, 30%);
+$blue_dark_dark2: darken($blue, 40%);
+$light_blue: #c6d5ea;
+$white: #ececee;
+$red: #a2120a;
+$red_light: #ffaeae;
+$light_blue_temp: #d5ddea;
+
+// Обновление существующих переменных
+$rust_color: $blue_dark; // Темно-синий
+$rust_color_text: $light_blue; // Белый текст
+$rust_color_blue: $holiday_sky_blue; // Небесно-голубой
+$rust_color_blue_text: $holiday_aqua; // Аквамариновый текст
+$rust_color_grey: $blue_dark; // Светло-голубой
+$rust_color_grey_text: $light_blue; // Белый текст
+$rust_color_green: $blue_dark; // Светло-голубой
+$rust_color_green_text: $light_blue; // Белый текст
+$rust_color_red: $blue_dark; // Темно-синий
+$rust_color_red_text: $light_blue; // Белый текст
+$rust_bg: $blue_dark; // Темно-синий фон
+$rust_logo: $holiday_sky_blue; // Небесно-голубой
+$rust_logo_text: $light_blue; // Белый текст
+$rust_logo_bg: $blue_dark; // Темно-синий
+
+// Примените изменения и к остальным цветовым переменным, где это необходимо.
+
+//$rust_color: #25251c;
+//$rust_color_text: #a9a29b;
+//$rust_color_blue: #1b3f5b;
+//$rust_color_blue_text: #439edf;
+//$rust_color_grey: #575350;
+//$rust_color_grey_text: #cec5bc;
 $rust_color_grey_dark: #434037;
 $rust_color_grey_dark_text: #dacfc6;
-$rust_color_green: #5c7137;
-$rust_color_green_text: #a8dc4d;
-$rust_color_blue: #194462;
-$rust_color_blue_text: #6b9dc1;
-$rust_color_red: #af3926;
-$rust_color_red_dark: #402824;
-$rust_color_red_text: #d9bab4;
-$rust_color_red_text2: #dd6e5b;
-$rust_bg: #23221e;
-$rust_logo: #8d2e1f;
-$rust_logo_text: #b0b0b0;
-$rust_logo_bg: #20201d;
+$color_green: #244968;
+$color_green_text: #4dafdc;
+//$rust_color_green: #5c7137;
+//$rust_color_green_text: #a8dc4d;
+//$rust_color_blue: #194462;
+//$rust_color_blue_text: #6b9dc1;
+//$rust_color_red: #af3926;
+//$rust_color_red_dark: #402824;
+//$rust_color_red_text: #d9bab4;f
+//$rust_color_red_text2: #dd6e5b;
+//$rust_bg: #23221e;
+//$rust_logo: #8d2e1f;
+//$rust_logo_text: #b0b0b0;
+//$rust_logo_bg: #20201d;
 
 $color_background_body: $rust_bg;
-$color_background_body_back: #2f2d23;
+$color_background_body_back: $holiday_dark_blue_dark;
 $color_background_body_dark: $rust_logo_bg;
-$color_success: $rust_color_green; //#006c2e $color_success
-$color_success_brighter: $rust_color_green_text; //#2ecc71
+$color_success: $color_green; //#006c2e $color_success
+$color_success_brighter: $color_green_text; //#2ecc71
 $color_success_super_brighter: lighten($color_success, 35%); //#2ecc71
 $color_success_dark: darken($color_success, 15%); //#2ecc71
-$color_success_dark_dark: #131513; //#151413
+$color_success_dark_dark: $blue_dark_dark; //#151413
 $color_success_dark_dark_hover: lighten($color_success_dark_dark, 5%); //#151413
 
 $color_blue: #00536c; //#006c2e $color_success
@@ -2511,7 +2549,7 @@ body {
         gap: 5px;
       }
       &_item {
-        background: rgba(255, 255, 255, 0.06);
+        background: rgba(0, 0, 0, 0.2);
         padding: 10px;
         position: relative;
         &_hover {
@@ -3022,7 +3060,7 @@ body::after {
   background: $color_background_body;
 }
 .modal.modal-alert .modal-dialog .modal-content .modal-body {
-  background: #252925f2;
+  background: $blue_dark_dark2;
 }
 
 .modal_form_product_description {
@@ -3567,7 +3605,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   border-radius: 0;
   color: #c2c7d7;
   font-size: 15px;
-  background-color: #252925f2;
+  background-color: $blue_dark_dark2;
 }
 .page_statistics_content div.dt-container .dt-search label {
   height: 100%;
@@ -3576,7 +3614,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   align-items: center;
   justify-content: center;
   color: #c2c7d7;
-  background-color: #252925f2;
+  background-color: $blue_dark_dark2;
 }
 .Search-module__icon {
   width: 18px;
@@ -3802,7 +3840,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   justify-content: space-between;
   align-items: center;
   color: $color_text;
-  background-color: #252925f2;
+  background-color: $blue_dark_dark2;
   padding: 10px 20px;
   margin: 0;
   font-size: clamp(16px, 1vw, 20px);
@@ -3899,7 +3937,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 
 :root {
   --background-color: $color_success_dark_dark;
-  --header-color: #252925f2;
+  --header-color: $blue_dark_dark2;
   --secondary-color: $color_background_body;
   --rust-button-red: #962f20;
   --rust-hover-red: #b83b28;
@@ -3916,7 +3954,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 }
 
 .profile-data-container::-webkit-scrollbar-track, .server-list::-webkit-scrollbar-track {
-  background: #252925f2;
+  background: $blue_dark_dark2;
 }
 .server-leaderboard-container::-webkit-scrollbar-track, .server-list::-webkit-scrollbar-track, .server-list::-webkit-scrollbar-track {
   background: $color_success_dark_dark;
@@ -5989,11 +6027,11 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   line-height: 15px;
 }
 .navbar .nav-item.menu-stats .nav-link {
-  color: $rust_color_blue_text;
-  background-color: $rust_color_blue;
+  color: $color_green_text;
+  background-color: $color_green;
   &:hover, &:focus {
-    background-color: lighten($rust_color_blue, 6%);
-    color: $rust_color_blue_text;
+    background-color: lighten($color_green, 6%);
+    color: $color_green_text;
   }
 }
 .navbar .nav-item.menu-skindrops .nav-link {
@@ -7699,7 +7737,7 @@ header {
   }
 }
 .widget_skindrops {
-  background: #6c0000;
+  background: #07006c;
   padding: 10px;
   border-radius: 0;
   overflow: hidden;
