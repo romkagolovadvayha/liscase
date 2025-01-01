@@ -215,7 +215,7 @@ class TelegramConstructor extends \yii\db\ActiveRecord
         if ($audienceId == self::AUDIENCE_WINNER) {
             return User::find()
                        ->select('DISTINCT(id)')
-                       ->andWhere(['IN', 'steam_id', [76561198166483284, 76561198162114176, 76561199729196379, 76561198071379438, 76561199070076939]])
+                       ->andWhere(['IN', 'steam_id', [76561198161653962]])
                        ->andWhere('telegram_chat_id is NOT NULL')
                        ->createCommand()
                        ->queryColumn();
