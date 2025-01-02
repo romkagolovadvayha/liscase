@@ -14,6 +14,8 @@ use yii\base\BaseObject;
  * @property string $steam_id
  * @property string $type
  * @property string $dead
+ * @property string $wears
+ * @property string $signs
  * @property string $weapon
  * @property string $distance
  * @property string $created_at

@@ -22,6 +22,7 @@ class UpdateKillsJob extends BaseObject implements JobInterface
     public $item;
     public $serverTag;
     public $wipeDate;
+    public $serverId;
 
     /**
      * @param \yii\queue\Queue $queue
@@ -34,9 +35,9 @@ class UpdateKillsJob extends BaseObject implements JobInterface
         $item = $this->item;
         try {
             try {
-                User::findBySteamId($item['steam_id']);
+                $user = User::findBySteamId($item['steam_id']);
                 if (strlen($item['dead']) >= 16) {
-                    User::findBySteamId($item['dead']);
+                    $userDead = User::findBySteamId($item['dead']);
                 }
             } catch (\Exception $ex) {}
             $model = new Kills();
@@ -48,31 +49,50 @@ class UpdateKillsJob extends BaseObject implements JobInterface
             $model->created_at = $item['date'];
             $model->server_tag = $this->serverTag;
             $model->wipe = $this->wipeDate;
+
+            if (!empty($item['signs'])) {
+                $model->signs = json_encode($item['signs']);
+            }
+            if (!empty($item['inventoryWear'])) {
+                $model->wears = json_encode($item['inventoryWear']);
+            }
+
             $model->save();
 
 
             if ($item['type'] == 'kill') {
-                /** @var Statistics $paramKills */
-                $paramKills = Statistics::find()
-                                        ->andWhere(['steam_id' => $model->steam_id])
-                                        ->andWhere(['server_tag' => $this->serverTag])
-                                        ->andWhere(['wipe' => $this->wipeDate])
-                                        ->andWhere(['key' => 'kills'])
-                                        ->one();
+                if (empty($item['signs'])) {
+                    /** @var Statistics $paramKills */
+                    $paramKills = Statistics::find()
+                                            ->andWhere(['steam_id' => $model->steam_id])
+                                            ->andWhere(['server_tag' => $this->serverTag])
+                                            ->andWhere(['wipe' => $this->wipeDate])
+                                            ->andWhere(['key' => 'kills'])
+                                            ->one();
 
-                if (!empty($paramKills)) {
-                    $paramKills->value++;
-                    $paramKills->save(false);
-                } else {
-                    $nModel = new Statistics();
-                    $nModel->steam_id = $model->steam_id;
-                    $nModel->server_tag = $this->serverTag;
-                    $nModel->key = 'kills';
-                    $nModel->value = 1;
-                    $nModel->wipe = $this->wipeDate;
-                    $nModel->save();
+                    if (!empty($paramKills)) {
+                        $paramKills->value++;
+                        $paramKills->save(false);
+                    } else {
+                        $nModel = new Statistics();
+                        $nModel->steam_id = $model->steam_id;
+                        $nModel->server_tag = $this->serverTag;
+                        $nModel->key = 'kills';
+                        $nModel->value = 1;
+                        $nModel->wipe = $this->wipeDate;
+                        $nModel->save();
+                    }
+                    if (!empty($user) && !empty($this->serverId)) {
+                        Yii::$app->queueTop->push(new UpdateTopJob([
+                                                                       'userId' => $user->id,
+                                                                       'key' => 'kills',
+                                                                       'value' => 1,
+                                                                       'serverId' => $this->serverId,
+                                                                       'wipeDate' => $this->wipeDate,
+                                                                   ]));
+
+                    }
                 }
-
                 /** @var Statistics $paramDeaths */
                 $paramDeaths = Statistics::find()
                                         ->andWhere(['steam_id' => $item['dead']])
@@ -91,6 +111,15 @@ class UpdateKillsJob extends BaseObject implements JobInterface
                     $nModel->value = 1;
                     $nModel->wipe = $this->wipeDate;
                     $nModel->save();
+                }
+                if (!empty($userDead) && !empty($this->serverId)) {
+                    Yii::$app->queueTop->push(new UpdateTopJob([
+                                                                   'userId' => $userDead->id,
+                                                                   'key' => 'deaths',
+                                                                   'value' => 1,
+                                                                   'serverId' => $this->serverId,
+                                                                   'wipeDate' => $this->wipeDate,
+                                                               ]));
                 }
             }
         } catch (\Exception $e) {

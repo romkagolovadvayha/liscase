@@ -71,6 +71,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         'item' => $item,
                         'serverTag' => $this->serverTag,
                         'wipeDate' => $wipeDate,
+                        'serverId' => $server->id,
                     ]));
                 } catch (\Exception $e) {
                     Yii::$app->telegramChats->sendMessage("SaveStatsJob::queueKills: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
