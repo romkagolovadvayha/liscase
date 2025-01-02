@@ -105,7 +105,7 @@ class UpdateKillsJob extends BaseObject implements JobInterface
                     $paramDeaths->save(false);
                 } else {
                     $nModel = new Statistics();
-                    $nModel->steam_id = $model->steam_id;
+                    $nModel->steam_id = $item['dead'];
                     $nModel->server_tag = $this->serverTag;
                     $nModel->key = 'deaths';
                     $nModel->value = 1;
