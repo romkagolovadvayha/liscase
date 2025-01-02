@@ -34,8 +34,6 @@ $animals2 = Kills::getAnimals2List();
             if (empty($model['wears'])) {
                 $dq .= "<span class=\"stats_player_kills_item_wear\">" . Yii::t('common', 'Голый') . "</span>";
             }
-            $dq .= "<span class=\"stats_player_kills_item_sleep\">" . Yii::t('common', 'Спящий') . "</span>";
-            $dq .= "<span class=\"stats_player_kills_item_team\">" . Yii::t('common', 'Тимейт') . "</span>";
             if (empty($model['dead_name'])) {
                 $deadLink = "<span class=\"stats_player_kills_item_name\">".Yii::t('common', 'Не известный')."</span>";
             } elseif ($model['dead'] === $user->steam_id) {
