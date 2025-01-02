@@ -24,7 +24,6 @@ class UpdateStatsUserJob extends BaseObject implements JobInterface
     public $serverTag;
     public $serverId;
     public $wipeDate;
-    public $request;
 
     /**
      * @param \yii\queue\Queue $queue
@@ -38,7 +37,6 @@ class UpdateStatsUserJob extends BaseObject implements JobInterface
             $steamId = $this->steam_id;
             $wipeDate = $this->wipeDate;
             $params = $this->params;
-            $request = $this->request;
             $user = User::findBySteamId($steamId);
             $statistics = Statistics::find()
                                     ->andWhere(['steam_id' => $steamId])
@@ -47,21 +45,8 @@ class UpdateStatsUserJob extends BaseObject implements JobInterface
                                     ->indexBy('key')
                                     ->all();
 
-            $params['kills'] = 0;
-            if (!empty($request) && !empty($request['kills'])) {
-                try {
-                    foreach ($request['kills'] as $item) {
-                        if (strlen($item['steam_id']) < 16 || strlen($item['dead']) < 16 || $item['type'] != 'kill') {
-                            continue;
-                        }
-                        if ($item['steam_id'] == $steamId) {
-                            $params['kills']++;
-                        }
-                    }
-                } catch (\Exception $e) {
-                    Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
-                }
-            }
+            unset($params['kills']);
+            unset($params['deaths']);
             foreach ($params as $key => $value) {
                 if (empty($value)) {
                     continue;

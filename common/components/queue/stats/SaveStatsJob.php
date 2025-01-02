@@ -56,13 +56,12 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     continue;
                 }
 
-                Yii::$app->queueKills->push(new UpdateStatsUserJob([
+                Yii::$app->queueParams->push(new UpdateStatsUserJob([
                                                                      'steam_id' => $steamId,
                                                                      'params' => $params,
                                                                      'serverTag' => $this->serverTag,
                                                                      'serverId' => $server->id,
                                                                      'wipeDate' => $wipeDate,
-                                                                     'request' => $request,
                                                                  ]));
 
             }

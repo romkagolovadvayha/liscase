@@ -49,6 +49,50 @@ class UpdateKillsJob extends BaseObject implements JobInterface
             $model->server_tag = $this->serverTag;
             $model->wipe = $this->wipeDate;
             $model->save();
+
+
+            if ($item['type'] == 'kill') {
+                /** @var Statistics $paramKills */
+                $paramKills = Statistics::find()
+                                        ->andWhere(['steam_id' => $model->steam_id])
+                                        ->andWhere(['server_tag' => $this->serverTag])
+                                        ->andWhere(['wipe' => $this->wipeDate])
+                                        ->andWhere(['key' => 'kills'])
+                                        ->one();
+
+                if (!empty($paramKills)) {
+                    $paramKills->value++;
+                    $paramKills->save(false);
+                } else {
+                    $nModel = new Statistics();
+                    $nModel->steam_id = $model->steam_id;
+                    $nModel->server_tag = $this->serverTag;
+                    $nModel->key = 'kills';
+                    $nModel->value = 1;
+                    $nModel->wipe = $this->wipeDate;
+                    $nModel->save();
+                }
+
+                /** @var Statistics $paramDeaths */
+                $paramDeaths = Statistics::find()
+                                        ->andWhere(['steam_id' => $item['dead']])
+                                        ->andWhere(['server_tag' => $this->serverTag])
+                                        ->andWhere(['wipe' => $this->wipeDate])
+                                        ->andWhere(['key' => 'deaths'])
+                                        ->one();
+                if (!empty($paramDeaths)) {
+                    $paramDeaths->value++;
+                    $paramDeaths->save(false);
+                } else {
+                    $nModel = new Statistics();
+                    $nModel->steam_id = $model->steam_id;
+                    $nModel->server_tag = $this->serverTag;
+                    $nModel->key = 'deaths';
+                    $nModel->value = 1;
+                    $nModel->wipe = $this->wipeDate;
+                    $nModel->save();
+                }
+            }
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage("UpdateKillsJob" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
         }
