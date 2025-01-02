@@ -51,6 +51,7 @@ use common\components\base\ActiveRecord;
  * @property int             $is_gamer
  * @property int             $server_id
  * @property bool            $raid_notify
+ * @property bool            $store
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
@@ -164,6 +165,7 @@ class User extends ActiveRecord implements IdentityInterface
             'unbanned_at'          => Yii::t('common', 'Разбан'),
             'ban_reason'          => Yii::t('common', 'Причина'),
             'ban_by'          => Yii::t('common', 'Кем забанен'),
+            'store'          => Yii::t('common', 'Доступ к магазину'),
         ];
     }
 
@@ -171,7 +173,7 @@ class User extends ActiveRecord implements IdentityInterface
     {
         return [
             [['email', 'password_hash', 'auth_key', 'ref_code', 'socket_room', 'status'], 'required'],
-            [['status', 'auto', 'steam_id'], 'integer'],
+            [['status', 'auto', 'steam_id', 'store'], 'integer'],
             [['ref_code'], 'number'],
             [['email', 'password_hash'], 'string', 'max' => 255],
             [['auth_key', 'socket_room'], 'string', 'max' => 32],

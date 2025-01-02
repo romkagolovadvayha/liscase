@@ -72,7 +72,7 @@ JS
     <?= Alert::widget() ?>
     <h1><?=Yii::t('common', 'Корзина сервера')?></h1>
     <p><?=Yii::t('common', 'Это ваша корзина с покупками, вы можете забрать их в любой момент')?></p>
-    <?php if (empty($user->server) || $user->server->is_store || in_array($user->steam_id, [76561199644761644, 76561199808643443])): ?>
+    <?php if (empty($user->server) || $user->server->is_store || $user->store): ?>
         <?php if (!empty($userDrops)):?>
             <div class="store_launcher_categories">
                 <?php foreach ($categories as $category): ?>

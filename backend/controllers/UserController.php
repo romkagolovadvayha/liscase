@@ -53,6 +53,7 @@ class UserController extends CrudController
 
     public function actionProfile($userId)
     {
+        /** @var User $user */
         $user = User::findOne($userId);
         $roleForm = new RoleForm();
         $roleForm->setUserId($userId);
@@ -71,6 +72,12 @@ class UserController extends CrudController
             && $roleForm->load(Yii::$app->request->post())
             && $roleForm->saveRecord()) {
             Yii::$app->session->addFlash('success', 'Роль пользователя успешно изменена!');
+            return $this->redirect(['profile', 'userId' => $userId]);
+        }
+        if (!empty($bodyParams['User'])
+            && $user->load(Yii::$app->request->post())
+            && $user->save()) {
+            Yii::$app->session->addFlash('success', 'Пользователь успешно изменен!');
             return $this->redirect(['profile', 'userId' => $userId]);
         }
         if (!empty($bodyParams['BonusForm'])
