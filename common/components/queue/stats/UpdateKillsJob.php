@@ -61,7 +61,7 @@ class UpdateKillsJob extends BaseObject implements JobInterface
 
 
             if ($item['type'] == 'kill') {
-                if (empty($item['signs'])) {
+                if (empty($item['signs']) && !empty($item['inventoryWear'])) {
                     /** @var Statistics $paramKills */
                     $paramKills = Statistics::find()
                                             ->andWhere(['steam_id' => $model->steam_id])
