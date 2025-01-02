@@ -1,15 +1,16 @@
 // Новогодние синие цвета
-$holiday_dark_blue_dark: #01173e; // Темно-синий
+$holiday_dark_blue_dark: #000918; // Темно-синий
 $holiday_dark_blue: #003366; // Темно-синий
 $holiday_sky_blue: #87CEEB; // Небесно-голубой
 $holiday_aqua: #00FFFF; // Аквамариновый
 $holiday_white: #FFFFFF; // Белый
 $holiday_light_blue: #ADD8E6; // Светло-голубой
 
+$border_radius: 10px;
 $blue: #5088c4;
-$blue_dark: darken($blue, 20%);
-$blue_dark_dark: darken($blue, 30%);
-$blue_dark_dark2: darken($blue, 40%);
+$blue_dark: #26282b;
+$blue_dark_dark: #141a24;
+$blue_dark_dark2: #09090a;
 $light_blue: #c6d5ea;
 $white: #ececee;
 $red: #a2120a;
@@ -42,8 +43,8 @@ $rust_logo_bg: $blue_dark; // Темно-синий
 //$rust_color_grey_text: #cec5bc;
 $rust_color_grey_dark: #434037;
 $rust_color_grey_dark_text: #dacfc6;
-$color_green: #244968;
-$color_green_text: #4dafdc;
+$color_green: #235d8d;
+$color_green_text: #dacfc6;
 //$rust_color_green: #5c7137;
 //$rust_color_green_text: #a8dc4d;
 //$rust_color_blue: #194462;
@@ -188,7 +189,7 @@ $color_text: #e4dad1;
         font-weight: 700;
         font-size: 14px;
         background-color: $color_success_brighter;
-        border-radius: 0;
+        border-radius: $border_radius;
         transition: background-color .3s ease;
       }
       &_old {
@@ -220,7 +221,7 @@ $color_text: #e4dad1;
   &_card {
     text-align: center;
     position: relative;
-    border-radius: 0;
+    border-radius: $border_radius;
     &_title {
       margin-top: 5px;
       color: #e8e9f3;
@@ -239,7 +240,7 @@ $color_text: #e4dad1;
       padding: 20px 20px;
       text-align: center;
       background-color: rgba(86,68,51,.6);
-      border-radius: 0;
+      border-radius: $border_radius;
       -webkit-backdrop-filter: blur(12px);
       backdrop-filter: blur(12px);
       margin-top: -100px;
@@ -388,7 +389,7 @@ $color_text: #e4dad1;
   }
   &_card {
     position: relative;
-    border-radius: 0;
+    border-radius: $border_radius;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -445,7 +446,7 @@ $color_text: #e4dad1;
 //    font-size: 13px;
 //    text-transform: uppercase;
 //    background-color: $color_success_brighter;
-//    border-radius: 0;
+//    border-radius: $border_radius;
 //    transition: background-color .3s ease,color .3s ease;
 //    &:before {
 //      vertical-align: middle;
@@ -484,7 +485,7 @@ $color_text: #e4dad1;
     .modal-content {
       text-align: center;
       background: transparent;
-      border-radius: 0;
+      border-radius: $border_radius;
       overflow: hidden;
       .modal-body {
         background: fade-out($color_background_body,  0.2);
@@ -499,7 +500,7 @@ $color_text: #e4dad1;
           text-transform: uppercase;
           padding: 10px 15px;
           cursor: pointer;
-          border-radius: 0;
+          border-radius: $border_radius;
           border-width: 1px;
           text-align: center;
           transition: all .15s ease;
@@ -540,7 +541,7 @@ $color_text: #e4dad1;
   &_item {
     height: 120px;
     position: relative;
-    border-radius: 0;
+    border-radius: $border_radius;
     overflow: hidden;
     margin: 5px;
     &_image {
@@ -661,7 +662,7 @@ $color_text: #e4dad1;
   &_item {
     height: 100px;
     position: relative;
-    border-radius: 0;
+    border-radius: $border_radius;
     overflow: hidden;
     margin: 5px;
     display: flex;
@@ -838,7 +839,7 @@ $color_text: #e4dad1;
     min-width: 10%;
     min-height: 80px;
     position: relative;
-    border-radius: 0;
+    border-radius: $border_radius;
     overflow: hidden;
     background: rgba(0, 0, 0, 0.4);
     color: #e4dad1;
@@ -857,7 +858,7 @@ $color_text: #e4dad1;
         background: rgba(108, 0, 0, 0.6);
         box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.71);
         border: 2px solid #660808;
-        border-radius: 0;
+        border-radius: $border_radius;
         font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
@@ -869,7 +870,7 @@ $color_text: #e4dad1;
       display: block;
       padding: 5px 2px;
       font-size: 11px;
-      border-radius: 0;
+      border-radius: $border_radius;
       position: relative;
       z-index: 3;
       height: auto;
@@ -1144,7 +1145,7 @@ $color_text: #e4dad1;
     &__item {
       position: relative;
       background-color: #1d1e27;
-      border-radius: 0;
+      border-radius: $border_radius;
       transition: background-color .3s ease;
       &--active {
         background-color: #22232c;
@@ -1226,7 +1227,7 @@ $color_text: #e4dad1;
 }
 
 .dropdown-menu {
-  border-radius: 0;
+  border-radius: $border_radius;
   border: none;
   background: $rust_color_grey_dark;
   position: relative;
@@ -1289,7 +1290,7 @@ select.form-control {
   font-size: 15px;
   text-align: left;
   background-color: #252530;
-  border-radius: 0;
+  border-radius: $border_radius;
   border: none;
   outline: none;
   transition: background-color .3s ease;
@@ -1307,7 +1308,7 @@ select.form-select {
   font-size: 13px;
   text-align: left;
   background-color: #252530;
-  border-radius: 0;
+  border-radius: $border_radius;
   border: none;
   outline: none;
   transition: background-color .3s ease;
@@ -1324,7 +1325,7 @@ select.form-select {
   font-size: 15px;
   text-align: left;
   background-color: #252530;
-  border-radius: 0;
+  border-radius: $border_radius;
   border: none;
   outline: none;
   transition: background-color .3s ease;
@@ -1337,7 +1338,7 @@ select.form-select {
 }
 
 .alert {
-  border-radius: 0;
+  border-radius: $border_radius;
 }
 #paymentform-payment_id {
   grid-auto-flow: dense;
@@ -1369,7 +1370,7 @@ select.form-select {
     position: relative;
     height: 36px;
     background-color: $color_success_dark_dark;
-    border-radius: 0;
+    border-radius: $border_radius;
     cursor: pointer;
     display: flex;
     padding: 5px;
@@ -1402,7 +1403,7 @@ select.form-select {
       bottom: 1px;
       right: 1px;
       padding: 2px;
-      border-radius: 0;
+      border-radius: $border_radius;
       font-size: 10px;
       background: rgba(0, 0, 0, 0.5);
     }
@@ -1644,7 +1645,7 @@ h1 {
       padding: 10px;
       text-transform: uppercase;
       background-color: $color_success_brighter;
-      border-radius: 0;
+      border-radius: $border_radius;
       border: 0;
       transition: background-color .3s ease,color .3s ease;
       line-height: 20px;
@@ -1853,7 +1854,7 @@ h1 {
       padding: 20px 20px;
       text-align: center;
       background-color: rgba($rust_color_red, 0.4);
-      border-radius: 0;
+      border-radius: $border_radius;
       -webkit-backdrop-filter: blur(12px);
       backdrop-filter: blur(12px);
       margin-top: -50px;
@@ -1882,7 +1883,7 @@ h1 {
         padding: 15px 20px;
         cursor: pointer;
         flex: 1 0;
-        border-radius: 0;
+        border-radius: $border_radius;
         border-width: 1px;
         text-align: center;
         transition: all .15s ease;
@@ -1986,7 +1987,7 @@ h1 {
         font-weight: 700;
         font-size: 14px;
         background-color: $color_success_brighter;
-        border-radius: 0;
+        border-radius: $border_radius;
         transition: background-color .3s ease;
       }
       &_old {
@@ -2029,7 +2030,7 @@ h1 {
   display: grid;
   &_item {
     padding: 20px;
-    border-radius: 0;
+    border-radius: $border_radius;
     background: darken($color_background_body, 1%);
     display: flex;
     align-items: center;
@@ -2333,7 +2334,7 @@ h1 {
             min-height: 80px;
             width: 100px;
             position: relative;
-            border-radius: 0;
+            border-radius: $border_radius;
             overflow: hidden;
             margin-right: 10px;
             margin-bottom: 10px;
@@ -2341,7 +2342,7 @@ h1 {
               display: block;
               padding: 5px 2px;
               font-size: 11px;
-              border-radius: 0;
+              border-radius: $border_radius;
               height: auto;
               width: 100%;
             }
@@ -2535,9 +2536,23 @@ body {
     }
     .servers {
       background: $color_background_body;
+      border-radius: $border_radius;
       &_wrapper {
-        //border: 1px solid rgba(19, 20, 26, 1);
-        border-radius: 0;
+        position: relative;
+        &:before {
+          background-image: url(/images/snow/6.png);
+          content: " ";
+          position: absolute;
+          left: -8px;
+          top: -6px;
+          width: 70px;
+          height: 52px;
+          background-size: contain;
+          background-repeat: no-repeat;
+          display: block;
+          z-index: 1;
+          opacity: 1;
+        }
         @media (max-width: 540px) {
           display: none;
         }
@@ -2547,11 +2562,14 @@ body {
         display: flex;
         flex-direction: column;
         gap: 5px;
+        border-bottom-left-radius: $border_radius;
+        border-bottom-right-radius: $border_radius;
       }
       &_item {
         background: rgba(0, 0, 0, 0.2);
         padding: 10px;
         position: relative;
+        border-radius: $border_radius;
         &_hover {
           display: none;
           position: absolute;
@@ -2596,7 +2614,7 @@ body {
             font-weight: 400;
             text-align: center;
             border: none;
-            border-radius: 0;
+            border-radius: $border_radius;
             &_wrap {
               display: flex;
               flex-direction: column;
@@ -2657,9 +2675,9 @@ body {
         &_progress {
           &_wrap {
             background: $color_success_dark_dark;
-            //border-radius: 0;
+            //border-radius: $border_radius;
             padding: 3px;
-            border-radius: 0;
+            border-radius: $border_radius;
             margin-top: 10px;
           }
           &_players {
@@ -2669,7 +2687,7 @@ body {
               display: flex;
               justify-content: flex-start;
               overflow: hidden;
-              border-radius: 0;
+              border-radius: $border_radius;
               position: relative;
               max-width: 100%;
               &:after {
@@ -2733,7 +2751,7 @@ body {
         font-weight: 700;
         text-align: center;
         border: none;
-        border-radius: 0;
+        border-radius: $border_radius;
         &_wrap {
           display: flex;
           flex-direction: column;
@@ -2766,7 +2784,37 @@ body {
         padding: 10px;
         background: $color_background_body;
         background: $color_background_body;
-        border-radius: 0;
+        border-radius: $border_radius;
+        position: relative;
+        &:after {
+          background-image: url('/images/snow/1.png');
+          transform: scaleX(-1);
+          content: " ";
+          position: absolute;
+          right: -8px;
+          top: -6px;
+          width: 52px;
+          height: 40px;
+          background-size: contain;
+          background-repeat: no-repeat;
+          display: block;
+          z-index: 1;
+          opacity: 1;
+        }
+        &:before {
+          background-image: url(/images/snow/3.png);
+          content: " ";
+          position: absolute;
+          left: 271px;
+          top: -12px;
+          width: 89px;
+          height: 23px;
+          background-size: contain;
+          background-repeat: no-repeat;
+          display: block;
+          z-index: 1;
+          opacity: 1;
+        }
       }
       &_buttons {
         gap: 10px;
@@ -2789,7 +2837,7 @@ body {
           height: 50px;
           text-align: center;
           border: none;
-          border-radius: 0;
+          border-radius: $border_radius;
           width: 292px;
           @media (max-width: 1070px) {
             width: 100%;
@@ -2806,7 +2854,7 @@ body {
           padding: 15px 20px;
           padding-left: 50px;
           font-size: 16px;
-          border-radius: 0;
+          border-radius: $border_radius;
         }
         &_icon {
           position: absolute;
@@ -2860,7 +2908,7 @@ body {
               color: $color_text;
               flex: 1 0;
               background-color: $color_success_dark_dark;
-              border-radius: 0;
+              border-radius: $border_radius;
               border-width: 1px;
               text-align: center;
               transition: all .15s ease;
@@ -2904,7 +2952,7 @@ body {
         display: block;
         overflow: hidden;
         height: 155px;
-        border-radius: 0;
+        border-radius: $border_radius;
         @media (max-width: 540px) {
           height: 100px;
         }
@@ -2938,7 +2986,7 @@ body {
             background: rgba(108, 0, 0, 0.6);
             box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.71);
             border: 2px solid #660808;
-            border-radius: 0;
+            border-radius: $border_radius;
             font-weight: 700;
             text-transform: uppercase;
           }
@@ -3029,7 +3077,7 @@ body {
     min-width: 100px;
     min-height: 90px;
     height: 90px;
-    border-radius: 0;
+    border-radius: $border_radius;
   }
 }
 .last_drops_wrapper {
@@ -3056,8 +3104,10 @@ body::after {
   opacity: 1;
 }
 .modal.modal-alert .modal-dialog .modal-header {
-  border-radius: 0;
+  border-radius: $border_radius;
   background: $color_background_body;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 .modal.modal-alert .modal-dialog .modal-content .modal-body {
   background: $blue_dark_dark2;
@@ -3103,7 +3153,7 @@ body::after {
     align-items: center;
     gap: 5px;
     button.btn {
-      border-radius: 0;
+      border-radius: $border_radius;
       margin: 0;
     }
   }
@@ -3111,7 +3161,7 @@ body::after {
 .modal_form_product {
   position: relative;
   .alert {
-    border-radius: 0;
+    border-radius: $border_radius;
     padding: 10px;
     font-size: 12px;
     text-align: center;
@@ -3159,7 +3209,7 @@ body::after {
   color: $color_text;
   margin-left: 5px;
   padding: 3px;
-  border-radius: 0;
+  border-radius: $border_radius;
 }
 .widget_top_table .steam-profile {
   white-space: nowrap;
@@ -3217,7 +3267,7 @@ a {
   border: 1px solid;
   padding: 5px 10px;
   font-size: 12px;
-  border-radius: 0;
+  border-radius: $border_radius;
 }
 .widget_live_pages .widget_live_servers_item:hover {
   color: $color_success_brighter;
@@ -3236,7 +3286,7 @@ a {
   font-weight: 700;
   text-align: center;
   border: none;
-  border-radius: 0;
+  border-radius: $border_radius;
   &_wrap {
     padding: 10px;
   }
@@ -3436,7 +3486,7 @@ h2.widget_bonus_header {
 }
 .widget_live {
   background: #1b1c24;
-  border-radius: 0;
+  border-radius: $border_radius;
   overflow: hidden;
   @media (max-width: 540px) {
     display: none;
@@ -3445,6 +3495,8 @@ h2.widget_bonus_header {
 .widget_top_header, .servers_header {
   padding: 15px 20px;
   align-items: center;
+  border-top-left-radius: $border_radius;
+  border-top-right-radius: $border_radius;
   h2 {
     font-size: 18px;
     margin: 0;
@@ -3465,7 +3517,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   background: #333;
   border: 1px dashed #696969;
   padding: 2%;
-  border-radius: 0;
+  border-radius: $border_radius;
   font-size: 12px;
   margin-bottom: 10px;
 }
@@ -3556,7 +3608,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   border: none;
   flex: 1 0;
   width: 100%;
-  border-radius: 0;
+  border-radius: $border_radius;
   position: relative;
   &:hover {
     color: $color_success_brighter;
@@ -3602,7 +3654,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   outline: 0;
   border: none;
   margin: 0;
-  border-radius: 0;
+  border-radius: $border_radius;
   color: #c2c7d7;
   font-size: 15px;
   background-color: $blue_dark_dark2;
@@ -3623,7 +3675,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 .page_statistics_content div.dt-container .dt-search {
   width: 100%;
   display: flex;
-  border-radius: 0;
+  border-radius: $border_radius;
   overflow: hidden;
   background: var(--bg-color-700);
   margin: 0;
@@ -3649,7 +3701,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   padding: 10px 1em;
   cursor: pointer;
   justify-content: center;
-  border-radius: 0;
+  border-radius: $border_radius;
   border: 1px solid;
 }
 .page_statistics_content div.dt-container .dt-paging  .dt-paging-button.previous.disabled,
@@ -3677,7 +3729,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   padding: 10px 1em;
   cursor: default;
   justify-content: center;
-  border-radius: 0;
+  border-radius: $border_radius;
   border: 1px solid;
 }
 .page_statistics_content div.dt-container .dt-paging  .dt-paging-button:hover {
@@ -3690,7 +3742,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   padding: 10px 1em;
   cursor: pointer;
   justify-content: center;
-  border-radius: 0;
+  border-radius: $border_radius;
   border: 1px solid;
 }
 .page_statistics_content .table {
@@ -3702,7 +3754,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   position: inherit;
   padding: 15px 10px;
   z-index: 100;
-  border-radius: 0;
+  border-radius: $border_radius;
   text-align: left;
   background: rgba(0, 0, 0, .4);
   color: $color_text;
@@ -3713,7 +3765,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   position: inherit;
   padding: 10px;
   z-index: 100;
-  border-radius: 0;
+  border-radius: $border_radius;
   background-color: rgba(0, 0, 0, .1);
   color: $color_text;
   border: 1px solid rgba(228, 218, 209, .05);
@@ -3791,7 +3843,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   padding: 10px 1em;
   cursor: pointer;
   justify-content: center;
-  border-radius: 0;
+  border-radius: $border_radius;
   border: 1px solid;
   width: 100%;
   display: block;
@@ -4211,7 +4263,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 }
 ::-webkit-scrollbar-thumb {
   background-color: #000000;
-  border-radius: 0;
+  border-radius: $border_radius;
 }
 
 .page_player_content .profile-data-section.slick-initialized.slick-slider:hover .slick-arrow {
@@ -4415,7 +4467,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     align-items: center;
     &_wrap {
       //background: $color_background_body;
-      border-radius: 0;
+      border-radius: $border_radius;
       overflow: hidden;
     }
     &_avatar {
@@ -4423,7 +4475,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
       height: 60px;
       img {
         margin: 0 auto;
-        border-radius: 0;
+        border-radius: $border_radius;
         display: block;
       }
     }
@@ -4474,7 +4526,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
       height: 50px;
       gap: 15px;
       border: none;
-      border-radius: 0;
+      border-radius: $border_radius;
       font-size: 14px;
       line-height: 14px;
       &_title {
@@ -4501,7 +4553,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
       width: 100%;
       &_wrap {
         background: $color_background_body;
-        border-radius: 0;
+        border-radius: $border_radius;
         overflow: hidden;
         grid-row: span 3;
         display: flex;
@@ -4885,7 +4937,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
       }
     }
     &_item {
-      border-radius: 0;
+      border-radius: $border_radius;
       position: relative;
       display: flex;
       gap: 20px;
@@ -5087,7 +5139,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
       }
       &_wrap {
         //background: $color_background_body;
-        border-radius: 0;
+        border-radius: $border_radius;
         overflow-x: hidden;
       }
       &_count {
@@ -5111,7 +5163,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
       }
       &_item {
         background: $color_background_body;
-        border-radius: 0;
+        border-radius: $border_radius;
         position: relative;
         display: flex;
         width: 100px;
@@ -5188,7 +5240,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     right: 0;
     &_wrap {
       background: $color_background_body;
-      border-radius: 0;
+      border-radius: $border_radius;
       grid-row: span 4;
       display: flex;
       overflow: hidden;
@@ -5204,7 +5256,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     &_container {
       display: block;
       .hitcount {
-        border-radius: 0;
+        border-radius: $border_radius;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -5288,7 +5340,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     max-height: 272px;
     &_wrap {
       background: $color_background_body;
-      border-radius: 0;
+      border-radius: $border_radius;
       overflow: hidden;
       grid-row: span 4;
       max-height: 320px;
@@ -5339,6 +5391,24 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
         color: $rust_color_green_text;
         padding: 3px;
       }
+      &_sleep {
+        background: #4b4b4b;
+        border-radius: 5px;
+        padding: 2px 5px;
+        font-size: 10px;
+      }
+      &_team {
+        background: #305023;
+        border-radius: 5px;
+        padding: 2px 5px;
+        font-size: 10px;
+      }
+      &_wear {
+        background: #233450;
+        border-radius: 5px;
+        padding: 2px 5px;
+        font-size: 10px;
+      }
     }
   }
   &_teams {
@@ -5348,7 +5418,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     max-height: 500px;
     &_wrap {
       background: $color_background_body;
-      border-radius: 0;
+      border-radius: $border_radius;
       overflow: hidden;
       grid-row: span 2;
       width: 320px;
@@ -5419,7 +5489,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     max-height: 500px;
     &_wrap {
       background: $color_background_body;
-      border-radius: 0;
+      border-radius: $border_radius;
       overflow: hidden;
       grid-row: span 3;
       width: 320px;
@@ -5471,7 +5541,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   &_item {
     &_wrap {
       background: $color_background_body;
-      border-radius: 0;
+      border-radius: $border_radius;
       overflow: hidden;
       grid-row: span 2;
     }
@@ -5529,7 +5599,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
         position: inherit;
         padding: 15px 10px;
         z-index: 100;
-        border-radius: 0;
+        border-radius: $border_radius;
         text-align: left;
         background: rgba(0, 0, 0, .4);
         color: $color_text;
@@ -5560,7 +5630,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
       height: 50px;
       gap: 15px;
       border: none;
-      border-radius: 0;
+      border-radius: $border_radius;
       font-size: 14px;
       line-height: 14px;
       @media (max-width: 521px) {
@@ -5619,7 +5689,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   display: flex;
   align-items: center;
   padding: 15px 20px;
-  border-radius: 0;
+  border-radius: $border_radius;
   height: auto;
   background-image: none !important;
 }
@@ -5630,7 +5700,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   display: flex;
   align-items: center;
   padding: 15px 20px;
-  border-radius: 0;
+  border-radius: $border_radius;
   height: auto;
 }
 .select2-container--krajee-bs5.select2-container--open:not(.select2-container--disabled) .select2-selection, .select2-container--krajee-bs5:not(.select2-container--disabled) .select2-selection:focus {
@@ -5656,13 +5726,13 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   border: none;
   color: $color_text;
   padding: 0 20px 20px 20px;
-  border-radius: 0;
+  border-radius: $border_radius;
   height: auto;
 }
 .select2-container--krajee-bs5 .select2-results__option[aria-selected] {
   background-color: #101110;
   color: $color_text;
-  border-radius: 0;
+  border-radius: $border_radius;
 }
 .select2-container--krajee-bs5 .select2-results__option--highlighted[aria-selected] {
   background-color: #313131;
@@ -5709,7 +5779,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     color: $color_text;
     position: relative;
     padding: 5px;
-    border-radius: 0;
+    border-radius: $border_radius;
     overflow: hidden;
     &_blocked {
       &_wrap {
@@ -5725,7 +5795,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
         background: rgba(108, 0, 0, 0.6);
         box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.71);
         border: 2px solid #660808;
-        border-radius: 0;
+        border-radius: $border_radius;
         font-weight: 700;
         text-transform: uppercase;
         padding: 10px;
@@ -5751,7 +5821,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
       padding: 5px;
       right: 5px;
       background: rgba(0, 0, 0, 0.3);
-      border-radius: 0;
+      border-radius: $border_radius;
       font-size: 12px;
       overflow: hidden;
     }
@@ -5764,13 +5834,13 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 .box_cards_card_count {
   position: absolute;
   right: 5px;
-  border-radius: 0;
+  border-radius: $border_radius;
   font-size: 12px;
   overflow: hidden;
   bottom: 35px;
 }
 .alert {
-  border-radius: 0;
+  border-radius: $border_radius;
   padding: 10px;
   font-size: 12px;
   text-align: center;
@@ -5793,7 +5863,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   background: $color_background_body;
   &_wrap {
     //border: 1px solid rgba(19, 20, 26, 1);
-    border-radius: 0;
+    border-radius: $border_radius;
     overflow: hidden;
   }
   &_header {
@@ -5811,7 +5881,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     justify-content: center;
     img {
       display: block;
-      border-radius: 0;
+      border-radius: $border_radius;
       overflow: hidden;
     }
   }
@@ -5829,7 +5899,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     flex-shrink: 0;
     align-items: center;
     margin-top: 20px;
-    //border-radius: 0;
+    //border-radius: $border_radius;
     overflow: hidden;
     .nav-item {
       width: 100%;
@@ -5858,7 +5928,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 }
 .profile_content {
   background: $color_background_body;
-  border-radius: 0;
+  border-radius: $border_radius;
   overflow: hidden;
   &_header {
     padding: 10px;
@@ -5874,7 +5944,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   .table {
     width: 100%;
     background: $color_background_body;
-    border-radius: 0;
+    border-radius: $border_radius;
     overflow: hidden;
     border-color: $color_success_dark_dark;
     thead {
@@ -5955,7 +6025,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     opacity: 0.7;
   }
   > img {
-    border-radius: 0;
+    border-radius: $border_radius;
   }
 }
 .header-right-menu {
@@ -6019,7 +6089,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   color: $rust_color_grey_text;
   flex: 1 0;
   background-color: $rust_color_grey;
-  border-radius: 0;
+  border-radius: $border_radius;
   border-width: 1px;
   text-align: center;
   transition: all .15s ease;
@@ -6029,6 +6099,21 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 .navbar .nav-item.menu-stats .nav-link {
   color: $color_green_text;
   background-color: $color_green;
+  position: relative;
+  &:before {
+    background-image: url(/images/snow/2.png);
+    content: " ";
+    position: absolute;
+    right: 23px;
+    top: -6px;
+    width: 59px;
+    height: 23px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    display: block;
+    z-index: 1;
+    opacity: 1;
+  }
   &:hover, &:focus {
     background-color: lighten($color_green, 6%);
     color: $color_green_text;
@@ -6149,7 +6234,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
       text-align: left;
       gap: 15px;
       border: none;
-      border-radius: 0;
+      border-radius: $border_radius;
       font-size: 18px;
       line-height: 18px;
       width: 100%;
@@ -6163,7 +6248,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 
 .page_content {
   background: $color_background_body;
-  border-radius: 0;
+  border-radius: $border_radius;
   overflow: hidden;
   &_header {
     background: $color_success_dark_dark;
@@ -6188,7 +6273,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     background: #333;
     border: 1px dashed #696969;
     padding: 15px;
-    border-radius: 0;
+    border-radius: $border_radius;
     font-size: 14px;
   }
   &_title {
@@ -6226,7 +6311,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
         padding: 0;
         margin-top: 10px;
         background-color: $color_success_dark_dark;
-        border-radius: 0;
+        border-radius: $border_radius;
         li {
           transition: .2s;
           padding: 10px;
@@ -6246,7 +6331,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 }
 .server_info {
   background: $color_background_body;
-  border-radius: 0;
+  border-radius: $border_radius;
   display: flex;
   overflow: hidden;
   @media (max-width: 540px) {
@@ -6336,9 +6421,9 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
         &_wrap {
           margin-top: 3px;
           background: $color_success_dark_dark;
-          //border-radius: 0;
+          //border-radius: $border_radius;
           padding: 3px;
-          border-radius: 0;
+          border-radius: $border_radius;
         }
         &_players {
           background: $color_success;
@@ -6347,7 +6432,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
             display: flex;
             justify-content: flex-start;
             overflow: hidden;
-            border-radius: 0;
+            border-radius: $border_radius;
             position: relative;
             max-width: 100%;
             &:after {
@@ -6396,7 +6481,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
       font-weight: 700;
       text-align: center;
       border: none;
-      border-radius: 0;
+      border-radius: $border_radius;
       &:hover {
         color: $color_success_brighter;
         background: $color_success_dark_dark;
@@ -6423,7 +6508,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 }
 #toast-container {
   > .toast {
-    border-radius: 0;
+    border-radius: $border_radius;
     overflow: hidden;
     box-shadow: 0 0 15px rgba(0, 0, 0, .4);
     padding: 0;
@@ -6497,7 +6582,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
 .widget_banner {
   background: $color_background_body;
   padding: 10px;
-  border-radius: 0;
+  border-radius: $border_radius;
   overflow: hidden;
   &_title {
     text-transform: uppercase;
@@ -6522,7 +6607,7 @@ h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
     font-weight: 500;
     text-align: center;
     border: none;
-    border-radius: 0;
+    border-radius: $border_radius;
     &:hover {
       color: $color_success_brighter;
       background: $color_success_dark_dark;
@@ -6551,7 +6636,7 @@ header {
   }
   &_item {
     background: $color_success_dark_dark;
-    border-radius: 0;
+    border-radius: $border_radius;
     overflow: hidden;
     padding: 5px;
     position: relative;
@@ -6719,7 +6804,7 @@ header {
       &_items {
         width: 100%;
         position: relative;
-        border-radius: 0;
+        border-radius: $border_radius;
         margin: 0 auto;
         margin-top: 10px;
         grid-auto-flow: dense;
@@ -6742,7 +6827,7 @@ header {
           z-index: 2;
           display: flex;
           background: $color_success_dark_dark;
-          border-radius: 0;
+          border-radius: $border_radius;
           &_number {
             position: absolute;
             font-size: 48px;
@@ -6825,7 +6910,7 @@ header {
             }
             &_btn {
               margin-top: 20px;
-              border-radius: 0;
+              border-radius: $border_radius;
               position: relative;
               color: #243922;
               font-weight: 700;
@@ -6867,19 +6952,19 @@ header {
         //&_progress {
         //  background: $color_success;
         //  height: 5px;
-        //  border-radius: 0;
+        //  border-radius: $border_radius;
         //  position: relative;
         //  &_wrap {
         //    padding: 2px;
         //    background: $color_success_dark_dark;
         //    position: absolute;
-        //    border-radius: 0;
+        //    border-radius: $border_radius;
         //    bottom: 4px;
         //    left: 50px;
         //    right: 50px;
         //  }
         //  &:after {
-        //    border-radius: 0;
+        //    border-radius: $border_radius;
         //    content: '';
         //    display: block;
         //    position: absolute;
@@ -6932,7 +7017,7 @@ header {
       font-weight: 700;
       text-align: center;
       border: none;
-      border-radius: 0;
+      border-radius: $border_radius;
       height: 50px;
       &:hover {
         color: $color_success_brighter;
@@ -6956,7 +7041,7 @@ header {
       }
       &_item {
         background-color: #868686;
-        border-radius: 0;
+        border-radius: $border_radius;
         padding: 5px;
         display: flex;
         //align-items: center;
@@ -7086,7 +7171,7 @@ header {
   &_buttons {
     display: none;
     background: $color_success_dark_dark;
-    border-radius: 0;
+    border-radius: $border_radius;
     @media (max-width: 768px) {
       display: flex;
     }
@@ -7100,7 +7185,7 @@ header {
       line-height: 16.1px;
       letter-spacing: 0.01em;
       text-align: center;
-      border-radius: 0;
+      border-radius: $border_radius;
       padding: 15px 10px;
       &.active {
         background: #65A93C;
@@ -7137,7 +7222,7 @@ header {
   }
   &_wrap {
     background: #202420f2;
-    border-radius: 0;
+    border-radius: $border_radius;
     overflow: hidden;
   }
   &_item {
@@ -7172,7 +7257,7 @@ header {
   margin-bottom: 12px;
   padding: 16px 20px;
   color: $color_text;
-  border-radius: 0;
+  border-radius: $border_radius;
   &_snippet {
     &_meta {
       align-items: center;
@@ -7393,7 +7478,7 @@ header {
   padding: 16px 20px;
   background-color: $color_success_dark_dark;
   color: var(--gen-blog-item-color);
-  border-radius: 0;
+  border-radius: $border_radius;
   h1 {
     font-weight: 500;
     overflow-x: auto;
@@ -7467,7 +7552,7 @@ header {
     box-sizing: border-box;
     margin-bottom: 12px;
     padding: 10px 20px;
-    border-radius: 0;
+    border-radius: $border_radius;
     color: $color_text;
     display: flex;
     justify-content: center;
@@ -7514,7 +7599,7 @@ header {
 .block {
   margin-bottom: 12px;
   background-color: $color_success_dark_dark;
-  border-radius: 0;
+  border-radius: $border_radius;
   &_header {
     display: flex;
     align-items: center;
@@ -7677,7 +7762,7 @@ header {
   background-color: $color_success_dark_dark;
   padding: 10px 20px;
   color: var(--gen-blog-item-color);
-  border-radius: 0;
+  border-radius: $border_radius;
   .comments {
     margin: 0 0 10px 0;
     .title-block {
@@ -7700,7 +7785,7 @@ header {
     .comment {
       .comment-content {
         border: none;
-        border-radius: 0;
+        border-radius: $border_radius;
         background: color-mix(in srgb, $color_success_dark_dark, #fff 5%);
         box-shadow: none;
       }
@@ -7737,9 +7822,9 @@ header {
   }
 }
 .widget_skindrops {
-  background: #07006c;
+  background: #6c001c;
   padding: 10px;
-  border-radius: 0;
+  border-radius: $border_radius;
   overflow: hidden;
   text-align: center;
   &_title {
@@ -7768,7 +7853,7 @@ header {
     font-weight: 500;
     text-align: center;
     border: none;
-    border-radius: 0;
+    border-radius: $border_radius;
     &:hover {
       color: $color_success_brighter;
       background: $color_success_dark_dark;
@@ -7783,7 +7868,7 @@ header {
   &_image {
     width: 60px;
     display: block;
-    border-radius: 0;
+    border-radius: $border_radius;
   }
   &_body {
     &_title {
@@ -7844,7 +7929,7 @@ header {
   color: #adadad;
   background: #333;
   border: 1px dashed #7aa600;
-  border-radius: 0;
+  border-radius: $border_radius;
   font-size: 14px;
   position: relative;
   padding: 15px;
@@ -7871,7 +7956,7 @@ header {
   .table {
     width: 100%;
     background: $color_background_body;
-    border-radius: 0;
+    border-radius: $border_radius;
     overflow: hidden;
     border-color: $color_success_dark_dark;
     thead {
@@ -8020,7 +8105,7 @@ header {
         color: $rust_color_grey_text;
         flex: 1 0;
         background-color: $rust_color_grey;
-        border-radius: 0;
+        border-radius: $border_radius;
         border-width: 1px;
         text-align: center;
         transition: all .15s ease;
@@ -8052,10 +8137,23 @@ header {
   margin-left: 0;
 }
 .form-control {
-  border-radius: 0 !important;
+  border-radius: $border_radius !important;
 }
 button {
-  border-radius: 0 !important;
+  border-radius: $border_radius !important;
+}
+.promocode {
+  .input-group {
+    .form-control {
+      border-top-right-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
+    }
+
+    button {
+      border-top-left-radius: 0 !important;
+      border-bottom-left-radius: 0 !important;
+    }
+  }
 }
 .modal-backdrop.show {
   opacity: 1;
@@ -8089,7 +8187,7 @@ button {
   margin-top: 5px;
 }
 .input-group-text {
-  border-radius: 0 !important;
+  border-radius: $border_radius !important;
 }
 .referal_conditions {
   &_title {
@@ -8141,7 +8239,7 @@ button {
     font-weight: 700;
     text-align: center;
     border: none;
-    border-radius: 0;
+    border-radius: $border_radius;
     width: 100%;
     &:hover {
       color: $rust_color_grey_text;
@@ -8285,7 +8383,7 @@ button {
       font-size: 13px;
       text-transform: uppercase;
       border: none;
-      border-radius: 0;
+      border-radius: $border_radius;
       transition: background-color .3s ease,color .3s ease;
       color: $rust_color_green_text;
       background-color: $rust_color_green;
@@ -8303,7 +8401,7 @@ button {
       background: #443f27;
       border: 1px dashed #787355;
       padding: 15px;
-      border-radius: 0;
+      border-radius: $border_radius;
       font-size: 14px;
       margin-bottom: 10px;
     }

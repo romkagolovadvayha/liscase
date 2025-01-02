@@ -118,6 +118,13 @@ JS
         'encode' => false,
         'url'     => '/user/history',
     ];
+    if (Yii::$app->params['buildings']) {
+        $mobileMenu[] = [
+            'label'   => '<i class="fa-solid fa-house"></i> ' . Yii::t('common', 'Постройки'),
+            'encode' => false,
+            'url'     => '/buildings',
+        ];
+    }
     $mobileMenu[] = [
         'label'   => '<i class="far fa-calendar-check"></i> ' . Yii::t('common', "Задания на вайп"),
         'encode' => false,
@@ -275,6 +282,24 @@ if (!Yii::$app->user->isGuest) {
                             'url'     => '/skindrops',
                             'encode' => false,
                             'visible' => Yii::$app->params['skindrops'],
+                            'options'     => [
+                                'class' => 'menu-skindrops'
+                            ],
+                        ],
+                        [
+                            'label'   => '<i class="fa-solid fa-house"></i> ' . Yii::t('common', 'Постройки'),
+                            'url'     => '/buildings',
+                            'encode' => false,
+                            'visible' => Yii::$app->params['buildings'],
+                            'options'     => [
+                                'class' => 'menu-skindrops'
+                            ],
+                        ],
+                        [
+                            'label'   => '<i class="far fa-newspaper"></i> ' . Yii::t('common', 'Блог'),
+                            'url'     => '/posts',
+                            'encode' => false,
+                            'visible' => Yii::$app->params['blog'],
                             'options'     => [
                                 'class' => 'menu-skindrops'
                             ],
