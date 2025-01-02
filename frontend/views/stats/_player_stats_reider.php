@@ -174,13 +174,13 @@ $this->registerJs($formatJs, \yii\web\View::POS_END);
                 <div class="stats_player_stats_reider_kills_info_item_value"><?=Yii::t('common', 'Уничтожено танков')?></div>
             </div>
         </div>
-<!--        --><?php //if ($this->beginCache('_player_kills2_' . $user->id . $server->id . Yii::$app->language, ['duration' => 30])): ?>
+        <?php if ($this->beginCache('_player_kills2_' . $user->id . $server->id . Yii::$app->language, ['duration' => 30])): ?>
             <?=$this->render('_player_kills2', [
                 'user' => $user,
                 'server' => $server,
                 'title' => Yii::t('common', 'История убийств'),
             ]);?>
-<!--            --><?php //$this->endCache(); ?>
-<!--        --><?php //endif; ?>
+            <?php $this->endCache(); ?>
+        <?php endif; ?>
     </div>
 </div>
