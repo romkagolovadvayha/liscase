@@ -6,6 +6,7 @@ return [
         'queueStats',
         'queueOnline',
         'queueKills',
+        'queueParams',
         'queueTop',
         'queueReport',
         'queueTeam',
@@ -36,6 +37,12 @@ return [
             'class'   => 'yii\queue\redis\Queue',
             'redis'   => 'redis',
             'channel' => 'queue-kills',
+            'ttr' => 1200,
+        ],
+        'queueParams'                => [
+            'class'   => 'yii\queue\redis\Queue',
+            'redis'   => 'redis',
+            'channel' => 'queue-params',
             'ttr' => 1200,
         ],
         'queueTop'                => [

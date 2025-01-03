@@ -55,72 +55,15 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 if (empty($params)) {
                     continue;
                 }
-                try {
-                    $user = User::findBySteamId($steamId);
-                } catch (\Exception $e) {
-                    Yii::$app->telegramChats->sendMessage("SaveStatsJob findBySteamId:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
-                }
-                $statistics = Statistics::find()
-                                        ->andWhere(['steam_id' => $steamId])
-                                        ->andWhere(['server_tag' => $this->serverTag])
-                                        ->andWhere(['wipe' => $wipeDate])
-                                        ->indexBy('key')
-                                        ->all();
 
-                try {
-                    /*if (!empty($user) && isset($params['hasGroupGaimer']) && !$params['hasGroupGaimer'] && in_array($this->serverTag, ['nolimit', 'max3'])) {
-                        if (!empty($statistics['playtime']) && $statistics['playtime']->value > 120) {
-                            $command = "o.usergroup add \"{$user->steam_id}\" gamer";
-                            RconTasks::execute($command);
-                        }
-                    }*/
-                } catch (\Exception $e) {
-                    Yii::$app->telegramReports->sendMessage("SaveStatsJob HasGroupGaimer:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
-                }
+                Yii::$app->queueParams->push(new UpdateStatsUserJob([
+                                                                     'steam_id' => $steamId,
+                                                                     'params' => $params,
+                                                                     'serverTag' => $this->serverTag,
+                                                                     'serverId' => $server->id,
+                                                                     'wipeDate' => $wipeDate,
+                                                                 ]));
 
-                $params['kills'] = 0;
-                if (!empty($request['kills'])) {
-                    try {
-                        foreach ($request['kills'] as $item) {
-                            if (strlen($item['steam_id']) < 16 || strlen($item['dead']) < 16 || $item['type'] != 'kill') {
-                                continue;
-                            }
-                            if ($item['steam_id'] == $steamId) {
-                                $params['kills']++;
-                            }
-                        }
-                    } catch (\Exception $e) {
-                        Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
-                    }
-                }
-                foreach ($params as $key => $value) {
-                    if (empty($value)) {
-                        continue;
-                    }
-                    try {
-                        Yii::$app->queueTop->push(new UpdateTopJob([
-                            'userId' => $user->id,
-                            'key' => $key,
-                            'value' => $value,
-                            'serverId' => $server->id,
-                            'wipeDate' => $wipeDate,
-                        ]));
-                    } catch (\Exception $e) {
-                        Yii::$app->telegramChats->sendMessage("SaveStatsJob::updateTop(user, key, value, server, wipeDate): " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
-                    }
-                    if (!empty($statistics[$key])) {
-                        $statistics[$key]->value += $value;
-                        $statistics[$key]->save();
-                    } else {
-                        $model = new Statistics();
-                        $model->steam_id = $steamId;
-                        $model->server_tag = $this->serverTag;
-                        $model->key = $key;
-                        $model->value = $value;
-                        $model->wipe = $wipeDate;
-                        $model->save();
-                    }
-                }
             }
             foreach ($request['kills'] as $item) {
                 try {
@@ -128,6 +71,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         'item' => $item,
                         'serverTag' => $this->serverTag,
                         'wipeDate' => $wipeDate,
+                        'serverId' => $server->id,
                     ]));
                 } catch (\Exception $e) {
                     Yii::$app->telegramChats->sendMessage("SaveStatsJob::queueKills: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());

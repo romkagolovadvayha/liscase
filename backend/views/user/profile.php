@@ -407,6 +407,9 @@ $checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
                                               ]);
             ?>
         </div>
+        <?= $this->render('_form', [
+            'model' => $user,
+        ]) ?>
         <div class="mt-4">
             <h3>Рефералы</h3>
             <?= \kartik\grid\GridView::widget([

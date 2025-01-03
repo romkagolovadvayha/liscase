@@ -74,12 +74,12 @@ class Skindrops extends ActiveRecord
         }
 
         $minPrice = 20;
-        $maxPrice = 50;
+        $maxPrice = 60;
         $items = [];
         $data = Yii::$app->rustTm->prices()['items'];
         shuffle($data);
         foreach ($data as $item) {
-            if ($item['price'] > $item['avg_price'] + 10) {
+            if ($item['price'] > $item['avg_price'] + 3) {
                 continue;
             }
             if ($item['price'] > $maxPrice || $item['price'] < $minPrice) {

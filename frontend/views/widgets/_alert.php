@@ -13,9 +13,17 @@ if (!Yii::$app->user->isGuest) {
 <?php endif; ?>
 
 <?php if (!empty($user) && !empty($user->server) && !$user->server->is_store): ?>
-<div class="widget_skindrops">
-    <div class="widget_skindrops_title"><?=Yii::t('common', 'Вы играете на сервере без доната!')?></div>
-    <div class="widget_skindrops_description"><?=Yii::t('common', 'Корзина на сервере не доступна!')?></div>
-    <a href="/servers" class="widget_skindrops_link"><?=Yii::t('common', 'Подробнее о сервере')?></a>
-</div>
+    <?php if (!$user->store): ?>
+        <div class="widget_skindrops">
+            <div class="widget_skindrops_title"><?=Yii::t('common', 'Вайп блок на сервере!')?></div>
+            <div class="widget_skindrops_description"><?=Yii::t('common', 'Корзина будет доступна в 07:00 МСК!')?></div>
+            <a href="/servers" class="widget_skindrops_link"><?=Yii::t('common', 'Подробнее о сервере')?></a>
+        </div>
+    <?php else: ?>
+        <div class="widget_skindrops">
+            <div class="widget_skindrops_title"><?=Yii::t('common', 'Вывод товаров доступен!')?></div>
+            <div class="widget_skindrops_description"><?=Yii::t('common', 'Чтобы получить товары в игре перейдите по ссылке ниже!')?></div>
+            <a href="/store" class="widget_skindrops_link"><?=Yii::t('common', 'Открыть корзину')?></a>
+        </div>
+    <?php endif; ?>
 <?php endif; ?>

@@ -38,6 +38,9 @@ class SaveRaidJob extends BaseObject implements JobInterface
                 foreach ($request['raids'] as $item) {
                     try {
                         $steamId = $item['steam_id'];
+                        if (strlen($steamId) < 16) {
+                            continue;
+                        }
                         $user = User::findBySteamId($steamId);
                         $location = $item['entityLocation'];
                         $explosives = $item['explosiveUsed'];
@@ -57,19 +60,13 @@ class SaveRaidJob extends BaseObject implements JobInterface
                             Yii::$app->telegramChats->sendMessage("SaveRaidJob save UserRaid: " . json_encode($model->getErrors()));
                         }
 
-                        /** @var User[] $users */
-                        $users = User::find()
-                            ->andWhere(['IN', 'steam_id', $owners])
-                            ->andWhere(['raid_notify' => 1])
-                            ->all();
-
-                        if (!empty($users)) {
+                        if (!empty($owners)) {
                             $date = new \DateTime();
                             $endDate = $date->format('Y-m-d H:i:s');
                             $date->modify('-1 hour');
                             $startDate = $date->format('Y-m-d H:i:s');
                             $exists = UserRaid::find()
-                                ->andWhere(['LIKE', 'key', '%' . $users[0]->steam_id . '%', false])
+                                ->andWhere(['LIKE', 'owners', '%' . $owners[0] . '%', false])
                                 ->andWhere(['notify' => 1])
                                 ->andWhere(['>=', 'created_at', $startDate])
                                 ->andWhere(['<=', 'created_at', $endDate])
@@ -107,13 +104,19 @@ class SaveRaidJob extends BaseObject implements JobInterface
                                 }
                             }
                             $model->notify = 1;
-                            Yii::$app->telegramChats->sendMessage($message);
-                            foreach ($users as $owner) {
-                                Yii::$app->queueTelegram->push(new SendMessageJob([
-                                    'telegram_chat_id' => $owner->telegram_chat_id,
-                                    'message' => $message,
-                                    'buttons' => [],
-                                ]));
+                            foreach ($owners as $owner) {
+                                /** @var User $userOwner */
+                                $userOwner = User::find()
+                                             ->andWhere(['steam_id' => $owner])
+                                             ->andWhere(['raid_notify' => 1])
+                                             ->one();
+                                if (!empty($userOwner)) {
+                                    Yii::$app->queueTelegram->push(new SendMessageJob([
+                                                                                          'telegram_chat_id' => $userOwner->telegram_chat_id,
+                                                                                          'message' => $message,
+                                                                                          'buttons' => [],
+                                                                                      ]));
+                                }
                             }
                         }
                         $model->save(false);

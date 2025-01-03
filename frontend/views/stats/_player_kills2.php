@@ -19,14 +19,29 @@ $animals2 = Kills::getAnimals2List();
         <?php foreach ($models as $model): ?>
             <?php
             $deadLink = "";
+            $dq = "";
+            if (!empty($model['signs'])) {
+                $signs = json_decode($model['signs'], 1);
+                foreach ($signs as $sign) {
+                    if ($sign == 'sleep') {
+                        $dq .= "<span class=\"stats_player_kills_item_sleep\">" . Yii::t('common', 'Спящий') . "</span>";
+                    }
+                    if ($sign == 'team') {
+                        $dq .= "<span class=\"stats_player_kills_item_team\">" . Yii::t('common', 'Тимейт') . "</span>";
+                    }
+                }
+            }
+            if (empty($model['wears'])) {
+                $dq .= "<span class=\"stats_player_kills_item_wear\">" . Yii::t('common', 'Голый') . "</span>";
+            }
             if (empty($model['dead_name'])) {
                 $deadLink = "<span class=\"stats_player_kills_item_name\">".Yii::t('common', 'Не известный')."</span>";
             } elseif ($model['dead'] === $user->steam_id) {
-                $deadLink = "<span class=\"stats_player_kills_item_name\">{$model['dead_name']}</span>";
+                $deadLink = "<span class=\"stats_player_kills_item_name\">{$model['dead_name']}</span> {$dq}";
             } else {
                 $deadLink = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" class=\"link_name stats_player_kills_name\" href=\"/stats/player?steamId={$model['dead']}&server={$server->tag}\">
                     {$model['dead_name']}
-                </a>";
+                </a> {$dq}";
             }
             ?>
             <?php
