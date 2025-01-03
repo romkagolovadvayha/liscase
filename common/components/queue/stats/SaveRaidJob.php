@@ -38,6 +38,9 @@ class SaveRaidJob extends BaseObject implements JobInterface
                 foreach ($request['raids'] as $item) {
                     try {
                         $steamId = $item['steam_id'];
+                        if (strlen($steamId) < 16) {
+                            continue;
+                        }
                         $user = User::findBySteamId($steamId);
                         $location = $item['entityLocation'];
                         $explosives = $item['explosiveUsed'];
