@@ -1,0 +1,42 @@
+{{ use('yii/widgets/ListView') }}
+{{ use('lo/widgets/magnific/MagnificPopup') }}
+<nav class="servers_navbar mb-24">
+    <ul class="servers_navbar_nav">
+        {% for ITEM in SERVERS %}
+            <li>
+                <a href="{{ ITEM.getLink('maps') }}" class="servers_navbar_nav_item{% if ITEM.tag == SERVER.tag %} active{% endif %}">
+                    {{ t('database', ITEM.monitoring_name) }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+</nav>
+
+<h1 class="main_title"><span>{{ t('common', 'Голосование за карту на сервере') }} {{ t('database', SERVER.name ) }}</span></h1>
+
+<div class="maps">
+    <div class="maps_content">
+        <div class="maps_content_list">
+            {{
+                list_view_widget({
+                    'dataProvider': dataProvider,
+                    'layout': '{items}{pager}',
+                    'itemView': 'item.twig',
+                    'layout': '<div class="maps_content_list_items">{items}</div>{pager}',
+                })
+            }}
+        </div>
+    </div>
+</div>
+{{
+    magnific_popup_widget({
+        'target': '.maps_content_list_item_images',
+        'options': {
+            'delegate': '.maps_content_list_item_images_image',
+            'gallery': {
+                'enabled': true
+            },
+        },
+        'effect': 'with-zoom'
+    })
+}}

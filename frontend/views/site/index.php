@@ -14,59 +14,8 @@ $this->title = Yii::t('common', Yii::$app->params['title']);
 \frontend\assets\LastDropAsset::register($this);
 \frontend\assets\UserBoxAsset::register($this);
 
-$this->registerJs(<<<JS
-    $(document).on('pjax:send', function() {
-       $('#product-loader').addClass('active');
-       $('#buy_product').attr('aria-disabled', true);
-    });
-    $(document).on('pjax:complete', function() {
-       $('#product-loader').removeClass('active');
-    });
-    var categories = $('.products_categories .products_categories_category');
-    var categoriesRight = $('.products_wrap_wrap > .categories .categories_item');
-    window.currentCategoryId = categories.first().attr('data-id');
-    categories.first().addClass('products_categories_category_active');
-    categoriesRight.first().addClass('categories_item_active');
-    window.search = function() {
-        var input, filter, ul, li, a, i, txtValue, categoryId;
-        input = document.getElementById("search");
-        filter = input.value.toUpperCase();
-        ul = document.getElementById("products");
-        li = ul.querySelectorAll("#products .products_item");
-        for (i = 0; i < li.length; i++) {
-            txtValue = $(li[i]).attr('data-title');
-            categoryId = $(li[i]).attr('data-category-id');
-            if (txtValue.toUpperCase().indexOf(filter) > -1 && (currentCategoryId === '' || currentCategoryId === undefined || categoryId == currentCategoryId)) {
-                li[i].style.display = "";
-            } else {
-                li[i].style.display = "none";
-            }
-        }
-    }
-    categories.click(function () {
-        var categories = $('.products_categories .products_categories_category.products_categories_category_active');
-        categories.removeClass('products_categories_category_active');
-        $(this).addClass('products_categories_category_active');
-        window.currentCategoryId = $(this).attr('data-id');
-        $('#search').val('');
-        search();
-    });
-    categoriesRight.click(function () {
-        var categories = $('.products_wrap_wrap > .categories .categories_item.categories_item_active');
-        categories.removeClass('categories_item_active');
-        $(this).addClass('categories_item_active');
-        window.currentCategoryId = $(this).attr('data-id');
-        $('#search').val('');
-        search();
-    });
-JS
-);
-
 /** @var \common\models\box\Category[] $categories */
-$categories = \common\models\box\Category::find()
-    ->andWhere(['show_main_block' => true])
-    ->cache(60)
-    ->all();
+$categories = \common\models\box\Category::getCategories(true);
 ?>
 <?php
 $locale = substr(Yii::$app->language, 0, 2);

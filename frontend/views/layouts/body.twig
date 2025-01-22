@@ -1,5 +1,4 @@
 {{ HEADER|raw }}
-
 {% if breadcrumbs %}
     <div class="breadcrumbs_wrap">
         <div class="container-fluid">{{ breadcrumbs|raw }}</div>
@@ -14,11 +13,12 @@
         {{ content|raw }}
     </section>
     <!-- ВИДЖЕТЫ -->
-    <aside class="stats-aside">
+    <aside class="stats-aside mobile_hide">
 {#        {{ ALERT_MESSAGE|raw }}#}
 {#        {{ SKINDROPS_BLOCK|raw }}#}
+        {{ BUILDINGS_BLOCK|raw }}
+        {{ TEAMS_BLOCK|raw }}
         {{ SERVERS_BLOCK|raw }}
-{#        {{ PROMOCODE_FORM|raw }}#}
 {#        {{ TOP_BLOCK|raw }}#}
 {#        {{ LIVE_BLOCK|raw }}#}
     </aside>

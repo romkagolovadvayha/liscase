@@ -4,10 +4,13 @@ use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 
 /** @var Servers $server */
-/** @var array $data */
+/** @var array $images */
+/** @var array $names */
 /** @var array $player */
+/** @var string $steamId */
+/** @var \common\models\user\User $user */
 
-$items = [
+$list = [
     [
         'name'  => Yii::t('common', 'Анчоус'),
         'key' => 'f_fish.anchovy',
@@ -55,48 +58,53 @@ $items = [
     ],
 ];
 
-$keys = [];
-foreach ($items as $item) {
-    $keys[] = $item['key'];
-}
-
-$drops = \common\models\box\Drop::find()
-                                ->cache(300)
-                                ->andWhere(['IN', 'eng_name', $keys])
-                                ->indexBy('eng_name')
-                                ->all();
-
-$fishing = [];
-foreach ($items as $item) {
-    $fishing[] = Statistics::getFishItem($drops, $player, $item['key'], $item['name'], $item['score']);
+$items = [];
+foreach ($list as $item) {
+    $items[] = Statistics::getFishItem($images, $player, $item['key'], $item['name'], $item['score']);
 }
 
 usort(
-    $fishing,
+    $items,
     function ($a, $b) {
         return ($b['score'] - $a['score']);
     }
 );
 
 ?>
-<div class="stats_player_stats_wrap stats_player_stats_wrap_fishing">
-    <h2><?=Yii::t('common', 'Рыбаловство')?></h2>
-    <div class="stats_player_stats">
-        <?php foreach ($fishing as $item): ?>
-            <div class="stats_player_stats_item_wrap">
-                <div class="stats_player_stats_item">
-                    <div class="stats_player_stats_item_image_wrap">
-                        <img class="stats_player_stats_item_image" src="<?= $item['image'] ?>"/>
-                    </div>
-                    <div class="stats_player_stats_item_count_wrap">
-                        <div class="stats_player_stats_item_count">
-                            <?= $item['count'] ?>
-                            <div class="stats_player_stats_item_score">x<?= $item['score'] ?></div>
-                        </div>
-                        <div class="stats_player_stats_item_name"><?= $item['name'] ?></div>
-                    </div>
-                </div>
+<!-- Рыбалка -->
+<section class="page-stats__block-without-hover">
+    <header class="flex items-center justify-space-between mb-24 transition-all">
+        <h4 class="flex items-center gap-x-12">
+            <?=Yii::t('common', 'Рыбаловство')?><span
+                    class="icons icons_24px icons_24px_info icons_hover"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="right"
+                    data-bs-title="<?=Yii::t('common', 'Количество рыбы, которую игрок поймал за вайп.')?>"
+            ></span>
+        </h4>
+
+        <label class="page-stats__show-statistics-block">
+            <p class="p1 text-text-teritiary"><?=Yii::t('common', 'Показывать')?></p>
+            <input checked type="checkbox" class="show-statistics-block__switch none" />
+            <span>
+                    <span class="icons icons_switch icons_switch_on"></span>
+                    <span class="icons icons_switch icons_switch_off"></span>
+                  </span>
+        </label>
+    </header>
+
+    <div class="page-stats__categories">
+        <?php foreach ($items as $item): ?>
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span><?= $item['desc'] ?><span class="category__x"
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-placement="bottom"
+                                                    data-bs-title="<?=Yii::t('common', 'Множитель для рейтинга игроков') . " x" . $item['score']?>">x<?= $item['score'] ?></span></span>
+                    <img src="<?= $item['image'] ?>" alt="" class="w-64 h-64 object-contain" />
+                </h5>
+                <p class="category__title"><?= Yii::t('database', $item['name']) ?></p>
             </div>
         <?php endforeach; ?>
     </div>
-</div>
+</section>

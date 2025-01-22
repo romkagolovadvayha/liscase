@@ -37,6 +37,16 @@
     }
   }
 
+  &_switch {
+    @include range(36, 20, "px");
+    &_on {
+      background: url("/images/design/icons/switch/on.svg") no-repeat center;
+    }
+    &_off {
+      background: url("/images/design/icons/switch/off.svg") no-repeat center;
+    }
+  }
+
   &_16px {
     @include range(16, 16, "px");
 

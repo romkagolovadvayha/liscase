@@ -2,7 +2,6 @@
 
 use yii\widgets\ListView;
 use frontend\widgets\Alert;
-use common\models\settings\Settings;
 
 /** @var yii\web\View $this */
 /** @var \yii\data\ActiveDataProvider $dataProvider */

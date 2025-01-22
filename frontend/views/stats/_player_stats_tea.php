@@ -4,35 +4,23 @@ use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 
 /** @var Servers $server */
-/** @var array $data */
+/** @var array $images */
+/** @var array $names */
 /** @var array $player */
+/** @var string $steamId */
+/** @var \common\models\user\User $user */
 
-$keys = Statistics::find()
-    ->cache(300)
-    ->select('DISTINCT(`key`) as type')
-    ->andWhere(['LIKE', 'key', '%mod_%', false])
-    ->asArray()
-    ->indexBy('type')
-    ->all();
 
-$keys = array_keys($keys);
-
-$keyDrops = [];
-foreach ($keys as $key) {
+$items = [];
+foreach ($player as $item) {
+    if (substr($item['key'], 0, 4) !== 'mod_') {
+        continue;
+    }
+    $key = str_replace('mod_', '', $item['key']);
     if (strpos($key, 'tea') === false) {
         continue;
     }
-    $keyDrops[] = str_replace('mod_', '', $key);
-}
-
-$drops = \common\models\box\Drop::find()
-                                ->cache(300)
-                                ->andWhere(['IN', 'eng_name', $keyDrops])
-                                ->indexBy('eng_name')
-                                ->all();
-$items = [];
-foreach ($keyDrops as $key) {
-    $items[] = Statistics::getFoodItem($drops, $player, $key);
+    $items[] = Statistics::getFoodItem($images, $names, $player, $key);
 }
 
 usort(
@@ -43,24 +31,40 @@ usort(
 );
 
 
-$items = array_slice($items, 0, 24);
+$items = array_slice($items, 0, 10);
 
 ?>
-<div class="stats_player_stats_wrap stats_player_stats_wrap_tea">
-    <h2><?=Yii::t('common', 'Чаепитие')?></h2>
-    <div class="stats_player_stats">
+<!-- Чаепитие -->
+<section class="page-stats__block-without-hover">
+    <header class="flex items-center justify-space-between mb-24 transition-all">
+        <h4 class="flex items-center gap-x-12">
+            <?=Yii::t('common', 'Чаепитие')?><span
+                    class="icons icons_24px icons_24px_info icons_hover"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="right"
+                    data-bs-title="<?=Yii::t('common', 'В этом блоке отображается сколько чая выпил игрок за вайп.')?>"
+            ></span>
+        </h4>
+
+        <label class="page-stats__show-statistics-block">
+            <p class="p1 text-text-teritiary"><?=Yii::t('common', 'Показывать')?></p>
+            <input checked type="checkbox" class="show-statistics-block__switch none" />
+            <span>
+                    <span class="icons icons_switch icons_switch_on"></span>
+                    <span class="icons icons_switch icons_switch_off"></span>
+                  </span>
+        </label>
+    </header>
+
+    <div class="page-stats__categories">
         <?php foreach ($items as $item): ?>
-            <div class="stats_player_stats_item_wrap">
-                <div class="stats_player_stats_item">
-                    <div class="stats_player_stats_item_image_wrap">
-                        <img class="stats_player_stats_item_image" src="<?= $item['image'] ?>"/>
-                    </div>
-                    <div class="stats_player_stats_item_count_wrap">
-                        <div class="stats_player_stats_item_count"><?= $item['desc'] ?></div>
-                        <div class="stats_player_stats_item_name"><?= $item['name'] ?></div>
-                    </div>
-                </div>
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span><?= $item['desc'] ?></span>
+                    <img src="<?= $item['image'] ?>" alt="<?= $item['name'] ?>" class="w-64 h-64 object-contain"/>
+                </h5>
+                <p class="category__title"><?= $item['name'] ?></p>
             </div>
         <?php endforeach; ?>
     </div>
-</div>
+</section>

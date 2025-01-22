@@ -1,0 +1,23 @@
+{{ use('kartik/grid/GridView') }}
+<h1 class="main_title"><span>{{ t('common', 'Бан лист') }}</span></h1>
+{{ grid_view_widget({
+    'dataProvider': dataProvider,
+    'filterModel': searchModel,
+    'layout': '{items} {pager}',
+    'columns': [
+        {
+            'attribute': 'steam_id',
+            'value': func.steam_id
+        },
+        {
+            'attribute': 'server_id',
+            'value': func.server_id
+        },
+        {
+            'attribute': 'banned_at',
+            'value': func.banned_at
+        },
+        'reason',
+    ]
+})
+}}

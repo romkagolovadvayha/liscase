@@ -28,6 +28,9 @@
   &__list {
     @extend .grid, .justify-flex-start, .gap-x-8, .gap-y-8, .w-full;
     grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(auto-fit, minmax(91px, 1fr));
+    }
   }
 
   &__title {
@@ -79,5 +82,11 @@
     &:before {
       opacity: 100;
     }
+  }
+}
+#buy-container figure img {
+  @media (max-width: 768px) {
+    width: 200px;
+    height: 200px;
   }
 }

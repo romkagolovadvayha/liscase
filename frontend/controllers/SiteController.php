@@ -60,9 +60,6 @@ class SiteController extends WebController
      */
     public function actionIndex()
     {
-        if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
-            throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован, напишите администратору в Discord, если не согласны с блокировкой!'));
-        }
         return $this->render('index');
     }
 
@@ -216,6 +213,14 @@ class SiteController extends WebController
             }
         }
         return $this->renderAjax('promocode');
+    }
+
+    public function actionMenu()
+    {
+        return $this->renderAjax('@frontend/views/layouts/menu.twig', [
+            'MENU_HIDDEN' => false,
+            'MOBILE' => true,
+        ]);
     }
 
     public function actionRobots()

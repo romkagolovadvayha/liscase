@@ -11,6 +11,18 @@ chat.onmessage = function(e) {
     if (response.type && response.type === 'chatBlur') {
         supportChatBlur(response);
     }
+    if (response.type && response.type === 'ticketsUpdate') {
+        supportTicketsUpdate(response);
+    }
+    if (response.type && response.type === 'support_notifications') {
+        supportNotification(response);
+    }
+    if (response.type && response.type === 'error') {
+        toastr.error('<i class=\'fas fa-exclamation-circle\'></i><div class=\'toast-message_text\'>' + response.error + '</div>', '', {'progressBar': true, 'positionClass': 'toast-top-right', 'escapeHtml': false,});
+    }
+    if (response.type && response.type === 'redirect') {
+        location.href = response.url;
+    }
     if ($('.store_launcher')) {
         if (response.type && response.type === 'store.take') {
             storeTake(response);
@@ -22,6 +34,7 @@ chat.onmessage = function(e) {
     if ($('.balance_count')) {
         if (response.type && response.type === 'update.balance') {
             updateBalance(response);
+            moneyNotification(response);
         }
     }
     if ($('.players_js')) {
@@ -30,24 +43,37 @@ chat.onmessage = function(e) {
         }
     }
 };
+function supportNotification(response) {
+    var notification = $('.menu__item_support .main-menu-notification');
+    sound('/sound/notification.mp3', response.hash);
+    if (response.count <= 0) {
+        if (notification.length) {
+            notification.hide();
+        }
+        return;
+    }
+    if (chatId !== undefined && chatId === response.chatId) {
+        return;
+    }
+    if (notification.length) {
+        notification.html(response.count);
+        return;
+    }
+    var support_item = $('.menu__item_support a');
+    support_item.append('<span class="main-menu-notification ">' + response.count + '</span>');
+}
+function moneyNotification(response) {
+    sound('/sound/money.mp3', response.hash);
+}
 
 chat.onopen = function(e) {
     if (token !== undefined) {
         chat.send( JSON.stringify({'action' : 'auth', 'token' : token, 'steam_id' : steam_id}) );
+        if ($('#supportMessage')) {
+            initChat();
+        }
     }
 };
-
-$(document).ready(function () {
-    $(document).on('click', '.show-chat-js', function (e) {
-        e.preventDefault();
-        var href = $(this).data('href');
-        if (!href) {
-            href = $(this).attr('href');
-        }
-        openChat(href);
-        return false;
-    });
-});
 
 function openChat(href) {
     var chatBody = $('#widget_chat .widget_chat_body');

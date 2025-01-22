@@ -44,15 +44,17 @@
     right: 0;
 
     & li {
-      @extend .pl-12,
-        .pr-14,
-        .py-12,
-        .bg-transparent,
-        .transition-all,
-        .flex,
-        .items-center,
-        .gap-x-8,
-        .text-text-secondary;
+      a {
+        @extend .pl-12,
+                .pr-14,
+                .py-12,
+                .bg-transparent,
+                .transition-all,
+                .flex,
+                .items-center,
+                .gap-x-8,
+                .text-text-secondary;
+      }
 
       &:hover {
         @extend .bg-background-secondary, .cursor-pointer, .text-text-main;

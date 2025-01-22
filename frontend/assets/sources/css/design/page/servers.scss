@@ -1,0 +1,101 @@
+.servers_page {
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  display: grid;
+  gap: 20px;
+  &_item {
+    position: relative;
+    z-index: 2;
+    &_wrap {
+      position: relative;
+      background-color: var(--background-secondary);
+      padding: 40px;
+      border-radius: var(--status-radius);
+      overflow: hidden;
+      &:before {
+        @extend .block, .absolute;
+        content: "";
+        background: url("/images/design/tasks/light.svg");
+        top: 0;
+        left: 0;
+        background-repeat: no-repeat;
+        background-size: 100% 240px;
+        min-width: 100%;
+        max-width: 100%;
+        width: 100%;
+        min-height: 240px;
+        max-height: 240px;
+        height: 240px;
+        border-top-left-radius: 8px;
+        transition: filter 0.25s ease-in-out;
+      }
+    }
+    &_header {
+      @extend .flex, .mb-5, .items-center, .justify-space-between;
+      &_title {
+        @extend .text-text-main;
+      }
+      &_status {
+        @extend .p3, .py-2, .px-8, .text-status-text-color, .bg-status-background-opacity;
+        border-radius: var(--status-radius);
+      }
+    }
+    &_labels {
+      @extend .mb-3, .items-center;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      justify-content: space-between;
+      &_label {
+        @extend .p3, .mb-2, .text-text-secondary;
+        display: block;
+      }
+    }
+    &_wipes {
+      @extend .items-center;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      margin-top: 32px;
+      &_wipe {
+        &_label {
+          @extend .p2, .mb-2, .text-text-secondary;
+          display: block;
+        }
+        &_date {
+          @extend .p2, .text-text-main;
+          display: block;
+        }
+      }
+    }
+    &_actions {
+      @extend .mb-3, .items-center;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 5px;
+      justify-content: space-between;
+      &_r {
+        @extend .mb-3, .items-center;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 5px;
+      }
+      a {
+        @extend .p3, .mb-3, .items-center, .block, .text-text-main;
+        padding: 5px 14px;
+      }
+    }
+    &_ip {
+      @extend .p3, .mb-3, .items-center, .block, .text-text-main;
+      display: inline-flex;
+      //border-radius: var(--status-radius);
+      //padding: 3px 10px;
+      gap: 10px;
+      justify-content: flex-start;
+      cursor: pointer;
+      &_content {}
+    }
+  }
+}

@@ -8,8 +8,8 @@ $isActive = in_array($model->id, $userLikes);
 <div class="buildings_content_list_item">
     <div class="buildings_content_list_item_images">
         <img src="<?=$model->buildingImage[0]->getPublicUrlPreview()?>">
-        <div class="buildings_content_list_item_images_name"><?=$model->name?></div>
-        <div class="buildings_content_list_item_images_server"><?=$model->server->name?></div>
+        <div class="buildings_content_list_item_images_name"><?=Yii::t('database', $model->name)?></div>
+        <div class="buildings_content_list_item_images_server"><?=Yii::t('database', $model->server->name)?></div>
         <div class="buildings_content_list_item_images_like<?=($isActive) ? ' active' : ''?>" data-id="<?=$model->id?>" data-guest="<?=Yii::$app->user->isGuest ? 1 : 0?>">
             <span class="buildings_content_list_item_images_like_count"><?=$model->likes?></span>
             <span class="buildings_content_list_item_images_like_icon">

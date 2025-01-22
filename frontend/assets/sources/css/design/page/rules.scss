@@ -1,0 +1,68 @@
+.rules {
+  &_snoska {
+    @extend
+    .bg-background-secondary,
+    .text-text-main,
+    .transition-all,
+    .p2,
+    .content-visibility-auto;
+    border: 1px dashed var(--text-secondary);
+    padding: 12px 16px;
+    border-radius: 8px;
+    background-color: var(--background-teritiary);
+    color: var(--text-main);
+  }
+  &_punishment {
+    color: var(--primary-colors-secondary);
+  }
+  &_command {
+    color: #aaf16e;
+    font-weight: 700;
+  }
+  &_commands {
+    li:before {
+      content: '' !important;
+    }
+  }
+  > ol {
+    margin: 0;
+    padding: 0;
+    margin-top: 20px;
+    counter-reset: item;
+    > li {
+      display: block;
+      & + li {
+        margin-top: 30px;
+      }
+      &.not_num:before {
+        content: '';
+        counter-increment: item;
+      }
+      ol {
+        @extend
+        .bg-background-secondary,
+        .text-text-secondary,
+        .transition-all,
+        .rounded-16;
+        counter-reset: item;
+        margin: 0;
+        padding: 0;
+        margin-top: 10px;
+        border-radius: var(--status-radius);
+        li {
+          @extend .p2, .text-text-main;
+          transition: .2s;
+          padding: 16px;
+          display: block;
+          counter-increment: item;
+          &:before {
+            content: counters(item, ".") " ";
+          }
+          &:nth-of-type(2n) {
+            background-color: rgba(228, 218, 209, .05);
+          }
+        }
+      }
+    }
+  }
+}

@@ -179,7 +179,7 @@ h3 {
 }
 
 //styleName: H4 Bold — 20×24;
-h4 {
+.h4, h4 {
   @extend .m-0;
   font-size: 20px;
   font-weight: 700;

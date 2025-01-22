@@ -18,7 +18,7 @@ if (empty($ticket)) {
     <div class="widget_chat_body">
 
     </div>
-    <div class="widget_chat_button show-chat-js" data-href="/support/ticket?id=<?=$ticket->getNumber()?>">
+    <div class="widget_chat_button show-chat-js" data-href="/support/ticket-ajax?id=<?=$ticket->getNumber()?>">
         <div class="widget_chat_button_name"><i class="fa-regular fa-envelope"></i> <?=Yii::t('common', 'Поддержка')?></div>
         <div class="widget_chat_button_badge">5</div>
     </div>

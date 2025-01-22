@@ -1,0 +1,31 @@
+<!-- Базы игрока -->
+<section class="stats-aside__stat-block stat-block">
+    <h4 class="stat-block__title flex items-center gap-x-14">
+        {{ t('common', 'Базы игрока') }}
+        <span
+                class="icons icons_24px icons_24px_info cursor-pointer"
+                data-bs-toggle="tooltip"
+                data-bs-title="{{ t('common', 'В этом блоке отображаются строения игрока в котором он проживал.') }}"
+        ></span>
+    </h4>
+
+    {% for ITEM in ITEMS %}
+    <a href="{{ ITEM.URL }}">
+        <figure class="mb-12">
+            <img
+                    src="{{ ITEM.IMAGE }}"
+                    alt=""
+                    style="height: 214px"
+                    class="rounded-8 object-cover w-full mb-12"
+            />
+
+            <figcaption class="flex flex-column gap-y-4">
+                <h5>{{ ITEM.NAME }}</h5>
+                <time datetime="02.11.2024" class="p2 text-text-secondary">{{ ITEM.DATE }}</time>
+            </figcaption>
+        </figure>
+    </a>
+    {% endfor %}
+
+    <a href="/buildings/create" class="button button-secondary w-full"><span>{{ t('common', 'Добавить постройку') }}</span></a>
+</section>

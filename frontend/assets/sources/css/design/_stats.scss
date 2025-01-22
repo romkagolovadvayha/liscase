@@ -12,6 +12,10 @@
       .transition-all,
       .rounded-16,
       .content-visibility-auto;
+    .w-full {
+      width: 100%;
+      justify-content: center;
+    }
 
     & .stat-block {
       &__title {
@@ -125,4 +129,22 @@
       }
     }
   }
+  //.servers_block {
+  //  @media (max-width: 560px) {
+  //    padding: 20px;
+  //  }
+  //  &.noactive {
+  //    @media (max-width: 560px) {
+  //      .stat-block__list {
+  //        display: none;
+  //      }
+  //      .button-secondary {
+  //        display: none;
+  //      }
+  //      .stat-block__title {
+  //        margin-bottom: 0;
+  //      }
+  //    }
+  //  }
+  //}
 }

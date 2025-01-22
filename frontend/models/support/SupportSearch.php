@@ -2,6 +2,8 @@
 
 namespace frontend\models\support;
 
+use common\components\helpers\Role;
+use common\models\user\User;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
 use common\models\support\Support;
@@ -34,11 +36,12 @@ class SupportSearch extends Support
     /**
      * Creates data provider instance with search query applied
      *
+     * @param User $user
      * @param array $params
      *
      * @return ActiveDataProvider
      */
-    public function search($params)
+    public function search($user, $params)
     {
         $query = Support::find();
 
@@ -56,13 +59,15 @@ class SupportSearch extends Support
             return $dataProvider;
         }
 
+        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+            $query->andWhere(['user_id' => $user->id]);
+        }
+
         // grid filtering conditions
         $query->andFilterWhere([
             'id' => $this->id,
-            'user_id' => $this->user_id,
             'status' => $this->status,
             'server_tag' => $this->server_tag,
-            'created_at' => $this->created_at,
         ]);
 
         return $dataProvider;

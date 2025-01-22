@@ -30,6 +30,28 @@ $config = [
         ],
     ],
     'components' => [
+        'urlManager'    => [
+            'enablePrettyUrl' => true,
+            'showScriptName'  => false,
+            'rules'           => [
+                '/p/<refCode:\d+>'                 => '/',
+                'posts' => 'blog/index',
+                'posts/<categoryLinkName:[a-z0-9_-]+>/post-<blogLinkName:[a-z0-9_-]+>/?' => 'blog/view',
+                'posts/<categoryLinkName:[a-z0-9_-]+>/<categoryLinkNameChild:[a-z0-9_-]+>/post-<blogLinkName:[a-z0-9_-]+>/' => 'blog/view',
+                'posts/<categoryLinkName:[a-z0-9_-]+>/' => 'blog/category',
+                'posts/<categoryLinkName:[a-z0-9_-]+>/<categoryLinkNameChild:[a-z0-9_-]+>/' => 'blog/category',
+                '/servers/wipe-block' => '/servers/wipe-block',
+                '/servers/<serverTag:[a-z0-9_-]+>/' => '/stats',
+                '/servers/<serverTag:[a-z0-9_-]+>/<steamId:[0-9]+>/' => '/stats/player',
+                '/servers/<serverTag:[a-z0-9_-]+>/<steamId:[0-9]+>/report' => '/stats/report',
+                '/servers/<serverTag:[a-z0-9_-]+>/rules' => '/servers/rules',
+                '/maps/vote' => '/maps/vote',
+                '/maps/<serverTag:[a-z0-9_-]+>/' => '/maps',
+                'sitemap.xml' => 'site/sitemap',
+                'robots.txt' => 'site/robots',
+                'rss' => 'site/rss',
+            ],
+        ],
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => '5c4cf22fbe90065a4a8e4591cf2cea84',
@@ -52,9 +74,6 @@ $config = [
 //                'hr-HR' => 'HR',
 //            ],
 //        ],
-        'cache' => [
-            'class' => 'yii\caching\FileCache',
-        ],
         'assetManager' => [
             'class' => 'yii\web\AssetManager',
             'forceCopy' => YII_DEBUG,

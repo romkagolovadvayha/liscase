@@ -1,0 +1,117 @@
+.form-group {
+  @extend .mb-15;
+  .control-label {
+    @extend .p2, .text-text-secondary, .mb-5;
+  }
+  .form-control {
+    @extend .p1,
+    .py-12,
+    .px-20,
+    .text-text-main,
+    .bg-background-main,
+    .transition-border-color,
+    .rounded-8;
+    width: 100%;
+    border: 1px solid var(--border-color-default);
+    outline: unset;
+
+    &::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+      background-color: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--status-background-opacity);
+      border-radius: 8px;
+    }
+
+    &:hover {
+      @extend .border-border-color-hover;
+    }
+
+    &:active,
+    &:focus {
+      @extend .border-border-color-active;
+    }
+
+    &::placeholder {
+      @extend .p1, .text-text-secondary;
+    }
+  }
+  .help-block {
+    @extend .p3, .mt-5;
+    color: var(--badge-background);
+  }
+  .file-caption {
+    width: 100%;
+    color: #c2c7d7;
+    font-size: 15px;
+    text-align: left;
+    background-color: #252530;
+    border-radius: var(--status-radius);
+    border: none;
+    outline: none;
+    transition: background-color .3s ease;
+    &:focus {
+      background-color: #2c2c38;
+      color: #c2c7d7;
+      border: none !important;
+      box-shadow: none !important;
+    }
+  }
+  .fileinput-remove {
+    display: none;
+  }
+  .btn-file {
+    @extend .button, .button-secondary;
+    display: inline-flex;
+    align-items: center;
+    text-transform: none;
+    gap: 10px;
+  }
+  .file-preview-thumbnails {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 10px;
+    .file-preview-frame {
+      margin: 0;
+      border: none;
+      box-shadow: none;
+      border-radius: var(--status-radius);
+      background-color: var(--background-secondary);
+      margin-bottom: 10px;
+      &:hover {
+        border: none;
+        box-shadow: var(--shadow-card);
+        background-color: var(--background-teritiary);
+      }
+      .kv-file-content {
+        img {
+          border-radius: var(--status-radius);
+        }
+      }
+      .krajee-default .file-footer-caption {
+        margin-bottom: 24px;
+      }
+      .file-upload-indicator {
+        display: none;
+      }
+    }
+  }
+  .file-drop-zone {
+    min-height: auto;
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+  .file-preview {
+    padding: 0;
+    border: none;
+    width: 100%;
+    margin-bottom: 0;
+  }
+  .file-drop-zone-title, .file-preview-status {
+    display: none;
+  }
+}

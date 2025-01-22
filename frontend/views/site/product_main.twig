@@ -6,6 +6,7 @@
         data-size="modal"
         data-toggl="modal"
         data-target="modal-dialog"
+        {% if INDEX > 4 %}style="display: none;"{% endif %}
         {% if BLOCKED %}aria-disabled="true"{% endif %}>
     <div class="block relative set__image-wrap">
         <img

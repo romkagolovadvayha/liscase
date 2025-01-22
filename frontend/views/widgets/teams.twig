@@ -1,0 +1,22 @@
+<!-- Команда -->
+<section class="stats-aside__stat-block stat-block">
+    <h4 class="stat-block__title">{{ t('common', 'Команда') }}</h4>
+    <ul class="stat-block__list">
+        {% for ITEM in ITEMS %}
+            <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                <img src="{{ ITEM.AVATAR }}" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="{{ ITEM.USERNAME }}">
+                <div class="flex flex-column w-full gap-y-4">
+                    <p class="flex justify-space-between items-center flex-wrap">
+                        <a href="{{ ITEM.LINK }}" class="p2 link font-medium">{{ ITEM.USERNAME }}</a>
+                        {% if ITEM.IS_AUTHOR %}
+                            <span class="p3 text-text-secondary">{{ t('common', 'лидер') }}</span>
+                        {% endif %}
+                    </p>
+                    <p class="p3">
+                        <span class="text-text-secondary mr-1">{{ t('common', 'Вступил') }} <span class="text-text-secondary server_timer" data-time="{{ ITEM.TIME }}">{{ ITEM.DATE }}</span></span>
+                    </p>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+</section>

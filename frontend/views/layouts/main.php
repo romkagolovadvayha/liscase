@@ -8,6 +8,7 @@ use frontend\assets\SocketAsset;
 use yii\bootstrap5\Html;
 use common\models\user\UserBalance;
 use frontend\assets\MainAsset;
+use common\models\servers\Servers;
 
 SocketAsset::register($this);
 AppAsset::register($this);
@@ -42,11 +43,21 @@ if (!Yii::$app->user->isGuest) {
         <<<JS
     var balanceStr = '{$balanceStr}';
     var balance = {$balance};
+    var chatId = undefined;
 JS,
         \yii\web\View::POS_BEGIN
     );
 }
 $userData = [];
+$servers = Servers::find()
+                  ->cache(30)
+                  ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                  ->orderBy(['sort' => SORT_ASC])
+                  ->all();
+$userData['SERVER_ACTIVE_ID'] = $servers[0]->id;
+$userData['SERVER_ACTIVE_TAG'] = $servers[0]->tag;
+$supportCount = 0;
+$notifications = [];
 if (!Yii::$app->user->isGuest) {
     $user = Yii::$app->user->identity;
     $userData = [
@@ -56,7 +67,35 @@ if (!Yii::$app->user->isGuest) {
         'currency' => UserBalance::getCurrency(),
         'balance' => $balance,
         'server' => $user->server,
+        'blocked' => $user->status === \common\models\user\User::STATUS_BLOCKED,
     ];
+    if (!empty($userData['server'])) {
+        foreach ($servers as $server) {
+            if ($server->id == $userData['server']->id) {
+                $userData['SERVER_ACTIVE_ID'] = $userData['server']->id;
+                $userData['SERVER_ACTIVE_TAG'] = $userData['server']->tag;
+                break;
+            }
+        }
+    }
+    $notifications = $user->notifications();
+}
+$lang = substr(Yii::$app->language, 0, 2);
+if (Yii::$app->user->isGuest || !$userData['blocked']) {
+    $body = Yii::$app->view->render('body', [
+        'content' => $content,
+        'userData' => $userData,
+        'lang' => $lang,
+        'servers' => $servers,
+        'notifications' => $notifications,
+    ]);
+} else {
+    $body = Yii::$app->view->render('body_blocked', [
+        'content' => $content,
+        'userData' => $userData,
+        'lang' => $lang,
+        'servers' => $servers,
+    ]);
 }
 ?>
 <?php $this->beginPage() ?>
@@ -64,10 +103,7 @@ if (!Yii::$app->user->isGuest) {
     'title' => Html::encode($this->title),
     'cssLink' => Yii::$app->params['css'],
     'head' => '<![CDATA[YII-BLOCK-HEAD]]>',
-    'lang' => substr(Yii::$app->language, 0, 2) ,
-    'body' => Yii::$app->view->render('body', [
-        'content' => $content,
-        'userData' => $userData,
-    ]),
+    'lang' => $lang,
+    'body' => $body,
 ]);?>
 <?php $this->endPage() ?>

@@ -3,6 +3,7 @@
 namespace frontend\controllers;
 
 use common\components\helpers\Role;
+use common\controllers\WebController;
 use common\models\building\Building;
 use common\models\building\BuildingLike;
 use frontend\forms\buildings\BuildingForm;
@@ -17,7 +18,7 @@ use Yii;
 /**
  * BuildingController implements the CRUD actions for Building model.
  */
-class BuildingsController extends Controller
+class BuildingsController extends WebController
 {
 
     /**
@@ -61,6 +62,7 @@ class BuildingsController extends Controller
         }
         $searchModel = new BuildingSearch();
         $dataProvider = $searchModel->search($this->request->queryParams);
+        $this->view->params['page'] = 'buildings';
 
         return $this->render('index', [
             'dataProvider' => $dataProvider,
@@ -78,6 +80,7 @@ class BuildingsController extends Controller
         if (!Yii::$app->params['buildings']) {
             throw new NotFoundHttpException('The requested page does not exist.');
         }
+        $this->view->params['page'] = 'buildings';
         return $this->render('view', [
             'model' => $this->findModel($id),
         ]);
@@ -149,6 +152,7 @@ class BuildingsController extends Controller
             $model->loadDefaultValues();
         }
 
+        $this->view->params['page'] = 'buildings';
         return $this->render('create', [
             'model' => $model,
         ]);

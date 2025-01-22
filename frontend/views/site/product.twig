@@ -6,6 +6,7 @@
         data-size="modal"
         data-toggl="modal"
         data-target="modal-dialog"
+        {% if INDEX > 24 %}style="display: none;"{% endif %}
         {% if BLOCKED %}aria-disabled="true"{% endif %}>
     {% if COUNT %}
         <p class="category-card__boost">x{{ COUNT }}</p>

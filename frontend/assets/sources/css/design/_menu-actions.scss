@@ -13,6 +13,10 @@
       .bg-background-main;
     z-index: 1;
     border: 1px solid var(--border-color-default);
+    @media (max-width: 768px) {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
 
     & img {
       @extend .block,
@@ -28,6 +32,9 @@
         .transition-border-color,
         .relative;
       right: -1px;
+      @media (max-width: 768px) {
+        display: none;
+      }
     }
   }
 
@@ -40,15 +47,17 @@
     right: 0;
 
     & li {
-      @extend .pl-12,
-        .pr-14,
-        .py-12,
-        .bg-transparent,
-        .transition-all,
-        .flex,
-        .items-center,
-        .gap-x-8,
-        .text-text-secondary;
+     a {
+       @extend .pl-12,
+       .pr-14,
+       .py-12,
+       .bg-transparent,
+       .transition-all,
+       .flex,
+       .items-center,
+       .gap-x-8,
+       .text-text-secondary;
+     }
 
       & > .icons {
         @extend .transition-bg-color;

@@ -7,19 +7,10 @@ use yii\helpers\Html;
 
 $this->title = Yii::t('common', 'Новая постройка');
 ?>
-<div class="container-fluid mb-5">
-    <div class="main_wrap server_info_page">
-        <aside>
-            <?php echo $this->render('@frontend/views/widgets/_alert'); ?>
-            <?=$this->render('@frontend/views/widgets/_buttons'); ?>
-            <?= $this->render('@frontend/views/widgets/_servers'); ?>
-        </aside>
-        <main id="main" role="main">
-            <div class="main_child">
-                <?= $this->render('_form', [
-                    'model' => $model,
-                ]) ?>
-            </div>
-        </main>
+<div class="server_info_page">
+    <div class="main_child">
+        <?= $this->render('_form', [
+            'model' => $model,
+        ]) ?>
     </div>
 </div>

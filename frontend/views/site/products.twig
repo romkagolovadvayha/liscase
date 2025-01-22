@@ -1,4 +1,5 @@
-<div class="category__cards">
+<div class="category__cards" id="products">
+    {% set i = 0 %}
     {% for item in PRODUCT_DROPS_SETS %}
         {% include 'product.twig'
             with {
@@ -10,8 +11,10 @@
             'CATEGORY_ID': 1,
             'IMAGE': item.image(),
             'BLOCKED': false,
+            'INDEX': i,
         }
         %}
+        {% set i = i + 1 %}
     {% endfor %}
     {% for item in PRODUCT_DROPS_SELECT %}
         {% include 'product.twig'
@@ -24,8 +27,10 @@
             'CATEGORY_ID': 1,
             'IMAGE': item.image(),
             'BLOCKED': false,
+            'INDEX': i,
         }
         %}
+        {% set i = i + 1 %}
     {% endfor %}
     {% for item in PRODUCT_DROPS %}
         {% include 'product.twig'
@@ -41,7 +46,9 @@
             'BLOCKED': item.blocked(),
             'BLOCKED_AT': item.blocked_at,
             'BLOCKED_TIME': item.blockedTime(),
+            'INDEX': i,
         }
         %}
+        {% set i = i + 1 %}
     {% endfor %}
 </div>

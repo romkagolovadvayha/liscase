@@ -1,6 +1,8 @@
 <!-- ВАЙП_БЛОК -->
-<section class="sets__wrapper">
+{% if PRODUCT_DROPS_SETS %}
+<section class="sets__wrapper mobile_hide">
     <div class="sets">
+        {% set i = 0 %}
         {% for item in PRODUCT_DROPS_SETS %}
             {% include 'product_main.twig'
                 with {
@@ -13,8 +15,10 @@
                 'IMAGE': item.image(),
                 'IMAGE2': item.image2(),
                 'BLOCKED': false,
+                'INDEX': i,
             }
             %}
+            {% set i = i + 1 %}
         {% endfor %}
         {% for item in PRODUCT_DROPS_SELECT %}
             {% include 'product_main.twig'
@@ -28,8 +32,10 @@
                 'IMAGE': item.image(),
                 'IMAGE2': item.image2(),
                 'BLOCKED': false,
+                'INDEX': i,
             }
             %}
+            {% set i = i + 1 %}
         {% endfor %}
         {% for item in PRODUCT_DROPS %}
             {% include 'product_main.twig'
@@ -46,8 +52,12 @@
                 'BLOCKED': item.blocked(),
                 'BLOCKED_AT': item.blocked_at,
                 'BLOCKED_TIME': item.blockedTime(),
+                'INDEX': i,
             }
             %}
+            {% set i = i + 1 %}
         {% endfor %}
     </div>
+    <button class="button-secondary" id="more_sets">{{ t('common', 'Показать еще') }}</button>
 </section>
+{% endif %}

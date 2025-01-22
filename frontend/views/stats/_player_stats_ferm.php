@@ -4,8 +4,11 @@ use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 
 /** @var Servers $server */
-/** @var array $data */
+/** @var array $images */
+/** @var array $names */
 /** @var array $player */
+/** @var string $steamId */
+/** @var \common\models\user\User $user */
 
 $items = [
     ['key' => 'gathered_cloth', 'name' => Yii::t('common', 'Ткань'), 'score' => 0.05],
@@ -20,48 +23,42 @@ $items = [
     ['key' => 'gathered_black.berry', 'name' => Yii::t('common', 'Черные ягоды'), 'score' => 1],
 ];
 
-$keys = [];
-foreach ($items as $item) {
-    $keys[] = $item['key'];
-}
-
-$drops = \common\models\box\Drop::find()
-                                ->cache(60*60)
-                                ->andWhere(['IN', 'eng_name', $keys])
-                                ->indexBy('eng_name')
-                                ->all();
-
 $fermers = [];
 foreach ($items as $item) {
-    $fermers[] = Statistics::getFermItem($drops, $player, $item['key'], $item['name'], $item['score']);
+    $fermers[] = Statistics::getFermItem($images, $player, $item['key'], $item['name'], $item['score']);
 }
 
-/*usort(
-    $fermers,
-    function ($a, $b) {
-        return ($b['count'] - $a['count']);
-    }
-);*/
+?> <!-- Фермерство -->
+<section class="page-stats__block-without-hover w-50p">
+    <header class="flex items-center justify-space-between mb-24 transition-all">
+        <h4 class="flex items-center gap-x-12">
+            <?=Yii::t('common', 'Фермерство')?><span
+                    class="icons icons_24px icons_24px_info icons_hover"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="right"
+                    data-bs-title="<?=Yii::t('common', 'Количество выращенных растений игроком.')?>"
+            ></span>
+        </h4>
 
-?>
-<div class="stats_player_stats_wrap stats_player_stats_wrap_ferm">
-    <h2><?=Yii::t('common', 'Фермерство')?></h2>
-    <div class="stats_player_stats">
+        <label class="page-stats__show-statistics-block">
+            <p class="p1 text-text-teritiary"><?=Yii::t('common', 'Показывать')?></p>
+            <input checked type="checkbox" class="show-statistics-block__switch none" />
+            <span>
+                      <span class="icons icons_switch icons_switch_on"></span>
+                      <span class="icons icons_switch icons_switch_off"></span>
+                    </span>
+        </label>
+    </header>
+
+    <div class="page-stats__categories">
         <?php foreach ($fermers as $item): ?>
-            <div class="stats_player_stats_item_wrap">
-                <div class="stats_player_stats_item">
-                    <div class="stats_player_stats_item_image_wrap">
-                        <img class="stats_player_stats_item_image" src="<?= $item['image'] ?>"/>
-                    </div>
-                    <div class="stats_player_stats_item_count_wrap">
-                        <div class="stats_player_stats_item_count">
-                            <?= $item['desc'] ?>
-                            <div class="stats_player_stats_item_score">x<?= $item['score'] ?></div>
-                        </div>
-                        <div class="stats_player_stats_item_name"><?= $item['name'] ?></div>
-                    </div>
-                </div>
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span><?= $item['desc'] ?><span class="category__x">x<?= $item['score'] ?></span></span>
+                    <img src="<?= $item['image'] ?>" alt="<?= $item['name'] ?>" class="w-64 h-64 object-contain"/>
+                </h5>
+                <p class="category__title"><?= $item['name'] ?></p>
             </div>
         <?php endforeach; ?>
     </div>
-</div>
+</section>

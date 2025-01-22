@@ -26,40 +26,29 @@ BuildingsAsset::register($this);
 $this->title = Yii::t('common', 'Постройки игроков');
 ?>
 
-<div class="container-fluid mb-5">
-    <div class="main_wrap server_info_page">
-        <aside>
-            <?php echo $this->render('@frontend/views/widgets/_alert'); ?>
-            <?=$this->render('@frontend/views/widgets/_buttons'); ?>
-            <?= $this->render('@frontend/views/widgets/_servers'); ?>
-            <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
-            <?= $this->render('@frontend/views/widgets/_live'); ?>
-        </aside>
-        <main id="main" role="main">
-            <div class="main_child buildings">
-                <?php if (!$userBuildingsWait): ?>
-                    <div class="buildings_buttons">
-                        <?= Html::a(Yii::t('common', 'Добавить свою постройку'), ['create'], ['class' => 'btn btn-success']) ?>
-                    </div>
-                <?php endif; ?>
-                <div class="buildings_content">
-                    <?php if ($userBuildingsWait): ?>
-                        <div class="buildings_content_moderation">
-                            <?=Yii::t('common', 'Ваша постройка ожидает проверки, как только ее проверят она появится в списке ниже.')?>
-                        </div>
-                    <?php endif; ?>
-                    <div class="buildings_content_list">
-                        <?= ListView::widget([
-                                             'dataProvider' => $dataProvider,
-                                             'itemView' => '_item',
-                                             'viewParams' => [
-                                                     'userLikes' => $userLikes
-                                             ],
-                                             'layout' => '<div class="buildings_content_list_items">{items}</div>{pager}',
-                                         ]); ?>
-                    </div>
-                </div>
+<div class="server_info_page">
+    <div class="buildings">
+        <?php if (!$userBuildingsWait): ?>
+            <div class="buildings_buttons">
+                <?= Html::a(Yii::t('common', 'Добавить свою постройку'), ['create'], ['class' => 'button button-secondary']) ?>
             </div>
-        </main>
+        <?php endif; ?>
+        <div class="buildings_content">
+            <?php if ($userBuildingsWait): ?>
+                <div class="buildings_content_moderation">
+                    <?=Yii::t('common', 'Ваша постройка ожидает проверки, как только ее проверят она появится в списке ниже.')?>
+                </div>
+            <?php endif; ?>
+            <div class="buildings_content_list">
+                <?= ListView::widget([
+                                         'dataProvider' => $dataProvider,
+                                         'itemView' => '_item',
+                                         'viewParams' => [
+                                             'userLikes' => $userLikes
+                                         ],
+                                         'layout' => '<div class="buildings_content_list_items">{items}</div>{pager}',
+                                     ]); ?>
+            </div>
+        </div>
     </div>
 </div>

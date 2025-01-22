@@ -1,10 +1,12 @@
 {{ use('common/components/widgets') }}
 
-<aside class="menu" id="main-menu" {% if MENU_HIDDEN %}style="width: 102px;"{% endif %}>
-    <button class="menu__button" id="menu-toggle-button" type="button">
-        <span class="icons icons_16px icons_16px_arrow_left" id="menu-button-arrow-left"></span>
-        <span class="icons icons_16px icons_16px_arrow_right" id="menu-button-arrow-right"></span>
-    </button>
+<aside {% if not MOBILE %}class="menu mobile_hide" id="main-menu" {% if MENU_HIDDEN %}style="width: 102px;"{% endif %}{% endif %}>
+    {% if not MOBILE %}
+        <button class="menu__button" id="menu-toggle-button" type="button">
+            <span class="icons icons_16px icons_16px_arrow_left" id="menu-button-arrow-left"></span>
+            <span class="icons icons_16px icons_16px_arrow_right" id="menu-button-arrow-right"></span>
+        </button>
+    {% endif %}
 
     <nav>
         <!-- СОЦИАЛЬНЫЕ СЕТИ -->
@@ -51,9 +53,10 @@
             'items': [
                 {
                     'label': t('common', 'Статистика'),
-                    'url': '/stats',
+                    'url': "/servers/#{USER.SERVER_ACTIVE_TAG}",
                     'iconClass': 'icons icons_32px icons_32px_statistics',
                     'activeClass': 'menu__item_active',
+                    'active': PAGE == 'stats',
                     'spanClass': 'main-menu-text',
                     'options': {'class': 'menu__item'},
                 },
@@ -63,7 +66,8 @@
                     'iconClass': 'icons icons_32px icons_32px_ban',
                     'activeClass': 'menu__item_active',
                     'spanClass': 'main-menu-text',
-                    'notification': 4,
+                    'active': PAGE == 'bans',
+                    'notification': NOTIFICATIONS.BANS,
                     'options': {'class': 'menu__item'},
                 },
                 {
@@ -80,7 +84,8 @@
                     'iconClass': 'icons icons_32px icons_32px_buildings',
                     'activeClass': 'menu__item_active',
                     'spanClass': 'main-menu-text',
-                    'notification': 2,
+                    'active': PAGE == 'buildings',
+                    'notification': NOTIFICATIONS.BUILDINGS,
                     'options': {'class': 'menu__item'},
                 },
                 {
@@ -93,9 +98,10 @@
                 },
                 {
                     'label': t('common', 'Правила серверов'),
-                    'url': '/rules',
+                    'url': "/servers/#{USER.SERVER_ACTIVE_TAG}/rules",
                     'iconClass': 'icons icons_32px icons_32px_rules',
                     'activeClass': 'menu__item_active',
+                    'active': PAGE == 'rules',
                     'spanClass': 'main-menu-text',
                     'options': {'class': 'menu__item'},
                 },
@@ -120,8 +126,19 @@
                     'url': '/support',
                     'iconClass': 'icons icons_32px icons_32px_support',
                     'activeClass': 'menu__item_active',
+                    'active': PAGE == 'support',
                     'spanClass': 'main-menu-text',
-                    'options': {'class': 'menu__item'},
+                    'notification': NOTIFICATIONS.SUPPORT,
+                    'options': {'class': 'menu__item menu__item_support'},
+                },
+                {
+                    'label': t('common', 'Выбор карты'),
+                    'url': "/maps/#{USER.SERVER_ACTIVE_TAG}",
+                    'iconClass': 'icons icons_32px icons_32px_support',
+                    'activeClass': 'menu__item_active',
+                    'active': PAGE == 'maps',
+                    'spanClass': 'main-menu-text',
+                    'options': {'class': 'menu__item menu__item_support'},
                 },
                 {
                     'label': t('common', 'FAQ'),

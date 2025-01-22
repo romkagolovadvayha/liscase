@@ -1,0 +1,142 @@
+.maps {
+  &_content {
+    .summary {
+      display: none;
+    }
+    &_list {
+      .pagination {
+        margin-top: 20px;
+      }
+      &_items {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(203px, 1fr));
+      }
+      &_item {
+        background-color: var(--background-secondary);
+        border-radius: var(--status-radius);
+        padding: 10px;
+        position: relative;
+        &:hover {
+          @extend .bg-background-teritiary;
+          box-shadow: var(--shadow-card);
+        }
+        &_images {
+          position: relative;
+          border-radius: var(--status-radius);
+          overflow: hidden;
+          &_image {
+            position: relative;
+            > img {
+              width: 100%;
+              display: block;
+            }
+            &_hover {
+              transition: 0.3s;
+              font-size: 72px;
+              line-height: 72px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              position: absolute;
+              left: 0;
+              right: 0;
+              top: 0;
+              bottom: 0;
+              color: #e8e9f3;
+              background: rgba(255, 255, 255, 0.1);
+              opacity: 0;
+            }
+            &:hover {
+              .maps_content_list_item_images_image_hover {
+                opacity: 0.6;
+              }
+            }
+          }
+          &_name {
+            @extend .p3, .py-2, .px-8, .text-status-text-color;
+            background-color: var(--background-secondary);
+            border-radius: var(--status-radius);
+            text-align: center;
+            max-width: 186px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+          }
+        }
+        &_footer {
+          margin-top: 10px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          &_like {
+            @extend .text-text-main;
+            align-self: flex-start;
+            background-color: var(--background-teritiary);
+            display: inline-flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            transition: all .2s ease;
+            z-index: 10;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            padding: 0;
+            border-radius: var(--status-radius);
+            .icon_active {
+              display: none;
+            }
+            .icon_noactive {
+              display: block;
+            }
+            &.active {
+              @extend .text-text-main;
+              background-color: var(--background-secondary);
+              .icon_active {
+                display: block;
+                color: var(--link-color-default);
+              }
+              .icon_noactive {
+                display: none;
+              }
+            }
+            &:hover {
+              opacity: 0.8;
+            }
+            &_count {
+              border-radius: var(--status-radius);
+              text-shadow: 0 1px 0 rgba(0, 0, 0, .2);
+              background-color: rgba(255, 255, 255, .2);
+              height: 30px;
+              width: 30px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            &_icon {
+              text-shadow: 0 1px 0 rgba(0, 0, 0, .2);
+              height: 30px;
+              width: 30px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              //padding: 0 10px;
+            }
+          }
+          &_name {
+            @extend .p3, .text-text-secondary;
+            display: block;
+            text-align: center;
+            overflow: hidden;
+            white-space: nowrap;
+            text-transform: uppercase;
+          }
+        }
+      }
+    }
+  }
+}

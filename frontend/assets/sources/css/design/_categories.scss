@@ -1,6 +1,9 @@
 .categories {
   @extend .flex, .flex-column, .mt-24, .items-center, .gap-y-32, .content-visibility-auto;
 
+  @media (max-width: 560px) {
+    row-gap: 0;
+  }
   &__carousel {
     @extend .relative;
 
@@ -16,6 +19,10 @@
       background-repeat: no-repeat;
       background-size: 194px 100px;
       z-index: 1;
+      @media (max-width: 560px) {
+        @include range(100, 60, "px");
+        background-size: 100px 60px;
+      }
     }
   }
 
@@ -36,6 +43,9 @@
       right: 0;
       bottom: 0;
       z-index: 1;
+      @media (max-width: 560px) {
+        opacity: 0.5;
+      }
     }
 
     &:before {
@@ -55,6 +65,11 @@
     &__title {
       @extend .p3, .uppercase, .text-text-secondary, .text-left, .transition-color;
       font-weight: 500;
+      @media (max-width: 560px) {
+        position: relative;
+        z-index: 2;
+        color: $primary-colors-white;
+      }
     }
 
     &:hover {
@@ -96,7 +111,9 @@
     &__cards {
       @extend .grid, .justify-flex-start, .gap-x-12, .gap-y-12, .w-full;
       grid-template-columns: repeat(auto-fit, minmax(203px, 1fr));
-
+      @media (max-width: 560px) {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
       & .category-card {
         @extend .p-8,
           .relative,
@@ -113,6 +130,9 @@
           transform 0.25s ease-in-out;
         cursor: pointer;
 
+        @media (max-width: 560px) {
+          min-width: 150px;
+        }
         &__boost {
           @extend .p2, .absolute, .text-left, .text-text-secondary;
           top: 8px;
@@ -168,5 +188,19 @@
         }
       }
     }
+
+    @media (max-width: 560px) {
+      width: 100px;
+      height: 60px;
+      max-width: 100px;
+      max-height: 60px;
+      min-width: 100px;
+      min-height: 60px;
+    }
+  }
+}
+#more_products {
+  @media (max-width: 560px) {
+    margin-top: 24px;
   }
 }

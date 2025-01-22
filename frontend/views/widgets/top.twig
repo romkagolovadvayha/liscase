@@ -16,13 +16,13 @@
             <ul class="stat-block__list">
                 {% for ITEM in TOP[SERVER.id] %}
                     <li class="gamer">
-                        <img src="{{ ITEM.user.getAvatar() }}" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 border-1 border-solid border-system-colors-gold object-cover" alt="{{ ITEM.user.username }}">
+                        <img src="{{ ITEM.avatar }}" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 border-1 border-solid border-system-colors-gold object-cover" alt="{{ ITEM.username }}">
                         <div class="block w-full">
                             <p class="p2 flex items-center justify-space-between">
-                                <span class="text-text-secondary">{{ ITEM.keyName() }}</span>
-                                <span class="text-text-main">{{ ITEM.valueFormat() }}</span>
+                                <span class="text-text-secondary">{{ ITEM.name }}</span>
+                                <span class="text-text-main">{{ ITEM.score }}</span>
                             </p>
-                            <a href="" class="link">{{ ITEM.user.username }}</a>
+                            <a href="" class="link">{{ ITEM.username }}</a>
                         </div>
                     </li>
                 {% endfor %}
@@ -53,5 +53,5 @@
         </div>
     </div>
 
-    <button class="button-secondary w-full">{{ t('common', 'Смотреть статистику') }}</button>
+    <a href="/servers/{{ USER.SERVER_ACTIVE_TAG }}" class="button button-secondary w-full">{{ t('common', 'Смотреть статистику') }}</a>
 </section>

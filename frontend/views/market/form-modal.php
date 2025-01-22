@@ -38,7 +38,6 @@ use yii\widgets\Pjax;
     </div>
 </div>
 <footer class="px-24 pb-24">
-    <?= Alert::widget() ?>
     <?php if (Yii::$app->user->isGuest): ?>
         <button class="button-danger w-full">
             <a href="/auth/oauth?authclient=steam" class="button__text" title="Авторизация через Steam">
@@ -62,6 +61,7 @@ use yii\widgets\Pjax;
                 ],
             ]
         ); ?>
+        <?= Alert::widget() ?>
         <input type="hidden" name="buy" value="1"/>
         <div class="modal_form_product_buttons">
             <button class="button-primary w-full" id="buy_product" type="submit">

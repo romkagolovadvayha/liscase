@@ -1,92 +1,70 @@
 <?php
 
-use common\models\support\Support;
+use common\components\helpers\Role;
 use yii\helpers\Html;
-use yii\helpers\Url;
-use yii\grid\ActionColumn;
-use kartik\grid\GridView;
+use yii\widgets\DetailView;
+use frontend\forms\support\SupportForm;
+use common\models\support\Support;
+use yii\helpers\ArrayHelper;
 
 /** @var yii\web\View $this */
-/** @var frontend\models\support\SupportSearch $searchModel */
-/** @var yii\data\ActiveDataProvider $dataProvider */
+/** @var common\models\support\Support $model */
+/** @var \common\models\user\User $user */
+/** @var \frontend\models\support\SupportSearch[] $tickets */
 
-$this->title = Yii::t('common', 'Поддержка');
+\frontend\assets\SupportAsset::register($this);
 ?>
-<div class="container-fluid mb-5">
-    <div class="main_wrap server_info_page">
-        <aside>
-            <?php echo $this->render('@frontend/views/widgets/_alert'); ?>
-            <?=$this->render('@frontend/views/widgets/_buttons'); ?>
-            <?= $this->render('@frontend/views/widgets/_servers'); ?>
-            <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
-            <?= $this->render('@frontend/views/widgets/_live'); ?>
-        </aside>
-        <main id="main" role="main">
-            <div class="main_child support">
-                <div class="support_buttons">
-                    <div
-                            data-href="/support/create"
-                            class="btn btn-success show-modal-link"
-                            data-size="modal-lg"
-                            data-toggl="modal"
-                            data-target="modal-dialog"
-                            data-title="<?=Yii::t('common', 'Новая жалоба')?>">
-                        <?=Yii::t('common', 'Создать тикет')?>
-                    </div>
+<div class="support_messages_wrap_wrap">
+    <div class="support_messages_header">
+        <div class="support_messages_header_name"><?=Yii::t('common', 'Поддержка')?></div>
+        <div class="support_messages_header_close"><i class="fa-solid fa-xmark"></i></div>
+    </div>
+    <div class="support_messages_main">
+        <div class="support_messages_side">
+            <ul class="tickets">
+                <?php foreach ($tickets as $ticket): ?>
+                    <li>
+                        <a href="<?=$ticket->getUrl()?>" class="tickets_item<?=($ticket->id === $model->id) ? ' active' : ''?>">
+                            <div class="tickets_item_avatar">
+                                <img src="<?=$ticket->user->getAvatar()?>" width="32px"/>
+                            </div>
+                            <div class="tickets_item_body">
+                                <div class="tickets_item_body_name"><?=$ticket->user->username?></div>
+                                <div class="tickets_item_body_footer">
+                                    <div class="tickets_item_body_footer_status">
+                                        <?=ArrayHelper::getValue(Support::getStatusList(), $ticket->status)?>
+                                    </div>
+                                    <div class="tickets_item_body_footer_date">
+                                        <span class="server_timer" data-time="<?=strtotime($ticket->updated_at)?>"><?=$ticket->updated_at?></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+        <div class="support_messages_body">
+            <div class="support_messages_wrap">
+                <div class="support_messages" id="chat" style="width: 100%;">
+                    <?php foreach ($model->supportMessages as $item): ?>
+                        <?=$this->render('_message', [
+                            'model' => $item
+                        ]); ?>
+                    <?php endforeach; ?>
                 </div>
-                <?= GridView::widget([
-                                         'dataProvider' => $dataProvider,
-                                         'filterModel' => $searchModel,
-                                         'columns' => [
-                                             [
-                                                 'attribute' => 'id',
-                                                 'options'   => ['width' => '120'],
-                                                 'format'    => 'raw',
-                                                 'value'          => function (Support $model) {
-                                                     return 'ID' . $model->getNumber();
-                                                 },
-                                             ],
-                                             [
-                                                 'attribute'       => 'status',
-                                                 'options'   => ['width' => '140'],
-                                                 'filterType'  => GridView::FILTER_SELECT2,
-                                                 'filter'          => \yii\helpers\ArrayHelper::merge(['' => 'Любой'], Support::getStatusList()),
-                                                 'value'           => function (Support $model) {
-                                                     $statusList = Support::getStatusList();
-                                                     return \yii\helpers\ArrayHelper::getValue($statusList, $model->status);
-                                                 },
-                                             ],
-                                             [
-                                                 'attribute'       => 'server_tag',
-                                                 'filterType'  => GridView::FILTER_SELECT2,
-                                                 'filter'          => \yii\helpers\ArrayHelper::merge(['' => 'Любой'], \common\models\servers\Servers::getServers()),
-                                                 'value'           => function (Support $model) {
-                                                     $statusList = \common\models\servers\Servers::getServers();
-                                                     return \yii\helpers\ArrayHelper::getValue($statusList, $model->server_tag);
-                                                 },
-                                             ],
-                                             [
-                                                 'attribute' => 'created_at',
-                                                 'options'   => ['width' => '200'],
-                                                 'class' => \common\components\grid\DateColumn::class,
-                                             ],
-                                             [
-                                                 'attribute' => 'updated_at',
-                                                 'options'   => ['width' => '200'],
-                                                 'class' => \common\components\grid\DateColumn::class,
-                                             ],
-                                             [
-                                                 'attribute' => '',
-                                                 'format'    => 'raw',
-                                                 'options'   => ['width' => '120'],
-                                                 'value'           => function (Support $model) {
-
-                                                     return "<a href=\"/support/ticket?id={$model->getNumber()}\" class=\"btn btn-primary\">Перейти</a>";
-                                                 },
-                                             ],
-                                         ],
-                                     ]); ?>
             </div>
-        </main>
+            <div class="support_messages_form">
+                <div id="supportChatWrited" class="support_messages_form_writed"></div>
+                <label class="support_messages_form_file">
+                    <input type="file" id="supportMessageFile" class="support_messages_form_file_input" />
+                    <i class="fa-solid fa-paperclip"></i>
+                </label>
+                <input id="supportMessage" placeholder="Напишите сообщение..." type="text" class="support_messages_form_input" />
+            </div>
+        </div>
     </div>
 </div>
+<script>
+    var chatId = <?=$model->getNumber()?>
+</script>

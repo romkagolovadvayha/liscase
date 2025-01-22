@@ -171,6 +171,19 @@ $modal-dialog-margin-y-sm-up: 0;
 @import "vape-block";
 @import "access-card";
 @import "pay";
+@import "_servers_navbar";
+@import "_kv-grid-table";
+@import "_pagination";
+@import "_form-group";
+@import "_select2";
+
+@import "page/servers";
+@import "page/rules";
+@import "page/buildings";
+@import "page/how-works";
+@import "page/support";
+@import "page/maps";
+@import "page/stats";
 
 .user-select-none {
   user-select: none;
@@ -212,11 +225,30 @@ $modal-dialog-margin-y-sm-up: 0;
   }
 }
 
+.main_title {
+  @extend h2, .mb-24;
+}
+
 .modal {
   --bs-modal-margin: 1.75rem;
+  @media (max-width: 768px) {
+    background-color: var(--bs-modal-bg);
+  }
+  header {
+    @media (max-width: 768px) {
+      background: rgba(0, 0, 0, 0.4);
+      margin-bottom: 24px;
+    }
+  }
   &.with-image {
     .modal-dialog {
       margin-top: 200px;
+      @media (max-width: 768px) {
+        margin: 0;
+        .modal-backdrop-image {
+          display: none;
+        }
+      }
     }
   }
 }
@@ -225,10 +257,19 @@ $modal-dialog-margin-y-sm-up: 0;
   @extend .flex, .items-center;
   //height: 100%;
 
+  @media (max-width: 768px) {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    max-width: 100%;
+  }
   .modal-content {
     @extend .rounded-16;
     position: relative;
     overflow: hidden;
+    @media (max-width: 768px) {
+      border-radius: 0;
+    }
   }
 
   .modal-backdrop-image {
@@ -285,6 +326,12 @@ $modal-dialog-margin-y-sm-up: 0;
     grid-template-columns: 241px 1fr 395px;
   }
 
+  @media (max-width: 768px) {
+    display: flex;
+    flex-direction: column-reverse;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
   &_menu_hide {
     grid-template-columns: 102px 1fr 395px;
 
@@ -381,5 +428,74 @@ ul {
   @extend .rounded-16;
   &.active {
     display: flex;
+  }
+}
+.blocked_text {
+  max-width: 100%;
+  margin: 0 auto;
+  background-color: var(--background-secondary);
+  border-radius: 16px;
+  padding: 20px 16px;
+  &_icon {
+    font-size: 94px;
+    line-height: 100px;
+    color: var(--primary-colors-secondary);
+    text-align: center;
+    display: block;
+  }
+  &_content {
+    margin-top: 40px;
+    font-size: 24px;
+    line-height: 28px;
+    color: var(--primary-colors-secondary);
+    text-align: center;
+    display: block;
+    max-width: 600px;
+  }
+}
+.mobile_hide {
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+.tablet_hide {
+  @media (min-width: 768px) and (max-width: 1024px) {
+    display: none;
+  }
+}
+.desktop_hide {
+  @media (min-width: 1024px) {
+    display: none;
+  }
+}
+
+.select {
+  @extend .h-48,
+  .min-h-48,
+  .max-h-48,
+  .border-solid,
+  .border-1,
+  .border-border-color-default,
+  .p1,
+  .bg-transparent,
+  .text-text-main,
+  .rounded-8,
+  .pl-20,
+  .pr-60,
+  .py-12,
+  .relative,
+  .transition-all;
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("../icons/16px/arrow_down.svg");
+  background-position: calc(100% - 20px);
+  background-size: 16px 16px;
+  background-repeat: no-repeat;
+  &:hover {
+    @extend .border-border-color-hover;
+  }
+  &:focus {
+    @extend .border-border-color-active;
   }
 }

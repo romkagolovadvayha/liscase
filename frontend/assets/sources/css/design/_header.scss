@@ -8,4 +8,15 @@
   &__actions {
     @extend .flex, .gap-x-8;
   }
+
+  @media (max-width: 768px) {
+    padding-left: 12px;
+    padding-right: 12px;
+    .header__actions .language {
+      display: none;
+    }
+    .header__actions .header__promocode {
+      display: none;
+    }
+  }
 }

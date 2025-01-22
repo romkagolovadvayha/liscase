@@ -67,5 +67,7 @@
     90deg,
     var(--primary-colors-main) 50%,
     var(--primary-colors-secondary) 100%
-  )
+  );
+
+  --online: #{$online};
 }

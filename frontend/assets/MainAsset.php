@@ -19,9 +19,6 @@ class MainAsset extends AssetBundle
     ];
 
     public $js = [
-        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js',
-        'https://momentjs.com/downloads/moment.min.js',
-        'https://momentjs.com/downloads/moment-with-locales.min.js',
         'js/cookie.js',
         'js/clipboard.min.js',
         'js/design/main.js',
@@ -30,6 +27,7 @@ class MainAsset extends AssetBundle
     ];
 
     public $depends = [
-        AppAsset::class
+        AppAsset::class,
+        MomentAsset::class,
     ];
 }

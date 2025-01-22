@@ -17,14 +17,25 @@ var formatRepo = function (repo) {
         return repo.text;
     }
     var markup =
-'<a href="/stats/player?steamId=' + repo.steam_id + '&server=' + repo.server + '" class="">' + 
-    '<div class="page_stats_search_name">' + repo.name + '</div>' +
-    '<div class="page_stats_search_steam_id">' + repo.steam_id + '</div>' +
+'<a href="' + repo.statsLink + '" class="select2_dropdown_item">' + 
+    '<div class="select2_dropdown_item_image"><img src="' + repo.avatar + '"/></div>' +
+    '<div class="select2_dropdown_item_content">' +
+    '<div class="select2_dropdown_item_content_name">' + repo.name + '</div>' +
+    '<div class="select2_dropdown_item_content_steam_id">' + repo.steam_id + '</div>' +
+    '</div>' +
 '</a>';
     return '<div style="overflow:hidden;">' + markup + '</div>';
 };
 var formatRepoSelection = function (repo) {
-    return repo.name || repo.text;
+    if (!repo.name) {
+        return repo.text;
+    }
+    return '<div class="select2_dropdown_item">' + 
+    '<div class="select2_dropdown_item_image_24"><img src="' + repo.avatar + '"/></div>' +
+    '<div class="select2_dropdown_item_content">' +
+    '<div class="select2_dropdown_item_content_name">' + repo.name + '</div>' +
+    '</div>' +
+'</a>';
 }
 JS;
 $this->registerJs($formatJs, View::POS_HEAD);
@@ -84,18 +95,20 @@ JS;
         'options' => ['multiple' => true, 'accept' => 'image/png, image/gif, image/jpeg'],
         'language' => 'ru',
         'pluginOptions' => [
-            'showPreview' => false,
-            'showCaption' => true,
+            'showPreview' => true,
+            'showCaption' => false,
             'showRemove' => false,
             'showUpload' => false,
             'maxFileCount' => 5,
             'browseIcon' => '<i class="fas fa-camera"></i> ',
-            'browseLabel' =>  'Выберите фото базы'
+            'browseLabel' =>  Yii::t('common', 'Выберите несколько фотографий базы')
         ]
     ]);?>
 
     <div class="form-group">
-        <?= Html::submitButton('Добавить', ['class' => 'btn btn-success']) ?>
+        <button type="submit" class="button-primary" style="margin-right: 8px">
+            <span class="button__text"><?=Yii::t('common', 'Отправить на модерацию')?></span>
+        </button>
     </div>
 
     <?php ActiveForm::end(); ?>

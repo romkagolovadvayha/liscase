@@ -25,9 +25,6 @@ class LauncherAsset extends AssetBundle
         'css/launcher.min.css',
     ];
     public $js = [
-        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js',
-        'https://momentjs.com/downloads/moment.min.js',
-        'https://momentjs.com/downloads/moment-with-locales.min.js',
         'js/socket.js',
         'js/launcher.js',
     ];
@@ -35,5 +32,6 @@ class LauncherAsset extends AssetBundle
         'yii\web\YiiAsset',
         BootstrapAsset::class,
         ToastrAsset::class,
+        MomentAsset::class,
     ];
 }

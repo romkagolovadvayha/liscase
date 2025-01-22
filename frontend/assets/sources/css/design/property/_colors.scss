@@ -10,7 +10,7 @@ $colors: "primary-colors-main", "primary-colors-secondary", "primary-colors-seco
   "button-secondary-border-color-default", "button-teritiary-new-price-color-default",
   "button-teritiary-old-price-color-hover", "button-teritiary-background",
   "system-colors-success-color", "progress-step-color", "system-colors-gold",
-  "system-colors-silver", "system-colors-bronze";
+  "system-colors-silver", "system-colors-bronze", "online";
 
 @each $color in $colors {
   .text-#{$color} {
