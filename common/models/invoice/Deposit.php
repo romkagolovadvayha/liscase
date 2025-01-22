@@ -337,7 +337,7 @@ class Deposit extends \common\components\base\ActiveRecord
                     $status = 'CANCEL';
                 }
                 return [
-                    'id' => $data['OrderId'],
+                    'id' => $data['PaymentId'],
                     'status' => $status
                 ];
             case 'anypay':

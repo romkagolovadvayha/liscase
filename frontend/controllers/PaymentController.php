@@ -49,7 +49,7 @@ class PaymentController extends WebController
         Yii::$app->response->statusCode = 200;
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
-        if ($payment != 'tome' && $payment != 'tinkoff') {
+        if ($payment != 'tinkoff') {
             Yii::$app->telegramChats->sendMessage(Yii::$app->request->getRawBody());
         }
         $response = Deposit::responseAdapter(Yii::$app->request->getRawBody(), $payment);
