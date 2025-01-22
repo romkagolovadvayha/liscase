@@ -93,7 +93,7 @@ class TBankMerchantAPI
                 'Phone' => '+79821159607',
             ],
             'Receipt' => [
-                'Email' => 'rom_ik@bk.ru',
+//                'Email' => 'rom_ik@bk.ru',
                 'Phone' => '+79821159607',
                 'Taxation' => 'osn',
                 'Items' => [
