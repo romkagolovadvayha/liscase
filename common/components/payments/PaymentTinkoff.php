@@ -51,7 +51,7 @@ class PaymentTinkoff
             $model->user->getPersonalBalance()->recalculateBalance();
         }
 
-        if (in_array($request['Payments'][0]['Status'], ['PARTIAL_REVERSED', 'REVERSED', 'CANCELED', 'PARTIAL_REFUNDED', 'REFUNDED', 'REJECTED', 'DEADLINE_EXPIRED '])) {
+        if (in_array($request['Payments'][0]['Status'], ['PARTIAL_REVERSED', 'REVERSED', 'CANCELED', 'PARTIAL_REFUNDED', 'REFUNDED', 'REJECTED', 'DEADLINE_EXPIRED'])) {
             $model->status = Deposit::STATUS_CANCELED;
             $model->save(false);
         }

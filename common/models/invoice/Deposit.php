@@ -329,6 +329,17 @@ class Deposit extends \common\components\base\ActiveRecord
                   'id' => $data['object']['id'],
                   'status' => $status
                 ];
+            case 'tinkoff':
+                if ($data['Status'] == 'CONFIRMED') {
+                    $status = 'SUCCESS';
+                }
+                if (in_array($data['Status'], ['PARTIAL_REVERSED', 'REVERSED', 'CANCELED', 'PARTIAL_REFUNDED', 'REFUNDED', 'REJECTED', 'DEADLINE_EXPIRED'])) {
+                    $status = 'CANCEL';
+                }
+                return [
+                    'id' => $data['OrderId'],
+                    'status' => $status
+                ];
             case 'anypay':
                 $status = 'NO AVAILABLE';
                 $transactionId = !empty($data['transaction_id']) ? $data['transaction_id'] : $data['result']['transaction_id'];
