@@ -240,20 +240,6 @@ try {
 } catch (\Exception $e) {
     Yii::$app->telegramReports->sendMessage("Profile:" . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage());
 }
-try {
-    $banList = Steam::getBansRust($user->steam_id);
-    foreach ($banList as $banItem) {
-        $bansExist = true;
-        $bans[] = [
-            'serverName' => $banItem['server'],
-            'reason' => $banItem['reason'],
-            'unbanned_date' => $banItem['expireDate'],
-            'date' => $banItem['date'],
-        ];
-    }
-} catch (\Exception $e) {
-    Yii::$app->telegramReports->sendMessage("Profile:" . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage());
-}
 
 
 

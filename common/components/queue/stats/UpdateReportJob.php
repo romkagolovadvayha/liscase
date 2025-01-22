@@ -157,15 +157,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
             } catch (\Exception $e) {
                 Yii::$app->telegramChats->sendMessage("UpdateReportJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             }
-            try {
-                $banList = Steam::getBansRust($user->steam_id);
-                foreach ($banList as $banItem) {
-                    $bansExist = true;
-                    $bans .= $banItem['server'] . ":" . $banItem['reason'] . "; Дата: " . $banItem['date'] . "; Срок: " . $banItem['expireDate'] . PHP_EOL;
-                }
-            } catch (\Exception $e) {
-                Yii::$app->telegramChats->sendMessage("UpdateReportJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
-            }
 
             if ($bansExist) {
                 $message .=  PHP_EOL  . PHP_EOL . "Найдены баны на других проектах:" . PHP_EOL . $bans;
