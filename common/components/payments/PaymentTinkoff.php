@@ -19,7 +19,7 @@ class PaymentTinkoff
         $terminalKey = '1737463692019';
         $secretKey = 'h3ba1mc*oVHGwj6R';
         $TBank = new TBankMerchantAPI($terminalKey, $secretKey);
-        $request = $TBank->create($deposit->amount, 'sbp', 'Донат на игровой сервер', $deposit->id);
+        $request = $TBank->create($deposit->amount, 'sbp', 'Донат на игровой сервер', $deposit->id, null, null, $deposit->user->email);
         if (!$request['Success']) {
             return null;
         }

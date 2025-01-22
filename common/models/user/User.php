@@ -52,6 +52,7 @@ use common\components\base\ActiveRecord;
  * @property int             $server_id
  * @property bool            $raid_notify
  * @property bool            $store
+ * @property bool            $is_email
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances

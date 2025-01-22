@@ -14,12 +14,13 @@ class PaymentForm extends Model
     public $amount;
     public $payment_id;
     public $confirm;
+    public $email;
 
     public function rules(): array
     {
         return ArrayHelper::merge([
-            [['payment_id', 'amount'], 'required'],
-            [['payment_id'], 'trim'],
+            [['payment_id', 'amount', 'email'], 'required'],
+            [['payment_id', 'email'], 'trim'],
             [['payment_id', 'amount', 'confirm'], 'integer'],
             ['payment_id', 'validatePaymentId'],
         ], parent::rules());
@@ -31,6 +32,7 @@ class PaymentForm extends Model
             'amount'    => Yii::t('common', 'Сумма пополнения'),
             'payment_id'    => Yii::t('common', 'Метод оплаты'),
             'confirm' => Yii::t('common', 'Условия соглашения'),
+            'email' => Yii::t('common', 'E-mail адрес'),
         ];
     }
 
@@ -62,6 +64,11 @@ class PaymentForm extends Model
     public function init()
     {
         parent::init();
+        /** @var User $user */
+        $user = Yii::$app->user->identity;
+        if ($user->is_email) {
+            $this->email = $user->email;
+        }
         $this->amount = 100;
         $this->confirm = 1;
         $this->payment_id = array_keys(Deposit::getTypeList())[0];
@@ -76,9 +83,21 @@ class PaymentForm extends Model
             $this->addError('confirm', Yii::t('common', 'Необходимо согласиться с условиями пользовательского соглашения'));
             return false;
         }
+        /** @var User $user */
+        $user = Yii::$app->user->identity;
+
+        if (!$user->is_email) {
+            if (strpos($this->email, '@') === false) {
+                $this->addError('email', Yii::t('common', 'E-mail адрес введен неверно.'));
+                return false;
+            }
+            $user->is_email = true;
+            $user->email = $this->email;
+            $user->save();
+        }
 
         $paymentApi = PaymentApi::getInstance($this->payment_id);
-        $deposit = Deposit::createOperation(Yii::$app->user->id, $this->amount, $this->payment_id);
+        $deposit = Deposit::createOperation($user->id, $this->amount, $this->payment_id);
         try {
             return $paymentApi->create($deposit);
         } catch (\Exception $ex) {

@@ -81,7 +81,7 @@ class TBankMerchantAPI
     /**
      * {@inheritdoc}
      */
-    public function create($amount, $method, $description = null, $depositId = null, $currency = 'RUB', $methodCurrency = 'RUB'): array
+    public function create($amount, $method, $description = null, $depositId = null, $currency = 'RUB', $methodCurrency = 'RUB', $email = null): array
     {
         $params = [
             'TerminalKey' => $this->_terminalKey,
@@ -89,12 +89,10 @@ class TBankMerchantAPI
             'OrderId' => $depositId,
             'Description' => $description,
             'DATA' => [
-                'Email' => 'rom_ik@bk.ru',
-                'Phone' => '+79821159607',
+                'Email' => $email,
             ],
             'Receipt' => [
-//                'Email' => 'rom_ik@bk.ru',
-                'Phone' => '+79821159607',
+                'Email' => $email,
                 'Taxation' => 'osn',
                 'Items' => [
                    [
