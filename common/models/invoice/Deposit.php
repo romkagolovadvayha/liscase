@@ -171,9 +171,6 @@ class Deposit extends \common\components\base\ActiveRecord
             self::TYPE_PAYMENT_CARD_TINKOFF     => '/images/payments/cards.svg',
         ];
 
-        if (Yii::$app->language !== '509') {
-            unset($icons[self::TYPE_PAYMENT_CARD_TINKOFF]);
-        }
         if (Yii::$app->language !== 'ru-RU') {
             unset($icons[self::TYPE_PAYMENT_CARD]);
             unset($icons[self::TYPE_PAYMENT_SBP]);
