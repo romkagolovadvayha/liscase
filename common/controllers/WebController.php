@@ -8,6 +8,7 @@ use yii\helpers\Html;
 use yii\web\Controller;
 use yii\helpers\Url;
 use common\components\web\Cookie;
+use yii\web\ForbiddenHttpException;
 
 class WebController extends Controller
 {
@@ -15,6 +16,14 @@ class WebController extends Controller
 
     public function beforeAction($action)
     {
+        // Получаем текущего пользователя
+        $user = Yii::$app->user->identity;
+        // Проверяем, заблокирован ли пользователь
+        if (!Yii::$app->user->isGuest && $user->status === User::STATUS_BLOCKED) {
+            Yii::$app->response->redirect(['/blocked'])->send();
+            return false; // Останавливаем выполнение текущего действия
+        }
+
         $this->_setRefCookies();
 
         return parent::beforeAction($action);

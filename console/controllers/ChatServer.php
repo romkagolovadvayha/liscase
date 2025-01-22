@@ -4,6 +4,7 @@ namespace console\controllers;
 use common\models\rcon\RconTasks;
 use common\models\support\SupportFile;
 use common\models\support\SupportMessage;
+use common\models\support\SupportRead;
 use common\models\user\UserDrop;
 use Yii;
 use common\components\helpers\Role;
@@ -43,102 +44,129 @@ class ChatServer extends WebSocketServer
         return !empty($request['action']) ? $request['action'] : parent::getCommand($from, $msg);
     }
 
-    private function mime2ext($mime) {
-        $mime_map = [
-            'application/x-compressed'                                                  => '7zip',
-            'video/x-f4v'                                                               => 'f4v',
-            'video/x-flv'                                                               => 'flv',
-            'image/gif'                                                                 => 'gif',
-            'application/x-gtar'                                                        => 'gtar',
-            'application/x-gzip'                                                        => 'gzip',
-            'image/jp2'                                                                 => 'jp2',
-            'video/mj2'                                                                 => 'jp2',
-            'image/jpx'                                                                 => 'jp2',
-            'image/jpm'                                                                 => 'jp2',
-            'image/png'                                                                => 'png',
-            'image/jpeg'                                                                => 'jpeg',
-            'image/pjpeg'                                                               => 'jpeg',
-            'video/quicktime'                                                           => 'mov',
-            'video/x-sgi-movie'                                                         => 'movie',
-            'audio/mpeg'                                                                => 'mp3',
-            'audio/mpg'                                                                 => 'mp3',
-            'audio/mpeg3'                                                               => 'mp3',
-            'audio/mp3'                                                                 => 'mp3',
-            'video/mp4'                                                                 => 'mp4',
-            'video/mpeg'                                                                => 'mpeg',
-            'application/x-photoshop'                                                   => 'psd',
-            'image/vnd.adobe.photoshop'                                                 => 'psd',
-            'application/x-rar'                                                         => 'rar',
-            'application/rar'                                                           => 'rar',
-            'application/x-rar-compressed'                                              => 'rar',
-            'image/svg+xml'                                                             => 'svg',
-            'audio/x-wav'                                                               => 'wav',
-            'audio/wave'                                                                => 'wav',
-            'audio/wav'                                                                 => 'wav',
-            'video/webm'                                                                => 'webm',
-            'image/webp'                                                                => 'webp',
-            'video/x-ms-wmv'                                                            => 'wmv',
-            'video/x-ms-asf'                                                            => 'wmv',
-            'application/x-zip'                                                         => 'zip',
-            'application/zip'                                                           => 'zip',
-            'application/x-zip-compressed'                                              => 'zip',
-            'application/s-compressed'                                                  => 'zip',
-            'multipart/x-zip'                                                           => 'zip',
-        ];
-
-        return isset($mime_map[$mime]) ? $mime_map[$mime] : false;
-    }
-
-    public function commandChatFile(ConnectionInterface $client, $msg)
-    {
-        try {
-            $request = json_decode($msg, true);
-            $mimeType = $request['type'];
-            $exp = $this->mime2ext($mimeType);
-            if (empty($exp)) {
-                return;
-            }
-            $decodedData = file_get_contents($request['data']);
-            $newFileName = $request['chatId'] . "_" . md5(time()) . ".{$exp}";
-            Yii::$app->s3Api->uploadFile('support/' . $newFileName, $decodedData);
-            $chat = Support::findByNumber($request['chatId']);
-            $message = new SupportMessage();
-            $message->user_id = $client->user->id;
-            $message->message = null;
-            $message->support_id = $chat->id;
-            $message->created_at = date('Y-m-d H:i:s');
-            $message->save();
-            if (!empty($message->getErrors())) {
-                print_r($message->getErrors());
-            }
-            $filename = htmlspecialchars(\yii\helpers\HtmlPurifier::process($request['filename']));
-            $file = new SupportFile();
-            $file->support_message_id = $message->id;
-            $file->file = $newFileName;
-            $file->filename = $filename;
-            $file->mimetype = $mimeType;
-            $file->created_at = date('Y-m-d H:i:s');
-            $file->save();
-            if (!empty($file->getErrors())) {
-                print_r($file->getErrors());
-            }
-            $user = $client->user;
-            foreach ($this->clients as $chatClient) {
-                if (empty($chatClient) || empty($chatClient->chat)) {
-                    continue;
-                }
-                if ($chatClient->chat != $request['chatId']) {
-                    continue;
-                }
-                $chatClient->send(json_encode([
-                                                  'type' => 'chat',
-                                                  'messageId' => $message->id,
-                                              ]));
-            }
-        } catch (\Exception $e) {
-            echo "commandChatFile: " . $e->getMessage() . PHP_EOL;
-        }
-    }
+//    private function mime2ext($mime) {
+//        $mime_map = [
+//            'application/x-compressed'                                                  => '7zip',
+//            'video/x-f4v'                                                               => 'f4v',
+//            'video/x-flv'                                                               => 'flv',
+//            'image/gif'                                                                 => 'gif',
+//            'application/x-gtar'                                                        => 'gtar',
+//            'application/x-gzip'                                                        => 'gzip',
+//            'image/jp2'                                                                 => 'jp2',
+//            'video/mj2'                                                                 => 'jp2',
+//            'image/jpx'                                                                 => 'jp2',
+//            'image/jpm'                                                                 => 'jp2',
+//            'image/png'                                                                => 'png',
+//            'image/jpeg'                                                                => 'jpeg',
+//            'image/pjpeg'                                                               => 'jpeg',
+//            'video/quicktime'                                                           => 'mov',
+//            'video/x-sgi-movie'                                                         => 'movie',
+//            'audio/mpeg'                                                                => 'mp3',
+//            'audio/mpg'                                                                 => 'mp3',
+//            'audio/mpeg3'                                                               => 'mp3',
+//            'audio/mp3'                                                                 => 'mp3',
+//            'video/mp4'                                                                 => 'mp4',
+//            'video/mpeg'                                                                => 'mpeg',
+//            'application/x-photoshop'                                                   => 'psd',
+//            'image/vnd.adobe.photoshop'                                                 => 'psd',
+//            'application/x-rar'                                                         => 'rar',
+//            'application/rar'                                                           => 'rar',
+//            'application/x-rar-compressed'                                              => 'rar',
+//            'image/svg+xml'                                                             => 'svg',
+//            'audio/x-wav'                                                               => 'wav',
+//            'audio/wave'                                                                => 'wav',
+//            'audio/wav'                                                                 => 'wav',
+//            'video/webm'                                                                => 'webm',
+//            'image/webp'                                                                => 'webp',
+//            'video/x-ms-wmv'                                                            => 'wmv',
+//            'video/x-ms-asf'                                                            => 'wmv',
+//            'application/x-zip'                                                         => 'zip',
+//            'application/zip'                                                           => 'zip',
+//            'application/x-zip-compressed'                                              => 'zip',
+//            'application/s-compressed'                                                  => 'zip',
+//            'multipart/x-zip'                                                           => 'zip',
+//        ];
+//
+//        return isset($mime_map[$mime]) ? $mime_map[$mime] : false;
+//    }
+//
+//    public function commandChatFile(ConnectionInterface $client, $msg)
+//    {
+//        try {
+//            $cacheKey = 'commandChatFile_' . $client->user->id;
+//            if (!empty(Yii::$app->cache->get($cacheKey))) {
+//                $client->send(json_encode(['type' => 'error', 'error' => Yii::$app->cache->get($cacheKey)]));
+//                return;
+//            }
+//            Yii::$app->cache->set($cacheKey, Yii::t('common', "Нельзя отправлять сообщения слишком часто!", [], $client->user->current_language), 5);
+//            $request = json_decode($msg, true);
+//            $mimeType = $request['type'];
+//            $exp = $this->mime2ext($mimeType);
+//            if (empty($exp)) {
+//                $client->send(json_encode(['type' => 'error', 'error' => Yii::t('common', "Не верный формат файла!", [], $client->user->current_language)]));
+//                return;
+//            }
+//            $decodedData = file_get_contents($request['data']);
+//            $newFileName = $request['chatId'] . "_" . md5(time()) . ".{$exp}";
+//            Yii::$app->s3Api->uploadFile('support/' . $newFileName, $decodedData);
+//            $chat = Support::findByNumber($request['chatId']);
+//            if (empty($chat)) {
+//                $chat = new Support();
+//                $chat->user_id = $client->user->id;
+//                $chat->status = Support::STATUS_OPEN;
+//                $chat->server_tag = !empty($user->server_id) ? $user->server->tag : null;
+//                $chat->created_at = date('Y-m-d H:i:s');
+//                $chat->updated_at = date('Y-m-d H:i:s');
+//                $chat->save(false);
+//                $mModel = new SupportMessage();
+//                $mModel->user_id = null;
+//                $mModel->message = "{USER_INFO}";
+//                $mModel->support_id = $chat->id;
+//                $mModel->created_at = date('Y-m-d H:i:s');
+//                $mModel->save();
+//                $client->send(json_encode(['type' => 'redirect', 'url' => $chat->getUrl()]));
+//            } else {
+//                $chat->updated_at = date('Y-m-d H:i:s');
+//                $chat->save(false);
+//            }
+//            $message = new SupportMessage();
+//            $message->user_id = $client->user->id;
+//            $message->message = null;
+//            $message->support_id = $chat->id;
+//            $message->created_at = date('Y-m-d H:i:s');
+//            $message->save();
+//            if (!empty($message->getErrors())) {
+//                print_r($message->getErrors());
+//            }
+//            $filename = htmlspecialchars(\yii\helpers\HtmlPurifier::process($request['filename']));
+//            $file = new SupportFile();
+//            $file->support_message_id = $message->id;
+//            $file->file = $newFileName;
+//            $file->filename = $filename;
+//            $file->mimetype = $mimeType;
+//            $file->created_at = date('Y-m-d H:i:s');
+//            $file->save();
+//            $this->commandTicketUpdate($client, json_encode(['user_id' => $chat->user_id]));
+//            if (!empty($file->getErrors())) {
+//                print_r($file->getErrors());
+//            }
+//            $user = $client->user;
+//            foreach ($this->clients as $chatClient) {
+//                if (empty($chatClient) || empty($chatClient->chat)) {
+//                    continue;
+//                }
+//                if ($chatClient->chat != $request['chatId']) {
+//                    continue;
+//                }
+//                $chatClient->send(json_encode([
+//                                                  'type' => 'chat',
+//                                                  'messageId' => $message->id,
+//                                              ]));
+//            }
+//        } catch (\Exception $e) {
+//            echo "commandChatFile: " . $e->getMessage() . PHP_EOL;
+//        }
+//    }
 
     public function commandSubscription(ConnectionInterface $client, $msg)
     {
@@ -185,6 +213,58 @@ class ChatServer extends WebSocketServer
         }
 
         $client->send( json_encode($result) );
+    }
+
+    public function commandSupportStatus(ConnectionInterface $client, $msg)
+    {
+        $request = json_decode($msg, true);
+        if (!empty($request['id'])) {
+            foreach ($this->clients as $chatClient) {
+                if (empty($chatClient) || empty($chatClient->chat)) {
+                    continue;
+                }
+                if ($chatClient->chat != $request['id']) {
+                    continue;
+                }
+                $model = new Support();
+                $chatClient->send(json_encode(['type' => 'redirect', 'url' => $model->getUrl()]));
+            }
+        }
+    }
+
+    public function commandTicketUpdate(ConnectionInterface $client, $msg)
+    {
+        $request = json_decode($msg, true);
+        if (!empty($request['user_id'])) {
+            foreach ($this->clients as $chatClient) {
+                if (empty($chatClient) || empty($chatClient->chat)) {
+                    continue;
+                }
+                /** @var User $user */
+                $user = $chatClient->user;
+                if ($user->id != $request['user_id'] && !$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+                    continue;
+                }
+                $chatClient->send(json_encode(['type' => 'ticketsUpdate']));
+            }
+        }
+    }
+
+    public function commandChatUpdate(ConnectionInterface $client, $msg)
+    {
+        $request = json_decode($msg, true);
+        if (!empty($request['user_id'])) {
+            foreach ($this->clients as $chatClient) {
+                if (empty($chatClient) || empty($chatClient->chat)) {
+                    continue;
+                }
+                if ($chatClient->chat != $request['id']) {
+                    continue;
+                }
+                $chatClient->send(json_encode(['type' => 'chat', 'messageId' => $request['messageId']]));
+            }
+            $this->commandTicketUpdate($client, json_encode(['user_id' => $request['user_id']]));
+        }
     }
 
     public function commandActivatedDrop(ConnectionInterface $client, $msg)
@@ -240,15 +320,13 @@ class ChatServer extends WebSocketServer
         $result = ['message' => ''];
 
         if (!empty($request['user_id'])) {
+           $hash = md5(time());
            foreach ($this->clients as $chatClient) {
                if (empty($chatClient->user)) {
                    continue;
                }
-               echo $chatClient->user->id . PHP_EOL;
-               echo $request['user_id'] . PHP_EOL;
                if ($chatClient->user->id == $request['user_id']) {
                    if ($request['code'] == 200) {
-                       echo 'update.balance' . PHP_EOL;
                        $chatClient->send(
                            json_encode(
                                [
@@ -256,6 +334,7 @@ class ChatServer extends WebSocketServer
                                    'code'    => 200,
                                    'balanceStr'    => $request['balanceStr'],
                                    'balance'    => $request['balance'],
+                                   'hash'    => $hash,
                                ]
                            )
                        );
@@ -376,23 +455,74 @@ class ChatServer extends WebSocketServer
             }
 
             if (!empty($client->user) && !empty($request['message']) && $message = trim($request['message']) ) {
+                $cacheKey = 'commandChat_' . $client->user->id;
+                if (!empty(Yii::$app->cache->get($cacheKey))) {
+                    $client->send(json_encode(['type' => 'error', 'error' => Yii::$app->cache->get($cacheKey)]));
+                    return;
+                }
+                Yii::$app->cache->set($cacheKey, Yii::t('common', "Нельзя отправлять сообщения слишком часто!", [], $client->user->current_language), 5);
                 /** @var User $user */
                 $user = $client->user;
+                if ($user->blocked_support || $user->status == User::STATUS_BLOCKED || strtotime($user->blocked_support_at) > time()) {
+                    $client->send(json_encode(['type' => 'error', 'error' => Yii::t('common', "Ваш чат заблокирован")]));
+                }
                 $chat = Support::findByNumber($client->chat);
-                $message = htmlspecialchars(\yii\helpers\HtmlPurifier::process($message));
+                if (empty($chat)) {
+                    $chat = new Support();
+                    $chat->user_id = $user->id;
+                    $chat->status = Support::STATUS_OPEN;
+                    $chat->server_tag = !empty($user->server_id) ? $user->server->tag : null;
+                    $chat->created_at = date('Y-m-d H:i:s');
+                    $chat->updated_at = date('Y-m-d H:i:s');
+                    $chat->save(false);
+                    $mModel = new SupportMessage();
+                    $mModel->user_id = null;
+                    $mModel->message = "{USER_INFO}";
+                    $mModel->support_id = $chat->id;
+                    $mModel->created_at = date('Y-m-d H:i:s');
+                    $mModel->save();
+                    $client->send(json_encode(['type' => 'redirect', 'url' => $chat->getUrl()]));
+                } else {
+                    $chat->updated_at = date('Y-m-d H:i:s');
+                    $chat->save(false);
+                }
+                $message = htmlspecialchars(\yii\helpers\HtmlPurifier::process(trim($message)));
                 $model = new SupportMessage();
                 $model->user_id = $user->id;
-                $model->message = $message;
+                $model->message = trim($message);
                 $model->support_id = $chat->id;
                 $model->created_at = date('Y-m-d H:i:s');
                 $model->save();
+
+                SupportRead::createRecord($chat->user_id, $user->id, $model->id, $chat->id);
+
+                $this->commandTicketUpdate($client, json_encode(['user_id' => $chat->user_id]));
+                $hash = md5(time());
                 foreach ($this->clients as $chatClient) {
-                    if (empty($chatClient) || empty($chatClient->chat)) {
+                    if (empty($chatClient)) {
+                        continue;
+                    }
+                    if (!empty($chatClient->user)) {
+                        /** @var User $_user */
+                        $_user = $chatClient->user;
+                        if ($_user->id === $chat->user_id || $_user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+                            if ($user->id !== $_user->id) {
+                                $chatClient->send(json_encode([
+                                                              'type' => 'support_notifications',
+                                                              'count' => Support::unreadAll($_user->id),
+                                                              'chatId' => $chat->getNumber(),
+                                                              'hash'    => $hash,
+                                                          ]));
+                            }
+                        }
+                    }
+                    if (empty($chatClient->chat)) {
                         continue;
                     }
                     if ($chatClient->chat != $request['chatId']) {
                         continue;
                     }
+                    SupportRead::readedAll($model->support_id, $chatClient->user->id);
                     $chatClient->send(json_encode([
                                                       'type' => 'chat',
                                                       'messageId' => $model->id,
@@ -402,7 +532,7 @@ class ChatServer extends WebSocketServer
                 $result['message'] = 'Enter message';
             }
 
-            $client->send( json_encode($result) );
+            //$client->send( json_encode($result) );
         } catch (\Exception $e) {
             echo "commandChat:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
         }

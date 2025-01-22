@@ -16,6 +16,8 @@ $config = [
     ],
     'components' => [
         'urlManager'    => [
+            'enablePrettyUrl' => true,
+            'showScriptName'  => false,
             'hostInfo' => str_replace(['http://', 'https://', '/'], '', $params['backendUrl']),
             'baseUrl'  => $params['backendUrl'],
         ],

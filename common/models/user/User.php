@@ -52,6 +52,11 @@ use common\components\base\ActiveRecord;
  * @property int             $server_id
  * @property bool            $raid_notify
  * @property bool            $store
+ * @property bool            $is_stats
+ * @property string          $blocked_support_at
+ * @property bool            $blocked_support
+ * @property string          $stat_status
+ * @property int             $avatar_frame
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
@@ -165,7 +170,8 @@ class User extends ActiveRecord implements IdentityInterface
             'unbanned_at'          => Yii::t('common', 'Разбан'),
             'ban_reason'          => Yii::t('common', 'Причина'),
             'ban_by'          => Yii::t('common', 'Кем забанен'),
-            'store'          => Yii::t('common', 'Доступ к магазину'),
+            'store'          => Yii::t('common', 'Доступ к магазину на без донатном сервере?'),
+            'is_stats'          => Yii::t('common', 'Показывать в статистике?'),
         ];
     }
 
@@ -173,9 +179,9 @@ class User extends ActiveRecord implements IdentityInterface
     {
         return [
             [['email', 'password_hash', 'auth_key', 'ref_code', 'socket_room', 'status'], 'required'],
-            [['status', 'auto', 'steam_id', 'store'], 'integer'],
+            [['status', 'auto', 'steam_id', 'store', 'is_stats', 'avatar_frame'], 'integer'],
             [['ref_code'], 'number'],
-            [['email', 'password_hash'], 'string', 'max' => 255],
+            [['email', 'password_hash', 'stat_status'], 'string', 'max' => 255],
             [['auth_key', 'socket_room'], 'string', 'max' => 32],
             [['current_language', 'created_at'], 'safe'],
         ];
@@ -634,6 +640,10 @@ class User extends ActiveRecord implements IdentityInterface
         return Yii::$app->params['cdnUrl'] . $this->userProfile->avatar;
     }
 
+    public function getStatus() {
+        return strtotime($this->last_visit_server_at) >= time() - 2 * 60;
+    }
+
     /**
      * @param string $jwt
      *
@@ -728,54 +738,54 @@ class User extends ActiveRecord implements IdentityInterface
             }
             $this->banned_at = $bannedAt;
             /** @var Servers[] $servers */
-            $servers = Servers::find()
-                              ->cache(30)
-                              ->andWhere(['status' => Servers::STATUS_ACTIVE])
-                              ->orderBy(['sort' => SORT_ASC])
-                              ->all();
-            if (in_array($reason, [self::REASON_GAME_3])) {
-                $serversBan = ['max3'];
-                foreach ($servers as $server) {
-                    if (in_array($server->tag, $serversBan)) {
-                        $unbannedAt = $server->next_wipe;
-                        break;
-                    }
-                }
-            }
-            if (in_array($reason, [self::REASON_GAME_1])) {
-                $serversBan = ['solo'];
-                foreach ($servers as $server) {
-                    if (in_array($server->tag, $serversBan)) {
-                        $unbannedAt = $server->next_wipe;
-                        break;
-                    }
-                }
-            }
-            if (!empty($unbannedAt)) {
-                $this->status      = User::STATUS_ACTIVE;
-                $this->unbanned_at = $unbannedAt;
-            }
+//            $servers = Servers::find()
+//                              ->cache(30)
+//                              ->andWhere(['status' => Servers::STATUS_ACTIVE])
+//                              ->orderBy(['sort' => SORT_ASC])
+//                              ->all();
+//            if (in_array($reason, [self::REASON_GAME_3])) {
+//                $serversBan = ['max3'];
+//                foreach ($servers as $server) {
+//                    if (in_array($server->tag, $serversBan)) {
+//                        $unbannedAt = $server->next_wipe;
+//                        break;
+//                    }
+//                }
+//            }
+//            if (in_array($reason, [self::REASON_GAME_1])) {
+//                $serversBan = ['solo'];
+//                foreach ($servers as $server) {
+//                    if (in_array($server->tag, $serversBan)) {
+//                        $unbannedAt = $server->next_wipe;
+//                        break;
+//                    }
+//                }
+//            }
+//            if (!empty($unbannedAt)) {
+//                $this->status      = User::STATUS_ACTIVE;
+//                $this->unbanned_at = $unbannedAt;
+//            }
             $this->save(false);
         }
-        $reasonText = ArrayHelper::getValue(User::getReasonList(), $reason);
-        if ($task) {
-            $command = "helper ban \"{$this->steam_id}\" \"{$reasonText}\"";
-            RconTasks::execute($command, $serversBan);
-        }
-        if (YII_ENV_PROD && $rustcheck && $reason !== User::REASON_NOT_REASON) {
-            Yii::$app->rustCheck->ban($this->steam_id, $reasonText);
-        }
-
-        /** @var UserChecking $userChecking */
-        $userChecking = UserChecking::find()
-                             ->andWhere(['user_id' => $this->id])
-                             ->andWhere(['status' => UserChecking::STATUS_CHECKING])
-                             ->one();
-        if (!empty($userChecking)) {
-            $userChecking->status  = UserChecking::STATUS_DONE;
-            $userChecking->done_at = date('Y-m-d H:i:s');
-            $userChecking->save();
-        }
+//        $reasonText = ArrayHelper::getValue(User::getReasonList(), $reason);
+//        if ($task) {
+//            $command = "helper ban \"{$this->steam_id}\" \"{$reasonText}\"";
+//            RconTasks::execute($command, $serversBan);
+//        }
+//        if (YII_ENV_PROD && $rustcheck && $reason !== User::REASON_NOT_REASON) {
+//            Yii::$app->rustCheck->ban($this->steam_id, $reasonText);
+//        }
+//
+//        /** @var UserChecking $userChecking */
+//        $userChecking = UserChecking::find()
+//                             ->andWhere(['user_id' => $this->id])
+//                             ->andWhere(['status' => UserChecking::STATUS_CHECKING])
+//                             ->one();
+//        if (!empty($userChecking)) {
+//            $userChecking->status  = UserChecking::STATUS_DONE;
+//            $userChecking->done_at = date('Y-m-d H:i:s');
+//            $userChecking->save();
+//        }
 
         return true;
     }
@@ -788,10 +798,10 @@ class User extends ActiveRecord implements IdentityInterface
         $this->status = User::STATUS_ACTIVE;
         $this->save(false);
 
-        $command = "unban \"{$this->steam_id}\"";
-        RconTasks::execute($command);
-
-        Yii::$app->rustCheck->unban($this->steam_id);
+//        $command = "unban \"{$this->steam_id}\"";
+//        RconTasks::execute($command);
+//
+//        Yii::$app->rustCheck->unban($this->steam_id);
         return true;
     }
 
@@ -809,5 +819,43 @@ class User extends ActiveRecord implements IdentityInterface
         }
 
         return false;
+    }
+
+    /**
+     * @return Servers|string|null
+     */
+    public function getCurrentServer() {
+        if (!empty($this->server)) {
+            return $this->server;
+        }
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->cache(30)
+                          ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+
+        return $servers[0];
+    }
+
+    public function getLink($key) {
+        if ($key === 'stats') {
+            $server = $this->getCurrentServer();
+            return "/servers/{$server->tag}/{$this->steam_id}";
+        }
+        if ($key === 'report') {
+            $server = $this->getCurrentServer();
+            return "/servers/{$server->tag}/{$this->steam_id}/report";
+        }
+        return null;
+    }
+
+    public function notifications() {
+        $supportCount = \common\models\support\Support::unreadAll($this->id);
+        return [
+            'SUPPORT' => $supportCount,
+            'BUILDINGS' => 0,
+            'BANS' => 0,
+        ];
     }
 }

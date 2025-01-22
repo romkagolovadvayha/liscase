@@ -44,6 +44,9 @@ use Yii;
  * @property string $updated_at
  * @property string $monitoring_name
  * @property string $monitoring_description
+ * @property string $rust_app_id
+ * @property int $min_map_size
+ * @property int $max_map_size
  */
 class Servers extends \common\components\base\ActiveRecord
 {
@@ -105,15 +108,18 @@ class Servers extends \common\components\base\ActiveRecord
             'updated_at'          => Yii::t('common', 'Последнее обновление'),
             'monitoring_name'          => Yii::t('common', 'Название в мониторинге'),
             'monitoring_description'          => Yii::t('common', 'Доп. название в мониторинге'),
+            'rust_app_id'          => Yii::t('common', 'ID в RustApp'),
+            'min_map_size'          => Yii::t('common', 'Минимальный размер карты'),
+            'max_map_size'          => Yii::t('common', 'Максимальный размер карты'),
         ];
     }
 
     public function rules()
     {
         return [
-            [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description'], 'required'],
+            [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description', 'min_map_size', 'max_map_size'], 'required'],
             [['description', 'name', 'ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description'], 'string'],
-            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id'], 'integer'],
+            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size'], 'integer'],
             [['wipe', 'next_wipe', 'global_wipe'], 'safe'],
         ];
     }
@@ -247,12 +253,32 @@ class Servers extends \common\components\base\ActiveRecord
         return null;
     }
 
+    public function wipeTime() {
+      return strtotime($this->wipe);
+    }
+
     public function nextWipeTime() {
       return strtotime($this->next_wipe);
+    }
+
+    public function globalWipeTime() {
+      return strtotime($this->global_wipe);
     }
 
     public function currentWipe() {
       return (new \DateTime($this->wipe))->format('Y-m-d') . "/" . (new \DateTime($this->next_wipe))->format('Y-m-d');
     }
 
+    public function getLink($key) {
+        if ($key === 'rules') {
+            return "/servers/{$this->tag}/rules";
+        }
+        if ($key === 'maps') {
+            return "/maps/{$this->tag}";
+        }
+        if ($key === 'map') {
+            return "https://rustmaps.com/map/{$this->map}";
+        }
+        return null;
+    }
 }

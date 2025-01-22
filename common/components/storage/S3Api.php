@@ -16,6 +16,44 @@ class S3Api
     public $uid;
     public $region;
 
+
+    public function createPresignedRequest($key)
+    {
+        putenv("AWS_SUPPRESS_PHP_DEPRECATION_WARNING=true");
+        $credentials = new Credentials($this->accessKey, $this->secretAccessKey);
+
+        $s3 = new S3Client([
+                               'version' => '2006-03-01',
+                               'region' => $this->region,
+                               'endpoint' => $this->baseUrl,
+                               'use_path_style_endpoint' => true,
+                               'credentials' => $credentials,
+                           ]);
+
+//        print_r($s3->getBucketAccelerateConfiguration([
+//                                                          'Bucket' => $this->uid,
+//                                                          'Key'    => $key,
+//                                                      ]));
+//        $s3->putBucketAccelerateConfiguration([
+//            'Bucket' => $this->uid,
+//            'Key'    => $key,
+//            'CORSRules' => [
+//                'AllowedHeaders' => ['*'],
+//                'AllowedMethods' => ["GET", "HEAD", "PUT"],
+//                'AllowedOrigins' => ['*'],
+//            ]
+//        ]);
+
+        // Генерация подписанного URL для загрузки
+        $command = $s3->getCommand('PutObject', [
+            'Bucket' => $this->uid,
+            'Key'    => $key,
+        ]);
+
+        // Генерация URL с подписанием на 15 минут
+        return (string) $s3->createPresignedRequest($command, '+15 minutes')->getUri();
+    }
+
     /**
      * @param $body
      *

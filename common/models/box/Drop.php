@@ -42,6 +42,8 @@ use Yii;
  */
 class Drop extends ActiveRecord
 {
+    private $_imageOrigUrl;
+    private $_imageOrig2Url;
 
     const STATUS_NOT_ACTIVE   = 0;
     const STATUS_ACTIVE       = 1;
@@ -203,7 +205,7 @@ class Drop extends ActiveRecord
      */
     public function getDropImages()
     {
-        return $this->hasMany(DropImage::class, ['drop_id' => 'id'])->cache(3600);
+        return $this->hasMany(DropImage::class, ['drop_id' => 'id']);
     }
 
     /**
@@ -249,7 +251,7 @@ class Drop extends ActiveRecord
     public function getImageOrig()
     {
         return $this->hasOne(DropImage::class, ['drop_id' => 'id'])
-            ->cache(300)
+//            ->cache(300)
             ->andWhere(['type' => DropImage::TYPE_ORIG]);
     }
 
@@ -261,7 +263,7 @@ class Drop extends ActiveRecord
     public function getImageOrig2()
     {
         return $this->hasOne(DropImage::class, ['drop_id' => 'id'])
-            ->cache(300)
+//            ->cache(300)
             ->andWhere(['type' => DropImage::TYPE_ORIG_2]);
     }
 
@@ -269,14 +271,22 @@ class Drop extends ActiveRecord
      *
      * @return Drop[]
      */
-    public static function getForMarket($mainBlock = false)
+    public static function getForMarket($mainBlock = false, $update = false)
     {
-        return Drop::find()
-                  ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
-                  ->andWhere(['show_main_block' => $mainBlock])
-                  ->orderBy(['sort' => SORT_ASC])
-                  ->cache(60)
-                  ->all();
+        $cacheKey = 'getForMarketDrop3_' . $mainBlock;
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $result = Drop::find()
+                      ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
+                      ->andWhere(['show_main_block' => $mainBlock])
+                      ->orderBy(['sort' => SORT_ASC])
+                      ->with('dropImages', 'type')  // Добавляем кэшируемые связи
+                      ->all();
+
+        Yii::$app->cache->set($cacheKey, $result, 7*24*60*60);
+        return $result;
     }
 
     /**
@@ -331,14 +341,29 @@ class Drop extends ActiveRecord
         return strtotime($this->blocked_at);
     }
 
+    /**
+     * Получить URL изображения.
+     * Загружает и кэширует изображение, если оно не было загружено ранее.
+     */
     public function image() {
-        return $this->imageOrig->getImagePubUrl();
+        foreach ($this->dropImages as $item) {
+            if ($item->type === DropImage::TYPE_ORIG) {
+                return $item->getImagePubUrl();
+            }
+        }
+        return null;
     }
 
+    /**
+     * Получить второй URL изображения.
+     * Кэширует значение, чтобы избежать повторных запросов.
+     */
     public function image2() {
-        if (empty($this->imageOrig2)) {
-            return $this->image();
+        foreach ($this->dropImages as $item) {
+            if ($item->type === DropImage::TYPE_ORIG_2) {
+                return $item->getImagePubUrl();
+            }
         }
-        return $this->imageOrig2->getImagePubUrl();
+        return $this->image();
     }
 }

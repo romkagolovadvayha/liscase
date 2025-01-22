@@ -13,14 +13,17 @@ use yii\widgets\ActiveForm;
     <?php $form = ActiveForm::begin(); ?>
 
     <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <?= $form->field($model, 'name')->textInput() ?>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <?= $form->field($model, 'monitoring_name')->textInput() ?>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <?= $form->field($model, 'monitoring_description')->textInput() ?>
+        </div>
+        <div class="col-md-3">
+            <?= $form->field($model, 'rust_app_id')->textInput() ?>
         </div>
     </div>
 
@@ -39,8 +42,11 @@ use yii\widgets\ActiveForm;
         </div>
     </div>
     <div class="row">
-        <div class="col-md-3">
-            <?= $form->field($model, 'map')->textInput() ?>
+        <div class="col-md-2">
+            <?= $form->field($model, 'min_map_size')->textInput() ?>
+        </div>
+        <div class="col-md-2">
+            <?= $form->field($model, 'max_map_size')->textInput() ?>
         </div>
         <div class="col-md-2">
             <?= $form->field($model, 'team_limit')->textInput() ?>
@@ -51,7 +57,7 @@ use yii\widgets\ActiveForm;
         <div class="col-md-2">
             <?= $form->field($model, 'tag')->textInput() ?>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <?= $form->field($model, 'wargm_id')->textInput() ?>
         </div>
     </div>

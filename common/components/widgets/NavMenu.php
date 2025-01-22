@@ -310,7 +310,7 @@ class NavMenu extends Widget
             return ArrayHelper::getValue($item, 'active', false);
         }
         if (!empty($item['url'])) {
-            if ((bool)strstr(Yii::$app->request->url, $item['url'])) {
+            if (Yii::$app->request->url === $item['url']) {
                 return true;
             }
         }

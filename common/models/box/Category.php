@@ -82,4 +82,22 @@ class Category extends ActiveRecord
         return $list;
     }
 
+    /**
+     * @param false $mainBlock
+     * @param false $update
+     *
+     * @return Category[]|false|mixed|\yii\db\ActiveRecord[]
+     */
+    public static function getCategories($mainBlock = false, $update = false) {
+        $cacheKey = 'getCategories_' . $mainBlock;
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        $result = Category::find()
+                          ->andWhere(['show_main_block' => $mainBlock])
+                          ->all();
+        Yii::$app->cache->set($cacheKey, $result, 7*24*60*60);
+        return $result;
+    }
+
 }

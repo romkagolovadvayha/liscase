@@ -227,4 +227,48 @@ class UserTop extends \yii\db\ActiveRecord
         }
         return number_format($this->value, 0, '.', ' ');
     }
+
+    public static function getUserTop($servers, $update = false)
+    {
+        $cacheKey = 'steam_getUserTop2_' . count($servers);
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        $top = [];
+        foreach ($servers as $server) {
+            $sql = "
+    SELECT id, user_id, `key`, value, server_id, wipe
+    FROM (
+        SELECT id, user_id, `key`, value, server_id, wipe,
+            MAX(value) OVER (PARTITION BY `key`, server_id) AS max_value
+        FROM user_top
+        WHERE server_id = :server_id
+          AND wipe = :wipe
+    ) AS ranked
+    WHERE value = max_value
+    ORDER BY server_id, `key`, value DESC
+";
+
+            $userTop = UserTop::findBySql($sql, [
+                ':server_id' => $server->id,
+                ':wipe' => $server->currentWipe(),
+            ])->all();
+
+
+            $top[$server->id] = [];
+            foreach ($userTop as $item) {
+                /** @var User $user */
+                $user = User::findOne($item['user_id']);
+                $top[$server->id][] = [
+                    'name' => $item->keyName(),
+                    'score' => $item->valueFormat(),
+                    'username' => $user->username,
+                    'avatar' => $user->getAvatar(),
+                ];
+            }
+        }
+
+        Yii::$app->cache->set($cacheKey, $top, 7*24*60*60);
+        return $top;
+    }
 }

@@ -130,4 +130,36 @@ class Support extends \yii\db\ActiveRecord
     {
         return $this->hasOne(Servers::class, ['tag' => 'server_tag']);
     }
+
+    public function getUrl($key = 'ticket') {
+        if ($key === 'ticket') {
+            if (empty($this->id)) {
+                return "/support";
+            }
+            return "/support/ticket?id={$this->getNumber()}";
+        }
+        if ($key === 'close') {
+            return "/support/ticket-close?id={$this->getNumber()}";
+        }
+        if ($key === 'open') {
+            return "/support/ticket-open?id={$this->getNumber()}";
+        }
+
+        return null;
+    }
+
+    public function unread($userId) {
+        return SupportRead::find()
+            ->andWhere(['support_id' => $this->id])
+            ->andWhere(['user_id' => $userId])
+            ->andWhere(['status' => SupportRead::STATUS_UNREAD])
+            ->count();
+    }
+
+    public static function unreadAll($userId) {
+        return SupportRead::find()
+            ->andWhere(['user_id' => $userId])
+            ->andWhere(['status' => SupportRead::STATUS_UNREAD])
+            ->count();
+    }
 }

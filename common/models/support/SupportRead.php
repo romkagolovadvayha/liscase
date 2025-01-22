@@ -2,20 +2,27 @@
 
 namespace common\models\support;
 
+use common\models\auth\AuthAssignment;
 use common\models\user\User;
 use Yii;
+use yii\base\BaseObject;
 
 /**
  * This is the model class for table "support_read".
  *
- * @property int $user_id
- * @property int $support_message_id
+ * @property int  $user_id
+ * @property int  $support_message_id
+ * @property int  $support_id
+ * @property bool $status
  *
  * @property SupportMessage $supportMessage
  * @property User $user
  */
 class SupportRead extends \yii\db\ActiveRecord
 {
+    const STATUS_UNREAD = 0;
+    const STATUS_READED = 1;
+
     /**
      * {@inheritdoc}
      */
@@ -31,7 +38,7 @@ class SupportRead extends \yii\db\ActiveRecord
     {
         return [
             [['user_id', 'support_message_id'], 'required'],
-            [['user_id', 'support_message_id'], 'integer'],
+            [['user_id', 'support_message_id', 'status', 'support_id'], 'integer'],
             [['support_message_id'], 'exist', 'skipOnError' => true, 'targetClass' => SupportMessage::class, 'targetAttribute' => ['support_message_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
         ];
@@ -66,5 +73,45 @@ class SupportRead extends \yii\db\ActiveRecord
     public function getUser()
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
+    }
+
+    public static function readedAll($supportId, $userId = null)
+    {
+        if (empty($userId)) {
+            SupportRead::updateAll(['status' => SupportRead::STATUS_READED], "support_id = {$supportId} AND status = 0");
+        }
+        if (!empty($userId)) {
+            SupportRead::updateAll(['status' => SupportRead::STATUS_READED], "user_id = {$userId} AND support_id = {$supportId} AND status = 0");
+        }
+    }
+
+    public static function createRecord($ownerId, $userId, $messageId, $supportId)
+    {
+        if ($ownerId !== $userId) {
+            $model = new SupportRead();
+            $model->user_id = $ownerId;
+            $model->support_message_id = $messageId;
+            $model->support_id = $supportId;
+            $model->status = SupportRead::STATUS_UNREAD;
+            $model->save();
+        }
+
+        $admins = AuthAssignment::find()
+            ->andWhere(['IN', 'item_name', ['ADMIN', 'MODERATOR']])
+            ->all();
+        foreach ($admins as $admin) {
+            if ($admin->user->id === $ownerId) {
+                continue;
+            }
+            if ($admin->user->id === $userId) {
+                continue;
+            }
+            $model = new SupportRead();
+            $model->user_id = $admin->user->id;
+            $model->support_message_id = $messageId;
+            $model->support_id = $supportId;
+            $model->status = SupportRead::STATUS_UNREAD;
+            $model->save();
+        }
     }
 }
