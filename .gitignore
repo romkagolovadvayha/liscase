@@ -43,3 +43,5 @@ package-lock.json
 madeline.php
 
 /common/config/web-local.php
+
+frontend/web/uploads/
