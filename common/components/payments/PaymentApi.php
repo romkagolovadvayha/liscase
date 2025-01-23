@@ -31,6 +31,7 @@ class PaymentApi extends Component
             Deposit::TYPE_PAYMENT_CARD_UA => PaymentCardUA::class,
             Deposit::TYPE_PAYMENT_CARD_KZT => PaymentCardKZT::class,
             Deposit::TYPE_PAYMENT_CARD_YM => PaymentCardYM::class,
+            Deposit::TYPE_PAYMENT_CARD_TINKOFF => PaymentTinkoff::class,
         ];
 
         $className = ArrayHelper::getValue($classMap, $type);

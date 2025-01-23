@@ -7,7 +7,7 @@ $contentClass = isset($this->params['contentClass']) ? $this->params['contentCla
 <div class="content-wrapper">
     <!-- Content Header (Page header) -->
     <?php if (isset($this->params['breadcrumbs'])): ?>
-    <div class="content-header bg-white mb-2">
+    <div class="content-header mb-2">
             <?php
             echo Breadcrumbs::widget([
                 'links' => $this->params['breadcrumbs'],

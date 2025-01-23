@@ -164,6 +164,9 @@ $config = [
         'anyPayApi'   => [
             'class' => \common\components\payments\AnyPay::class,
         ],
+        'settings'   => [
+            'class' => \common\components\settings\Settings::class,
+        ],
         'rustTm'   => [
             'class' => \common\components\rusttm\RustTm::class,
             'secretKey' => '4Tctry3D0b9003d52Kv2w10BND942mX',

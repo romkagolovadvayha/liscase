@@ -1,5 +1,6 @@
 <?php
 
+use common\models\user\User;
 use yii\web\View;
 use common\models\invoice\Deposit;
 use frontend\forms\market\PaymentForm;
@@ -13,6 +14,8 @@ use yii\bootstrap5\Html;
 //payments__payment-btn--active
 $user        = Yii::$app->user->identity;
 $this->title = Yii::t('common', "Пополнения баланса");
+/** @var User $user */
+$user = Yii::$app->user->identity;
 ?>
 
 <?php Pjax::begin(
@@ -35,6 +38,9 @@ $this->title = Yii::t('common', "Пополнения баланса");
 <?= $form->field($modelForm, 'amount', [
     'template' => "{label}\n<div class=\"input-group input-group-custom\">{input}\n<span class=\"input-group-text\">".Yii::t('common', 'RUB')."\n{hint}\n{error}</span></div>"
 ])->label(false)->textInput(['placeholder' => Yii::t('common', 'Введите сумму пополнения'), 'autocomplete' => 'off']); ?>
+<?php if (!$user->is_email): ?>
+    <?= $form->field($modelForm, 'email')->label(false)->textInput(['placeholder' => Yii::t('common', 'E-mail')]); ?>
+<?php endif; ?>
 <div class="payments">
     <div class="payments-list">
         <?= $form->field($modelForm, 'payment_id')

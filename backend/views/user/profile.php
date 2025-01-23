@@ -207,22 +207,6 @@ try {
     Yii::$app->telegramReports->sendMessage("Profile:" . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage());
 }
 try {
-    $banList = Steam::getBansRustRoom($user->steam_id);
-    foreach ($banList as $banItem) {
-        $bansExist = true;
-        $date = new DateTime();
-        $date->setTimestamp($banItem['date']);
-        $bans[] = [
-            'serverName' => $banItem['server'],
-            'reason' => $banItem['reason'],
-            'unbanned_date' => $banItem['expireDate'],
-            'date' => $date->format('d.m.Y H:i:s'),
-        ];
-    }
-} catch (\Exception $e) {
-    Yii::$app->telegramReports->sendMessage("Profile:" . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage());
-}
-try {
     $banList = Steam::getBansRustUssr($user->steam_id);
     foreach ($banList as $banItem) {
         $bansExist = true;
@@ -251,20 +235,6 @@ try {
             'reason' => $banItem['reason'],
             'unbanned_date' => $banItem['expireDate'],
             'date' => $dateText,
-        ];
-    }
-} catch (\Exception $e) {
-    Yii::$app->telegramReports->sendMessage("Profile:" . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage());
-}
-try {
-    $banList = Steam::getBansRust($user->steam_id);
-    foreach ($banList as $banItem) {
-        $bansExist = true;
-        $bans[] = [
-            'serverName' => $banItem['server'],
-            'reason' => $banItem['reason'],
-            'unbanned_date' => $banItem['expireDate'],
-            'date' => $banItem['date'],
         ];
     }
 } catch (\Exception $e) {

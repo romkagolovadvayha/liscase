@@ -57,6 +57,7 @@ use common\components\base\ActiveRecord;
  * @property bool            $blocked_support
  * @property string          $stat_status
  * @property int             $avatar_frame
+ * @property bool            $is_email
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances

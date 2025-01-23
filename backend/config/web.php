@@ -21,10 +21,11 @@ $config = [
             'hostInfo' => str_replace(['http://', 'https://', '/'], '', $params['backendUrl']),
             'baseUrl'  => $params['backendUrl'],
         ],
-        'cache' => [
-            'class' => 'yii\caching\FileCache',
+        'assetManager' => [
+            'class' => 'yii\web\AssetManager',
+            'forceCopy' => YII_DEBUG,
         ],
-        'user' => [
+        'user'         => [
             'identityClass'   => 'common\models\user\User',
             'loginUrl'        => ['auth/oauth?authclient=steam'],
             'enableAutoLogin' => true,

@@ -1,0 +1,30 @@
+<?php
+use yii\helpers\Html;
+use yii\widgets\ActiveForm;
+
+$this->title = 'Добавить настройку';
+?>
+
+<div class="settings-create">
+    <h1><?= Html::encode($this->title) ?></h1>
+
+    <?php $form = ActiveForm::begin(); ?>
+
+    <?= $form->field($model, 'name')->textInput() ?>
+    <?= $form->field($model, 'category')->textInput() ?>
+    <?= $form->field($model, 'type')->dropDownList([
+                                                       'text' => 'Текстовое поле',
+                                                       'color' => 'Выбор цвета',
+                                                       'image' => 'Изображение',
+                                                       'number' => 'Числовое поле',
+                                                       'checkbox' => 'Чекбокс',
+                                                   ]) ?>
+    <?= $form->field($model, 'value')->textInput() ?>
+    <?= $form->field($model, 'code')->textInput() ?>
+
+    <div class="form-group">
+        <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
+    </div>
+
+    <?php ActiveForm::end(); ?>
+</div>
