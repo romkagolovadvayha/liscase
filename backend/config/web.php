@@ -19,6 +19,10 @@ $config = [
             'hostInfo' => str_replace(['http://', 'https://', '/'], '', $params['backendUrl']),
             'baseUrl'  => $params['backendUrl'],
         ],
+        'assetManager' => [
+            'class' => 'yii\web\AssetManager',
+            'forceCopy' => YII_DEBUG,
+        ],
         'user'         => [
             'identityClass'   => 'common\models\user\User',
             'loginUrl'        => ['/auth/login'],

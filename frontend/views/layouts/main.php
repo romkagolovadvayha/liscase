@@ -226,7 +226,7 @@ if (!Yii::$app->user->isGuest) {
         <div class="container-fluid">
             <div class="header_mobile">
                 <a class="navbar-brand" href="<?=Yii::$app->homeUrl?>">
-                    <img src="<?=Yii::$app->params['logo']?>"/>
+                    <img src="<?=Yii::$app->settings->get('design_logo')?>"/>
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Меню сайта">
                     <?php if (!Yii::$app->user->isGuest): ?>
@@ -252,7 +252,7 @@ if (!Yii::$app->user->isGuest) {
             </div>
             <div class="collapse navbar-collapse" id="navbarHeader">
                 <a class="navbar-brand" href="<?=Yii::$app->homeUrl?>">
-                    <img src="<?=Yii::$app->params['logo']?>"/>
+                    <img src="<?=Yii::$app->settings->get('design_logo')?>"/>
                 </a>
                 <?=Nav::widget([
                     'items' => [

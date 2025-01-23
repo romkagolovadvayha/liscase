@@ -17,13 +17,16 @@ $buildingBadge = \common\models\building\Building::find()
     ->count();
 
 $usersBadge = \common\models\user\User::find()
+                                                 ->cache(60)
                                                  ->andWhere(['>=', 'created_at', date('Y-m-d 00:00:01')])
-                                                 ->andWhere(['<=', 'created_at', date('Y-m-d 23:59:59')])
                                                  ->count();
+
+$moder = Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR);
+$admin = Yii::$app->user->can(Role::ROLE_ADMIN);
 ?>
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <a href="<?=Yii::$app->params['baseUrl']?>" class="brand-link" style="display: block; text-align: center">
-        <img src="<?=Yii::$app->params['cdnUrl']?>/images/logo.png" alt="Prostoj Logo" style="display: inline-block; width: 120px; max-width: 100%">
+        <img src="<?=Yii::$app->params['baseUrl']?><?=Yii::$app->settings->get('design_logo')?>" alt="<?=Yii::$app->settings->get('site_title')?>" style="display: inline-block; width: 120px; max-width: 100%">
     </a>
 
     <!-- Sidebar -->
@@ -54,28 +57,28 @@ $usersBadge = \common\models\user\User::find()
                          'icon' => 'fa-solid fa-users',
                          'badgeSuccess' => $usersBadge,
                          'url' => ['/user'],
-                         'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR),
+                         'visibility' => $moder,
                          'active' => _checkActive('/user') && !_checkActive('/user-'),
                     ],
                    [
                        'label' => 'Сервера',
                        'icon' => 'fas fa-gamepad',
                        'url' => ['/servers'],
-                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'visibility' => $admin,
                        'active' => _checkActive('/servers'),
                    ],
                    [
                          'label' => 'Репорты',
                          'icon' => 'fa-solid fa-flag',
                          'url' => ['/reports'],
-                         'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR),
+                         'visibility' => $moder,
                          'active' => _checkActive('/reports'),
                     ],
                    [
                        'label' => 'Рассылка сообщений',
                        'icon' => 'fa-solid fa-envelope',
                        'url' => ['/telegram-constructor'],
-                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'visibility' => $admin,
                        'active' => _checkActive('/telegram-constructor'),
                    ],
                    [
@@ -83,14 +86,14 @@ $usersBadge = \common\models\user\User::find()
                        'icon' => 'fa-solid fa-house',
                        'badgeDanger' => $buildingBadge,
                        'url' => ['/building'],
-                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR),
+                       'visibility' => Yii::$app->settings->get('section_buildings') && $moder,
                        'active' => _checkActive('/building'),
                    ],
                    [
                        'label' => 'Отчеты',
                        'icon' => 'fa-solid fa-table-list',
                        'url' => [''],
-                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'visibility' => $admin,
                        'active' => _checkActive('/report/') || _checkActive('/deposit'),
                        'items' => [
                            [
@@ -123,9 +126,15 @@ $usersBadge = \common\models\user\User::find()
                         'label' => 'Скины',
                         'icon' => 'fa-solid fa-gift',
                         'url' => ['/rbac/permission'],
-                        'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                        'visibility' => Yii::$app->settings->get('section_skindrops') && $admin,
                         'active' => _checkActive('/skindrops/'),
                         'items' => [
+                            [
+                                'label' => 'Настройки',
+                                'icon' => 'fas fa-cog',
+                                'url' => ['/settings/index?category=skindrops'],
+                                'active' => _checkActive('/settings/index?category=skindrops'),
+                            ],
                             [
                                 'label' => 'Отправленные скины',
                                 'icon' => 'fa-solid fa-hourglass-start',
@@ -144,7 +153,7 @@ $usersBadge = \common\models\user\User::find()
                         'label' => 'Товары',
                         'icon' => 'fa-solid fa-list',
                         'url' => ['/rbac/permission'],
-                        'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                        'visibility' => $admin,
                         'active' => _checkActive('/box/') || _checkActive('/sets/') || _checkActive('/drop/') || _checkActive('/select/'),
                         'items' => [
                             [
@@ -177,37 +186,75 @@ $usersBadge = \common\models\user\User::find()
                        'label'  => Yii::t('common', 'Блог'),
                        'icon'   => 'fa-regular fa-newspaper',
                        'url'    => '/blog',
-                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'visibility' => Yii::$app->settings->get('section_blog') && $admin,
                        'active' => _checkActive('/blog/'),
                    ],
                    [
                        'label'  => Yii::t('common', 'Задания'),
                        'icon'   => 'fa-solid fa-list-check',
                        'url'    => '/task',
-                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'visibility' => Yii::$app->settings->get('section_tasks') && $admin,
                        'active' => _checkActive('/task'),
                    ],
                    [
                        'label'  => Yii::t('common', 'Переводы'),
                        'icon'   => 'fa-solid fa-language',
                        'url'    => '/translateManager',
-                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'visibility' => $admin,
                        'active' => _checkActive('/translateManager'),
                    ],
                     [
                         'label' => 'Промокоды',
                         'icon' => 'fa-solid fa-percent',
                         'url' => ['/promocode'],
-                        'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                        'visibility' => $admin,
                         'active' => _checkActive('/promocode'),
                     ],
                     [
                         'label' => 'WIPE меню',
                         'icon' => 'fa-solid fa-cloud-sun',
                         'url' => ['/wipe'],
-                        'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                        'visibility' => $admin,
                         'active' => _checkActive('/wipe'),
                     ],
+                   [
+                       'label' => 'Настройки',
+                       'icon' => 'fas fa-cog',
+                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'active' => _checkActive('/settings'),
+                       'items' => [
+                           [
+                               'label' => 'Настройки сайта',
+                               'icon' => 'fas fa-sitemap',
+                               'url' => ['/settings/index?category=site'],
+                               'active' => _checkActive('/settings/index?category=site'),
+                           ],
+                           [
+                               'label' => 'Настройки дизайна',
+                               'icon' => 'fas fa-spray-can',
+                               'url' => ['/settings/index?category=design'],
+                               'active' => _checkActive('/settings/index?category=design'),
+                           ],
+                           [
+                               'label' => 'Способы оплаты',
+                               'icon' => 'fas fa-shopping-basket',
+                               'url' => ['/settings/index?category=payments'],
+                               'active' => _checkActive('/settings/index?category=payments'),
+                           ],
+                           [
+                               'label' => 'Настройка ботов',
+                               'icon' => 'fas fa-robot',
+                               'url' => ['/settings/index?category=bots'],
+                               'active' => _checkActive('/settings/index?category=bots'),
+                           ],
+                           [
+                               'label' => 'Добавить настройку',
+                               'icon' => 'fas fa-plus',
+                               'url' => ['/settings/create'],
+                               'active' => _checkActive('/settings/create'),
+                           ],
+                       ]
+                   ],
 //                    ['label' => 'Simple Link', 'icon' => 'th', 'badge' => '<span class="right badge badge-danger">New</span>'],
 //                    ['label' => 'Simple Link', 'icon' => 'th', 'badge' => '<span class="right badge badge-danger">New</span>'],
 //                    ['label' => 'Yii2 PROVIDED', 'header' => true],

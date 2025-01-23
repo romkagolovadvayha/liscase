@@ -52,9 +52,6 @@ $config = [
 //                'hr-HR' => 'HR',
 //            ],
 //        ],
-        'cache' => [
-            'class' => 'yii\caching\FileCache',
-        ],
         'assetManager' => [
             'class' => 'yii\web\AssetManager',
             'forceCopy' => YII_DEBUG,

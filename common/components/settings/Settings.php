@@ -1,0 +1,50 @@
+<?php
+
+namespace common\components\settings;
+
+use common\models\site\SiteSetting;
+use linslin\yii2\curl\Curl;
+use Yii;
+use yii\base\Component;
+use yii\web\NotFoundHttpException;
+
+class Settings
+{
+    /**
+     * @param $key
+     *
+     * @return array|string
+     */
+    public function get($key): string
+    {
+        $items = $this->getSettings();
+        if (empty($items[$key])) {
+            return '';
+        }
+        return $items[$key];
+    }
+
+    /**
+     * @param bool $update
+     *
+     * @return array|false|mixed
+     */
+    public function getSettings($update = false) {
+        $cacheKey = 'Settings_getSettings';
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        $result = [];
+
+        /** @var SiteSetting[] $settings */
+        $settings = SiteSetting::find()
+            ->all();
+        foreach ($settings as $item) {
+            $key = $item->category . "_" . $item->code;
+            $result[$key] = $item->getValue();
+        }
+
+        Yii::$app->cache->set($cacheKey, $result, 3 * 60 * 60);
+        return $result;
+    }
+}
