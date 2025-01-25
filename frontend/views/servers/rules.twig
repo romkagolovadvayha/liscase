@@ -2,7 +2,7 @@
     <ul class="servers_navbar_nav">
         {% for ITEM in SERVERS %}
         <li>
-            <a href="{{ ITEM.getLink('maps') }}" class="servers_navbar_nav_item{% if ITEM.tag == SERVER.tag %} active{% endif %}">
+            <a href="{{ ITEM.getLink('rules') }}" class="servers_navbar_nav_item{% if ITEM.tag == SERVER.tag %} active{% endif %}">
                 {{ t('database', ITEM.monitoring_name) }}
             </a>
         </li>
@@ -19,7 +19,10 @@
     </p>
     <ol>
         <li class="not_num">
-            <span class="rules_title">{{ t('common', 'Права и обязанности сторон') }}</span>
+            <span class="rules_title">
+                <span class="rules_title_icon"><i class="fas fa-shield-alt"></i></span>
+                <span>{{ t('common', 'Права и обязанности сторон') }}</span>
+            </span>
             <ol>
                 <li>{{ t('common', 'Администрация оставляет за собой право делать любые изменения на сервере без предварительного уведомления игроков.') }}</li>
                 <li>{{ t('common', 'Незнание правил не освобождает от ответственности за их нарушение. Играя на сервере, Вы автоматически соглашаетесь с правилами.') }}</li>
@@ -36,7 +39,10 @@
             </ol>
         </li>
         <li class="not_num">
-            <span class="rules_title">{{ t('common', 'Правила для игроков') }}</span>
+            <span class="rules_title">
+                <span class="rules_title_icon"><i class="fas fa-user-shield"></i></span>
+                <span>{{ t('common', 'Правила для игроков') }}</span>
+            </span>
             <ol>
                 <li>{{ t('common', 'Читы | макросы на компьютере или их покупка за последний год = бан. Нас не волнует используете их или нет.') }} <span class="rules_punishment">[ban]</span></li>
                 <li>{{ t('common', 'Клан лидеры обязуются проверять соклановцев на читы, в противном случае в бан может уйти весь клан.') }} <span class="rules_punishment">[ban]</span></li>
@@ -59,7 +65,10 @@
         </li>
         {% if SERVER.team_limit %}
         <li class="not_num">
-            <span class="rules_title">{{ t('common', 'Правила лимита игроков в команде') }}</span>
+            <span class="rules_title">
+                <span class="rules_title_icon"><i class="fas fa-user-plus"></i></span>
+                <span>{{ t('common', 'Правила лимита игроков в команде') }}</span>
+            </span>
             <ol>
                 <li>{{ t('common', 'Запрещено кооперироваться больше {PARAMS_LIMIT_PEOPLE} людей. Исключением считается: сейв зона.', {'PARAMS_LIMIT_PEOPLE': SERVER.team_limit}) }} <span class="rules_punishment">[{{ t('common', 'предупреждение') }} \ {{ t('common', 'ban до конца вайпа') }}]</span></li>
                 <li>{{ t('common', 'Запрещено соседям защищать друг друга при рейде или перестрелке, чем разрешено правилами сервера.') }} <span class="rules_punishment">[{{ t('common', 'предупреждение') }} \ {{ t('common', 'ban до конца вайпа') }}]</span></li>
@@ -70,7 +79,10 @@
         </li>
         {% endif %}
         <li class="not_num rules_commands">
-            <span class="rules_title">{{ t('common', 'Команды на сервере') }}</span>
+            <span class="rules_title">
+                <span class="rules_title_icon"><i class="fas fa-terminal"></i></span>
+                <span>{{ t('common', 'Команды на сервере') }}</span>
+            </span>
             <ol>
                 {% if 'report' in COMMANDS %}
                     <li><span class="rules_command">/report</span> - {{ t('common', 'Отправить репорт на игрока') }}</li>

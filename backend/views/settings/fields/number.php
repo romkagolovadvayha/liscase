@@ -7,7 +7,7 @@ use common\models\site\SiteSetting;
 
 ?>
 
-<label class="setting_items_item_block_text">
+<div class="setting_items_item_block_text">
     <span class="setting_items_item_block_name">
         <span><?= Html::encode($item->name) ?></span>
         <span class="setting_items_item_block_code"><?=$item->category?>_<?=$item->code?></span>
@@ -15,4 +15,4 @@ use common\models\site\SiteSetting;
     <span>
         <?=Html::textInput('settings[' . $item->id . ']', $item->value, ['class' => 'form-control'])?>
     </span>
-</label>
+</div>

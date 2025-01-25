@@ -6,6 +6,7 @@ use common\models\statistics\Kills;
 /** @var Servers[] $servers */
 /** @var array $PROJECT_STATS */
 /** @var array $userData */
+/** @var $SETTINGS */
 
 $kills = Kills::getLive($servers);
 ?>
@@ -15,4 +16,5 @@ $kills = Kills::getLive($servers);
     'KILLS' => $kills,
     'PROJECT_STATS' => $PROJECT_STATS,
     'USER' => $userData,
+    'SETTINGS' => $SETTINGS
 ]);?>

@@ -15,20 +15,21 @@ $settings = SiteSetting::find()
                        ->all();
 
 $this->title = 'Способы оплаты';
+$tabs = [
+    [
+        'category' => 'tinkoffpay',
+        'title' => 'Тинькофф',
+    ],
+    [
+        'category' => 'trc20',
+        'title' => 'TRC20',
+    ],
+    [
+        'category' => 'ton',
+        'title' => 'TON COIN',
+    ],
+];
 ?>
-
-<div class="settings-index">
-    <h1><?= Html::encode($this->title) ?></h1>
-
-    <ul>
-        <li>
-            <a href="/settings/index?category=tinkoffpay">Тинькофф</a>
-        </li>
-        <li>
-            <a href="/settings/index?category=trc20">TRC20</a>
-        </li>
-        <li>
-            <a href="/settings/index?category=ton">TON COIN</a>
-        </li>
-    </ul>
+<div class="wrap800">
+    <?=$this->render('tabs', ['tabs' => $tabs])?>
 </div>

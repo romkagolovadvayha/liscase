@@ -10,8 +10,8 @@
       .pb-16,
       .bg-background-secondary,
       .transition-all,
-      .rounded-16,
       .content-visibility-auto;
+    border-radius: var(--block-radius);
     .w-full {
       width: 100%;
       justify-content: center;
@@ -26,7 +26,8 @@
         @extend .grid, .gap-y-8;
 
         & .stat-block__server {
-          @extend .py-12, .px-16, .bg-background-teritiary, .transition-box-shadow, .rounded-8;
+          @extend .py-12, .px-16, .bg-background-teritiary, .transition-box-shadow;
+          border-radius: var(--card-radius);
 
           &:hover {
             box-shadow: var(--shadow-card);
@@ -99,11 +100,11 @@
             .bg-background-teritiary,
             .py-14,
             .px-16,
-            .rounded-8,
             .gap-x-8,
             .relative,
             .transition-all;
 
+          border-radius: var(--card-radius);
           &:before {
             @extend .absolute, .transition-all;
             content: "";

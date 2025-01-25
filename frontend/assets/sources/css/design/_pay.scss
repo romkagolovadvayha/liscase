@@ -6,7 +6,6 @@
 
   &__button {
     @extend .bg-background-main,
-      .rounded-8,
       .px-8,
       .py-6,
       .border-solid,
@@ -17,13 +16,15 @@
       .justify-center,
       .items-center,
       .gap-x-8;
+    border-radius: var(--card-radius);
     transition:
       border-color 0.25s ease-in-out,
       transform 0.25s ease-in-out;
     min-width: 129px;
 
     &:before {
-      @extend .absolute, .transition-all, .rounded-8, .border-solid, .border-1, .border-transparent;
+      @extend .absolute, .transition-all, .border-solid, .border-1, .border-transparent;
+      border-radius: var(--card-radius);
       content: "";
       opacity: 0;
       inset: -1px;
@@ -83,7 +84,6 @@
 
   &__button {
     @extend .bg-background-teritiary,
-      .rounded-8,
       .px-5,
       .py-10,
       .border-solid,
@@ -94,14 +94,16 @@
       .flex-column,
       .justify-center,
       .items-center;
+    border-radius: var(--card-radius);
     transition:
       border-color 0.25s ease-in-out,
       transform 0.25s ease-in-out;
     min-width: 95px;
 
     &:before {
-      @extend .absolute, .transition-all, .rounded-8, .border-solid, .border-1, .border-transparent;
+      @extend .absolute, .transition-all, .border-solid, .border-1, .border-transparent;
       content: "";
+      border-radius: var(--card-radius);
       opacity: 0;
       inset: -1px;
       background-image: var(--base-linear-gradiend);

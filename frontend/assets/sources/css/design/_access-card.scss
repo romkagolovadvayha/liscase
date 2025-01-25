@@ -1,7 +1,8 @@
 .access-card {
-  @extend .p-8, .relative, .text-center, .bg-background-teritiary, .rounded-8, .flex, .flex-column, .justify-space-between, .cursor-pointer, .items-center;
+  @extend .p-8, .relative, .text-center, .bg-background-teritiary, .flex, .flex-column, .justify-space-between, .cursor-pointer, .items-center;
   max-width: 100%;
   min-width: 56px;
+  border-radius: var(--card-radius);
   max-height: 128px;
   transition:
     border-color 0.25s ease-in-out,
@@ -11,7 +12,8 @@
   border: 1px solid transparent;
 
   &:before {
-    @extend .absolute, .transition-all, .rounded-8;
+    @extend .absolute, .transition-all;
+    border-radius: var(--card-radius);
     content: "";
     opacity: 0;
     inset: -1px;

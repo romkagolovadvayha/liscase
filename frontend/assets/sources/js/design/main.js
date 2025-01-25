@@ -171,3 +171,10 @@ $(document).ready(function() {
     });
     }
 });
+
+var timers = $('.wipe_timer');
+for (var i = 0; i < timers.length; i++) {
+    var dateTime = $(timers[i]).attr('data-time');
+    var left = moment.unix(dateTime);
+    $(timers[i]).html(left.locale(lang).format('D MMMM H:mm'));
+}

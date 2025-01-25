@@ -4,6 +4,7 @@ use common\models\servers\Servers;
 
 /** @var Servers[] $servers */
 /** @var array $PROJECT_STATS */
+/** @var $SETTINGS */
 
 $lang = substr(Yii::$app->language, 0, 2);
 $this->registerJs(
@@ -23,4 +24,5 @@ JS
 <?=Yii::$app->view->render('servers.twig', [
     'SERVERS' => $servers,
     'PROJECT_STATS' => $PROJECT_STATS,
+    'SETTINGS' => $SETTINGS
 ]);?>

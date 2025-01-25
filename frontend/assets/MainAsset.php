@@ -15,6 +15,7 @@ class MainAsset extends AssetBundle
     public $sourcePath = '@frontend/assets/sources';
 
     public $css = [
+//        'css/design/root-colors.min.css',
         'css/design/styles.min.css',
     ];
 

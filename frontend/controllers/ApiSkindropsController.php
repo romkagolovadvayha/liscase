@@ -133,7 +133,7 @@ class ApiSkindropsController extends WebController
             $chatAlertTextEn .= "Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>";
         } else {
             $chatAlertTextRu .= "VK: <color=#feeda1>" . Yii::$app->params['vkText'] . "</color>";
-            $chatAlertTextEn .= "Site: <color=#feeda1>en." . Yii::$app->params['domain'] . "/skindrops</color>";
+            $chatAlertTextEn .= "Site: <color=#feeda1>en." . Yii::$app->settings->get('site_domain') . "/skindrops</color>";
         }
         $chatAlertPlayerTextRu = "Поздравляем!\nВы выиграли скин <color=#aaf16e>{0}</color> (<color=#aaf16e>{1} RUB</color>)\nУ вас есть 5 минут чтобы принять трейд";
         $chatAlertPlayerTextEn = "Congratulations!\nYou have won a skin <color=#aaf16e>{0}</color> (<color=#aaf16e>{1} $</color>)\nYou have 5 minutes to accept the trade";

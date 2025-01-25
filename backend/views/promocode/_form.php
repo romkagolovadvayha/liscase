@@ -12,10 +12,16 @@ use yii\bootstrap5\ActiveForm;
         'options' => ['enctype' => 'multipart/form-data']
     ]); ?>
 
-<?= $form->field($model, 'code')->textInput(); ?>
-<?= $form->field($model, 'amount')->textInput(); ?>
-<?= $form->field($model, 'finished_at')->textInput(); ?>
-<?= $form->field($model, 'status')->dropDownList(Promocode::getStatusList(), []) ?>
-<?= $this->context->getFormButtons(); ?>
+<div class="modal-content-body">
+    <?= $form->field($model, 'code')->textInput(); ?>
+    <?= $form->field($model, 'amount')->textInput(); ?>
+    <?= $form->field($model, 'finished_at')->textInput(); ?>
+    <?= $form->field($model, 'status')->dropDownList(Promocode::getStatusList(), []) ?>
+</div>
+<footer>
+    <button type="submit" class="btn">
+        <span class="button__text">Сохранить</span>
+    </button>
+</footer>
 
 <?php ActiveForm::end(); ?>

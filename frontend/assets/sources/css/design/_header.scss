@@ -4,7 +4,11 @@
   border-bottom: 1px solid var(--border-color-default);
   grid-column-start: 1;
   grid-column-end: 4;
-
+  &_logo {
+    img {
+      max-height: 35px;
+    }
+  }
   &__actions {
     @extend .flex, .gap-x-8;
   }

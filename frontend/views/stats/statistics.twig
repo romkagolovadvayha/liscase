@@ -1,0 +1,15 @@
+<div class="flex flex-column gap-x-12 gap-y-12 tab-pane active" id="Max3">
+    <div class="flex justify-space-between gap-x-12">
+        <div class="page-stats__the-best">
+            {% for ITEM in ITEMS %}
+                {% include 'item_top.twig'
+                    with {
+                        'TITLE': ITEM['label'],
+                        'ITEMS': ITEM['items'],
+                        'USER': USER,
+                    }
+                %}
+            {% endfor %}
+        </div>
+    </div>
+</div>

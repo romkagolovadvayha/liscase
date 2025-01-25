@@ -7,7 +7,7 @@ table.kv-grid-table {
   &:before {
     @extend .block, .absolute;
     content: "";
-    background: url("/images/design/user/light.svg");
+    background: var(--light-background);
     top: 0;
     left: -300px;
     background-repeat: no-repeat;
@@ -24,7 +24,7 @@ table.kv-grid-table {
   &:after {
     @extend .block, .absolute;
     content: "";
-    background: url("/images/design/user/light.svg");
+    background: var(--light-background);
     bottom: 0;
     right: -300px;
     background-repeat: no-repeat;

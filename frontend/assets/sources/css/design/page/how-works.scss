@@ -123,7 +123,7 @@ h2.how-works__title {
     border-radius: 100%;
     font-size: 54px;
     line-height: 54px;
-    color: #aaf16e;
+    color: var(--server-command);
     @media (max-width: 990px) {
       height: 80px;
       width: 80px;
@@ -135,7 +135,7 @@ h2.how-works__title {
       right: 10px;
       bottom: 10px;
       left: 10px;
-      border: 2px solid #aaf16e;
+      border: 2px solid var(--server-command);
       border-radius: 100%;
       content: "";
     }
@@ -222,7 +222,7 @@ h2.how-works__title {
     padding-left: 0;
     &__item {
       background-color: var(--background-secondary);
-      border-radius: 8px;
+      border-radius: var(--card-radius);
       position: relative;
       transition: background-color .3s ease;
       &--active {
@@ -371,7 +371,7 @@ h2.how-works__title {
   height: 107px;
   overflow: hidden;
   .last_drops_item {
-    border-radius: 8px;
+    border-radius: var(--card-radius);
     width: 130px;
     min-width: 130px;
     min-height: 100px;

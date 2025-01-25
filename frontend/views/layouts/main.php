@@ -25,9 +25,9 @@ $this->registerMetaTag(['charset' => Yii::$app->charset], 'charset');
 $this->registerMetaTag(['name' => 'viewport', 'content' => 'width=device-width, initial-scale=1, shrink-to-fit=no']);
 $this->registerMetaTag(['name' => 'description', 'content' => $this->params['meta_description'] ?? '']);
 $this->registerMetaTag(['name' => 'keywords', 'content' => $this->params['meta_keywords'] ?? '']);
-$this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => '/images/favicon.svg']);
+$this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii::$app->settings->get('design_favicon')]);
 
-$baseUrl = Yii::$app->params['domain'];
+$baseUrl = Yii::$app->settings->get('site_domain');
 $ws = Yii::$app->params['ws'];
 $this->registerJs(<<<JS
     var baseUrl = '{$baseUrl}';
@@ -80,6 +80,7 @@ if (!Yii::$app->user->isGuest) {
     }
     $notifications = $user->notifications();
 }
+$settings = Yii::$app->settings;
 $lang = substr(Yii::$app->language, 0, 2);
 if (Yii::$app->user->isGuest || !$userData['blocked']) {
     $body = Yii::$app->view->render('body', [
@@ -88,6 +89,7 @@ if (Yii::$app->user->isGuest || !$userData['blocked']) {
         'lang' => $lang,
         'servers' => $servers,
         'notifications' => $notifications,
+        'SETTINGS' => $settings,
     ]);
 } else {
     $body = Yii::$app->view->render('body_blocked', [
@@ -95,12 +97,15 @@ if (Yii::$app->user->isGuest || !$userData['blocked']) {
         'userData' => $userData,
         'lang' => $lang,
         'servers' => $servers,
+        'SETTINGS' => $settings,
     ]);
 }
+
 ?>
 <?php $this->beginPage() ?>
 <?=Yii::$app->view->render('main.twig', [
     'title' => Html::encode($this->title),
+    'SETTINGS' => $settings,
     'cssLink' => Yii::$app->params['css'],
     'head' => '<![CDATA[YII-BLOCK-HEAD]]>',
     'lang' => $lang,

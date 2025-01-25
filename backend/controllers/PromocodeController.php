@@ -8,7 +8,9 @@ use common\components\base\Model;
 use common\components\helpers\Role;
 use common\models\box\Box;
 use common\models\box\BoxSearch;
+use common\models\promocode\Promocode;
 use common\models\promocode\PromocodeSearch;
+use yii\base\BaseObject;
 use yii\web\Response;
 use Yii;
 
@@ -62,19 +64,20 @@ class PromocodeController extends \backend\components\CrudController
         ]);
     }
 
-    /**
-     * @throws \yii\db\StaleObjectException
-     * @throws \Throwable
-     */
-    public function actionDelete($id)
+    public function actionCreate()
     {
-        $formModel = Box::findOne($id);
-        if ($formModel !== null) {
-            $formModel->delete();
+        $model = new PromocodeForm();
+
+        if ($this->request->isPost) {
+            if ($model->load($this->request->post()) && $model->save()) {
+                return $this->redirect(['view', 'id' => $model->id]);
+            }
+        } else {
+            $model->loadDefaultValues();
         }
 
-        $this->_setSearchModel();
-        $this->_rememberIndexUrl();
-        return $this->_renderIndex($this->_getSearchDataProvider());
+        return $this->renderAjax('create', [
+            'model' => $model,
+        ]);
     }
 }

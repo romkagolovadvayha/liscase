@@ -204,13 +204,6 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'active' => _checkActive('/translateManager'),
                    ],
                     [
-                        'label' => 'Промокоды',
-                        'icon' => 'fa-solid fa-percent',
-                        'url' => ['/promocode'],
-                        'visibility' => $admin,
-                        'active' => _checkActive('/promocode'),
-                    ],
-                    [
                         'label' => 'WIPE меню',
                         'icon' => 'fa-solid fa-cloud-sun',
                         'url' => ['/wipe'],
@@ -248,6 +241,13 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                                'active' => _checkActive('/settings/index?category=bots'),
                            ],
                            [
+                               'label' => 'Промокоды',
+                               'icon' => 'fa-solid fa-percent',
+                               'url' => ['/promocode'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/promocode'),
+                           ],
+                           [
                                'label' => 'Добавить настройку',
                                'icon' => 'fas fa-plus',
                                'url' => ['/settings/create'],
@@ -255,12 +255,6 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                            ],
                        ]
                    ],
-//                    ['label' => 'Simple Link', 'icon' => 'th', 'badge' => '<span class="right badge badge-danger">New</span>'],
-//                    ['label' => 'Simple Link', 'icon' => 'th', 'badge' => '<span class="right badge badge-danger">New</span>'],
-//                    ['label' => 'Yii2 PROVIDED', 'header' => true],
-//                    ['label' => 'Login', 'url' => ['site/login'], 'icon' => 'sign-in-alt', 'visible' => Yii::$app->user->isGuest],
-//                    ['label' => 'Gii',  'icon' => 'file-code', 'url' => ['/gii'], 'target' => '_blank'],
-//                    ['label' => 'Debug', 'icon' => 'bug', 'url' => ['/debug'], 'target' => '_blank'],
                 ],
             ]);
             ?>

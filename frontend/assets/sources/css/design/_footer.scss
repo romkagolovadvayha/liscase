@@ -12,6 +12,11 @@
   grid-column-start: 1;
   grid-column-end: 4;
 
+  &_logo {
+    img {
+      max-height: 35px;
+    }
+  }
   &__main-links {
     @extend .flex, .flex-column;
   }

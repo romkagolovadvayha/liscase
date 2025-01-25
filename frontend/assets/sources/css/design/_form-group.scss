@@ -9,8 +9,8 @@
     .px-20,
     .text-text-main,
     .bg-background-main,
-    .transition-border-color,
-    .rounded-8;
+    .transition-border-color;
+    border-radius: var(--card-radius);
     width: 100%;
     border: 1px solid var(--border-color-default);
     outline: unset;

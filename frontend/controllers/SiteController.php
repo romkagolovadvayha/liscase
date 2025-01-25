@@ -243,7 +243,7 @@ class SiteController extends WebController
         }
 
         $command = "bcm.mute {$steamId} 1h \"{$reason}\"";
-        $response = shell_exec("node /var/www/www-root/data/var/www/" . Yii::$app->params['domain'] . "/node/webrcon/src/send.js \"{$server->ip}\" {$server->rcon} \"{$server->rcon_password}\" \"{$command}\" 2>&1");
+        $response = shell_exec("node /var/www/www-root/data/var/www/" . Yii::$app->settings->get('site_domain') . "/node/webrcon/src/send.js \"{$server->ip}\" {$server->rcon} \"{$server->rcon_password}\" \"{$command}\" 2>&1");
         print_r($response);
         exit;
     }

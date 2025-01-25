@@ -1,5 +1,6 @@
 .daily-reward {
-  @extend .pt-52, .px-40, .pb-40, .relative, .bg-background-secondary, .rounded-16;
+  @extend .pt-52, .px-40, .pb-40, .relative, .bg-background-secondary;
+  border-radius: var(--block-radius);
   min-width: 420px;
   width: 420px;
   min-height: 390px;
@@ -14,7 +15,7 @@
     @extend .block, .absolute;
     @include range(286, 286, "px");
     content: "";
-    background: url("/images/design/user/light.svg");
+    background: var(--light-background);
     right: 0;
     bottom: 0;
     background-repeat: no-repeat;

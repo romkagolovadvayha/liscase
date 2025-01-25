@@ -1006,7 +1006,7 @@ $color_text: #e4dad1;
     border-radius: 100%;
     font-size: 54px;
     line-height: 54px;
-    color: #aaf16e;
+    color: var(--server-command);
     @media (max-width: 990px) {
       height: 80px;
       width: 80px;
@@ -1018,7 +1018,7 @@ $color_text: #e4dad1;
       right: 10px;
       bottom: 10px;
       left: 10px;
-      border: 2px solid #aaf16e;
+      border: 2px solid var(--server-command);
       border-radius: 100%;
       content: "";
     }

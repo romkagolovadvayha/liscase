@@ -555,6 +555,7 @@ $color_text: #e4dad1;
 .setting {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 40px;
   color: hsl(0 0% 94.9% / 1);
   &_header {
@@ -570,6 +571,17 @@ $color_text: #e4dad1;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    width: 100%;
+    &_flex {
+      max-width: 100%;
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      .setting_items_item {
+        width: 48%;
+      }
+    }
     &_actions {
 
     }
@@ -581,6 +593,7 @@ $color_text: #e4dad1;
         display: flex;
         flex-direction: column;
         gap: 10px;
+        width: 100%;
       }
     }
     &_item  {
@@ -589,13 +602,18 @@ $color_text: #e4dad1;
       background: hsl(0 0% 15.3% / 1);
       display: grid;
       grid-template-columns: repeat(1, minmax(0, 1fr));
-      max-width: 800px;
       &_block {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: .625rem;
         margin: 0;
+        label {
+          margin: 0;
+        }
+        [type="color"] {
+          width: 100px;
+        }
         &_text {
           display: flex;
           flex-direction: column;
@@ -634,7 +652,11 @@ $color_text: #e4dad1;
     }
   }
 }
-.content {
+.content-wrapper .content {
+  padding-top: 50px;
+}
+.content-wrapper .content, .modal {
+  color: hsl(0deg 0% 94.9% / 75%);
   .form-control {
     background: hsl(0 0% 11.8% / 1);
     color: hsl(0 0% 94.9% / 1);
@@ -663,6 +685,124 @@ $color_text: #e4dad1;
       &:hover {
         background-color: hsl(0 0% 20.4% / 1);
         color: hsl(0 0% 55.3% / 1);
+      }
+    }
+  }
+  .nav-tabs {
+    border-color: hsl(0 0% 11.8% / 1);
+  }
+  .tab-content {
+    margin-top: 20px;
+  }
+  .nav {
+    gap: 20px;
+  }
+  .nav-tabs .nav-link {
+    color: hsl(0deg 0% 94.9% / 75%);
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0;
+    padding-bottom: 8px;
+    &:hover {
+      color: hsl(0deg 0% 94.9% / 85%);
+      border-bottom: 2px solid transparent;
+    }
+  }
+  .nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link {
+    background-color: transparent;
+    border-bottom: 2px solid hsl(0deg 0% 94.9% / 75%);
+    color: hsl(0 0% 94.9% / 1);
+  }
+  .grid-view {
+    .summary {
+      text-align: left;
+    }
+  }
+  a {
+    color: hsl(0 0% 94.9% / 1);
+  }
+  .table {
+    position: relative;
+    padding: .625rem;
+    border-radius: .375rem;
+    border-color: hsl(0 0% 15.3% / 1);
+    background: hsl(0 0% 15.3% / 1);
+    color: hsl(0 0% 94.9% / 1);
+    overflow: hidden;
+    thead {
+      background: transparent;
+      tr {
+        &.filters {
+          background: transparent;
+          td {
+            background: transparent;
+            position: relative;
+            z-index: 2;
+            color: hsl(0 0% 94.9% / 1);
+            border-color: hsl(0 0% 15.3% / 1);
+          }
+        }
+        th {
+          background: transparent;
+          position: relative;
+          z-index: 2;
+          border-color: hsl(0 0% 15.3% / 1);
+        }
+      }
+    }
+    tbody {
+      background: transparent;
+      tr {
+        td {
+          border-color: hsl(0 0% 15.3% / 1);
+          color: hsl(0 0% 94.9% / 1);
+          background: transparent;
+          position: relative;
+          z-index: 2;
+        }
+        &:nth-of-type(odd) {
+          td {
+            background: rgba(0, 0, 0, 0.2);
+          }
+        }
+      }
+    }
+  }
+}
+.wrap800 {
+  width: 800px;
+  margin: 0 auto;
+}
+
+.modal {
+  --bs-modal-margin: 1.75rem;
+  background-color: hsl(0 0% 15.3% / 0.5);
+  max-width: 100%;
+  .modal-dialog {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    .modal-content {
+      border-radius: 16px;
+      background-color: hsl(0 0% 15.3% / 1);
+      overflow: hidden;
+      position: relative;
+      header {
+        background: rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        padding: 15px 24px;
+        justify-content: space-between;
+        h4 {
+          font-size: 1.25rem;
+          margin: 0;
+        }
+      }
+      &-body {
+        padding: 24px;
+      }
+      footer {
+        padding: 24px;
       }
     }
   }

@@ -132,23 +132,15 @@ $config = [
         ],
         'telegramPayments'   => [
             'class'  => \common\components\telegram\TelegramPayments::class,
-            'token'      => $params['tgBot']['token'],
-            'chatId' => $params['tgBot']['chatId'],
         ],
         'telegramReports'   => [
             'class'  => \common\components\telegram\TelegramReports::class,
-            'token'      => $params['tgBotReports']['token'],
-            'chatId' => $params['tgBotReports']['chatId'],
         ],
         'telegramChats'   => [
             'class'  => \common\components\telegram\TelegramChats::class,
-            'token'      => $params['tgBotChats']['token'],
-            'chatId' => $params['tgBotChats']['chatId'],
         ],
         'telegramReport'   => [
             'class'  => \common\components\telegram\TelegramReport::class,
-            'token'      => $params['tgBotReport']['token'],
-            'chatId' => $params['tgBotReport']['chatId'],
         ],
         'paypalychApi'   => [
             'class' => \common\components\payments\Paypalych::class,
@@ -169,12 +161,9 @@ $config = [
         ],
         'rustTm'   => [
             'class' => \common\components\rusttm\RustTm::class,
-            'secretKey' => '4Tctry3D0b9003d52Kv2w10BND942mX',
-            //'secretKey' => 'y6aq0Jb1WmFe2nMcYy1y41Iq0V4lpq3',
         ],
         'rustCheck'   => [
             'class' => \common\components\rustcheck\RustCheck::class,
-            'secretKey' => '9f97841bde0d594447c732dc2311a465',
         ],
         'discord'   => [
             'class' => \common\components\discord\Discord::class,
@@ -193,7 +182,6 @@ $config = [
         ],
         'personalBotTelegram'               => [
             'class'    => \common\components\telegram\TelegramApiHelper::class,
-            'botToken' => '7005949610:AAEK2H_vhym6px9mPB4EMyeZ94Hgx71sxzM', //@ProstojServerBot
         ],
         'rustotekaBotTelegram'               => [
             'class'    => \common\components\telegram\TelegramApiHelper::class,

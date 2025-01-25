@@ -16,7 +16,6 @@ class Template extends ActiveRecord
         return [
             [['name'], 'required'],
             ['name', 'string', 'max' => 255],
-            ['content', 'string'],
         ];
     }
 }

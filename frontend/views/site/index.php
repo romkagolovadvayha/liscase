@@ -9,7 +9,7 @@ use common\models\box\Box;
 use common\models\box\Drop;
 use common\models\box\Select;
 
-$this->title = Yii::t('common', Yii::$app->params['title']);
+$this->title = Yii::t('database', Yii::$app->settings->get('site_title'));
 
 \frontend\assets\LastDropAsset::register($this);
 \frontend\assets\UserBoxAsset::register($this);
@@ -56,6 +56,7 @@ if (!Yii::$app->user->isGuest) {
     $awards = \common\models\tasks\Task::awards($user->id);
 }
 
+$SETTINGS = Yii::$app->settings;
 ?>
 
 <?php //if (!empty($getNextOpenFreeBoxDate)) {
@@ -75,23 +76,28 @@ if (!Yii::$app->user->isGuest) {
         'PRODUCT_DROPS_SETS' => \common\models\box\Sets::getSetsForMarket(true),
         'PRODUCT_DROPS_SELECT' => Select::getForMarket(true),
         'PRODUCT_DROPS' => Drop::getForMarket(true),
+        'SETTINGS' => $SETTINGS,
     ]),
     'PRODUCTS' => Yii::$app->view->render('products.twig', [
         'PRODUCT_DROPS_SETS' => \common\models\box\Sets::getSetsForMarket(),
         'PRODUCT_DROPS_SELECT' => Select::getForMarket(),
         'PRODUCT_DROPS' => Drop::getForMarket(),
+        'SETTINGS' => $SETTINGS,
     ]),
     'CATEGORIES' => Yii::$app->view->render('categories.twig', [
         'ITEMS' => $categories,
+        'SETTINGS' => $SETTINGS,
     ]),
     'STATISTICS' => Yii::$app->view->render('statistics.twig', [
         'USER_GUEST' => Yii::$app->user->isGuest,
         'PROJECT_STATS' => $projectStats,
         'USER' => $userData,
-        'BOT_LINK' => "https://t.me/" . Yii::$app->params['tgPersonalBot'],
+        'BOT_LINK' => "https://t.me/" . Yii::$app->settings->get('tgbot_login'),
         'USER_STATS' => $userStats,
         'STATS' => new Statistics(),
         'AWARDS' => $awards,
+        'SETTINGS' => $SETTINGS,
     ]),
+    'SETTINGS' => $SETTINGS,
 ]);?>
 

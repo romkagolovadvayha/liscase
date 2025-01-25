@@ -85,7 +85,7 @@ class Tome
             ],
             "confirmation" => [
                 "type" => "redirect",
-                "return_url" => "https://" . Yii::$app->params['domain'] . "/user/history?depositId={$depositId}"
+                "return_url" => "https://" . Yii::$app->settings->get('site_domain') . "/user/history?depositId={$depositId}"
             ],
             'description' => $description
         ];

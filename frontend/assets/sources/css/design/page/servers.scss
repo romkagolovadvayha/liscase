@@ -14,8 +14,8 @@
       &:before {
         @extend .block, .absolute;
         content: "";
-        background: url("/images/design/tasks/light.svg");
-        top: 0;
+        background: var(--light-background);
+        bottom: 0;
         left: 0;
         background-repeat: no-repeat;
         background-size: 100% 240px;

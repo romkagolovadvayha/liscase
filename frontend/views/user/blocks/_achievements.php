@@ -55,7 +55,7 @@ $received = true;
                             <div title="Чистый чай на металлолом" class="achievements_body_list_items_item_info_simage">
                                 <img src="/images/tg.png">
                             </div>
-                            <a href="https://t.me/<?=Yii::$app->params['tgPersonalBot']?>" class="achievements_body_list_items_item_info_btn">
+                            <a href="https://t.me/<?=Yii::$app->settings->get('tgbot_login')?>" class="achievements_body_list_items_item_info_btn">
                                 <?=Yii::t('common', 'Подключить')?>
                             </a>
                         </div>

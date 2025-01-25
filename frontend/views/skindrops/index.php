@@ -23,7 +23,7 @@ if (!Yii::$app->user->isGuest && !empty($user->userProfile->trade_link)) {
     $tradeLinkCompleted = true;
 }
 $usernameCompleted = false;
-$prefix = "prostoj";
+$prefix = Yii::$app->settings->get('skindrops_prefix');
 if (!Yii::$app->user->isGuest && strpos(mb_strtolower($user->username), $prefix) !== false) {
     $usernameCompleted = true;
 }
@@ -104,7 +104,7 @@ foreach ($skindrops as $item) {
             </div>
             <div class="how-works__item<?=$usernameCompleted ? '' : ' danger'?>">
                 <div class="how-works__icon"><i class="fas fa-spell-check"></i></div>
-                <div class="how-works__desc"><?=Yii::t('common', "Сделайте приписку к нику Prostoj")?></div>
+                <div class="how-works__desc"><?=Yii::t('common', "Сделайте приписку к нику ")?>"<?=Yii::$app->settings->get('skindrops_prefix')?>"</div>
             </div>
             <div class="how-works__separator<?=$usernameCompleted ? '' : ' danger'?>">
                 <div class="how-works__separator-item"><i class="fas fa-angle-right"></i></div>
@@ -127,7 +127,7 @@ foreach ($skindrops as $item) {
             'inputOptions' => [
                 'class' => 'search search_pay'
             ],
-            'template' => "{input}<span class=\"icons icons_16px icons_16px_coin\"></span>"
+            'template' => "{input}"
         ])
                 ->label(false)
                 ->textInput(['placeholder' => Yii::t('common', 'Вставьте трейд ссылку...')]); ?>
@@ -173,7 +173,9 @@ foreach ($skindrops as $item) {
                     <ol>
                         <li><?=Yii::t('common', 'Розыгрыш скинов на серверах происходит каждые <b>~60 минут</b> среди всех участников.')?></li>
                         <li><?=Yii::t('common', 'Розыгрыш скинов будет отменён, если на сервере нет минимум <b>20 онлайн</b>.')?></li>
-                        <li><?=Yii::t('common', 'У вас должна быть <b>приписка в нике Prostoj</b> (Пример: ept Prostoj)')?></li>
+                        <li><?=Yii::t('common', 'У вас должна быть <b>приписка в нике {PARAM_PREFIX}</b> (Пример: ept {PARAM_PREFIX})', [
+                                'PARAM_PREFIX' => Yii::$app->settings->get('skindrops_prefix')
+                            ])?></li>
                         <li><?=Yii::t('common', 'У победителя будет <b>5 минут</b>, что бы принять трейд от бота в Steam.')?></li>
                         <li><?=Yii::t('common', 'Если настройки приватности для получения трейда были закрыты или вы не успели принять трейд втечении <b>5 минут</b>, то выдача скина повторно не проводится.')?></li>
                     </ol>

@@ -1,0 +1,23 @@
+<section class="the-best__item">
+    <h4 class="text-text-main mb-20 relative z-1">{{ TITLE }}</h4>
+
+    <ol class="the-best__list">
+        {% for ITEM in ITEMS %}
+        <li class="the-best__list__item__wrap">
+            <div class="the-best__list__item">
+                <p class="the-best__list__item_header">
+                    <a href="{{ ITEM.link }}">{{ ITEM.username }}</a>
+                    <span>{{ ITEM.score }}</span>
+                </p>
+                {% if ITEM.amount > 0 %}
+                <div class="the-best__list__item_reward">
+                    <span class="icons icons_16px icons_16px_trophy bg-system-colors-{{ ITEM.color }}"></span>
+                    <span class="p3 text-text-main">{{ ITEM.amount }}</span>
+                    <span class="icons icons_16px icons_16px_coin"></span>
+                </div>
+                {% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ol>
+</section>

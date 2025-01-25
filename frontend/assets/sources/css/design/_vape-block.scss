@@ -1,5 +1,6 @@
 .vape-block {
-  @extend .p-8, .relative, .text-center, .bg-background-teritiary, .rounded-8;
+  @extend .p-8, .relative, .text-center, .bg-background-teritiary;
+  border-radius: var(--card-radius);
   max-width: 100%;
   min-width: 56px;
   transition:

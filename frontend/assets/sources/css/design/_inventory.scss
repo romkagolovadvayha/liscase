@@ -1,6 +1,7 @@
 .inventory {
-  @extend .p-8, .relative, .text-center, .bg-background-teritiary, .rounded-8;
+  @extend .p-8, .relative, .text-center, .bg-background-teritiary;
   max-width: 100%;
+  border-radius: var(--card-radius);
   min-width: 125px;
   transition:
     box-shadow 0.25s ease-in-out,

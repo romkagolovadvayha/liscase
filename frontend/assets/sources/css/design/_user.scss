@@ -1,5 +1,6 @@
 .user {
-  @extend .p-40, .relative, .bg-background-secondary, .rounded-16;
+  @extend .p-40, .relative, .bg-background-secondary;
+  border-radius: var(--block-radius);
   min-width: 848px;
   width: 848px;
   overflow: hidden;
@@ -16,7 +17,7 @@
     @extend .block, .absolute;
     @include range(422, 422, "px");
     content: "";
-    background: url("/images/design/user/light.svg");
+    background: var(--light-background);
     right: 0;
     bottom: 0;
     background-repeat: no-repeat;
@@ -55,7 +56,8 @@
         }
 
         &.stat {
-          @extend .py-8, .bg-background-teritiary, .rounded-8;
+          @extend .py-8, .bg-background-teritiary;
+          border-radius: var(--card-radius);
 
           & p:first-of-type {
             @extend .p1, .text-text-main;

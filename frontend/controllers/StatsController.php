@@ -7,6 +7,7 @@ use common\models\servers\Servers;
 use common\models\statistics\Reports;
 use common\models\stats\Wipe;
 use common\models\user\User;
+use common\models\user\UserTop;
 use yii\web\NotFoundHttpException;
 use Yii;
 
@@ -50,11 +51,20 @@ class StatsController extends WebController
             throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден!'));
         }
 
+        $this->view->title                      = Yii::t('common', 'Статистика сервера') . ' ' . Yii::t('database', $server->name);
+        $this->view->params['meta_description'] = Yii::t('common', "Статистика игроков Rust.");
+        $this->view->params['meta_keywords']    = Yii::t('common', "стастистика игроков, статистика сервера, статистика rust");
         $this->view->params['page'] = 'stats';
 
-        return $this->render('index', [
-            'server'  => $server,
-            'servers'  => $servers,
+        $user = Yii::$app->user->identity;
+
+        $items = UserTop::getUserTops($server, $server->currentWipe());
+
+        return $this->render('statistics.twig', [
+            'SERVER'  => $server,
+            'SERVERS'  => $servers,
+            'USER'  => $user,
+            'ITEMS'  => $items,
         ]);
     }
 
@@ -82,7 +92,7 @@ class StatsController extends WebController
         /** @var User[] $users */
         $users = User::find()
                      ->andWhere(['OR', ['LIKE', 'username', '%'.$q.'%', false], ['LIKE', 'steam_id', '%'.$q.'%', false]])
-//                     ->andWhere(['>=', 'last_visit_server_at', $date->format('Y-m-d H:i:s')])
+                     ->andWhere(['>=', 'last_visit_server_at', $date->format('Y-m-d H:i:s')])
                      ->andWhere(['status' => User::STATUS_ACTIVE])
                      ->andWhere(['is_stats' => true])
                      ->orderBy(['last_visit_server_at' => SORT_DESC])

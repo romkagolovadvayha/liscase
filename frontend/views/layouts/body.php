@@ -4,6 +4,7 @@
 /** @var array $userData */
 /** @var Servers[] $servers */
 /** @var array $notifications */
+/** @var $SETTINGS */
 
 use common\models\servers\Servers;
 use common\components\web\Cookie;
@@ -59,35 +60,39 @@ if (!empty($this->params['_user'])) {
     'MENU_HIDDEN' => $hiddenMenu,
 //    'ALERT_MESSAGE' => $this->render('@frontend/views/widgets/_alert'),
 //    'SKINDROPS_BLOCK' => $this->render('@frontend/views/widgets/_skindrops'),
-    'SERVERS_BLOCK' => $this->render('@frontend/views/widgets/_servers', ['servers' => $servers, 'PROJECT_STATS' => $projectStats]),
+    'SERVERS_BLOCK' => $this->render('@frontend/views/widgets/_servers', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'SETTINGS' => $SETTINGS]),
 //    'PROMOCODE_FORM' => $this->render('@frontend/views/layouts/_promocode_line'),
-    'TOP_BLOCK' => $this->render('@frontend/views/widgets/_top', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData]),
-    'LIVE_BLOCK' => $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData]),
+    'TOP_BLOCK' => $this->render('@frontend/views/widgets/_top', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]),
+    'LIVE_BLOCK' => $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]),
     'BUILDINGS_BLOCK' => $buildingsBlock,
     'TEAMS_BLOCK' => $teamBlock,
     'HEADER' => Yii::$app->view->render('header.twig', [
         'HOME_URL' => Yii::$app->homeUrl,
-        'LOGO_IMAGE' => Yii::$app->params['logo'],
+        'LOGO_IMAGE' => Yii::$app->settings->get('design_logo'),
         'USER_GUEST' => Yii::$app->user->isGuest,
         'user' => $userData,
         'lang' => $lang,
-        'DOMAIN' => Yii::$app->params['domain'],
+        'DOMAIN' => Yii::$app->settings->get('site_domain'),
+        'SETTINGS' => $SETTINGS,
     ]),
     'MENU' => Yii::$app->view->render('menu.twig', [
         'MENU_HIDDEN' => $hiddenMenu,
         'USER' => $userData,
         'PAGE' => $page,
         'NOTIFICATIONS' => $notifications,
+        'SETTINGS' => $SETTINGS,
     ]),
     'MODAL' => Yii::$app->view->render('modal.twig', [
-
+        'SETTINGS' => $SETTINGS,
     ]),
     'FOOTER' => Yii::$app->view->render('footer.twig', [
         'EMAIL' => Yii::$app->params['email'],
-        'LOGO_IMAGE' => Yii::$app->params['logo'],
+        'LOGO_IMAGE' => Yii::$app->settings->get('design_logo'),
+        'SETTINGS' => $SETTINGS,
         'HOME_URL' => Yii::$app->homeUrl,
-        'DOMAIN' => Yii::$app->params['domain'],
-    ])
+        'DOMAIN' => Yii::$app->settings->get('site_domain'),
+    ]),
+    'SETTINGS' => $SETTINGS,
 ]);?>
 
 <?=Yii::$app->view->render('metrics.twig')?>

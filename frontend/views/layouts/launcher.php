@@ -18,7 +18,7 @@ $this->registerMetaTag(['charset' => Yii::$app->charset], 'charset');
 $this->registerMetaTag(['name' => 'viewport', 'content' => 'width=device-width, initial-scale=1, shrink-to-fit=no']);
 $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => '/images/favicon.svg']);
 
-$baseUrl = Yii::$app->params['domain'];
+$baseUrl = Yii::$app->settings->get('site_domain');
 $ws = Yii::$app->params['ws'];
 $this->registerJs(<<<JS
     var baseUrl = '{$baseUrl}';

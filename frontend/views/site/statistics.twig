@@ -72,6 +72,7 @@
                 </div>
 
                 <!-- Награды -->
+                {% if SETTINGS.get('section_tasks') %}
                 <div class="user__awards awards">
                     <p class="awards__title">
                         {{ t('common', 'Награды') }}
@@ -101,8 +102,9 @@
                         </p>
                     {% endif %}
                 </div>
+                {% endif %}
             </div>
-            <img src="/images/design/stats_block.png" alt="farmer" class="user__image"/>
+            <img src="{{ SETTINGS.get('design_statsBlockImage') }}" alt="farmer" class="user__image"/>
             {% if USER.server %}
             <a href="/stats/player?steamId={{ USER.steam_id }}&server={{ USER.server.tag }}" class="button button-primary" style="margin-right: 8px">
                 <span class="button__text">{{ t('common', 'Моя статистика') }}</span>
@@ -135,7 +137,7 @@
                         data-bs-title="{{ t('common', 'Скопировать команду') }}">/bonus</span> в боте, чтобы получить награду</span>
         </p>
 
-        <img src="/images/design/bonus_block.png" alt="symbol" class="daily-reward__image"/>
+        <img src="{{ SETTINGS.get('design_bonusBlockImage') }}" alt="symbol" class="daily-reward__image"/>
         <a href="{{ BOT_LINK }}" target="_blank" class="button button-secondary">
             <span class="button__text"> Получить бонус </span>
         </a>

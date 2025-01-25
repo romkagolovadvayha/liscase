@@ -1,6 +1,6 @@
 <header class="header">
-    <a href="{{ HOME_URL }}">
-        <img src="{{ LOGO_IMAGE }}" alt="" />
+    <a href="{{ HOME_URL }}" class="header_logo">
+        <img src="{{ LOGO_IMAGE }}" alt="Logo" />
     </a>
 
     <div class="header__actions">
@@ -43,7 +43,7 @@
                     data-href="/site/promocode"
                     data-size="modal-sm"
                     data-content-overflow="unset"
-                    data-top-image="/images/design/modal/promo.png"
+                    data-top-image="{{ SETTINGS.get('design_promoPopupImage') }}"
                     data-top-class="modal-backdrop-image_promo active"
                     data-toggl="modal"
                     data-target="modal-dialog"
@@ -56,7 +56,7 @@
                 data-href="/user/payment"
                 data-size="modal-sm"
                 data-content-overflow="unset"
-                data-top-image="/images/design/modal/pay.png"
+                data-top-image="{{ SETTINGS.get('design_payPopupImage') }}"
                 data-top-class="modal-backdrop-image_pay active"
                 data-toggl="modal"
                 data-target="modal-dialog"

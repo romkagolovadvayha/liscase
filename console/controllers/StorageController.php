@@ -37,6 +37,7 @@ class StorageController extends Controller
      */
     public function actionUpdate()
     {
+        /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
                           ->orderBy(['sort' => SORT_ASC])
@@ -44,6 +45,7 @@ class StorageController extends Controller
 
         foreach ($servers as $server) {
             Teams::getTeams($server, true);
+            UserTop::getUserTops($server, $server->currentWipe(), true);
         }
 
         UserTop::getUserTop($servers, true);

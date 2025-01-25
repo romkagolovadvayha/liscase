@@ -37,7 +37,7 @@ class RustotekaBotSystem extends AbstractSystemBots
      */
     public function getSystemName()
     {
-        return Yii::$app->params['domain'];
+        return Yii::$app->settings->get('site_domain');
     }
 
     /**
@@ -312,6 +312,6 @@ class RustotekaBotSystem extends AbstractSystemBots
      */
     protected function _getUrl($method)
     {
-        return 'https://' . Yii::$app->params['domain'] . '/api/telegram-personal-bot/' . $method;
+        return 'https://' . Yii::$app->settings->get('site_domain') . '/api/telegram-personal-bot/' . $method;
     }
 }

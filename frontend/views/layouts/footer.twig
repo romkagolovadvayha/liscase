@@ -1,46 +1,44 @@
 <footer class="footer">
     <div class="footer__main-links footer_logo_block">
-        <a href="{{ HOME_URL }}" class="mb-48">
-            <img src="{{ LOGO_IMAGE }}" alt="" />
+        <a href="{{ HOME_URL }}" class="footer_logo mb-48">
+            <img src="{{ SETTINGS.get('design_logo') }}" alt="" />
         </a>
 
-        <a href="mailto:{{ EMAIL }}" class="mb-24 p1">{{ EMAIL }}</a>
+        <a href="mailto:{{ SETTINGS.get('site_email') }}" class="mb-24 p1">{{ SETTINGS.get('site_email') }}</a>
 
-        <ul class="footer__social-network social-network">
-            <li class="social-network__item">
-                <a
-                        href="/"
-                        target="_blank"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="bottom"
-                        data-bs-title="Telegram"
-                >
-                    <span class="icons icons_hover icons_32px icons_32px_telegram"></span>
-                </a>
-            </li>
-            <li class="social-network__item">
-                <a
-                        href="/"
-                        target="_blank"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="bottom"
-                        data-bs-title="VK"
-                >
-                    <span class="icons icons_hover icons_32px icons_32px_vk"></span>
-                </a>
-            </li>
-            <li class="social-network__item">
-                <a
-                        href="/"
-                        target="_blank"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="bottom"
-                        data-bs-title="Discord"
-                >
-                    <span class="icons icons_hover icons_32px icons_32px_discord"></span>
-                </a>
-            </li>
-        </ul>
+        {{ nav_menu_widget({
+            'options': {
+                'class': 'footer__social-network social-network',
+            },
+            'activateItems': false,
+            'items': [
+                {
+                    'label': '',
+                    'url': SETTINGS.get('social_telegram'),
+                    'iconClass': 'icons icons_hover icons_32px icons_32px_telegram',
+                    'options': {'class': ''},
+                    'visibility': SETTINGS.get('social_telegram'),
+                    'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "Telegram"}
+                },
+                {
+                    'label': '',
+                    'url': SETTINGS.get('social_vk'),
+                    'iconClass': 'icons icons_hover icons_32px icons_32px_vk',
+                    'options': {'class': ''},
+                    'visibility': SETTINGS.get('social_vk'),
+                    'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "VK"}
+                },
+                {
+                    'label': '',
+                    'url': SETTINGS.get('social_discord'),
+                    'iconClass': 'icons icons_hover icons_32px icons_32px_discord',
+                    'options': {'class': ''},
+                    'visibility': SETTINGS.get('social_discord'),
+                    'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "Discord"}
+                },
+            ]
+        })
+        }}
     </div>
 
     <nav class="footer__menu-links mobile_hide">

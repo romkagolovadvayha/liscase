@@ -185,6 +185,12 @@ class NavMenu extends Widget
         $spanClass = ArrayHelper::getValue($item, 'spanClass', null);
         $notification = ArrayHelper::getValue($item, 'notification', null);
         $activeClass = ArrayHelper::getValue($item, 'activeClass', null);
+        $visibility = ArrayHelper::getValue($item, 'visibility', null);
+
+        if (isset($item['visibility']) && (empty($visibility) || !$visibility)) {
+            return '';
+        }
+
         $active = $this->isItemActive($item);
 
         if (empty($items)) {

@@ -15,7 +15,7 @@ class RustApp
     private $_banList = [];
 
     public function banList() {
-        $rustAppApiKey = 'af376656-3f99-4db6-9b74-8e07741b76c2';
+        $rustAppApiKey = Yii::$app->settings->get('banSystem_rustAppPrivateApiKey');
         //$servers = $this->servers();
         /** @var Servers[] $servers */
         $servers = Servers::find()

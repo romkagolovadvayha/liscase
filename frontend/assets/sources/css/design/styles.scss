@@ -146,7 +146,6 @@ $modal-dialog-margin-y-sm-up: 0;
 @import "property/opacity";
 
 @import "colors";
-@import "root";
 @import "fonts";
 @import "buttons";
 @import "link";
@@ -264,7 +263,7 @@ $modal-dialog-margin-y-sm-up: 0;
     max-width: 100%;
   }
   .modal-content {
-    @extend .rounded-16;
+    border-radius: var(--block-radius);
     position: relative;
     overflow: hidden;
     @media (max-width: 768px) {
@@ -425,7 +424,7 @@ ul {
   flex-direction: column;
   gap: 20px;
   background: rgba(0, 0, 0, 0.5);
-  @extend .rounded-16;
+  border-radius: var(--block-radius);
   &.active {
     display: flex;
   }
@@ -479,12 +478,12 @@ ul {
   .p1,
   .bg-transparent,
   .text-text-main,
-  .rounded-8,
   .pl-20,
   .pr-60,
   .py-12,
   .relative,
   .transition-all;
+  border-radius: var(--card-radius);
   outline: none;
   -webkit-appearance: none;
   -moz-appearance: none;

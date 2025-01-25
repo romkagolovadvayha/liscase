@@ -87,7 +87,7 @@ class ApiController extends WebController
         $result['result'] = "success";
         $result['code'] = 100;
         $result['data'] = [
-            'link' => Yii::$app->params['domain'],
+            'link' => Yii::$app->settings->get('site_domain'),
             'default_balance' => 50,
         ];
         return $result;
@@ -299,6 +299,7 @@ class ApiController extends WebController
     public function actionWipeInfo($serverTag)
     {
         header('Content-type: application/json');
+        $color = Yii::$app->settings->get('server-command');
         /** @var Servers $server */
         $server = Servers::find()
             ->andWhere(['tag' => $serverTag])
@@ -312,8 +313,8 @@ class ApiController extends WebController
         }
         $lastWipe = (new \DateTime($server->wipe))->format('d.m.Y H:i');
         $nextWipe = (new \DateTime($server->next_wipe))->format('d.m.Y H:i');
-        $result['ru'] = "Последний вайп: <color=#aaf16e>{$lastWipe} МСК</color>\nСледующий вайп: <color=#aaf16e>{$nextWipe} МСК</color>";
-        $result['en'] = "Last WIPE: <color=#aaf16e>{$lastWipe} MSK</color>\nNext WIPE: <color=#aaf16e>{$nextWipe} MSK</color>";
+        $result['ru'] = "Последний вайп: <color={$color}>{$lastWipe} МСК</color>\nСледующий вайп: <color={$color}>{$nextWipe} МСК</color>";
+        $result['en'] = "Last WIPE: <color={$color}>{$lastWipe} MSK</color>\nNext WIPE: <color={$color}>{$nextWipe} MSK</color>";
         $result['code'] = 200;
         return json_encode($result,JSON_PRETTY_PRINT);
     }
@@ -332,17 +333,19 @@ class ApiController extends WebController
             $result['code'] = 104;
             return json_encode($result,JSON_PRETTY_PRINT);
         }
+        $color = Yii::$app->settings->get('server-command');
+        $colorPrimary = Yii::$app->settings->get('server-command-primary');
         $result['ru'] = "Добро пожаловать на сервер {0}!" . PHP_EOL;
-        $result['ru'] .= "<color=#aaf16e><size=18>{$server->name}</size></color>" . PHP_EOL;
-        $result['ru'] .= "Для получения информации о командах на сервере введите в чат <color=#feeda1>/help</color>" . PHP_EOL;
-        $result['ru'] .= "Правила сервера и новости можно посмотреть в нашем Discord - <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
+        $result['ru'] .= "<color={$color}><size=18>{$server->name}</size></color>" . PHP_EOL;
+        $result['ru'] .= "Для получения информации о командах на сервере введите в чат <color={$colorPrimary}>/help</color>" . PHP_EOL;
+        $result['ru'] .= "Правила сервера и новости можно посмотреть в нашем Discord - <color={$colorPrimary}>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
         $result['ru'] .= "Удачного выживания!";
 
         $nameEn = Yii::t('database', $server->name, [], 'en-US');
         $result['en'] = "Welcome to the server {0}!" . PHP_EOL;
-        $result['en'] .= "<color=#aaf16e><size=18>{$nameEn}</size></color>" . PHP_EOL;
-        $result['en'] .= "To get information about commands on the server, enter into chat <color=#feeda1>/help</color>" . PHP_EOL;
-        $result['en'] .= "Server rules and news can be found on our website - <color=#feeda1>en." . Yii::$app->params['domain'] . "</color>" . PHP_EOL;
+        $result['en'] .= "<color={$color}><size=18>{$nameEn}</size></color>" . PHP_EOL;
+        $result['en'] .= "To get information about commands on the server, enter into chat <color={$colorPrimary}>/help</color>" . PHP_EOL;
+        $result['en'] .= "Server rules and news can be found on our website - <color={$colorPrimary}>en." . Yii::$app->settings->get('site_domain') . "</color>" . PHP_EOL;
         $result['en'] .= "Happy survival!";
         $result['code'] = 200;
         return json_encode($result,JSON_PRETTY_PRINT);
@@ -362,61 +365,63 @@ class ApiController extends WebController
             $result['code'] = 104;
             return json_encode($result,JSON_PRETTY_PRINT);
         }
-        $result['ru'] = "<color=#aaf16e>/pop</color> - Текущий онлайн игроков" . PHP_EOL .
-        "<color=#aaf16e>/wipe</color> - Информация о вайпе" . PHP_EOL .
-        "<color=#aaf16e>/time</color> - Текущее время на сервере" . PHP_EOL .
-        "<color=#aaf16e>/pm</color> - Отправить личное сообщение пользователю";
+        $color = Yii::$app->settings->get('server-command');
+        $colorPrimary = Yii::$app->settings->get('server-command-primary');
+        $result['ru'] = "<color={$color}>/pop</color> - Текущий онлайн игроков" . PHP_EOL .
+        "<color={$color}>/wipe</color> - Информация о вайпе" . PHP_EOL .
+        "<color={$color}>/time</color> - Текущее время на сервере" . PHP_EOL .
+        "<color={$color}>/pm</color> - Отправить личное сообщение пользователю";
 
-        $result['en'] = "<color=#aaf16e>/pop</color> - Current online for server" . PHP_EOL .
-        "<color=#aaf16e>/wipe</color> - Wipe info" . PHP_EOL .
-        "<color=#aaf16e>/time</color> - Current time server" . PHP_EOL .
-        "<color=#aaf16e>/pm</color> - Private message";
+        $result['en'] = "<color={$color}>/pop</color> - Current online for server" . PHP_EOL .
+        "<color={$color}>/wipe</color> - Wipe info" . PHP_EOL .
+        "<color={$color}>/time</color> - Current time server" . PHP_EOL .
+        "<color={$color}>/pm</color> - Private message";
 
         $commands = json_decode($server->commands, 1);
         if (in_array('remove', $commands)) {
-            $result['ru'] .= PHP_EOL . "<color=#aaf16e>/remove</color> - Удаление обьектов";
-            $result['en'] .= PHP_EOL . "<color=#aaf16e>/remove</color> - Remove objects";
+            $result['ru'] .= PHP_EOL . "<color={$color}>/remove</color> - Удаление обьектов";
+            $result['en'] .= PHP_EOL . "<color={$color}>/remove</color> - Remove objects";
         }
         if (in_array('xrates', $commands)) {
-            $result['ru'] .= PHP_EOL . "<color=#aaf16e>/rate</color> - Смотреть текущие рейты";
-            $result['en'] .= PHP_EOL . "<color=#aaf16e>/rate</color> - Current rates";
+            $result['ru'] .= PHP_EOL . "<color={$color}>/rate</color> - Смотреть текущие рейты";
+            $result['en'] .= PHP_EOL . "<color={$color}>/rate</color> - Current rates";
         }
         if (in_array('fmenu', $commands)) {
-            $result['ru'] .= PHP_EOL . "<color=#aaf16e>/fmenu</color> - Меню друзей";
-            $result['en'] .= PHP_EOL . "<color=#aaf16e>/fmenu</color> - Friends menu";
+            $result['ru'] .= PHP_EOL . "<color={$color}>/fmenu</color> - Меню друзей";
+            $result['en'] .= PHP_EOL . "<color={$color}>/fmenu</color> - Friends menu";
         }
         if (in_array('sil', $commands)) {
-            $result['ru'] .= PHP_EOL . "<color=#aaf16e>/sil URL</color> - Вставить изображение в рамку";
-            $result['en'] .= PHP_EOL . "<color=#aaf16e>/sil URL</color> - Paste image";
+            $result['ru'] .= PHP_EOL . "<color={$color}>/sil URL</color> - Вставить изображение в рамку";
+            $result['en'] .= PHP_EOL . "<color={$color}>/sil URL</color> - Paste image";
         }
         if (in_array('vlock', $commands)) {
-            $result['ru'] .= PHP_EOL . "<color=#aaf16e>/vlock</color> - Установить код на транспорт";
-            $result['en'] .= PHP_EOL . "<color=#aaf16e>/vlock</color> - Codelock for minicopter";
+            $result['ru'] .= PHP_EOL . "<color={$color}>/vlock</color> - Установить код на транспорт";
+            $result['en'] .= PHP_EOL . "<color={$color}>/vlock</color> - Codelock for minicopter";
         }
         if (in_array('store', $commands)) {
-            $result['ru'] .= PHP_EOL . "<color=#aaf16e>/store</color> - Корзина сервера";
-            $result['en'] .= PHP_EOL . "<color=#aaf16e>/store</color> - Basket server";
+            $result['ru'] .= PHP_EOL . "<color={$color}>/store</color> - Корзина сервера";
+            $result['en'] .= PHP_EOL . "<color={$color}>/store</color> - Basket server";
         }
 
         $result['ru'] .= PHP_EOL . PHP_EOL;
 
         if (!empty(Yii::$app->params['discordText'])) {
-            $result['ru'] .= "Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
+            $result['ru'] .= "Discord: <color={$colorPrimary}>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
         } else {
-            $result['ru'] .= "VK: <color=#feeda1>" . Yii::$app->params['vkText'] . "</color>" . PHP_EOL;
+            $result['ru'] .= "VK: <color={$colorPrimary}>" . Yii::$app->params['vkText'] . "</color>" . PHP_EOL;
         }
 
-        $result['ru'] .= "Сайт: <color=#feeda1>" . Yii::$app->params['domain'] . "</color>";
+        $result['ru'] .= "Сайт: <color={$colorPrimary}>" . Yii::$app->settings->get('site_domain') . "</color>";
 
         $result['en'] .= PHP_EOL . PHP_EOL;
 
         if (!empty(Yii::$app->params['discordText'])) {
-            $result['en'] .= "Discord: <color=#feeda1>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
+            $result['en'] .= "Discord: <color={$colorPrimary}>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
         } else {
-            $result['en'] .= "VK: <color=#feeda1>" . Yii::$app->params['vkText'] . "</color>" . PHP_EOL;
+            $result['en'] .= "VK: <color={$colorPrimary}>" . Yii::$app->params['vkText'] . "</color>" . PHP_EOL;
         }
 
-        $result['en'] .= "Site: <color=#feeda1>en." . Yii::$app->params['domain'] . "</color>";
+        $result['en'] .= "Site: <color={$colorPrimary}>en." . Yii::$app->settings->get('site_domain') . "</color>";
 
         $result['code'] = 200;
         return json_encode($result,JSON_PRETTY_PRINT);

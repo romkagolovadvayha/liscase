@@ -19,10 +19,10 @@
         .justify-space-between,
         .flex-column,
         .transition-box-shadow,
-        .rounded-8,
         .content-visibility-auto;
       overflow: hidden;
 
+      border-radius: var(--card-radius);
       &:hover {
         & .task__image {
           transform: rotateY(180deg);
@@ -50,7 +50,7 @@
       &:before {
         @extend .block, .absolute;
         content: "";
-        background: url("/images/design/tasks/light.svg");
+        background: var(--light-background);
         top: 0;
         left: 0;
         background-repeat: no-repeat;

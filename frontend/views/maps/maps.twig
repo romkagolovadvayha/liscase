@@ -13,7 +13,10 @@
 </nav>
 
 <h1 class="main_title"><span>{{ t('common', 'Голосование за карту на сервере') }} {{ t('database', SERVER.name ) }}</span></h1>
-
+<p class="maps_snoska">
+    {{ t('common', 'Голосовать за карту могут только игроки, игравшие на сервере более 1 часа.') }}<br/>
+    {{ t('common', 'Следующий вайп на сервере') }}: <span class="wipe_timer" data-time="{{ SERVER.nextWipeTime() }}">{{ SERVER.next_wipe }}</span> {{ t('common', 'МСК') }}
+</p>
 <div class="maps">
     <div class="maps_content">
         <div class="maps_content_list">

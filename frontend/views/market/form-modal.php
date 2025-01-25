@@ -30,7 +30,7 @@ use yii\widgets\Pjax;
                 <?php if (!Yii::$app->params['basketSite']): ?>
                     <?=Yii::t('common', 'Чтобы получить, введите /store в чат')?>
                 <?php else: ?>
-                    <?=Yii::t('common', 'Чтобы получить, перейдите на эту страницу')?> <a href="/store" target="_blank"><?=Yii::$app->params['domain']?>/store</a>
+                    <?=Yii::t('common', 'Чтобы получить, перейдите на эту страницу')?> <a href="/store" target="_blank"><?=Yii::$app->settings->get('site_domain')?>/store</a>
                 <?php endif; ?>
             </span>
 <!--            <span>Чтобы получить, введите <span class="text-link-color-default command_to_bot cursor-pointer" data-bs-toggle="tooltip" data-bs-title="Скопировать команду">/store</span> в чат</span>-->

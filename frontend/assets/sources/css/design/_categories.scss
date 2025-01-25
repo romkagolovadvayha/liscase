@@ -27,7 +27,8 @@
   }
 
   & .category {
-    @extend .text-center, .p-12, .relative, .rounded-8;
+    @extend .text-center, .p-12, .relative;
+    border-radius: var(--card-radius);
     @include range(180, 100, "px");
     border: 1px solid var(--border-color-default);
     overflow: hidden;
@@ -119,8 +120,8 @@
           .relative,
           .text-center,
           .bg-background-secondary,
-          .rounded-8,
           .content-visibility-auto;
+        border-radius: var(--card-radius);
         max-width: 100%;
         min-width: 203px;
         padding-top: 23px;

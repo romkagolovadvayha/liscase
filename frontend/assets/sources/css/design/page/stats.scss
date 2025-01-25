@@ -1,6 +1,7 @@
 .page-stats {
   &__block {
-    @extend .bg-background-secondary, .rounded-16, .px-20, .py-20, .transition-all;
+    @extend .bg-background-secondary, .px-20, .py-20, .transition-all;
+    border-radius: var(--block-radius);
     &:hover {
       @extend .bg-background-teritiary;
       & .gamer-stats__item {
@@ -12,7 +13,7 @@
       &:before {
         @extend .block, .absolute;
         content: "";
-        background: url("/images/design/stats/light.svg");
+        background: var(--light-background);
         top: 0;
         left: 0;
         right: 0;
@@ -102,7 +103,8 @@
     }
   }
   &__block-without-hover {
-    @extend .bg-background-secondary, .rounded-16, .px-20, .py-20, .transition-all;
+    @extend .bg-background-secondary, .px-20, .py-20, .transition-all;
+    border-radius: var(--block-radius);
   }
   &__params {
     @extend .py-28;
@@ -120,11 +122,11 @@
       .items-center,
       .flex-column,
       .transition-box-shadow,
-      .rounded-8,
       .border-1,
       .border-background-teritiary,
       .border-solid;
       overflow: hidden;
+      border-radius: var(--card-radius);
       &__image {
         @extend .mb-16, .transition-transform;
         @include range(48, 48, "px");
@@ -171,14 +173,15 @@
     }
   }
   &__category {
-    @extend .bg-background-teritiary, .p-12, .rounded-8, .relative, .overflow-hidden;
+    @extend .bg-background-teritiary, .p-12, .relative, .overflow-hidden;
+    border-radius: var(--card-radius);
     & img {
       @extend .transition-transform;
     }
     &:before {
       @extend .block, .absolute, .transition-opacity;
       content: "";
-      background: url("/images/design/stats/light.svg");
+      background: var(--light-background);
       top: -50px;
       right: -80px;
       background-repeat: no-repeat;
@@ -267,11 +270,12 @@
     grid-template-columns: repeat(auto-fit, minmax(311px, 1fr));
     & .the-best {
       &__item {
-        @extend .p-20, .bg-background-secondary, .rounded-16, .relative, .overflow-hidden;
+        @extend .p-20, .bg-background-secondary, .relative, .overflow-hidden;
+        border-radius: var(--block-radius);
         &:after {
           content: "";
           @extend .absolute;
-          background: url("/images/design/stats/light_the_best.svg");
+          background: var(--light-the-best-background);
           background-repeat: repeat-y;
           background-size: 100%;
           @include range(100, 100, "%");
@@ -288,9 +292,22 @@
       }
       &__list {
         @extend .relative, .z-1, .w-full;
-        & li {
-          @extend .py-6, .px-12, .relative;
-          list-style-position: inside;
+        list-style-type: none;
+        &__item {
+          width: 100%;
+          vertical-align: top;
+          display: inline-block;
+          &__wrap {
+            @extend .py-6, .relative;
+          }
+          &_header {
+            @extend .flex, .items-center, .justify-space-between, .min-w-190, .p2;
+            margin-bottom: 4px;
+          }
+          &_reward {
+            @extend .inline-flex, .items-center, .gap-x-4, .bg-background-main, .rounded-4;
+            padding: 4px;
+          }
           &:before {
             @extend .absolute, .transition-all;
             content: "";
@@ -310,14 +327,6 @@
             &:before {
               opacity: 100;
             }
-          }
-          & > div {
-            @extend .pl-6;
-            vertical-align: top;
-            width: calc(100% - 16px);
-          }
-          &::marker {
-            @extend .p2;
           }
         }
       }

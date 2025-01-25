@@ -10,8 +10,6 @@ use yii\web\NotFoundHttpException;
 class RustCheck
 {
 
-    public $secretKey;
-
     /**
      * {@inheritdoc}
      */
@@ -25,7 +23,8 @@ class RustCheck
      */
     public function getInfo($steamId)
     {
-        $url = $this->baseUrl . "?action=getInfo&key={$this->secretKey}&player={$steamId}";
+        $secretKey = Yii::$app->settings->get('banSystem_rustcheatcheck');
+        $url = $this->baseUrl . "?action=getInfo&key={$secretKey}&player={$steamId}";
         $response = Yii::$app->curl->get($url);
         if (empty($response)) {
             return [];
@@ -38,7 +37,8 @@ class RustCheck
      */
     public function ban($steamId, $reason)
     {
-        $url = $this->baseUrl . "?action=addBan&key={$this->secretKey}&player={$steamId}&reason={$reason}";
+        $secretKey = Yii::$app->settings->get('banSystem_rustcheatcheck');
+        $url = $this->baseUrl . "?action=addBan&key={$secretKey}&player={$steamId}&reason={$reason}";
         Yii::$app->curl->get($url);
     }
 
@@ -47,7 +47,8 @@ class RustCheck
      */
     public function unban($steamId)
     {
-        $url = $this->baseUrl . "?action=removeBan&key={$this->secretKey}&player={$steamId}";
+        $secretKey = Yii::$app->settings->get('banSystem_rustcheatcheck');
+        $url = $this->baseUrl . "?action=removeBan&key={$secretKey}&player={$steamId}";
         Yii::$app->curl->get($url);
     }
 

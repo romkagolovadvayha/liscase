@@ -24,7 +24,7 @@ class SettingsController extends Controller
     }
 
     // Страница отображения настроек
-    public function actionForm($category)
+    public function actionForm($category, $itemsFlexClass = null)
     {
         $settings = SiteSetting::find()
                                ->indexBy('id')
@@ -52,11 +52,16 @@ class SettingsController extends Controller
                     }
                 }
             }
+            if ($category === 'colors') {
+                Yii::$app->settings->genColors();
+            }
             Yii::$app->settings->getSettings(true);
             Yii::$app->session->setFlash('success', 'Настройки успешно сохранены!');
         }
+
         return $this->render('pages/form', [
-            'category' => $category
+            'category' => $category,
+            'setting_items_class' => $itemsFlexClass,
         ]);
     }
 

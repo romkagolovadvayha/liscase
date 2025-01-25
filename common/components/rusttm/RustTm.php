@@ -10,8 +10,6 @@ use yii\web\NotFoundHttpException;
 class RustTm
 {
 
-    public $secretKey;
-
     /**
      * {@inheritdoc}
      */
@@ -22,7 +20,8 @@ class RustTm
      */
     public function history(): array
     {
-        $url = $this->baseUrl . "/history?key={$this->secretKey}";
+        $secretKey = Yii::$app->settings->get('rusttm_secretKey');
+        $url = $this->baseUrl . "/history?key={$secretKey}";
         $response = Yii::$app->curl->get($url);
         return json_decode($response, 1);
     }
@@ -32,7 +31,8 @@ class RustTm
      */
     public function buy($name, $price, $partner, $token): array
     {
-        $url = $this->baseUrl . "/buy-for?key={$this->secretKey}&hash_name=".urlencode($name)."&price={$price}&partner={$partner}&token={$token}";
+        $secretKey = Yii::$app->settings->get('rusttm_secretKey');
+        $url = $this->baseUrl . "/buy-for?key={$secretKey}&hash_name=".urlencode($name)."&price={$price}&partner={$partner}&token={$token}";
         $response = Yii::$app->curl->get($url);
         Yii::$app->telegramChats->sendMessage($response);
         if (empty($response)) {

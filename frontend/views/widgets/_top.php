@@ -6,6 +6,7 @@ use common\models\user\UserTop;
 /** @var Servers[] $servers */
 /** @var array $PROJECT_STATS */
 /** @var array $userData */
+/** @var $SETTINGS */
 
 $top = UserTop::getUserTop($servers);
 ?>
@@ -15,4 +16,5 @@ $top = UserTop::getUserTop($servers);
     'PROJECT_STATS' => $PROJECT_STATS,
     'USER' => $userData,
     'TOP' => $top,
+    'SETTINGS' => $SETTINGS
 ]);?>

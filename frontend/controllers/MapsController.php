@@ -2,6 +2,7 @@
 namespace frontend\controllers;
 
 use common\models\servers\Servers;
+use common\models\statistics\Statistics;
 use common\models\user\User;
 use frontend\models\maps\MapsSearch;
 use Yii;
@@ -79,8 +80,17 @@ class MapsController extends Controller
             Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос снят!'));
             $model->unvoted();
         } else {
-            Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос успешно учтен!'));
-            $model->voted();
+            $playtime = Statistics::find()
+                ->andWhere(['steam_id' => $user->steam_id])
+                ->andWhere(['key' => 'playtime'])
+                ->sum('value');
+
+            if ($playtime < 60) {
+                Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы проголосовать, нужно отыграть на сервере минимум 1 час!'));
+            } else {
+                Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос успешно учтен!'));
+                $model->voted();
+            }
         }
 
         return $this->renderAjax('@frontend/views/maps/like', [
