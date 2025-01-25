@@ -402,6 +402,8 @@ if (!Yii::$app->user->isGuest) {
                     <a class="ShopFooter-module__link" href="/site/personalinformation" target="_blank" rel="noreferrer"><?=Yii::t('common', 'Обработка персональных данных')?></a>
                     <a class="ShopFooter-module__link" href="mailto:<?=Yii::$app->params['email']?>" target="_blank" rel="noreferrer"><?=Yii::$app->params['email']?></a>
                 </div>
+                <div class="mt-2">ИП УСКОВ АРТЕМ ОЛЕГОВИЧ</div>
+                <div>ИНН 180600035048</div>
             </div>
         </div>
     </div>
