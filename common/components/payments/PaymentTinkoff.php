@@ -16,8 +16,8 @@ class PaymentTinkoff
      */
     public function create($deposit)
     {
-        $terminalKey = '1737463692019';
-        $secretKey = 'h3ba1mc*oVHGwj6R';
+        $terminalKey = '1737559446507';
+        $secretKey = '4J4_4eebH1yPO6eA';
         $TBank = new TBankMerchantAPI($terminalKey, $secretKey);
         $request = $TBank->create($deposit->amount, 'sbp', 'Донат на игровой сервер', $deposit->id, null, null, $deposit->user->email);
         if (!$request['Success']) {
@@ -31,8 +31,8 @@ class PaymentTinkoff
 
     public function check($depositId)
     {
-        $terminalKey = '1737463692019';
-        $secretKey = 'h3ba1mc*oVHGwj6R';
+        $terminalKey = '1737559446507';
+        $secretKey = '4J4_4eebH1yPO6eA';
         $TBank = new TBankMerchantAPI($terminalKey, $secretKey);
         $request = $TBank->check($depositId);
         $model = Deposit::findOne($depositId);
@@ -61,15 +61,17 @@ class PaymentTinkoff
 
     public function debugCheck($depositId)
     {
-        $terminalKey = '1737463692019';
-        $secretKey = 'h3ba1mc*oVHGwj6R';
+        $terminalKey = '1737559446507';
+        $secretKey = '4J4_4eebH1yPO6eA';
         $TBank = new TBankMerchantAPI($terminalKey, $secretKey);
         $model = Deposit::findOne($depositId);
         if ($model->status !== Deposit::STATUS_WAIT_CONFIRM) {
             return $model->status;
         }
         $request = $TBank->check($depositId);
-
+        if (empty($request['Payments'])) {
+            return '';
+        }
         return $request['Payments'][0]['Status'];
     }
 

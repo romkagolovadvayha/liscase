@@ -252,7 +252,7 @@ if (!Yii::$app->user->isGuest) {
             </div>
             <div class="collapse navbar-collapse" id="navbarHeader">
                 <a class="navbar-brand" href="<?=Yii::$app->homeUrl?>">
-                    <img src="<?=Yii::$app->settings->get('design_logo')?>"/>
+                    <img src="<?=Yii::$app->params['logo']?>"/>
                 </a>
                 <?=Nav::widget([
                     'items' => [
