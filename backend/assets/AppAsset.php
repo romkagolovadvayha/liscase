@@ -3,6 +3,7 @@
 namespace backend\assets;
 
 use yii\web\AssetBundle;
+use yii\web\JqueryAsset;
 
 /**
  * Main backend application asset bundle.
@@ -18,5 +19,10 @@ class AppAsset extends AssetBundle
     public $js = [
         'https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js',
         'js/backend.js',
+    ];
+
+    public $depends = [
+        BootstrapAsset::class,
+        FontAwesomeAsset::class,
     ];
 }

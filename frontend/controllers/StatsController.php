@@ -59,55 +59,40 @@ class StatsController extends WebController
         $user = Yii::$app->user->identity;
 
         $items = UserTop::getUserTops($server, $server->currentWipe());
+        $searchJS = User::searchJS();
 
         return $this->render('statistics.twig', [
             'SERVER'  => $server,
             'SERVERS'  => $servers,
             'USER'  => $user,
             'ITEMS'  => $items,
+            'SEARCH_JS'  => $searchJS,
         ]);
     }
 
-    public function actionSearch($q, $server) {
+    public function actionSearch($q, $serverId) {
         \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
-        /** @var Servers $server */
-        $server = Servers::find()
-                         ->cache(30)
-                         ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
-                         ->andWhere(['tag' => $server])
-                         ->one();
-
-        if (empty($server)) {
-            throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден!'));
-        }
-
         $result = [];
-        $items = [];
         if (is_null($q)) {
             throw new NotFoundHttpException(Yii::t('common', 'Неверный запрос!'));
         }
-        $date = new \DateTime();
-        $date->modify('-30 day');
-        /** @var User[] $users */
-        $users = User::find()
-                     ->andWhere(['OR', ['LIKE', 'username', '%'.$q.'%', false], ['LIKE', 'steam_id', '%'.$q.'%', false]])
-                     ->andWhere(['>=', 'last_visit_server_at', $date->format('Y-m-d H:i:s')])
-                     ->andWhere(['status' => User::STATUS_ACTIVE])
-                     ->andWhere(['is_stats' => true])
-                     ->orderBy(['last_visit_server_at' => SORT_DESC])
-                     ->all();
-        foreach ($users as $user) {
-            $items[] = [
-                'id' => $user->id,
-                'name' => $user->username,
-                'server' => $server->tag,
-                'strtolower' => mb_strtolower($user->username),
-                'steam_id' => $user->steam_id,
-                'statsLink' => $user->getLink('stats'),
-                'avatar' => $user->getAvatar(),
-            ];
+
+        $users = User::getUsers($serverId);
+        $needle = mb_strtolower($q);
+
+        function findKey($arr, $needle) {
+            return array_values(
+                array_filter(
+                    $arr,
+                    function ($element) use ($needle) {
+                        return strpos($element['strtolower'], $needle) !== false || $element['steam_id'] == $needle;
+                    }
+                )
+            );
         }
+
+        $items = array_slice(findKey($users, $needle), 0, 15);
         $result['items'] = $items;
         return $result;
     }

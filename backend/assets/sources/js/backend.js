@@ -166,3 +166,29 @@ if (telegramconstructor_audience_id) {
 if ($.fn.filseinputLocales) {
     $.fn.filseinputLocales['ru']['dropZoneTitle'] = "Выберите файлы";
 }
+
+function initBackend() {
+    var colorPicker = $('.color_picker');
+    var colorPickerText = $('.color_picker_text');
+    if (colorPicker) {
+        colorPicker.on('input', function (e) {
+            var _el = $(this);
+            var _colorPickerText = $(this).parent().parent().find('.color_picker_text');
+            _colorPickerText.val(_el.val());
+        });
+        colorPickerText.on('input', function (e) {
+            var _el = $(this);
+            var _colorPicker = $(this).parent().parent().find('.color_picker');
+            _colorPicker.val(_el.val());
+        });
+    }
+}
+
+initBackend();
+
+$(document).on('pjax:send', function() {
+
+});
+$(document).on('pjax:complete', function() {
+    initBackend();
+});

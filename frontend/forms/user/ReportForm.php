@@ -12,6 +12,7 @@ use common\models\user\User;
 use common\models\user\UserPromocode;
 use Yii;
 use yii\base\BaseObject;
+use yii\helpers\HtmlPurifier;
 
 class ReportForm extends Reports
 {
@@ -75,7 +76,7 @@ class ReportForm extends Reports
         $item = [
             'steam_id' => $this->_user->steam_id,
             'recepient_steam_id' => $this->_recepient_user->steam_id,
-            'reason' => $this->text,
+            'reason' => HtmlPurifier::process($this->text),
             'created_at' => date('Y-m-d H:i:s'),
         ];
         Yii::$app->queueReport->push(new UpdateReportJob([

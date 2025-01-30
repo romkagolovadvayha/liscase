@@ -130,20 +130,27 @@ class Kills extends ActiveRecord
 
         for ($i = 0; $i < count($models); $i++) {
             $model = $models[$i];
+            if (!empty($model['signs'])) {
+                $model['signs'] = json_decode($model['signs'], 1);
+            }
             $model['bot'] = false;
             if (!empty($user) && $model['steam_id'] === $user->steam_id) {
                 $model['name'] = $user->username;
+                $model['link'] = $user->getLink('stats');
             }
             if (!empty($user) && $model['dead'] === $user->steam_id) {
                 $model['dead_name'] = $user->username;
+                $model['dead_link'] = $user->getLink('stats');
             }
             if (empty($model['name']) && strlen($model['steam_id']) === 17) {
                 $_user = User::findBySteamId($model['steam_id']);
                 $model['name'] = $_user->username;
+                $model['link'] = $_user->getLink('stats');
             }
             if (empty($model['dead_name']) && strlen($model['dead']) === 17) {
                 $_user = User::findBySteamId($model['dead']);
                 $model['dead_name'] = $_user->username;
+                $model['dead_link'] = $_user->getLink('stats');
             }
             if ($model['type'] !== 'deaths' && $model['type'] !== 'suicides') {
                 if (!empty($drops[$model['weapon']])) {
@@ -169,6 +176,42 @@ class Kills extends ActiveRecord
         return $models;
     }
 
+    public static function getKillsLive($server, $user = null) {
+        $kills = [];
+        $animals = Kills::getAnimalsList();
+        $animals2 = Kills::getAnimals2List();
+        $models = Kills::getKills($server, $user);
+        foreach ($models as $model) {
+            if (empty($model['dead_name'])) {
+                $model['deadLink'] = "<span class=\"stat-block__list__name\">".Yii::t('common', 'Не известный')."</span>";
+            } else {
+                $model['deadLink'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" class=\"stat-block__list__name p3 link font-medium\" href=\"{$model['dead_link']}\">
+                    {$model['dead_name']}
+                </a>";
+            }
+            if (empty($model['name'])) {
+                $model['link'] = "<span class=\"stats_player_kills_item_name\">".Yii::t('common', 'Не известный')."</span>";
+            } else {
+                $model['link'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" class=\"stat-block__list__name p3 link font-medium\" href=\"{$model['link']}\">
+                    {$model['name']}
+                </a>";
+            }
+            if (!empty($animals[$model['dead']])) {
+                $model['animal'] = $animals[$model['dead']];
+            }
+            if (!empty($animals2[$model['dead']])) {
+                $model['animal2'] = $animals2[$model['dead']];
+            }
+            if (empty($model['weapon_name'])) {
+                $model['weapon_name'] = $model['weapon'];
+            }
+            $kills[] = $model;
+        }
+        unset($models);
+
+        return $kills;
+    }
+
     public static function getLive($servers, $update = false) {
         $cacheKey = 'steam_getLive_' . count($servers);
         if (Yii::$app->cache->get($cacheKey) && !$update) {
@@ -183,16 +226,16 @@ class Kills extends ActiveRecord
             $kills[$server->id] = [];
             foreach ($models as $model) {
                 if (empty($model['dead_name'])) {
-                    $model['deadLink'] = "<span class=\"stats_player_kills_item_name\">".Yii::t('common', 'Не известный')."</span>";
+                    $model['deadLink'] = "<span class=\"stat-block__list__name\">".Yii::t('common', 'Не известный')."</span>";
                 } else {
-                    $model['deadLink'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" class=\"p3 link font-medium\" href=\"/stats/player?steamId={$model['dead']}&server={$server->tag}\">
+                    $model['deadLink'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" class=\"stat-block__list__name p3 link font-medium\" href=\"{$model['dead_link']}\">
                     {$model['dead_name']}
                 </a>";
                 }
                 if (empty($model['name'])) {
                     $model['link'] = "<span class=\"stats_player_kills_item_name\">".Yii::t('common', 'Не известный')."</span>";
                 } else {
-                    $model['link'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" class=\"p3 link font-medium\" href=\"/stats/player?steamId={$model['steam_id']}&server={$server->tag}\">
+                    $model['link'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" class=\"stat-block__list__name p3 link font-medium\" href=\"{$model['link']}\">
                     {$model['name']}
                 </a>";
                 }

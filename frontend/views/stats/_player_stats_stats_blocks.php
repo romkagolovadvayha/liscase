@@ -2,6 +2,7 @@
 
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
+use common\models\user\UserTree;
 
 /** @var Servers $server */
 /** @var array $images */
@@ -10,38 +11,41 @@ use common\models\statistics\Statistics;
 /** @var string $steamId */
 /** @var \common\models\user\User $user */
 
+$items   = [
+    [
+        'name'  => Yii::t('common', 'Обломки костей'),
+        'score' => Statistics::getParam($player, 'bone.fragments'),
+        'image' => Statistics::getImage($images, 'bone.fragments'),
+    ],
+    [
+        'name'  => Yii::t('common', 'Животный жир'),
+        'score' => Statistics::getParam($player, 'fat.animal'),
+        'image' => Statistics::getImage($images, 'fat.animal'),
+    ],
+    [
+        'name'  => Yii::t('common', 'Кожа'),
+        'score' => Statistics::getParam($player, 'leather'),
+        'image' => Statistics::getImage($images, 'leather'),
+    ],
+    [
+        'name'  => Yii::t('common', 'Прыжков с парашюта'),
+        'score' => Statistics::getParam($player, 'parachuteseat'),
+        'image' => Statistics::getImage($images, 'parachute'),
+    ],
+    [
+        'name'  => Yii::t('common', 'Выкопано тайников'),
+        'score' => Statistics::getParam($player, 'stash'),
+        'image' => Statistics::getImage($images, 'small-stash'),
+    ],
+    [
+        'name'  => Yii::t('common', 'Скрап'),
+        'score' => Statistics::getParam($player, 'scrap'),
+        'image' => Statistics::getImage($images, 'scrap'),
+    ],
+];
+
 ?>
 
-<div class="page-stats__actions-in-game">
-    <div class="page-stats__block page-stats__block_with-light text-center">
-        <img src="<?=Statistics::getImage($images, 'barrel')?>" alt="" class="mb-32 relative z-1" />
-        <p class="p1 text-text-secondary mb-8 text-left relative z-1">
-            <?=Yii::t('common', 'Разбито бочек')?>
-        </p>
-        <h3 class="text-text-main text-left relative z-1"><?=Statistics::getParam($player, 'barrel')?></h3>
-    </div>
-
-    <div class="page-stats__block page-stats__block_with-light text-center">
-        <img src="<?=Statistics::getImage($images, 'crate_open')?>" alt="" class="mb-32 relative z-1" />
-        <p class="p1 text-text-secondary mb-8 text-left relative z-1">
-            <?=Yii::t('common', 'Открыто ящиков')?>
-        </p>
-        <h3 class="text-text-main text-left relative z-1"><?=Statistics::getParam($player, 'crate_open')?></h3>
-    </div>
-
-    <div class="page-stats__block page-stats__block_with-light text-center">
-        <img src="<?=Statistics::getImage($images, 'parachute')?>" alt="" class="mb-32 relative z-1" />
-        <p class="p1 text-text-secondary mb-8 text-left relative z-1">
-            <?=Yii::t('common', 'Прыжков с парашюта')?>
-        </p>
-        <h3 class="text-text-main text-left relative z-1"><?=Statistics::getParam($player, 'parachuteseat')?></h3>
-    </div>
-
-    <div class="page-stats__block page-stats__block_with-light text-center">
-        <img src="<?=Statistics::getImage($images, 'small-stash')?>" alt="" class="mb-32 relative z-1" />
-        <p class="p1 text-text-secondary mb-8 text-left relative z-1">
-            <?=Yii::t('common', 'Выкопано тайников')?>
-        </p>
-        <h3 class="text-text-main text-left relative z-1"><?=Statistics::getParam($player, 'stash')?></h3>
-    </div>
-</div>
+<?=Yii::$app->view->render('farm_other.twig', [
+    'ITEMS' => $items,
+]);?>

@@ -10,7 +10,7 @@
 
     <div class="stat-block__list mb-8">
         {% for SERVER in SERVERS %}
-        <article class="stat-block__server server server_status{{ SERVER.status }}" data-server-id="{{ SERVER.id }}">
+        <article class="stat-block__server server server_item_js server_status{{ SERVER.status }}" data-server-id="{{ SERVER.id }}">
             <header class="server__header">
                 <h5 class="server__title">{{ t('database', SERVER.monitoring_name) }}</h5>
                 <span class="server__status">{{ SERVER.wipeTypeText() }}</span>
@@ -22,10 +22,13 @@
             </p>
 
             <div class="server__progress-wrapper">
-                <div class="server__progress">
-                    <div style="width: {{ SERVER.monitoring().percentPlayers }}%"></div>
+                <div class="server__progress__wrap">
+                    <div class="server__progress progress_js" style="width: {{ SERVER.monitoring().percentPlayers + SERVER.monitoring().percentJoined }}%;">
+                        <div class="server__progress_players players_progress_js" style="width: {{ SERVER.monitoring().percentPlayersAbsolute + SERVER.monitoring().percentJoinedAbsolute }}%;"></div>
+{#                        <div class="server__progress_queued queued_progress_js" style="width: {{ SERVER.monitoring().percentQueued }}%;"></div>#}
+                    </div>
                 </div>
-                <span class="server__progress-value">{{ SERVER.players + SERVER.joined }}/{{ SERVER.max }}</span>
+                <span class="server__progress-value"><span class="players_js">{{ SERVER.players + SERVER.joined }}</span>/{{ SERVER.max }}</span>
 
                 <button
                         class="server__button-copy btn-clipboard"
@@ -36,6 +39,12 @@
                 >
                     <span class="icons icons_16px icons_16px_link"></span>
                 </button>
+            </div>
+            <div class="server__progress__status offline_js">
+                {{ t('common', 'Выключен') }}
+            </div>
+            <div class="server__progress__status wait_js">
+                {{ t('common', 'Скоро открытие') }}
             </div>
         </article>
         {% endfor %}

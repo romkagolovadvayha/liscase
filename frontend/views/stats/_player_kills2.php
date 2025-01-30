@@ -39,7 +39,7 @@ $animals2 = Kills::getAnimals2List();
             } elseif ($model['dead'] === $user->steam_id) {
                 $deadLink = "<span class=\"stats_player_kills_item_name\">{$model['dead_name']}</span> {$dq}";
             } else {
-                $deadLink = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" class=\"link_name stats_player_kills_name\" href=\"/stats/player?steamId={$model['dead']}&server={$server->tag}\">
+                $deadLink = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" class=\"link_name stats_player_kills_name\" href=\"/stats/player?steamId=&server={$server->tag}\">
                     {$model['dead_name']}
                 </a> {$dq}";
             }

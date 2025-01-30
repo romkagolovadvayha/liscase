@@ -8,6 +8,7 @@ use common\models\servers\Servers;
 use common\models\stats\Wipe;
 use common\models\user\Auth;
 use common\models\user\User;
+use common\models\user\UserTree;
 use Yii;
 
 /**

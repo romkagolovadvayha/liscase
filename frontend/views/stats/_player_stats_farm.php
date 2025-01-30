@@ -32,24 +32,14 @@ $items   = [
         'score' => 0.05,
     ],
     [
-        'name'  => Yii::t('common', 'Животный жир'),
-        'key' => 'fat.animal',
+        'name'  => Yii::t('common', 'Разбито бочек'),
         'score' => 0,
+        'key' => 'barrel',
     ],
     [
-        'name'  => Yii::t('common', 'Кожа'),
-        'key' => 'leather',
+        'name'  => Yii::t('common', 'Открыто ящиков'),
         'score' => 0,
-    ],
-    [
-        'name'  => Yii::t('common', 'Обломки костей'),
-        'key' => 'bone.fragments',
-        'score' => 0,
-    ],
-    [
-        'name'  => Yii::t('common', 'Скрап'),
-        'key' => 'scrap',
-        'score' => 0,
+        'key' => 'crate_open',
     ],
 ];
 
@@ -60,7 +50,7 @@ foreach ($items as $item) {
 ?>
 
 <!-- Ресурсы -->
-<section class="page-stats__block-without-hover">
+<section class="page-stats__block-without-hover w-50p">
     <header class="flex items-center justify-space-between mb-24 transition-all">
         <h4 class="flex items-center gap-x-12">
             <?=Yii::t('common', 'Ресурсы')?><span
@@ -70,15 +60,6 @@ foreach ($items as $item) {
                     data-bs-title="<?=Yii::t('common', 'Количество нафармленных ресурсов игроком за вайп')?>"
             ></span>
         </h4>
-
-        <label class="page-stats__show-statistics-block">
-            <p class="p1 text-text-teritiary"><?=Yii::t('common', 'Показывать')?></p>
-            <input checked type="checkbox" class="show-statistics-block__switch none" />
-            <span>
-                    <span class="icons icons_switch icons_switch_on"></span>
-                    <span class="icons icons_switch icons_switch_off"></span>
-                  </span>
-        </label>
     </header>
 
     <div class="page-stats__categories">

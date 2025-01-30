@@ -53,58 +53,54 @@ $dataProvider = new \yii\data\ArrayDataProvider([
 
 ?>
 
-<div class="container-fluid mb-5">
-    <div class="main_wrap">
-        <aside>
-            <?= $this->render('@frontend/views/widgets/_profile'); ?>
-            <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
-        </aside>
-        <main id="main" role="main">
-            <div class="main_child">
-                <div class="profile_content">
-                    <div class="profile_content_header">
-                        <?=Yii::t('common', "История операций")?>
-                    </div>
-                    <div class="profile_content_body">
-                        <?= Alert::widget() ?>
-                        <div class="profile_table">
-                            <?= \kartik\grid\GridView::widget([
-                                                                  'dataProvider' => $dataProvider,
-                                                                  'layout'       => "{items} {pager}",
-                                                                  'columns'      => [
-                                                                      [
-                                                                          'attribute' => 'comment',
-                                                                          'label'     => Yii::t('common', "Детали"),
-                                                                          'format'    => 'raw',
-                                                                          'value'          => function ($model) {
-                                                                              return $model['comment'];
-                                                                          },
-                                                                      ],
-                                                                      [
-                                                                          'attribute' => 'created_at',
-                                                                          'options'   => ['width' => '150'],
-                                                                          'label'     => Yii::t('common', "Дата"),
-                                                                          'format'    => 'raw',
-                                                                          'value'          => function ($model) {
-                                                                              return $model['created_at'];
-                                                                          },
-                                                                      ],
-                                                                      [
-                                                                          'attribute' => 'sum',
-                                                                          'options'   => ['width' => '150'],
-                                                                          'label'     => Yii::t('common', "Сумма"),
-                                                                          'format'    => 'raw',
-                                                                          'value'          => function ($model) {
-                                                                              return $model['sum'] . " RUB";
-                                                                          },
-                                                                      ],
-                                                                  ],
-                                                              ]);
-                            ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-</div>
+<?= Alert::widget() ?>
+<section class="tasks">
+    <h2 class="tasks__title">
+        <?=Yii::t('common', 'История операций')?>
+        <span
+                class="icons icons_24px icons_24px_info icons_hover"
+                data-bs-toggle="tooltip"
+                data-bs-placement="right"
+                data-bs-title="<?=Yii::t('common', 'В этом разделе отображаются все ваши операции в магазине.')?>"
+        ></span>
+    </h2>
+
+    <section class="page-stats__block-without-hover">
+    <?= \kartik\grid\GridView::widget([
+                                          'dataProvider' => $dataProvider,
+                                          'layout'       => "{items} {pager}",
+                                          'columns'      => [
+                                              [
+                                                  'attribute' => 'comment',
+                                                  'label'     => Yii::t('common', "Детали"),
+                                                  'format'    => 'raw',
+                                                  'value'          => function ($model) {
+                                                      return $model['comment'];
+                                                  },
+                                              ],
+                                              [
+                                                  'attribute' => 'created_at',
+                                                  'options'   => ['width' => '200'],
+                                                  'label'     => Yii::t('common', "Дата"),
+                                                  'format'    => 'raw',
+                                                  'value'          => function ($model) {
+                                                      return \common\components\helpers\DateHelper::passed($model['created_at']);
+                                                  },
+                                              ],
+                                              [
+                                                  'attribute' => 'sum',
+                                                  'options'   => ['width' => '150'],
+                                                  'label'     => Yii::t('common', "Сумма"),
+                                                  'format'    => 'raw',
+                                                  'value'          => function ($model) {
+                                                      if ($model['sum'] == 0) {
+                                                          return '';
+                                                      }
+                                                      return $model['sum'] . " <span class=\"icons icons_16px icons_16px_coin\"></span>";
+                                                  },
+                                              ],
+                                          ],
+                                      ]);
+    ?>
+    </section>
+</section>

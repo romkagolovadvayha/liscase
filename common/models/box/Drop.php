@@ -6,6 +6,7 @@ use common\components\base\ActiveRecord;
 use common\components\helpers\CurrencyHelper;
 use common\models\statistics\Statistics;
 use Yii;
+use yii\web\JsExpression;
 
 /**
  * @property int         $id
@@ -331,6 +332,61 @@ class Drop extends ActiveRecord
                                              ]);
         }
         return $result;
+    }
+
+    public static function searchJS() {
+        return [
+            'ajaxData' => new JsExpression('function(params) {return {q:params.term}; }'),
+            'processResults' => new JsExpression('function (data, params) {return {results: data.items};}'),
+            'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
+            'templateResult' => new JsExpression("
+                                function (item) {
+                                    if (item.loading) {
+                                        return item.text;
+                                    }
+                                    try {
+                                        var markup = '<div class=\"drop-select-item\"><img class=\"kv-icon-image\" src=\"' + item.image + '\"/><div class=\"drop-select-item-content\">' + item.name + '</div></div>';
+                                        return '<div style=\"overflow:hidden;\">' + markup + '</div>';
+                                    } catch {
+                                        return item.text;
+                                    }
+                                }
+                            "),
+            'templateSelection' => new JsExpression("
+                                function (item) {
+                                    try {
+                                        var model = JSON.parse(item.text);
+                                        return '<div class=\"drop-select-item\"><img class=\"kv-icon-image\" src=\"' + model.image + '\"/><div class=\"drop-select-item-content\">' + model.name + '</div></div>';
+                                    } catch {
+                                        return item.text;
+                                    }
+                                }
+                            "),
+        ];
+    }
+
+    public static function getDropList($all = false, $update = false) {
+        $cacheKey = "Drops_6_getDropList_" . $all;
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        /** @var Drop[] $drops */
+        $drops = Drop::find()
+                     ->andWhere('rust_id is not null')
+                     ->orderBy(['sort' => SORT_ASC])
+                     ->all();
+
+        $items = [];
+        foreach ($drops as $item) {
+            $items[$item->id] = json_encode([
+                                                'id' => $item->id,
+                                                'name' => $item->name,
+                                                'image' => $item->imageOrig->getImagePubUrl(),
+                                            ]);
+        }
+
+        Yii::$app->cache->set($cacheKey, $items, 3*60);
+        return $items;
     }
 
     public function blocked() {

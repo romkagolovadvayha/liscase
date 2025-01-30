@@ -55,19 +55,19 @@
                 <div class="user__stats stats">
                     <div class="stats__item stat" data-bs-toggle="tooltip" data-bs-title="{{ t('common', 'Серная руда') }}">
                         <img src="/images/design/user/gold.png" alt="gold" class="stat__image"/>
-                        <p class="p0">{{ STATS.getParam(USER_STATS, 'sulfur.ore') }}</p>
+                        <p class="p0">{{ STATS.getParam(USER_STATS, 'sulfur.ore')|number_format(0, '', ' ') }}</p>
                     </div>
                     <div class="stats__item stat" data-bs-toggle="tooltip" data-bs-title="{{ t('common', 'Железная руда') }}">
                         <img src="/images/design/user/iron_stone.png" alt="iron_stone" class="stat__image"/>
-                        <p class="p0">{{ STATS.getParam(USER_STATS, 'metal.ore') }}</p>
+                        <p class="p0">{{ STATS.getParam(USER_STATS, 'metal.ore')|number_format(0, '', ' ') }}</p>
                     </div>
                     <div class="stats__item stat" data-bs-toggle="tooltip" data-bs-title="{{ t('common', 'Камень') }}">
                         <img src="/images/design/user/stone.png" alt="stone" class="stat__image"/>
-                        <p class="p0">{{ STATS.getParam(USER_STATS, 'stones') }}</p>
+                        <p class="p0">{{ STATS.getParam(USER_STATS, 'stones')|number_format(0, '', ' ') }}</p>
                     </div>
                     <div class="stats__item stat" data-bs-toggle="tooltip" data-bs-title="{{ t('common', 'Дерево') }}">
                         <img src="/images/design/user/wood.png" alt="wood" class="stat__image"/>
-                        <p class="p0">{{ STATS.getParam(USER_STATS, 'wood') }}</p>
+                        <p class="p0">{{ STATS.getParam(USER_STATS, 'wood')|number_format(0, '', ' ') }}</p>
                     </div>
                 </div>
 
@@ -86,7 +86,7 @@
                     {% if AWARDS %}
                     <div class="awards__list">
                         {% for AWARD in AWARDS %}
-                        <img src="{{ AWARD.image }}"
+                            <img src="{{ AWARD.image }}"
                              alt="award"
                              class="awards__image"
                              data-bs-toggle="tooltip"

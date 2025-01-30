@@ -35,21 +35,27 @@
         <p class="p2 text-text-secondary">{{ t('common', 'Награды') }}</p>
 
         <div class="flex items-center gap-x-16">
+            {% if AMOUNT_GOLD > 0 %}
             <div class="flex items-center gap-x-4">
                 <span class="icons icons_16px icons_16px_trophy bg-system-colors-gold"></span>
-                <span class="p2 text-text-main">500</span>
+                <span class="p2 text-text-main">{{ AMOUNT_GOLD }}</span>
                 <span class="icons icons_16px icons_16px_coin"></span>
             </div>
+            {% endif %}
+            {% if AMOUNT_SILVER > 0 %}
             <div class="flex items-center gap-x-4">
                 <span class="icons icons_16px icons_16px_trophy bg-system-colors-silver"></span>
-                <span class="p2 text-text-main">150</span>
+                <span class="p2 text-text-main">{{ AMOUNT_SILVER }}</span>
                 <span class="icons icons_16px icons_16px_coin"></span>
             </div>
+            {% endif %}
+            {% if AMOUNT_BRONZE > 0 %}
             <div class="flex items-center gap-x-4">
                 <span class="icons icons_16px icons_16px_trophy bg-system-colors-bronze"></span>
-                <span class="p2 text-text-main">50</span>
+                <span class="p2 text-text-main">{{ AMOUNT_BRONZE }}</span>
                 <span class="icons icons_16px icons_16px_coin"></span>
             </div>
+            {% endif %}
         </div>
     </div>
 

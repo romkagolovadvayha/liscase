@@ -129,12 +129,37 @@ class Servers extends \common\components\base\ActiveRecord
         $h = floor (($minutes - $d * 1440) / 60);
         $m = $minutes - ($d * 1440) - ($h * 60);
 
+        $dName = Yii::t('common', 'день');
+        if (in_array($d, [2,3,4])) {
+            $dName = Yii::t('common', 'дня');
+        } elseif ($d > 4) {
+            $dName = Yii::t('common', 'дней');
+        }
+
+        $hName = Yii::t('common', 'час');
+        if (in_array($h, [2,3,4,22,23,24])) {
+            $hName = Yii::t('common', 'часа');
+        } elseif (in_array($h, [1,21])) {
+            $hName = Yii::t('common', 'час');
+        } elseif ($h > 4) {
+            $hName = Yii::t('common', 'часов');
+        }
+
+        $mName = Yii::t('common', 'минута');
+        if (in_array($h, [2,3,4,22,23,24])) {
+            $mName = Yii::t('common', 'минуты');
+        } elseif (in_array($h, [1,21])) {
+            $mName = Yii::t('common', 'минута');
+        } elseif ($h > 4) {
+            $mName = Yii::t('common', 'минут');
+        }
+
         if ($d > 0) {
-            return "{$d}д. {$h}ч. {$m}м.";
+            return "{$d} {$dName} {$h} {$hName}";
         } else if ($h > 0) {
-            return "{$h}ч. {$m}м.";
+            return "{$h} {$hName} {$m} {$mName}";
         } else {
-            return "{$m}м.";
+            return "{$m} {$mName}";
         }
     }
 
@@ -272,6 +297,9 @@ class Servers extends \common\components\base\ActiveRecord
     public function getLink($key) {
         if ($key === 'rules') {
             return "/servers/{$this->tag}/rules";
+        }
+        if ($key === 'stats') {
+            return "/servers/{$this->tag}";
         }
         if ($key === 'maps') {
             return "/maps/{$this->tag}";

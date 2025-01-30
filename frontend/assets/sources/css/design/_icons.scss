@@ -87,7 +87,7 @@
       mask: url("/images/design/icons/16px/user.svg") no-repeat center;
     }
     &_coin {
-      background: url("/images/design/icons/16px/coin.svg") no-repeat center;
+      background: var(--icon-money) no-repeat center;
     }
   }
 

@@ -1,5 +1,5 @@
 .tasks {
-  @extend .mt-64, .content-visibility-auto;
+  @extend .content-visibility-auto;
 
   &__title {
     @extend .mb-32, .flex, .text-text-main, .uppercase, .items-center, .gap-x-12;
@@ -37,10 +37,6 @@
         & .task__image {
           filter: grayscale(100%);
         }
-
-        & .task__content {
-          @extend .mb-24;
-        }
       }
 
       &:hover {
@@ -51,7 +47,8 @@
         @extend .block, .absolute;
         content: "";
         background: var(--light-background);
-        top: 0;
+        bottom: 0;
+        z-index: -1;
         left: 0;
         background-repeat: no-repeat;
         background-size: 100% 240px;
@@ -66,7 +63,7 @@
       }
 
       &__content {
-        @extend .relative, .mb-32;
+        @extend .relative, .mb-24;
         z-index: 1;
       }
 

@@ -33,7 +33,12 @@ $statusClass = $user->getStatus() ? '' : ' profile_offline';
 if ($user->status === User::STATUS_BLOCKED) {
     $statusClass = ' profile_banned';
 }
+$wipes = Statistics::find()
+                   ->select('COUNT(DISTINCT `wipe`)')
+                   ->andWhere(['steam_id' => $user->steam_id])
+                   ->scalar() ?? 0;
 $awards = \common\models\tasks\Task::awards($user->id);
+$kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam($player, 'kills') / Statistics::getParam($player, 'deaths'), 2) : Statistics::getParam($player, 'kills');
 ?>
 
 
@@ -51,119 +56,52 @@ $awards = \common\models\tasks\Task::awards($user->id);
 
 <?= Alert::widget() ?>
 <div class="flex flex-column gap-x-12 gap-y-12 tab-pane active" id="Max3">
-    <div class="flex justify-space-between gap-x-12">
-        <div class="flex flex-column w-full gap-y-12">
-            <section class="page-stats__block profile">
-                <!-- ОНЛАЙН -->
-                <div class="profile__wrapper<?=$statusClass?>">
-                    <div class="profile__image">
-                        <img src="<?=$user->getAvatar()?>" alt="<?=Yii::t('common', 'Аватар игрока')?> <?=$user->username?>" />
-                    </div>
-                    <div>
-                        <h2 class="text-primary-colors-main flex items-center gap-x-12">
-                            <?=$user->username?> <a href="https://steamcommunity.com/profiles/<?=$user->steam_id?>" class="stats_player_card_body_name_steam" target="_blank" title="<?=Yii::t('common', 'Перейти в профиль Steam')?>"><span class="icons icons_24px icons_24px_steam"></span></a>
-                        </h2>
-                        <p class="p1 text-text-main">
-                            <?=Yii::t('common', 'Онлайн за вайп')?>: <span style="color: var(--online);"><?=Servers::getPlayTime(Statistics::getParam($player, 'playtime'))?></span>
-                        </p>
-                    </div>
-                </div>
-
-                <?php if (!empty($user->stat_status)): ?>
-                    <p class="p1 text-text-secondary mb-8 relative z-1"><?=Yii::t('common', 'Статус')?></p>
-                    <p class="p1 text-text-teritiary relative z-1"><?=$user->stat_status?></p>
-                <?php endif; ?>
-
-                <a href="<?=$user->getLink('report')?>" class="flex items-center gap-x-8 mt-20 relative z-1 show-modal-link"
-                   data-size="modal-lg"
-                   data-toggl="modal"
-                   data-target="modal-dialog"
-                   data-title="<?=Yii::t('common', 'Пожаловаться на игрока')?>">
-                    <span class="icons icons_24px icons_24px_report"></span>
-                    <?=Yii::t('common', 'Пожаловаться')?>
-                </a>
-            </section>
-
-            <!-- Награды -->
-            <section class="page-stats__block-without-hover">
-                <h4 class="flex items-center gap-x-12 mb-24">
-                    Награды<span
-                        class="icons icons_24px icons_24px_info icons_hover"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="right"
-                        data-bs-title="<?=Yii::t('common', 'Выполни все задания, чтобы получить награду')?>"
-                    ></span>
-                </h4>
-
-                <div class="page-stats__awards">
-                    <?php if (empty($awards)): ?>
-                        <?=Yii::t('common', 'Игрок не выполнил еще не одного задания.')?>
-                    <?php endif; ?>
-                    <?php foreach ($awards as $item): ?>
-                        <div class="award">
-                            <img src="<?=$item['image']?>" alt="<?=$item['name']?>" class="award__image" />
-                            <p class="p2"><?=$item['name']?></p>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </section>
-
-            <!--Статистика по убийствам и смертям-->
-<!--            <section class="page-stats__block">-->
-<!--                <h4 class="flex items-center gap-x-12 mb-24">-->
-<!--                    Статистика по убийствам и смертям<span-->
-<!--                        class="icons icons_24px icons_24px_info icons_hover"-->
-<!--                        data-bs-toggle="tooltip"-->
-<!--                        data-bs-placement="right"-->
-<!--                        data-bs-title="У каждого оружия указано количество убитых"-->
-<!--                    ></span>-->
-<!--                </h4>-->
-<!---->
-<!--                <img src="/images/design/stats/graphics_2.png" alt="" class="w-full" />-->
-<!--            </section>-->
-
-            <?=$this->render('_player_stats_stats_blocks', [
-                'images' => $images,
-                'names' => $names,
-                'player' => $player,
-                'server' => $server,
-                'steamId' => $steamId,
-                'user' => $user,
-            ]);?>
-        </div>
-
-        <div class="flex flex-column w-full gap-y-12">
-            <?=$this->render('_player_stats_stats', [
-                'images' => $images,
-                'names' => $names,
-                'player' => $player,
-                'server' => $server,
-                'steamId' => $steamId,
-                'user' => $user,
-            ]);?>
-
-<!--            <section class="page-stats__block">-->
-<!--                <h4 class="flex items-center gap-x-12 mb-24">-->
-<!--                    Наигранные часы<span-->
-<!--                            class="icons icons_24px icons_24px_info icons_hover"-->
-<!--                            data-bs-toggle="tooltip"-->
-<!--                            data-bs-placement="right"-->
-<!--                            data-bs-title="У каждого оружия указано количество убитых"-->
-<!--                    ></span>-->
-<!--                </h4>-->
-<!---->
-<!--                <img src="/images/design/stats/graphics_1.png" alt="" class="w-full" />-->
-<!--            </section>-->
-
-            <?=$this->render('_player_stats_hits', [
-                'images' => $images,
-                'names' => $names,
-                'player' => $player,
-                'server' => $server,
-                'steamId' => $steamId,
-                'user' => $user,
-            ]);?>
-        </div>
+    <div class="page-stats__two-blocks">
+        <?=Yii::$app->view->render('profile.twig', [
+            'WRAPPER_CLASS' => $statusClass,
+            'USER' => $user,
+            'STATS' => [
+                'ONLINE' => Servers::getPlayTime(Statistics::getParam($player, 'playtime')),
+                'KILLS' => number_format(Statistics::getParam($player, 'kills'), 0),
+                'DEATHS' => number_format(Statistics::getParam($player, 'deaths'), 0),
+                'KD' => number_format($kdr, 2),
+                'SCIENTISTS' => number_format(Statistics::getParam($player, 'scientists'), 0),
+                'WOUNDED' => number_format(Statistics::getParam($player, 'wounded'), 0),
+                'TCS_DESTOYED' => number_format(Statistics::getParam($player, 'tcsdestroyed'), 0),
+                'WIPES' => number_format($wipes, 0),
+            ],
+        ]);?>
+        <?=$this->render('_player_stats_farm', [
+            'images' => $images,
+            'names' => $names,
+            'player' => $player,
+            'server' => $server,
+            'steamId' => $steamId,
+            'user' => $user,
+        ]);?>
+    </div>
+    <div class="page-stats__two-blocks">
+       <div class="page-stats__categories__blocks_wrap w-50p">
+           <?=Yii::$app->view->render('awards.twig', [
+               'ITEMS' => $awards,
+           ]);?>
+           <?=$this->render('_player_stats_stats_blocks', [
+               'images' => $images,
+               'names' => $names,
+               'player' => $player,
+               'server' => $server,
+               'steamId' => $steamId,
+               'user' => $user,
+           ]);?>
+       </div>
+        <?=$this->render('_player_stats_hits', [
+            'images' => $images,
+            'names' => $names,
+            'player' => $player,
+            'server' => $server,
+            'steamId' => $steamId,
+            'user' => $user,
+        ]);?>
     </div>
 
     <div class="flex flex-column gap-x-12 gap-y-12">
@@ -178,15 +116,6 @@ $awards = \common\models\tasks\Task::awards($user->id);
         ]);?>
 
         <?=$this->render('_player_stats_reider', [
-            'images' => $images,
-            'names' => $names,
-            'player' => $player,
-            'server' => $server,
-            'steamId' => $steamId,
-            'user' => $user,
-        ]);?>
-
-        <?=$this->render('_player_stats_farm', [
             'images' => $images,
             'names' => $names,
             'player' => $player,

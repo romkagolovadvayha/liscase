@@ -9,6 +9,10 @@ use common\models\user\UserTop;
 /** @var $SETTINGS */
 
 $top = UserTop::getUserTop($servers);
+$goldAmount = Yii::$app->settings->get('tops_gold_amount');
+$silverAmount = Yii::$app->settings->get('tops_silver_amount');
+$silverAmount = Yii::$app->settings->get('tops_silver_amount');
+$bronzeAmount = Yii::$app->settings->get('tops_bronze_amount');
 ?>
 
 <?=Yii::$app->view->render('top.twig', [
@@ -16,5 +20,8 @@ $top = UserTop::getUserTop($servers);
     'PROJECT_STATS' => $PROJECT_STATS,
     'USER' => $userData,
     'TOP' => $top,
-    'SETTINGS' => $SETTINGS
+    'SETTINGS' => $SETTINGS,
+    'AMOUNT_GOLD' => $goldAmount,
+    'AMOUNT_SILVER' => $silverAmount,
+    'AMOUNT_BRONZE' => $bronzeAmount,
 ]);?>

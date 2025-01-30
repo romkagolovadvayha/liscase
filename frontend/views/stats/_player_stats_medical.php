@@ -30,14 +30,14 @@ foreach ($keys as $key) {
             ></span>
         </h4>
 
-        <label class="page-stats__show-statistics-block">
-            <p class="p1 text-text-teritiary"><?=Yii::t('common', 'Показывать')?></p>
-            <input checked type="checkbox" class="show-statistics-block__switch none" />
-            <span>
-                      <span class="icons icons_switch icons_switch_on"></span>
-                      <span class="icons icons_switch icons_switch_off"></span>
-                    </span>
-        </label>
+<!--        <label class="page-stats__show-statistics-block">-->
+<!--            <p class="p1 text-text-teritiary">--><?//=Yii::t('common', 'Показывать')?><!--</p>-->
+<!--            <input checked type="checkbox" class="show-statistics-block__switch none" />-->
+<!--            <span>-->
+<!--                      <span class="icons icons_switch icons_switch_on"></span>-->
+<!--                      <span class="icons icons_switch icons_switch_off"></span>-->
+<!--                    </span>-->
+<!--        </label>-->
     </header>
 
     <div class="page-stats__categories">

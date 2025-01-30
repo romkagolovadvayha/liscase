@@ -25,9 +25,9 @@
                 <span class="button__text">
                     {% if PRICE %}
                     {% if PRICE_REAL != PRICE %}
-                        <span class="old-price">{{ PRICE }} ₽</span>
+                        <span class="old-price">{{ PRICE }}</span>
                     {% endif %}
-                    <span>{{ PRICE_REAL }} ₽</span>
+                        <span>{{ PRICE_REAL }}</span> <span class="icons icons_16px icons_16px_coin"></span>
                     {% else %}
                         {{ t('common', 'Купить') }}
                     {% endif %}

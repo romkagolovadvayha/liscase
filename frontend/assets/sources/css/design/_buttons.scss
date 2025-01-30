@@ -134,6 +134,21 @@ button,
     }
   }
 
+  &-disabled {
+    @extend .p2,
+      .uppercase,
+      .py-13,
+      .px-20,
+      .relative,
+      .text-button-secondary-text-color-default,
+      .transition-all;
+    font-weight: 500;
+    box-sizing: border-box;
+    background: transparent;
+    border-radius: var(--button-secondary-radius);
+    border: 1px solid var(--button-secondary-border-color-default);
+  }
+
   // Обязательно оборачивать текст кнопки в <span class="button__text">
   &-teritiary {
     @extend .p2,

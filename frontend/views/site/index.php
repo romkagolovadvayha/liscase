@@ -53,7 +53,7 @@ if (!Yii::$app->user->isGuest) {
                                ->cache(60)
                                ->all();
     }
-    $awards = \common\models\tasks\Task::awards($user->id);
+    $awards = \common\models\tasks\Task::awards($user->id, false);
 }
 
 $SETTINGS = Yii::$app->settings;

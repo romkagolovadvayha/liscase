@@ -1,4 +1,5 @@
 <!-- Команда -->
+{% if ITEMS %}
 <section class="stats-aside__stat-block stat-block">
     <h4 class="stat-block__title">{{ t('common', 'Команда') }}</h4>
     <ul class="stat-block__list">
@@ -20,3 +21,4 @@
         {% endfor %}
     </ul>
 </section>
+{% endif %}

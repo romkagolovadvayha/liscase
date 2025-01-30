@@ -1,0 +1,59 @@
+<!-- Задания на вайп -->
+<section class="tasks">
+    <h2 class="tasks__title">
+        {{ t('common', 'Задания на вайп') }}
+        <span
+                class="icons icons_24px icons_24px_info icons_hover"
+                data-bs-toggle="tooltip"
+                data-bs-placement="right"
+                data-bs-title="{{ t('common', 'Выполни все задания, чтобы получить награду') }}"
+        ></span>
+    </h2>
+
+    <div class="tasks__list">
+        {% for ITEM in ITEMS %}
+        <div class="task{% if ITEM.status != 'completed' %} task_is-not-completed{% endif %}">
+            <div class="task__content">
+                <img src="{{ ITEM.image }}" alt="fermer" class="task__image" />
+
+                <h4 class="task__title">{{ ITEM.name }}</h4>
+                {% if ITEM.status == 'completed' %}
+                    <a href="{{ USER.getLink('stats') }}">{{ t('common', 'Смотреть статистику') }}</a>
+                {% endif %}
+                {% if ITEM.status == 'wait' %}
+                    <div class="task__description">
+                        <p class="p2">{{ t('common', 'Прогресс текущего задания') }}:</p>
+                        <p class="p2">{{ ITEM.info.total|number_format(0, '', ' ')}}/{{ ITEM.info.amount|number_format(0, '', ' ')}} {{ ITEM.info.description}}</p>
+                    </div>
+                {% endif %}
+                {% if ITEM.status == 'wait-get' %}
+                    <a href="/user/get-achievement?type={{ ITEM.type }}" class="button button-secondary button-size__s h-36 mt-10">
+                        <span class="button__text">{{ t('common', 'Получить награду') }}</span>
+                    </a>
+                {% endif %}
+            </div>
+
+            <div class="task__progress">
+                <div class="progress__title">
+                    {% if ITEM.status == 'completed' %}
+                        <p>{{ t('common', 'Завершено') }}</p>
+                    {% else %}
+                        <p>{{ t('common', 'Прогресс') }}</p>
+                    {% endif %}
+                    <p>{{ ITEM.completed }}/{{ ITEM.count }}</p>
+                </div>
+                <div class="progress__steps steps">
+                    {% for step in ITEM.items %}
+                        {% if step.status == 'completed' %}
+                            <span class="steps__item_is-completed"></span>
+                        {% endif %}
+                        {% if step.status == 'wait' or step.status == 'wait-get' %}
+                            <span></span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>

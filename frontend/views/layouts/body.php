@@ -12,6 +12,7 @@ use common\models\statistics\Teams;
 use common\models\statistics\Statistics;
 use common\models\building\Building;
 use common\models\user\User;
+use common\models\statistics\Kills;
 
 $breadcrumbs = null;
 $page = isset($this->params['page']) ? $this->params['page'] : '';
@@ -27,6 +28,8 @@ $hiddenMenu = Cookie::getValue('isMenuHide') == 'true';
 //file_put_contents(Yii::getAlias('@frontend/web/css/styles.min.css'), $compileFile->getCss());
 $buildingsBlock = null;
 $teamBlock = null;
+$killsBlock = null;
+$profileBlock = null;
 if (!empty($this->params['_user'])) {
     /** @var User $_user */
     $_user = $this->params['_user'];
@@ -37,6 +40,12 @@ if (!empty($this->params['_user'])) {
     }
     $team = Teams::getTeam($_server, $_user->steam_id);
     $teamBlock = $this->render('@frontend/views/widgets/teams.twig', ['ITEMS' => $team]);
+    $kills = Kills::getKillsLive($_server, $_user);
+    $killsBlock = $this->render('@frontend/views/widgets/kills.twig', ['ITEMS' => $kills]);
+}
+if (!empty($this->params['_profile'])) {
+    /** @var User $_user */
+    $profileBlock = $this->render('@frontend/views/widgets/profile.twig', ['userData' => $userData, 'PAGE' => $page, 'SETTINGS' => $SETTINGS]);
 }
 ?>
 
@@ -58,6 +67,7 @@ if (!empty($this->params['_user'])) {
     'email' => Yii::$app->params['email'],
     'user' => $userData,
     'MENU_HIDDEN' => $hiddenMenu,
+    'PROFILE_BLOCK' => $profileBlock,
 //    'ALERT_MESSAGE' => $this->render('@frontend/views/widgets/_alert'),
 //    'SKINDROPS_BLOCK' => $this->render('@frontend/views/widgets/_skindrops'),
     'SERVERS_BLOCK' => $this->render('@frontend/views/widgets/_servers', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'SETTINGS' => $SETTINGS]),
@@ -65,6 +75,7 @@ if (!empty($this->params['_user'])) {
     'TOP_BLOCK' => $this->render('@frontend/views/widgets/_top', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]),
     'LIVE_BLOCK' => $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]),
     'BUILDINGS_BLOCK' => $buildingsBlock,
+    'KILLS_BLOCK' => $killsBlock,
     'TEAMS_BLOCK' => $teamBlock,
     'HEADER' => Yii::$app->view->render('header.twig', [
         'HOME_URL' => Yii::$app->homeUrl,
@@ -78,8 +89,8 @@ if (!empty($this->params['_user'])) {
     'MENU' => Yii::$app->view->render('menu.twig', [
         'MENU_HIDDEN' => $hiddenMenu,
         'USER' => $userData,
-        'PAGE' => $page,
         'NOTIFICATIONS' => $notifications,
+        'PAGE' => $page,
         'SETTINGS' => $SETTINGS,
     ]),
     'MODAL' => Yii::$app->view->render('modal.twig', [

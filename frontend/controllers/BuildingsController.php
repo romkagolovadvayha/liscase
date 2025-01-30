@@ -141,6 +141,13 @@ class BuildingsController extends WebController
             return $this->redirect(['index']);
         }
 
+        /** @var \common\models\user\User $user */
+        $user = Yii::$app->user->identity;
+        if (empty($user->server)) {
+            Yii::$app->session->addFlash('danger', Yii::t('common', 'Добавить сервер могут только игроки!'));
+            return $this->redirect(['index']);
+        }
+
         $model = new BuildingForm();
 
         if ($this->request->isPost) {
@@ -155,6 +162,7 @@ class BuildingsController extends WebController
         $this->view->params['page'] = 'buildings';
         return $this->render('create', [
             'model' => $model,
+            'server' => $user->server,
         ]);
     }
 

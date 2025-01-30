@@ -119,4 +119,23 @@ class DateHelper
 
         return $array;
     }
+
+    public static function passed($date, $time_format = 'H:i:s', $month_format = 'd.m.Y H:i:s', $year_format = 'd.m.Y H:i:s') {
+        $_date = new \DateTime($date);
+        $today = new \DateTime('now', $_date->getTimezone());
+        $yesterday = new \DateTime('-1 day', $_date->getTimezone());
+        $tomorrow = new \DateTime('+1 day', $_date->getTimezone());
+
+        if ($today->format('ymd') == $_date->format('ymd')) {
+            return \Yii::t('common', 'Сегодня');
+
+        } elseif ($yesterday->format('ymd') == $_date->format('ymd')) {
+            return \Yii::t('common', 'Вчера');
+
+        } elseif ($today->format('Y') == $_date->format('Y')) {
+            return $_date->format($month_format);
+        } else {
+            return $_date->format($year_format);
+        }
+    }
 }

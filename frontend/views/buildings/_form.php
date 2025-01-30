@@ -10,6 +10,7 @@ use yii\web\JsExpression;
 /** @var yii\web\View $this */
 /** @var \frontend\forms\buildings\BuildingForm $model */
 /** @var yii\widgets\ActiveForm $form */
+/** @var \common\models\servers\Servers $server */
 
 $formatJs = <<< 'JS'
 var formatRepo = function (repo) {
@@ -65,7 +66,7 @@ JS;
                 'allowClear' => true,
                 'minimumInputLength' => 1,
                 'ajax' => [
-                    'url' => "/stats/search?server=" . Yii::$app->params['statisticsServerDefault'],
+                    'url' => "/stats/search?serverId=" . $server->id,
                     'dataType' => 'json',
                     'delay' => 250,
                     'data' => new JsExpression('function(params) { return {q:params.term}; }'),

@@ -52,7 +52,7 @@ class SettingsController extends Controller
                     }
                 }
             }
-            if ($category === 'colors') {
+            if (in_array($category, ['colors', 'design'])) {
                 Yii::$app->settings->genColors();
             }
             Yii::$app->settings->getSettings(true);

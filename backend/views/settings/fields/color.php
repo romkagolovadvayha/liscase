@@ -13,6 +13,9 @@ use common\models\site\SiteSetting;
         <span class="setting_items_item_block_code"><?=$item->category?>_<?=$item->code?></span>
     </span>
     <span>
-        <input type="color" class="form-control" name="settings[<?=$item->id?>]" value="<?=$item->value?>" />
+        <input type="text" class="color_picker_text form-control" style="width: 90px;" value="<?=$item->value?>" />
+    </span>
+    <span>
+        <input type="color" class="color_picker form-control" name="settings[<?=$item->id?>]" value="<?=$item->value?>" />
     </span>
 </div>

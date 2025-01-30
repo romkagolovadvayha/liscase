@@ -90,8 +90,24 @@ $servers = Servers::find()
                                 'cache' => true
                             ],
                             'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
-                            'templateResult' => new JsExpression('formatRepo'),
-                            'templateSelection' => new JsExpression('formatRepoSelection')
+                            'templateResult' => new JsExpression("
+                                function (repo) {
+                                    if (repo.loading) {
+                                        return repo.text;
+                                    }
+                                    var markup =
+                                        '<a href=\"/stats/player?steamId=' + repo.steam_id + '&server=' + repo.server + '\" class=\"\">' +
+                                        '<div class=\"page_stats_search_name\">' + repo.name + '</div>' +
+                                        '<div class=\"page_stats_search_steam_id\">' + repo.steam_id + '</div>' +
+                                        '</a>';
+                                    return '<div style=\"overflow:hidden;\">' + markup + '</div>';
+                                }
+                            "),
+                            'templateSelection' => new JsExpression("
+                                function (repo) {
+                                    return repo.name || repo.text;
+                                }
+                            "),
                         ],
                         'pluginEvents' => [
                             "select2:select" => "function(e) { 

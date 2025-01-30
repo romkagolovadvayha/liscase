@@ -20,6 +20,7 @@ use yii\helpers\ArrayHelper;
 use yii\helpers\HtmlPurifier;
 use yii\web\IdentityInterface;
 use common\components\base\ActiveRecord;
+use yii\web\JsExpression;
 
 /**
  * @property int             $id
@@ -638,6 +639,9 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     public function getAvatar() {
+        if (empty($this->userProfile)) {
+            return '';
+        }
         return Yii::$app->params['cdnUrl'] . $this->userProfile->avatar;
     }
 
@@ -848,6 +852,9 @@ class User extends ActiveRecord implements IdentityInterface
             $server = $this->getCurrentServer();
             return "/servers/{$server->tag}/{$this->steam_id}/report";
         }
+        if ($key === 'steam') {
+            return "https://steamcommunity.com/profiles/{$this->steam_id}";
+        }
         return null;
     }
 
@@ -858,5 +865,87 @@ class User extends ActiveRecord implements IdentityInterface
             'BUILDINGS' => 0,
             'BANS' => 0,
         ];
+    }
+
+    public static function searchJS() {
+        return [
+          'ajaxData' => new JsExpression('function(params) { return {q:params.term}; }'),
+          'processResults' => new JsExpression('function (data, params) {return {results: data.items};}'),
+          'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
+          'templateResult' => new JsExpression("
+                                function (repo) {
+                                    if (repo.loading) {
+                                        return repo.text;
+                                    }
+                                    var markup =
+                                '<a href=\"' + repo.statsLink + '\" class=\"select2_dropdown_item\">' + 
+                                    '<div class=\"select2_dropdown_item_image\"><img src=\"' + repo.avatar + '\"/></div>' +
+                                    '<div class=\"select2_dropdown_item_content\">' +
+                                    '<div class=\"select2_dropdown_item_content_name\">' + repo.name + '</div>' +
+                                    '<div class=\"select2_dropdown_item_content_steam_id\">' + repo.steam_id + '</div>' +
+                                    '</div>' +
+                                '</a>';
+                                    return '<div style=\"overflow:hidden;\">' + markup + '</div>';
+                                }
+                            "),
+          'templateSelection' => new JsExpression("
+                                    function (repo) {
+                                        if (!repo.name) {
+                                            return repo.text;
+                                        }
+                                        return '<div class=\"select2_dropdown_item\">' + 
+                                        '<div class=\"select2_dropdown_item_image_24\">' + 
+                                            '<img src=\"' + repo.avatar + '\"/></div>' +
+                                            '<div class=\"select2_dropdown_item_content\">' +
+                                                '<div class=\"select2_dropdown_item_content_name\">' + repo.name + '</div>' +
+                                            '</div>' +
+                                        '</div>';
+                                    }
+                            "),
+          'eventSelect2' => new JsExpression("
+                                    function(e) { 
+                                        window.location.href = e.params.data.statsLink;
+                                    }
+                            "),
+        ];
+    }
+
+    /**
+     * @param       $serverId
+     * @param false $update
+     *
+     * @return array|false|mixed
+     */
+    public static function getUsers($serverId, $update = false) {
+        $cacheKey = "User_getUsers_{$serverId}";
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        $date = new \DateTime();
+        $date->modify('-30 day');
+        /** @var User[] $users */
+        $users = User::find()
+                     ->andWhere(['>=', 'last_visit_server_at', $date->format('Y-m-d H:i:s')])
+                     ->andWhere(['status' => User::STATUS_ACTIVE])
+                     ->andWhere(['server_id' => $serverId])
+                     ->andWhere(['is_stats' => true])
+                     ->orderBy(['last_visit_server_at' => SORT_DESC])
+                     ->all();
+
+        $items = [];
+        foreach ($users as $user) {
+            $items[] = [
+                'id' => $user->id,
+                'name' => $user->username,
+                'strtolower' => mb_strtolower($user->username),
+                'steam_id' => $user->steam_id,
+                'statsLink' => $user->getLink('stats'),
+                'avatar' => $user->getAvatar(),
+                'status' => $user->getStatus(),
+            ];
+        }
+
+        Yii::$app->cache->set($cacheKey, $items, 7*24*60*60);
+        return $items;
     }
 }

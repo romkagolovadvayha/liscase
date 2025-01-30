@@ -190,13 +190,6 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'active' => _checkActive('/blog/'),
                    ],
                    [
-                       'label'  => Yii::t('common', 'Задания'),
-                       'icon'   => 'fa-solid fa-list-check',
-                       'url'    => '/task',
-                       'visibility' => Yii::$app->settings->get('section_tasks') && $admin,
-                       'active' => _checkActive('/task'),
-                   ],
-                   [
                        'label'  => Yii::t('common', 'Переводы'),
                        'icon'   => 'fa-solid fa-language',
                        'url'    => '/translateManager',
@@ -210,6 +203,35 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                         'visibility' => $admin,
                         'active' => _checkActive('/wipe'),
                     ],
+                   [
+                       'label' => 'Бонусы',
+                       'icon' => 'fas fa-cog',
+                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'active' => _checkActive('/achievements-daily') || _checkActive('/promocode') || _checkActive('/task'),
+                       'items' => [
+                           [
+                               'label' => 'Промокоды',
+                               'icon' => 'fa-solid fa-percent',
+                               'url' => ['/promocode'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/promocode'),
+                           ],
+                           [
+                               'label' => 'Ежедневная награда',
+                               'icon' => 'fa-solid fa-cloud-sun',
+                               'url' => ['/achievements-daily'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/achievements-daily'),
+                           ],
+                           [
+                               'label'  => Yii::t('common', 'Задания'),
+                               'icon'   => 'fa-solid fa-list-check',
+                               'url'    => '/task',
+                               'visibility' => Yii::$app->settings->get('section_tasks') && $admin,
+                               'active' => _checkActive('/task'),
+                           ],
+                       ]
+                   ],
                    [
                        'label' => 'Настройки',
                        'icon' => 'fas fa-cog',
@@ -239,13 +261,6 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                                'icon' => 'fas fa-robot',
                                'url' => ['/settings/index?category=bots'],
                                'active' => _checkActive('/settings/index?category=bots'),
-                           ],
-                           [
-                               'label' => 'Промокоды',
-                               'icon' => 'fa-solid fa-percent',
-                               'url' => ['/promocode'],
-                               'visibility' => $admin,
-                               'active' => _checkActive('/promocode'),
                            ],
                            [
                                'label' => 'Добавить настройку',

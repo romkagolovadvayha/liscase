@@ -1,3 +1,40 @@
+{{ use('kartik/select2/Select2') }}
+{{ use('yii/web') }}
+<nav class="servers_navbar mb-24">
+    <ul class="servers_navbar_nav">
+        {% for ITEM in SERVERS %}
+            <li>
+                <a href="{{ ITEM.getLink('stats') }}" class="servers_navbar_nav_item{% if ITEM.tag == SERVER.tag %} active{% endif %}">
+                    {{ t('database', ITEM.monitoring_name) }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+</nav>
+<div class="mb-24">
+    {{ select2_widget({
+        'name': 'stats-search',
+        'options': { 'placeholder': t('common', 'Введите ник или Steam ID...') },
+        'pluginOptions': {
+            'allowClear': true,
+            'minimumInputLength': 1,
+            'ajax': {
+                'url': '/stats/search?serverId=' ~ SERVER.id,
+                'dataType': 'json',
+                'delay': 250,
+                'data': SEARCH_JS.ajaxData,
+                'processResults': SEARCH_JS.processResults,
+                'cache': true
+            },
+            'escapeMarkup': SEARCH_JS.escapeMarkup,
+            'templateResult': SEARCH_JS.templateResult,
+            'templateSelection': SEARCH_JS.templateSelection
+        },
+        'pluginEvents': {
+            "select2:select": SEARCH_JS.eventSelect2,
+        },
+    }) }}
+</div>
 <div class="flex flex-column gap-x-12 gap-y-12 tab-pane active" id="Max3">
     <div class="flex justify-space-between gap-x-12">
         <div class="page-stats__the-best">

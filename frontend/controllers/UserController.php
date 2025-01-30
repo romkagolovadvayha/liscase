@@ -64,6 +64,8 @@ class UserController extends WebController
             throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован!'));
         }
         $post = Yii::$app->request->post();
+        $this->view->params['_profile'] = true;
+        $this->view->params['page'] = 'user-inventory';
         if (!empty($post['sell'])) {
             $userBalance = Yii::$app->user->identity->getPersonalBalance();
             $userDrop = UserDrop::findOne($post['sell']);
@@ -91,6 +93,8 @@ class UserController extends WebController
         }
         $post = Yii::$app->request->post();
         $user = Yii::$app->user->identity;
+        $this->view->params['_profile'] = true;
+        $this->view->params['page'] = 'user-history';
         if (!empty($depositId)) {
             $deposit = Deposit::findOne($depositId);
             if (!empty($deposit) && $deposit->user_id === $user->id && $deposit->status === Deposit::STATUS_WAIT_CONFIRM) {
@@ -151,6 +155,8 @@ class UserController extends WebController
         if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
             throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован!'));
         }
+        $this->view->params['_profile'] = true;
+        $this->view->params['page'] = 'user-partner';
         return $this->render('partner');
     }
 
@@ -164,6 +170,8 @@ class UserController extends WebController
         if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
             throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован!'));
         }
+        $this->view->params['_profile'] = true;
+        $this->view->params['page'] = 'user-task';
         return $this->render('tasks');
     }
 
@@ -225,36 +233,30 @@ class UserController extends WebController
             return $this->redirect('tasks');
         }
         $user = Yii::$app->user->identity;
-        $tasks = Task::getTasksByUser($user, $type);
-        $taskAvailable = null;
-        foreach ($tasks as $task) {
-            if ($task['status'] === 1) {
-                $taskAvailable = $task;
-                break;
-            }
-        }
-        if (empty($taskAvailable)) {
+        $tasks = Task::getTasksByUser($user)[$type];
+        if ($tasks['status'] !== 'wait-get') {
             Yii::$app->session->addFlash('danger', Yii::t('common', 'Задание не выполнено!'));
             return $this->redirect('tasks');
         }
 
-        if ($taskAvailable['drop_id'] === 843) {
-            UserTask::createRecord($user->id, $taskAvailable['id']);
+        if ($tasks['info']['drop_id'] === 843) {
+            UserTask::createRecord($user->id, $tasks['info']['id']);
             $userBalance = $user->getPersonalBalance();
             $model = new Profit();
             $model->user_balance_id   = $userBalance->id;
-            $model->amount            = $taskAvailable['count'];
+            $model->amount            = $tasks['info']['count'];
             $model->type              = $type;
             $model->comment           = Yii::t('common', 'Выполнение задания', [], 'ru-RU');
             $model->status            = 1;
             $model->save();
             $userBalance->recalculateBalance();
-            Yii::$app->session->addFlash('success', Yii::t('common', 'Награда успешно получена'));
         } else {
-            UserTask::createRecord($user->id, $taskAvailable['id']);
-            UserDrop::createRecord($user->id, $taskAvailable['drop_id'], 14, null,UserDrop::STATUS_ACTIVE, false, $taskAvailable['count']);
-            Yii::$app->session->addFlash('success', Yii::t('common', 'Ежедневная награда успешно получена'));
+            UserTask::createRecord($user->id, $tasks['info']['id']);
+            UserDrop::createRecord($user->id, $tasks['info']['drop_id'], 14, null,UserDrop::STATUS_ACTIVE, false, $tasks['info']['count']);
         }
+        Yii::$app->session->addFlash('success', Yii::t('common', 'Награда \"{PARAM_DROP_NAME}\" успешно получена', [
+            'PARAM_DROP_NAME' => $tasks['info']['dropName']
+        ]));
 
         return $this->redirect('tasks');
     }
@@ -276,7 +278,7 @@ class UserController extends WebController
         }
 
         $dailyReward = null;
-        foreach (Task::getDailyRewardList($user) as $item) {
+        foreach (Task::getDailyRewardList($user)['items'] as $item) {
             if (!empty($item['status']) && $item['status'] === 'available') {
                 $dailyReward = $item;
                 break;
@@ -295,7 +297,7 @@ class UserController extends WebController
             $type = Profit::TYPE_DAILY_REWARD_LIST_BOX_BIG;
         }
 
-        if ($dailyReward['drop_id'] === 843) {
+        if ($dailyReward['drop_id'] == 843) {
             $model = new Profit();
             $model->user_balance_id   = $userBalance->id;
             $model->amount            = $dailyReward['amount'];

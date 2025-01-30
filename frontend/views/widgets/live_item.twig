@@ -30,11 +30,28 @@
                 {{ ITEM.deadLink|raw }}
             {% endif %}
         </p>
-        {% if ITEM.distance > 0 %}
+        <div class="stat-block__list__footer">
             <p class="p2">
-                <span class="text-text-secondary mr-4">{{ t('common', 'Дистанция') }}:</span>
+                <span class="text-text-secondary">{{ t('common', 'Дистанция') }}:</span>
                 <span class="text-text-main">{{ ITEM.distance }} {{ t('common', 'м') }}</span>
             </p>
-        {% endif %}
+            {% if ITEM.signs %}
+                {% set break = false %}
+                {% for SIGN in ITEM.signs %}
+                    {% if not break %}
+                        {% if SIGN == 'sleep' %}
+                            <span class="stat-block__list__footer__label">{{ t('common', 'Спящий') }}</span>
+                            {% set break = true %}
+                        {% endif %}
+                        {% if SIGN == 'team' %}
+                            <span class="stat-block__list__footer__label">{{ t('common', 'Тимейт') }}</span>
+                            {% set break = true %}
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            {% elseif ITEM.wears %}
+                <span class="stat-block__list__footer__label">{{ t('common', 'Голый') }}</span>
+            {% endif %}
+        </div>
     </div>
 </li>

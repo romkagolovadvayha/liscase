@@ -10,6 +10,7 @@ use common\models\servers\Servers;
 use common\models\statistics\Kills;
 use common\models\statistics\Statistics;
 use common\models\statistics\Teams;
+use common\models\user\User;
 use common\models\user\UserTop;
 use Yii;
 use common\models\box\Box;
@@ -46,6 +47,7 @@ class StorageController extends Controller
         foreach ($servers as $server) {
             Teams::getTeams($server, true);
             UserTop::getUserTops($server, $server->currentWipe(), true);
+            User::getUsers($server->id, true);
         }
 
         UserTop::getUserTop($servers, true);
