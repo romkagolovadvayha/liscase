@@ -51,6 +51,7 @@ class StorageController extends Controller
             User::getUsers($server->id, true);
         }
 
+        Statistics::projectStats(true);
         UserTop::getUserTop($servers, true);
         Kills::getLive($servers, true);
     }
@@ -63,7 +64,6 @@ class StorageController extends Controller
     public function actionUpdateMarket()
     {
         ini_set('memory_limit', '512M');
-        Statistics::projectStats(true);
         Statistics::productsImages(true);
         Statistics::productsNames(true);
         Sets::getSetsForMarket(true, true);
