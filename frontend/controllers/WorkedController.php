@@ -23,7 +23,7 @@ class WorkedController extends Controller
         if (!Yii::$app->settings->get('site_enabled')) {
             return $this->redirect('/');
         }
-        return $this->render('../site/worked.twig');
+        return $this->render('worked.twig');
     }
 
 }
