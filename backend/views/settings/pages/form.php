@@ -37,7 +37,7 @@ $settings = SiteSetting::find()
                                         'enableClientValidation' => false,
                                         'enableAjaxValidation'   => false,
                                         'id' => 'settings-form-' . $category,
-                                        'options' => ['data-pjax' => true],
+                                        'options' => ['data-pjax' => true, 'enctype' => 'multipart/form-data'],
                                         'method' => 'post',
                                         'action' => '/settings/form?category=' . $category . '&itemsFlexClass=' . $setting_items_class,
                                     ]); ?>
