@@ -657,7 +657,7 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     public function getStatus() {
-        return strtotime($this->last_visit_server_at) >= time() - 2 * 60;
+        return strtotime($this->last_visit_server_at) >= time() - 10 * 60;
     }
 
     /**
