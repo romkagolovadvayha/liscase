@@ -27,12 +27,18 @@ class StatsController extends Controller
 
         foreach ($servers as $server) {
             $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
-//            $statisticsKills = Statistics::find()
-//                                       ->andWhere(['server_tag' => $server->tag])
-//                                       ->andWhere(['wipe' => $wipeDate])
-//                                       ->andWhere(['key' => 'kills'])
-//                                       ->indexBy('steam_id')
-//                                       ->all();
+            $statisticsKills = Statistics::find()
+                                       ->andWhere(['server_tag' => $server->tag])
+                                       ->andWhere(['wipe' => $wipeDate])
+                                       ->andWhere(['key' => 'kills'])
+                                       ->indexBy('steam_id')
+                                       ->all();
+            $statisticsNudeKills = Statistics::find()
+                                       ->andWhere(['server_tag' => $server->tag])
+                                       ->andWhere(['wipe' => $wipeDate])
+                                       ->andWhere(['key' => 'nude_kills'])
+                                       ->indexBy('steam_id')
+                                       ->all();
             $statisticsDeaths = Statistics::find()
                                          ->andWhere(['server_tag' => $server->tag])
                                          ->andWhere(['wipe' => $wipeDate])
@@ -40,19 +46,36 @@ class StatsController extends Controller
                                          ->indexBy('steam_id')
                                          ->all();
 
-//            $killsData = Kills::find()
-//                          ->select([
-//                                      'count' => 'COUNT(*)',
-//                                      'steam_id' => 'steam_id'
-//                                   ])
-//                          ->andWhere(['type' => 'kill'])
-////                          ->andWhere(['>', 'distance', 0])
-//                          ->andWhere(['server_tag' => $server->tag])
-//                          ->andWhere(['wipe' => $wipeDate])
-//                          ->asArray()
-//                          ->groupBy(['steam_id'])
-//                          ->indexBy('steam_id')
-//                          ->all();
+            $killsData = Kills::find()
+                          ->select([
+                                      'count' => 'COUNT(*)',
+                                      'steam_id' => 'steam_id'
+                                   ])
+                          ->andWhere(['type' => 'kill'])
+                          ->andWhere(['NOT LIKE', 'signs', '%team%'])
+                          ->andWhere(['NOT LIKE', 'signs', '%sleep%'])
+                          ->andWhere(['server_tag' => $server->tag])
+                          ->andWhere(['wipe' => $wipeDate])
+                          ->asArray()
+                          ->groupBy(['steam_id'])
+                          ->indexBy('steam_id')
+                          ->all();
+
+            $nudeKillsData = Kills::find()
+                          ->select([
+                                      'count' => 'COUNT(*)',
+                                      'steam_id' => 'steam_id'
+                                   ])
+                          ->andWhere(['type' => 'kill'])
+                          ->andWhere('wears IS NULL')
+                          ->andWhere(['NOT LIKE', 'signs', '%team%'])
+                          ->andWhere(['NOT LIKE', 'signs', '%sleep%'])
+                          ->andWhere(['server_tag' => $server->tag])
+                          ->andWhere(['wipe' => $wipeDate])
+                          ->asArray()
+                          ->groupBy(['steam_id'])
+                          ->indexBy('steam_id')
+                          ->all();
 
             $deadData = Kills::find()
                           ->select([
@@ -68,20 +91,34 @@ class StatsController extends Controller
                           ->indexBy('dead')
                           ->all();
 
-//            foreach ($killsData as $steamId => $item) {
-//                if (!empty($statisticsKills[$steamId])) {
-//                    $statisticsKills[$steamId]->value = $item['count'];
-//                    $statisticsKills[$steamId]->save();
-//                } else {
-//                    $model = new Statistics();
-//                    $model->key = 'kills';
-//                    $model->value = $item['count'];
-//                    $model->steam_id = $steamId;
-//                    $model->server_tag = $server->tag;
-//                    $model->wipe = $wipeDate;
-//                    $model->save(false);
-//                }
-//            }
+            foreach ($nudeKillsData as $steamId => $item) {
+                if (!empty($statisticsNudeKills[$steamId])) {
+                    $statisticsNudeKills[$steamId]->value = $item['count'];
+                    $statisticsNudeKills[$steamId]->save();
+                } else {
+                    $model = new Statistics();
+                    $model->key = 'nude_kills';
+                    $model->value = $item['count'];
+                    $model->steam_id = $steamId;
+                    $model->server_tag = $server->tag;
+                    $model->wipe = $wipeDate;
+                    $model->save(false);
+                }
+            }
+            foreach ($killsData as $steamId => $item) {
+                if (!empty($statisticsKills[$steamId])) {
+                    $statisticsKills[$steamId]->value = $item['count'];
+                    $statisticsKills[$steamId]->save();
+                } else {
+                    $model = new Statistics();
+                    $model->key = 'kills';
+                    $model->value = $item['count'];
+                    $model->steam_id = $steamId;
+                    $model->server_tag = $server->tag;
+                    $model->wipe = $wipeDate;
+                    $model->save(false);
+                }
+            }
             foreach ($deadData as $steamId => $item) {
                 if (!empty($statisticsDeaths[$steamId])) {
                     $statisticsDeaths[$steamId]->value = $item['count'];

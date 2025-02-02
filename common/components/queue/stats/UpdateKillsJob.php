@@ -61,7 +61,28 @@ class UpdateKillsJob extends BaseObject implements JobInterface
 
 
             if ($item['type'] == 'kill') {
-                if (empty($item['signs']) && !empty($item['inventoryWear'])) {
+                if (empty($item['inventoryWear'])) {
+                    /** @var Statistics $paramKills */
+                    $paramNudeKills = Statistics::find()
+                                            ->andWhere(['steam_id' => $model->steam_id])
+                                            ->andWhere(['server_tag' => $this->serverTag])
+                                            ->andWhere(['wipe' => $this->wipeDate])
+                                            ->andWhere(['key' => 'nude_kills'])
+                                            ->one();
+                    if (!empty($paramNudeKills)) {
+                        $paramNudeKills->value++;
+                        $paramNudeKills->save(false);
+                    } else {
+                        $nModel = new Statistics();
+                        $nModel->steam_id = $model->steam_id;
+                        $nModel->server_tag = $this->serverTag;
+                        $nModel->key = 'nude_kills';
+                        $nModel->value = 1;
+                        $nModel->wipe = $this->wipeDate;
+                        $nModel->save();
+                    }
+                }
+                if (empty($item['signs'])) {
                     /** @var Statistics $paramKills */
                     $paramKills = Statistics::find()
                                             ->andWhere(['steam_id' => $model->steam_id])

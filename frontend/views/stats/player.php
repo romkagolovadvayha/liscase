@@ -69,6 +69,7 @@ $kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam(
                 'WOUNDED' => number_format(Statistics::getParam($player, 'wounded'), 0),
                 'TCS_DESTOYED' => number_format(Statistics::getParam($player, 'tcsdestroyed'), 0),
                 'WIPES' => number_format($wipes, 0),
+                'NUDE_KILLS' => number_format(Statistics::getParam($player, 'nude_kills'), 0),
             ],
         ]);?>
         <?=$this->render('_player_stats_farm', [
