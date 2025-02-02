@@ -86,6 +86,9 @@ class SettingsController extends Controller
             mkdir(dirname($filePath));
             chmod(dirname($filePath), 0777);
         }
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
         file_put_contents($filePath, file_get_contents($tmpName));
         return $fileUrl;
     }
