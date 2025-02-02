@@ -7,7 +7,7 @@
     <div class="relative payment-form z-1 grid gap-y-8">
         <div class="relative mt-12 text-center">
             <div class="mb-24 p1 text-center">
-                <img src="<?=$logo?>" style="max-width: 180px;max-height: 80px;"/>
+                <img src="<?=$logo?>" style="width: 180px;max-height: 50px;"/>
             </div>
             <?php if (extension_loaded('imagick')): ?>
                 <img class="relative rounded-8 mb-24" src="<?= (new \Da\QrCode\QrCode($response['wallet']))->setSize(150)->writeDataUri(); ?>" alt="">
