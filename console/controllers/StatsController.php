@@ -52,8 +52,6 @@ class StatsController extends Controller
                                       'steam_id' => 'steam_id'
                                    ])
                           ->andWhere(['type' => 'kill'])
-                          ->andWhere(['NOT LIKE', 'signs', '%team%'])
-                          ->andWhere(['NOT LIKE', 'signs', '%sleep%'])
                           ->andWhere(['server_tag' => $server->tag])
                           ->andWhere(['wipe' => $wipeDate])
                           ->asArray()
