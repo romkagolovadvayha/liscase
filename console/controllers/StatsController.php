@@ -2,11 +2,13 @@
 
 namespace console\controllers;
 
+use common\components\web\User;
 use common\models\servers\Servers;
 use common\models\statistics\Reports;
 use common\models\statistics\Statistics;
 use common\models\statistics\Kills;
 use common\models\statistics\Teams;
+use common\models\user\UserTop;
 use yii\base\BaseObject;
 use yii\console\Controller;
 use Yii;
@@ -19,6 +21,7 @@ class StatsController extends Controller
      * @throws \Exception
      */
     public function actionCalculate() {
+        ini_set('memory_limit', '512M');
         /** @var Servers[] $servers */
         $servers = Servers::find()
                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
@@ -89,6 +92,7 @@ class StatsController extends Controller
                           ->indexBy('dead')
                           ->all();
 
+
             foreach ($nudeKillsData as $steamId => $item) {
                 if (!empty($statisticsNudeKills[$steamId])) {
                     $statisticsNudeKills[$steamId]->value = $item['count'];
@@ -115,6 +119,31 @@ class StatsController extends Controller
                     $model->server_tag = $server->tag;
                     $model->wipe = $wipeDate;
                     $model->save(false);
+                }
+                if ($item['count'] > 24) {
+                    $user = \common\models\user\User::find()
+                                ->andWhere(['steam_id' => $steamId])
+                                ->one();
+                    if (!empty($user)) {
+                        $userTop = UserTop::find()
+                                          ->andWhere(['user_id' => $user->id])
+                                          ->andWhere(['key' => UserTop::TYPE_KILLS])
+                                          ->andWhere(['server_id' => $server->id])
+                                          ->andWhere(['wipe' => $wipeDate])
+                                          ->one();
+                        if (!empty($userTop)) {
+                            $userTop->value = $item['count'];
+                            $userTop->save();
+                        } else {
+                            $model = new UserTop();
+                            $model->key = UserTop::TYPE_KILLS;
+                            $model->value = $item['count'];
+                            $model->user_id = $user->id;
+                            $model->server_id = $server->id;
+                            $model->wipe = $wipeDate;
+                            $model->save(false);
+                        }
+                    }
                 }
             }
             foreach ($deadData as $steamId => $item) {

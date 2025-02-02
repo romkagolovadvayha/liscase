@@ -22,7 +22,6 @@ use yii\helpers\ArrayHelper;
  */
 class UserTop extends \yii\db\ActiveRecord
 {
-
     const TYPE_REIDER = 'reider';
     const TYPE_KILLS = 'kills';
     const TYPE_SCIENTISTS = 'scientists';
