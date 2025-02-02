@@ -38,6 +38,7 @@ class StorageController extends Controller
      */
     public function actionUpdate()
     {
+        ini_set('memory_limit', '512M');
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
@@ -52,6 +53,16 @@ class StorageController extends Controller
 
         UserTop::getUserTop($servers, true);
         Kills::getLive($servers, true);
+    }
+
+    /**
+     * storage/update-market
+     *
+     * @throws \Exception
+     */
+    public function actionUpdateMarket()
+    {
+        ini_set('memory_limit', '512M');
         Statistics::projectStats(true);
         Statistics::productsImages(true);
         Statistics::productsNames(true);
