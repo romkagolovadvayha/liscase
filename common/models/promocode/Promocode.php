@@ -79,7 +79,7 @@ class Promocode extends \common\components\base\ActiveRecord
             'amount'       => Yii::t('common', 'Сумма'),
             'status'        => Yii::t('common', 'Статус'),
             'finished_at'          => Yii::t('common', 'Дата завершения'),
-            'created_at'    => Yii::t('common', 'Дата операции'),
+            'created_at'    => Yii::t('common', 'Дата начала'),
         ];
     }
 

@@ -1,0 +1,7 @@
+.info {
+  @extend .mb-60, .flex, .justify-center, .gap-x-12, .gap-y-12;
+
+  @media (max-width: 1785px) {
+    flex-wrap: wrap;
+  }
+}

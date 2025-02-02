@@ -1,0 +1,94 @@
+.access-card {
+  @extend .p-8, .relative, .text-center, .bg-background-teritiary, .flex, .flex-column, .justify-space-between, .cursor-pointer, .items-center;
+  max-width: 100%;
+  min-width: 56px;
+  border-radius: var(--card-radius);
+  max-height: 128px;
+  transition:
+    border-color 0.25s ease-in-out,
+    box-shadow 0.25s ease-in-out,
+    background-color 0.25s ease-in-out,
+    transform 0.25s ease-in-out;
+  border: 1px solid transparent;
+
+  &:before {
+    @extend .absolute, .transition-all;
+    border-radius: var(--card-radius);
+    content: "";
+    opacity: 0;
+    inset: -1px;
+    border: 1px solid transparent;
+    background-image: var(--base-linear-gradiend);
+    mask:
+      linear-gradient(#fff 0 0) padding-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    background-size: 101% 100%;
+    background-position: center;
+  }
+
+  &__list {
+    @extend .grid, .justify-flex-start, .gap-x-8, .gap-y-8, .w-full;
+    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(auto-fit, minmax(91px, 1fr));
+    }
+  }
+
+  &__title {
+    @extend .p3, .text-text-main;
+    //align-self: flex-start;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 10px;
+  }
+
+  &__wrap {
+
+  }
+
+  &__radio {
+    width: 1px;
+    height: 1px;
+    position: absolute;
+    bottom: 0;
+    opacity: 0;
+  }
+
+  &__image {
+    @extend .object-contain, .transition-transform, .relative;
+    @include range(80, 80, "px");
+  }
+
+  &:hover {
+    @extend .border-border-color-hover;
+    box-shadow: var(--shadow-card);
+
+    & .access-card__image {
+      transform: scale(1.1) rotate(10deg);
+    }
+  }
+
+  &:active {
+    @extend .transform-click;
+
+    &:before {
+      opacity: 100;
+    }
+  }
+
+  &_active {
+    &:before {
+      opacity: 100;
+    }
+  }
+}
+#buy-container figure img {
+  @media (max-width: 768px) {
+    width: 200px;
+    height: 200px;
+  }
+}

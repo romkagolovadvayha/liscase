@@ -11,12 +11,14 @@ use common\components\base\ActiveRecord;
  * @property string     $name
  * @property string     $description
  * @property int        $status
+ * @property bool       $show_main_block
  * @property string     $created_at
  *
  * @property SelectDrop[]  $selectDrop
  * @property SelectDrop[]  $selectDropCarousel
- * @property SelectImage[] $SelectImages
+ * @property SelectImage[] $selectImages
  * @property SelectImage   $imageOrig
+ * @property SelectImage   $imageOrig2
  */
 class Select extends ActiveRecord
 {
@@ -54,6 +56,7 @@ class Select extends ActiveRecord
             'id'                  => Yii::t('common', 'ID'),
             'name'               => Yii::t('common', 'Название'),
             'status'              => Yii::t('common', 'Статус'),
+            'show_main_block'              => Yii::t('common', 'Показывать в главном блоке главной страницы'),
             'created_at'          => Yii::t('common', 'Дата создания'),
         ];
     }
@@ -62,7 +65,7 @@ class Select extends ActiveRecord
     {
         return [
             [['name', 'status', 'created_at'], 'required'],
-            [['status'], 'integer'],
+            [['status', 'show_main_block'], 'integer'],
             [['description'], 'trim'],
             [['name'], 'string', 'max' => 255],
             [['created_at'], 'safe'],
@@ -89,6 +92,17 @@ class Select extends ActiveRecord
     {
         return $this->hasOne(SelectImage::class, ['select_id' => 'id'])
                     ->andWhere(['type' => SelectImage::TYPE_ORIG]);
+    }
+
+    /**
+     * Gets query for [ImageOrig2].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getImageOrig2()
+    {
+        return $this->hasOne(SelectImage::class, ['select_id' => 'id'])
+                    ->andWhere(['type' => SelectImage::TYPE_ORIG_2]);
     }
 
     /**
@@ -128,11 +142,46 @@ class Select extends ActiveRecord
      *
      * @return Select[]
      */
-    public static function getForMarket()
+    public static function getForMarket($mainBlock = false, $update = false)
     {
-        return Select::find()
-                   ->andWhere(['status' => Select::STATUS_ACTIVE])
-                   ->all();
+        $cacheKey = 'getForMarketSelect3_' . $mainBlock;
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $result = Select::find()
+                        ->andWhere(['status' => Select::STATUS_ACTIVE])
+                        ->andWhere(['show_main_block' => $mainBlock])
+                        ->with('selectImages')  // Добавляем кэшируемые связи
+                        ->all();
+
+        Yii::$app->cache->set($cacheKey, $result, 7*24*60*60);
+        return $result;
     }
 
+    /**
+     * Получить URL изображения.
+     * Загружает и кэширует изображение, если оно не было загружено ранее.
+     */
+    public function image() {
+        foreach ($this->selectImages as $item) {
+            if ($item->type === SelectImage::TYPE_ORIG) {
+                return $item->getImagePubUrl();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Получить второй URL изображения.
+     * Кэширует значение, чтобы избежать повторных запросов.
+     */
+    public function image2() {
+        foreach ($this->selectImages as $item) {
+            if ($item->type === SelectImage::TYPE_ORIG_2) {
+                return $item->getImagePubUrl();
+            }
+        }
+        return $this->image();
+    }
 }

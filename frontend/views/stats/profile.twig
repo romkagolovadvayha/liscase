@@ -1,0 +1,67 @@
+<section class="page-stats__block profile w-50p">
+    <!-- ОНЛАЙН -->
+    <div class="profile__wrapper{{ WRAPPER_CLASS }}">
+        <div class="profile__image">
+            <img src="{{ USER.getAvatar() }}" alt="{{ USER.username }}" />
+        </div>
+        <div>
+            <h2 class="text-primary-colors-main flex items-center gap-x-12">
+                {{ USER.username }} <a href="{{ USER.getLink('steam') }}" class="stats_player_card_body_name_steam" target="_blank" title="<?=Yii::t('common', 'Перейти в профиль Steam')?>"><span class="icons icons_24px icons_24px_steam"></span></a>
+            </h2>
+            <p class="p1 text-text-main">
+                {{ t('common', 'Онлайн за вайп') }}: <span style="color: var(--online);">{{ STATS.ONLINE }}</span>
+            </p>
+        </div>
+    </div>
+
+{#    <p class="p1 text-text-secondary mb-8 relative z-1">{{ t('common', 'Статус') }}</p>#}
+{#    <p class="p1 text-text-teritiary relative z-1">#}
+{#        {% if USER.stat_status %}#}
+{#            {{ USER.stat_status }}#}
+{#        {% else %}#}
+{#            {{ t('common', 'Игрок не указал статус.') }}#}
+{#        {% endif %}#}
+{#    </p>#}
+
+    <div class="user__stats stats">
+        <div class="stats__item">
+            <p>{{ t('common', 'Убийств') }}</p>
+            <p>{{ STATS.KILLS }}</p>
+        </div>
+        <div class="stats__item">
+            <p>{{ t('common', 'Смертей') }}</p>
+            <p>{{ STATS.DEATHS }}</p>
+        </div>
+        <div class="stats__item">
+            <p>K/D</p>
+            <p>{{ STATS.KD }}</p>
+        </div>
+        <div class="stats__item">
+            <p>{{ t('common', 'Убил ботов') }}</p>
+            <p>{{ STATS.SCIENTISTS }}</p>
+        </div>
+        <div class="stats__item">
+            <p>{{ t('common', 'Нокнут') }}</p>
+            <p>{{ STATS.WOUNDED }}</p>
+        </div>
+        <div class="stats__item">
+            <p>{{ t('common', 'Зарейдил') }}</p>
+            <p>{{ STATS.TCS_DESTOYED }}</p>
+        </div>
+        <div class="stats__item">
+            <p>{{ t('common', 'Вайпов') }}</p>
+            <p>{{ STATS.WIPES }}</p>
+        </div>
+    </div>
+
+    <div class="profile__footer">
+        <a href="{{ USER.getLink('report') }}" class="flex items-center gap-x-8 relative z-1 show-modal-link"
+           data-size="modal-lg"
+           data-toggl="modal"
+           data-target="modal-dialog"
+           data-title="{{ t('common', 'Пожаловаться на игрока') }}">
+            <span class="icons icons_24px icons_24px_report"></span>
+            {{ t('common', 'Пожаловаться') }}
+        </a>
+    </div>
+</section>

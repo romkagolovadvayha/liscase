@@ -15,12 +15,34 @@ $settings = SiteSetting::find()
                        ->all();
 
 $this->title = 'Настройки ботов';
+$tabs = [
+    [
+        'category' => 'tgbot',
+        'title' => 'Персональный бот',
+    ],
+    [
+        'title' => 'Для оповещений',
+        'items' => [
+            [
+                'category' => 'tgbotReport',
+                'title' => 'Телеграм канал для репортов',
+            ],
+            [
+                'category' => 'tgbotPaymentReport',
+                'title' => 'Телеграм канал для финансовых отчетов',
+            ],
+            [
+                'category' => 'tgbotPayments',
+                'title' => 'Телеграм канал для оповещений о платежах',
+            ],
+            [
+                'category' => 'tgbotAlert',
+                'title' => 'Телеграм канал для прочих оповещений',
+            ],
+        ],
+    ],
+];
 ?>
-
-<div class="setting">
-    <?=$this->render('form', ['category' => 'tgbot', 'title' => 'Персональный бот'])?>
-    <?=$this->render('form', ['category' => 'tgbotReport', 'title' => 'Телеграм канал для репортов<'])?>
-    <?=$this->render('form', ['category' => 'tgbotPaymentReport', 'title' => 'Телеграм канал для финансовых отчетов'])?>
-    <?=$this->render('form', ['category' => 'tgbotPayments', 'title' => 'Телеграм канал для оповещений о платежах'])?>
-    <?=$this->render('form', ['category' => 'tgbotAlert', 'title' => 'Телеграм канал для прочих оповещений'])?>
+<div class="wrap800">
+    <?=$this->render('tabs', ['tabs' => $tabs])?>
 </div>

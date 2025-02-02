@@ -2,259 +2,243 @@
 
 /** @var yii\web\View $this */
 /** @var Servers $server */
+/** @var Servers[] $servers */
 /** @var string $steamId */
+/** @var User $user */
 
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use yii\web\NotFoundHttpException;
-use common\models\statistics\Teams;
 use common\models\user\User;
+use frontend\widgets\Alert;
 use yii\bootstrap5\Html;
 use kartik\select2\Select2;
 use yii\web\View;
 use yii\web\JsExpression;
-
-$user = User::findBySteamId($steamId, true);
+use common\models\statistics\Teams;
 
 if (empty($user)) {
     throw new NotFoundHttpException(Yii::t('common', 'Пользователь не найден или статистика еще не подгрузилась!'));
 }
 
-$wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
-
 $this->title = $user->username . " " . Yii::t('common', 'статистика на сервере') . " " . Yii::t('database', $server->name);
+$this->params['page'] = 'stats';
 
-$teams = Teams::getTeams($server, $user);
-$clan = Teams::getAllInTeams($server, $user->steam_id);
-$stats = \common\models\statistics\Statistics::getStats($server, $user->steam_id);
-$player = null;
-if (!empty($stats['player'])) {
-    $player = $stats['player'];
+$wipe = $server->currentWipe();
+$player = Statistics::getPlayerStats($server, $user->steam_id, $wipe);
+$images = Statistics::productsImages();
+$names = Statistics::productsNames();
+
+$statusClass = $user->getStatus() ? '' : ' profile_offline';
+if ($user->status === User::STATUS_BLOCKED) {
+    $statusClass = ' profile_banned';
 }
-
-/** @var Servers[] $servers */
-$servers = Servers::find()
-                  ->cache(30)
-                  ->andWhere(['status' => Servers::STATUS_ACTIVE])
-                  ->orderBy(['sort' => SORT_ASC])
-                  ->all();
-
-$formatJs = <<< 'JS'
-var formatRepo = function (repo) {
-    if (repo.loading) {
-        return repo.text;
-    }
-    var markup =
-'<a href="/stats/player?steamId=' + repo.steam_id + '&server=' + repo.server + '" class="">' + 
-    '<div class="stats_player_search_name">' + repo.name + '</div>' +
-    '<div class="stats_player_search_steam_id">' + repo.steam_id + '</div>' +
-'</a>';
-    return '<div style="overflow:hidden;">' + markup + '</div>';
-};
-var formatRepoSelection = function (repo) {
-    return repo.name || repo.text;
-}
-JS;
-$this->registerJs($formatJs, View::POS_HEAD);
-
-$resultsJs = <<< JS
-function (data, params) {
-    return {
-        results: data.items
-    };
-}
-JS;
-\frontend\assets\ChartistAsset::register($this);
+$wipes = Statistics::find()
+                   ->select('COUNT(DISTINCT `wipe`)')
+                   ->andWhere(['steam_id' => $user->steam_id])
+                   ->scalar() ?? 0;
+$awards = \common\models\tasks\Task::awards($user->id);
+$kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam($player, 'kills') / Statistics::getParam($player, 'deaths'), 2) : Statistics::getParam($player, 'kills');
 ?>
-<style>
-    .select2-container--krajee-bs5:not(.select2-container--disabled) .select2-dropdown {
-        margin-top: -45px;
-    }
-</style>
 
-<div class="mb-5">
-    <div class="stats_player_buttons">
-        <div class="stats_player_card_wrap">
-            <div class="stats_player_card">
-                <div class="stats_player_card_avatar">
-                    <img src="<?=$user->getAvatar()?>" alt="<?=Yii::t('common', 'Фото игрока')?> <?=$user->username?>"/>
-                </div>
-                <div class="stats_player_card_body">
-                    <div class="stats_player_card_body_name">
-                        <span><?=$user->username?></span> <a href="https://steamcommunity.com/profiles/<?=$user->steam_id?>" class="stats_player_card_body_name_steam" target="_blank" title="<?=Yii::t('common', 'Перейти в профиль Steam')?>"><i class="fab fa-steam"></i></a>
-                    </div>
-                    <div class="stats_player_card_body_item">
-                        <?=Yii::t('common', 'Онлайн за вайп')?>: <span style="color: #aaf16e;"><?=Servers::getPlayTime(Statistics::getParam($player, 'playtime'))?></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="stats_player_search_wrap">
-            <?=Select2::widget([
-                                   'name' => 'stats-search',
-                                   'options' => ['placeholder' => Yii::t('common', 'Введите ник или Steam ID...')],
-                                   'pluginOptions' => [
-                                       'allowClear' => true,
-                                       'minimumInputLength' => 1,
-                                       'ajax' => [
-                                           'url' => "/stats/search?server={$server->tag}",
-                                           'dataType' => 'json',
-                                           'delay' => 250,
-                                           'data' => new JsExpression('function(params) { return {q:params.term}; }'),
-                                           'processResults' => new JsExpression($resultsJs),
-                                           'cache' => true
-                                       ],
-                                       'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
-                                       'templateResult' => new JsExpression('formatRepo'),
-                                       'templateSelection' => new JsExpression('formatRepoSelection')
-                                   ],
-                                   'pluginEvents' => [
-                                       "select2:select" => "function(e) { 
-                                window.location.href = '/stats/player?steamId=' + e.params.data.steam_id + '&server=' + e.params.data.server;
-                            }",
-                                   ],
-                               ]);?>
-            <div class="stats_player_search_icon">
-                <i class="fas fa-search"></i>
-            </div>
-        </div>
-        <?php foreach ($servers as $item): ?>
-            <a href="/stats/player?steamId=<?=$user->steam_id?>&server=<?=$item->tag?>" class="stats_player_buttons_server<?=$item->tag === $server->tag ? ' page_stats_servers_item_active' : ''?>">
-                <?=Yii::t('database', $item->name)?>
-            </a>
-        <?php endforeach; ?>
-    </div>
-    <?=$this->render('_player_stats_npc', [
-        'data' => $stats['playtime'],
-        'player' => $player,
-        'server' => $server,
-        'wipeDate' => $wipeDate,
-        'steamId' => $steamId,
-    ]);?>
-    <?=$this->render('_player_stats_reider', [
-        'data' => $stats['playtime'],
-        'player' => $player,
-        'server' => $server,
-        'wipeDate' => $wipeDate,
-        'steamId' => $steamId,
-        'user' => $user,
-    ]);?>
-    <?=$this->render('_player_stats_farm', [
-        'data' => $stats['playtime'],
-        'player' => $player,
-        'server' => $server,
-    ]);?>
-    <div class="stats_player_stats_wrap_wrap">
-        <?=$this->render('_player_stats_ferm', [
-            'data' => $stats['playtime'],
+
+<!--<div class="flex items-center justify-space-between gap-x-12 mb-28">-->
+<!--    <input placeholder="Введите ник или Steam ID" type="text" class="search" />-->
+<!---->
+<!--    <select class="select" style="min-width: 311px">-->
+<!--        <option selected>Текущий вайп</option>-->
+<!--        <option value="1">Вайп 18.11.24–02.12.24</option>-->
+<!--        <option value="2">Вайп 28.10.24–18.11.24</option>-->
+<!--        <option value="3">Вайп 07.10.24–28.10.24</option>-->
+<!--    </select>-->
+<!--</div>-->
+
+
+<?= Alert::widget() ?>
+<div class="flex flex-column gap-x-12 gap-y-12 tab-pane active" id="Max3">
+    <div class="page-stats__two-blocks">
+        <?=Yii::$app->view->render('profile.twig', [
+            'WRAPPER_CLASS' => $statusClass,
+            'USER' => $user,
+            'STATS' => [
+                'ONLINE' => Servers::getPlayTime(Statistics::getParam($player, 'playtime')),
+                'KILLS' => number_format(Statistics::getParam($player, 'kills'), 0),
+                'DEATHS' => number_format(Statistics::getParam($player, 'deaths'), 0),
+                'KD' => number_format($kdr, 2),
+                'SCIENTISTS' => number_format(Statistics::getParam($player, 'scientists'), 0),
+                'WOUNDED' => number_format(Statistics::getParam($player, 'wounded'), 0),
+                'TCS_DESTOYED' => number_format(Statistics::getParam($player, 'tcsdestroyed'), 0),
+                'WIPES' => number_format($wipes, 0),
+            ],
+        ]);?>
+        <?=$this->render('_player_stats_farm', [
+            'images' => $images,
+            'names' => $names,
             'player' => $player,
             'server' => $server,
+            'steamId' => $steamId,
+            'user' => $user,
         ]);?>
+    </div>
+    <div class="page-stats__two-blocks">
+       <div class="page-stats__categories__blocks_wrap w-50p">
+           <?=Yii::$app->view->render('awards.twig', [
+               'ITEMS' => $awards,
+           ]);?>
+           <?=$this->render('_player_stats_stats_blocks', [
+               'images' => $images,
+               'names' => $names,
+               'player' => $player,
+               'server' => $server,
+               'steamId' => $steamId,
+               'user' => $user,
+           ]);?>
+       </div>
+        <?=$this->render('_player_stats_hits', [
+            'images' => $images,
+            'names' => $names,
+            'player' => $player,
+            'server' => $server,
+            'steamId' => $steamId,
+            'user' => $user,
+        ]);?>
+    </div>
+
+    <div class="flex flex-column gap-x-12 gap-y-12">
+
+        <?=$this->render('_player_stats_weapons', [
+            'images' => $images,
+            'names' => $names,
+            'player' => $player,
+            'server' => $server,
+            'steamId' => $steamId,
+            'user' => $user,
+        ]);?>
+
+        <?=$this->render('_player_stats_reider', [
+            'images' => $images,
+            'names' => $names,
+            'player' => $player,
+            'server' => $server,
+            'steamId' => $steamId,
+            'user' => $user,
+        ]);?>
+
+<!--        <div class="page-stats__two-blocks">-->
+<!--            <section class="page-stats__block-without-hover w-50p">-->
+<!--                <header class="flex items-center justify-space-between mb-24 transition-all">-->
+<!--                    <h4 class="flex items-center gap-x-12">-->
+<!--                        Статистика по ресурсам<span-->
+<!--                            class="icons icons_24px icons_24px_info icons_hover"-->
+<!--                            data-bs-toggle="tooltip"-->
+<!--                            data-bs-placement="right"-->
+<!--                            data-bs-title="У каждого оружия указано количество убитых"-->
+<!--                        ></span>-->
+<!--                    </h4>-->
+<!---->
+<!--                    <label class="page-stats__show-statistics-block">-->
+<!--                      <p class="p1 text-text-teritiary">Показывать</p>-->
+<!--                      <input checked type="checkbox" class="show-statistics-block__switch none" />-->
+<!--                      <span>-->
+<!--                        <span class="icons icons_switch icons_switch_on"></span>-->
+<!--                        <span class="icons icons_switch icons_switch_off"></span>-->
+<!--                      </span>-->
+<!--                    </label>-->
+<!--                </header>-->
+<!---->
+<!--                <img src="/images/design/stats/graphics_3.png" class="w-full" alt="graphics_3" />-->
+<!--            </section>-->
+<!---->
+<!--            <section class="page-stats__block-without-hover w-50p">-->
+<!--                <header class="flex items-center justify-space-between mb-24 transition-all">-->
+<!--                    <h4 class="flex items-center gap-x-12">-->
+<!--                        Статистика по ящикам и бочкам<span-->
+<!--                            class="icons icons_24px icons_24px_info icons_hover"-->
+<!--                            data-bs-toggle="tooltip"-->
+<!--                            data-bs-placement="right"-->
+<!--                            data-bs-title="У каждого оружия указано количество убитых"-->
+<!--                        ></span>-->
+<!--                    </h4>-->
+<!---->
+<!--                  <label class="page-stats__show-statistics-block">-->
+<!--                      <p class="p1 text-text-teritiary">Показывать</p>-->
+<!--                      <input checked type="checkbox" class="show-statistics-block__switch none" />-->
+<!--                      <span>-->
+<!--                        <span class="icons icons_switch icons_switch_on"></span>-->
+<!--                        <span class="icons icons_switch icons_switch_off"></span>-->
+<!--                      </span>-->
+<!--                    </label>-->
+<!--                </header>-->
+<!---->
+<!--                <img src="/images/design/stats/graphics_3.png" class="w-full" alt="graphics_3" />-->
+<!--            </section>-->
+<!--        </div>-->
+
         <?=$this->render('_player_stats_fishing', [
-            'data' => $stats['playtime'],
+            'images' => $images,
+            'names' => $names,
             'player' => $player,
             'server' => $server,
+            'steamId' => $steamId,
+            'user' => $user,
         ]);?>
-    </div>
-    <div class="stats_player_teams_wrap_wrap">
-        <?=$this->render('_player_teams', [
-            'player' => $player,
-            'server' => $server,
-            'teams' => $teams,
-            'steam_id' => $steamId,
-            'title' => Yii::t('common', 'История команды'),
-        ]);?>
-        <?=$this->render('_player_clan', [
-            'player' => $player,
-            'server' => $server,
-            'clan' => $clan,
-            'steam_id' => $steamId,
-            'title' => Yii::t('common', 'Команда'),
-        ]);?>
-    </div>
-    <div class="stats_player_stats_wrap_wrap">
-        <?=$this->render('_player_stats_food', [
-            'data' => $stats['playtime'],
-            'player' => $player,
-            'server' => $server,
-        ]);?>
+
+        <div class="page-stats__two-blocks">
+            <?=$this->render('_player_stats_ferm', [
+                'images' => $images,
+                'names' => $names,
+                'player' => $player,
+                'server' => $server,
+                'steamId' => $steamId,
+                'user' => $user,
+            ]);?>
+            <?=$this->render('_player_stats_food', [
+                'images' => $images,
+                'names' => $names,
+                'player' => $player,
+                'server' => $server,
+                'steamId' => $steamId,
+                'user' => $user,
+            ]);?>
+        </div>
+
         <?=$this->render('_player_stats_tea', [
-            'data' => $stats['playtime'],
+            'images' => $images,
+            'names' => $names,
             'player' => $player,
             'server' => $server,
+            'steamId' => $steamId,
+            'user' => $user,
         ]);?>
-        <?=$this->render('_player_stats_level_card', [
-            'data' => $stats['playtime'],
-            'player' => $player,
-            'server' => $server,
-        ]);?>
-        <?=$this->render('_player_stats_medical', [
-            'data' => $stats['playtime'],
-            'player' => $player,
-            'server' => $server,
-        ]);?>
+
         <?=$this->render('_player_stats_hunter', [
-            'data' => $stats['playtime'],
+            'images' => $images,
+            'names' => $names,
             'player' => $player,
             'server' => $server,
-        ]);?>
-    </div>
-    <div class="stats_player">
-        <?=$this->render('_player_item2', [
-            'data' => $stats['kills'],
+            'steamId' => $steamId,
             'user' => $user,
-            'player' => $player,
-            'server' => $server,
-            'title' => Yii::t('common', 'Лучший Киллер'),
         ]);?>
-        <?=$this->render('_player_item2', [
-            'data' => $stats['playtime'],
-            'user' => $user,
-            'player' => $player,
-            'server' => $server,
-            'title' => Yii::t('common', 'ТОП Онлайн'),
-        ]);?>
-        <?=$this->render('_player_item2', [
-                'data' => $stats['reider'],
-                'user' => $user,
+
+        <div class="page-stats__two-blocks">
+            <?=$this->render('_player_stats_level_card', [
+                'images' => $images,
+                'names' => $names,
                 'player' => $player,
                 'server' => $server,
-                'title' => Yii::t('common', 'Лучший Рейдер'),
-        ]);?>
-        <?=$this->render('_player_item2', [
-                'data' => $stats['farmer'],
+                'steamId' => $steamId,
                 'user' => $user,
+            ]);?>
+
+            <?=$this->render('_player_stats_medical', [
+                'images' => $images,
+                'names' => $names,
                 'player' => $player,
                 'server' => $server,
-                'title' => Yii::t('common', 'Лучший Фармер'),
-        ]);?>
-        <?=$this->render('_player_item2', [
-                'data' => $stats['fermer'],
+                'steamId' => $steamId,
                 'user' => $user,
-                'player' => $player,
-                'server' => $server,
-                'title' => Yii::t('common', 'Лучший Фермер'),
-        ]);?>
-        <?=$this->render('_player_item2', [
-                'data' => $stats['fishing'],
-                'user' => $user,
-                'player' => $player,
-                'server' => $server,
-                'title' => Yii::t('common', 'Лучший Рыбак'),
-        ]);?>
-        <?=$this->render('_player_item2', [
-                'data' => $stats['hunter'],
-                'user' => $user,
-                'player' => $player,
-                'server' => $server,
-                'title' => Yii::t('common', 'Лучший Охотник'),
-        ]);?>
-        <?=$this->render('_player_item2', [
-                'data' => $stats['scientists'],
-                'user' => $user,
-                'player' => $player,
-                'server' => $server,
-                'title' => Yii::t('common', 'Лучший Мирный'),
-        ]);?>
+            ]);?>
+        </div>
+
     </div>
 </div>

@@ -8,6 +8,9 @@ use Yii;
 
 class PromocodeSearch extends Promocode
 {
+
+    public $status = 1;
+
     public function rules(): array
     {
         return [
@@ -25,7 +28,7 @@ class PromocodeSearch extends Promocode
     {
         $this->load($params);
 
-        $query = self::find();
+        $query = Promocode::find();
 
         if (is_callable($filter)) {
             call_user_func($filter, $query);

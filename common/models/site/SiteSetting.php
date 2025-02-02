@@ -49,6 +49,9 @@ class SiteSetting extends ActiveRecord
         if ($this->type == 'checkbox') {
             return $this->value === '1';
         }
+        if ($this->type == 'number' && empty($this->value)) {
+            return 0;
+        }
         return $this->value;
     }
 

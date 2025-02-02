@@ -8,6 +8,7 @@ use yii\widgets\Pjax;
 
 /** @var string $category */
 /** @var string $title */
+/** @var string $setting_items_class */
 
 /** @var \common\models\site\SiteSetting[] $settings */
 $settings = SiteSetting::find()
@@ -15,6 +16,12 @@ $settings = SiteSetting::find()
                        ->indexBy('id')
                        ->all();
 
+    $itemsClass = 'setting_items';
+    if (!empty($setting_items_class)) {
+        $itemsClass .= " " . $setting_items_class;
+    } else {
+        $setting_items_class = null;
+    }
 ?>
 
 <div class="setting_items_wrap_wrap">
@@ -32,11 +39,11 @@ $settings = SiteSetting::find()
                                         'id' => 'settings-form-' . $category,
                                         'options' => ['data-pjax' => true],
                                         'method' => 'post',
-                                        'action' => '/settings/form?category=' . $category,
+                                        'action' => '/settings/form?category=' . $category . '&itemsFlexClass=' . $setting_items_class,
                                     ]); ?>
     <?=\frontend\widgets\Alert::widget()?>
     <div class="setting_items_wrap">
-        <div class="setting_items">
+        <div class="<?=$itemsClass?>">
             <?php foreach ($settings as $setting): ?>
                 <div class="setting_items_item">
                     <?=$this->render('../fields/' . $setting->type, ['item' => $setting])?>

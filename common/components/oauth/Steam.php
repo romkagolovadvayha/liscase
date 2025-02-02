@@ -102,11 +102,6 @@ class Steam extends OpenId
     }
 
     public static function updateUser($id) {
-        $cacheKey = 'steam_updateUser_' . $id;
-        if (Yii::$app->cache->get($cacheKey)) {
-            return null;
-        }
-
         $user = User::findOne($id);
 
         $key = Yii::$app->params['steamApiKey'];
@@ -117,27 +112,17 @@ class Steam extends OpenId
         $user->userProfile->name = $usersInfo[0]['personaname'];
         $user->userProfile->save(false);
         $user->save(false);
-        Yii::$app->cache->set($cacheKey, 1, 60);
+
         return $user;
     }
 
     public static function getInfoUser($steamId) {
-        $cacheKey = 'steam_updateUser_' . $steamId;
-        if (Yii::$app->cache->get($cacheKey)) {
-            return Yii::$app->cache->get($cacheKey);
-        }
-
         $key = Yii::$app->params['steamApiKey'];
         $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$steamId}";
-        $response = (clone Yii::$app->curl)->setOptions([
-                                                    CURLOPT_PROXYTYPE => Yii::$app->params['proxy']['type'],
-                                                    CURLOPT_PROXY => Yii::$app->params['proxy']['host'],
-                                                    CURLOPT_PROXYPORT => Yii::$app->params['proxy']['port'],
-                                                    CURLOPT_PROXYUSERPWD => Yii::$app->params['proxy']['login'] . ':' . Yii::$app->params['proxy']['password'],
-                                                ])->get($apiUrl);
+        $response = (clone Yii::$app->curl)->get($apiUrl);
         $response = json_decode($response, 1);
         $usersInfo = $response['response']['players'];
-        Yii::$app->cache->set($cacheKey, $usersInfo, 60);
+
         return $usersInfo;
     }
 

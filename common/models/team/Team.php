@@ -107,7 +107,7 @@ class Team extends \yii\db\ActiveRecord
             case 'kicked':
                 self::kicked($item, $server, $wipeDate);
                 break;
-            case 'disbanded':
+            case 'disband':
                 self::disbanded($item, $server, $wipeDate);
                 break;
         }

@@ -1,0 +1,14 @@
+.clockdown {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  &_minutes, &_seconds {
+    @extend h1;
+    color: var(--primary-colors-secondary);
+  }
+  &_separator {
+    @extend h1;
+    color: var(--primary-colors-secondary);
+  }
+}

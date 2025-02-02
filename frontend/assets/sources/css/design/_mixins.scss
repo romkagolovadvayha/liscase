@@ -1,0 +1,12 @@
+@mixin range($width, $height, $unit) {
+  width: #{$width + $unit};
+  height: #{$height + $unit};
+  max: {
+    width: #{$width + $unit};
+    height: #{$height + $unit};
+  }
+  min: {
+    width: #{$width + $unit};
+    height: #{$height + $unit};
+  }
+}

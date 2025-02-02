@@ -18,6 +18,8 @@ use yii\web\JsExpression;
 <?= $form->field($model, 'price')->textInput(); ?>
 <?= $form->field($model, 'description')->textarea(); ?>
 <?= $form->field($model, 'preview_file')->fileInput(); ?>
+<?= $form->field($model, 'preview_file_open')->fileInput(); ?>
+<?= $form->field($model, 'show_main_block')->dropDownList([0 => 'Нет', 1 => 'Да'], []); ?>
 <?= $form->field($model, 'status')->dropDownList(Sets::getStatusList(), []) ?>
 <?= $this->context->getFormButtons(); ?>
 

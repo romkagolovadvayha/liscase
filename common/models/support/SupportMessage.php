@@ -35,7 +35,7 @@ class SupportMessage extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['support_id', 'user_id'], 'required'],
+            [['support_id'], 'required'],
             [['support_id', 'user_id'], 'integer'],
             [['message'], 'string'],
             [['created_at'], 'safe'],

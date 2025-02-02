@@ -47,4 +47,34 @@ class Settings
         Yii::$app->cache->set($cacheKey, $result, 3 * 60 * 60);
         return $result;
     }
+
+    public function genColors() {
+        /** @var SiteSetting[] $colors */
+        $colors = SiteSetting::find()
+                    ->andWhere(['IN', 'category', ['colors', 'design']])
+                    ->all();
+
+        $css = ":root {\n";
+        foreach ($colors as $color) {
+            $code = str_replace('_', '-', $color->code);
+            if ($color->type === 'image') {
+                $css .= "--{$code}: url({$color->value});\n";
+            } else {
+                $css .= "--{$code}: {$color->value};\n";
+            }
+        }
+        $css .= "}\n";
+
+        $filePath = Yii::getAlias('@frontend/web/uploads/site/colors/colors.css');
+        if (!file_exists(dirname(dirname($filePath)))) {
+            mkdir(dirname(dirname($filePath)));
+            chmod(dirname(dirname($filePath)), 0777);
+        }
+        if (!file_exists(dirname($filePath))) {
+            mkdir(dirname($filePath));
+            chmod(dirname($filePath), 0777);
+        }
+
+        file_put_contents($filePath, $css);
+    }
 }

@@ -1,0 +1,7 @@
+$names: "center", "space-between", "flex-start";
+
+@each $name in $names {
+  .justify-#{$name} {
+    justify-content: #{$name};
+  }
+}

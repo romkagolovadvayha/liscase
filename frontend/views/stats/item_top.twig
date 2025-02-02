@@ -1,0 +1,33 @@
+<section class="the-best__item">
+    <h4 class="text-text-main mb-20 relative z-1">{{ TITLE }}</h4>
+
+    <ol class="the-best__list">
+        {% for ITEM in ITEMS %}
+        <li>
+            <a href="{{ ITEM.link }}" class="the-best__list__item__wrap">
+                <div class="the-best__list__avatar">
+                    <img src="{{ ITEM.avatar }}" alt="{{ ITEM.username }}" />
+                </div>
+                <div class="the-best__list__item{% if ITEM.steam_id == USER.steam_id %} active{% endif %}">
+                    <div class="the-best__list__item_header">
+                        <div class="the-best__list__item_header_name">{{ ITEM.username }}</div>
+                        {% if ITEM.steam_id == USER.steam_id %}
+                            <span class="the-best__list__item_header_label">{{ t('common', 'вы') }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="the-best__list__item_footer">
+                        {% if ITEM.amount > 0 %}
+                        <div class="the-best__list__item_reward">
+                            <span class="icons icons_16px icons_16px_trophy bg-system-colors-{{ ITEM.color }}"></span>
+                            <span class="p3 text-text-main">{{ ITEM.amount }}</span>
+                            <span class="icons icons_16px icons_16px_coin"></span>
+                        </div>
+                        {% endif %}
+                        <div class="the-best__list__item_footer_score">{{ ITEM.score }}</div>
+                    </div>
+                </div>
+            </a>
+        </li>
+        {% endfor %}
+    </ol>
+</section>

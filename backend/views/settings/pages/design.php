@@ -9,8 +9,18 @@ use yii\widgets\Pjax;
 /** @var string $category */
 
 $this->title = 'Настройки дизайна';
+$tabs = [
+    [
+        'category' => 'design',
+        'title' => 'Дизайн',
+        'setting_items_class' => 'setting_items_flex',
+    ],
+    [
+        'category' => 'colors',
+        'title' => 'Настройки темы',
+        'setting_items_class' => 'setting_items_flex',
+    ],
+];
 ?>
 
-<div class="setting">
-    <?=$this->render('form', ['category' => $category, 'title' => 'Настройки дизайна'])?>
-</div>
+<?=$this->render('tabs', ['tabs' => $tabs])?>

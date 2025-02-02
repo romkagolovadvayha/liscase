@@ -1,0 +1,16 @@
+{% if ITEMS %}
+<section class="stats-aside__stat-block stat-block">
+    <h4 class="stat-block__title">{{ t('common', 'Убийства') }}</h4>
+    <div class="tab-content mb-8">
+        <ul class="stat-block__list">
+            {% for ITEM in ITEMS %}
+                {% include 'live_item.twig'
+                    with {
+                    'ITEM': ITEM,
+                }
+                %}
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+{% endif %}

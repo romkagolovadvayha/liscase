@@ -1,0 +1,138 @@
+.user {
+  @extend .p-40, .relative, .bg-background-secondary;
+  border-radius: var(--block-radius);
+  min-width: 848px;
+  width: 848px;
+  overflow: hidden;
+
+  @media (min-width: 1720px) {
+    width: 100%;
+    min-width: 713px;
+  }
+  @media (max-width: 1720px) {
+    min-width: 100%;
+  }
+
+  &:before {
+    @extend .block, .absolute;
+    @include range(422, 422, "px");
+    content: "";
+    background: var(--light-background);
+    right: 0;
+    bottom: 0;
+    background-repeat: no-repeat;
+    background-size: 422px 422px;
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
+  }
+
+  &__title {
+    @extend .relative, .mb-22, .text-primary-colors-main, .short, .z-1;
+  }
+
+  &__description {
+    @extend .mb-22, .text-text-main;
+  }
+
+  &__stats {
+    @extend .grid, .gap-x-8;
+    grid-template-columns: repeat(4, 100px);
+
+    &-wrapper {
+      @extend .relative, .grid, .gap-y-10, .z-1;
+    }
+
+    & .stats {
+      &__item {
+        @extend .grid, .py-12, .pr-4, .pl-12, .gap-y-4;
+
+        & p:first-of-type {
+          @extend .p2, .text-text-secondary;
+        }
+
+        & p:nth-of-type(2) {
+          @extend .p1, .text-text-main;
+          font-weight: 700;
+        }
+
+        &.stat {
+          @extend .py-8, .bg-background-teritiary;
+          border-radius: var(--card-radius);
+
+          & p:first-of-type {
+            @extend .p1, .text-text-main;
+            font-weight: 700;
+          }
+        }
+
+        & .stat {
+          &__image {
+            @extend .object-contain, .transition-transform;
+            @include range(32, 32, "px");
+          }
+        }
+
+        &:hover {
+          .stat__image {
+            transform: scale(1.08);
+          }
+        }
+      }
+    }
+  }
+
+  &__image {
+    @extend .absolute, .object-contain;
+    width: 972px;
+    height: 547px;
+    right: -260px;
+    bottom: -87px;
+  }
+
+  &_not-authorized {
+    @extend .pt-56, .pr-0, .pb-40, .pl-40;
+    min-height: 390px;
+
+    & .user__title {
+      @extend .mb-12;
+    }
+
+    & .user__image {
+      @extend .absolute, .object-contain;
+      width: 668.34px;
+      height: 376px;
+      right: -159px;
+      bottom: -36px;
+    }
+
+    & button {
+      @extend .py-12, .absolute;
+      bottom: 40px;
+      left: 40px;
+    }
+  }
+
+  &__awards {
+    @extend .mb-32;
+
+    &.awards {
+      @extend .grid, .mt-24, .gap-y-14;
+    }
+
+    & .awards {
+      &__title {
+        @extend .p2, .flex, .text-text-secondary, .items-center, .gap-x-8;
+      }
+
+      &__list {
+        @extend .flex, .gap-x-2, .flex-wrap;
+      }
+
+      &__image {
+        @extend .object-contain;
+        width: 48px;
+        height: 48px;
+      }
+    }
+  }
+}

@@ -1,0 +1,232 @@
+button,
+.button {
+  width: fit-content;
+  display: -webkit-inline-box;
+  display: -ms-inline-flexbox;
+  display: -moz-inline-box;
+
+  &__text,
+  .button__text {
+    @extend .relative, .flex, .items-center, .justify-center, .gap-x-8;
+    z-index: 1;
+  }
+
+  // Обязательно оборачивать текст кнопки в <span class="button__text">
+  &-primary {
+    @extend .p2, .uppercase, .py-14, .px-20, .relative, .text-button-main-new-price-color-default;
+    border-width: 0;
+    font-weight: 500;
+    border-radius: var(--button-secondary-radius);
+    background: var(--base-linear-gradiend);
+    overflow: hidden;
+    position: relative;
+    transition:
+      transform 0.25s ease-in-out,
+      background-color 0.25s ease-in-out;
+
+    &[aria-disabled="true"] {
+      @extend .user-select-none, .pe-none;
+      background: var(--tooltip-background);
+      .button__text {
+        color: transparent;
+      }
+      &:after {
+        background: url(/images/icons/loader2.svg);
+        height: 24px;
+        width: 24px;
+        background-size: contain;
+        content: "";
+        display: block;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-left: -12px;
+        margin-top: -12px;
+      }
+    }
+    &:before {
+      @extend .block, .absolute, .transition-opacity;
+      content: "";
+      background-image: linear-gradient(
+        90deg,
+        var(--primary-colors-main) 0%,
+        var(--primary-colors-secondary) 50.04%,
+        #ffb834 100%
+      );
+      opacity: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    &:hover {
+      color: var(--button-main-new-price-color-default);
+      &:before {
+        @extend .transition-opacity;
+        opacity: 100;
+      }
+    }
+
+    &:active {
+      @extend .bg-primary-colors-main, .transform-click;
+      transition:
+        transform 0.25s ease-in-out,
+        background-color 0.25s ease-in-out;
+
+      &:before {
+        opacity: 0;
+      }
+    }
+
+    &:disabled {
+      @extend .user-select-none, .pe-none, .text-text-disabled;
+      background: var(--button-disabled);
+    }
+  }
+
+  &-secondary {
+    @extend .p2,
+      .uppercase,
+      .py-13,
+      .px-20,
+      .relative,
+      .text-button-secondary-text-color-default,
+      .transition-all;
+    font-weight: 500;
+    box-sizing: border-box;
+    background: transparent;
+    border-radius: var(--button-secondary-radius);
+    border: 1px solid var(--button-secondary-border-color-default);
+
+    &:before {
+      @extend .absolute, .transition-all;
+      content: "";
+      opacity: 0;
+      inset: -1px;
+      border-radius: var(--button-secondary-radius);
+      border: 1px solid transparent;
+      background-image: var(--base-linear-gradiend);
+      mask:
+        linear-gradient(#fff 0 0) padding-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      background-size: 101% 100%;
+      background-position: center;
+    }
+
+    &:hover {
+      color: var(--button-main-new-price-color-default);
+      &:before {
+        @extend .transition-all;
+        opacity: 100;
+      }
+    }
+
+    &:active {
+      @extend .bg-background-secondary, .transition-all, .transform-click;
+    }
+
+    &:disabled {
+      @extend .user-select-none, .pe-none, .border-button-disabled, .text-text-disabled;
+    }
+  }
+
+  &-disabled {
+    @extend .p2,
+      .uppercase,
+      .py-13,
+      .px-20,
+      .relative,
+      .text-button-secondary-text-color-default,
+      .transition-all;
+    font-weight: 500;
+    box-sizing: border-box;
+    background: transparent;
+    border-radius: var(--button-secondary-radius);
+    border: 1px solid var(--button-secondary-border-color-default);
+  }
+
+  // Обязательно оборачивать текст кнопки в <span class="button__text">
+  &-teritiary {
+    @extend .p2,
+      .uppercase,
+      .py-14,
+      .px-20,
+      .relative,
+      .text-button-main-new-price-color-default,
+      .bg-button-teritiary-background;
+    border-width: 0;
+    font-weight: 500;
+    border-radius: var(--button-secondary-radius);
+    overflow: hidden;
+    transition:
+      transform 0.25s ease-in-out,
+      background-image 0.25s ease-in-out,
+      background-color 0.25s ease-in-out;
+
+    &:before {
+      @extend .block, .absolute, .transition-opacity;
+      content: "";
+      background-image: var(--base-linear-gradiend);
+      opacity: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    &:hover {
+      color: var(--button-main-new-price-color-default);
+      &:before {
+        @extend .transition-opacity;
+        opacity: 100;
+      }
+    }
+
+    &:active {
+      @extend .bg-primary-colors-main, .transform-click;
+      transition:
+        transform 0.25s ease-in-out,
+        background-color 0.25s ease-in-out;
+
+      &:before {
+        opacity: 0;
+      }
+    }
+
+    &:disabled {
+      @extend .user-select-none, .pe-none, .bg-button-disabled, .text-text-disabled;
+    }
+  }
+
+  &-size {
+    &__m {
+      @extend .p2, .uppercase, .py-14, .px-20;
+    }
+    &__s {
+      @extend .p3, .uppercase, .py-10, .px-12;
+      @media (max-width: 768px) {
+        font-size: 20px;
+        line-height: 25px;
+      }
+    }
+  }
+
+  &-type {
+    &__rounded {
+      @extend .p-16;
+      border-radius: 100%;
+    }
+  }
+
+  &:disabled {
+    & .old-price {
+      @extend .text-text-disabled;
+    }
+  }
+}

@@ -15,12 +15,13 @@ class DropForm extends Drop
 {
 
     public $preview_file;
+    public $preview_file_open;
 
     public function rules(): array
     {
         return ArrayHelper::merge([
                                       [['name', 'eng_name', 'market_status', 'min_box', 'max_box', 'description', 'rust_id', 'type_id', 'price', 'count', 'discount', 'preview_file', 'command', 'blocked_hour'], 'trim'],
-                                      [['preview_file'], 'file', 'skipOnEmpty' => true, 'extensions' => 'png'],
+                                      [['preview_file', 'preview_file_open'], 'file', 'skipOnEmpty' => true, 'extensions' => ['svg', 'jpg', 'png']],
                                   ], parent::rules());
     }
 
@@ -28,6 +29,7 @@ class DropForm extends Drop
     {
         return ArrayHelper::merge(parent::attributeLabels(), [
             'preview_file' => 'Изображение предмета',
+            'preview_file_open' => 'Доп. изображение (Не обязательно)',
         ]);
     }
 
@@ -36,6 +38,9 @@ class DropForm extends Drop
         parent::afterFind();
         if (!empty($this->imageOrig)) {
             $this->preview_file = $this->imageOrig->getImagePubUrl();
+        }
+        if (!empty($this->imageOrig2)) {
+            $this->preview_file_open = $this->imageOrig2->getImagePubUrl();
         }
     }
 
@@ -59,24 +64,25 @@ class DropForm extends Drop
         if (empty($this->id)) {
             $this->id = Yii::$app->db->getLastInsertID();
         }
-        $this->preview_file = $this->_loadImage(UploadedFile::getInstance($this, 'preview_file'), $this->id);
+        $this->preview_file = $this->_loadImage(UploadedFile::getInstance($this, 'preview_file'), $this->id, DropImage::TYPE_ORIG);
+        $this->preview_file_open = $this->_loadImage(UploadedFile::getInstance($this, 'preview_file_open'), $this->id, DropImage::TYPE_ORIG_2);
 
         return true;
     }
 
-    private function _loadImage($image, $boxId) {
+    private function _loadImage($image, $boxId, $type) {
         if (empty($image) || empty($image->tempName)) {
             return null;
         }
         $uploadDir = Yii::getAlias('@app/web/uploads');
-        $fileUrl = "/drop/" . $this->id . "_" . md5(time()) . ".png";
+        $fileUrl = "/drop/" . $this->id . "_" . $type . "_" . md5(time()) . ".png";
         $filePath = $uploadDir . $fileUrl;
         if (!file_exists(dirname($filePath))) {
             mkdir(dirname($filePath));
             chmod(dirname($filePath), 0777);
         }
         file_put_contents($filePath, file_get_contents($image->tempName));
-        DropImage::createRecord($fileUrl, DropImage::TYPE_ORIG, $boxId);
+        DropImage::createRecord($fileUrl, $type, $boxId);
         return $filePath;
     }
 

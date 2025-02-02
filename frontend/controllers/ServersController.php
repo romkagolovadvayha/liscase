@@ -31,29 +31,54 @@ class ServersController extends WebController
      */
     public function actionIndex()
     {
-        return $this->render('index');
+        $servers = Servers::find()
+                          ->cache(30)
+                          ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+
+        $projectStats = \common\models\statistics\Statistics::projectStats();
+        $this->view->title = Yii::t('common', 'Наши сервера Rust');
+
+        return $this->render('servers-list.twig', [
+            'SERVERS' => $servers,
+            'PROJECT_STATS' => $projectStats
+        ]);
     }
 
     /**
-     * @param $server
+     * @param $serverTag
      *
      * @return string
      * @throws NotFoundHttpException
      */
-    public function actionRules($server)
+    public function actionRules($serverTag)
     {
-        /** @var Servers $server */
-        $server = Servers::find()
-                         ->cache(30)
-                         ->andWhere(['tag' => $server])
-                         ->one();
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->cache(30)
+                          ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+
+        foreach ($servers as $item) {
+            if ($item->tag === $serverTag) {
+                $server = $item;
+                break;
+            }
+        }
 
         if (empty($server)) {
             throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден!'));
         }
+        $commands = json_decode($server->commands, 1);
+        $this->view->title = Yii::t('common', 'Правила сервера') . " " . Yii::t('database', $server->name);
+        $this->view->params['page'] = 'rules';
 
-        return $this->render('rules', [
-            'server' => $server
+        return $this->render('rules.twig', [
+            'SERVER' => $server,
+            'SERVERS' => $servers,
+            'COMMANDS' => $commands,
         ]);
     }
 
@@ -61,12 +86,6 @@ class ServersController extends WebController
     {
         $this->layout = 'service';
         return $this->renderAjax('wipe-block');
-    }
-
-    public function actionBonus()
-    {
-        $this->layout = 'service';
-        return $this->renderAjax('bonus');
     }
 
 }

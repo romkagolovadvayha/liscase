@@ -36,10 +36,7 @@ class TaskController extends Controller
      */
     public function actionIndex()
     {
-       $items = Task::getTypeList();
-        return $this->render('index', [
-            'items' => $items
-        ]);
+        return $this->redirect('/task/type?id=' . Task::TYPE_FERMER);
     }
 
     /**
@@ -53,9 +50,12 @@ class TaskController extends Controller
                      ->andWhere(['type' => $id])
                      ->orderBy(['sort' => SORT_ASC])
                      ->all();
+        $tasks = Task::getTypeList();
+        unset($tasks[Task::TYPE_All]);
         return $this->render('type', [
             'items' => $items,
             'id' => $id,
+            'tasks' => $tasks,
         ]);
     }
 
@@ -68,9 +68,14 @@ class TaskController extends Controller
         $formModel = Task::findOne($id);
         if ($formModel->load(Yii::$app->request->post())) {
             $formModel->save();
+            return $this->redirect('/task/type?id=' . $formModel->type);
         }
+        $tasks = Task::getTypeList();
+        unset($tasks[Task::TYPE_All]);
         return $this->render('update', [
             'model' => $formModel,
+            'id' => $id,
+            'tasks' => $tasks,
         ]);
     }
 

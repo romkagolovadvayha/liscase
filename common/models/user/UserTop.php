@@ -3,7 +3,9 @@
 namespace common\models\user;
 
 use common\models\servers\Servers;
+use common\models\statistics\Statistics;
 use Yii;
+use yii\helpers\ArrayHelper;
 
 /**
  * This is the model class for table "user_top".
@@ -149,6 +151,19 @@ class UserTop extends \yii\db\ActiveRecord
         ];
     }
 
+    public static function getTopsLabel() {
+        return [
+            UserTop::TYPE_REIDER => Yii::t('common', 'Лучший рейдер'),
+            UserTop::TYPE_KILLS => Yii::t('common', 'Лучший киллер'),
+            UserTop::TYPE_SCIENTISTS => Yii::t('common', 'Лучший мирный'),
+            UserTop::TYPE_PLAYTIME => Yii::t('common', 'Топ по онлайну'),
+            UserTop::TYPE_FARMER => Yii::t('common', 'Лучший фармер'),
+            UserTop::TYPE_FISHING => Yii::t('common', 'Лучший рыбак'),
+            UserTop::TYPE_HUNTER => Yii::t('common', 'Лучший охотник'),
+            UserTop::TYPE_FERMER => Yii::t('common', 'Лучший фермер'),
+        ];
+    }
+
     public static function getRaiting() {
         return [
           UserTop::TYPE_REIDER => [
@@ -211,5 +226,159 @@ class UserTop extends \yii\db\ActiveRecord
               'gathered_potato' => 0.4,
           ],
         ];
+    }
+
+    public function keyName()
+    {
+        return ArrayHelper::getValue(UserTop::getRaitingLabel(), $this->key);
+    }
+
+    public function valueFormat()
+    {
+        if ($this->key == UserTop::TYPE_PLAYTIME) {
+            return Servers::getPlayTime($this->value);
+        }
+        return number_format($this->value, 0, '.', ' ');
+    }
+
+    public static function getUserTop($servers, $update = false)
+    {
+        $cacheKey = 'steam_getUserTop_' . count($servers);
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        $top = [];
+        foreach ($servers as $server) {
+            $sql = "
+    SELECT id, user_id, `key`, value, server_id, wipe
+    FROM (
+        SELECT id, user_id, `key`, value, server_id, wipe,
+            MAX(value) OVER (PARTITION BY `key`, server_id) AS max_value
+        FROM user_top
+        WHERE server_id = :server_id
+          AND wipe = :wipe
+    ) AS ranked
+    WHERE value = max_value
+    ORDER BY server_id, `key`, value DESC
+";
+
+            $userTop = UserTop::findBySql($sql, [
+                ':server_id' => $server->id,
+                ':wipe' => $server->currentWipe(),
+            ])->all();
+
+
+            $top[$server->id] = [];
+            foreach ($userTop as $item) {
+                /** @var User $user */
+                $user = User::findOne($item['user_id']);
+                $top[$server->id][] = [
+                    'name' => $item->keyName(),
+                    'score' => $item->valueFormat(),
+                    'username' => $user->username,
+                    'avatar' => $user->getAvatar(),
+                ];
+            }
+        }
+
+        Yii::$app->cache->set($cacheKey, $top, 7*24*60*60);
+        return $top;
+    }
+
+    /**
+     * @param Servers $server
+     * @param bool $update
+     *
+     * @return array|false|mixed
+     */
+    public static function getUserTops($server, $wipe, $update = false)
+    {
+        $cacheKey = "User_Top___getUserTops_{$server->id}_{$wipe}";
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        $items = [];
+        foreach (UserTop::getTopsLabel() as $key => $label) {
+            /** @var UserTop[] $userTops */
+            $userTops = UserTop::find()
+                               ->andWhere(['key' => $key])
+                               ->andWhere(['server_id' => $server->id])
+                               ->andWhere(['wipe' => $wipe])
+                               ->orderBy(['value' => SORT_DESC])
+                               ->limit(3)
+                               ->all();
+            $items[$key] = [
+                'label' => $label,
+                'items' => [],
+            ];
+            if ($key !== 'playtime') {
+                foreach ($userTops as $position => $item) {
+                    /** @var User $user */
+                    $user = User::findOne($item['user_id']);
+                    $color = UserTop::getColor($position);
+                    $amount = UserTop::getAmount($position);
+                    $items[$key]['items'][] = [
+                        'position' => $position,
+                        'color' => $color,
+                        'amount' => $amount,
+                        'steam_id' => $user->steam_id,
+                        'score' => $item->valueFormat(),
+                        'link' => "/servers/{$server->tag}/{$user->steam_id}",
+                        'username' => $user->username,
+                        'avatar' => $user->getAvatar(),
+                    ];
+                }
+            } else {
+                /** @var Statistics[] $statistics */
+                $statistics = Statistics::find()
+                                        ->andWhere(['key' => $key])
+                                        ->andWhere(['server_tag' => $server->tag])
+                                        ->andWhere(['wipe' => $wipe])
+                                        ->orderBy(['value' => SORT_DESC])
+                                        ->limit(3)
+                                        ->all();
+                foreach ($statistics as $position => $item) {
+                    $color = UserTop::getColor($position);
+                    $amount = UserTop::getAmount($position);
+                    /** @var User $user */
+                    $user = $item->user;
+                    $items[$key]['items'][] = [
+                        'position' => $position,
+                        'color' => $color,
+                        'amount' => $amount,
+                        'steam_id' => $user->steam_id,
+                        'score' => Servers::getPlayTime($item->value),
+                        'link' => "/servers/{$server->tag}/{$user->steam_id}",
+                        'username' => $user->username,
+                        'avatar' => $user->getAvatar(),
+                    ];
+                }
+            }
+        }
+
+        Yii::$app->cache->set($cacheKey, $items, 7*24*60*60);
+        return $items;
+    }
+
+    public static function getColor($position) {
+        $color = 'gold';
+        if ($position === 1) {
+            $color = 'silver';
+        }
+        if ($position === 2) {
+            $color = 'bronze';
+        }
+        return $color;
+    }
+
+    public static function getAmount($position) {
+        $amount = Yii::$app->settings->get('tops_gold_amount');
+        if ($position === 1) {
+            $amount = Yii::$app->settings->get('tops_silver_amount');
+        }
+        if ($position === 2) {
+            $amount = Yii::$app->settings->get('tops_bronze_amount');
+        }
+        return $amount;
     }
 }

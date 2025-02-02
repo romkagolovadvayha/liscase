@@ -1,0 +1,11 @@
+$spaceamounts: 0, 4, 6, 8, 12, 16, 20;
+
+@each $space in $spaceamounts {
+  .rounded-#{$space} {
+    border-radius: #{$space}px;
+  }
+}
+
+.rounded-full {
+  border-radius: 100%;
+}

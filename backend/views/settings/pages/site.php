@@ -15,10 +15,27 @@ $settings = SiteSetting::find()
                        ->all();
 
 $this->title = 'Настройки сайта';
+
+$tabs = [
+    [
+        'category' => 'site',
+        'title' => 'Настройки сайта',
+    ],
+    [
+        'category' => 'social',
+        'title' => 'Социальные сети',
+    ],
+    [
+        'category' => 'section',
+        'title' => 'Разделы сайта',
+    ],
+    [
+        'category' => 'banSystem',
+        'title' => 'Бан система',
+    ],
+];
 ?>
 
-<div class="setting">
-    <?=$this->render('form', ['category' => 'site', 'title' => "Настройки сайта"])?>
-    <?=$this->render('form', ['category' => 'social', 'title' => "Социальные сети"])?>
-    <?=$this->render('form', ['category' => 'section', 'title' => "Разделы сайта"])?>
+<div class="wrap800">
+    <?=$this->render('tabs', ['tabs' => $tabs])?>
 </div>

@@ -7,8 +7,12 @@ use common\components\base\Model;
 use common\components\helpers\Role;
 use common\models\box\Drop;
 use common\models\box\DropSearch;
+use common\models\user\User;
+use yii\web\NotFoundHttpException;
 use yii\web\Response;
 use Yii;
+
+use function frontend\controllers\findKey;
 
 class DropController extends \backend\components\CrudController
 {
@@ -120,4 +124,33 @@ class DropController extends \backend\components\CrudController
             'items' => $drops
         ]);
     }
+
+    public function actionSearchDrop($q = null) {
+        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        /** @var Drop[] $drops */
+        $dropsQuery = Drop::find()
+                     ->andWhere('rust_id is not null');
+
+        if (!empty($q)) {
+            $dropsQuery->andWhere(['LIKE', 'name', '%' . $q . '%', false]);
+        }
+
+        $drops = $dropsQuery
+            ->orderBy(['sort' => SORT_ASC])
+            ->limit(20)
+            ->all();
+
+        $items = [];
+        foreach ($drops as $item) {
+            $items[] = [
+                'id' => $item->id,
+                'name' => $item->name,
+                'image' => $item->imageOrig->getImagePubUrl(),
+            ];
+        }
+
+        return ['items' => $items];
+    }
+
 }

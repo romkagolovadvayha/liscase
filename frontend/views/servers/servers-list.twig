@@ -1,0 +1,63 @@
+<div class="servers_page">
+    {% for SERVER in SERVERS %}
+        <article class="servers_page_item_wrap server_status{{ SERVER.status }}" data-server-id="{{ SERVER.id }}">
+            <div class="servers_page_item">
+                <header class="servers_page_item_header">
+                    <h5 class="servers_page_item_header_title">{{ t('database', SERVER.monitoring_description) }} [{{ t('database', SERVER.monitoring_name) }}]</h5>
+                    <span class="servers_page_item_header_status">{{ SERVER.wipeTypeText() }}</span>
+                </header>
+
+                <div class="servers_page_item_actions">
+                    <div class="servers_page_item_ip btn-clipboard"
+                         data-clipboard-text="connect {{ SERVER.ip }}:{{ SERVER.port }}"
+                         data-message="{{ t('common', 'IP адрес скопирован в буфер обмена!') }}"
+                         data-bs-toggle="tooltip"
+                         data-bs-title="{{ t('common', 'Скопировать IP') }}">
+                        <span class="servers_page_item_ip_content">connect {{ SERVER.ip }}:{{ SERVER.port }}</span>
+                    </div>
+                    <div class="servers_page_item_actions_r">
+                        <a class="button button-secondary" href="{{ SERVER.getLink('map') }}" target="_blank" >{{ t('common', 'Текущая карта') }}</a>
+                        <a class="button button-secondary" href="{{ SERVER.getLink('rules') }}">{{ t('common', 'Правила сервера') }}</a>
+                    </div>
+                </div>
+                <div class="servers_page_item_labels">
+                    {% if SERVER.is_store %}
+                        <div class="servers_page_item_labels_label"><i class="fas fa-check"></i> {{ t('common', 'Донат выключен') }}</div>
+                    {% endif %}
+                    {% if SERVER.stats_payment %}
+                        <div class="servers_page_item_labels_label"><i class="fas fa-wallet"></i> {{ t('common', 'Оплата за топы') }}</div>
+                    {% endif %}
+                    {% if SERVER.skindrops %}
+                        <div class="servers_page_item_labels_label"><i class="fas fa-gift"></i> {{ t('common', 'Раздача скинов') }}</div>
+                    {% endif %}
+                    {% if SERVER.team_limit %}
+                        <div class="servers_page_item_labels_label"><i class="fas fa-users"></i> {{ t('common', 'Лимит {PARAM_LIMIT} человека', {PARAM_LIMIT: SERVER.team_limit}) }}</div>
+                    {% else %}
+                        <div class="servers_page_item_labels_label"><i class="fas fa-users-slash"></i> {{ t('common', 'Лимит не ограничен') }}</div>
+                    {% endif %}
+                    <div class="servers_page_item_labels_label"><i class="fas fa-bell"></i> {{ t('common', 'Оповещение о рейдах') }}</div>
+                </div>
+                <div class="servers_page_item_wipes">
+                    <div class="servers_page_item_wipes_wipe">
+                        <span class="servers_page_item_wipes_wipe_label">{{ t('common', 'Последний вайп') }}</span>
+                        <span class="servers_page_item_wipes_wipe_date">
+                            <span class="wipe_timer" data-time="{{ SERVER.wipeTime() }}">{{ SERVER.wipe }}</span> {{ t('common', 'МСК') }}
+                        </span>
+                    </div>
+                    <div class="servers_page_item_wipes_wipe">
+                        <span class="servers_page_item_wipes_wipe_label">{{ t('common', 'Следующий вайп') }}</span>
+                        <span class="servers_page_item_wipes_wipe_date">
+                            <span class="wipe_timer" data-time="{{ SERVER.nextWipeTime() }}">{{ SERVER.next_wipe }}</span> {{ t('common', 'МСК') }}
+                        </span>
+                    </div>
+                    <div class="servers_page_item_wipes_wipe">
+                        <span class="servers_page_item_wipes_wipe_label">{{ t('common', 'Глобальный вайп') }}</span>
+                        <span class="servers_page_item_wipes_wipe_date">
+                            <span class="wipe_timer" data-time="{{ SERVER.globalWipeTime() }}">{{ SERVER.global_wipe }}</span> {{ t('common', 'МСК') }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </article>
+    {% endfor %}
+</div>

@@ -14,10 +14,13 @@ use common\components\base\ActiveRecord;
  * @property float      $price
  * @property int        $status
  * @property int        $sort
+ * @property bool       $show_main_block
  * @property string     $created_at
  *
  * @property SetsDrop[]  $setsDrop
  * @property SetsImage   $imageOrig
+ * @property SetsImage[] $setsImages
+ * @property SetsImage   $imageOrig2
  */
 class Sets extends ActiveRecord
 {
@@ -55,6 +58,7 @@ class Sets extends ActiveRecord
             'discount'    => Yii::t('common', 'Скидка'),
             'price'       => Yii::t('common', 'Цена'),
             'status'      => Yii::t('common', 'Статус'),
+            'show_main_block'              => Yii::t('common', 'Показывать в главном блоке главной страницы'),
             'created_at'  => Yii::t('common', 'Дата создания'),
         ];
     }
@@ -63,7 +67,7 @@ class Sets extends ActiveRecord
     {
         return [
             [['name', 'price', 'status', 'created_at'], 'required'],
-            [['status', 'discount'], 'integer'],
+            [['status', 'discount', 'show_main_block'], 'integer'],
             [['name'], 'string', 'max' => 255],
             [['created_at'], 'safe'],
         ];
@@ -88,7 +92,19 @@ class Sets extends ActiveRecord
     public function getImageOrig()
     {
         return $this->hasOne(SetsImage::class, ['sets_id' => 'id'])
+                    ->cache(60)
                     ->andWhere(['type' => SetsImage::TYPE_ORIG]);
+    }
+    /**
+     * Gets query for [imageOrig2].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getImageOrig2()
+    {
+        return $this->hasOne(SetsImage::class, ['sets_id' => 'id'])
+                    ->cache(60)
+                    ->andWhere(['type' => SetsImage::TYPE_ORIG_2]);
     }
 
     /**
@@ -124,14 +140,59 @@ class Sets extends ActiveRecord
     }
 
     /**
+     * Gets query for [[setsImages]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getSetsImages()
+    {
+        return $this->hasMany(SetsImage::class, ['sets_id' => 'id']);
+    }
+
+    /**
      *
      * @return Sets[]
      */
-    public static function getSetsForMarket()
+    public static function getSetsForMarket($mainBlock = false, $update = false)
     {
-        return Sets::find()
-                   ->andWhere(['status' => Drop::STATUS_ACTIVE])
-                   ->all();
+        $cacheKey = 'getSetsForMarket3_' . $mainBlock;
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $result = Sets::find()
+                      ->andWhere(['status' => Drop::STATUS_ACTIVE])
+                      ->andWhere(['show_main_block' => $mainBlock])
+                      ->with('setsImages')  // Добавляем кэшируемые связи
+                      ->all();
+
+        Yii::$app->cache->set($cacheKey, $result, 7*24*60*60);
+        return $result;
     }
 
+    /**
+     * Получить URL изображения.
+     * Загружает и кэширует изображение, если оно не было загружено ранее.
+     */
+    public function image() {
+        foreach ($this->setsImages as $item) {
+            if ($item->type === SetsImage::TYPE_ORIG) {
+                return $item->getImagePubUrl();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Получить второй URL изображения.
+     * Кэширует значение, чтобы избежать повторных запросов.
+     */
+    public function image2() {
+        foreach ($this->setsImages as $item) {
+            if ($item->type === SetsImage::TYPE_ORIG_2) {
+                return $item->getImagePubUrl();
+            }
+        }
+        return $this->image();
+    }
 }

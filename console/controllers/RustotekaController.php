@@ -3,8 +3,11 @@ namespace console\controllers;
 
 use common\components\bansystem\BanSystemApi;
 use common\components\oauth\Steam;
+use common\models\bans\Bans;
 use common\models\bansystem\BanList;
+use common\models\user\User;
 use yii\console\Controller;
+use yii\helpers\HtmlPurifier;
 
 class RustotekaController extends Controller
 {
@@ -109,36 +112,37 @@ class RustotekaController extends Controller
      */
     public function actionBanImport() {
         $projects = [
-            BanSystemApi::TYPE_GGRUST,
-            BanSystemApi::TYPE_RUSTROOM,
-            BanSystemApi::TYPE_RUSTUSSR,
-            BanSystemApi::TYPE_MAGICRUST,
-//            BanSystemApi::TYPE_BRORUST,
-            BanSystemApi::TYPE_GRANDRUST,
-//            BanSystemApi::TYPE_MOSKOV77,
-            BanSystemApi::TYPE_SLABIYRUST,
-//            BanSystemApi::TYPE_JOKERRUST,
-            BanSystemApi::TYPE_RUSTCHEATCHECK,
-            BanSystemApi::TYPE_PROSTOJ,
+//            BanSystemApi::TYPE_GGRUST,
+//            BanSystemApi::TYPE_RUSTROOM,
+//            BanSystemApi::TYPE_RUSTUSSR,
+//            BanSystemApi::TYPE_MAGICRUST,
+////            BanSystemApi::TYPE_BRORUST,
+//            BanSystemApi::TYPE_GRANDRUST,
+////            BanSystemApi::TYPE_MOSKOV77,
+//            BanSystemApi::TYPE_SLABIYRUST,
+////            BanSystemApi::TYPE_JOKERRUST,
+//            BanSystemApi::TYPE_RUSTCHEATCHECK,
+//            BanSystemApi::TYPE_PROSTOJ,
+            BanSystemApi::TYPE_RUSTAPP,
         ];
 
         foreach ($projects as $project) {
             $banSystem = BanSystemApi::getInstance($project);
-            $count = 0;
-            foreach ($banSystem->banList() as $item) {
-                BanList::createModel(
-                    $item['steam_id'],
-                    $item['project'],
-                    $item['server'],
-                    $item['reason'],
-                    $item['date'],
-                    $item['expireDate'],
-                );
-                if ($count > 30) {
-                    break;
-                }
-                $count++;
+            $banList = $banSystem->banList();
+            foreach ($banList as $item) {
+                $user = User::findBySteamId($item['steam_id']);
+                $model = new Bans();
+                $model->username = HtmlPurifier::process($item['username']);
+                $model->steam_id = $item['steam_id'];
+                $model->server_id = $item['server_id'];
+                $model->reason = $item['reason'];
+                $model->banned_at = $item['date'];
+                $model->unbanned_at = $item['expireDate'];
+                $model->user_id = $user->id;
+                $model->ip = $item['ip'];
+                $model->save();
             }
+            echo "project: {$project}; count: " . count($banList) . PHP_EOL;
         }
     }
 

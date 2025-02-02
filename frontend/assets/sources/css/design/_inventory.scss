@@ -1,0 +1,49 @@
+.inventory {
+  @extend .p-8, .relative, .text-center, .bg-background-teritiary;
+  max-width: 100%;
+  border-radius: var(--card-radius);
+  min-width: 125px;
+  transition:
+    box-shadow 0.25s ease-in-out,
+    background-color 0.25s ease-in-out,
+    transform 0.25s ease-in-out;
+
+  &[aria-disabled="true"] {
+    @extend .user-select-none, .pe-none, .text-text-disabled;
+    background: var(--button-disabled);
+    .inventory__image {
+      filter: grayscale(100%);
+    }
+    .inventory__title {
+      @extend .text-text-teritiary;
+    }
+  }
+  &__list {
+    @extend .grid, .justify-flex-start, .gap-x-8, .gap-y-8, .w-full;
+    grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+  }
+
+  &__boost {
+    @extend .p2, .absolute, .text-left, .text-text-secondary;
+    top: 8px;
+    left: 8px;
+  }
+
+  &__image {
+    @extend .object-contain, .transition-transform, .relative;
+    top: 16px;
+    @include range(80, 80, "px");
+  }
+
+  &__title {
+    @extend .p3, .mt-16, .text-left, .text-text-main, .short;
+  }
+
+  &:hover {
+    box-shadow: var(--shadow-card);
+
+    & .inventory__image {
+      transform: scale(1.1) rotate(10deg);
+    }
+  }
+}

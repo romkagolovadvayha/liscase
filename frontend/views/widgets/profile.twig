@@ -1,0 +1,72 @@
+{{ use('common/components/widgets') }}
+
+<section class="stats-aside__stat-block stat-block stat-block-profile">
+    <div class="stat-block-profile-image">
+        <img src="{{ userData.avatar }}"/>
+    </div>
+    {{ nav_menu_widget({
+        'options': {
+            'class': 'stat-block-profile-menu mt-24',
+        },
+        'menuHidden': MENU_HIDDEN,
+        'items': [
+            {
+                'label': t('common', 'Профиль'),
+                'url': "/user/profile",
+                'iconClass': 'icons icons_16px fa-solid fa-user',
+                'activeClass': 'active',
+                'active': PAGE == 'user-profile',
+                'spanClass': 'stat-block-profile-menu__item-text',
+                'options': {'class': 'stat-block-profile-menu__item'},
+            },
+            {
+                'label': t('common', 'Бонусы и задания'),
+                'url': "/user/tasks",
+                'iconClass': 'icons icons_16px fa-solid fa-gift',
+                'activeClass': 'active',
+                'active': PAGE == 'user-task',
+                'spanClass': 'stat-block-profile-menu__item-text',
+                'options': {'class': 'stat-block-profile-menu__item'},
+            },
+            {
+                'label': t('common', 'Моя корзина'),
+                'url': "/user/inventory",
+                'iconClass': 'icons icons_16px fa-solid fa-basket-shopping',
+                'activeClass': 'active',
+                'active': PAGE == 'user-inventory',
+                'spanClass': 'stat-block-profile-menu__item-text',
+                'options': {'class': 'stat-block-profile-menu__item'},
+            },
+            {
+                'label': t('common', 'История операций'),
+                'url': "/user/history",
+                'iconClass': 'icons icons_16px fa-solid fa-clock-rotate-left',
+                'activeClass': 'active',
+                'active': PAGE == 'user-history',
+                'spanClass': 'stat-block-profile-menu__item-text',
+                'options': {'class': 'stat-block-profile-menu__item'},
+            },
+            {
+                'label': t('common', 'Реферальная система'),
+                'url': "/user/partner",
+                'iconClass': 'icons icons_16px fa-solid fa-link',
+                'activeClass': 'active',
+                'active': PAGE == 'user-partner',
+                'visibility': SETTINGS.get('section_referral'),
+                'spanClass': 'stat-block-profile-menu__item-text',
+                'options': {'class': 'stat-block-profile-menu__item'},
+            },
+            {
+                'label': t('common', 'Выдача скинов'),
+                'url': "/user/skins",
+                'iconClass': 'icons icons_16px fas fa-donate',
+                'activeClass': 'active',
+                'active': PAGE == 'user-skins',
+                'visibility': SETTINGS.get('section_skindrops'),
+                'spanClass': 'stat-block-profile-menu__item-text',
+                'options': {'class': 'stat-block-profile-menu__item'},
+            },
+        ]
+    })
+    }}
+</section>

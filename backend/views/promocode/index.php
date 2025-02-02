@@ -11,40 +11,66 @@ use common\models\promocode\Promocode;
 
 $this->title = Yii::t('common', 'Промокоды');
 ?>
+<div class="wrap800">
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a href="/promocode" class="nav-link active">Все промокоды</a>
+        </li>
+        <li class="nav-item">
+            <a href="/promocode/create"
+               class="nav-link show-modal-link"
+               data-toggl="modal"
+               data-target="modal-dialog"
+               data-title="Новый промокод">
+                Новый промокод
+            </a>
+        </li>
+    </ul>
 
-<?= Html::a(Yii::t('common', 'Добавить промокод'),
-    '/promocode/create',
-    ['class' => 'btn btn-success']); ?>
-<div>&nbsp;</div>
-
-<?= GridView::widget([
-    'dataProvider' => $dataProvider,
-    'filterModel'  => $searchModel,
-    'columns'      => [
-        'code',
-        [
-            'attribute' => 'status',
-            'filterType'  => GridView::FILTER_SELECT2,
-            'filter'    => ArrayHelper::merge(['' => 'Все'], Promocode::getStatusList()),
-            'options'   => ['width' => '150'],
-            'value'     => function (Promocode $model) {
-                return ArrayHelper::getValue(Promocode::getStatusList(), $model->status);
-            },
-        ],
-        [
-            'attribute' => 'amount',
-            'options'   => ['width' => '100'],
-        ],
-        [
-            'attribute' => 'finished_at',
-            'options'   => ['width' => '200'],
-            'class' => \common\components\grid\DateColumn::class,
-        ],
-        [
-            'class'    => 'yii\grid\ActionColumn',
-            'template' => '{update}{delete}',
-            'options'  => ['width' => '30'],
-        ],
-    ],
-]);
-?>
+    <div class="tab-content">
+        <?= GridView::widget([
+            'dataProvider' => $dataProvider,
+            'filterModel'  => $searchModel,
+            'columns'      => [
+                'code',
+                [
+                    'attribute' => 'status',
+                    'filterType'  => GridView::FILTER_SELECT2,
+                    'filter'    => ArrayHelper::merge(['' => 'Все'], Promocode::getStatusList()),
+                    'options'   => ['width' => '120'],
+                    'value'     => function (Promocode $model) {
+                        return ArrayHelper::getValue(Promocode::getStatusList(), $model->status);
+                    },
+                ],
+                [
+                    'attribute' => 'amount',
+                    'options'   => ['width' => '50'],
+                ],
+                [
+                    'attribute' => 'created_at',
+                    'options'   => ['width' => '180'],
+                    'class' => \common\components\grid\DateColumn::class,
+                    'format'    => 'raw',
+                    'value'          => function (Promocode $model) {
+                        return date('d.m.Y H:i:s', strtotime($model->created_at));
+                    },
+                ],
+                [
+                    'attribute' => 'finished_at',
+                    'options'   => ['width' => '180'],
+                    'class' => \common\components\grid\DateColumn::class,
+                    'format'    => 'raw',
+                    'value'          => function (Promocode $model) {
+                        return date('d.m.Y H:i:s', strtotime($model->created_at));
+                    },
+                ],
+                [
+                    'class'    => 'yii\grid\ActionColumn',
+                    'template' => '{update}',
+                    'options'  => ['width' => '30'],
+                ],
+            ],
+        ]);
+        ?>
+    </div>
+</div>

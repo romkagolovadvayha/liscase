@@ -32,17 +32,17 @@ class BanSystemApi extends Component
     public static function getInstance($type)
     {
         $classMap = [
-            BanSystemApi::TYPE_GGRUST          => GGRust::class,
-            BanSystemApi::TYPE_RUSTROOM          => RustRoom::class,
-            BanSystemApi::TYPE_RUSTUSSR          => RustUssr::class,
-            BanSystemApi::TYPE_MAGICRUST          => MagicRust::class,
-            BanSystemApi::TYPE_BRORUST          => BroRust::class,
-            BanSystemApi::TYPE_GRANDRUST          => GrandRust::class,
-            BanSystemApi::TYPE_MOSKOV77          => Moskov77::class,
-            BanSystemApi::TYPE_JOKERRUST          => JokerRust::class,
-            BanSystemApi::TYPE_SLABIYRUST          => Slabiy::class,
-            BanSystemApi::TYPE_RUSTCHEATCHECK          => RustCheatCheck::class,
-            BanSystemApi::TYPE_PROSTOJ          => Prostoj::class,
+//            BanSystemApi::TYPE_GGRUST          => GGRust::class,
+//            BanSystemApi::TYPE_RUSTROOM          => RustRoom::class,
+//            BanSystemApi::TYPE_RUSTUSSR          => RustUssr::class,
+//            BanSystemApi::TYPE_MAGICRUST          => MagicRust::class,
+//            BanSystemApi::TYPE_BRORUST          => BroRust::class,
+//            BanSystemApi::TYPE_GRANDRUST          => GrandRust::class,
+//            BanSystemApi::TYPE_MOSKOV77          => Moskov77::class,
+//            BanSystemApi::TYPE_JOKERRUST          => JokerRust::class,
+//            BanSystemApi::TYPE_SLABIYRUST          => Slabiy::class,
+//            BanSystemApi::TYPE_RUSTCHEATCHECK          => RustCheatCheck::class,
+//            BanSystemApi::TYPE_PROSTOJ          => Prostoj::class,
             BanSystemApi::TYPE_RUSTAPP          => RustApp::class,
         ];
 

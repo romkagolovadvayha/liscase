@@ -190,13 +190,6 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'active' => _checkActive('/blog/'),
                    ],
                    [
-                       'label'  => Yii::t('common', 'Задания'),
-                       'icon'   => 'fa-solid fa-list-check',
-                       'url'    => '/task',
-                       'visibility' => Yii::$app->settings->get('section_tasks') && $admin,
-                       'active' => _checkActive('/task'),
-                   ],
-                   [
                        'label'  => Yii::t('common', 'Переводы'),
                        'icon'   => 'fa-solid fa-language',
                        'url'    => '/translateManager',
@@ -204,19 +197,55 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'active' => _checkActive('/translateManager'),
                    ],
                     [
-                        'label' => 'Промокоды',
-                        'icon' => 'fa-solid fa-percent',
-                        'url' => ['/promocode'],
-                        'visibility' => $admin,
-                        'active' => _checkActive('/promocode'),
-                    ],
-                    [
                         'label' => 'WIPE меню',
                         'icon' => 'fa-solid fa-cloud-sun',
                         'url' => ['/wipe'],
                         'visibility' => $admin,
                         'active' => _checkActive('/wipe'),
                     ],
+                   [
+                       'label' => 'Бонусы',
+                       'icon' => 'fas fa-cog',
+                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'active' => _checkActive('/achievements-daily') || _checkActive('/payment-bonuses') || _checkActive('/promocode') || _checkActive('/task') || _checkActive('/settings/index?category=referral'),
+                       'items' => [
+                           [
+                               'label' => 'Промокоды',
+                               'icon' => 'fa-solid fa-percent',
+                               'url' => ['/promocode'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/promocode'),
+                           ],
+                           [
+                               'label' => 'Ежедневная награда',
+                               'icon' => 'fa-solid fa-cloud-sun',
+                               'url' => ['/achievements-daily'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/achievements-daily'),
+                           ],
+                           [
+                               'label'  => Yii::t('common', 'Задания'),
+                               'icon'   => 'fa-solid fa-list-check',
+                               'url'    => '/task',
+                               'visibility' => Yii::$app->settings->get('section_tasks') && $admin,
+                               'active' => _checkActive('/task'),
+                           ],
+                           [
+                               'label'  => Yii::t('common', 'Реферальная система'),
+                               'icon'   => 'fa-solid fa-list-check',
+                               'url'    => '/settings/index?category=referral',
+                               'visibility' => Yii::$app->settings->get('referral_bonus') && $admin,
+                               'active' => _checkActive('/settings/index?category=referral'),
+                           ],
+                           [
+                               'label'  => Yii::t('common', 'При пополнении'),
+                               'icon'   => 'fa-solid fa-list-check',
+                               'url'    => '/payment-bonuses',
+                               'visibility' => $admin,
+                               'active' => _checkActive('/payment-bonuses'),
+                           ],
+                       ]
+                   ],
                    [
                        'label' => 'Настройки',
                        'icon' => 'fas fa-cog',
@@ -255,12 +284,6 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                            ],
                        ]
                    ],
-//                    ['label' => 'Simple Link', 'icon' => 'th', 'badge' => '<span class="right badge badge-danger">New</span>'],
-//                    ['label' => 'Simple Link', 'icon' => 'th', 'badge' => '<span class="right badge badge-danger">New</span>'],
-//                    ['label' => 'Yii2 PROVIDED', 'header' => true],
-//                    ['label' => 'Login', 'url' => ['site/login'], 'icon' => 'sign-in-alt', 'visible' => Yii::$app->user->isGuest],
-//                    ['label' => 'Gii',  'icon' => 'file-code', 'url' => ['/gii'], 'target' => '_blank'],
-//                    ['label' => 'Debug', 'icon' => 'bug', 'url' => ['/debug'], 'target' => '_blank'],
                 ],
             ]);
             ?>

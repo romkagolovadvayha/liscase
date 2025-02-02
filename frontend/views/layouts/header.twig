@@ -1,0 +1,123 @@
+<header class="header">
+    <a href="{{ HOME_URL }}" class="header_logo">
+        <img src="{{ LOGO_IMAGE }}" alt="Logo" />
+    </a>
+
+    <div class="header__actions">
+        <!-- Язык -->
+        <div class="language">
+            <div class="language__select">
+                <span class="icons icons_flag icons_flag_ru" id="selected_language_ru" {% if lang != 'ru' %}style="display: none;"{% endif %}></span>
+                <span class="icons icons_flag icons_flag_en" id="selected_language_en" {% if lang == 'ru' %}style="display: none;"{% endif %}></span>
+                <span class="icons icons_16px icons_16px_arrow_down"></span>
+            </div>
+            <ul class="language__list">
+                {% if lang != 'ru' %}
+                    <li id="item_language_ru">
+                        <a href="https://{{DOMAIN}}">
+                            <span class="icons icons_flag icons_flag_ru"></span>
+                            <span class="p3 uppercase font-medium">RU</span>
+                        </a>
+                    </li>
+                {% endif %}
+                {% if lang == 'ru' %}
+                    <li id="item_language_en">
+                        <a href="https://en.{{DOMAIN}}">
+                            <span class="icons icons_flag icons_flag_en"></span>
+                            <span class="p3 uppercase font-medium">EN</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+        {% if USER_GUEST %}
+            <a href="/auth/oauth?authclient=steam" class="button button-primary button-size__s h-36" style="padding-top: 6px; padding-bottom: 6px">
+              <span class="button__text">
+                {{ t('common', 'Войти через Steam') }}
+                <span class="icons icons_24px icons_24px_steam bg-white"></span>
+              </span>
+            </a>
+        {% else %}
+            <button class="header__promocode button-secondary button-size__s h-36 show-modal-link"
+                    style="padding-top: 6px; padding-bottom: 6px"
+                    data-href="/site/promocode"
+                    data-size="modal-sm"
+                    data-content-overflow="unset"
+                    data-top-image="{{ SETTINGS.get('design_promoPopupImage') }}"
+                    data-top-class="modal-backdrop-image_promo active"
+                    data-toggl="modal"
+                    data-target="modal-dialog"
+                    data-title="{{ t('common', 'Промокод') }}">
+                <span class="button__text">{{ t('common', 'Промокод') }}</span>
+            </button>
+            <!-- Меню действий -->
+            <div
+                class="menu-actions show-modal-link tablet_hide desktop_hide"
+                data-href="/user/payment"
+                data-size="modal-sm"
+                data-content-overflow="unset"
+                data-top-image="{{ SETTINGS.get('design_payPopupImage') }}"
+                data-top-class="modal-backdrop-image_pay active"
+                data-toggl="modal"
+                data-target="modal-dialog"
+                data-title="{{ t('common', 'Пополнение') }}">
+                <div class="menu-actions__balance-photo">
+                    <span class="balance_count">{{ user.balance|number_format(0, '', ' ') }}</span>
+                    <span class="icons icons_16px icons_16px_coin"></span>
+                </div>
+            </div>
+
+            <!-- Уведомления -->
+            <button class="header__notify button-secondary button-size__s h-36 w-36" style="padding: 0; padding-top: 3px; z-index: 2">
+                <span class="icons icons_16px icons_16px_bell"></span>
+            </button>
+            <!-- Меню действий -->
+            <div class="menu-actions mobile_hide">
+                <div class="menu-actions__balance-photo">
+                    <span class="balance_count">{{ user.balance|number_format(0, '', ' ') }}</span>
+                    <span class="icons icons_16px icons_16px_coin"></span>
+
+                    <img src="{{ user.avatar }}" alt="avatar">
+                </div>
+                <ul class="menu-actions__list">
+                    <li>
+                        <a href="/user/profile">
+                            <span class="icons icons_16px icons_16px_user"></span>
+                            <span class="p3 uppercase font-medium">{{ t('common', 'Мой профиль') }}</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/user/payment"
+                           class="show-modal-link"
+                           data-size="modal-sm"
+                           data-content-overflow="unset"
+                           data-top-image="{{ SETTINGS.get('design_payPopupImage') }}"
+                           data-top-class="modal-backdrop-image_pay active"
+                           data-toggl="modal"
+                           data-target="modal-dialog"
+                           data-title="{{ t('common', 'Пополнить баланс') }}">
+                            <span class="icons icons_16px fas fa-wallet"></span>
+                            <span class="p3 uppercase font-medium">{{ t('common', 'Пополнить баланс') }}</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/user/logout">
+                            <span class="icons icons_16px icons_16px_exit"></span>
+                            <span class="p3 uppercase font-medium">{{ t('common', 'Выйти') }}</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <button class="button-primary show-modal-link button-size__s h-36 w-36 tablet_hide desktop_hide"
+                    data-href="/site/menu"
+                    data-size="modal-sm"
+                    data-toggl="modal"
+                    data-target="modal-dialog"
+                    data-title="{{ t('common', 'Меню') }}"
+                    style="padding: 0; padding-top: 3px; z-index: 2">
+                <i class="fas fa-bars"></i>
+            </button>
+        {% endif %}
+    </div>
+</header>

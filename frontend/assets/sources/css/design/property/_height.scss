@@ -1,0 +1,11 @@
+$names: "", "max-", "min-";
+$values: 0, 4, 8, 12, 16, 20, 22, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 72, 76, 80, 84, 88,
+  92, 96, 100, 180, 300;
+
+@each $value in $values {
+  @each $name in $names {
+    .#{$name}h-#{$value} {
+      #{$name}height: #{$value}px;
+    }
+  }
+}

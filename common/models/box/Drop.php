@@ -6,6 +6,7 @@ use common\components\base\ActiveRecord;
 use common\components\helpers\CurrencyHelper;
 use common\models\statistics\Statistics;
 use Yii;
+use yii\web\JsExpression;
 
 /**
  * @property int         $id
@@ -28,10 +29,12 @@ use Yii;
  * @property string      $blocked_at
  * @property int         $status
  * @property string      $created_at
+ * @property bool        $show_main_block
  * @property int         $sort
  *
  * @property DropImage[] $dropImages
  * @property DropImage   $imageOrig
+ * @property DropImage   $imageOrig2
  * @property DropType    $type
  * @property string      $priceCeil
  * @property string      $priceMarket
@@ -40,6 +43,8 @@ use Yii;
  */
 class Drop extends ActiveRecord
 {
+    private $_imageOrigUrl;
+    private $_imageOrig2Url;
 
     const STATUS_NOT_ACTIVE   = 0;
     const STATUS_ACTIVE       = 1;
@@ -100,6 +105,7 @@ class Drop extends ActiveRecord
             'created_at'          => Yii::t('common', 'Дата создания'),
             'command'          => Yii::t('common', 'Команда'),
             'blocked_hour'          => Yii::t('common', 'Вайп блок (часов)'),
+            'show_main_block'              => Yii::t('common', 'Показывать в главном блоке главной страницы'),
             'sort'          => Yii::t('common', 'Сортировка'),
         ];
     }
@@ -172,7 +178,7 @@ class Drop extends ActiveRecord
     public function rules(): array
     {
         return [
-            [['status', 'type_id', 'category_id', 'sort'], 'integer'],
+            [['status', 'type_id', 'category_id', 'sort', 'show_main_block'], 'integer'],
             [['name', 'market_id', 'eng_name', 'quality'], 'string', 'max' => 255],
             [['description'], 'string'],
             [['created_at','price'], 'safe'],
@@ -200,7 +206,7 @@ class Drop extends ActiveRecord
      */
     public function getDropImages()
     {
-        return $this->hasMany(DropImage::class, ['drop_id' => 'id'])->cache(3600);
+        return $this->hasMany(DropImage::class, ['drop_id' => 'id']);
     }
 
     /**
@@ -246,20 +252,42 @@ class Drop extends ActiveRecord
     public function getImageOrig()
     {
         return $this->hasOne(DropImage::class, ['drop_id' => 'id'])
-            ->cache(300)
+//            ->cache(300)
             ->andWhere(['type' => DropImage::TYPE_ORIG]);
+    }
+
+    /**
+     * Gets query for [ImageOrig2].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getImageOrig2()
+    {
+        return $this->hasOne(DropImage::class, ['drop_id' => 'id'])
+//            ->cache(300)
+            ->andWhere(['type' => DropImage::TYPE_ORIG_2]);
     }
 
     /**
      *
      * @return Drop[]
      */
-    public static function getForMarket()
+    public static function getForMarket($mainBlock = false, $update = false)
     {
-        return Drop::find()
-                  ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
-                  ->orderBy(['sort' => SORT_ASC])
-                  ->all();
+        $cacheKey = 'getForMarketDrop3_' . $mainBlock;
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $result = Drop::find()
+                      ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
+                      ->andWhere(['show_main_block' => $mainBlock])
+                      ->orderBy(['sort' => SORT_ASC])
+                      ->with('dropImages', 'type')  // Добавляем кэшируемые связи
+                      ->all();
+
+        Yii::$app->cache->set($cacheKey, $result, 7*24*60*60);
+        return $result;
     }
 
     /**
@@ -304,5 +332,94 @@ class Drop extends ActiveRecord
                                              ]);
         }
         return $result;
+    }
+
+    public static function searchJS() {
+        return [
+            'ajaxData' => new JsExpression('function(params) {return {q:params.term}; }'),
+            'processResults' => new JsExpression('function (data, params) {return {results: data.items};}'),
+            'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
+            'templateResult' => new JsExpression("
+                                function (item) {
+                                    if (item.loading) {
+                                        return item.text;
+                                    }
+                                    try {
+                                        var markup = '<div class=\"drop-select-item\"><img class=\"kv-icon-image\" src=\"' + item.image + '\"/><div class=\"drop-select-item-content\">' + item.name + '</div></div>';
+                                        return '<div style=\"overflow:hidden;\">' + markup + '</div>';
+                                    } catch {
+                                        return item.text;
+                                    }
+                                }
+                            "),
+            'templateSelection' => new JsExpression("
+                                function (item) {
+                                    try {
+                                        var model = JSON.parse(item.text);
+                                        return '<div class=\"drop-select-item\"><img class=\"kv-icon-image\" src=\"' + model.image + '\"/><div class=\"drop-select-item-content\">' + model.name + '</div></div>';
+                                    } catch {
+                                        return item.text;
+                                    }
+                                }
+                            "),
+        ];
+    }
+
+    public static function getDropList($all = false, $update = false) {
+        $cacheKey = "Drops_6_getDropList_" . $all;
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        /** @var Drop[] $drops */
+        $drops = Drop::find()
+                     ->andWhere('rust_id is not null')
+                     ->orderBy(['sort' => SORT_ASC])
+                     ->all();
+
+        $items = [];
+        foreach ($drops as $item) {
+            $items[$item->id] = json_encode([
+                                                'id' => $item->id,
+                                                'name' => $item->name,
+                                                'image' => $item->imageOrig->getImagePubUrl(),
+                                            ]);
+        }
+
+        Yii::$app->cache->set($cacheKey, $items, 3*60);
+        return $items;
+    }
+
+    public function blocked() {
+        return !empty($this->blocked_at) && strtotime($this->blocked_at) > time();
+    }
+
+    public function blockedTime() {
+        return strtotime($this->blocked_at);
+    }
+
+    /**
+     * Получить URL изображения.
+     * Загружает и кэширует изображение, если оно не было загружено ранее.
+     */
+    public function image() {
+        foreach ($this->dropImages as $item) {
+            if ($item->type === DropImage::TYPE_ORIG) {
+                return $item->getImagePubUrl();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Получить второй URL изображения.
+     * Кэширует значение, чтобы избежать повторных запросов.
+     */
+    public function image2() {
+        foreach ($this->dropImages as $item) {
+            if ($item->type === DropImage::TYPE_ORIG_2) {
+                return $item->getImagePubUrl();
+            }
+        }
+        return $this->image();
     }
 }

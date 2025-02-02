@@ -1,0 +1,41 @@
+<div
+        data-href="{{ URL }}"
+        data-category-id="{{ CATEGORY_ID }}"
+        class="category-card show-modal-link"
+        data-title="{{ t('database', NAME) }}"
+        data-size="modal"
+        data-toggl="modal"
+        data-target="modal-dialog"
+        {% if INDEX > 24 %}style="display: none;"{% endif %}
+        {% if BLOCKED %}aria-disabled="true"{% endif %}>
+    {% if COUNT %}
+        <p class="category-card__boost">x{{ COUNT }}</p>
+    {% endif %}
+    <img class="category-card__image" src="{{ IMAGE }}" alt="" />
+    <p class="category-card__title">{{ t('database', NAME) }}</p>
+    <button class="button-teritiary" {% if BLOCKED %}disabled{% endif %}>
+                <span class="button__text">
+                    {% if not BLOCKED %}
+                        {% if PRICE %}
+                            {% if PRICE_REAL != PRICE %}
+                                <span class="old-price">{{ PRICE }}</span>
+                            {% endif %}
+                        <span>{{ PRICE_REAL }}</span> <span class="icons icons_16px icons_16px_coin"></span>
+                        {% else %}
+                            {{ t('common', 'Купить') }}
+                        {% endif %}
+                    {% else %}
+                        {{ t('common', 'Вайп-блок') }}
+                    {% endif %}
+                </span>
+    </button>
+{#    {% if BLOCKED %}#}
+{#        <button class="button-teritiary" disabled>#}
+{#            <span class="button__text"> Вайп-блок </span>#}
+{#        </button>#}
+{#        <div class="products_item_blocked_wrap">#}
+{#            <div class="products_item_blocked_title">{{ t('common', 'Вайп блок') }}</div>#}
+{#            <div class="products_item_blocked_timer blocked_products_timer" data-time="{{ BLOCKED_TIME }}">{{ BLOCKED_AT }}</div>#}
+{#        </div>#}
+{#    {% endif %}#}
+</div>

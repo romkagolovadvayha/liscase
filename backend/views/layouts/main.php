@@ -11,6 +11,7 @@ use common\components\widgets\ModalWidget;
 \backend\assets\AppAsset::register($this);
 \backend\assets\BootstrapAsset::register($this);
 \common\assets\BootstrapIcons::register($this);
+\frontend\assets\ModalAsset::register($this);
 $this->registerCssFile('https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback');
 
 $assetDir = Yii::$app->assetManager->getPublishedUrl('@vendor/almasaeed2010/adminlte/dist');
@@ -34,28 +35,24 @@ $this->registerJsFile($publishedRes[1].'/control_sidebar.js', ['depends' => '\ha
 <?php $this->beginBody() ?>
 
 <div class="wrapper">
-    <!-- Navbar -->
-    <?= $this->render('navbar', ['assetDir' => $assetDir]) ?>
-    <!-- /.navbar -->
-
-    <!-- Main Sidebar Container -->
     <?= $this->render('sidebar', ['assetDir' => $assetDir]) ?>
-
-    <!-- Content Wrapper. Contains page content -->
     <?= $this->render('content', ['content' => $content, 'assetDir' => $assetDir]) ?>
-    <!-- /.content-wrapper -->
-
-    <!-- Control Sidebar -->
     <?= $this->render('control-sidebar') ?>
-    <!-- /.control-sidebar -->
-
-    <!-- Main Footer -->
-    <?= $this->render('footer') ?>
 </div>
 
-<?php
-echo ModalWidget::widget();
 
+<div class="modal fade" id="modal-dialog" tabindex="-1" role="dialog" aria-labelledby="modal-dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <header class="flex justify-space-between items-center pb-28 pt-24 px-24 relative z-1 gap-x-24">
+                <h4 class="short modal-title-js"></h4>
+                <span class="icons icons_32px icons_32px_clear icons_hover" data-bs-dismiss="modal"></span>
+            </header>
+            <div class="modal-body-js"></div>
+        </div>
+    </div>
+</div>
+<?php
 $secondModal          = new ModalWidget();
 $secondModal->modalId = 'modal-dialog-second';
 echo $secondModal->run();

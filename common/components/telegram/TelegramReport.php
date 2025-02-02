@@ -7,8 +7,6 @@ use yii\helpers\ArrayHelper;
 
 class TelegramReport
 {
-    public $token;
-    public $chatId;
 
     /**
      * @param       $method
@@ -74,7 +72,8 @@ class TelegramReport
             unset($params['text']);
         }
 
-        $url = 'https://api.telegram.org/bot' . $this->token . '/' . $method .
+        $token = Yii::$app->settings->get('tgbotPaymentReport_token');
+        $url = 'https://api.telegram.org/bot' . $token . '/' . $method .
             (!empty($getParams) ? '?' . http_build_query($getParams) : '');
 
         return [$url, $params];
@@ -88,8 +87,9 @@ class TelegramReport
      */
     public function sendMessage($messageText, $inlineKeyboard = []): array
     {
+        $chatId = Yii::$app->settings->get('tgbotPaymentReport_chatId');
         $params = [
-            'chat_id'      => $this->chatId,
+            'chat_id'      => $chatId,
             'text'         => $messageText,
             'parse_mode'   => 'Html',
             'link_preview_options'   => [

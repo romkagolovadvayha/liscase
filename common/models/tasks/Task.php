@@ -2,6 +2,7 @@
 
 namespace common\models\tasks;
 
+use common\models\achievements\AchievementsDaily;
 use common\models\box\Drop;
 use common\models\profit\Profit;
 use common\models\servers\Servers;
@@ -10,6 +11,7 @@ use common\models\stats\Wipe;
 use common\models\user\User;
 use common\models\user\UserTask;
 use Yii;
+use yii\helpers\ArrayHelper;
 
 /**
  * This is the model class for table "task".
@@ -18,7 +20,6 @@ use Yii;
  * @property string     $description
  * @property int        $type
  * @property int        $amount
- * @property int        $drop_id_image
  * @property int        $drop_id
  * @property int        $count
  * @property string     $stat_attribute
@@ -38,6 +39,7 @@ class Task extends \common\components\base\ActiveRecord
     const TYPE_KILLER  = 5;
     const TYPE_NPC     = 6;
     const TYPE_ANIMAL  = 7;
+    const TYPE_All  = 'all';
 
 
     /**
@@ -53,6 +55,7 @@ class Task extends \common\components\base\ActiveRecord
             self::TYPE_KILLER => Yii::t('common', 'Киллер'),
             self::TYPE_NPC => Yii::t('common', 'Мирный'),
             self::TYPE_ANIMAL => Yii::t('common', 'Охотник'),
+            self::TYPE_All => Yii::t('common', 'Все задания'),
         ];
     }
 
@@ -71,7 +74,7 @@ class Task extends \common\components\base\ActiveRecord
     {
         return [
             [['description', 'stat_attribute'], 'trim'],
-            [['type', 'sort', 'drop_id_image', 'drop_id', 'count', 'amount'], 'integer'],
+            [['type', 'sort', 'drop_id', 'count', 'amount'], 'integer'],
             [['created_at'], 'safe'],
         ];
     }
@@ -87,7 +90,6 @@ class Task extends \common\components\base\ActiveRecord
             'amount'       => Yii::t('common', 'Сколько нужно выполнить?'),
             'drop_id'       => Yii::t('common', 'ID предмета награды'),
             'count'       => Yii::t('common', 'Количество наград'),
-            'drop_id_image'       => Yii::t('common', 'ID предмета для изображения'),
             'stat_attribute'       => Yii::t('common', 'Какой показатель статистики учитывать?'),
             'type' => Yii::t('common', 'Тип'),
             'created_at'  => Yii::t('common', 'Дата создания'),
@@ -111,17 +113,9 @@ class Task extends \common\components\base\ActiveRecord
     }
 
     /**
-     * @return \yii\db\ActiveQuery
-     */
-    public function getDropImage()
-    {
-        return $this->hasOne(Drop::class, ['id' => 'drop_id_image']);
-    }
-
-    /**
      * @param User $user
      */
-    public static function getTasksByUser($user, $type)
+    public static function getTasksByUser($user)
     {
         /** @var Servers[] $servers */
         $servers = Servers::find()
@@ -133,7 +127,6 @@ class Task extends \common\components\base\ActiveRecord
         /** @var Task[] $tasks */
         $tasks = Task::find()
                      ->cache(30)
-                     ->andWhere(['type' => $type])
                      ->orderBy(['sort' => SORT_ASC])
                      ->all();
 
@@ -141,34 +134,41 @@ class Task extends \common\components\base\ActiveRecord
         $userTasks = $user->userTasks;
 
         $result = [];
-        $available = false;
-        $disabled = false;
-
         foreach ($tasks as $task) {
-            $item = [
-                'id' => $task->id,
-                'taskImage' => $task->dropImage->imageOrig->getImagePubUrl(),
-                'dropImage' => $task->drop->imageOrig->getImagePubUrl(),
-                'drop_id' => $task->drop->id,
-                'dropName' => $task->drop->name,
-                'count' => $task->count,
-                'description' => $task->description,
-            ];
+            if (empty($result[$task->type])) {
+                $result[$task->type] = [];
+                $result[$task->type]['disabled'] = false;
+                $result[$task->type]['available'] = false;
+                $result[$task->type]['type'] = $task->type;
+                $result[$task->type]['completed'] = 0;
+                $result[$task->type]['count'] = 0;
+                $result[$task->type]['image'] = Task::awardImage($task->type);
+                $result[$task->type]['name'] = ArrayHelper::getValue(Task::getTypeList(), $task->type);
+                $result[$task->type]['items'] = [];
+            }
+            $completed = false;
             foreach ($userTasks as $userTask) {
                 if ($task->id === $userTask->task_id) {
-                    $item['status'] = 0;
+                    $completed = true;
                     break;
                 }
             }
-            if (!isset($item['status']) && !$available && !$disabled) {
-                $total = 0;
+            if ($completed) {
+                $result[$task->type]['completed']++;
+                $result[$task->type]['count']++;
+                $result[$task->type]['status'] = 'completed';
+                $result[$task->type]['items'][] = [
+                    'status' => 'completed'
+                ];
+                continue;
+            }
+            $total = 0;
+            if (!$result[$task->type]['available'] && !$result[$task->type]['disabled']) {
                 foreach ($servers as $server) {
-                    $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
                     $player = Statistics::find()
-                                        ->cache(180)
                                         ->andWhere(['steam_id' => $user->steam_id])
                                         ->andWhere(['server_tag' => $server->tag])
-                                        ->andWhere(['wipe' => $wipeDate])
+                                        ->andWhere(['wipe' => $server->currentWipe()])
                                         ->indexBy('key')
                                         ->all();
                     if (empty($player)) {
@@ -177,15 +177,48 @@ class Task extends \common\components\base\ActiveRecord
                     $total += Statistics::getParam($player, $task->stat_attribute);
                 }
                 if ($total >= $task->amount) {
-                    $item['status'] = 1;
-                    $available = true;
+                    $result[$task->type]['count']++;
+                    $result[$task->type]['completed']++;
+                    $result[$task->type]['status'] = 'wait-get';
+                    $result[$task->type]['info'] = [
+                        'id' => $task->id,
+                        'dropImage' => $task->drop->imageOrig->getImagePubUrl(),
+                        'drop_id' => $task->drop->id,
+                        'dropName' => $task->drop->name,
+                        'count' => $task->count,
+                        'amount' => $task->amount,
+                        'description' => $task->description,
+                        'stat_attribute' => $task->stat_attribute,
+                        'total' => $total,
+                    ];
+                    $result[$task->type]['items'][] = [
+                        'status' => 'wait-get'
+                    ];
+                    $result[$task->type]['available'] = true;
+                    continue;
                 }
             }
             if (!isset($item['status'])) {
-                $item['status'] = 2;
-                $disabled = true;
+                if (empty($result[$task->type]['info'])) {
+                    $result[$task->type]['info'] = [
+                        'id' => $task->id,
+                        'dropImage' => $task->drop->imageOrig->getImagePubUrl(),
+                        'drop_id' => $task->drop->id,
+                        'dropName' => $task->drop->name,
+                        'count' => $task->count,
+                        'amount' => $task->amount,
+                        'description' => $task->description,
+                        'stat_attribute' => $task->stat_attribute,
+                        'total' => $total,
+                    ];
+                    $result[$task->type]['status'] = 'wait';
+                }
+                $result[$task->type]['count']++;
+                $result[$task->type]['items'][] = [
+                    'status' => 'wait'
+                ];
+                $result[$task->type]['disabled'] = true;
             }
-            $result[] = $item;
         }
 
         return $result;
@@ -211,81 +244,16 @@ class Task extends \common\components\base\ActiveRecord
      * @return array[]
      */
     public static function getDailyRewardList($user) {
-        $dailyRewardList = [
-            [
-                'name' => Yii::t('common', '1 день'),
-                'amount' => 10,
-                'drop_id' => 570,
-            ],
-            [
-                'name' => Yii::t('common', '2 день'),
-                'amount' => 3000,
-                'drop_id' => 295
-            ],
-            [
-                'name' => Yii::t('common', '3 день'),
-                'amount' => 3000,
-                'drop_id' => 300
-            ],
-            [
-                'name' => Yii::t('common', '4 день'),
-                'amount' => 100,
-                'drop_id' => 316
-            ],
-            [
-                'name' => Yii::t('common', '5 день'),
-                'amount' => 1,
-                'drop_id' => 868
-            ],
-            [
-                'name' => Yii::t('common', '6 день'),
-                'amount' => 100,
-                'drop_id' => 305
-            ],
-            [
-                'name' => Yii::t('common', '7 день'),
-                'amount' => 50,
-                'type' => 'gift_small',
-                'drop_id' => 843
-            ],
-            [
-                'name' => Yii::t('common', '8 день'),
-                'amount' => 2,
-                'drop_id' => 203
-            ],
-            [
-                'name' => Yii::t('common', '9 день'),
-                'amount' => 2,
-                'drop_id' => 626
-            ],
-            [
-                'name' => Yii::t('common', '10 день'),
-                'amount' => 1,
-                'drop_id' => 869
-            ],
-            [
-                'name' => Yii::t('common', '11 день'),
-                'amount' => 1,
-                'drop_id' => 867
-            ],
-            [
-                'name' => Yii::t('common', '12 день'),
-                'amount' => 1,
-                'drop_id' => 864
-            ],
-            [
-                'name' => Yii::t('common', '13 день'),
-                'amount' => 1000,
-                'drop_id' => 320
-            ],
-            [
-                'name' => Yii::t('common', '14 день'),
-                'amount' => 100.00,
-                'type' => 'gift_big',
-                'drop_id' => 843
-            ],
-        ];
+        $dailyRewardList = AchievementsDaily::find()
+            ->cache(60)
+            ->orderBy(['daily' => SORT_ASC])
+            ->asArray()
+            ->all();
 
+        $dailyRewardList[count($dailyRewardList) - 1]['type'] = 'gift_big';
+
+        $result = [];
+        $result['received'] = false;
         foreach ($dailyRewardList as $i => $dailyRewardItem) {
             if (!empty($dailyRewardItem['drop_id'])) {
                 $drop = Drop::findOne($dailyRewardItem['drop_id']);
@@ -349,10 +317,88 @@ class Task extends \common\components\base\ActiveRecord
 
         if (!empty($dailyRewardList[$received]) && empty($dailyRewardList[$received]['status'])) {
             if (!$exists) {
+                $result['received'] = true;
                 $dailyRewardList[$received]['status'] = 'available';
             }
         }
 
-        return $dailyRewardList;
+        foreach ($dailyRewardList as $i => $item) {
+            if (empty($item['status'])) {
+                $dailyRewardList[$i]['status'] = 'disabled';
+            }
+        }
+
+        $result['items'] = $dailyRewardList;
+
+        return $result;
     }
+
+//    const TYPE_FERMER  = 1;
+//    const TYPE_REIDER  = 2;
+//    const TYPE_FARMER  = 3;
+//    const TYPE_FISHING = 4;
+//    const TYPE_KILLER  = 5;
+//    const TYPE_NPC     = 6;
+//    const TYPE_ANIMAL  = 7;
+    public static function awardImage($type = 'all') {
+        $images = [
+          self::TYPE_FERMER => '/images/awards/fermer.png',
+          self::TYPE_FARMER => '/images/awards/farmer.png',
+          self::TYPE_FISHING => '/images/awards/fish.png',
+          self::TYPE_REIDER => '/images/awards/reyder.png',
+          self::TYPE_ANIMAL => '/images/awards/hunt.png',
+          self::TYPE_KILLER => '/images/awards/killer.png',
+          self::TYPE_NPC => '/images/awards/mirny.png',
+          self::TYPE_All  => '/images/awards/all.png',
+        ];
+
+        return !empty($images[$type]) ? $images[$type] : '';
+    }
+
+    public static function awards($userId, $all = true) {
+        $result = [];
+        $awards = UserTask::find()
+                        ->cache(60)
+                        ->alias('ut')
+                        ->joinWith('task t')
+                        ->select(['t.type'])
+                        ->andWhere(['t.drop_id' => 843])
+                        ->andWhere(['ut.user_id' => $userId])
+                        ->asArray()
+                        ->groupBy('type')
+                        ->indexBy('type')
+                        ->all();
+
+        foreach ($awards as $award) {
+            $result[$award['type']] = [
+                'image' => self::awardImage($award['type']),
+                'name' => ArrayHelper::getValue(self::getTypeList(), $award['type']),
+                'completed' => true
+            ];
+        }
+
+        if ($all) {
+            foreach (self::getTypeList() as $type => $name) {
+                if (!empty($result[$type])) {
+                    continue;
+                }
+                $result[$type] = [
+                    'image'     => self::awardImage($type),
+                    'name'      => $name,
+                    'completed' => !empty($awards[$type])
+                ];
+            }
+        }
+
+        if (count($result) == 7) {
+            $result[self::TYPE_All] = [
+                'image' => self::awardImage(self::TYPE_All),
+                'name' => ArrayHelper::getValue(self::getTypeList(), self::TYPE_All),
+                'completed' => true
+            ];
+        }
+
+        return $result;
+    }
+
 }

@@ -3,10 +3,12 @@
 namespace common\models\statistics;
 
 use common\components\base\ActiveRecord;
+use common\models\box\Drop;
 use common\models\servers\Servers;
 use common\models\stats\Wipe;
 use common\models\user\Auth;
 use common\models\user\User;
+use common\models\user\UserTree;
 use Yii;
 
 /**
@@ -39,13 +41,52 @@ class Statistics extends ActiveRecord
     }
 
     public static function getParam($allParams, $key) {
+        if ($key == 'kd') {
+            $kills = Statistics::getParam($allParams, 'kills');
+            $deaths = Statistics::getParam($allParams, 'deaths');
+            if ($kills == 0 || $deaths == 0) {
+                return 0;
+            }
+            return $kills / $deaths;
+        }
         if (empty($allParams[$key])) {
             return 0;
         }
         if (is_object($allParams[$key])) {
             return $allParams[$key]->value;
         }
+        if (is_array($allParams[$key])) {
+            return $allParams[$key]['value'];
+        }
         return $allParams[$key];
+    }
+
+    public static function getImage($images, $key) {
+        if (empty($images[$key])) {
+            return '/uploads/drop/870_7aca7dcc75a50be0c7bcf772460d2018.png';
+        }
+        return $images[$key];
+    }
+
+    public static function getName($names, $key) {
+        if (empty($names[$key])) {
+            return Yii::t('common', 'Без названия');
+        }
+        return Yii::t('database', $names[$key]);
+    }
+
+    public static function getPlayerStats(Servers $server, $steamId, $wipe) {
+        $statistics = Statistics::find()
+            ->cache(60)
+            ->select(['value', 'key'])
+            ->andWhere(['steam_id' => $steamId])
+            ->andWhere(['server_tag' => $server->tag])
+            ->andWhere(['wipe' => $wipe])
+            ->indexBy('key')
+            ->asArray()
+            ->all();
+
+        return $statistics;
     }
 
     public static function getStats(Servers $server, $steamId = null, $all = true, $wipeDate = null, $cache = true) {
@@ -203,26 +244,21 @@ class Statistics extends ActiveRecord
         ];
     }
 
-    public static function getRaiderItem($drops, $player, $key, $score) {
+    public static function getRaiderItem($names, $images, $player, $key, $score) {
         $result = [];
         $key = str_replace('.deployed', '', $key);
-
-        if (!empty($drops[$key])) {
-            $result['image'] = $drops[$key]->imageOrig->getImagePubUrl();
-            $result['name'] = $drops[$key]->name;
-        }
+        $result['image'] = Statistics::getImage($images, $key);
+        $result['name'] = Statistics::getName($names, $key);
         $result['count'] = Statistics::getParam($player, $key);
         $result['desc'] = Statistics::getParam($player, $key);
         $result['score'] = $score;
         return $result;
     }
 
-    public static function getFermItem($drops, $player, $key, $name, $score) {
+    public static function getFermItem($images, $player, $key, $name, $score) {
         $result = [];
 
-        if (!empty($drops[$key])) {
-            $result['image'] = $drops[$key]->imageOrig->getImagePubUrl();
-        }
+        $result['image'] = Statistics::getImage($images, $key);
         $result['name'] = $name;
         $result['score'] = $score;
         $result['count'] = Statistics::getParam($player, $key);
@@ -231,38 +267,43 @@ class Statistics extends ActiveRecord
         return $result;
     }
 
-    public static function getLevelCardItem($drops, $player, $key) {
+    public static function getLevelCardItem($images, $names, $player, $key) {
         $result = [];
 
-        if (!empty($drops[$key])) {
-            $result['image'] = $drops[$key]->imageOrig->getImagePubUrl();
-        }
-        $result['name'] = Yii::t('database', $drops[$key]->name);
+        $result['name'] = Yii::t('database', Statistics::getParam($names, $key));
+        $result['image'] = Statistics::getParam($images, $key);
         $result['count'] = Statistics::getParam($player, $key);
         $result['desc'] = number_format(Statistics::getParam($player, $key), 0);
 
         return $result;
     }
 
-    public static function getFoodItem($drops, $player, $key) {
+    public static function getFoodItem($images, $names, $player, $key) {
         $result = [];
 
-        if (!empty($drops[$key])) {
-            $result['image'] = $drops[$key]->imageOrig->getImagePubUrl();
-        }
-        $result['name'] = Yii::t('database', $drops[$key]->name);
         $result['count'] = Statistics::getParam($player, 'mod_' . $key);
+        $result['image'] = Statistics::getImage($images, $key);
+        $result['name'] = Statistics::getName($names, $key);
         $result['desc'] = number_format(Statistics::getParam($player, 'mod_' . $key), 0);
 
         return $result;
     }
 
-    public static function getFishItem($drops, $player, $key, $name, $score) {
+    public static function getFishItem($images, $player, $key, $name, $score) {
         $result = [];
 
-        if (!empty($drops[$key])) {
-            $result['image'] = $drops[$key]->imageOrig->getImagePubUrl();
-        }
+        $result['name'] = $name;
+        $result['score'] = $score;
+        $result['count'] = Statistics::getParam($player, $key);
+        $result['image'] = Statistics::getImage($images, $key);
+        $result['desc'] = number_format(Statistics::getParam($player, $key), 0);
+
+        return $result;
+    }
+
+    public static function getFarmItem($images, $names, $player, $key, $name, $score) {
+        $result = [];
+        $result['image'] = Statistics::getImage($images, $key);
         $result['name'] = $name;
         $result['score'] = $score;
         $result['count'] = Statistics::getParam($player, $key);
@@ -271,19 +312,68 @@ class Statistics extends ActiveRecord
         return $result;
     }
 
-    public static function getFarmItem($drops, $player, $key, $name, $score) {
+    public static function projectStats($update = false) {
+        $cacheKey = 'Statistics_projectStats_';
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
         $result = [];
 
-        if (!empty($drops[$key])) {
-            $result['image'] = $drops[$key]->imageOrig->getImagePubUrl();
-        } else {
-            print_r($key);exit;
-        }
-        $result['name'] = $name;
-        $result['score'] = $score;
-        $result['count'] = Statistics::getParam($player, $key);
-        $result['desc'] = number_format(Statistics::getParam($player, $key), 0);
+        $result['users'] = User::find()
+            ->count();
 
+        $result['online'] = Servers::find()
+            ->sum('players + joined') ?? 0;
+
+        $result['servers'] = Servers::find()
+            ->andWhere(['NOT IN', 'status', [Servers::STATUS_CLOSED]])
+            ->count();
+
+
+        Yii::$app->cache->set($cacheKey, $result, 7*24*60*60);
+        return $result;
+    }
+
+    public static function productsImages($update = false) {
+        $cacheKey = 'Statistics_productsImages_';
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $result = [];
+
+        /** @var Drop[] $drops */
+        $drops = Drop::find()
+            ->andWhere(['<>', 'eng_name', ''])
+            ->all();
+
+        foreach ($drops as $item) {
+            $result[$item->eng_name] = $item->image();
+        }
+
+        Yii::$app->cache->set($cacheKey, $result, 30*60);
+        return $result;
+    }
+
+    public static function productsNames($update = false) {
+        $cacheKey = 'Statistics_productsNames_';
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $result = [];
+
+        /** @var Drop[] $drops */
+        $drops = Drop::find()
+            ->andWhere(['<>', 'eng_name', ''])
+            ->all();
+
+        foreach ($drops as $item) {
+            $result[$item->eng_name] = $item->name;
+        }
+
+        Yii::$app->cache->set($cacheKey, $result, 30*60);
         return $result;
     }
 }

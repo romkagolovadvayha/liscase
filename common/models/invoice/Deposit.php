@@ -16,6 +16,7 @@ use yii\helpers\ArrayHelper;
  * @property int    $user_id
  * @property int    $payment_type
  * @property int    $amount
+ * @property int    $amount_exchange
  * @property string $payment_id
  * @property int    $status
  * @property string $created_at
@@ -38,6 +39,7 @@ class Deposit extends \common\components\base\ActiveRecord
     const TYPE_PAYMENT_CARD_KZT        = 16;
     const TYPE_PAYMENT_CARD_YM        = 17;
     const TYPE_PAYMENT_CARD_TINKOFF        = 18;
+    const TYPE_PAYMENT_TON        = 19;
 
     const STATUS_WAIT_CONFIRM = 1;
     const STATUS_CANCELED     = 2;
@@ -80,13 +82,14 @@ class Deposit extends \common\components\base\ActiveRecord
     public function attributeLabels()
     {
         return [
-            'id'           => 'ID',
-            'user_id'      => Yii::t('common', 'ID пользователя'),
-            'payment_type' => Yii::t('common', 'Метод оплаты'),
-            'status'       => Yii::t('common', 'Статус'),
-            'payment_id'   => Yii::t('common', 'ID платежа'),
-            'amount'       => Yii::t('common', 'Сумма'),
-            'created_at'   => Yii::t('common', 'Дата операции'),
+            'id'              => 'ID',
+            'user_id'         => Yii::t('common', 'ID пользователя'),
+            'payment_type'    => Yii::t('common', 'Метод оплаты'),
+            'status'          => Yii::t('common', 'Статус'),
+            'payment_id'      => Yii::t('common', 'ID платежа'),
+            'amount'          => Yii::t('common', 'Сумма'),
+            'amount_exchange' => Yii::t('common', 'Сумма в валюте'),
+            'created_at'      => Yii::t('common', 'Дата операции'),
         ];
     }
 
@@ -132,20 +135,21 @@ class Deposit extends \common\components\base\ActiveRecord
     public static function getTypeList()
     {
         return [
-            self::TYPE_PAYMENT_CARD      => Yii::t('common', 'Оплата картой'),
-            self::TYPE_PAYMENT_SBP       => Yii::t('common', 'Оплата по СБП'),
+//            self::TYPE_PAYMENT_CARD      => Yii::t('common', 'Оплата картой'),
+//            self::TYPE_PAYMENT_SBP       => Yii::t('common', 'Оплата по СБП'),
 //            self::TYPE_PAYMENT_TRON      => Yii::t('common', 'Оплата TRON'),
             self::TYPE_PAYMENT_TRC20     => Yii::t('common', 'Оплата TRC20'),
-            self::TYPE_PAYMENT_ERC20     => Yii::t('common', 'Оплата ERC20'),
+//            self::TYPE_PAYMENT_ERC20     => Yii::t('common', 'Оплата ERC20'),
 //            self::TYPE_PAYMENT_YOOONEY     => Yii::t('common', 'Оплата ЮMoney'),
 //            self::TYPE_PAYMENT_STEAM_PAY     => Yii::t('common', 'Оплата Steam Pay'),
 //            self::TYPE_PAYMENT_VISA     => Yii::t('common', 'Оплата картой Visa'),
 //            self::TYPE_PAYMENT_MIR     => Yii::t('common', 'Оплата картой МИР'),
-            self::TYPE_PAYMENT_PERFECT_MONEY     => Yii::t('common', 'Оплата Perfect Money'),
-            self::TYPE_PAYMENT_CARD_UA     => Yii::t('common', 'Оплата картой UA'),
-            self::TYPE_PAYMENT_CARD_KZT     => Yii::t('common', 'Оплата картой Казахстан'),
-            self::TYPE_PAYMENT_CARD_YM     => Yii::t('common', 'Оплата ЮMoney'),
+//            self::TYPE_PAYMENT_PERFECT_MONEY     => Yii::t('common', 'Оплата Perfect Money'),
+//            self::TYPE_PAYMENT_CARD_UA     => Yii::t('common', 'Оплата картой UA'),
+//            self::TYPE_PAYMENT_CARD_KZT     => Yii::t('common', 'Оплата картой Казахстан'),
+//            self::TYPE_PAYMENT_CARD_YM     => Yii::t('common', 'Оплата ЮMoney'),
             self::TYPE_PAYMENT_CARD_TINKOFF     => Yii::t('common', 'Оплата Тинькофф'),
+            self::TYPE_PAYMENT_TON     => Yii::t('common', 'Оплата TON'),
         ];
     }
 
@@ -171,12 +175,14 @@ class Deposit extends \common\components\base\ActiveRecord
             self::TYPE_PAYMENT_CARD_TINKOFF     => '/images/payments/cards.svg',
         ];
 
-        if (Yii::$app->language !== 'ru-RU') {
-            unset($icons[self::TYPE_PAYMENT_CARD]);
-            unset($icons[self::TYPE_PAYMENT_SBP]);
-            unset($icons[self::TYPE_PAYMENT_CARD_UA]);
-            unset($icons[self::TYPE_PAYMENT_CARD_KZT]);
-            unset($icons[self::TYPE_PAYMENT_CARD_TINKOFF]);
+        if (Yii::$app->settings->get('tinkoffpay_enabled')) {
+            $icons[self::TYPE_PAYMENT_CARD_TINKOFF] = Yii::$app->settings->get('tinkoffpay_logo');
+        }
+        if (Yii::$app->settings->get('trc20_enabled')) {
+            $icons[self::TYPE_PAYMENT_TRC20] = Yii::$app->settings->get('trc20_logo');
+        }
+        if (Yii::$app->settings->get('ton_enabled')) {
+            $icons[self::TYPE_PAYMENT_TON] = Yii::$app->settings->get('ton_logo');
         }
 
         return $icons;
@@ -191,8 +197,8 @@ class Deposit extends \common\components\base\ActiveRecord
 //            self::TYPE_PAYMENT_TRC20     => 'TRC20',
 //            self::TYPE_PAYMENT_ERC20     => 'ERC20',
 //            self::TYPE_PAYMENT_TRON     => 'TRX',
-            self::TYPE_PAYMENT_CARD_UA     => '<div style="font-size: 14px">Украина</div>',
-            self::TYPE_PAYMENT_CARD_KZT     => '<div style="font-size: 14px">Казахстан</div>',
+//            self::TYPE_PAYMENT_CARD_UA     => '<div style="font-size: 14px">Украина</div>',
+//            self::TYPE_PAYMENT_CARD_KZT     => '<div style="font-size: 14px">Казахстан</div>',
         ];
     }
 
@@ -204,18 +210,19 @@ class Deposit extends \common\components\base\ActiveRecord
         return [
             self::TYPE_PAYMENT_CARD          => [1, 100000],
             self::TYPE_PAYMENT_SBP           => [1, 100000],
-//            self::TYPE_PAYMENT_TRON          => [1000, 100000],
-            self::TYPE_PAYMENT_TRC20         => [300, 100000],
-//            self::TYPE_PAYMENT_ERC20         => [1000, 100000],
+            //            self::TYPE_PAYMENT_TRON          => [1000, 100000],
+            self::TYPE_PAYMENT_TRC20         => [100, 100000],
+            self::TYPE_PAYMENT_TON           => [100, 100000],
+            //            self::TYPE_PAYMENT_ERC20         => [1000, 100000],
             self::TYPE_PAYMENT_YOOONEY       => [1000, 100000],
             self::TYPE_PAYMENT_STEAM_PAY     => [1000, 100000],
-//            self::TYPE_PAYMENT_VISA          => [1000, 100000],
-//            self::TYPE_PAYMENT_MIR           => [1000, 100000],
+            //            self::TYPE_PAYMENT_VISA          => [1000, 100000],
+            //            self::TYPE_PAYMENT_MIR           => [1000, 100000],
             self::TYPE_PAYMENT_PERFECT_MONEY => [1000, 100000],
-            self::TYPE_PAYMENT_CARD_UA => [1000, 100000],
-            self::TYPE_PAYMENT_CARD_KZT => [1000, 100000],
-            self::TYPE_PAYMENT_CARD_YM => [1000, 100000],
-            self::TYPE_PAYMENT_CARD_TINKOFF => [10, 100000],
+            self::TYPE_PAYMENT_CARD_UA       => [1000, 100000],
+            self::TYPE_PAYMENT_CARD_KZT      => [1000, 100000],
+            self::TYPE_PAYMENT_CARD_YM       => [1000, 100000],
+            self::TYPE_PAYMENT_CARD_TINKOFF  => [10, 100000],
         ];
     }
 
@@ -351,4 +358,25 @@ class Deposit extends \common\components\base\ActiveRecord
         }
     }
 
+    public static function getExchange($currency)
+    {
+        $cacheKey = "Deposit_getExchanges_{$currency}";
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $curl = clone Yii::$app->curl
+                    ->setHeader('Content-Type', 'application/json')
+                    ->setRequestBody(null);
+
+        if ($currency === 'RUB') {
+            $exchangeTariff = $curl->get('https://api.binance.com/api/v3/ticker/price?symbol=USDTRUB');
+        } else {
+            $exchangeTariff = $curl->get('https://api.binance.com/api/v3/ticker/price?symbol=' . $currency . 'USDT');
+        }
+        $exchange = ArrayHelper::getValue(json_decode($exchangeTariff), 'price');
+
+        Yii::$app->cache->set($cacheKey, $exchange, 60*60);
+        return $exchange;
+    }
 }

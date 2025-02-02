@@ -8,6 +8,7 @@ use common\models\user\UserBox;
 use common\models\user\UserDrop;
 use frontend\forms\promocode\PromocodeForm;
 use Yii;
+use yii\base\BaseObject;
 use yii\filters\AccessControl;
 use yii\web\ForbiddenHttpException;
 use yii\web\Response;
@@ -16,6 +17,7 @@ use common\models\blog\Blog;
 use common\models\blog\BlogCategory;
 use common\models\user\User;
 use yii\web\NotFoundHttpException;
+use common\components\web\Cookie;
 
 class SiteController extends WebController
 {
@@ -58,20 +60,6 @@ class SiteController extends WebController
      */
     public function actionIndex()
     {
-        if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
-            throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован, напишите администратору в Discord, если не согласны с блокировкой!'));
-        }
-        $promocodeForm = new PromocodeForm();
-        if ($promocodeForm->load(Yii::$app->request->post())) {
-            $model = $promocodeForm->saveRecord();
-            if (!empty($model)) {
-                Yii::$app->session->addFlash('success', Yii::t('common', 'Баланс пополнен на {PARAMS_PROMSUM} RUB', [
-                    'PARAMS_PROMSUM' => $model->amount
-                ]));
-            } else {
-                Yii::$app->session->addFlash('danger', array_values($promocodeForm->getFirstErrors())[0]);
-            }
-        }
         return $this->render('index');
     }
 
@@ -203,6 +191,38 @@ class SiteController extends WebController
         ]);
     }
 
+    public function actionMenuToggle()
+    {
+        header("Content-Type: application/json");
+        $hide = Cookie::getValue('isMenuHide') == 'true';
+        Cookie::add('isMenuHide', !$hide, true, 60*60*24*365*5);
+        return json_encode(['success' => true]);
+    }
+
+    public function actionPromocode()
+    {
+        $promocodeForm = new PromocodeForm();
+        if ($promocodeForm->load(Yii::$app->request->post())) {
+            $model = $promocodeForm->saveRecord();
+            if (!empty($model)) {
+                Yii::$app->session->addFlash('success', Yii::t('common', 'Баланс пополнен на {PARAMS_PROMSUM} RUB', [
+                    'PARAMS_PROMSUM' => $model->amount
+                ]));
+            } else {
+                Yii::$app->session->addFlash('danger', array_values($promocodeForm->getFirstErrors())[0]);
+            }
+        }
+        return $this->renderAjax('promocode');
+    }
+
+    public function actionMenu()
+    {
+        return $this->renderAjax('@frontend/views/layouts/menu.twig', [
+            'MENU_HIDDEN' => false,
+            'MOBILE' => true,
+        ]);
+    }
+
     public function actionRobots()
     {
         Yii::$app->response->headers->set('Content-Type','application/txt; charset=UTF-8');
@@ -223,7 +243,7 @@ class SiteController extends WebController
         }
 
         $command = "bcm.mute {$steamId} 1h \"{$reason}\"";
-        $response = shell_exec("node /var/www/www-root/data/var/www/" . Yii::$app->params['domain'] . "/node/webrcon/src/send.js \"{$server->ip}\" {$server->rcon} \"{$server->rcon_password}\" \"{$command}\" 2>&1");
+        $response = shell_exec("node /var/www/www-root/data/var/www/" . Yii::$app->settings->get('site_domain') . "/node/webrcon/src/send.js \"{$server->ip}\" {$server->rcon} \"{$server->rcon_password}\" \"{$command}\" 2>&1");
         print_r($response);
         exit;
     }

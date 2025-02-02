@@ -1,0 +1,42 @@
+$colors: "primary-colors-main", "primary-colors-secondary", "primary-colors-secondary-opacity",
+  "primary-colors-white", "primary-colors-main-opacity", "background-main", "background-secondary",
+  "background-teritiary", "text-main", "text-secondary", "text-teritiary", "text-disabled",
+  "icon-main", "icon-hover", "icon-mini", "icon-in-button", "status-text-color",
+  "status-background-opacity", "status-radius", "tooltip-background", "tooltip-text-color",
+  "badge-text-color", "badge-background", "border-color-default", "border-color-hover",
+  "border-color-active", "link-color-default", "link-color-hover", "link-color-disabled",
+  "button-disabled", "button-main-new-price-color-default", "button-main-old-price-color-default",
+  "button-main-radius", "button-secondary-text-color-default",
+  "button-secondary-border-color-default", "button-teritiary-new-price-color-default",
+  "button-teritiary-old-price-color-hover", "button-teritiary-background",
+  "system-colors-success-color", "progress-step-color", "system-colors-gold",
+  "system-colors-silver", "system-colors-bronze", "online";
+
+@each $color in $colors {
+  .text-#{$color} {
+    color: var(--#{$color});
+  }
+}
+
+@each $color in $colors {
+  .bg-#{$color} {
+    background-color: var(--#{$color});
+  }
+}
+
+@each $color in $colors {
+  .border-#{$color} {
+    border-color: var(--#{$color});
+  }
+}
+
+.bg-white {
+  background-color: #fff !important;
+}
+
+.bg-transparent {
+  background-color: transparent;
+}
+.border-transparent {
+  border-color: transparent;
+}

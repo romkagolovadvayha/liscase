@@ -16,15 +16,18 @@ use yii\bootstrap5\ActiveForm;
 <?= $form->field($model, 'rust_id')->textInput(); ?>
 <?= $form->field($model, 'category_id')->dropDownList(\common\models\box\Category::getCategoryList(), []) ?>
 <?= $form->field($model, 'preview_file')->fileInput(); ?>
+<?= $form->field($model, 'preview_file_open')->fileInput(); ?>
 <?= $form->field($model, 'market_status')->dropDownList(Drop::getMarketStatusList(), []) ?>
 <?= $form->field($model, 'command')->textarea(); ?>
 <?= $form->field($model, 'blocked_hour')->dropDownList([
+        0 => 'Нет блока',
         2 => '2 часа',
         4 => '4 часа',
         6 => '6 часов',
         12 => '12 часов',
         24 => '24 часа',
 ], []); ?>
+<?= $form->field($model, 'show_main_block')->dropDownList([0 => 'Нет', 1 => 'Да'], []); ?>
 <?= $form->field($model, 'price')->textInput(); ?>
 <?= $form->field($model, 'sort')->textInput(); ?>
 

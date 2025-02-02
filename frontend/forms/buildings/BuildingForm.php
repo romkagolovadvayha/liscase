@@ -27,7 +27,7 @@ class BuildingForm extends Building
         return ArrayHelper::merge([
             [['image', 'residents'], 'required'],
             [['image'], 'safe'],
-            [['image'], 'file', 'skipOnEmpty' => true, 'extensions' => 'jpeg, jpg, png, gif', 'checkExtensionByMimeType' => false, 'maxFiles' => 5],
+            [['image'], 'file', 'skipOnEmpty' => true, 'extensions' => ['svg', 'jpg', 'jpeg', 'gif', 'png'], 'checkExtensionByMimeType' => false, 'maxFiles' => 5],
         ], parent::rules());
     }
 

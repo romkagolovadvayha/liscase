@@ -28,6 +28,9 @@ class SendMessageJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
+        if (!YII_ENV_PROD) {
+            return;
+        }
         try {
             Yii::$app->personalBotTelegram->sendMessage($this->telegram_chat_id, $this->message, $this->buttons);
         } catch (\Exception $e) {

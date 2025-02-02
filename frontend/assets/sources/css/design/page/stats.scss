@@ -1,0 +1,476 @@
+.page-stats {
+  &__block {
+    @extend .bg-background-secondary, .px-20, .py-20, .transition-all;
+    border-radius: var(--block-radius);
+    &:hover {
+      @extend .bg-background-teritiary;
+      & .gamer-stats__item {
+        @extend .bg-background-teritiary;
+      }
+    }
+    &_with-light {
+      @extend .relative;
+      &:before {
+        @extend .block, .absolute;
+        content: "";
+        background: var(--light-background);
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-repeat: no-repeat;
+        background-size: 100% 311px;
+        min-width: 100%;
+        max-width: 100%;
+        width: 100%;
+        min-height: 311px;
+        max-height: 311px;
+        height: 311px;
+        transition: filter 0.25s ease-in-out;
+        opacity: 0;
+      }
+      &:hover {
+        &:before {
+          opacity: 1;
+        }
+      }
+    }
+    &.profile {
+      @extend .relative, .overflow-hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      & .profile {
+        &__wrapper {
+          @extend .flex, .items-center, .gap-x-20, .relative, .z-1;
+        }
+        &__footer {
+          flex: 1 0;
+          display: flex;
+          align-items: flex-end;
+          gap: 24px;
+        }
+        &_offline {
+          & .profile__image {
+            & img {
+              @extend .border-icon-main;
+            }
+            &:after {
+              content: "";
+              @extend .none;
+            }
+          }
+        }
+        &_banned {
+          & .profile__image {
+            & img {
+              filter: grayscale(100%);
+            }
+            &:after {
+              content: "";
+              @extend .absolute, .block, .border-0, .bg-transparent;
+              background-image: url("/images/design/icons/20px/block.svg");
+              background-repeat: no-repeat;
+              background-size: 20px 20px;
+            }
+          }
+          & h2 {
+            @extend .text-text-secondary;
+          }
+        }
+        &__image {
+          @extend .rounded-6, .relative;
+          @include range(64, 64, "px");
+          &:after {
+            content: "";
+            @extend .absolute,
+            .block,
+            .border-4,
+            .border-solid,
+            .border-background-secondary,
+            .bg-online,
+            .rounded-full;
+            @include range(20, 20, "px");
+            bottom: -6px;
+            right: -6px;
+          }
+          & img {
+            @extend .border-2, .border-solid, .border-primary-colors-secondary, .rounded-6;
+            @include range(64, 64, "px");
+          }
+        }
+      }
+    }
+  }
+  &__two-blocks {
+    @extend .flex, .gap-x-12, .gap-y-12;
+    &_one-block {
+      @extend .grid;
+      & > .w-50p {
+        @extend .w-full;
+      }
+    }
+  }
+  &__block-without-hover {
+    @extend .bg-background-secondary, .px-20, .py-20, .transition-all;
+    border-radius: var(--block-radius);
+  }
+  &__params {
+    @extend .py-28;
+  }
+  &__awards {
+    @extend .grid, .justify-flex-start, .gap-x-8, .gap-y-8, .w-full;
+    grid-template-columns: repeat(4, minmax(78px, 1fr));
+    & .award {
+      @extend .flex,
+      .px-8,
+      .py-12,
+      .relative,
+      .bg-background-teritiary,
+      .justify-center,
+      .items-center,
+      .flex-column,
+      .transition-box-shadow,
+      .border-1,
+      .border-background-teritiary,
+      .border-solid;
+      overflow: hidden;
+      border-radius: var(--card-radius);
+      &__image {
+        @extend .mb-16, .transition-transform;
+        @include range(48, 48, "px");
+      }
+      &:hover {
+        & .award__image {
+          transform: rotateY(180deg);
+        }
+      }
+      &_is-not-completed {
+        @extend .bg-transparent, .border-border-color-default;
+        opacity: 0.5;
+        & .award__image {
+          filter: grayscale(100%);
+        }
+      }
+      &:hover {
+        box-shadow: var(--shadow-card);
+      }
+    }
+  }
+  &__actions-in-game {
+    @extend .grid, .justify-flex-start, .gap-x-12, .gap-y-12, .w-full;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    & img {
+      @extend .transition-transform;
+      height: 150px;
+    }
+    & .page-stats__block_with-light {
+      &:hover {
+        & img {
+          transform: scale(1.1) rotate(10deg);
+        }
+      }
+    }
+  }
+  &__categories {
+    @extend .grid, .justify-flex-start, .gap-x-12, .gap-y-12, .w-full, .transition-all;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    height: fit-content;
+    &__blocks {
+      flex: 1 0;
+      &_wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      & .category {
+        border-radius: var(--block-radius);
+        background-color: var(--background-secondary);
+      }
+    }
+    &_hide {
+      opacity: 0;
+      height: 0;
+      display: none;
+    }
+    &__footer {
+      margin-top: 12px;
+      display: flex;
+      width: 100%;
+      .button {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+        display: flex;
+      }
+    }
+  }
+  &__category {
+    @extend .bg-background-teritiary, .p-12, .relative, .overflow-hidden;
+    border-radius: var(--card-radius);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    justify-content: center;
+    border-width: 1px;
+    border-style: solid;
+    border-color: transparent;
+    &.available {
+      background-color: var(--background-main);
+      border-color: var(--border-color-default);
+      //background-color: var(--background-main);
+    }
+    &.disabled {
+      border-color: var(--border-color-default);
+      background-color: transparent;
+      & .category__count-and-img img {
+        filter: grayscale(100%);
+      }
+    }
+    & img {
+      @extend .transition-transform;
+      margin-bottom: 5px;
+    }
+    &:before {
+      @extend .block, .absolute, .transition-opacity;
+      content: "";
+      background: var(--light-background);
+      bottom: 0;
+      right: -80px;
+      background-repeat: no-repeat;
+      background-size: 250px 170px;
+      @include range(250, 170, "px");
+      opacity: 0;
+    }
+    &:hover {
+      &:before {
+        opacity: 1;
+      }
+      & img {
+        transform: scale(1.1) rotate(10deg);
+      }
+    }
+    & .category {
+      &__count-and-img {
+        @extend .text-text-main,
+        .flex,
+        .items-flex-end,
+        .justify-space-between,
+        .relative,
+        .z-1;
+        flex: 1 0;
+      }
+      &__title {
+        @extend .p2, .text-text-secondary, .short, .relative, .z-1;
+      }
+      &__x {
+        @extend .p3, .text-system-colors-success-color, .ml-4;
+      }
+    }
+    &__footer {
+      position: relative;
+      z-index: 2;
+    }
+    &__blocked {
+      content: '';
+      background-color: var(--color-rules-punishment);
+      position: absolute;
+      display: block;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      z-index: 0;
+      opacity: 0.1;
+      &__info {
+        position: absolute;
+        z-index: 1;
+        top: 5px;
+        left: 5px;
+      }
+    }
+  }
+  &__gamer-stats {
+    @extend .relative, .flex, .items-center, .justify-center;
+    @include range(584, 509, "px");
+    & img {
+      @include range(584, 509, "px");
+    }
+    & .gamer-stats {
+      &__item {
+        @extend .absolute,
+        .bg-background-secondary,
+        .w-100,
+        .h-24,
+        .block,
+        .h4,
+        .text-text-main,
+        .transition-all;
+        &.gamer-stats__head {
+          top: 25px;
+          right: 93px;
+        }
+        &.gamer-stats__left-arm {
+          @extend .text-right;
+          top: 154px;
+          left: 11px;
+        }
+        &.gamer-stats__left-hip {
+          @extend .text-right;
+          bottom: 194px;
+          left: 28px;
+        }
+        &.gamer-stats__left-leg {
+          @extend .text-right;
+          bottom: 64px;
+          left: 24px;
+        }
+        &.gamer-stats__right-arm {
+          top: 144px;
+          right: 10px;
+        }
+        &.gamer-stats__right-hip {
+          bottom: 200px;
+          right: 50px;
+        }
+        &.gamer-stats__right-leg {
+          bottom: 48px;
+          right: 36px;
+        }
+      }
+    }
+  }
+  &__the-best {
+    @extend .grid, .justify-flex-start, .gap-x-12, .gap-y-12, .w-full;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    & .the-best {
+      &__item {
+        @extend .p-20, .bg-background-secondary, .relative, .overflow-hidden;
+        border-radius: var(--block-radius);
+        &:after {
+          content: "";
+          @extend .absolute;
+          background: var(--light-the-best-background);
+          background-repeat: repeat-y;
+          background-size: 100%;
+          @include range(100, 100, "%");
+          top: 0;
+          left: 0;
+          bottom: 0;
+          transition: filter 0.25s ease-in-out;
+        }
+        &:hover {
+          &:after {
+            filter: drop-shadow(2px 4px 6px var(--primary-colors-main));
+          }
+        }
+      }
+      &__list {
+        @extend .relative, .z-1, .w-full;
+        list-style-type: none;
+        &__avatar {
+          width: 50px;
+          height: 50px;
+          min-width: 50px;
+          border-color: var(--icon-main);
+          border-radius: var(--avatar-radius);
+          border-width: 2px;
+          border-style: solid;
+          overflow: hidden;
+          img {
+            width: 100%;
+            display: block;
+          }
+        }
+        &__item {
+          width: 100%;
+          vertical-align: top;
+          display: flex;
+          flex-direction: column;
+          gap: 3px;
+          justify-content: space-between;
+          align-items: flex-start;
+          &__wrap {
+            @extend .py-6, .relative;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+          }
+          &_header {
+            @extend .flex, .items-center, .justify-space-between, .p2;
+            gap: 5px;
+            width: 100%;
+            &_name {
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 152px;
+            }
+            &_label {
+              @extend .bg-status-background-opacity, .px-8, .py-2, .p3;
+              border-radius: var(--button-secondary-radius);
+            }
+          }
+          &_footer {
+            @extend .flex, .items-center, .justify-space-between, .p2;
+            gap: 5px;
+            width: 100%;
+            &_score {
+              display: block;
+              flex: 1 0;
+              text-align: right;
+            }
+          }
+          &_reward {
+            @extend .inline-flex, .items-center, .gap-x-4, .bg-background-main, .rounded-4;
+            padding: 4px;
+          }
+          &:before {
+            @extend .absolute, .transition-all;
+            content: "";
+            opacity: 0;
+            inset: -1px;
+            z-index: -1;
+            border-radius: var(--button-secondary-radius);
+            border: 1px solid transparent;
+            background-image: var(--base-linear-gradiend);
+            mask:
+                    linear-gradient(#fff 0 0) padding-box,
+                    linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            background-size: 101% 100%;
+            background-position: center;
+            left: -6px;
+            right: -6px;
+          }
+          &.active {
+            &:before {
+              opacity: 100;
+            }
+          }
+        }
+      }
+    }
+  }
+  &__show-statistics-block {
+    @extend .flex, .items-center, .gap-x-12, .user-select-none, .cursor-pointer;
+    & [type="checkbox"] {
+      & + span {
+        & > .icons_switch_on {
+          display: none;
+        }
+        & > .icons_switch_off {
+          display: block;
+        }
+      }
+      &:checked + span {
+        & > .icons_switch_on {
+          display: block;
+        }
+        & > .icons_switch_off {
+          display: none;
+        }
+      }
+    }
+  }
+}

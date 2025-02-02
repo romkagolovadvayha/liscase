@@ -13,6 +13,7 @@ $this->title = Yii::t('common', "Корзина") . " - {$user->userProfile->nam
 /** @var UserDrop[] $userDrops */
 $userDrops = $user->getUserDrop()
     ->andWhere(['status' => UserDrop::STATUS_ACTIVE])
+    ->orderBy(['id' => SORT_DESC])
     ->all();
 ?>
 
@@ -28,68 +29,55 @@ $this->registerJs(<<<JS
 JS
 );
 ?>
-<div class="container-fluid mb-5">
-    <div class="main_wrap">
-        <aside>
-            <?= $this->render('@frontend/views/widgets/_profile'); ?>
-            <?php echo $this->render('@frontend/views/layouts/_promocode_line'); ?>
-        </aside>
-        <main id="main" role="main">
-            <div class="main_child">
-                <div class="profile_content">
-                    <div class="profile_content_header">
-                        <?=Yii::t('common', "Корзина")?>
-                    </div>
-                    <div class="profile_content_body">
-                        <?= Alert::widget() ?>
-                        <?php if (!empty($userDrops)):?>
-                            <div class="box_cards_wrapper">
-                                <div class="box_cards">
-                                    <?php foreach ($userDrops as $userDrop): ?>
-                                        <?php foreach ($userDrop->drop as $drop): ?>
-                                            <?php $blocked = !empty($drop->blocked_at) && strtotime($drop->blocked_at) > time(); ?>
-                                            <div class="box_cards_card">
-                                                <div class="box_cards_card_info">
-                                                    <div class="box_cards_card_info_title"><?=Yii::t('database', $drop->name)?></div>
-                                                </div>
-                                                <div class="box_cards_card_image">
-                                                    <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $drop->name)?>">
-                                                </div>
-                                                <div class="box_cards_card_count">
-                                                    x<?= $userDrop->count ?>
-                                                </div>
-                                                <?php if ($blocked): ?>
-                                                    <div class="box_cards_card_blocked_wrap">
-                                                        <div class="box_cards_card_blocked_title"><?=Yii::t('common', 'Вайп блок')?></div>
-                                                        <div class="box_cards_card_blocked_timer blocked_products_timer" data-time="<?=strtotime($drop->blocked_at)?>"><?=$drop->blocked_at?></div>
-                                                    </div>
-                                                <?php endif; ?>
-                                                <?php $form = ActiveForm::begin(); ?>
-                                                <input type="hidden" name="sell" value="<?=$userDrop->id?>"/>
-                                                <?php if (empty($userDrop->box_id) && empty($userDrop->sets_id)): ?>
-                                                    <button type="submit" class="btn box_cards_card_btn" data-bs-dismiss="modal">
-                                                        <?=Yii::t('common', 'Вернуть')?>
-                                                        <span class="badge bg-danger">+<?=$drop->getRealPrice()?></span>
-                                                    </button>
-                                                <?php else: ?>
-                                                    <button type="submit" class="btn box_cards_card_btn disabled" disabled>
-                                                        <?=Yii::t('common', 'Нет возврата')?>
-                                                    </button>
-                                                <?php endif; ?>
-                                                <?php ActiveForm::end(); ?>
-                                            </div>
-                                        <?php endforeach; ?>
-                                    <?php endforeach; ?>
-                                </div>
+<?= Alert::widget() ?>
+<section class="tasks">
+    <h2 class="tasks__title">
+        <?=Yii::t('common', 'Моя корзина')?>
+        <span
+                class="icons icons_24px icons_24px_info icons_hover"
+                data-bs-toggle="tooltip"
+                data-bs-placement="right"
+                data-bs-title="<?=Yii::t('common', 'В этом разделе отображаются все вещи, которые вы можете вывести на сервере.')?>"
+        ></span>
+    </h2>
+    <?php if (!empty($userDrops)):?>
+        <section class="page-stats__block-without-hover">
+            <div class="page-stats__categories">
+                <?php foreach ($userDrops as $userDrop): ?>
+                    <?php foreach ($userDrop->drop as $drop): ?>
+                        <?php $blocked = !empty($drop->blocked_at) && strtotime($drop->blocked_at) > time(); ?>
+                        <div class="page-stats__category category<?php if ($blocked): ?> blocked<?php endif; ?>">
+                            <h5 class="category__count-and-img">
+                                <span>x<?= $userDrop->count ?></span>
+                                <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?=Yii::t('database', $drop->name)?>" class="w-64 h-64 object-contain">
+                            </h5>
+                            <p class="category__title"><?=Yii::t('database', $drop->name)?></p>
+                            <div class="page-stats__category__footer mt-6">
+                                <?php $form = ActiveForm::begin(); ?>
+                                <input type="hidden" name="sell" value="<?=$userDrop->id?>"/>
+                                <?php if (empty($userDrop->box_id) && empty($userDrop->sets_id)): ?>
+                                    <button type="submit" class="button-secondary button-size__s h-36 w-full" style="padding-top: 6px; padding-bottom: 6px" data-bs-dismiss="modal">
+                                        <span class="button__text"><?=Yii::t('common', 'Вернуть')?> <span class="badge bg-danger">+<?=$drop->getRealPrice()?></span></span>
+                                    </button>
+                                <?php else: ?>
+                                    <button type="submit" class="button-secondary button-size__s h-36 w-full" style="padding-top: 6px; padding-bottom: 6px" disabled>
+                                        <span class="button__text"><?=Yii::t('common', 'Нет возврата')?></span>
+                                    </button>
+                                <?php endif; ?>
+                                <?php ActiveForm::end(); ?>
                             </div>
-                        <?php else:?>
-                            <p class="mt-4">
-                                <?=Yii::t('common', 'В вашем инвентаре пока нет вещей')?>
-                            </p>
-                        <?php endif;?>
-                    </div>
-                </div>
+                            <?php if ($blocked): ?>
+                                <span class="icons icons_24px icons_24px_info icons_hover page-stats__category__blocked__info" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="<?=Yii::t('common', 'Товар сейчас находится в вайп-блоке')?>"></span>
+                                <div class="page-stats__category__blocked"></div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endforeach; ?>
             </div>
-        </main>
-    </div>
-</div>
+        </section>
+    <?php else:?>
+        <p class="mt-4">
+            <?=Yii::t('common', 'В вашем инвентаре пока нет вещей')?>
+        </p>
+    <?php endif;?>
+</section>

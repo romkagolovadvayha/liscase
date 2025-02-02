@@ -13,6 +13,7 @@ use yii\base\BaseObject;
  * @property string              $tag
  * @property string              $image
  * @property int                 $sort
+ * @property bool                $show_main_block
  * @property string              $created_at
  */
 class Category extends ActiveRecord
@@ -36,6 +37,7 @@ class Category extends ActiveRecord
             'name'               => Yii::t('common', 'Название'),
             'tag'              => Yii::t('common', 'Тэг'),
             'sort'              => Yii::t('common', 'Сортировка'),
+            'show_main_block'              => Yii::t('common', 'Показывать на главной странице'),
             'created_at'              => Yii::t('common', 'Тип'),
         ];
     }
@@ -44,7 +46,7 @@ class Category extends ActiveRecord
     {
         return [
             [['name'], 'required'],
-            [['sort'], 'integer'],
+            [['sort', 'show_main_block'], 'integer'],
             [['name', 'tag', 'created_at'], 'string', 'max' => 255],
         ];
     }
@@ -78,6 +80,24 @@ class Category extends ActiveRecord
             $list[$item->id] = Yii::t('database', $item->name);
         }
         return $list;
+    }
+
+    /**
+     * @param false $mainBlock
+     * @param false $update
+     *
+     * @return Category[]|false|mixed|\yii\db\ActiveRecord[]
+     */
+    public static function getCategories($mainBlock = false, $update = false) {
+        $cacheKey = 'getCategories_' . $mainBlock;
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        $result = Category::find()
+                          ->andWhere(['show_main_block' => $mainBlock])
+                          ->all();
+        Yii::$app->cache->set($cacheKey, $result, 7*24*60*60);
+        return $result;
     }
 
 }

@@ -1,0 +1,151 @@
+.tasks {
+  @extend .content-visibility-auto;
+
+  &__title {
+    @extend .mb-32, .flex, .text-text-main, .uppercase, .items-center, .gap-x-12;
+  }
+
+  &__list {
+    @extend .grid, .justify-center, .gap-x-20, .gap-y-20;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+
+    & .task {
+      @extend .flex,
+        .pt-20,
+        .px-20,
+        .pb-32,
+        .relative,
+        .bg-background-secondary,
+        .justify-space-between,
+        .flex-column,
+        .transition-box-shadow,
+        .content-visibility-auto;
+      overflow: hidden;
+
+      border-radius: var(--card-radius);
+      &:hover {
+        & .task__image {
+          transform: rotateY(180deg);
+        }
+
+        &:before {
+          filter: drop-shadow(2px 4px 6px var(--primary-colors-main));
+        }
+      }
+
+      &_is-not-completed {
+        & .task__image {
+          filter: grayscale(100%);
+        }
+      }
+
+      &:hover {
+        box-shadow: var(--shadow-card);
+      }
+
+      &:before {
+        @extend .block, .absolute;
+        content: "";
+        background: var(--light-background);
+        bottom: 0;
+        z-index: -1;
+        left: 0;
+        background-repeat: no-repeat;
+        background-size: 100% 240px;
+        min-width: 100%;
+        max-width: 100%;
+        width: 100%;
+        min-height: 240px;
+        max-height: 240px;
+        height: 240px;
+        border-top-left-radius: 8px;
+        transition: filter 0.25s ease-in-out;
+      }
+
+      &__content {
+        @extend .relative, .mb-24;
+        z-index: 1;
+      }
+
+      &__image {
+        @extend .mb-16, .transition-transform;
+        @include range(76, 76, "px");
+      }
+
+      &__title {
+        @extend .mb-6, .uppercase;
+        font-weight: 700;
+      }
+
+      &__description {
+        @extend .mt-8;
+
+        & p:first-of-type {
+          @extend .p2, .mb-2, .text-text-secondary;
+        }
+
+        & p:nth-of-type(2) {
+          @extend .p2, .text-text-main;
+        }
+      }
+
+      &__progress {
+        @extend .flex, .flex-column, .gap-y-8;
+
+        & .progress {
+          &__title {
+            @extend .flex, .items-center, .justify-space-between;
+
+            & p:first-of-type {
+              @extend .p1, .text-text-secondary;
+            }
+            & p:last-of-type {
+              @extend .p1, .text-text-main;
+            }
+          }
+
+          &__steps {
+            @extend .flex,
+              .p-3,
+              .bg-background-main,
+              .items-center,
+              .justify-space-between,
+              .gap-x-4,
+              .rounded-12;
+            width: 100%;
+            height: 12px;
+
+            & span {
+              @extend .block, .bg-icon-main, .rounded-4;
+              width: 100%;
+              height: 6px;
+            }
+
+            & .steps {
+              &__item {
+                &_is-completed {
+                  &:nth-of-type(1) {
+                    @extend .bg-primary-colors-main;
+                  }
+                  &:nth-of-type(2) {
+                    background: var(--base-linear-gradiend);
+                  }
+                  &:nth-of-type(3) {
+                    background: linear-gradient(
+                      90deg,
+                      var(--primary-colors-secondary) 0%,
+                      var(--progress-step-color) 100%
+                    );
+                  }
+                  &:nth-of-type(4) {
+                    @extend .bg-progress-step-color;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

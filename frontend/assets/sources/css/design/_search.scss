@@ -1,0 +1,50 @@
+.search, .filters .form-control {
+  @extend .p1,
+    .py-12,
+    .px-20,
+    .text-text-main,
+    .bg-background-main,
+    .transition-border-color;
+  border-radius: var(--card-radius);
+  height: 48px;
+  width: 100%;
+  border: 1px solid var(--border-color-default);
+  outline: unset;
+
+  &:hover {
+    @extend .border-border-color-hover;
+  }
+
+  &:active,
+  &:focus {
+    @extend .border-border-color-active;
+  }
+
+  &::placeholder {
+    @extend .p1, .text-text-secondary;
+  }
+
+  &_pay {
+    @extend .bg-transparent, .relative;
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    & + .icons_16px {
+      @extend .absolute, .transition-transform;
+      top: 16px;
+      bottom: 16px;
+      right: 20px;
+      transition-duration: .5s;
+    }
+
+    &:hover {
+      & + .icons_16px {
+        transform: rotateY(360deg);
+      }
+    }
+  }
+}

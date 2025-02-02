@@ -1,0 +1,8 @@
+<div class="owl-carousel categories__carousel">
+    {% for item in ITEMS %}
+        <div class="category" data-id="{{ item.id }}">
+            <img src="{{ item.image }}" alt="category" class="category__image" />
+            <p class="category__title">{{ t('database', item.name) }}</p>
+        </div>
+    {% endfor %}
+</div>

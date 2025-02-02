@@ -36,6 +36,9 @@ class Profit extends \common\components\base\ActiveRecord
     public const TYPE_WARGM_BONUS = 11;
     public const TYPE_TOP = 12;
     public const TYPE_TELEGRAM_BOT = 13;
+    public const TYPE_TRANSFER_REFERRAL = 14;
+    public const TYPE_TRANSFER_SKINS = 15;
+    public const TYPE_WINNER_SKINS = 16;
 
     /**
      * @return array
@@ -56,6 +59,9 @@ class Profit extends \common\components\base\ActiveRecord
             self::TYPE_WARGM_BONUS => Yii::t('common', 'Бонус за голосование на сайте WarGM'),
             self::TYPE_TOP => Yii::t('common', 'Награда за топ сервера'),
             self::TYPE_TELEGRAM_BOT => Yii::t('common', 'Привязка телеграм бота'),
+            self::TYPE_TRANSFER_REFERRAL => Yii::t('common', 'Перевод с счета реферальной системы'),
+            self::TYPE_TRANSFER_SKINS => Yii::t('common', 'Перевод с счета скинов'),
+            self::TYPE_WINNER_SKINS => Yii::t('common', 'Выйгран скин'),
         ];
     }
 

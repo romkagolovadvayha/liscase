@@ -1,0 +1,155 @@
+@font-face {
+  font-family: "Roboto";
+  src: url("ediumItalic.eot");
+  src:
+    url("ediumItalic.eot?#iefix") format("embedded-opentype"),
+    url("ediumItalic.woff2") format("woff2"),
+    url("ediumItalic.woff") format("woff"),
+    url("ediumItalic.ttf") format("truetype"),
+    url("ediumItalic.svg#Roboto-MediumItalic") format("svg");
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("edium.eot");
+  src:
+    url("edium.eot?#iefix") format("embedded-opentype"),
+    url("edium.woff2") format("woff2"),
+    url("edium.woff") format("woff"),
+    url("edium.ttf") format("truetype"),
+    url("edium.svg#Roboto-Medium") format("svg");
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("hin.eot");
+  src:
+    url("hin.eot?#iefix") format("embedded-opentype"),
+    url("hin.woff2") format("woff2"),
+    url("hin.woff") format("woff"),
+    url("hin.ttf") format("truetype"),
+    url("hin.svg#Roboto-Thin") format("svg");
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("lackItalic.eot");
+  src:
+    url("lackItalic.eot?#iefix") format("embedded-opentype"),
+    url("lackItalic.woff2") format("woff2"),
+    url("lackItalic.woff") format("woff"),
+    url("lackItalic.ttf") format("truetype"),
+    url("lackItalic.svg#Roboto-BlackItalic") format("svg");
+  font-weight: 900;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("hinItalic.eot");
+  src:
+    url("hinItalic.eot?#iefix") format("embedded-opentype"),
+    url("hinItalic.woff2") format("woff2"),
+    url("hinItalic.woff") format("woff"),
+    url("hinItalic.ttf") format("truetype"),
+    url("hinItalic.svg#Roboto-ThinItalic") format("svg");
+  font-weight: 100;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("ightItalic.eot");
+  src:
+    url("ightItalic.eot?#iefix") format("embedded-opentype"),
+    url("ightItalic.woff2") format("woff2"),
+    url("ightItalic.woff") format("woff"),
+    url("ightItalic.ttf") format("truetype"),
+    url("ightItalic.svg#Roboto-LightItalic") format("svg");
+  font-weight: 300;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("talic.eot");
+  src:
+    url("talic.eot?#iefix") format("embedded-opentype"),
+    url("talic.woff2") format("woff2"),
+    url("talic.woff") format("woff"),
+    url("talic.ttf") format("truetype"),
+    url("talic.svg#Roboto-Italic") format("svg");
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("lack.eot");
+  src:
+    url("lack.eot?#iefix") format("embedded-opentype"),
+    url("lack.woff2") format("woff2"),
+    url("lack.woff") format("woff"),
+    url("lack.ttf") format("truetype"),
+    url("lack.svg#Roboto-Black") format("svg");
+  font-weight: 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("ight.eot");
+  src:
+    url("ight.eot?#iefix") format("embedded-opentype"),
+    url("ight.woff2") format("woff2"),
+    url("ight.woff") format("woff"),
+    url("ight.ttf") format("truetype"),
+    url("ight.svg#Roboto-Light") format("svg");
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("old.eot");
+  src:
+    url("old.eot?#iefix") format("embedded-opentype"),
+    url("old.woff2") format("woff2"),
+    url("old.woff") format("woff"),
+    url("old.ttf") format("truetype"),
+    url("old.svg#Roboto-Bold") format("svg");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("egular.eot");
+  src:
+    url("egular.eot?#iefix") format("embedded-opentype"),
+    url("egular.woff2") format("woff2"),
+    url("egular.woff") format("woff"),
+    url("egular.ttf") format("truetype"),
+    url("egular.svg#Roboto-Regular") format("svg");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Roboto";
+  src: url("oldItalic.eot");
+  src:
+    url("oldItalic.eot?#iefix") format("embedded-opentype"),
+    url("oldItalic.woff2") format("woff2"),
+    url("oldItalic.woff") format("woff"),
+    url("oldItalic.ttf") format("truetype"),
+    url("oldItalic.svg#Roboto-BoldItalic") format("svg");
+  font-weight: bold;
+  font-style: italic;
+}

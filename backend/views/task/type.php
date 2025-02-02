@@ -8,8 +8,17 @@ use common\models\tasks\Task;
 
 /** @var $items Task[] */
 /** @var $id */
+/** @var $tasks */
 
 $this->title = Yii::t('common', 'Задания');
+
+$data = [];
+foreach ($tasks as $_id => $item) {
+    $data[] = [
+        'id' => $_id,
+        'title' => $item,
+    ];
+}
 
 $provider = new \yii\data\ArrayDataProvider([
                                                         'allModels' => $items,
@@ -24,48 +33,51 @@ $provider = new \yii\data\ArrayDataProvider([
                                                     ]);
 ?>
 
-<?= Html::a(Yii::t('common', 'Сортировать'),
-            '/task/sort?id=' . $id,
-            ['class' => 'btn btn-primary']); ?>
+<div class="wrap800">
+    <ul class="nav nav-tabs">
+        <?php foreach ($data as $item): ?>
+            <li class="nav-item">
+                <a href="/task/type?id=<?=$item['id']?>" class="nav-link<?php if ($item['id'] == $id): ?> active<?php endif; ?>"><?=$item['title']?></a>
+            </li>
+        <?php endforeach; ?>
+    </ul>
 
-<div class="mt-3">
-    <?= \kartik\grid\GridView::widget([
-                                          'dataProvider' => $provider,
-                                          'layout'       => "{items} {pager}",
-                                          'columns'      => [
-                                              [
-                                                  'attribute' => 'name',
-                                                  'label'     => Yii::t('common', "Название"),
-                                                  'format'    => 'raw',
-                                                  'value'          => function (Task $model) {
-                                                      return "{$model->description}({$model->amount})";
-                                                  },
+    <div class="tab-content">
+        <?= \kartik\grid\GridView::widget([
+                                              'dataProvider' => $provider,
+                                              'layout'       => "{items} {pager}",
+                                              'columns'      => [
+                                                  [
+                                                      'attribute' => 'name',
+                                                      'label'     => Yii::t('common', "Награда"),
+                                                      'format'    => 'raw',
+                                                      'value'          => function (Task $model) {
+                                                          return "Задание: {$model->description}<br/>Награда: {$model->drop->name}";
+                                                      },
+                                                  ],
+                                                  [
+                                                      'attribute' => 'count',
+                                                      'label'     => Yii::t('common', "Количество"),
+                                                      'options'   => ['width' => '80'],
+                                                      'format'    => 'raw',
+                                                      'value'          => function (Task $model) {
+                                                          return "x{$model->amount}<br/>x{$model->count}";
+                                                      },
+                                                  ],
+                                                  [
+                                                      'attribute' => 'buttons',
+                                                      'label'     => '',
+                                                      'options'   => ['width' => '30'],
+                                                      'format'    => 'raw',
+                                                      'value'          => function (Task $model) {
+                                                          return Html::a('<i class="fas fa-pencil-alt"></i>', '/task/update?id=' . $model->id);
+                                                      },
+                                                  ],
                                               ],
-                                              [
-                                                  'attribute' => 'bonus',
-                                                  'label'     => Yii::t('common', "Награда"),
-                                                  'format'    => 'raw',
-                                                  'value'          => function (Task $model) {
-                                                      return "{$model->drop->name}({$model->count})";
-                                                  },
-                                              ],
-                                              [
-                                                  'attribute' => 'stat_attribute',
-                                                  'label'     => Yii::t('common', "Статистика"),
-                                                  'format'    => 'raw',
-                                                  'value'          => function (Task $model) {
-                                                      return "{$model->stat_attribute}";
-                                                  },
-                                              ],
-                                              [
-                                                  'attribute' => 'actions',
-                                                  'label'     => '',
-                                                  'format'    => 'raw',
-                                                  'value'          => function (Task $model) {
-                                                      return "<a href=\"/task/update?id={$model->id}\">Изменить</a>";
-                                                  },
-                                              ],
-                                          ],
-                                      ]);
-    ?>
+                                          ]);
+        ?>
+        <?= Html::a(Yii::t('common', 'Сортировать'),
+                    '/task/sort?id=' . $id,
+                    ['class' => 'btn btn-primary']); ?>
+    </div>
 </div>

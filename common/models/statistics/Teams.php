@@ -4,6 +4,7 @@ namespace common\models\statistics;
 
 use common\components\base\ActiveRecord;
 use common\components\google\TranslateApi;
+use common\models\servers\Servers;
 use common\models\user\User;
 use Yii;
 use yii\base\BaseObject;
@@ -46,45 +47,120 @@ class Teams extends ActiveRecord
             'wipe'    => Yii::t('common', 'Wipe'),
         ];
     }
+
+    public static function getTeam(Servers $server, $steamId) {
+        $teams = Teams::getTeams($server);
+        foreach ($teams as $_authorSteamId => $team) {
+            foreach ($team as $_steamId => $item) {
+                if ($steamId == $_steamId) {
+
+                    /** @var User[] $users */
+                    $users = User::find()->andWhere(['IN', 'steam_id', array_keys($teams[$_authorSteamId])])->all();
+                    foreach ($users as $user) {
+                        $teams[$_authorSteamId][$user->steam_id]['AVATAR'] = $user->getAvatar();
+                        $teams[$_authorSteamId][$user->steam_id]['LINK'] = $user->getLink('stats');
+                        $teams[$_authorSteamId][$user->steam_id]['USERNAME'] = $user->username;
+                    }
+
+                    return $teams[$_authorSteamId];
+                }
+            }
+        }
+
+        return [];
+    }
+
+
     /**
-     * @param $server
-     * @param User $user
+     * @param Servers $server
      *
-     * @return Teams[]
+     * @return array
      */
-    public static function getTeams($server, $user) {
+    public static function getTeams(Servers $server, $update = false) {
+        $cacheKey = 'Teams_getTeams__' . $server->tag;
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
         /** @var Teams[] $models */
-        $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
         $models = Teams::find()
-                       ->cache(61*5)
-                       ->andWhere(['OR',
-                                   ['team_author' => $user->steam_id],
-                                   ['steam_id' => $user->steam_id]
-                                  ])
                        ->andWhere(['server_tag' => $server->tag])
-                       ->andWhere(['wipe' => $wipeDate])
-                       ->orderBy(['created_at' => SORT_DESC])
+                       ->andWhere(['wipe' => $server->currentWipe()])
+                       ->orderBy(['created_at' => SORT_ASC])
                        ->asArray()
                        ->all();
 
-        for ($i = 0; $i < count($models); $i++) {
-            $model = $models[$i];
-            if ($model['steam_id'] === $user->steam_id) {
-                $model['name'] = $user->username;
+        $items = [];
+        $playerTeam = [];
+        foreach ($models as $item) {
+            if (!isset($items[$item['team_author']])) {
+                $items[$item['team_author']] = [];
+                $items[$item['team_author']][$item['team_author']] = [
+                    'IS_AUTHOR' => true,
+                    'STEAM_ID' => $item['team_author'],
+                    'DATE' => $item['created_at'],
+                    'TIME' => strtotime($item['created_at']),
+                ];
+                $playerTeam[$item['team_author']] = $item['team_author'];
             }
-            if ($model['team_author'] === $user->steam_id) {
-                $model['team_author_name'] = $user->username;
+            if ($item['type'] == 'invite_accepted') {
+                if (isset($playerTeam[$item['steam_id']])) {
+                    $_authorTeam = $playerTeam[$item['steam_id']];
+                    if (isset($items[$_authorTeam])) {
+                        foreach (array_keys($items[$_authorTeam]) as $playerSteamId) {
+                            if (!isset($playerTeam[$playerSteamId])) {
+                                continue;
+                            }
+                            unset($playerTeam[$playerSteamId]);
+                        }
+                    }
+                    if (!empty($items[$_authorTeam])) {
+                        unset($items[$_authorTeam]);
+                    }
+                }
+                if (empty($items[$item['team_author']][$item['steam_id']])) {
+                    $items[$item['team_author']][$item['steam_id']] = [
+                        'STEAM_ID' => $item['team_author'],
+                        'DATE' => $item['created_at'],
+                        'TIME' => strtotime($item['created_at']),
+                    ];
+                    $playerTeam[$item['steam_id']] = $item['team_author'];
+                }
             }
-            if (empty($model['team_author_name']) || empty($model['name'])) {
-                $user = User::findBySteamId($model['steam_id']);
-                $model['name'] = $user->username;
-                $user = User::findBySteamId($model['team_author']);
-                $model['team_author_name'] = $user->username;
+            if (in_array($item['type'], ['leaved', 'kicked'])) {
+                if ($item['team_author'] === $item['steam_id']) {
+                    foreach (array_keys($items[$item['team_author']]) as $playerSteamId) {
+                        if (!isset($playerTeam[$playerSteamId])) {
+                            continue;
+                        }
+                        unset($playerTeam[$playerSteamId]);
+                    }
+                    unset($items[$item['team_author']]);
+                } else {
+                    unset($playerTeam[$item['steam_id']]);
+                    unset($items[$item['team_author']][$item['steam_id']]);
+                }
             }
-            $models[$i] = $model;
+            if (empty($items[$item['team_author']])) {
+                unset($playerTeam[$item['team_author']]);
+                unset($items[$item['team_author']]);
+            }
+            if (in_array($item['type'], ['disband']) || empty($items[$item['team_author']])) {
+                $_authorTeam = $item['team_author'];
+                if (!empty($items[$_authorTeam])) {
+                    foreach (array_keys($items[$_authorTeam]) as $playerSteamId) {
+                        if (!isset($playerTeam[$playerSteamId])) {
+                            continue;
+                        }
+                        unset($playerTeam[$playerSteamId]);
+                    }
+                }
+                unset($items[$_authorTeam]);
+            }
         }
 
-        return $models;
+        Yii::$app->cache->set($cacheKey, $items, 60*60);
+        return $items;
     }
 
     public static function getAllInTeams($server, $steamId) {

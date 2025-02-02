@@ -5,40 +5,46 @@ namespace console\controllers;
 use common\models\servers\Servers;
 use common\models\skindrops\SkindropsLink;
 use common\models\stats\Info;
+use common\models\user\UserPayoutSkins;
 use yii\base\BaseObject;
 use yii\console\Controller;
+use yii\web\NotFoundHttpException;
 
 class SkinDropsController extends Controller
 {
     /**
-     * Получает информацию о серверах
-     * skin-drops/parser-links
+     * Чекает статусы отправленых скинов
+     * skin-drops/status-check
      *
      * @throws \Exception
      */
-    public function actionParserLinks()
+    public function actionStatusCheck()
     {
-        $result = json_decode(file_get_contents(__DIR__ . "/../../skindrops.json"), 1);
-        foreach ($result as $steamId => $item) {
-            if (!empty($item['tradeurl'])) {
-                /** @var SkindropsLink $model */
-                $model = SkindropsLink::find()
-                    ->andWhere(['steam_id' => $steamId])
-                    ->one();
-                if (empty($model)) {
-                    $model = new SkindropsLink();
-                    $model->steam_id = $steamId;
-                    $model->tradeurl = $item['tradeurl'];
-                    $str = str_replace('https://steamcommunity.com/tradeoffer/new/?', '', $model->tradeurl);
-                    $array = explode('&', $str);
-                    $model->partner = explode('=', $array[0])[1];
-                    $model->token = explode('=', $array[1])[1];
-                    $model->save(false);
-                } else {
-                    $model->tradeurl = $item['tradeurl'];
-                    $model->save();
-                }
-            }
-        }
+        UserPayoutSkins::check();
     }
+
+    /**
+     * Провести розыгрыш
+     * skin-drops/go-draw
+     *
+     * @throws \Exception
+     */
+    public function actionGoDraw()
+    {
+        if (!\Yii::$app->settings->get('section_skindrops')) {
+            return;
+        }
+
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE]])
+            ->andWhere(['skindrops' => 1])
+            ->all();
+
+        foreach ($servers as $server) {
+            $server->goDraw();
+        }
+
+    }
+
 }

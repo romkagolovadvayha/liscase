@@ -2,8 +2,10 @@
 
 namespace common\models\user;
 
+use common\components\helpers\DateHelper;
 use common\components\helpers\Role;
 use common\components\oauth\Steam;
+use common\components\queue\telegram\SendMessageJob;
 use common\components\web\Cookie;
 use common\models\auth\AuthAssignment;
 use common\models\invoice\Invoice;
@@ -11,6 +13,7 @@ use common\models\invoice\Deposit;
 use common\models\profit\Profit;
 use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
+use common\models\skindrops\Skindrops;
 use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
 use yii\base\BaseObject;
@@ -20,6 +23,7 @@ use yii\helpers\ArrayHelper;
 use yii\helpers\HtmlPurifier;
 use yii\web\IdentityInterface;
 use common\components\base\ActiveRecord;
+use yii\web\JsExpression;
 
 /**
  * @property int             $id
@@ -52,6 +56,11 @@ use common\components\base\ActiveRecord;
  * @property int             $server_id
  * @property bool            $raid_notify
  * @property bool            $store
+ * @property bool            $is_stats
+ * @property string          $blocked_support_at
+ * @property bool            $blocked_support
+ * @property string          $stat_status
+ * @property int             $avatar_frame
  * @property bool            $is_email
  *
  * @property UserProfile     $userProfile
@@ -166,7 +175,8 @@ class User extends ActiveRecord implements IdentityInterface
             'unbanned_at'          => Yii::t('common', 'Разбан'),
             'ban_reason'          => Yii::t('common', 'Причина'),
             'ban_by'          => Yii::t('common', 'Кем забанен'),
-            'store'          => Yii::t('common', 'Доступ к магазину'),
+            'store'          => Yii::t('common', 'Доступ к магазину на без донатном сервере?'),
+            'is_stats'          => Yii::t('common', 'Показывать в статистике?'),
         ];
     }
 
@@ -174,9 +184,9 @@ class User extends ActiveRecord implements IdentityInterface
     {
         return [
             [['email', 'password_hash', 'auth_key', 'ref_code', 'socket_room', 'status'], 'required'],
-            [['status', 'auto', 'steam_id', 'store'], 'integer'],
+            [['status', 'auto', 'steam_id', 'store', 'is_stats', 'avatar_frame'], 'integer'],
             [['ref_code'], 'number'],
-            [['email', 'password_hash'], 'string', 'max' => 255],
+            [['email', 'password_hash', 'stat_status'], 'string', 'max' => 255],
             [['auth_key', 'socket_room'], 'string', 'max' => 32],
             [['current_language', 'created_at'], 'safe'],
         ];
@@ -488,6 +498,14 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
+     * @return UserBalance
+     */
+    public function getSkinsBalance()
+    {
+        return $this->_getUserBalanceByType(UserBalance::TYPE_SKINS);
+    }
+
+    /**
      * @return string
      */
     public function getCurrency()
@@ -632,7 +650,14 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     public function getAvatar() {
+        if (empty($this->userProfile)) {
+            return '';
+        }
         return Yii::$app->params['cdnUrl'] . $this->userProfile->avatar;
+    }
+
+    public function getStatus() {
+        return strtotime($this->last_visit_server_at) >= time() - 2 * 60;
     }
 
     /**
@@ -647,53 +672,6 @@ class User extends ActiveRecord implements IdentityInterface
         }
 
         return static::findOne(['jwt' => $jwt]);
-    }
-
-    /**
-     * @param User $user
-     */
-    public static function parentBonus($user)
-    {
-        /** @var Servers[] $servers */
-        $servers = Servers::find()
-                          ->cache(30)
-                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
-                          ->orderBy(['sort' => SORT_ASC])
-                          ->all();
-
-        $onlineTime = 0;
-        foreach ($servers as $server) {
-            $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
-            $player = Statistics::find()
-                                ->cache(180)
-                                ->andWhere(['steam_id' => $user->steam_id])
-                                ->andWhere(['server_tag' => $server->tag])
-                                ->andWhere(['wipe' => $wipeDate])
-                                ->indexBy('key')
-                                ->all();
-            if (empty($player)) {
-                continue;
-            }
-            $onlineTime += Statistics::getParam($player, 'playtime');
-        }
-
-        if ($onlineTime < 60) {
-            return;
-        }
-
-        $user->userProfile->parent_bonus = 1;
-        $user->userProfile->save(false);
-
-        $profit = new Profit();
-        $profit->status = 1;
-        $profit->type = Profit::TYPE_REFERRAL;
-        $profit->amount = 30;
-        $profit->user_balance_id = $user->getParentUser()->getPersonalBalance()->id;
-        $profit->comment = Yii::t('common', 'Бонус за приглашенного пользователя "{PARAMS_USER_NAME}"', [
-            'PARAMS_USER_NAME' => $user->username
-        ],'ru-RU');
-        $profit->created_at = date('Y-m-d H:i:s');
-        $profit->save(false);
     }
 
     /**
@@ -729,54 +707,54 @@ class User extends ActiveRecord implements IdentityInterface
             }
             $this->banned_at = $bannedAt;
             /** @var Servers[] $servers */
-            $servers = Servers::find()
-                              ->cache(30)
-                              ->andWhere(['status' => Servers::STATUS_ACTIVE])
-                              ->orderBy(['sort' => SORT_ASC])
-                              ->all();
-            if (in_array($reason, [self::REASON_GAME_3])) {
-                $serversBan = ['max3'];
-                foreach ($servers as $server) {
-                    if (in_array($server->tag, $serversBan)) {
-                        $unbannedAt = $server->next_wipe;
-                        break;
-                    }
-                }
-            }
-            if (in_array($reason, [self::REASON_GAME_1])) {
-                $serversBan = ['solo'];
-                foreach ($servers as $server) {
-                    if (in_array($server->tag, $serversBan)) {
-                        $unbannedAt = $server->next_wipe;
-                        break;
-                    }
-                }
-            }
-            if (!empty($unbannedAt)) {
-                $this->status      = User::STATUS_ACTIVE;
-                $this->unbanned_at = $unbannedAt;
-            }
+//            $servers = Servers::find()
+//                              ->cache(30)
+//                              ->andWhere(['status' => Servers::STATUS_ACTIVE])
+//                              ->orderBy(['sort' => SORT_ASC])
+//                              ->all();
+//            if (in_array($reason, [self::REASON_GAME_3])) {
+//                $serversBan = ['max3'];
+//                foreach ($servers as $server) {
+//                    if (in_array($server->tag, $serversBan)) {
+//                        $unbannedAt = $server->next_wipe;
+//                        break;
+//                    }
+//                }
+//            }
+//            if (in_array($reason, [self::REASON_GAME_1])) {
+//                $serversBan = ['solo'];
+//                foreach ($servers as $server) {
+//                    if (in_array($server->tag, $serversBan)) {
+//                        $unbannedAt = $server->next_wipe;
+//                        break;
+//                    }
+//                }
+//            }
+//            if (!empty($unbannedAt)) {
+//                $this->status      = User::STATUS_ACTIVE;
+//                $this->unbanned_at = $unbannedAt;
+//            }
             $this->save(false);
         }
-        $reasonText = ArrayHelper::getValue(User::getReasonList(), $reason);
-        if ($task) {
-            $command = "helper ban \"{$this->steam_id}\" \"{$reasonText}\"";
-            RconTasks::execute($command, $serversBan);
-        }
-        if (YII_ENV_PROD && $rustcheck && $reason !== User::REASON_NOT_REASON) {
-            Yii::$app->rustCheck->ban($this->steam_id, $reasonText);
-        }
-
-        /** @var UserChecking $userChecking */
-        $userChecking = UserChecking::find()
-                             ->andWhere(['user_id' => $this->id])
-                             ->andWhere(['status' => UserChecking::STATUS_CHECKING])
-                             ->one();
-        if (!empty($userChecking)) {
-            $userChecking->status  = UserChecking::STATUS_DONE;
-            $userChecking->done_at = date('Y-m-d H:i:s');
-            $userChecking->save();
-        }
+//        $reasonText = ArrayHelper::getValue(User::getReasonList(), $reason);
+//        if ($task) {
+//            $command = "helper ban \"{$this->steam_id}\" \"{$reasonText}\"";
+//            RconTasks::execute($command, $serversBan);
+//        }
+//        if (YII_ENV_PROD && $rustcheck && $reason !== User::REASON_NOT_REASON) {
+//            Yii::$app->rustCheck->ban($this->steam_id, $reasonText);
+//        }
+//
+//        /** @var UserChecking $userChecking */
+//        $userChecking = UserChecking::find()
+//                             ->andWhere(['user_id' => $this->id])
+//                             ->andWhere(['status' => UserChecking::STATUS_CHECKING])
+//                             ->one();
+//        if (!empty($userChecking)) {
+//            $userChecking->status  = UserChecking::STATUS_DONE;
+//            $userChecking->done_at = date('Y-m-d H:i:s');
+//            $userChecking->save();
+//        }
 
         return true;
     }
@@ -789,10 +767,10 @@ class User extends ActiveRecord implements IdentityInterface
         $this->status = User::STATUS_ACTIVE;
         $this->save(false);
 
-        $command = "unban \"{$this->steam_id}\"";
-        RconTasks::execute($command);
-
-        Yii::$app->rustCheck->unban($this->steam_id);
+//        $command = "unban \"{$this->steam_id}\"";
+//        RconTasks::execute($command);
+//
+//        Yii::$app->rustCheck->unban($this->steam_id);
         return true;
     }
 
@@ -807,6 +785,272 @@ class User extends ActiveRecord implements IdentityInterface
             if (Yii::$app->authManager->checkAccess($this->id, $role)) {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return Servers|string|null
+     */
+    public function getCurrentServer() {
+        if (!empty($this->server)) {
+            return $this->server;
+        }
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->cache(30)
+                          ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+
+        return $servers[0];
+    }
+
+    public function getLink($key) {
+        if ($key === 'stats') {
+            $server = $this->getCurrentServer();
+            return "/servers/{$server->tag}/{$this->steam_id}";
+        }
+        if ($key === 'report') {
+            $server = $this->getCurrentServer();
+            return "/servers/{$server->tag}/{$this->steam_id}/report";
+        }
+        if ($key === 'steam') {
+            return "https://steamcommunity.com/profiles/{$this->steam_id}";
+        }
+        return null;
+    }
+
+    public function notifications() {
+        $supportCount = \common\models\support\Support::unreadAll($this->id);
+        return [
+            'SUPPORT' => $supportCount,
+            'BUILDINGS' => 0,
+            'BANS' => 0,
+        ];
+    }
+
+    public static function searchJS() {
+        return [
+          'ajaxData' => new JsExpression('function(params) { return {q:params.term}; }'),
+          'processResults' => new JsExpression('function (data, params) {return {results: data.items};}'),
+          'escapeMarkup' => new JsExpression('function (markup) { return markup; }'),
+          'templateResult' => new JsExpression("
+                                function (repo) {
+                                    if (repo.loading) {
+                                        return repo.text;
+                                    }
+                                    var markup =
+                                '<a href=\"' + repo.statsLink + '\" class=\"select2_dropdown_item\">' + 
+                                    '<div class=\"select2_dropdown_item_image\"><img src=\"' + repo.avatar + '\"/></div>' +
+                                    '<div class=\"select2_dropdown_item_content\">' +
+                                    '<div class=\"select2_dropdown_item_content_name\">' + repo.name + '</div>' +
+                                    '<div class=\"select2_dropdown_item_content_steam_id\">' + repo.steam_id + '</div>' +
+                                    '</div>' +
+                                '</a>';
+                                    return '<div style=\"overflow:hidden;\">' + markup + '</div>';
+                                }
+                            "),
+          'templateSelection' => new JsExpression("
+                                    function (repo) {
+                                        if (!repo.name) {
+                                            return repo.text;
+                                        }
+                                        return '<div class=\"select2_dropdown_item\">' + 
+                                        '<div class=\"select2_dropdown_item_image_24\">' + 
+                                            '<img src=\"' + repo.avatar + '\"/></div>' +
+                                            '<div class=\"select2_dropdown_item_content\">' +
+                                                '<div class=\"select2_dropdown_item_content_name\">' + repo.name + '</div>' +
+                                            '</div>' +
+                                        '</div>';
+                                    }
+                            "),
+          'eventSelect2' => new JsExpression("
+                                    function(e) { 
+                                        window.location.href = e.params.data.statsLink;
+                                    }
+                            "),
+        ];
+    }
+
+    /**
+     * @param       $serverId
+     * @param false $update
+     *
+     * @return array|false|mixed
+     */
+    public static function getUsers($serverId, $update = false) {
+        $cacheKey = "User_getUsers_{$serverId}";
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        $date = new \DateTime();
+        $date->modify('-30 day');
+        /** @var User[] $users */
+        $users = User::find()
+                     ->andWhere(['>=', 'last_visit_server_at', $date->format('Y-m-d H:i:s')])
+                     ->andWhere(['status' => User::STATUS_ACTIVE])
+                     ->andWhere(['server_id' => $serverId])
+                     ->andWhere(['is_stats' => true])
+                     ->orderBy(['last_visit_server_at' => SORT_DESC])
+                     ->all();
+
+        $items = [];
+        foreach ($users as $user) {
+            $items[] = [
+                'id' => $user->id,
+                'name' => $user->username,
+                'strtolower' => mb_strtolower($user->username),
+                'steam_id' => $user->steam_id,
+                'statsLink' => $user->getLink('stats'),
+                'avatar' => $user->getAvatar(),
+                'status' => $user->getStatus(),
+            ];
+        }
+
+        Yii::$app->cache->set($cacheKey, $items, 7*24*60*60);
+        return $items;
+    }
+
+    public function getReferralBonus() {
+        $referralBonusPersonal = $this->userProfile->referral_bonus;
+        $referralBonus = Yii::$app->settings->get('referral_percent');
+        if ($referralBonusPersonal > $referralBonus) {
+            return $referralBonusPersonal;
+        }
+        return $referralBonus;
+    }
+
+    public function getReferralBalance() {
+        $usersTree = UserTree::find()
+                             ->andWhere(['parent_user_id' => $this->id])
+                             ->andWhere(['NOT IN', 'user_id', [$this->id]])
+                             ->orderBy(['created_at' => SORT_DESC])
+                             ->limit(100)
+                             ->all();
+        $total = 0;
+        /** @var User[] $users */
+        foreach ($usersTree as $userTree) {
+            /** @var Deposit $deposit */
+            foreach ($userTree->user->deposits as $deposit) {
+                if ($deposit->status !== Deposit::STATUS_SUCCESS) {
+                    continue;
+                }
+                $total += $deposit->amount;
+            }
+        }
+        $payoutSum = \common\models\user\UserPayoutReferral::find()
+                                                           ->andWhere(['user_id' => $this->id])
+                                                           ->sum('amount') ?? 0;
+        return $total * ($this->userProfile->referral_bonus/100) - $payoutSum;
+    }
+
+    /**
+     * @param $price
+     * @param $skinName
+     * @param Servers $server
+     *
+     * @return void
+     */
+    public function sendChatWinnerMessage($price, $skinName, $image300, $server) {
+        $price = round($price, 2);
+        $priceEn = round($price / 85, 2);
+
+        $chatAlertTextRu = "<color=#aaf16e>{0}</color> выиграл скин <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} RUB</color>)\nХочешь тоже получать скины?\nПодробности в ";
+        $chatAlertTextEn = "<color=#aaf16e>{0}</color> won a skin <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} $</color>)\nDo you want to receive skins too?\nDetails in ";
+        if (!empty(Yii::$app->settings->get('social_discord'))) {
+            $linkText = str_replace('https://', '', Yii::$app->settings->get('social_discord'));
+            $chatAlertTextRu .= "Discord: <color=#feeda1>" . $linkText . "</color>";
+            $chatAlertTextEn .= "Discord: <color=#feeda1>" . $linkText . "</color>";
+        } elseif (!empty(Yii::$app->settings->get('social_vk'))) {
+            $linkText = str_replace('https://', '', Yii::$app->settings->get('social_vk'));
+            $chatAlertTextRu .= "VK: <color=#feeda1>" . $linkText . "</color>";
+            $chatAlertTextEn .= "Site: <color=#feeda1>en." . Yii::$app->settings->get('site_domain') . "/skindrops</color>";
+        }
+        $chatAlertPlayerTextRu = "Поздравляем!\nВы выиграли скин <color=#aaf16e>{0}</color> (<color=#aaf16e>{1} RUB</color>)\nСредства начислены вам на счет";
+        $chatAlertPlayerTextEn = "Congratulations!\nYou have won a skin <color=#aaf16e>{0}</color> (<color=#aaf16e>{1} $</color>)\nThe funds have been credited to your account";
+
+        $chatAlertTextRu = str_replace('{0}', $this->username, $chatAlertTextRu);
+        $chatAlertTextRu = str_replace('{1}', $skinName, $chatAlertTextRu);
+        $chatAlertTextRu = str_replace('{2}', $price, $chatAlertTextRu);
+
+        $chatAlertTextEn = str_replace('{0}', $this->username, $chatAlertTextEn);
+        $chatAlertTextEn = str_replace('{1}', $skinName, $chatAlertTextEn);
+        $chatAlertTextEn = str_replace('{2}', $priceEn, $chatAlertTextEn);
+
+        $chatAlertPlayerTextRu = str_replace('{0}', $skinName, $chatAlertPlayerTextRu);
+        $chatAlertPlayerTextRu = str_replace('{1}',$price, $chatAlertPlayerTextRu);
+
+        $chatAlertPlayerTextEn = str_replace('{0}', $skinName, $chatAlertPlayerTextEn);
+        $chatAlertPlayerTextEn = str_replace('{1}',$priceEn, $chatAlertPlayerTextEn);
+
+        if (!empty(Yii::$app->settings->get('skindrops_discordHook'))) {
+            $title = '';
+            $description = "Игрок **[{$this->username}](http://steamcommunity.com/profiles/{$this->steam_id})** выиграл скин **{$skinName}**\nЦена в Steam: **{$price} RUB**";
+
+            $countSkins = Skindrops::find()
+                ->andWhere(['steam_id' => $this->steam_id])
+                ->count();
+
+            $fields = [
+                [
+                    'name' => " ",
+                    'value' => " ",
+                    'inline' => false,
+                ],
+                [
+                    'name' => " ",
+                    'value' => " ",
+                    'inline' => false,
+                ],
+                [
+                    'name' => $countSkins,
+                    'value' => 'Игрок выиграл скинов',
+                    'inline' => true,
+                ],
+            ];
+            Yii::$app->discord->send(Yii::$app->settings->get('skindrops_discordHook'), $title, $description, $image300, $fields, $server->discord_token);
+        }
+        if (!empty($this->telegram_chat_id) && YII_ENV_PROD) {
+            $tgMessage = "Поздравляем!";
+            $tgMessage .= PHP_EOL . "Вы выиграли скин <b>{$skinName}</b> (<b>{$price} RUB</b>)";
+            $tgMessage .= PHP_EOL . "Средства начислены вам на счет";
+            Yii::$app->queueTelegram->push(new SendMessageJob([
+                                                              'telegram_chat_id' => $this->telegram_chat_id,
+                                                              'message' => $tgMessage,
+                                                              'buttons' => [],
+                                                          ]));
+        }
+
+        $sound = 'assets/prefabs/misc/easter/painted eggs/effects/eggpickup.prefab';
+        $command = "helper message \"{$this->steam_id}\" \"{$chatAlertPlayerTextRu}\" \"{$chatAlertPlayerTextEn}\"";
+        $rconTask = new RconTasks();
+        $rconTask->status = RconTasks::STATUS_WAIT;
+        $rconTask->command = $command;
+        $rconTask->server_tag = $server->tag;
+        $rconTask->created_at = date('Y-m-d H:i:s');
+        $rconTask->save();
+        $command = "helper globalMessage \"{$chatAlertTextRu}\" \"{$chatAlertTextEn}\" \"{$sound}\"";
+        $rconTask = new RconTasks();
+        $rconTask->status = RconTasks::STATUS_WAIT;
+        $rconTask->command = $command;
+        $rconTask->server_tag = $server->tag;
+        $rconTask->created_at = date('Y-m-d H:i:s');
+        $rconTask->save();
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasHourInServer() {
+        $playtime = Statistics::find()
+                              ->andWhere(['steam_id' => $this->steam_id])
+                              ->andWhere(['key' => 'playtime'])
+                              ->sum('value') ?? 0;
+
+        if ($playtime >= 60) {
+            return true;
         }
 
         return false;

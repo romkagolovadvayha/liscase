@@ -3,8 +3,12 @@
 namespace common\models\servers;
 
 use common\models\blog\BlogCategory;
+use common\models\profit\Profit;
+use common\models\skindrops\Skindrops;
+use common\models\user\User;
 use WebSocket\Client;
 use Yii;
+use yii\base\BaseObject;
 
 /**
  * This is the model class for table "servers".
@@ -42,6 +46,11 @@ use Yii;
  * @property string $discord_token
  * @property int    $sort
  * @property string $updated_at
+ * @property string $monitoring_name
+ * @property string $monitoring_description
+ * @property string $rust_app_id
+ * @property int $min_map_size
+ * @property int $max_map_size
  */
 class Servers extends \common\components\base\ActiveRecord
 {
@@ -101,15 +110,20 @@ class Servers extends \common\components\base\ActiveRecord
             'wargm_id'          => Yii::t('common', 'WarGM ID'),
             'is_store'          => Yii::t('common', 'Магазин на сервере'),
             'updated_at'          => Yii::t('common', 'Последнее обновление'),
+            'monitoring_name'          => Yii::t('common', 'Название в мониторинге'),
+            'monitoring_description'          => Yii::t('common', 'Доп. название в мониторинге'),
+            'rust_app_id'          => Yii::t('common', 'ID в RustApp'),
+            'min_map_size'          => Yii::t('common', 'Минимальный размер карты'),
+            'max_map_size'          => Yii::t('common', 'Максимальный размер карты'),
         ];
     }
 
     public function rules()
     {
         return [
-            [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag'], 'required'],
-            [['description', 'name', 'ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag'], 'string'],
-            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id'], 'integer'],
+            [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description', 'min_map_size', 'max_map_size'], 'required'],
+            [['description', 'name', 'ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description'], 'string'],
+            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size'], 'integer'],
             [['wipe', 'next_wipe', 'global_wipe'], 'safe'],
         ];
     }
@@ -119,12 +133,37 @@ class Servers extends \common\components\base\ActiveRecord
         $h = floor (($minutes - $d * 1440) / 60);
         $m = $minutes - ($d * 1440) - ($h * 60);
 
+        $dName = Yii::t('common', 'день');
+        if (in_array($d, [2,3,4])) {
+            $dName = Yii::t('common', 'дня');
+        } elseif ($d > 4) {
+            $dName = Yii::t('common', 'дней');
+        }
+
+        $hName = Yii::t('common', 'час');
+        if (in_array($h, [2,3,4,22,23,24])) {
+            $hName = Yii::t('common', 'часа');
+        } elseif (in_array($h, [1,21])) {
+            $hName = Yii::t('common', 'час');
+        } elseif ($h > 4) {
+            $hName = Yii::t('common', 'часов');
+        }
+
+        $mName = Yii::t('common', 'минута');
+        if (in_array($h, [2,3,4,22,23,24])) {
+            $mName = Yii::t('common', 'минуты');
+        } elseif (in_array($h, [1,21])) {
+            $mName = Yii::t('common', 'минута');
+        } elseif ($h > 4) {
+            $mName = Yii::t('common', 'минут');
+        }
+
         if ($d > 0) {
-            return "{$d}д. {$h}ч. {$m}м.";
+            return "{$d} {$dName} {$h} {$hName}";
         } else if ($h > 0) {
-            return "{$h}ч. {$m}м.";
+            return "{$h} {$hName} {$m} {$mName}";
         } else {
-            return "{$m}м.";
+            return "{$m} {$mName}";
         }
     }
 
@@ -205,5 +244,181 @@ class Servers extends \common\components\base\ActiveRecord
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('Servers notify: ' . $ex->getMessage());
         }
+    }
+
+    public function monitoring() {
+        $result = [];
+        if ($this->players + $this->joined > 0) {
+            $result['percentPlayers']         = ceil(100 / $this->max * $this->players);
+            $result['percentJoined']          = ceil(100 / $this->max * $this->joined);
+            $result['percentQueued']          = ceil(100 / $this->max * $this->queued);
+            $result['percentAbsoluteCount']   = 100 / ($result['percentPlayers'] + $result['percentJoined']);
+            $result['percentPlayersAbsolute'] = ceil($result['percentAbsoluteCount'] * $result['percentPlayers']);
+            $result['percentJoinedAbsolute']  = ceil($result['percentAbsoluteCount'] * $result['percentJoined']);
+            $result['percentQueuedAbsolute']  = ceil($result['percentAbsoluteCount'] * $result['percentQueued']);
+        } else {
+            $result['percentPlayers']         = 0;
+            $result['percentJoined']          = 0;
+            $result['percentQueued']           = 0;
+            $result['percentAbsoluteCount']   = 0;
+            $result['percentPlayersAbsolute'] = 0;
+            $result['percentJoinedAbsolute']  = 0;
+            $result['percentQueuedAbsolute']  = 0;
+        }
+
+        return $result;
+    }
+
+    public function wipeTypeText() {
+        if ($this->wipe_type === 7) {
+            return Yii::t('common', 'Еженедельно');
+        }
+        if ($this->wipe_type === 14) {
+            return Yii::t('common', 'Каждые две недели');
+        }
+        if ($this->wipe_type === 30) {
+            return Yii::t('common', 'Раз в месяц');
+        }
+        return null;
+    }
+
+    public function wipeTime() {
+      return strtotime($this->wipe);
+    }
+
+    public function nextWipeTime() {
+      return strtotime($this->next_wipe);
+    }
+
+    public function globalWipeTime() {
+      return strtotime($this->global_wipe);
+    }
+
+    public function currentWipe() {
+      return (new \DateTime($this->wipe))->format('Y-m-d') . "/" . (new \DateTime($this->next_wipe))->format('Y-m-d');
+    }
+
+    public function getLink($key) {
+        if ($key === 'rules') {
+            return "/servers/{$this->tag}/rules";
+        }
+        if ($key === 'stats') {
+            return "/servers/{$this->tag}";
+        }
+        if ($key === 'maps') {
+            return "/maps/{$this->tag}";
+        }
+        if ($key === 'map') {
+            return "https://rustmaps.com/map/{$this->map}";
+        }
+        return null;
+    }
+
+    /**
+     * @param int $i
+     *
+     * @return User|null
+     * @throws \Exception
+     */
+    public function getWinner($i = 0, $all = false) {
+        if ($i > 4) {
+            return null;
+        }
+
+        if (!$all) {
+            $usersDroped = Skindrops::find()
+                                ->select('DISTINCT(steam_id)')
+                                ->andWhere(['>', 'created_at', date('Y-m-d 00:00:01')])
+                                ->createCommand()
+                                ->queryColumn();
+        } else {
+            $usersDroped = [];
+        }
+
+        $prefix = strtolower(Yii::$app->settings->get('skindrops_prefix'));
+        /** @var User $_user */
+        $_user = User::find()
+                    ->andWhere(['>=', 'last_visit_server_at', date('Y-m-d H:i:s', time() - 5 * 60)])
+                    ->andWhere(['server_id' => $this->id])
+                    ->andWhere(['status' => User::STATUS_ACTIVE])
+                    ->andWhere(['NOT IN', 'steam_id', $usersDroped])
+                    ->andWhere(['LIKE', 'username', '%' . $prefix . '%', false])
+                    ->orderBy('rand()')
+                    ->one();
+
+        if (empty($_user)) {
+            $_user = User::find()
+                         ->andWhere(['>=', 'last_visit_server_at', date('Y-m-d H:i:s', time() - 5 * 60)])
+                         ->andWhere(['server_id' => $this->id])
+                         ->andWhere(['status' => User::STATUS_ACTIVE])
+                         ->andWhere(['LIKE', 'username', '%' . $prefix . '%', false])
+                         ->orderBy('rand()')
+                         ->one();
+        }
+
+        if (empty($_user)) {
+            return null;
+        }
+
+        $user = User::findBySteamId($_user->steam_id, true);
+
+        if (strpos(mb_strtolower($user->username), $prefix) === false) {
+            return $this->getWinner($i + 1, $all);
+        }
+
+        return $user;
+    }
+
+    public function goDraw() {
+        $winner = $this->getWinner();
+        if (empty($winner)) {
+            $winner = $this->getWinner(0, true);
+        }
+        if (empty($winner)) {
+            return;
+        }
+
+        $skin = null;
+        $items = Yii::$app->rustTm->items();
+        shuffle($items);
+        foreach ($items as $item) {
+            $minSum = Yii::$app->settings->get('skindrops_minSum');
+            $maxSum = Yii::$app->settings->get('skindrops_maxSum');
+            if ($item['price'] < $minSum) {
+                continue;
+            }
+            if ($item['price'] > $maxSum) {
+                continue;
+            }
+            $skin = $item;
+            break;
+        }
+
+        $price = $skin['price'];
+        $name = $skin['name'];
+        $image = $skin['image'];
+        $image300 = $skin['image300'];
+
+        $model = new Skindrops();
+        $model->name = $name;
+        $model->steam_id = $winner->steam_id;
+        $model->player = $winner->username;
+        $model->price = ceil($price);
+        $model->real_price = ceil($price);
+        $model->image = $image;
+        $model->created_at = date('Y-m-d H:i:s');
+        $model->save(false);
+
+        $model = new Profit();
+        $model->user_balance_id = $winner->getSkinsBalance()->id;
+        $model->amount = ceil($price);
+        $model->comment = Yii::t('common', 'Выйгрыш скина');
+        $model->status = 1;
+        $model->type = Profit::TYPE_WINNER_SKINS;
+        $model->created_at = date('Y-m-d H:i:s');
+        $model->save(false);
+        $winner->getSkinsBalance()->recalculateBalance();
+
+        $winner->sendChatWinnerMessage($price, $name, $image300, $this);
     }
 }

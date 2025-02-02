@@ -10,98 +10,102 @@ use yii\widgets\Pjax;
 use yii\bootstrap5\Html;
 
 ?>
+<?php Pjax::begin(
+    [
+        'id'              => 'buy-container-pjax',
+        'enablePushState' => false
+    ]
+); ?>
+<?php $form = ActiveForm::begin(
+    [
+        'enableClientValidation' => false,
+        'enableAjaxValidation'   => false,
+        'id'                     => 'buy-container',
+        'options'                => [
+            'data-pjax' => 1,
+        ],
+    ]
+); ?>
+<div class="grid gap-y-24 px-24 mb-24">
+    <figure class="mb-32 flex items-center justify-center w-full">
+        <img src="<?= $model->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $model->name) ?>" class="w-300 h-300">
+    </figure>
 
-<div class="modal_form_product">
-    <div class="modal_form_product_image">
-        <img src="<?= $model->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $model->name) ?>" width="150px">
+    <div class="access-card__list mb-10">
+        <?= $form->field($model, 'drop_id',
+                                                          [
+                                                              'errorOptions'   => [
+                                                                  'encode' => false,
+                                                                  'class'  => 'help-block',
+                                                              ],
+                                                          ])
+                                                  ->radioList($model->selectDrop, [
+                                                      'class'  => 'access-card__list mb-10',
+                                                      'item' => function ($index, \common\models\box\SelectDrop $label, $name, $checked, $value) use ($model) {
+                                                          $id = 'option_' . $label->drop->id . '_' . $index;
+                                                          $return = Html::radio($name, $label->drop_id == $model->drop_id, [
+                                                              'id'    => $id,
+                                                              'value' => $label->drop->id,
+                                                              'class' => 'modal_form_product_select_item_radio access-card__radio',
+                                                          ]);
+                                                          $img = Html::img($label->drop->imageOrig->getImagePubUrl(), [
+                                                              'class' => 'access-card__image',
+                                                          ]);
+                                                          $text = Html::tag('span', $label->drop->getRealPrice());
+                                                          $textWrap = Html::tag('span', $text . ' <span class="icons icons_16px icons_16px_coin"></span>', [
+                                                              'class' => 'access-card__title',
+                                                          ]);
+                                                          $wrapClass = ($label->drop_id == $model->drop_id) ? 'access-card access-card_active' : 'access-card';
+                                                          $return .= Html::label($img . $textWrap, $id, [
+                                                              'class' => $wrapClass,
+                                                          ]);
+                                                          $wrap = Html::tag('div', $return, [
+                                                              'class' => 'access-card__wrap',
+                                                              'data-bs-toggle' => 'tooltip',
+                                                              'data-bs-placement' => 'bottom',
+                                                              'data-bs-title' => Yii::t('database', $label->drop->name),
+                                                          ]);
+                                                          return $wrap;
+                                                      },
+                                                  ])
+                                                  ->label(false); ?>
     </div>
+
+    <div class="relative z-1 grid gap-y-16">
+        <h2 class="mb-8">
+            <?=$model->drop->getRealPrice()?>
+            <span class="icons icons_16px icons_16px_coin"></span>
+        </h2>
+        <p class="p3 text-text-teritiary">
+            <?=Yii::t('database', $model->description)?>
+        </p>
+        <p class="p2 p-12 bg-background-teritiary rounded-8 flex items-center gap-x-12">
+            <span class="icons icons_24px icons_24px_info"></span>
+            <span>
+                <?php if (!Yii::$app->params['basketSite']): ?>
+                    <?=Yii::t('common', 'Чтобы получить, введите /store в чат')?>
+                <?php else: ?>
+                    <?=Yii::t('common', 'Чтобы получить, перейдите на эту страницу')?> <a href="/store" target="_blank"><?=Yii::$app->settings->get('site_domain')?>/store</a>
+                <?php endif; ?>
+            </span>
+        </p>
+    </div>
+</div>
+<footer class="px-24 pb-24">
+    <?= Alert::widget() ?>
     <?php if (Yii::$app->user->isGuest): ?>
-        <div class="market_entity_card_alert">
-            <div class="market_entity_card_alert_title"><?=Yii::t('common', 'ВЫ НЕ АВТОРИЗОВАНЫ!')?></div>
-            <div class="market_entity_card_alert_text"><?=Yii::t('common', 'Для покупки необходимо пройти авторизацию')?></div>
-        </div>
-        <div class="market_entity_card_actions">
             <a href="/auth/oauth?authclient=steam" class="market_entity_card_actions_btn btn_steam" title="Авторизация через Steam">
                 <i class="fab fa-steam"></i> <span><?=Yii::t('common', 'Войти через Steam')?></span>
             </a>
-        </div>
     <?php else: ?>
-        <div class="modal_form_product_description"><?=Yii::t('database', $model->description)?></div>
-        <?php Pjax::begin(
-            [
-                'id'              => 'buy-container-pjax',
-                'enablePushState' => false
-            ]
-        ); ?>
-        <?= Alert::widget() ?>
-        <?php $form = ActiveForm::begin(
-            [
-                'enableClientValidation' => false,
-                'enableAjaxValidation'   => false,
-                'id'                     => 'buy-container',
-                'options'                => [
-                    'data-pjax' => 1,
-                ],
-            ]
-        ); ?>
-        <div class="modal_form_product_select">
-            <?= $form->field($model, 'drop_id',
-                             [
-                                 'errorOptions'   => [
-                                     'encode' => false,
-                                     'class'  => 'help-block',
-                                 ],
-                             ])
-                     ->radioList($model->selectDrop, [
-                         'item' => function ($index, \common\models\box\SelectDrop $label, $name, $checked, $value) use ($model) {
-                             $id = 'option_' . $label->drop->id . '_' . $index;
-                             $return = Html::radio($name, $label->drop_id == $model->drop_id, [
-                                 'id'    => $id,
-                                 'value' => $label->drop->id,
-                                 'class' => 'modal_form_product_select_item_radio',
-                             ]);
-                             $img = Html::img($label->drop->imageOrig->getImagePubUrl(), [
-                                 'class' => 'modal_form_product_select_item_img',
-                                 'title' => $label->drop->name,
-                             ]);
-                             $imgWrap = Html::tag('div', $img, [
-                                 'class' => 'modal_form_product_select_item_img_wrap',
-                             ]);
-                             $price = Html::tag('div', $label->drop->getRealPrice() . " RUB", [
-                                 'class' => 'modal_form_product_select_item_price',
-                             ]);
-                             $return .= Html::label($imgWrap, $id, [
-                                 'class' => 'modal_form_product_select_item'
-                             ]);
-                             return $return;
-                         },
-                     ])
-                     ->label(false); ?>
-        </div>
-        <table class="table">
-            <tr>
-                <td>Товар</td>
-                <td><?=Yii::t('database', $model->drop->name)?></td>
-            </tr>
-            <tr>
-                <td><?=Yii::t('common', 'Стоимость')?></td>
-                <td><?=$model->drop->getRealPrice()?> RUB</td>
-            </tr>
-        </table>
-        <div class="productModalGiveText">
-            <?php if (!Yii::$app->params['basketSite']): ?>
-                <?=Yii::t('common', 'Чтобы получить, введите /store в чат')?>
-            <?php else: ?>
-                <?=Yii::t('common', 'Чтобы получить, перейдите на эту страницу')?> <a href="/store" target="_blank"><?=Yii::$app->params['domain']?>/store</a>
-            <?php endif; ?>
-        </div>
         <input type="hidden" class="modal_form_product_buy" name="buy" value="1"/>
         <div class="modal_form_product_buttons">
-            <button type="button" class="btn cancel" data-bs-dismiss="modal"><?=Yii::t('common', 'Закрыть')?></button>
-            <button type="submit" class="btn" id="buy_product"><?=Yii::t('common', 'Оплатить')?></button>
+            <button type="submit" id="buy_product" class="button-primary w-full">
+                <span class="button__text"><?=Yii::t('common', 'Оплатить')?></span>
+            </button>
         </div>
-        <?php ActiveForm::end(); ?>
-        <?php Pjax::end(); ?>
     <?php endif; ?>
-</div>
-<div class="page_preloader" id="product-loader"></div>
+</footer>
+<?php ActiveForm::end(); ?>
+<?php Pjax::end(); ?>
+<div class="modal_preloader" id="product-loader"></div>

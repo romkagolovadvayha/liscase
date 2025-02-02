@@ -1,0 +1,51 @@
+.grid-view, .list-view {
+  .pagination {
+    @extend .text-text-main;
+    background-color: var(--background-secondary);
+    box-sizing: border-box;
+    margin-bottom: 12px;
+    padding: 10px 20px;
+    border-radius: var(--status-radius);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    > li {
+      padding: 0 5px;
+      > a {
+        @extend .text-text-main;
+        height: 32px;
+        min-width: 32px;
+        padding: 0;
+        text-align: center;
+        line-height: 32px;
+        display: block;
+        border-radius: var(--status-radius);
+      }
+    }
+    .active {
+      > a {
+        @extend .p3, .py-2, .px-8, .text-status-text-color, .bg-status-background-opacity;
+        @extend .text-text-main;
+        height: 32px;
+        min-width: 32px;
+        padding: 0;
+        text-align: center;
+        line-height: 32px;
+        display: block;
+        font-weight: 500;
+        text-transform: uppercase;
+        cursor: default;
+      }
+    }
+    .prev {
+      margin-right: auto;
+    }
+    .next {
+      margin-left: auto;
+    }
+  }
+  .page-link {
+    background: transparent;
+    border-color: transparent;
+  }
+}

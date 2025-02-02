@@ -9,48 +9,48 @@ use frontend\widgets\Alert;
 use yii\widgets\Pjax;
 
 ?>
+<div class="grid gap-y-24 px-24 mb-24">
+    <figure class="mb-5 flex items-center justify-center w-full relative">
+        <img src="/images/design/modal/light.png" alt="" class="absolute">
+        <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $drop->name) ?>" class="w-180 h-180 relative z-1">
+    </figure>
 
-
-<div class="modal_form_product">
-    <div class="modal_form_product_image">
-        <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $drop->name) ?>" width="150px">
+    <div class="relative z-1 grid gap-y-16">
+        <h2 class="mb-8">
+            <?=$drop->getRealPrice()?>
+            <span class="icons icons_16px icons_16px_coin"></span>
+        </h2>
+        <p class="p3 text-text-teritiary">
+            <?=Yii::t('database', $drop->description)?>
+        </p>
+        <p class="p2 text-text-secondary"><?=Yii::t('common', 'Количество')?>: х<?=$drop->count?></p>
+        <p class="p2 p-12 bg-background-teritiary rounded-8 flex items-center gap-x-12">
+            <span class="icons icons_24px icons_24px_info"></span>
+            <span>
+                <?php if (!Yii::$app->params['basketSite']): ?>
+                    <?=Yii::t('common', 'Чтобы получить, введите /store в чат')?>
+                <?php else: ?>
+                    <?=Yii::t('common', 'Чтобы получить, перейдите на эту страницу')?> <a href="/store" target="_blank"><?=Yii::$app->settings->get('site_domain')?>/store</a>
+                <?php endif; ?>
+            </span>
+<!--            <span>Чтобы получить, введите <span class="text-link-color-default command_to_bot cursor-pointer" data-bs-toggle="tooltip" data-bs-title="Скопировать команду">/store</span> в чат</span>-->
+        </p>
     </div>
+</div>
+<footer class="px-24 pb-24">
     <?php if (Yii::$app->user->isGuest): ?>
-        <div class="market_entity_card_alert">
-            <div class="market_entity_card_alert_title"><?=Yii::t('common', 'ВЫ НЕ АВТОРИЗОВАНЫ!')?></div>
-            <div class="market_entity_card_alert_text"><?=Yii::t('common', 'Для покупки необходимо пройти авторизацию')?></div>
-        </div>
-        <div class="market_entity_card_actions">
-            <a href="/auth/oauth?authclient=steam" class="market_entity_card_actions_btn btn_steam" title="Авторизация через Steam">
+        <button class="button-danger w-full">
+            <a href="/auth/oauth?authclient=steam" class="button__text" title="Авторизация через Steam">
                 <i class="fab fa-steam"></i> <span><?=Yii::t('common', 'Войти через Steam')?></span>
             </a>
-        </div>
+        </button>
     <?php else: ?>
-        <div class="modal_form_product_description"><?=Yii::t('database', $drop->description)?></div>
-        <table class="table">
-            <tr>
-                <td><?=Yii::t('common', 'Количество')?></td>
-                <td>x<?=$drop->count?></td>
-            </tr>
-            <tr>
-                <td><?=Yii::t('common', 'Стоимость')?></td>
-                <td><?=$drop->getRealPrice()?> RUB</td>
-            </tr>
-        </table>
-        <div class="productModalGiveText">
-            <?php if (!Yii::$app->params['basketSite']): ?>
-                <?=Yii::t('common', 'Чтобы получить, введите /store в чат')?>
-            <?php else: ?>
-                <?=Yii::t('common', 'Чтобы получить, перейдите на эту страницу')?> <a href="/store" target="_blank"><?=Yii::$app->params['domain']?>/store</a>
-            <?php endif; ?>
-        </div>
         <?php Pjax::begin(
             [
                 'id'              => 'buy-container-pjax',
                 'enablePushState' => false
             ]
         ); ?>
-        <?= Alert::widget() ?>
         <?php $form = ActiveForm::begin(
             [
                 'enableClientValidation' => false,
@@ -61,13 +61,15 @@ use yii\widgets\Pjax;
                 ],
             ]
         ); ?>
+        <?= Alert::widget() ?>
         <input type="hidden" name="buy" value="1"/>
         <div class="modal_form_product_buttons">
-            <button type="button" class="btn cancel" data-bs-dismiss="modal"><?=Yii::t('common', 'Закрыть')?></button>
-            <button type="submit" class="btn" id="buy_product"><?=Yii::t('common', 'Оплатить')?></button>
+            <button class="button-primary w-full" id="buy_product" type="submit">
+                <span class="button__text"><?=Yii::t('common', 'Оплатить')?></span>
+            </button>
         </div>
         <?php ActiveForm::end(); ?>
         <?php Pjax::end(); ?>
     <?php endif; ?>
-</div>
-<div class="page_preloader" id="product-loader"></div>
+</footer>
+<div class="modal_preloader" id="product-loader"></div>
