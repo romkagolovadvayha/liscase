@@ -5,10 +5,12 @@ namespace common\models\servers;
 use common\models\blog\BlogCategory;
 use common\models\profit\Profit;
 use common\models\skindrops\Skindrops;
+use common\models\statistics\Statistics;
 use common\models\user\User;
 use WebSocket\Client;
 use Yii;
 use yii\base\BaseObject;
+use yii\helpers\ArrayHelper;
 
 /**
  * This is the model class for table "servers".
@@ -192,43 +194,19 @@ class Servers extends \common\components\base\ActiveRecord
             /** @var Servers[] $servers */
             $servers = \common\models\servers\Servers::find()->orderBy(['sort' => SORT_ASC])->all();
             $client = new Client(Yii::$app->params['ws']);
-            $total = \common\models\servers\Servers::find()->andWhere(
-                ['status' => Servers::STATUS_ACTIVE]
-            )->sum('players');
+            $projectStats = Statistics::projectStats();
+            $total = $projectStats['online'];
 
             $serversData = [];
             foreach ($servers as $server) {
-                if ($server->players+$server->joined > 0) {
-                    $percentPlayers = ceil(100/$server->max*$server->players);
-                    $percentJoined = ceil(100/$server->max*$server->joined);
-                    $percentQueued = ceil(100/$server->max*$server->queued);
-                    $percentAbsoluteCount = 100/($percentPlayers+$percentJoined);
-                    $percentPlayersAbsolute = ceil($percentAbsoluteCount * $percentPlayers);
-                    $percentJoinedAbsolute = ceil($percentAbsoluteCount * $percentJoined);
-                    $percentQueuedAbsolute = ceil($percentAbsoluteCount * $percentQueued);
-                } else {
-                    $percentPlayers = 0;
-                    $percentJoined = 0;
-                    $percentQueued = 0;
-                    $percentAbsoluteCount = 0;
-                    $percentPlayersAbsolute = 0;
-                    $percentJoinedAbsolute = 0;
-                    $percentQueuedAbsolute = 0;
-                }
                 $serversData[] = [
                     'server_id' => $server->id,
                     'status' => $server->status,
                     'players' => $server->players,
                     'joined' => $server->joined,
                     'queued' => $server->queued,
-                    'percentPlayers' => $percentPlayers,
-                    'percentJoined' => $percentJoined,
-                    'percentQueued' => $percentQueued,
-                    'percentAbsoluteCount' => $percentAbsoluteCount,
-                    'percentPlayersAbsolute' => $percentPlayersAbsolute,
-                    'percentJoinedAbsolute' => $percentJoinedAbsolute,
-                    'percentQueuedAbsolute' => $percentQueuedAbsolute,
                 ];
+                $serversData = ArrayHelper::merge($serversData, $server->monitoring());
             }
 
             $client->send(
