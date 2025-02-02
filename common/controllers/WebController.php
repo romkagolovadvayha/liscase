@@ -2,6 +2,7 @@
 
 namespace common\controllers;
 
+use common\components\helpers\Role;
 use common\models\user\User;
 use Yii;
 use yii\helpers\Html;
@@ -22,6 +23,13 @@ class WebController extends Controller
         if (!Yii::$app->user->isGuest && $user->status === User::STATUS_BLOCKED) {
             Yii::$app->response->redirect(['/blocked'])->send();
             return false; // Останавливаем выполнение текущего действия
+        }
+
+        if (Yii::$app->settings->get('site_enabled')) {
+            if (Yii::$app->user->isGuest || !Yii::$app->user->identity->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+                Yii::$app->response->redirect(['/worked'])->send();
+                return false; // Останавливаем выполнение текущего действия
+            }
         }
 
         $this->_setRefCookies();

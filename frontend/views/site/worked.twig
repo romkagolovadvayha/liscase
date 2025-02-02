@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Технические работы</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
+        <link href="/uploads/site/colors/colors.css" rel="stylesheet"/>
+        <style>
+            body {
+                background: var(--background-secondary);
+                color: var(--text-main);
+            }
+            .roboto-condensed-500 {
+                font-family: "Roboto Condensed", serif;
+                font-optical-sizing: auto;
+                font-weight: 500;
+                font-style: normal;
+            }
+            .roboto-condensed-700 {
+                font-family: "Roboto Condensed", serif;
+                font-optical-sizing: auto;
+                font-weight: 700;
+                font-style: normal;
+            }
+            .roboto-500 {
+                font-family: "Roboto", serif;
+                font-optical-sizing: auto;
+                font-weight: 500;
+                font-style: normal;
+                font-variation-settings:
+                        "wdth" 100;
+            }
+            .roboto-700 {
+                font-family: "Roboto", serif;
+                font-optical-sizing: auto;
+                font-weight: 700;
+                font-style: normal;
+                font-variation-settings:
+                        "wdth" 100;
+            }
+            .text {
+                margin: 0 auto;
+                padding-top: 100px;
+                text-align: center;
+            }
+            .text_content {
+                font-size: 40px;
+                font-weight: 400;
+                line-height: 48px;
+                text-align: center;
+                margin-top: 40px;
+            }
+            .text_content_small {
+                font-size: 24px;
+                font-weight: 400;
+                line-height: 28px;
+                text-align: center;
+                margin-top: 10px;
+                color: var(--primary-colors-secondary);
+            }
+            .text_icon {
+                display: block;
+            }
+            .text_icon img {
+                display: block;
+                margin: 0 auto;
+                max-width: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="text">
+            <div class="text_icon"><img src="/images/technical-work.png" /></div>
+            <div class="text_content roboto-condensed-700">{{ t('common', 'Идут технические работы, пожалуйста подождите...') }}</div>
+            <div class="text_content_small roboto-condensed-500">{{ t('common', 'Примерное время ожидания 15 минут') }}</div>
+        </div>
+    </body>
+</html>

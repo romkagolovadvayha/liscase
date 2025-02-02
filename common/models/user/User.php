@@ -957,8 +957,8 @@ class User extends ActiveRecord implements IdentityInterface
         $price = round($price, 2);
         $priceEn = round($price / 85, 2);
 
-        $chatAlertTextRu = "<color=#aaf16e>{0}</color> выиграл скин <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} RUB</color>)\nХочешь тоже получать скины?\nПодробности в ";
-        $chatAlertTextEn = "<color=#aaf16e>{0}</color> won a skin <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} $</color>)\nDo you want to receive skins too?\nDetails in ";
+        $chatAlertTextRu = '<color=#aaf16e>{0}</color> выиграл скин <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} RUB</color>)\nХочешь тоже получать скины?\nПодробности в ';
+        $chatAlertTextEn = '<color=#aaf16e>{0}</color> won a skin <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} $</color>)\nDo you want to receive skins too?\nDetails in ';
         if (!empty(Yii::$app->settings->get('social_discord'))) {
             $linkText = str_replace('https://', '', Yii::$app->settings->get('social_discord'));
             $chatAlertTextRu .= "Discord: <color=#feeda1>" . $linkText . "</color>";
@@ -968,8 +968,8 @@ class User extends ActiveRecord implements IdentityInterface
             $chatAlertTextRu .= "VK: <color=#feeda1>" . $linkText . "</color>";
             $chatAlertTextEn .= "Site: <color=#feeda1>en." . Yii::$app->settings->get('site_domain') . "/skindrops</color>";
         }
-        $chatAlertPlayerTextRu = "Поздравляем!\nВы выиграли скин <color=#aaf16e>{0}</color> (<color=#aaf16e>{1} RUB</color>)\nСредства начислены вам на счет";
-        $chatAlertPlayerTextEn = "Congratulations!\nYou have won a skin <color=#aaf16e>{0}</color> (<color=#aaf16e>{1} $</color>)\nThe funds have been credited to your account";
+        $chatAlertPlayerTextRu = 'Поздравляем!\nСредства начислены вам на счет';
+        $chatAlertPlayerTextEn = 'Congratulations!\nThe funds have been credited to your account';
 
         $chatAlertTextRu = str_replace('{0}', $this->username, $chatAlertTextRu);
         $chatAlertTextRu = str_replace('{1}', $skinName, $chatAlertTextRu);
@@ -1024,7 +1024,7 @@ class User extends ActiveRecord implements IdentityInterface
         }
 
         $sound = 'assets/prefabs/misc/easter/painted eggs/effects/eggpickup.prefab';
-        $command = "helper message \"{$this->steam_id}\" \"{$chatAlertPlayerTextRu}\" \"{$chatAlertPlayerTextEn}\"";
+        $command = "helper message \"{$chatAlertPlayerTextRu}\" \"{$chatAlertPlayerTextEn}\" \"\" \"{$this->steam_id}\"";
         $rconTask = new RconTasks();
         $rconTask->status = RconTasks::STATUS_WAIT;
         $rconTask->command = $command;
