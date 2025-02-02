@@ -52,7 +52,7 @@
   }
 
   &__conditions {
-    @extend .flex, .items-flex-start, .gap-x-12, .user-select-none, .cursor-pointer;
+    @extend .flex, .items-flex-start, .gap-x-12, .user-select-none, .cursor-pointer, .flex-wrap;
 
     & [type="checkbox"] {
       & + span {
@@ -75,7 +75,11 @@
     }
   }
 }
-
+.payment-form {
+  .mb-3 {
+    margin-bottom: 0 !important;
+  }
+}
 .pay-card {
   &__list {
     @extend .grid, .justify-flex-start, .gap-x-8, .gap-y-8, .w-full;
@@ -94,12 +98,14 @@
       .flex-column,
       .justify-center,
       .items-center;
+    height: 46px;
     border-radius: var(--card-radius);
     transition:
       border-color 0.25s ease-in-out,
       transform 0.25s ease-in-out;
     min-width: 95px;
-
+    padding-top: 5px;
+    padding-bottom: 3px;
     &:before {
       @extend .absolute, .transition-all, .border-solid, .border-1, .border-transparent;
       content: "";
@@ -119,12 +125,15 @@
       @extend .border-border-color-hover;
     }
 
-    &:active,
-    &_active {
-      @extend .transform-click;
+    &-radio {
+      &:checked {
+        & + .pay-card__button {
+          @extend .transform-click;
 
-      &:before {
-        opacity: 100;
+          &:before {
+            opacity: 100;
+          }
+        }
       }
     }
   }

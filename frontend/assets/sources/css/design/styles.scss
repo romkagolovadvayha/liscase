@@ -175,6 +175,7 @@ $modal-dialog-margin-y-sm-up: 0;
 @import "_pagination";
 @import "_form-group";
 @import "_select2";
+@import "_clockdown";
 
 @import "page/servers";
 @import "page/rules";
@@ -184,6 +185,7 @@ $modal-dialog-margin-y-sm-up: 0;
 @import "page/maps";
 @import "page/stats";
 @import "page/achievements";
+@import "page/referral";
 
 .user-select-none {
   user-select: none;
@@ -497,5 +499,15 @@ ul {
   }
   &:focus {
     @extend .border-border-color-active;
+  }
+}
+.line_sum {
+  align-items: center;
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+  color: var(--online);
+  &_munus {
+    color: var(--color-rules-punishment);
   }
 }

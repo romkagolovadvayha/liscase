@@ -75,6 +75,16 @@
                     'options': {'class': 'menu__item'},
                 },
                 {
+                    'label': t('common', 'Блог'),
+                    'url': '/posts',
+                    'iconClass': 'icons icons_32px icons_32px_ban',
+                    'activeClass': 'menu__item_active',
+                    'spanClass': 'main-menu-text',
+                    'active': PAGE == 'blog',
+                    'visibility': SETTINGS.get('section_blog'),
+                    'options': {'class': 'menu__item'},
+                },
+                {
                     'label': t('common', 'Наши сервера'),
                     'url': '/servers',
                     'iconClass': 'icons icons_32px icons_32px_servers',
@@ -158,6 +168,16 @@
                     'activeClass': 'menu__item_active',
                     'spanClass': 'main-menu-text',
                     'visibility': false,
+                    'options': {'class': 'menu__item'},
+                },
+                {
+                    'label': t('common', 'Реферальная система'),
+                    'url': '/referral',
+                    'iconClass': 'icons icons_32px icons_32px_promo',
+                    'activeClass': 'menu__item_active',
+                    'spanClass': 'main-menu-text',
+                    'active': PAGE == 'referral',
+                    'visibility': SETTINGS.get('section_referral'),
                     'options': {'class': 'menu__item'},
                 },
                 {

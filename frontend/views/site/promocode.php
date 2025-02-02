@@ -42,7 +42,7 @@ $promocodeForm = new \frontend\forms\promocode\PromocodeForm();
     <footer class="px-24 pb-24">
         <?= Alert::widget() ?>
         <button type="submit" id="buy_product" class="button-primary w-full">
-            <span class="button__text">Применить</span>
+            <span class="button__text"><?=Yii::t('common', 'Применить')?></span>
         </button>
     </footer>
 <?php ActiveForm::end(); ?>

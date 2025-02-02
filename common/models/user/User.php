@@ -2,8 +2,10 @@
 
 namespace common\models\user;
 
+use common\components\helpers\DateHelper;
 use common\components\helpers\Role;
 use common\components\oauth\Steam;
+use common\components\queue\telegram\SendMessageJob;
 use common\components\web\Cookie;
 use common\models\auth\AuthAssignment;
 use common\models\invoice\Invoice;
@@ -11,6 +13,7 @@ use common\models\invoice\Deposit;
 use common\models\profit\Profit;
 use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
+use common\models\skindrops\Skindrops;
 use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
 use yii\base\BaseObject;
@@ -495,6 +498,14 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
+     * @return UserBalance
+     */
+    public function getSkinsBalance()
+    {
+        return $this->_getUserBalanceByType(UserBalance::TYPE_SKINS);
+    }
+
+    /**
      * @return string
      */
     public function getCurrency()
@@ -661,53 +672,6 @@ class User extends ActiveRecord implements IdentityInterface
         }
 
         return static::findOne(['jwt' => $jwt]);
-    }
-
-    /**
-     * @param User $user
-     */
-    public static function parentBonus($user)
-    {
-        /** @var Servers[] $servers */
-        $servers = Servers::find()
-                          ->cache(30)
-                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
-                          ->orderBy(['sort' => SORT_ASC])
-                          ->all();
-
-        $onlineTime = 0;
-        foreach ($servers as $server) {
-            $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
-            $player = Statistics::find()
-                                ->cache(180)
-                                ->andWhere(['steam_id' => $user->steam_id])
-                                ->andWhere(['server_tag' => $server->tag])
-                                ->andWhere(['wipe' => $wipeDate])
-                                ->indexBy('key')
-                                ->all();
-            if (empty($player)) {
-                continue;
-            }
-            $onlineTime += Statistics::getParam($player, 'playtime');
-        }
-
-        if ($onlineTime < 60) {
-            return;
-        }
-
-        $user->userProfile->parent_bonus = 1;
-        $user->userProfile->save(false);
-
-        $profit = new Profit();
-        $profit->status = 1;
-        $profit->type = Profit::TYPE_REFERRAL;
-        $profit->amount = 30;
-        $profit->user_balance_id = $user->getParentUser()->getPersonalBalance()->id;
-        $profit->comment = Yii::t('common', 'Бонус за приглашенного пользователя "{PARAMS_USER_NAME}"', [
-            'PARAMS_USER_NAME' => $user->username
-        ],'ru-RU');
-        $profit->created_at = date('Y-m-d H:i:s');
-        $profit->save(false);
     }
 
     /**
@@ -947,5 +911,148 @@ class User extends ActiveRecord implements IdentityInterface
 
         Yii::$app->cache->set($cacheKey, $items, 7*24*60*60);
         return $items;
+    }
+
+    public function getReferralBonus() {
+        $referralBonusPersonal = $this->userProfile->referral_bonus;
+        $referralBonus = Yii::$app->settings->get('referral_percent');
+        if ($referralBonusPersonal > $referralBonus) {
+            return $referralBonusPersonal;
+        }
+        return $referralBonus;
+    }
+
+    public function getReferralBalance() {
+        $usersTree = UserTree::find()
+                             ->andWhere(['parent_user_id' => $this->id])
+                             ->andWhere(['NOT IN', 'user_id', [$this->id]])
+                             ->orderBy(['created_at' => SORT_DESC])
+                             ->limit(100)
+                             ->all();
+        $total = 0;
+        /** @var User[] $users */
+        foreach ($usersTree as $userTree) {
+            /** @var Deposit $deposit */
+            foreach ($userTree->user->deposits as $deposit) {
+                if ($deposit->status !== Deposit::STATUS_SUCCESS) {
+                    continue;
+                }
+                $total += $deposit->amount;
+            }
+        }
+        $payoutSum = \common\models\user\UserPayoutReferral::find()
+                                                           ->andWhere(['user_id' => $this->id])
+                                                           ->sum('amount') ?? 0;
+        return $total * ($this->userProfile->referral_bonus/100) - $payoutSum;
+    }
+
+    /**
+     * @param $price
+     * @param $skinName
+     * @param Servers $server
+     *
+     * @return void
+     */
+    public function sendChatWinnerMessage($price, $skinName, $image300, $server) {
+        $price = round($price, 2);
+        $priceEn = round($price / 85, 2);
+
+        $chatAlertTextRu = "<color=#aaf16e>{0}</color> выиграл скин <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} RUB</color>)\nХочешь тоже получать скины?\nПодробности в ";
+        $chatAlertTextEn = "<color=#aaf16e>{0}</color> won a skin <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} $</color>)\nDo you want to receive skins too?\nDetails in ";
+        if (!empty(Yii::$app->settings->get('social_discord'))) {
+            $linkText = str_replace('https://', '', Yii::$app->settings->get('social_discord'));
+            $chatAlertTextRu .= "Discord: <color=#feeda1>" . $linkText . "</color>";
+            $chatAlertTextEn .= "Discord: <color=#feeda1>" . $linkText . "</color>";
+        } elseif (!empty(Yii::$app->settings->get('social_vk'))) {
+            $linkText = str_replace('https://', '', Yii::$app->settings->get('social_vk'));
+            $chatAlertTextRu .= "VK: <color=#feeda1>" . $linkText . "</color>";
+            $chatAlertTextEn .= "Site: <color=#feeda1>en." . Yii::$app->settings->get('site_domain') . "/skindrops</color>";
+        }
+        $chatAlertPlayerTextRu = "Поздравляем!\nВы выиграли скин <color=#aaf16e>{0}</color> (<color=#aaf16e>{1} RUB</color>)\nСредства начислены вам на счет";
+        $chatAlertPlayerTextEn = "Congratulations!\nYou have won a skin <color=#aaf16e>{0}</color> (<color=#aaf16e>{1} $</color>)\nThe funds have been credited to your account";
+
+        $chatAlertTextRu = str_replace('{0}', $this->username, $chatAlertTextRu);
+        $chatAlertTextRu = str_replace('{1}', $skinName, $chatAlertTextRu);
+        $chatAlertTextRu = str_replace('{2}', $price, $chatAlertTextRu);
+
+        $chatAlertTextEn = str_replace('{0}', $this->username, $chatAlertTextEn);
+        $chatAlertTextEn = str_replace('{1}', $skinName, $chatAlertTextEn);
+        $chatAlertTextEn = str_replace('{2}', $priceEn, $chatAlertTextEn);
+
+        $chatAlertPlayerTextRu = str_replace('{0}', $skinName, $chatAlertPlayerTextRu);
+        $chatAlertPlayerTextRu = str_replace('{1}',$price, $chatAlertPlayerTextRu);
+
+        $chatAlertPlayerTextEn = str_replace('{0}', $skinName, $chatAlertPlayerTextEn);
+        $chatAlertPlayerTextEn = str_replace('{1}',$priceEn, $chatAlertPlayerTextEn);
+
+        if (!empty(Yii::$app->settings->get('skindrops_discordHook'))) {
+            $title = '';
+            $description = "Игрок **[{$this->username}](http://steamcommunity.com/profiles/{$this->steam_id})** выиграл скин **{$skinName}**\nЦена в Steam: **{$price} RUB**";
+
+            $countSkins = Skindrops::find()
+                ->andWhere(['steam_id' => $this->steam_id])
+                ->count();
+
+            $fields = [
+                [
+                    'name' => " ",
+                    'value' => " ",
+                    'inline' => false,
+                ],
+                [
+                    'name' => " ",
+                    'value' => " ",
+                    'inline' => false,
+                ],
+                [
+                    'name' => $countSkins,
+                    'value' => 'Игрок выиграл скинов',
+                    'inline' => true,
+                ],
+            ];
+            Yii::$app->discord->send(Yii::$app->settings->get('skindrops_discordHook'), $title, $description, $image300, $fields, $server->discord_token);
+        }
+        if (!empty($this->telegram_chat_id) && YII_ENV_PROD) {
+            $tgMessage = "Поздравляем!";
+            $tgMessage .= PHP_EOL . "Вы выиграли скин <b>{$skinName}</b> (<b>{$price} RUB</b>)";
+            $tgMessage .= PHP_EOL . "Средства начислены вам на счет";
+            Yii::$app->queueTelegram->push(new SendMessageJob([
+                                                              'telegram_chat_id' => $this->telegram_chat_id,
+                                                              'message' => $tgMessage,
+                                                              'buttons' => [],
+                                                          ]));
+        }
+
+        $sound = 'assets/prefabs/misc/easter/painted eggs/effects/eggpickup.prefab';
+        $command = "helper message \"{$this->steam_id}\" \"{$chatAlertPlayerTextRu}\" \"{$chatAlertPlayerTextEn}\"";
+        $rconTask = new RconTasks();
+        $rconTask->status = RconTasks::STATUS_WAIT;
+        $rconTask->command = $command;
+        $rconTask->server_tag = $server->tag;
+        $rconTask->created_at = date('Y-m-d H:i:s');
+        $rconTask->save();
+        $command = "helper globalMessage \"{$chatAlertTextRu}\" \"{$chatAlertTextEn}\" \"{$sound}\"";
+        $rconTask = new RconTasks();
+        $rconTask->status = RconTasks::STATUS_WAIT;
+        $rconTask->command = $command;
+        $rconTask->server_tag = $server->tag;
+        $rconTask->created_at = date('Y-m-d H:i:s');
+        $rconTask->save();
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasHourInServer() {
+        $playtime = Statistics::find()
+                              ->andWhere(['steam_id' => $this->steam_id])
+                              ->andWhere(['key' => 'playtime'])
+                              ->sum('value') ?? 0;
+
+        if ($playtime >= 60) {
+            return true;
+        }
+
+        return false;
     }
 }

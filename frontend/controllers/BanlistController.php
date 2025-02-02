@@ -8,6 +8,7 @@ use common\models\stats\Teams;
 use common\models\stats\Wipe;
 use frontend\models\banlist\BansSearch;
 use yii\base\BaseObject;
+use yii\helpers\Html;
 use yii\web\NotFoundHttpException;
 use Yii;
 
@@ -46,6 +47,9 @@ class BanlistController extends WebController
         $searchModel = new BansSearch();
         $dataProvider = $searchModel->search($this->request->queryParams);
 
+        $avatar = function (BansSearch $model) {
+            return Html::img($model->user->getAvatar(), ['class' => 'block w-24 h-24 min-w-24 min-h-24 rounded-6 object-cover']);
+        };
         $steamId = function (BansSearch $model) {
             return $model->username;
         };
@@ -75,6 +79,7 @@ class BanlistController extends WebController
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
             'func' => [
+                'avatar' => $avatar,
                 'steam_id' => $steamId,
                 'server_id' => $serverId,
                 'unbanned_at' => $unbannedAt,

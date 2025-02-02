@@ -403,7 +403,6 @@ $checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
                                                               if ($model->user->userProfile->parent_bonus) {
                                                                   return Yii::t('common', "Да");
                                                               }
-                                                              User::parentBonus($model->user);
                                                               return Yii::t('common', "Нет");
                                                           },
                                                       ],

@@ -3,8 +3,12 @@
 namespace common\models\servers;
 
 use common\models\blog\BlogCategory;
+use common\models\profit\Profit;
+use common\models\skindrops\Skindrops;
+use common\models\user\User;
 use WebSocket\Client;
 use Yii;
+use yii\base\BaseObject;
 
 /**
  * This is the model class for table "servers".
@@ -308,5 +312,113 @@ class Servers extends \common\components\base\ActiveRecord
             return "https://rustmaps.com/map/{$this->map}";
         }
         return null;
+    }
+
+    /**
+     * @param int $i
+     *
+     * @return User|null
+     * @throws \Exception
+     */
+    public function getWinner($i = 0, $all = false) {
+        if ($i > 4) {
+            return null;
+        }
+
+        if (!$all) {
+            $usersDroped = Skindrops::find()
+                                ->select('DISTINCT(steam_id)')
+                                ->andWhere(['>', 'created_at', date('Y-m-d 00:00:01')])
+                                ->createCommand()
+                                ->queryColumn();
+        } else {
+            $usersDroped = [];
+        }
+
+        $prefix = strtolower(Yii::$app->settings->get('skindrops_prefix'));
+        /** @var User $_user */
+        $_user = User::find()
+                    ->andWhere(['>=', 'last_visit_server_at', date('Y-m-d H:i:s', time() - 5 * 60)])
+                    ->andWhere(['server_id' => $this->id])
+                    ->andWhere(['status' => User::STATUS_ACTIVE])
+                    ->andWhere(['NOT IN', 'steam_id', $usersDroped])
+                    ->andWhere(['LIKE', 'username', '%' . $prefix . '%', false])
+                    ->orderBy('rand()')
+                    ->one();
+
+        if (empty($_user)) {
+            $_user = User::find()
+                         ->andWhere(['>=', 'last_visit_server_at', date('Y-m-d H:i:s', time() - 5 * 60)])
+                         ->andWhere(['server_id' => $this->id])
+                         ->andWhere(['status' => User::STATUS_ACTIVE])
+                         ->andWhere(['LIKE', 'username', '%' . $prefix . '%', false])
+                         ->orderBy('rand()')
+                         ->one();
+        }
+
+        if (empty($_user)) {
+            return null;
+        }
+
+        $user = User::findBySteamId($_user->steam_id, true);
+
+        if (strpos(mb_strtolower($user->username), $prefix) === false) {
+            return $this->getWinner($i + 1, $all);
+        }
+
+        return $user;
+    }
+
+    public function goDraw() {
+        $winner = $this->getWinner();
+        if (empty($winner)) {
+            $winner = $this->getWinner(0, true);
+        }
+        if (empty($winner)) {
+            return;
+        }
+
+        $skin = null;
+        $items = Yii::$app->rustTm->items();
+        shuffle($items);
+        foreach ($items as $item) {
+            $minSum = Yii::$app->settings->get('skindrops_minSum');
+            $maxSum = Yii::$app->settings->get('skindrops_maxSum');
+            if ($item['price'] < $minSum) {
+                continue;
+            }
+            if ($item['price'] > $maxSum) {
+                continue;
+            }
+            $skin = $item;
+            break;
+        }
+
+        $price = $skin['price'];
+        $name = $skin['name'];
+        $image = $skin['image'];
+        $image300 = $skin['image300'];
+
+        $model = new Skindrops();
+        $model->name = $name;
+        $model->steam_id = $winner->steam_id;
+        $model->player = $winner->username;
+        $model->price = ceil($price);
+        $model->real_price = ceil($price);
+        $model->image = $image;
+        $model->created_at = date('Y-m-d H:i:s');
+        $model->save(false);
+
+        $model = new Profit();
+        $model->user_balance_id = $winner->getSkinsBalance()->id;
+        $model->amount = ceil($price);
+        $model->comment = Yii::t('common', 'Выйгрыш скина');
+        $model->status = 1;
+        $model->type = Profit::TYPE_WINNER_SKINS;
+        $model->created_at = date('Y-m-d H:i:s');
+        $model->save(false);
+        $winner->getSkinsBalance()->recalculateBalance();
+
+        $winner->sendChatWinnerMessage($price, $name, $image300, $this);
     }
 }

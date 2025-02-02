@@ -52,7 +52,7 @@ table.kv-grid-table {
     background: transparent;
     tr {
       &.filters {
-        background: transparent;
+        background-color: var(--background-secondary);
         td {
           @extend .text-text-main;
           background: transparent;
@@ -72,6 +72,14 @@ table.kv-grid-table {
         position: relative;
         z-index: 2;
         padding: 12px;
+        font-size: 16px;
+        font-weight: 500;
+        background: rgba(0, 0, 0, 0.2);
+        a {
+          font-size: 16px;
+          font-weight: 500;
+          @extend .text-text-main;
+        }
       }
     }
   }
@@ -85,7 +93,7 @@ table.kv-grid-table {
         z-index: 2;
         padding: 12px;
       }
-      &:nth-of-type(odd) {
+      &:nth-of-type(2n) {
         td {
           background: rgba(0, 0, 0, 0.2);
         }

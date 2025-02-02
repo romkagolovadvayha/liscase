@@ -127,19 +127,19 @@
                 {{ t('common', "Переходи в наш <a href=\"{BOT_PARAM_LINK}\" class=\"p0\" target=\"_blank\">Telegram-бот</a> для получения ежедневного бонуса.", {BOT_PARAM_LINK: BOT_LINK})|raw }}
               </span>
             <span
-            >Напиши <span
+            >{{ t('common', 'Напиши') }} <span
                         style="color: var(--link-color-default)"
                         class="btn-clipboard"
                         data-clipboard-text="/bonus"
                         data-message="{{ t('common', 'Команда скопирована в буфер обмена!') }}"
                         data-bs-toggle="tooltip"
                         data-bs-placement="bottom"
-                        data-bs-title="{{ t('common', 'Скопировать команду') }}">/bonus</span> в боте, чтобы получить награду</span>
+                        data-bs-title="{{ t('common', 'Скопировать команду') }}">/bonus</span> {{ t('common', 'в боте, чтобы получить награду') }}</span>
         </p>
 
         <img src="{{ SETTINGS.get('design_bonusBlockImage') }}" alt="symbol" class="daily-reward__image"/>
         <a href="{{ BOT_LINK }}" target="_blank" class="button button-secondary">
-            <span class="button__text"> Получить бонус </span>
+            <span class="button__text">{{ t('common', 'Получить бонус') }}</span>
         </a>
     </section>
 </div>

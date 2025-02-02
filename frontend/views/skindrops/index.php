@@ -1,5 +1,6 @@
 <?php
 
+use yii\web\NotFoundHttpException;
 use yii\web\View;
 use frontend\forms\profile\ProfileForm;
 use frontend\widgets\Alert;
@@ -9,8 +10,8 @@ use yii\bootstrap5\ActiveForm;
 /** @var ProfileForm $model */
 /** @var \common\models\user\User $user */
 
-if (!Yii::$app->params['skindrops']) {
-    return;
+if (!Yii::$app->settings->get('section_skindrops')) {
+    throw new NotFoundHttpException(Yii::t('common', "Страница не найдена"));
 }
 
 $this->title = Yii::t('common', "Как получать скины в Rust бесплатно");

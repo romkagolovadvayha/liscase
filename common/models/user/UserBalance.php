@@ -27,6 +27,7 @@ use yii\base\BaseObject;
 class UserBalance extends \common\components\base\ActiveRecord
 {
     const TYPE_PERSONAL = 1;
+    const TYPE_SKINS = 2;
 
     /**
      * @return array
@@ -35,6 +36,7 @@ class UserBalance extends \common\components\base\ActiveRecord
     {
         return [
             self::TYPE_PERSONAL => Yii::t('common', 'Лицевой счет'),
+            self::TYPE_SKINS => Yii::t('common', 'Скины'),
         ];
     }
 
@@ -45,6 +47,7 @@ class UserBalance extends \common\components\base\ActiveRecord
     {
         return [
             self::TYPE_PERSONAL => 'RUB',
+            self::TYPE_SKINS => 'RUB',
         ];
     }
 
@@ -163,11 +166,25 @@ class UserBalance extends \common\components\base\ActiveRecord
     public function recalculateBalance()
     {
         $balance = (float)$this->getProfits()->sum('amount');
-        $invoices = (float)$this->getInvoices()->sum('amount');
-        $deposits = (float)$this->getDeposits()->andWhere(['status' => Deposit::STATUS_SUCCESS])->sum('amount');
-
-        $this->balance = ceil($balance + $deposits - $invoices);
-        $this->save(false);
+        if ($this->type === self::TYPE_PERSONAL) {
+            $invoices = (float)$this->getInvoices()->sum('amount');
+            $deposits = (float)$this->getDeposits()->andWhere(['status' => Deposit::STATUS_SUCCESS])->sum('amount');
+            $this->balance = ceil($balance + $deposits - $invoices);
+            $this->save(false);
+        }
+        if ($this->type === self::TYPE_SKINS) {
+            $payouts = UserPayoutSkins::find()
+                                ->andWhere(['IN', 'status', [UserPayoutSkins::STATUS_WAIT, UserPayoutSkins::STATUS_SUCCESS]])
+                                ->andWhere(['user_id' => $this->user->id])
+                                ->sum('amount');
+            $personalBalance = $this->user->getPersonalBalance();
+            $transfers = Profit::find()
+                                ->andWhere(['IN', 'type', [Profit::TYPE_TRANSFER_SKINS]])
+                                ->andWhere(['user_balance_id' => $personalBalance->id])
+                                ->sum('amount');
+            $this->balance = ceil($balance - $payouts - $transfers);
+            $this->save(false);
+        }
 
         try {
             if ($this->type === self::TYPE_PERSONAL) {

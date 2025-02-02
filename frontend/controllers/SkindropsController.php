@@ -38,10 +38,14 @@ class SkindropsController extends WebController
             $user  = Yii::$app->user->identity;
             $model = ProfileForm::findOne($user->userProfile->id);
 
-            if ($model->load(Yii::$app->request->post())) {
+            if (Yii::$app->request->isPost && $model->load(Yii::$app->request->post())) {
                 if ($model->saveRecord()) {
                     Yii::$app->session->addFlash('success', 'Ссылка на трейд успешно привязана!');
                     return $this->refresh();
+                } else {
+                    if (!empty($model->getFirstError('global'))) {
+                        Yii::$app->session->addFlash('danger', $model->getFirstError('global'));
+                    }
                 }
             }
         }

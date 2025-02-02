@@ -81,9 +81,23 @@
                 </div>
                 <ul class="menu-actions__list">
                     <li>
-                        <a href="/stats/{{ user.steam_id }}">
+                        <a href="/user/profile">
                             <span class="icons icons_16px icons_16px_user"></span>
                             <span class="p3 uppercase font-medium">{{ t('common', 'Мой профиль') }}</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/user/payment"
+                           class="show-modal-link"
+                           data-size="modal-sm"
+                           data-content-overflow="unset"
+                           data-top-image="{{ SETTINGS.get('design_payPopupImage') }}"
+                           data-top-class="modal-backdrop-image_pay active"
+                           data-toggl="modal"
+                           data-target="modal-dialog"
+                           data-title="{{ t('common', 'Пополнить баланс') }}">
+                            <span class="icons icons_16px fas fa-wallet"></span>
+                            <span class="p3 uppercase font-medium">{{ t('common', 'Пополнить баланс') }}</span>
                         </a>
                     </li>
                     <li>

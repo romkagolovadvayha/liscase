@@ -1,4 +1,4 @@
-.grid-view {
+.grid-view, .list-view {
   .pagination {
     @extend .text-text-main;
     background-color: var(--background-secondary);

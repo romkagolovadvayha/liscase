@@ -5,6 +5,7 @@ namespace common\models\skindrops;
 use common\components\base\ActiveRecord;
 use common\components\google\TranslateApi;
 use common\models\user\User;
+use common\models\user\UserPayoutSkins;
 use Yii;
 use yii\base\BaseObject;
 

@@ -12,30 +12,36 @@ class Discord
     /**
      * {@inheritdoc}
      */
-    public function send($webhook, $title, $description, $image = null)
+    public function send($channelId, $title, $description, $image, $fields, $tokenBot)
     {
         $embeds = [
-            'title' => $title,
             'description' => $description,
             'color' => 5793266,
             'url' => "",
             'footer' => (object)[],
         ];
+        if (!empty($title)) {
+            $embeds['title'] = $title;
+        }
+        if (!empty($fields)) {
+            $embeds['fields'] = $fields;
+        }
         if (!empty($image)) {
             $embeds['thumbnail'] = [
               'url' => $image
             ];
         }
         $params = [
-            'username' => 'SkinDrops',
-            'avatar_url' => 'https://i.imgur.com/UuFJB1B.png',
             'embeds' => [$embeds],
         ];
 
-        Yii::$app->curl
+        $response = (clone Yii::$app->curl)
             ->setOption(CURLOPT_TIMEOUT, 10)
             ->setOption(CURLOPT_POSTFIELDS, json_encode($params))
             ->setHeader('Content-Type', 'application/json')
-            ->post($webhook);
+            ->setHeader('Authorization', "Bot {$tokenBot}")
+            ->post("https://discord.com/api/v10/channels/{$channelId}/messages");
+
+        return $response;
     }
 }

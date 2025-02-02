@@ -59,6 +59,25 @@ function openModal(modalId, size, title, href, topImage, contentOverflow, topCla
         modalEl.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((tooltip) => {
             new bootstrap.Tooltip(tooltip);
         });
+        let pay_buttons = $('.pay__button');
+        let paymentform__amount = $('#paymentform-amount');
+        if (pay_buttons && paymentform__amount) {
+            pay_buttons.click(function () {
+                pay_buttons.removeClass('pay__button_active');
+                $(this).addClass('pay__button_active');
+                $('#paymentform-amount').val($(this).attr('data-value'));
+            });
+            paymentform__amount.on('input', function () {
+                pay_buttons.removeClass('pay__button_active');
+                let amount = $(this).val();
+                for (let i = pay_buttons.length - 1; i >= 0; i--) {
+                    if (amount >= parseInt($(pay_buttons[i]).attr('data-value'))) {
+                        $(pay_buttons[i]).addClass('pay__button_active');
+                        break;
+                    }
+                }
+            });
+        }
     });
 
     modalEl.addEventListener('shown.bs.modal', () => {

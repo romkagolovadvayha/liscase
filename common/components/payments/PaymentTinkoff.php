@@ -26,7 +26,7 @@ class PaymentTinkoff
         $deposit->payment_id = $request["PaymentId"];
         $deposit->save(false);
 
-        return $request['PaymentURL'];
+        return ['paymentURL' => $request['PaymentURL']];
     }
 
     public function check($depositId)

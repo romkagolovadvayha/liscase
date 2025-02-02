@@ -33,7 +33,7 @@
       margin: 0;
     }
 
-    & + .icons_16px_coin {
+    & + .icons_16px {
       @extend .absolute, .transition-transform;
       top: 16px;
       bottom: 16px;
@@ -42,7 +42,7 @@
     }
 
     &:hover {
-      & + .icons_16px_coin {
+      & + .icons_16px {
         transform: rotateY(360deg);
       }
     }

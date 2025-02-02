@@ -96,7 +96,11 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                                       if ($model['sum'] == 0) {
                                                           return '';
                                                       }
-                                                      return $model['sum'] . " <span class=\"icons icons_16px icons_16px_coin\"></span>";
+                                                      $class = '';
+                                                      if ($model['sum'] < 0) {
+                                                          $class = 'line_sum_munus';
+                                                      }
+                                                      return "<div class=\"line_sum {$class}\">{$model['sum']} <span class=\"icons icons_16px icons_16px_coin\"></span></div>";
                                                   },
                                               ],
                                           ],

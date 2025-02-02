@@ -6,10 +6,19 @@
     </div>
     {{ nav_menu_widget({
         'options': {
-            'class': 'stat-block-profile-menu mt-8',
+            'class': 'stat-block-profile-menu mt-24',
         },
         'menuHidden': MENU_HIDDEN,
         'items': [
+            {
+                'label': t('common', 'Профиль'),
+                'url': "/user/profile",
+                'iconClass': 'icons icons_16px fa-solid fa-user',
+                'activeClass': 'active',
+                'active': PAGE == 'user-profile',
+                'spanClass': 'stat-block-profile-menu__item-text',
+                'options': {'class': 'stat-block-profile-menu__item'},
+            },
             {
                 'label': t('common', 'Бонусы и задания'),
                 'url': "/user/tasks",
@@ -38,11 +47,22 @@
                 'options': {'class': 'stat-block-profile-menu__item'},
             },
             {
-                'label': t('common', 'Рефиральная система'),
+                'label': t('common', 'Реферальная система'),
                 'url': "/user/partner",
                 'iconClass': 'icons icons_16px fa-solid fa-link',
                 'activeClass': 'active',
                 'active': PAGE == 'user-partner',
+                'visibility': SETTINGS.get('section_referral'),
+                'spanClass': 'stat-block-profile-menu__item-text',
+                'options': {'class': 'stat-block-profile-menu__item'},
+            },
+            {
+                'label': t('common', 'Выдача скинов'),
+                'url': "/user/skins",
+                'iconClass': 'icons icons_16px fas fa-donate',
+                'activeClass': 'active',
+                'active': PAGE == 'user-skins',
+                'visibility': SETTINGS.get('section_skindrops'),
                 'spanClass': 'stat-block-profile-menu__item-text',
                 'options': {'class': 'stat-block-profile-menu__item'},
             },

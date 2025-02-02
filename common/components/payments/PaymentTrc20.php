@@ -16,48 +16,30 @@ class PaymentTrc20
      */
     public function create($deposit)
     {
-        $result = Yii::$app->anyPayApi->create($deposit->amount, 'usdt', 'Пополнение баланса', $deposit->id, 'RUB', 'RUB');
-        $deposit->payment_id = $result['result']['transaction_id'];
+        $deposit->payment_id = Yii::$app->settings->get('trc20_wallet');
+        $deposit->amount_exchange = round($deposit->amount / Deposit::getExchange('RUB'), 2);
         $deposit->save(false);
 
-        return $result['result']['payment_url'];
+        return [
+            'template' => 'payments/crypto',
+            'type' => Deposit::TYPE_PAYMENT_TRC20,
+            'exchange' => 'USDT',
+            'network' => 'TRC20',
+            'amount' => $deposit->amount,
+            'amount_exchange' => $deposit->amount_exchange,
+            'wallet' => $deposit->payment_id,
+            'deadline' => 10 * 60,
+        ];
     }
 
     public function check($depositId)
     {
-        $model = Deposit::findOne($depositId);
-        if ($model->status !== Deposit::STATUS_WAIT_CONFIRM) {
-            return $model->status;
-        }
-        $result = Yii::$app->anyPayApi->check($model->payment_id);
-        if (empty($result['result']) || empty($result['result']['payments']) || empty($result['result']['payments'][$model->payment_id])) {
-            return false;
-        }
-        $payment = $result['result']['payments'][$model->payment_id];
-        if ($payment['status'] === 'paid') {
-            $model->status = Deposit::STATUS_SUCCESS;
-            $model->save(false);
-            Deposit::bonus($model->user, $model->amount, $model->payment_type);
-            $model->user->getPersonalBalance()->recalculateBalance();
-        } elseif ($payment['status'] !== 'waiting' && $payment['status'] !== 'partially-paid') {
-            $model->status = Deposit::STATUS_CANCELED;
-            $model->save(false);
-        }
-
-        return $model->status;
+        return Deposit::STATUS_CANCELED;
     }
 
     public function debugCheck($depositId)
     {
-        $model = Deposit::findOne($depositId);
-        if ($model->status !== Deposit::STATUS_WAIT_CONFIRM) {
-            return $model->status;
-        }
-        $result = Yii::$app->anyPayApi->check($model->payment_id);
-        if (empty($result['result']) || empty($result['result']['payments']) || empty($result['result']['payments'][$model->payment_id])) {
-            return 'not result';
-        }
-        return $result['result']['payments'][$model->payment_id]['status'];
+        return Deposit::STATUS_CANCELED;
     }
 
 }

@@ -1,5 +1,6 @@
 .icons {
   @extend .inline-block;
+  color: var(--icon-main);
 
   &_hover {
     @extend .transition-bg-color;

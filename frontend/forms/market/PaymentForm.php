@@ -70,8 +70,8 @@ class PaymentForm extends Model
             $this->email = $user->email;
         }
         $this->amount = 100;
-        $this->confirm = 1;
-        $this->payment_id = array_keys(Deposit::getTypeList())[0];
+        $this->confirm = true;
+        $this->payment_id = array_keys(Deposit::getIconTypeList())[0];
     }
 
     public function createOperation()

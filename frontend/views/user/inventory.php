@@ -13,6 +13,7 @@ $this->title = Yii::t('common', "Корзина") . " - {$user->userProfile->nam
 /** @var UserDrop[] $userDrops */
 $userDrops = $user->getUserDrop()
     ->andWhere(['status' => UserDrop::STATUS_ACTIVE])
+    ->orderBy(['id' => SORT_DESC])
     ->all();
 ?>
 

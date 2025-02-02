@@ -207,7 +207,7 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'label' => 'Бонусы',
                        'icon' => 'fas fa-cog',
                        'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
-                       'active' => _checkActive('/achievements-daily') || _checkActive('/promocode') || _checkActive('/task'),
+                       'active' => _checkActive('/achievements-daily') || _checkActive('/payment-bonuses') || _checkActive('/promocode') || _checkActive('/task') || _checkActive('/settings/index?category=referral'),
                        'items' => [
                            [
                                'label' => 'Промокоды',
@@ -229,6 +229,20 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                                'url'    => '/task',
                                'visibility' => Yii::$app->settings->get('section_tasks') && $admin,
                                'active' => _checkActive('/task'),
+                           ],
+                           [
+                               'label'  => Yii::t('common', 'Реферальная система'),
+                               'icon'   => 'fa-solid fa-list-check',
+                               'url'    => '/settings/index?category=referral',
+                               'visibility' => Yii::$app->settings->get('referral_bonus') && $admin,
+                               'active' => _checkActive('/settings/index?category=referral'),
+                           ],
+                           [
+                               'label'  => Yii::t('common', 'При пополнении'),
+                               'icon'   => 'fa-solid fa-list-check',
+                               'url'    => '/payment-bonuses',
+                               'visibility' => $admin,
+                               'active' => _checkActive('/payment-bonuses'),
                            ],
                        ]
                    ],

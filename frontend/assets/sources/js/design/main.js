@@ -34,13 +34,19 @@ $(document).ready(function () {
     });
 });
 
-
 $(document).on('pjax:send', function() {
     $('#product-loader').addClass('active');
     $('#buy_product').attr('aria-disabled', true);
+    $('#skin_loader').addClass('active');
 });
 $(document).on('pjax:complete', function() {
     $('#product-loader').removeClass('active');
+    $('#skin_loader').removeClass('active');
+    if (document.getElementById('crypto-payment-form')) {
+        document.getElementById('crypto-payment-form').querySelectorAll('[data-bs-toggle="tooltip"]').forEach((tooltip) => {
+            new bootstrap.Tooltip(tooltip);
+        });
+    }
 });
 var categories = $('.categories .category');
 var more_products_button = $('#more_products');
@@ -177,4 +183,22 @@ for (var i = 0; i < timers.length; i++) {
     var dateTime = $(timers[i]).attr('data-time');
     var left = moment.unix(dateTime);
     $(timers[i]).html(left.locale(lang).format('D MMMM H:mm'));
+}
+function payClockdown(deadline) {
+    if (!$('.clockdown_minutes').length || deadline <= 0) {
+        return;
+    }
+    let minutes = parseInt(deadline / 60);
+    let seconds = parseInt(deadline % 60);
+    if (minutes < 10) {
+        minutes = '0' + minutes;
+    }
+    if (seconds < 10) {
+        seconds = '0' + seconds;
+    }
+    $('.clockdown_minutes').html(minutes);
+    $('.clockdown_seconds').html(seconds);
+    setTimeout(() => {
+        payClockdown(deadline - 1);
+    }, 1000);
 }
