@@ -5,13 +5,13 @@
 ?>
 <div class="grid gap-y-24 px-24 mb-24" id="crypto-payment-form">
     <div class="relative payment-form z-1 grid gap-y-8">
-        <div class="relative mt-12">
-            <?php if (extension_loaded('imagick')): ?>
-                <img src="<?= (new \Da\QrCode\QrCode($response['wallet']))->setSize(150)->writeDataUri(); ?>" alt="">
-            <?php endif; ?>
+        <div class="relative mt-12 text-center">
             <div class="mb-24 p1 text-center">
-                <img src="<?=$logo?>" style="max-width: 150px;max-height: 60px;"/>
+                <img src="<?=$logo?>" style="max-width: 180px;max-height: 80px;"/>
             </div>
+            <?php if (extension_loaded('imagick')): ?>
+                <img class="relative rounded-8 mb-24" src="<?= (new \Da\QrCode\QrCode($response['wallet']))->setSize(150)->writeDataUri(); ?>" alt="">
+            <?php endif; ?>
             <div class="relative mb-12 btn-clipboard"
                  data-bs-toggle="tooltip"
                  data-bs-placement="right"
