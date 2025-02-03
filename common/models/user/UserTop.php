@@ -250,16 +250,16 @@ class UserTop extends \yii\db\ActiveRecord
         $top = [];
         foreach ($servers as $server) {
             $sql = "
-    SELECT id, user_id, `key`, value, server_id, wipe
-    FROM (
-        SELECT id, user_id, `key`, value, server_id, wipe,
-            MAX(value) OVER (PARTITION BY `key`, server_id) AS max_value
-        FROM user_top
-        WHERE server_id = :server_id
-          AND wipe = :wipe
-    ) AS ranked
-    WHERE value = max_value
-    ORDER BY server_id, `key`, value DESC
+SELECT id, user_id, `key`, value, server_id, wipe
+FROM (
+    SELECT id, user_id, `key`, value, server_id, wipe,
+           ROW_NUMBER() OVER (PARTITION BY `key`, server_id ORDER BY value DESC) AS rn
+    FROM user_top
+    WHERE server_id = :server_id
+      AND wipe = :wipe
+) AS ranked
+WHERE rn = 1
+ORDER BY server_id, `key`, value DESC;
 ";
 
             $userTop = UserTop::findBySql($sql, [
