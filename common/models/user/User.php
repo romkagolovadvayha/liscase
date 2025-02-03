@@ -957,8 +957,8 @@ class User extends ActiveRecord implements IdentityInterface
         $price = round($price, 2);
         $priceEn = round($price / 85, 2);
 
-        $chatAlertTextRu = '<color=#aaf16e>{0}</color> выиграл скин <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} RUB</color>)\nХочешь тоже получать скины?\nПодробности в ';
-        $chatAlertTextEn = '<color=#aaf16e>{0}</color> won a skin <color=#aaf16e>{1}</color> (<color=#aaf16e>{2} $</color>)\nDo you want to receive skins too?\nDetails in ';
+        $chatAlertTextRu = '<color=#aaf16e>{0}</color> выиграл скин за <color=#aaf16e>{2} RUB</color>\nХочешь тоже получать скины?\nПодробности в ';
+        $chatAlertTextEn = '<color=#aaf16e>{0}</color> won a skin for <color=#aaf16e>{2} $</color>\nDo you want to receive skins too?\nDetails in ';
         if (!empty(Yii::$app->settings->get('social_discord'))) {
             $linkText = str_replace('https://', '', Yii::$app->settings->get('social_discord'));
             $chatAlertTextRu .= "Discord: <color=#feeda1>" . $linkText . "</color>";
