@@ -78,6 +78,9 @@ class SkinsForm extends \common\components\base\ActiveRecord
         $userPayout->amount  = $item['price'];
         $userPayout->created_at = date('Y-m-d H:i:s');
         if (!$userPayout->save()) {
+            $userPayout->status = UserPayoutSkins::STATUS_REJECT;
+            $userPayout->save(false);
+            $user->getSkinsBalance()->recalculateBalance();
             $this->addError('id', Yii::t('common', 'Произошла ошибка при получении скина!'));
             Yii::$app->telegramChats->sendMessage(json_encode($userPayout->getErrors()));
             return false;
@@ -89,7 +92,11 @@ class SkinsForm extends \common\components\base\ActiveRecord
             $partner = Skindrops::getUrlQuery($user->userProfile->trade_link, 'partner');
             $token = Skindrops::getUrlQuery($user->userProfile->trade_link, 'token');
             if (empty($partner) || empty($token)) {
+                $userPayout->status = UserPayoutSkins::STATUS_REJECT;
+                $userPayout->save(false);
+                $user->getSkinsBalance()->recalculateBalance();
                 $this->addError('id', Yii::t('common', 'Неверная ссылка для обмена'));
+                return false;
             }
             $trade = Yii::$app->rustTm->buy($item['name'], $item['price'] * 100, $partner, $token);
             if (empty($trade)) {
@@ -109,8 +116,12 @@ class SkinsForm extends \common\components\base\ActiveRecord
                 } elseif (strpos($trade['error'],'открыть инвентарь') !== false) {
                     $this->addError('id', Yii::t('common', 'Вам нужно сначала открыть инвентарь в настройках стим профиля.'));
                 } else {
+                    $userPayout->status = UserPayoutSkins::STATUS_REJECT;
+                    $userPayout->save(false);
+                    $user->getSkinsBalance()->recalculateBalance();
                     Yii::$app->telegramChats->sendMessage(json_encode($trade));
                     $this->addError('id', Yii::t('common', 'Произошла ошибка при получении скина!'));
+                    return false;
                 }
                 $userPayout->status = UserPayoutSkins::STATUS_REJECT;
                 $userPayout->save(false);
