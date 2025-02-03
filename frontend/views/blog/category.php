@@ -14,42 +14,30 @@ $this->params['breadcrumbs'][] = ['label' => Yii::t('common', "Блог"), 'url'
 if (!empty($blogCategory->parentCategory)) {
     $this->params['breadcrumbs'][] = ['label' => Yii::t('database', $blogCategory->parentCategory->name), 'url' => [$blogCategory->parentCategory->getUrl()]];
 }
+$this->params['h1'] = Yii::t('database', $blogCategory->name);
+$this->params['page'] = 'blog';
+$this->params['_blog_category'] = $blogCategory;
+$this->params['_blog_category_block'] = true;
+$this->params['_blog_comments_block'] = true;
 $this->params['breadcrumbs'][] = $this->title;
 $this->params['meta_keywords'] = Yii::t('database', $blogCategory->keywords);
 $this->params['meta_description'] = Yii::t('database', $blogCategory->description);
 ?>
 
-<div class="container-fluid mb-5">
-    <div class="main_wrap">
-        <aside>
-            <?=$this->render('../layouts/_side_category_list', [
-                'category' => $blogCategory
-            ])?>
-            <?=$this->render('@frontend/views/widgets/_buttons'); ?>
-            <?= $this->render('@frontend/views/widgets/_servers'); ?>
-            <?=$this->render('../layouts/_side_comments_list')?>
-        </aside>
-        <main id="main" role="main">
-            <div class="main_child">
-                <?= Alert::widget() ?>
-                <?=$this->render('_header', [
-                    'dataProvider' => $dataProvider,
-                    'title' => $blogCategory->name,
-                    'categoryId' => $blogCategory->id,
-                ])?>
-                <?= ListView::widget([
-                                         'id'           => 'blog-list-view',
-                                         'dataProvider' => $dataProvider,
-                                         'layout'       => "{items}{pager}",
-                                         'itemView'     => '../blog/_item',
-                                         'itemOptions' => [
-                                             'tag' => false,
-                                         ],
-                                     ]) ?>
-            </div>
-        </main>
-    </div>
-</div>
+<?= Alert::widget() ?>
+<?=$this->render('_header', [
+    'dataProvider' => $dataProvider,
+    'categoryId' => $blogCategory->id,
+])?>
+<?= ListView::widget([
+                         'id'           => 'blog-list-view',
+                         'dataProvider' => $dataProvider,
+                         'layout'       => "{items}{pager}",
+                         'itemView'     => '../blog/_item',
+                         'itemOptions' => [
+                             'tag' => false,
+                         ],
+                     ]) ?>
 <?=\lo\widgets\magnific\MagnificPopup::widget(
     [
         'target' => '.blog_item_body_text_images_item_preview_wrap',

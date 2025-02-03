@@ -184,6 +184,18 @@
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/servers.svg") no-repeat center;
     }
+    &_news {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/news.svg") no-repeat center;
+    }
+    &_skin {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/skin.svg") no-repeat center;
+    }
+    &_location {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/location.svg") no-repeat center;
+    }
     &_statistics {
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/statistics.svg") no-repeat center;

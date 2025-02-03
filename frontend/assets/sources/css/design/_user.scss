@@ -4,6 +4,8 @@
   min-width: 848px;
   width: 848px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 
   @media (min-width: 1720px) {
     width: 100%;
@@ -40,6 +42,13 @@
 
     &-wrapper {
       @extend .relative, .grid, .gap-y-10, .z-1;
+    }
+
+    &_footer {
+      flex: 1 0;
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
     }
 
     & .stats {

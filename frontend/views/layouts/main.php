@@ -80,13 +80,17 @@ if (!Yii::$app->user->isGuest) {
     }
     $notifications = $user->notifications();
 }
+
 $settings = Yii::$app->settings;
 $lang = substr(Yii::$app->language, 0, 2);
+
+$H1 = Html::encode(!empty($this->params['h1']) ? $this->params['h1'] : null);
 if (Yii::$app->user->isGuest || !$userData['blocked']) {
     $body = Yii::$app->view->render('body', [
         'content' => $content,
         'userData' => $userData,
         'lang' => $lang,
+        'H1' => $H1,
         'servers' => $servers,
         'notifications' => $notifications,
         'SETTINGS' => $settings,
@@ -96,6 +100,7 @@ if (Yii::$app->user->isGuest || !$userData['blocked']) {
         'content' => $content,
         'userData' => $userData,
         'lang' => $lang,
+        'H1' => $H1,
         'servers' => $servers,
         'SETTINGS' => $settings,
     ]);
@@ -105,6 +110,7 @@ if (Yii::$app->user->isGuest || !$userData['blocked']) {
 <?php $this->beginPage() ?>
 <?=Yii::$app->view->render('main.twig', [
     'title' => Html::encode($this->title),
+    'H1' => $H1,
     'SETTINGS' => $settings,
     'cssLink' => Yii::$app->params['css'],
     'head' => '<![CDATA[YII-BLOCK-HEAD]]>',

@@ -23,11 +23,13 @@ $rating = $model->getBlogRatings()->sum('weight') ?? 0;
                 </span>
             </div>
         </div>
-        <h2 class="blog_item_title"><a href="<?=$model->getUrl()?>" class="tm-title__link"><?=Yii::t('database', $model->name)?></a></h2>
+        <a href="<?=$model->getUrl()?>">
+            <h2 class="blog_item_title"><?=Yii::t('database', $model->name)?></h2>
+        </a>
         <div class="blog_item_categories">
             <a href="<?=$model->blogCategory->parentCategory->getUrl()?>"><?=Yii::t('database', $model->blogCategory->parentCategory->name)?></a>, <a href="<?=$model->blogCategory->getUrl()?>"><?=Yii::t('database', $model->blogCategory->name)?></a>
         </div>
-        <div class="blog_item_body">
+        <div class="blog_item_body p2 mb-24">
             <?php if (!empty($model->blogImages[0])): ?>
             <div class="blog_item_body_cover">
                 <?=$this->render('_file', [
@@ -36,10 +38,10 @@ $rating = $model->getBlogRatings()->sum('weight') ?? 0;
                 ]); ?>
             </div>
             <?php endif; ?>
-            <div class="blog_item_body_text">
+            <div class="blog_item_body_text mb-24">
                 <?=Yii::t('database', $model->description)?>
             </div>
-            <a href="<?=$model->getUrl()?>" class="blog_item_body_readmore btn"><span><?=Yii::t('common', 'Читать далее')?></span></a>
+            <a href="<?=$model->getUrl()?>" class="button button-secondary "><span><?=Yii::t('common', 'Читать далее')?></span></a>
         </div>
         <div class="blog_item_data">
             <div class="blog_item_data_item blog_item_data_views">

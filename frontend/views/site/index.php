@@ -8,6 +8,7 @@ use yii\bootstrap5\Html;
 use common\models\box\Box;
 use common\models\box\Drop;
 use common\models\box\Select;
+use common\models\servers\Servers;
 
 $this->title = Yii::t('database', Yii::$app->settings->get('site_title'));
 
@@ -54,6 +55,28 @@ if (!Yii::$app->user->isGuest) {
                                ->all();
     }
     $awards = \common\models\tasks\Task::awards($user->id, false);
+}
+
+$servers = Servers::find()
+                  ->cache(30)
+                  ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                  ->orderBy(['sort' => SORT_ASC])
+                  ->all();
+$userData['SERVER_ACTIVE_ID'] = $servers[0]->id;
+$userData['SERVER_ACTIVE_TAG'] = $servers[0]->tag;
+$userData['USER_STATS_LINK'] = null;
+if (!Yii::$app->user->isGuest) {
+    $user = Yii::$app->user->identity;
+    if (!empty($user->server)) {
+        foreach ($servers as $server) {
+            if ($server->id == $user->server->id) {
+                $userData['SERVER_ACTIVE_ID'] = $user->server->id;
+                $userData['SERVER_ACTIVE_TAG'] = $user->server->tag;
+                $userData['USER_STATS_LINK'] = $user->getLink('stats');
+                break;
+            }
+        }
+    }
 }
 
 $SETTINGS = Yii::$app->settings;

@@ -55,6 +55,11 @@ class SupportController extends WebController
      */
     public function actionIndex()
     {
+        if (\Yii::$app->user->isGuest) {
+            $this->view->title = Yii::t('common', 'Поддержка');
+            $this->view->params['page'] = 'support';
+            return $this->render('auth.twig');
+        }
         $user = \Yii::$app->user->identity;
         if ($user->blocked_support) {
             return $this->render('blocked');
@@ -534,6 +539,11 @@ class SupportController extends WebController
      */
     public function actionTicket($id)
     {
+        if (\Yii::$app->user->isGuest) {
+            $this->view->title = Yii::t('common', 'Поддержка');
+            $this->view->params['page'] = 'support';
+            return $this->render('auth.twig');
+        }
         $user = \Yii::$app->user->identity;
 
         if ($user->blocked_support) {

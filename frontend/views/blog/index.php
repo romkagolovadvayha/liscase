@@ -8,13 +8,16 @@ use frontend\widgets\Alert;
 
 $this->title = Yii::t('common', 'Баги и новости Rust');
 
+$this->params['h1'] = Yii::t('common', 'Блог');
+$this->params['page'] = 'blog';
+$this->params['_blog_comments_block'] = true;
+$this->params['_blog_category_block'] = true;
 $this->params['breadcrumbs'][] = ['label' => Yii::t('common', "Блог")];
 ?>
 
 <?= Alert::widget() ?>
 <?=$this->render('_header', [
     'dataProvider' => $dataProvider,
-    'title' => Yii::t('common', 'Блог'),
 ])?>
 <?= ListView::widget([
                          'id'           => 'blog-list-view',

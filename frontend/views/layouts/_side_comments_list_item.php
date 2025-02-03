@@ -9,20 +9,19 @@ use common\models\comment\Comment;
 $blog = \common\models\blog\Blog::findOne($model->entityId);
 
 ?>
-<li class="block_body_article_list_item">
-    <article>
-        <p class="tm-article-title__link">
+
+<li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+    <div class="block w-full">
+        <p class="p3 gap-x-4 mb-12">
             <?=Yii::t('common', 'Пользователь')?>
-            <a href="/users/<?=$model->createdByUser->username?>"><?=$model->createdByUser->username?></a>
+            <a class="p3" href="/users/<?=$model->createdByUser->username?>"><?=$model->createdByUser->username?></a>
             <?=Yii::t('common', 'оставил коментарий к записи')?>
-            <a href="<?=$blog->getUrl()?>"><?=Yii::t('database', $blog->name)?></a>
+            <a class="p3" href="<?=$blog->getUrl()?>"><?=Yii::t('database', $blog->name)?></a>
         </p>
-        <div class="block_body_article_list_item_data">
-            <div class="block_body_article_list_item_data_item">
-                <div class="block_body_article_list_item_data_item_icon_wrapper" title="<?=Yii::t('common', 'Дата комментария')?>">
-                    <?=date('d.m.Y H:i:s', $model->createdAt)?>
-                </div>
-            </div>
+        <div class="stat-block__list__footer">
+            <p class="p3 text-text-teritiary" title="<?=Yii::t('common', 'Дата комментария')?>">
+                <?=\common\components\helpers\DateHelper::passed(date('Y-m-d H:i:s', $model->createdAt))?>
+            </p>
         </div>
-    </article>
+    </div>
 </li>

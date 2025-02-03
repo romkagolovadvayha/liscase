@@ -5,6 +5,7 @@
 /** @var Servers[] $servers */
 /** @var array $notifications */
 /** @var $SETTINGS */
+/** @var $H1 */
 
 use common\models\servers\Servers;
 use common\components\web\Cookie;
@@ -30,6 +31,23 @@ $buildingsBlock = null;
 $teamBlock = null;
 $killsBlock = null;
 $profileBlock = null;
+$blogListCategoryBlock = null;
+$blogCommentsBlock = null;
+$blogSimilarBlock = null;
+if (!empty($this->params['_blog_category_block'])) {
+    $paramsBlock = [];
+    if (!empty($this->params['_blog_category'])) {
+        $paramsBlock['category'] = $this->params['_blog_category'];
+    }
+    $blogListCategoryBlock = $this->render('../layouts/_side_category_list', $paramsBlock);
+}
+if (!empty($this->params['_blog_comments_block'])) {
+    $blogCommentsBlock = $this->render('../layouts/_side_comments_list');
+}
+if (!empty($this->params['_blog_similar_block'])) {
+    $blogSimilarBlock = $this->render('../layouts/_side_similar_posts', ['model' => $this->params['_blog_model']]);
+}
+
 if (!empty($this->params['_user'])) {
     /** @var User $_user */
     $_user = $this->params['_user'];
@@ -64,6 +82,7 @@ if (!empty($this->params['_profile'])) {
     'content' => $content,
     'this' => $this,
     'breadcrumbs' => $breadcrumbs,
+    'H1' => $H1,
     'email' => Yii::$app->params['email'],
     'user' => $userData,
     'MENU_HIDDEN' => $hiddenMenu,
@@ -77,6 +96,9 @@ if (!empty($this->params['_profile'])) {
     'BUILDINGS_BLOCK' => $buildingsBlock,
     'KILLS_BLOCK' => $killsBlock,
     'TEAMS_BLOCK' => $teamBlock,
+    'BLOG_CATEGORY_LIST_BLOCK' => $blogListCategoryBlock,
+    'BLOG_COMMENTS_LIST_BLOCK' => $blogCommentsBlock,
+    'BLOG_SIMILAR_LIST_BLOCK' => $blogSimilarBlock,
     'HEADER' => Yii::$app->view->render('header.twig', [
         'HOME_URL' => Yii::$app->homeUrl,
         'LOGO_IMAGE' => Yii::$app->settings->get('design_logo'),

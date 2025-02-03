@@ -117,8 +117,12 @@
         @extend .text-text-main;
       }
 
-      & .icons_32px {
+      & .icons_32px:not(.icon_font) {
         @extend .bg-text-main, .transition-bg-color;
+      }
+      & .icon_font {
+        @extend .transition-bg-color;
+        color: var(--text-main);
       }
     }
   }

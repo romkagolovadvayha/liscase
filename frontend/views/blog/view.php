@@ -17,9 +17,16 @@ $this->params['breadcrumbs'][] = ['label' => Yii::t('database', $blog->blogCateg
 $this->params['breadcrumbs'][] = $this->title;
 $this->params['meta_keywords'] = Yii::t('database', $blog->keywords);
 $this->params['meta_description'] = Yii::t('database', $blog->description);
+$this->params['page'] = 'blog';
 
 $date = new DateTime($blog->created_at);
 $rating = $blog->getBlogRatings()->sum('weight') ?? 0;
+
+$this->params['_blog_category'] = $blog->blogCategory;
+$this->params['_blog_model'] = $blog;
+$this->params['_blog_comments_block'] = true;
+$this->params['_blog_category_block'] = true;
+$this->params['_blog_similar_block'] = true;
 ?>
 
 <?= Alert::widget() ?>
@@ -41,20 +48,20 @@ $rating = $blog->getBlogRatings()->sum('weight') ?? 0;
                 <a href="<?=$blog->blogCategory->parentCategory->getUrl()?>"><?=Yii::t('database', $blog->blogCategory->parentCategory->name)?></a>, <a href="<?=$blog->blogCategory->getUrl()?>"><?=Yii::t('database', $blog->blogCategory->name)?></a>
             </div>
             <div class="blog_item_body">
-                <div class="blog_item_body_text">
-                    <div class="blog_item_body_text_images">
-                        <?php foreach ($blog->blogImages as $image): ?>
-                            <?=$this->render('_file', [
-                                'url' => $image->getPublicUrl(),
-                                'name' => $image->link
-                            ]); ?>
-                        <?php endforeach; ?>
-                    </div>
-                    <p><?=Yii::t('database', $blog->content)?></p>
-                    <p>
-                        <?=Yii::t('common', 'Поставщик новостей')?>: <a href="https://discord.gg/rust-ru" rel="nofollow" target="_blank">RustRu</a>
-                    </p>
+                <?php if (!empty($blog->blogImages)): ?>
+                <div class="blog_item_body_text_images mb-24">
+                    <?php foreach ($blog->blogImages as $image): ?>
+                        <?=$this->render('_file', [
+                            'url' => $image->getPublicUrl(),
+                            'name' => $image->link
+                        ]); ?>
+                    <?php endforeach; ?>
                 </div>
+                <?php endif; ?>
+                <div class="blog_item_body_text p1 mb-24"><?=Yii::t('database', $blog->content)?></div>
+                <p class="p2">
+                    <?=Yii::t('common', 'Поставщик новостей')?>: <a href="https://discord.gg/rust-ru" rel="nofollow" class="p2" target="_blank">RustRu</a>
+                </p>
             </div>
             <div class="blog_item_data">
                 <div class="blog_item_data_item blog_item_data_views">

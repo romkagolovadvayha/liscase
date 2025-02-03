@@ -25,7 +25,7 @@ use yii\widgets\ActiveForm;
     <div class="comment-box-partial">
         <div class="button-container show">
             <?php echo Html::a(Yii::t('common', 'Нажмите, чтобы отменить ответ на комментарий.'), '#', ['id' => 'cancel-reply', 'class' => 'pull-right', 'data' => ['action' => 'cancel-reply']]); ?>
-            <?php echo Html::submitButton(Yii::t('common', 'Комментарий'), ['class' => 'btn btn-primary comment-submit']); ?>
+            <?php echo Html::submitButton(Yii::t('common', 'Отправить'), ['class' => 'button-secondary']); ?>
         </div>
     </div>
     <?php $form->end(); ?>

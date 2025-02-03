@@ -19,15 +19,17 @@
             </div>
         </div>
         <img src="/images/design/user/user_0.png" alt="farmer" class="user__image"/>
-        <a href="/auth/oauth?authclient=steam" class="button button-primary">
+        <div class="user__stats_footer">
+            <a href="/auth/oauth?authclient=steam" class="button button-primary h-48" style="padding-top: 15px;">
               <span class="button__text">
                 {{ t('common', 'Войти через Steam') }}
                 <span class="icons icons_24px icons_24px_steam bg-white"></span>
               </span>
-        </a>
-        <a href="/stats" class="button button-primary" style="margin-right: 8px">
-            <span class="button__text">{{ t('common', 'Статистика игроков') }}</span>
-        </a>
+            </a>
+            <a href="/servers/{{ USER.SERVER_ACTIVE_TAG }}" class="button button-secondary" style="padding-top: 15px;">
+                <span class="button__text">{{ t('common', 'Статистика игроков') }}</span>
+            </a>
+        </div>
     </section>
     {% else %}
         <!-- С АВТОРИЗАЦИЕЙ -->
@@ -105,18 +107,20 @@
                 {% endif %}
             </div>
             <img src="{{ SETTINGS.get('design_statsBlockImage') }}" alt="farmer" class="user__image"/>
-            {% if USER.server %}
-            <a href="/stats/player?steamId={{ USER.steam_id }}&server={{ USER.server.tag }}" class="button button-primary" style="margin-right: 8px">
-                <span class="button__text">{{ t('common', 'Моя статистика') }}</span>
-            </a>
-            {% else %}
-                <a href="/stats" class="button button-primary" style="margin-right: 8px">
-                    <span class="button__text">{{ t('common', 'Статистика игроков') }}</span>
+            <div class="user__stats_footer">
+                {% if USER.USER_STATS_LINK %}
+                    <a href="{{ USER.USER_STATS_LINK }}" class="button button-primary">
+                        <span class="button__text">{{ t('common', 'Моя статистика') }}</span>
+                    </a>
+                {% else %}
+                    <a href="/servers/{{ USER.SERVER_ACTIVE_TAG }}" class="button button-primary">
+                        <span class="button__text">{{ t('common', 'Статистика игроков') }}</span>
+                    </a>
+                {% endif %}
+                <a href="/user/profile" class="button button-secondary">
+                    <span class="button__text">{{ t('common', 'МОЙ ПРОФИЛЬ') }}</span>
                 </a>
-            {% endif %}
-            <a href="/user/profile" class="button button-secondary">
-                <span class="button__text">{{ t('common', 'МОЙ ПРОФИЛЬ') }}</span>
-            </a>
+            </div>
         </section>
     {% endif %}
 
@@ -138,7 +142,7 @@
         </p>
 
         <img src="{{ SETTINGS.get('design_bonusBlockImage') }}" alt="symbol" class="daily-reward__image"/>
-        <a href="{{ BOT_LINK }}" target="_blank" class="button button-secondary">
+        <a href="{{ BOT_LINK }}" target="_blank" class="button button-secondary" style="padding-top: 15px;">
             <span class="button__text">{{ t('common', 'Получить бонус') }}</span>
         </a>
     </section>

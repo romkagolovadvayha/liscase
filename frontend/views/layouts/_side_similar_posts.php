@@ -15,24 +15,20 @@ $dataProvider = new ActiveDataProvider([
     ],
 ]);
 ?>
-
-<section class="block">
-    <header class="block_header">
-        <div class="block_header_container">
-            <h2 class="block_header_container_title"><?=Yii::t('common', 'Похожие записи')?></h2>
-        </div>
-    </header>
-    <div class="block_body">
-        <ul class="block_body_article_list">
-            <?= ListView::widget([
-                'id'           => 'blog-popular-list-view',
-                'dataProvider' => $dataProvider,
-                'layout'       => "{items}",
-                'itemView'     => '_side_popular_posts_item',
-                'itemOptions' => [
-                    'tag' => false,
-                ],
-            ]) ?>
-        </ul>
+<section class="stats-aside__stat-block stat-block">
+    <h4 class="stat-block__title"><?=Yii::t('common', 'Похожие записи')?></h4>
+    <div class="tab-content">
+        <?= ListView::widget([
+                                 'id'           => 'blog-popular-list-view',
+                                 'options' => [
+                                     'class'           => 'stat-block__list',
+                                 ],
+                                 'dataProvider' => $dataProvider,
+                                 'layout'       => "{items}",
+                                 'itemView'     => '_side_popular_posts_item',
+                                 'itemOptions' => [
+                                     'tag' => false,
+                                 ],
+                             ]) ?>
     </div>
 </section>
