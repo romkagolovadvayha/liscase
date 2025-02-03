@@ -13,7 +13,7 @@ class UserBoxAsset extends AssetBundle
 
     public $js
         = [
-            'js/user-box.js',
+            'js/user-box.js?v=1.0',
         ];
 
     public $depends

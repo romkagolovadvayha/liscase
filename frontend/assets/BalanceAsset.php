@@ -10,7 +10,7 @@ class BalanceAsset extends AssetBundle
 
     public $js
         = [
-            'js/balance.js',
+            'js/balance.js?v=1.0',
         ];
 
     public $depends

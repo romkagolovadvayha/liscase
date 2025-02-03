@@ -10,7 +10,7 @@ class BuildingsAsset extends AssetBundle
 
     public $js
         = [
-            'js/buildings.js',
+            'js/buildings.js?v=1.0',
         ];
 
     public $depends

@@ -25,7 +25,7 @@ class LauncherAsset extends AssetBundle
         'css/launcher.min.css',
     ];
     public $js = [
-        'js/socket.js',
+        'js/socket.js?v=1.0',
         'js/launcher.js',
     ];
     public $depends = [

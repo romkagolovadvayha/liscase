@@ -26,7 +26,7 @@ class TeamsAsset extends AssetBundle
 
     public $js
         = [
-            'js/teams.js',
+            'js/teams.js?v=1.0',
         ];
 
     public $depends
