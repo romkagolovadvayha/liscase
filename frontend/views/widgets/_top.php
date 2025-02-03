@@ -8,7 +8,11 @@ use common\models\user\UserTop;
 /** @var array $userData */
 /** @var $SETTINGS */
 
-$top = UserTop::getUserTop($servers);
+$top = [];
+foreach ($servers as $server) {
+    $top[$server->id] = UserTop::getUserTops($server, $server->currentWipe());
+}
+
 $goldAmount = Yii::$app->settings->get('tops_gold_amount');
 $silverAmount = Yii::$app->settings->get('tops_silver_amount');
 $silverAmount = Yii::$app->settings->get('tops_silver_amount');

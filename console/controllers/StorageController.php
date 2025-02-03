@@ -39,21 +39,25 @@ class StorageController extends Controller
     public function actionUpdate()
     {
         ini_set('memory_limit', '512M');
-        /** @var Servers[] $servers */
-        $servers = Servers::find()
-                          ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
-                          ->orderBy(['sort' => SORT_ASC])
-                          ->all();
+        try {
+            /** @var Servers[] $servers */
+            $servers = Servers::find()
+                              ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                              ->orderBy(['sort' => SORT_ASC])
+                              ->all();
 
-        foreach ($servers as $server) {
-            Teams::getTeams($server, true);
-            UserTop::getUserTops($server, $server->currentWipe(), true);
-            User::getUsers($server->id, true);
+            foreach ($servers as $server) {
+                Teams::getTeams($server, true);
+                UserTop::getUserTops($server, $server->currentWipe(), true);
+                User::getUsers($server->id, true);
+            }
+
+            Statistics::projectStats(true);
+            //UserTop::getUserTop($servers, true);
+            Kills::getLive($servers, true);
+        } catch (\Exception $e) {
+            Yii::$app->telegramChats->sendMessage('storage/update ' . $e->getMessage());
         }
-
-        Statistics::projectStats(true);
-        UserTop::getUserTop($servers, true);
-        Kills::getLive($servers, true);
     }
 
     /**
