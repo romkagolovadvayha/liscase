@@ -20,11 +20,11 @@ class MainAsset extends AssetBundle
     ];
 
     public $js = [
-        'js/cookie.js',
-        'js/clipboard.min.js',
-        'js/design/main.js',
-        'js/design/menu.js',
-        'js/main.js',
+        'js/cookie.js?v=1.0',
+        'js/clipboard.min.js?v=1.0',
+        'js/design/main.js?v=1.0',
+        'js/design/menu.js?v=1.0',
+        'js/main.js?v=1.0',
     ];
 
     public $depends = [
