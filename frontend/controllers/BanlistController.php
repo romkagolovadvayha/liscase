@@ -57,7 +57,7 @@ class BanlistController extends WebController
             if (empty($model->server_id)) {
                 return Yii::t('common', 'Все сервера');
             }
-            return $model->server->name;
+            return $model->server->monitoring_name;
         };
         $bannedAt = function (BansSearch $model) {
             if (empty($model->banned_at)) {

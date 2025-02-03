@@ -348,6 +348,10 @@ class Servers extends \common\components\base\ActiveRecord
     }
 
     public function goDraw() {
+        $minOnline = Yii::$app->settings->get('skindrops_minOnline');
+        if ($this->players < $minOnline || $this->status !== Servers::STATUS_ACTIVE) {
+            return;
+        }
         $winner = $this->getWinner();
         if (empty($winner)) {
             $winner = $this->getWinner(0, true);
