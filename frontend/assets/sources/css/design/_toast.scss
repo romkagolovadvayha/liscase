@@ -1,0 +1,31 @@
+
+#toast-container {
+  > .toast {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(0, 0, 0, .4);
+    padding: 0;
+    opacity: 0.8;
+    &.toast-success {
+      background: #1f9e12;
+      background-image: none !important;
+    }
+    &.toast-error {
+      background: #e26a6a;
+      background-image: none !important;
+    }
+    .toast-message {
+      padding: 10px;
+      display: flex;
+      font-size: 28px;
+      line-height: 28px;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 15px;
+      &_text {
+        font-size: 14px;
+        line-height: 14px;
+      }
+    }
+  }
+}
