@@ -63,6 +63,7 @@ class Kills extends ActiveRecord
             'stag' => 'олень',
             'autoturret_deployed' => 'турель',
             'zombie' => 'зомби',
+            'simpleshark' => 'акула',
         ];
     }
 
@@ -78,6 +79,7 @@ class Kills extends ActiveRecord
             'skull.wolf' => 'волка',
             'stag' => 'оленя',
             'zombie' => 'зомби',
+            'simpleshark' => 'акулу',
         ];
     }
 

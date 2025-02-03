@@ -165,6 +165,7 @@ class UserBalance extends \common\components\base\ActiveRecord
 
     public function recalculateBalance()
     {
+        $oldBalance = $this->balance;
         $balance = (float)$this->getProfits()->sum('amount');
         if ($this->type === self::TYPE_PERSONAL) {
             $invoices = (float)$this->getInvoices()->sum('amount');
@@ -187,7 +188,7 @@ class UserBalance extends \common\components\base\ActiveRecord
         }
 
         try {
-            if ($this->type === self::TYPE_PERSONAL) {
+            if ($this->type === self::TYPE_PERSONAL && $oldBalance != $this->balance) {
                 $client = new Client(Yii::$app->params['ws']);
                 $client->send(
                     json_encode(

@@ -47,151 +47,17 @@
         </div>
 
         <div class="menu__list_wrap"{% if MENU_HIDDEN %} style="margin-top: 40px"{% endif %}>
-        <!-- РАЗДЕЛЫ -->
-        {{ nav_menu_widget({
-            'options': {
-                'class': 'menu__list',
-            },
-            'menuHidden': MENU_HIDDEN,
-            'items': [
-                {
-                    'label': t('common', 'Статистика'),
-                    'url': "/servers/#{USER.SERVER_ACTIVE_TAG}",
-                    'iconClass': 'icons icons_32px icons_32px_statistics',
-                    'activeClass': 'menu__item_active',
-                    'active': PAGE == 'stats',
-                    'spanClass': 'main-menu-text',
-                    'options': {'class': 'menu__item'},
-                },
-                {
-                    'label': t('common', 'Бан-лист'),
-                    'url': '/banlist',
-                    'iconClass': 'icons icons_32px icons_32px_ban',
-                    'activeClass': 'menu__item_active',
-                    'spanClass': 'main-menu-text',
-                    'active': PAGE == 'bans',
-                    'notification': NOTIFICATIONS.BANS,
-                    'visibility': SETTINGS.get('section_banlist'),
-                    'options': {'class': 'menu__item'},
-                },
-                {
-                    'label': t('common', 'Новости'),
-                    'url': '/posts',
-                    'iconClass': 'icons icons_32px icons_32px_news',
-                    'activeClass': 'menu__item_active',
-                    'spanClass': 'main-menu-text',
-                    'active': PAGE == 'blog',
-                    'visibility': SETTINGS.get('section_blog'),
-                    'options': {'class': 'menu__item'},
-                },
-                {
-                    'label': t('common', 'Наши сервера'),
-                    'url': '/servers',
-                    'iconClass': 'icons icons_32px icons_32px_servers',
-                    'activeClass': 'menu__item_active',
-                    'spanClass': 'main-menu-text',
-                    'options': {'class': 'menu__item'},
-                },
-                {
-                    'label': t('common', 'Постройки'),
-                    'url': '/buildings',
-                    'iconClass': 'icons icons_32px icons_32px_buildings',
-                    'activeClass': 'menu__item_active',
-                    'spanClass': 'main-menu-text',
-                    'active': PAGE == 'buildings',
-                    'visibility': SETTINGS.get('section_buildings'),
-                    'notification': NOTIFICATIONS.BUILDINGS,
-                    'options': {'class': 'menu__item'},
-                },
-                {
-                    'label': t('common', 'Рейтинг кланов'),
-                    'url': '/clans',
-                    'iconClass': 'icons icons_32px icons_32px_rate',
-                    'activeClass': 'menu__item_active',
-                    'spanClass': 'main-menu-text',
-                    'visibility': SETTINGS.get('section_clans'),
-                    'options': {'class': 'menu__item'},
-                },
-                {
-                    'label': t('common', 'Правила серверов'),
-                    'url': "/servers/#{USER.SERVER_ACTIVE_TAG}/rules",
-                    'iconClass': 'icons icons_32px icons_32px_rules',
-                    'activeClass': 'menu__item_active',
-                    'active': PAGE == 'rules',
-                    'spanClass': 'main-menu-text',
-                    'options': {'class': 'menu__item'},
-                },
-                {
-                    'label': t('common', 'Как получать скины'),
-                    'url': '/skindrops',
-                    'iconClass': 'icons icons_32px icons_32px_rate',
-                    'activeClass': 'menu__item_active',
-                    'spanClass': 'main-menu-text',
-                    'visibility': SETTINGS.get('section_skindrops'),
-                    'options': {'class': 'menu__item'},
-                },
-                {
-                    'label': t('common', 'Поддержка'),
-                    'url': '/support',
-                    'iconClass': 'icons icons_32px icons_32px_support',
-                    'activeClass': 'menu__item_active',
-                    'active': PAGE == 'support',
-                    'spanClass': 'main-menu-text',
-                    'visibility': SETTINGS.get('section_support'),
-                    'notification': NOTIFICATIONS.SUPPORT,
-                    'options': {'class': 'menu__item menu__item_support'},
-                },
-                {
-                    'label': t('common', 'Выбор карты'),
-                    'url': "/maps/#{USER.SERVER_ACTIVE_TAG}",
-                    'iconClass': 'icons icons_32px icons_32px_location',
-                    'activeClass': 'menu__item_active',
-                    'active': PAGE == 'maps',
-                    'visibility': SETTINGS.get('section_maps'),
-                    'spanClass': 'main-menu-text',
-                    'options': {'class': 'menu__item menu__item_maps'},
-                },
-                {
-                    'label': t('common', 'Ваши скины'),
-                    'url': "/custom-skins",
-                    'iconClass': 'icons icons_32px icons_32px_skin',
-                    'activeClass': 'menu__item_active',
-                    'active': PAGE == 'custom-skins',
-                    'visibility': SETTINGS.get('section_skins'),
-                    'spanClass': 'main-menu-text',
-                    'options': {'class': 'menu__item menu__item_skins'},
-                },
-                {
-                    'label': t('common', 'Промокоды'),
-                    'url': '/promocodes',
-                    'iconClass': 'icons icons_32px icons_32px_promo',
-                    'activeClass': 'menu__item_active',
-                    'spanClass': 'main-menu-text',
-                    'visibility': false,
-                    'options': {'class': 'menu__item'},
-                },
-                {
-                    'label': t('common', 'Реферальная система'),
-                    'url': '/referral',
-                    'iconClass': 'icons icons_32px icons_32px_promo',
-                    'activeClass': 'menu__item_active',
-                    'spanClass': 'main-menu-text',
-                    'active': PAGE == 'referral',
-                    'visibility': SETTINGS.get('section_referral'),
-                    'options': {'class': 'menu__item'},
-                },
-                {
-                    'label': t('common', 'FAQ'),
-                    'url': '/faq',
-                    'iconClass': 'icons icons_32px icons_32px_faq',
-                    'activeClass': 'menu__item_active',
-                    'spanClass': 'main-menu-text',
-                    'visibility': false,
-                    'options': {'class': 'menu__item'},
-                },
-            ]
-        })
-        }}
+        {% include 'nav.twig'
+            with {
+                'SETTINGS': SETTINGS,
+                'PAGE': PAGE,
+                'CLASS': 'menu__list',
+                'CLASS_ITEM': 'menu__item',
+                'CLASS_ITEM_ACTIVE': 'menu__item_active',
+                'CLASS_ITEM_SPAN_TEXT': 'main-menu-text',
+                'CLASS_ICON': '',
+            }
+        %}
         </div>
     </nav>
 </aside>

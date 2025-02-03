@@ -92,10 +92,10 @@
 
   &__image {
     @extend .absolute, .object-contain;
-    width: 972px;
-    height: 547px;
-    right: -260px;
-    bottom: -87px;
+    width: auto;
+    height: 431px;
+    right: 0;
+    bottom: 0;
   }
 
   &_not-authorized {
@@ -108,10 +108,10 @@
 
     & .user__image {
       @extend .absolute, .object-contain;
-      width: 668.34px;
-      height: 376px;
-      right: -159px;
-      bottom: -36px;
+      height: 390px;
+      right: 0;
+      bottom: 0;
+      width: auto;
     }
 
     & button {

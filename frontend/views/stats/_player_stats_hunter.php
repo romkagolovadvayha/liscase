@@ -32,13 +32,8 @@ $hunters = [
     ],
     [
         'name'  => Yii::t('common', 'Медведи'),
-        'count' => Statistics::getParam($player, 'bear'),
+        'count' => Statistics::getParam($player, 'bear') + Statistics::getParam($player, 'polarbear'),
         'image'  => '/images/hunters/bear.png',
-    ],
-    [
-        'name'  => Yii::t('common', 'Белые медведи'),
-        'count' => Statistics::getParam($player, 'polarbear'),
-        'image'  => '/images/hunters/Polarbear.png',
     ],
     [
         'name'  => Yii::t('common', 'Олени'),
@@ -49,6 +44,11 @@ $hunters = [
         'name'  => Yii::t('common', 'Курицы'),
         'count' => Statistics::getParam($player, 'chicken'),
         'image'  => '/images/hunters/Chicken.png',
+    ],
+    [
+        'name'  => Yii::t('common', 'Акулы'),
+        'count' => Statistics::getParam($player, 'simpleshark'),
+        'image'  => '/images/hunters/shark.png',
     ],
 ];
 

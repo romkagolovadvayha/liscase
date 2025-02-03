@@ -47,7 +47,7 @@ class SettingsController extends Controller
                     if (!empty($settings[$id]) && !empty($tmpName)) {
                         /** @var SiteSetting $setting */
                         $setting        = $settings[$id];
-                        $setting->value = $this->_loadImage($tmpName, $setting->category, $_FILES['settings']['name'][$id], $setting->code);
+                        $setting->value = $this->_loadImage($tmpName, $setting->category, $_FILES['settings']['name'][$id], $setting->code, $setting->value);
                         $setting->save();
                     }
                 }
@@ -65,7 +65,7 @@ class SettingsController extends Controller
         ]);
     }
 
-    private function _loadImage($tmpName, $category, $name, $code) {
+    private function _loadImage($tmpName, $category, $name, $code, $oldFile) {
         if (empty($tmpName)) {
             return null;
         }
@@ -75,8 +75,9 @@ class SettingsController extends Controller
             Yii::$app->session->setFlash('danger', 'Разрешенно загружать только изображения в формате SVG, PNG, JPG, ICO, WEBP!');
             return null;
         }
+        $fileName = md5(time() . $code);
         $uploadDir = Yii::getAlias('@frontend/web');
-        $fileUrl = "/uploads/site/{$category}/{$code}.{$exp}";
+        $fileUrl = "/uploads/site/{$category}/{$fileName}.{$exp}";
         $filePath = $uploadDir . $fileUrl;
         if (!file_exists(dirname(dirname($filePath)))) {
             mkdir(dirname(dirname($filePath)));
@@ -86,8 +87,8 @@ class SettingsController extends Controller
             mkdir(dirname($filePath));
             chmod(dirname($filePath), 0777);
         }
-        if (file_exists($filePath)) {
-            unlink($filePath);
+        if (file_exists($oldFile)) {
+            unlink($oldFile);
         }
         file_put_contents($filePath, file_get_contents($tmpName));
         return $fileUrl;

@@ -28,6 +28,10 @@ $tabs = [
         'category' => 'ton',
         'title' => 'TON COIN',
     ],
+    [
+        'category' => 'personal_info_ip',
+        'title' => 'Информация о вас',
+    ],
 ];
 ?>
 <div class="wrap800">

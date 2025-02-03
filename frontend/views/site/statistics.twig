@@ -18,7 +18,7 @@
                 <p>{{ PROJECT_STATS.servers|number_format(0, '', ' ') }}</p>
             </div>
         </div>
-        <img src="/images/design/user/user_0.png" alt="farmer" class="user__image"/>
+        <img src="{{ SETTINGS.get('design_image_not_auth') }}" alt="farmer" class="user__image"/>
         <div class="user__stats_footer">
             <a href="/auth/oauth?authclient=steam" class="button button-primary h-48" style="padding-top: 15px;">
               <span class="button__text">

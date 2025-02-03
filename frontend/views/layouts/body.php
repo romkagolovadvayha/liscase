@@ -124,6 +124,7 @@ if (!empty($this->params['_profile'])) {
         'SETTINGS' => $SETTINGS,
         'HOME_URL' => Yii::$app->homeUrl,
         'DOMAIN' => Yii::$app->settings->get('site_domain'),
+        'PAGE' => $page,
     ]),
     'SETTINGS' => $SETTINGS,
 ]);?>
