@@ -8,6 +8,7 @@ use common\models\statistics\Reports;
 use common\models\stats\Wipe;
 use common\models\user\User;
 use common\models\user\UserTop;
+use yii\helpers\Url;
 use yii\web\NotFoundHttpException;
 use Yii;
 
@@ -26,12 +27,18 @@ class StatsController extends WebController
         ];
     }
 
+    public function actionIndex($server)
+    {
+        Yii::$app->response->redirect('/servers/' . $server, 301);
+        Yii::$app->end();
+    }
+
     /**
      *
      * @return \yii\web\Response | string
      * @throws NotFoundHttpException
      */
-    public function actionIndex($serverTag)
+    public function actionStats($serverTag)
     {
         /** @var Servers[] $servers */
         $servers = Servers::find()
@@ -97,12 +104,18 @@ class StatsController extends WebController
         return $result;
     }
 
+    public function actionPlayer($server, $steamId)
+    {
+        Yii::$app->response->redirect("/servers/{$server}/{$steamId}", 301);
+        Yii::$app->end();
+    }
+
     /**
      *
      * @return \yii\web\Response | string
      * @throws NotFoundHttpException
      */
-    public function actionPlayer($serverTag, $steamId)
+    public function actionPlayerNew($serverTag, $steamId)
     {
         /** @var Servers[] $servers */
         $servers = Servers::find()
