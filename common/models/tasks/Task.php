@@ -158,7 +158,10 @@ class Task extends \common\components\base\ActiveRecord
                 $result[$task->type]['count']++;
                 $result[$task->type]['status'] = 'completed';
                 $result[$task->type]['items'][] = [
-                    'status' => 'completed'
+                    'status' => 'completed',
+                    'dropImage' => $task->drop->imageOrig->getImagePubUrl(),
+                    'dropName' => $task->drop->name,
+                    'count' => $task->count,
                 ];
                 continue;
             }
@@ -192,7 +195,10 @@ class Task extends \common\components\base\ActiveRecord
                         'total' => $total,
                     ];
                     $result[$task->type]['items'][] = [
-                        'status' => 'wait-get'
+                        'status' => 'wait-get',
+                        'dropImage' => $task->drop->imageOrig->getImagePubUrl(),
+                        'dropName' => $task->drop->name,
+                        'count' => $task->count,
                     ];
                     $result[$task->type]['available'] = true;
                     continue;
@@ -215,7 +221,10 @@ class Task extends \common\components\base\ActiveRecord
                 }
                 $result[$task->type]['count']++;
                 $result[$task->type]['items'][] = [
-                    'status' => 'wait'
+                    'status' => 'wait',
+                    'dropImage' => $task->drop->imageOrig->getImagePubUrl(),
+                    'dropName' => $task->drop->name,
+                    'count' => $task->count,
                 ];
                 $result[$task->type]['disabled'] = true;
             }

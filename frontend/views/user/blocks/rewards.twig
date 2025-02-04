@@ -42,13 +42,24 @@
                     {% endif %}
                     <p>{{ ITEM.completed }}/{{ ITEM.count }}</p>
                 </div>
-                <div class="progress__steps steps">
+                <div class="progress__steps steps" style="margin-bottom: 40px;">
                     {% for step in ITEM.items %}
                         {% if step.status == 'completed' %}
-                            <span class="steps__item_is-completed"></span>
+                            <span class="steps__item_is-completed relative">
+                                <div class="progress__steps_reward">
+                                    <img src="{{ step.dropImage }}" />
+                                </div>
+                            </span>
                         {% endif %}
                         {% if step.status == 'wait' or step.status == 'wait-get' %}
-                            <span></span>
+                            <span class="relative">
+                                <div class="progress__steps_reward"
+                                     data-bs-toggle="tooltip"
+                                     data-bs-placement="right"
+                                     data-bs-title="{{ t('common', 'Награда') }}: {{ step.dropName }} x{{ step.count }}">
+                                    <img src="{{ step.dropImage }}" />
+                                </div>
+                            </span>
                         {% endif %}
                     {% endfor %}
                 </div>
