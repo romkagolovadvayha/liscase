@@ -42,7 +42,7 @@
                     {% endif %}
                     <p>{{ ITEM.completed }}/{{ ITEM.count }}</p>
                 </div>
-                <div class="progress__steps steps" style="margin-bottom: 40px;">
+                <div class="progress__steps steps" style="margin-bottom: 30px;">
                     {% for step in ITEM.items %}
                         {% if step.status == 'completed' %}
                             <span class="steps__item_is-completed relative">
@@ -55,7 +55,7 @@
                             <span class="relative">
                                 <div class="progress__steps_reward"
                                      data-bs-toggle="tooltip"
-                                     data-bs-placement="right"
+                                     data-bs-placement="bottom"
                                      data-bs-title="{{ t('common', 'Награда') }}: {{ step.dropName }} x{{ step.count }}">
                                     <img src="{{ step.dropImage }}" />
                                 </div>
