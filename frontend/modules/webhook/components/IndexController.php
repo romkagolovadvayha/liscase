@@ -28,7 +28,7 @@ abstract class IndexController extends Controller
 
         /** @var TelegramApiHelper $bot */
         $bot = $system->getTelegramBot();
-        if ($token != $bot->botToken) {
+        if ($token != Yii::$app->settings->get('tgbot_botToken')) {
             return false;
         }
 
