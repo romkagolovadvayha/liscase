@@ -305,7 +305,7 @@ class PersonalBotSystem extends AbstractSystem
             if (!empty($user->telegram_chat_id)) {
                 return 'Вы уже авторизованы!';
             }
-            $userTG = User::findByChatId($user->telegram_chat_id);
+            $userTG = User::findByChatId($chatId);
             if (!empty($userTG)) {
                 return "С этого Telegram вы уже авторизованы в пользователе {$userTG->username}!";
             }
