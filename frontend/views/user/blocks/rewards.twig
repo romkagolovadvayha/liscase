@@ -42,7 +42,7 @@
                     {% endif %}
                     <p>{{ ITEM.completed }}/{{ ITEM.count }}</p>
                 </div>
-                <div class="progress__steps steps" style="margin-bottom: 30px;">
+                <div class="progress__steps steps" style="margin-bottom: 20px;">
                     {% for step in ITEM.items %}
                         {% if step.status == 'completed' %}
                             <span class="steps__item_is-completed relative">
