@@ -422,4 +422,17 @@ class Drop extends ActiveRecord
         }
         return $this->image();
     }
+
+    public static function updateCache() {
+        Statistics::productsImages(true);
+        Statistics::productsNames(true);
+        Sets::getSetsForMarket(true, true);
+        Sets::getSetsForMarket(false, true);
+        Select::getForMarket(true, true);
+        Select::getForMarket(false, true);
+        Drop::getForMarket(true, true);
+        Drop::getForMarket(false, true);
+        Category::getCategories(true, true);
+        Category::getCategories(false, true);
+    }
 }

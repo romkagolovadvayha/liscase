@@ -67,6 +67,7 @@ class DropForm extends Drop
         $this->preview_file = $this->_loadImage(UploadedFile::getInstance($this, 'preview_file'), $this->id, DropImage::TYPE_ORIG);
         $this->preview_file_open = $this->_loadImage(UploadedFile::getInstance($this, 'preview_file_open'), $this->id, DropImage::TYPE_ORIG_2);
 
+        Drop::updateCache();
         return true;
     }
 

@@ -68,15 +68,6 @@ class StorageController extends Controller
     public function actionUpdateMarket()
     {
         ini_set('memory_limit', '512M');
-        Statistics::productsImages(true);
-        Statistics::productsNames(true);
-        Sets::getSetsForMarket(true, true);
-        Sets::getSetsForMarket(false, true);
-        Select::getForMarket(true, true);
-        Select::getForMarket(false, true);
-        Drop::getForMarket(true, true);
-        Drop::getForMarket(false, true);
-        Category::getCategories(true, true);
-        Category::getCategories(false, true);
+        Drop::updateCache();
     }
 }
