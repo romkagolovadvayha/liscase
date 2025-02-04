@@ -74,8 +74,14 @@ class DropForm extends Drop
         if (empty($image) || empty($image->tempName)) {
             return null;
         }
+        $exp = explode('.', $image->name);
+        $exp = $exp[count($exp) - 1];
+        if (!in_array($exp, ['svg', 'png', 'jpg', 'ico', 'webp'])) {
+            Yii::$app->session->setFlash('danger', 'Разрешенно загружать только изображения в формате SVG, PNG, JPG, ICO, WEBP!');
+            return null;
+        }
         $uploadDir = Yii::getAlias('@app/web/uploads');
-        $fileUrl = "/drop/" . $this->id . "_" . $type . "_" . md5(time()) . ".png";
+        $fileUrl = "/drop/" . $this->id . "_" . $type . "_" . md5(time()) . ".{$exp}";
         $filePath = $uploadDir . $fileUrl;
         if (!file_exists(dirname($filePath))) {
             mkdir(dirname($filePath));
