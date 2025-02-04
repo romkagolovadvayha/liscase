@@ -36,7 +36,7 @@
     </div>
 </div>
 <footer class="px-24 pb-24 flex justify-content-center">
-    <a href="/user/payment" id="buy_product" class="button button-teritiary">
+    <a href="/user/payment" class="button button-teritiary button-size__s h-36" style="padding-top: 6px; padding-bottom: 6px">
         <span class="button__text"><i class="fas fa-long-arrow-alt-left"></i> <?=Yii::t('common', 'Другой способ оплаты')?></span>
     </a>
 </footer>

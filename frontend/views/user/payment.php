@@ -85,12 +85,13 @@ $user = Yii::$app->user->identity;
                              $img = Html::img($label, [
                                  'style' => 'max-width: 90%;max-height: 36px;',
                              ]);
+
                              $shortNameList = Deposit::getShortNameList();
                              $shortName = "";
                              if (!empty($shortNameList[$value])) {
-                                 $shortName = Html::tag('div', $shortNameList[$value], [
+                                 $shortName = Html::tag('span', $shortNameList[$value], [
                                      'class' => 'text-text-teritiary',
-                                     'style' => 'font-size: 10px',
+                                     'style' => 'font-size: 10px; margin-top: 4px;',
                                  ]);
                              }
                              $return .= Html::label($img . $shortName, $id, [

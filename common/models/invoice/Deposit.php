@@ -40,6 +40,8 @@ class Deposit extends \common\components\base\ActiveRecord
     const TYPE_PAYMENT_CARD_YM        = 17;
     const TYPE_PAYMENT_CARD_TINKOFF        = 18;
     const TYPE_PAYMENT_TON        = 19;
+    const TYPE_PAYMENT_SKINS        = 20;
+    const TYPE_PAYMENT_TELEGRAM        = 21;
 
     const STATUS_WAIT_CONFIRM = 1;
     const STATUS_CANCELED     = 2;
@@ -150,6 +152,8 @@ class Deposit extends \common\components\base\ActiveRecord
 //            self::TYPE_PAYMENT_CARD_YM     => Yii::t('common', 'Оплата ЮMoney'),
             self::TYPE_PAYMENT_CARD_TINKOFF     => Yii::t('common', 'Оплата Тинькофф'),
             self::TYPE_PAYMENT_TON     => Yii::t('common', 'Оплата TON'),
+            self::TYPE_PAYMENT_SKINS     => Yii::t('common', 'Оплата скинами'),
+            self::TYPE_PAYMENT_TELEGRAM     => Yii::t('common', 'Оплата любой картой'),
         ];
     }
 
@@ -172,7 +176,7 @@ class Deposit extends \common\components\base\ActiveRecord
 //            self::TYPE_PAYMENT_CARD_UA     => '/images/payments/cards.svg',
 //            self::TYPE_PAYMENT_CARD_KZT     => '/images/payments/cards.svg',
 //            self::TYPE_PAYMENT_CARD_YM     => '/images/payments/iomoney.png',
-            self::TYPE_PAYMENT_CARD_TINKOFF     => '/images/payments/cards.svg',
+//            self::TYPE_PAYMENT_CARD_TINKOFF     => '/images/payments/cards.svg',
         ];
 
         if (Yii::$app->settings->get('tinkoffpay_enabled')) {
@@ -183,6 +187,12 @@ class Deposit extends \common\components\base\ActiveRecord
         }
         if (Yii::$app->settings->get('ton_enabled')) {
             $icons[self::TYPE_PAYMENT_TON] = Yii::$app->settings->get('ton_logo');
+        }
+        if (Yii::$app->settings->get('skinpay_enabled')) {
+            $icons[self::TYPE_PAYMENT_SKINS] = Yii::$app->settings->get('skinpay_logo');
+        }
+        if (Yii::$app->settings->get('telegrampay_enabled')) {
+            $icons[self::TYPE_PAYMENT_TELEGRAM] = Yii::$app->settings->get('telegrampay_logo');
         }
 
         return $icons;
@@ -199,6 +209,7 @@ class Deposit extends \common\components\base\ActiveRecord
 //            self::TYPE_PAYMENT_TRON     => 'TRX',
 //            self::TYPE_PAYMENT_CARD_UA     => '<div style="font-size: 14px">Украина</div>',
 //            self::TYPE_PAYMENT_CARD_KZT     => '<div style="font-size: 14px">Казахстан</div>',
+            self::TYPE_PAYMENT_TELEGRAM    => Yii::t('common', 'Любые карты'),
         ];
     }
 
@@ -223,6 +234,8 @@ class Deposit extends \common\components\base\ActiveRecord
             self::TYPE_PAYMENT_CARD_KZT      => [1000, 100000],
             self::TYPE_PAYMENT_CARD_YM       => [1000, 100000],
             self::TYPE_PAYMENT_CARD_TINKOFF  => [10, 100000],
+            self::TYPE_PAYMENT_SKINS  => [50, 100000],
+            self::TYPE_PAYMENT_TELEGRAM  => [50, 100000],
         ];
     }
 

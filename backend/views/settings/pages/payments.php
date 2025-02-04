@@ -29,6 +29,14 @@ $tabs = [
         'title' => 'TON COIN',
     ],
     [
+        'category' => 'skinpay',
+        'title' => 'Оплата скинами',
+    ],
+    [
+        'category' => 'telegrampay',
+        'title' => 'Оплата через TG',
+    ],
+    [
         'category' => 'personal_info_ip',
         'title' => 'Информация о вас',
     ],
