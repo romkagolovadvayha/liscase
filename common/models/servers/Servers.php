@@ -276,12 +276,15 @@ class Servers extends \common\components\base\ActiveRecord
       return (new \DateTime($this->wipe))->format('Y-m-d') . "/" . (new \DateTime($this->next_wipe))->format('Y-m-d');
     }
 
-    public function getLink($key) {
+    public function getLink($key, $steamId = null) {
         if ($key === 'rules') {
             return "/servers/{$this->tag}/rules";
         }
         if ($key === 'stats') {
             return "/servers/{$this->tag}";
+        }
+        if ($key === 'user-stats') {
+            return "/servers/{$this->tag}/{$steamId}";
         }
         if ($key === 'maps') {
             return "/maps/{$this->tag}";

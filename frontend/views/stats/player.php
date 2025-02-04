@@ -53,6 +53,17 @@ $kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam(
 <!--    </select>-->
 <!--</div>-->
 
+<nav class="servers_navbar mb-24">
+    <ul class="servers_navbar_nav">
+        <?php foreach ($servers as $_server): ?>
+            <li>
+                <a href="<?=$_server->getLink('user-stats', $user->steam_id)?>" class="servers_navbar_nav_item<?php if ($_server->id === $server->id): ?> active<?php endif; ?> ">
+                    <?=Yii::t('database', $_server->monitoring_name)?>
+                </a>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+</nav>
 
 <?= Alert::widget() ?>
 <div class="flex flex-column gap-x-12 gap-y-12 tab-pane active" id="Max3">

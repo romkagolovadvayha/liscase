@@ -186,7 +186,7 @@
     }
     &_news {
       @extend .bg-icon-main;
-      mask: url("/images/design/icons/32px/news.svg") no-repeat center;
+      mask: url("/images/design/icons/32px/blog.svg") no-repeat center;
     }
     &_skin {
       @extend .bg-icon-main;
@@ -194,7 +194,7 @@
     }
     &_location {
       @extend .bg-icon-main;
-      mask: url("/images/design/icons/32px/location.svg") no-repeat center;
+      mask: url("/images/design/icons/32px/locations.svg") no-repeat center;
     }
     &_statistics {
       @extend .bg-icon-main;
