@@ -25,7 +25,7 @@ if (!Yii::$app->user->isGuest && !empty($user->userProfile->trade_link)) {
 }
 $usernameCompleted = false;
 $prefix = Yii::$app->settings->get('skindrops_prefix');
-if (!Yii::$app->user->isGuest && strpos(mb_strtolower($user->username), $prefix) !== false) {
+if (!Yii::$app->user->isGuest && strpos(mb_strtolower($user->username), strtolower($prefix)) !== false) {
     $usernameCompleted = true;
 }
 $allCompleted = $usernameCompleted && $tradeLinkCompleted && $authCompleted;
