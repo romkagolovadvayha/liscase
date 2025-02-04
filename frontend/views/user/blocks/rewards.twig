@@ -45,18 +45,21 @@
                 <div class="progress__steps steps" style="margin-bottom: 20px;">
                     {% for step in ITEM.items %}
                         {% if step.status == 'completed' %}
-                            <span class="steps__item_is-completed relative">
+                            <span class="steps__item_is-completed relative"
+                                  data-bs-toggle="tooltip"
+                                  data-bs-placement="bottom"
+                                  data-bs-title="{{ t('common', 'Награда') }}: {{ step.dropName }} x{{ step.count }}">
                                 <div class="progress__steps_reward">
                                     <img src="{{ step.dropImage }}" />
                                 </div>
                             </span>
                         {% endif %}
                         {% if step.status == 'wait' or step.status == 'wait-get' %}
-                            <span class="relative">
-                                <div class="progress__steps_reward"
-                                     data-bs-toggle="tooltip"
-                                     data-bs-placement="bottom"
-                                     data-bs-title="{{ t('common', 'Награда') }}: {{ step.dropName }} x{{ step.count }}">
+                            <span class="relative"
+                                  data-bs-toggle="tooltip"
+                                  data-bs-placement="bottom"
+                                  data-bs-title="{{ t('common', 'Награда') }}: {{ step.dropName }} x{{ step.count }}">
+                                <div class="progress__steps_reward">
                                     <img src="{{ step.dropImage }}" />
                                 </div>
                             </span>
