@@ -42,24 +42,24 @@
                     {% endif %}
                     <p>{{ ITEM.completed }}/{{ ITEM.count }}</p>
                 </div>
-                <div class="progress__steps steps" style="margin-bottom: 20px;">
+                <div class="progress__steps steps" style="margin-bottom: 30px;">
                     {% for step in ITEM.items %}
                         {% if step.status == 'completed' %}
-                            <span class="steps__item_is-completed relative"
-                                  data-bs-toggle="tooltip"
-                                  data-bs-placement="bottom"
-                                  data-bs-title="{{ t('common', 'Награда') }}: {{ step.dropName }} x{{ step.count }}">
-                                <div class="progress__steps_reward">
+                            <span class="steps__item_is-completed relative">
+                                <div class="progress__steps_reward"
+                                     data-bs-toggle="tooltip"
+                                     data-bs-placement="right"
+                                     data-bs-title="{{ t('common', 'Награда') }}: {{ step.dropName }} x{{ step.count }}">
                                     <img src="{{ step.dropImage }}" />
                                 </div>
                             </span>
                         {% endif %}
                         {% if step.status == 'wait' or step.status == 'wait-get' %}
-                            <span class="relative"
-                                  data-bs-toggle="tooltip"
-                                  data-bs-placement="bottom"
-                                  data-bs-title="{{ t('common', 'Награда') }}: {{ step.dropName }} x{{ step.count }}">
-                                <div class="progress__steps_reward">
+                            <span class="relative">
+                                <div class="progress__steps_reward"
+                                     data-bs-toggle="tooltip"
+                                     data-bs-placement="right"
+                                     data-bs-title="{{ t('common', 'Награда') }}: {{ step.dropName }} x{{ step.count }}">
                                     <img src="{{ step.dropImage }}" />
                                 </div>
                             </span>
