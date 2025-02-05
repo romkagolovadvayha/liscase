@@ -210,10 +210,6 @@ button,
     }
     &__s {
       @extend .p3, .uppercase, .py-10, .px-12;
-      @media (max-width: 768px) {
-        font-size: 20px;
-        line-height: 25px;
-      }
     }
   }
 

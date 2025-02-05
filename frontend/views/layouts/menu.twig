@@ -1,6 +1,6 @@
 {{ use('common/components/widgets') }}
 
-<aside {% if not MOBILE %}class="menu mobile_hide" id="main-menu" {% if MENU_HIDDEN %}style="width: 102px;"{% endif %}{% endif %}>
+<aside {% if not MOBILE %}class="menu" id="main-menu" {% if MENU_HIDDEN %}style="width: 102px;"{% endif %}{% endif %}>
     {% if not MOBILE %}
         <button class="menu__button" id="menu-toggle-button" type="button">
             <span class="icons icons_16px icons_16px_arrow_left" id="menu-button-arrow-left"></span>
@@ -51,6 +51,7 @@
             with {
                 'SETTINGS': SETTINGS,
                 'PAGE': PAGE,
+                'USER': USER,
                 'CLASS': 'menu__list',
                 'CLASS_ITEM': 'menu__item',
                 'CLASS_ITEM_ACTIVE': 'menu__item_active',

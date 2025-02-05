@@ -60,6 +60,7 @@ class SiteController extends WebController
      */
     public function actionIndex()
     {
+        $this->view->params['page'] = 'home';
         return $this->render('index');
     }
 
@@ -215,11 +216,14 @@ class SiteController extends WebController
         return $this->renderAjax('promocode');
     }
 
-    public function actionMenu()
+    public function actionMenu($page = null)
     {
+        $userData = \common\models\user\User::userData();
         return $this->renderAjax('@frontend/views/layouts/menu.twig', [
             'MENU_HIDDEN' => false,
             'MOBILE' => true,
+            'USER' => $userData,
+            'PAGE' => $page,
         ]);
     }
 

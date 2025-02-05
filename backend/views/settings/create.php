@@ -14,6 +14,7 @@ $this->title = 'Добавить настройку';
     <?= $form->field($model, 'category')->textInput() ?>
     <?= $form->field($model, 'type')->dropDownList([
                                                        'text' => 'Текстовое поле',
+                                                       'longtext' => 'Много текста',
                                                        'color' => 'Выбор цвета',
                                                        'image' => 'Изображение',
                                                        'number' => 'Числовое поле',

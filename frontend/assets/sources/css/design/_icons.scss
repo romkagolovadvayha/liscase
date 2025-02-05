@@ -180,6 +180,14 @@
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/rules.svg") no-repeat center;
     }
+    &_shop {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/shop.svg") no-repeat center;
+    }
+    &_profile {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/profile.svg") no-repeat center;
+    }
     &_servers {
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/servers.svg") no-repeat center;

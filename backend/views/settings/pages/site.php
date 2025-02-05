@@ -33,6 +33,10 @@ $tabs = [
         'category' => 'banSystem',
         'title' => 'Бан система',
     ],
+    [
+        'category' => 'metrics',
+        'title' => 'Счетчики',
+    ],
 ];
 ?>
 

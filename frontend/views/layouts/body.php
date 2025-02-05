@@ -107,6 +107,7 @@ if (!empty($this->params['_profile'])) {
         'lang' => $lang,
         'DOMAIN' => Yii::$app->settings->get('site_domain'),
         'SETTINGS' => $SETTINGS,
+        'PAGE' => $page,
     ]),
     'MENU' => Yii::$app->view->render('menu.twig', [
         'MENU_HIDDEN' => $hiddenMenu,

@@ -1,5 +1,8 @@
 .servers_page {
-  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(410px, 1fr));
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
   display: grid;
   gap: 20px;
   &_item {
@@ -31,6 +34,12 @@
     }
     &_header {
       @extend .flex, .mb-5, .items-center, .justify-space-between;
+      @media (max-width: 768px) {
+        gap: 12px;
+        align-items: flex-start;
+        justify-content: flex-start;
+        flex-direction: column;
+      }
       &_title {
         @extend .text-text-main;
       }
@@ -46,6 +55,11 @@
       flex-wrap: wrap;
       margin-top: 12px;
       justify-content: space-between;
+      @media (max-width: 768px) {
+        gap: 12px;
+        align-items: flex-start;
+        justify-content: flex-start;
+      }
       &_label {
         @extend .p3, .mb-2, .text-text-secondary;
         display: block;
@@ -57,6 +71,11 @@
       flex-wrap: wrap;
       justify-content: space-between;
       margin-top: 32px;
+      @media (max-width: 768px) {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+      }
       &_wipe {
         &_label {
           @extend .p2, .mb-2, .text-text-secondary;
@@ -75,6 +94,9 @@
       flex-wrap: wrap;
       margin-top: 5px;
       justify-content: space-between;
+      @media (max-width: 768px) {
+        margin-top: 12px;
+      }
       &_r {
         @extend .mb-3, .items-center;
         display: flex;

@@ -3,15 +3,20 @@
   flex-direction: column;
   gap: 10px;
   &_wrap {
-    height: 700px;
     overflow-y: auto;
     box-shadow: none;
     border-radius: 8px;
-    position: relative;
     padding-left: 16px;
     padding-right: 16px;
     padding-top: 10px;
-    padding-bottom: 90px;
+    padding-bottom: 70px;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    @media (max-width: 768px) {
+      padding-left: 0;
+      padding-right: 0;
+    }
     &::-webkit-scrollbar {
       width: 5px;
       height: 5px;
@@ -28,6 +33,17 @@
       overflow: hidden;
       box-shadow: 0 0 2px 0 rgba(0, 0, 0, 0.30), 0 4px 16px 0 rgba(0, 0, 0, 0.30);
       width: 100%;
+      display: flex;
+      flex-direction: column;
+      @media (max-width: 768px) {
+        position: absolute;
+        top: 76px;
+        left: 0;
+        right: 0;
+        bottom: 60px;
+        z-index: 100;
+        border-radius: 0;
+      }
     }
   }
   &_header {
@@ -62,6 +78,14 @@
     align-items: flex-end;
     width: auto;
     height: auto;
+    @media (max-width: 768px) {
+      bottom: 0;
+      left: 0;
+      right: 0;
+      border-radius: 0;
+      border-left: 0;
+      border-right: 0;
+    }
     textarea {
       width: 100%;
       resize: none;
@@ -169,6 +193,9 @@
     align-items: flex-end;
     gap: 15px;
     padding: 0 30px;
+    @media (max-width: 768px) {
+      flex-wrap: wrap;
+    }
     &:hover {
       .support_messages_item_tools {
         display: block;
@@ -335,12 +362,16 @@
   width: 100%;
   display: flex;
   justify-content: flex-start;
+  flex: 1 0;
 }
 .support_messages_side {
   width: 200px;
   border-right: 1px solid var(--background-teritiary);
   height: 700px;
   overflow-y: auto;
+  @media (max-width: 768px) {
+    display: none;
+  }
   &::-webkit-scrollbar {
     width: 5px;
     height: 5px;

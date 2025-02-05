@@ -6,13 +6,22 @@
     'menuHidden': MENU_HIDDEN,
     'items': [
         {
+            'label': t('common', 'Главная страница'),
+            'url': "/",
+            'iconClass': "icons icons_32px icons_32px_shop #{CLASS_ICON}",
+            'activeClass': CLASS_ITEM_ACTIVE,
+            'active': PAGE == 'home',
+            'spanClass': CLASS_ITEM_SPAN_TEXT,
+            'options': {'class': "#{CLASS_ITEM} tablet_hide desktop_hide menu__item_mobile"},
+        },
+        {
             'label': t('common', 'Статистика'),
             'url': "/servers/#{USER.SERVER_ACTIVE_TAG}",
             'iconClass': "icons icons_32px icons_32px_statistics #{CLASS_ICON}",
             'activeClass': CLASS_ITEM_ACTIVE,
             'active': PAGE == 'stats',
             'spanClass': CLASS_ITEM_SPAN_TEXT,
-            'options': {'class': CLASS_ITEM},
+            'options': {'class': "#{CLASS_ITEM} menu__item_mobile"},
         },
         {
             'label': t('common', 'Бан-лист'),
@@ -90,7 +99,7 @@
             'spanClass': CLASS_ITEM_SPAN_TEXT,
             'visibility': SETTINGS.get('section_support'),
             'notification': NOTIFICATIONS.SUPPORT,
-            'options': {'class': "#{CLASS_ITEM} menu__item_support"},
+            'options': {'class': "#{CLASS_ITEM} menu__item_support menu__item_mobile"},
         },
         {
             'label': t('common', 'Выбор карты'),
@@ -100,7 +109,7 @@
             'active': PAGE == 'maps',
             'visibility': SETTINGS.get('section_maps'),
             'spanClass': CLASS_ITEM_SPAN_TEXT,
-            'options': {'class': "#{CLASS_ITEM} menu__item_maps"},
+            'options': {'class': "#{CLASS_ITEM} menu__item_maps menu__item_mobile"},
         },
         {
             'label': t('common', 'Ваши скины'),
@@ -139,6 +148,15 @@
             'spanClass': CLASS_ITEM_SPAN_TEXT,
             'visibility': false,
             'options': {'class': CLASS_ITEM},
+        },
+        {
+            'label': t('common', 'Профиль'),
+            'url': "/user/profile",
+            'iconClass': "icons icons_32px icons_32px_profile #{CLASS_ICON}",
+            'activeClass': CLASS_ITEM_ACTIVE,
+            'active': PAGE == 'user-profile',
+            'spanClass': CLASS_ITEM_SPAN_TEXT,
+            'options': {'class': "#{CLASS_ITEM} tablet_hide desktop_hide menu__item_mobile"},
         },
     ]
 })

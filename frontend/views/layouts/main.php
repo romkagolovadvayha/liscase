@@ -48,38 +48,18 @@ JS,
         \yii\web\View::POS_BEGIN
     );
 }
-$userData = [];
 $servers = Servers::find()
                   ->cache(30)
                   ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
                   ->orderBy(['sort' => SORT_ASC])
                   ->all();
-$userData['SERVER_ACTIVE_ID'] = $servers[0]->id;
-$userData['SERVER_ACTIVE_TAG'] = $servers[0]->tag;
 $supportCount = 0;
 $notifications = [];
 if (!Yii::$app->user->isGuest) {
     $user = Yii::$app->user->identity;
-    $userData = [
-        'username' => $user->username,
-        'steam_id' => $user->steam_id,
-        'avatar' => $user->getAvatar(),
-        'currency' => UserBalance::getCurrency(),
-        'balance' => $balance,
-        'server' => $user->server,
-        'blocked' => $user->status === \common\models\user\User::STATUS_BLOCKED,
-    ];
-    if (!empty($userData['server'])) {
-        foreach ($servers as $server) {
-            if ($server->id == $userData['server']->id) {
-                $userData['SERVER_ACTIVE_ID'] = $userData['server']->id;
-                $userData['SERVER_ACTIVE_TAG'] = $userData['server']->tag;
-                break;
-            }
-        }
-    }
     $notifications = $user->notifications();
 }
+$userData = \common\models\user\User::userData();
 
 $settings = Yii::$app->settings;
 $lang = substr(Yii::$app->language, 0, 2);
