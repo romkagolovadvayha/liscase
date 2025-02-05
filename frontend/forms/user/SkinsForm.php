@@ -69,6 +69,8 @@ class SkinsForm extends \common\components\base\ActiveRecord
             return false;
         }
 
+        $dbTransaction = Yii::$app->db->beginTransaction();
+
         $userPayout = new UserPayoutSkins();
         $userPayout->user_id  = $user->id;
         $userPayout->name  = $item['name'];
@@ -86,8 +88,6 @@ class SkinsForm extends \common\components\base\ActiveRecord
             return false;
         }
         $user->getSkinsBalance()->recalculateBalance();
-
-        $dbTransaction = Yii::$app->db->beginTransaction();
         try {
             $partner = Skindrops::getUrlQuery($user->userProfile->trade_link, 'partner');
             $token = Skindrops::getUrlQuery($user->userProfile->trade_link, 'token');
