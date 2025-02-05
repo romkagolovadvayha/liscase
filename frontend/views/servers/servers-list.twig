@@ -21,7 +21,7 @@
                     </div>
                 </div>
                 <div class="servers_page_item_labels">
-                    {% if SERVER.is_store %}
+                    {% if not SERVER.is_store %}
                         <div class="servers_page_item_labels_label"><i class="fas fa-check"></i> {{ t('common', 'Донат выключен') }}</div>
                     {% endif %}
                     {% if SERVER.stats_payment %}
