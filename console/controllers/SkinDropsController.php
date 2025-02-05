@@ -24,6 +24,17 @@ class SkinDropsController extends Controller
     }
 
     /**
+     * Очистить пустые
+     * skin-drops/clear
+     *
+     * @throws \Exception
+     */
+    public function actionClear()
+    {
+        UserPayoutSkins::clear();
+    }
+
+    /**
      * Провести розыгрыш
      * skin-drops/go-draw
      *

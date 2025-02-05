@@ -129,6 +129,16 @@ class SkinsForm extends \common\components\base\ActiveRecord
                 return false;
             }
 
+            if (empty($trade['id'])) {
+                $userPayout->status = UserPayoutSkins::STATUS_REJECT;
+                $userPayout->save(false);
+                $user->getSkinsBalance()->recalculateBalance();
+                Yii::$app->telegramChats->sendMessage("Ошибка сохранения скина (нет ID) у UserId: " . Yii::$app->user->id);
+                Yii::$app->telegramChats->sendMessage(json_encode($trade));
+                $dbTransaction->rollBack();
+                return false;
+            }
+
             $userPayout->skin_id  = $trade['id'];
             $userPayout->price  = $trade['price'] / 100;
 

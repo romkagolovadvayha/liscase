@@ -83,4 +83,19 @@ class UserPayoutSkins extends ActiveRecord
             }
         }
     }
+
+    public static function clear() {
+        /** @var UserPayoutSkins[] $payouts */
+        $payouts = UserPayoutSkins::find()
+                                  ->andWhere(['status' => UserPayoutSkins::STATUS_WAIT])
+                                  ->orderBy(['created_at' => SORT_DESC])
+                                  ->all();
+        foreach ($payouts as $payout) {
+            if (empty($payout->skin_id)) {
+                $payout->status = UserPayoutSkins::STATUS_REJECT;
+                $payout->save();
+                $payout->user->getSkinsBalance()->recalculateBalance();
+            }
+        }
+    }
 }
