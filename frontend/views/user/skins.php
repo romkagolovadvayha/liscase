@@ -123,7 +123,7 @@ $dataProvider = new \yii\data\ArrayDataProvider([
             <div class="page-stats__categories">
                 <div class="page-stats__category category">
                     <h5 class="category__count-and-img">
-                        <span><div class="line_sum"><?=number_format($balance->balance, 0, '.', ' ')?> <span class="icons icons_16px icons_16px_coin"></span></div></span>
+                        <span><div class="line_sum"><?=number_format($balance->balance, 0, '.', ' ')?> <span class="icons icons_16px icons_16px_coin_skins"></span></div></span>
                     </h5>
                     <?php if ($balance->balance > 0): ?>
                         <a
@@ -225,7 +225,7 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                                                   } else {
                                                                       $amount = '+' . $amount;
                                                                   }
-                                                                  return "<div class=\"line_sum {$class}\">{$amount} <span class=\"icons icons_16px icons_16px_coin\"></span></div>";
+                                                                  return "<div class=\"line_sum {$class}\">{$amount} <span class=\"icons icons_16px icons_16px_coin_skins\"></span></div>";
                                                               },
                                                           ],
                                                       ],

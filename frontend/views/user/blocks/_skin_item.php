@@ -24,7 +24,7 @@ $skinsForm = new SkinsForm();
 ); ?>
 <div class="page-stats__category category">
     <h5 class="category__count-and-img">
-        <span><?=number_format($model['price'], 0, '.', ' ')?> <span class="icons icons_16px icons_16px_coin" style="vertical-align: middle;margin-top: -3px;"></span></span>
+        <span><?=number_format($model['price'], 0, '.', ' ')?> <span class="icons icons_16px icons_16px_coin_skins" style="vertical-align: middle;margin-top: -3px;"></span></span>
         <a href="<?=$model['image300']?>" title="<?=$model['name']?>"><img src="<?=$model['image']?>" alt="<?=$model['name']?>" class="w-64 h-64 object-contain"></a>
     </h5>
     <p class="category__title"><?=$model['name']?></p>
