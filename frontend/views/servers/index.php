@@ -20,7 +20,7 @@ $formatJs = <<< 'JS'
 var wipes = $('.server_info_profile_wipe_date');
 for (var i = 0; i < wipes.length; i++) {
     var date = $(wipes[i]).attr('data-date');
-    $(wipes[i]).html(moment(date).locale('ru').format('D MMM YYYY в HH:mm МСК'));
+    $(wipes[i]).html(moment(date).locale('ru').format('D MMM YYYY в HH:mm'));
 }
 JS;
 $this->registerJs($formatJs, \yii\web\View::POS_END);
