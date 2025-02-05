@@ -12,7 +12,7 @@ class ModalAsset extends AssetBundle
 
     public $js
         = [
-            'js/modal.js?v=1.0',
+            'js/modal.js?v=1.1',
         ];
 
     public $depends

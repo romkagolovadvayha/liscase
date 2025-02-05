@@ -1,6 +1,7 @@
 $(document).ready(function () {
     $(document).on('click', '.show-modal-link', function (e) {
         e.preventDefault();
+        $('.modal-backdrop').remove();
         var href = $(this).data('href');
         if (!href) {
             href = $(this).attr('href');

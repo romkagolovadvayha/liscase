@@ -15,6 +15,24 @@
             'options': {'class': "#{CLASS_ITEM} tablet_hide desktop_hide menu__item_mobile"},
         },
         {
+            'label': t('common', 'Промокод'),
+            'url': "/site/promocode",
+            'iconClass': "icons icons_32px icons_32px_statistics #{CLASS_ICON}",
+            'activeClass': CLASS_ITEM_ACTIVE,
+            'spanClass': CLASS_ITEM_SPAN_TEXT,
+            'options': {
+                'class': "#{CLASS_ITEM} tablet_hide desktop_hide show-modal-link",
+                'data-size': 'modal-sm',
+                'data-content-overflow': "unset",
+                'data-top-image': SETTINGS.get('design_promoPopupImage'),
+                'data-top-class': 'modal-backdrop-image_promo active',
+                'data-toggl': 'modal',
+                'data-target': 'modal-dialog' ,
+                'data-title': t('common', 'Промокод'),
+                'data-href': "/site/promocode"
+            },
+        },
+        {
             'label': t('common', 'Статистика'),
             'url': "/servers/#{USER.SERVER_ACTIVE_TAG}",
             'iconClass': "icons icons_32px icons_32px_statistics #{CLASS_ICON}",
