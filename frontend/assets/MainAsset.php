@@ -24,7 +24,7 @@ class MainAsset extends AssetBundle
         'js/clipboard.min.js?v=1.0',
         'js/design/main.js?v=1.0',
         'js/design/menu.js?v=1.0',
-        'js/main.js?v=1.0',
+        'js/main.js?v=1.1',
     ];
 
     public $depends = [

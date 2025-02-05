@@ -103,7 +103,7 @@ more_sets_button.click(function () {
 var notificationSound = undefined;
 function sound(file, hash) {
     notificationSound = new Audio(file);
-    notificationSound.volume = 0.5;  // Устанавливаем громкость от 0 до 1
+    notificationSound.volume = 0.2;  // Устанавливаем громкость от 0 до 1
     notificationSound.loop = false;  // Повторять ли звук
 
     // Проверяем, если на других вкладках уже был запущен звук
