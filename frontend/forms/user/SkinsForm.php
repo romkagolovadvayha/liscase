@@ -115,6 +115,8 @@ class SkinsForm extends \common\components\base\ActiveRecord
                     $this->addError('id', Yii::t('common', 'Этот скин, к сожалению, уже купили. Пожалуйста, выберите другой.'));
                 } elseif (strpos($trade['error'],'открыть инвентарь') !== false) {
                     $this->addError('id', Yii::t('common', 'Вам нужно сначала открыть инвентарь в настройках стим профиля.'));
+                } elseif (strpos($trade['error'],'Неверная ссылка для обмена') !== false) {
+                    $this->addError('id', Yii::t('common', 'Неверная ссылка для обмена, проверьте или попробуйте еще раз'));
                 } else {
                     $userPayout->status = UserPayoutSkins::STATUS_REJECT;
                     $userPayout->save(false);
