@@ -135,6 +135,7 @@ class SkinsForm extends \common\components\base\ActiveRecord
                 $user->getSkinsBalance()->recalculateBalance();
                 Yii::$app->telegramChats->sendMessage("Ошибка сохранения скина (нет ID) у UserId: " . Yii::$app->user->id);
                 Yii::$app->telegramChats->sendMessage(json_encode($trade));
+                $this->addError('id', Yii::t('common', 'Произошла ошибка при получении скина!'));
                 $dbTransaction->rollBack();
                 return false;
             }
