@@ -151,12 +151,39 @@
         },
         {
             'label': t('common', 'Профиль'),
-            'url': "/user/profile",
             'iconClass': "icons icons_32px icons_32px_profile #{CLASS_ICON}",
             'activeClass': CLASS_ITEM_ACTIVE,
-            'active': PAGE == 'user-profile',
+            'dropdownOptions': {
+                'class': CLASS,
+            },
             'spanClass': CLASS_ITEM_SPAN_TEXT,
-            'options': {'class': "#{CLASS_ITEM} tablet_hide desktop_hide menu__item_mobile"},
+            'options': {'class': "#{CLASS_ITEM} menu__item_hide menu__item_mobile"},
+            'items': [
+                {
+                    'label': t('common', 'Профиль'),
+                    'url': "/user/profile",
+                    'iconClass': "icons icons_32px icons_32px_profile #{CLASS_ICON}",
+                    'activeClass': CLASS_ITEM_ACTIVE,
+                    'spanClass': 'stat-block-profile-menu__item-text',
+                    'linkOptions': {'class': "#{CLASS_ITEM} menu__item_mobile"},
+                },
+                {
+                    'label': t('common', 'Бонусы и задания'),
+                    'url': "/user/tasks",
+                    'iconClass': "icons icons_32px icons_32px_bonuses #{CLASS_ICON}",
+                    'activeClass': 'active',
+                    'spanClass': 'stat-block-profile-menu__item-text',
+                    'linkOptions': {'class': "#{CLASS_ITEM} menu__item_mobile"},
+                },
+                {
+                    'label': t('common', 'Моя корзина'),
+                    'url': "/user/inventory",
+                    'iconClass': "icons icons_32px icons_32px_basket #{CLASS_ICON}",
+                    'activeClass': 'active',
+                    'spanClass': 'stat-block-profile-menu__item-text',
+                    'linkOptions': {'class': "#{CLASS_ITEM} menu__item_mobile"},
+                },
+            ],
         },
     ]
 })

@@ -188,6 +188,14 @@
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/profile.svg") no-repeat center;
     }
+    &_basket {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/basket.svg") no-repeat center;
+    }
+    &_bonuses {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/bonuses.svg") no-repeat center;
+    }
     &_servers {
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/servers.svg") no-repeat center;

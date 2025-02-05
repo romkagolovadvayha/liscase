@@ -14,7 +14,6 @@ use Throwable;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\bootstrap5\BootstrapAsset;
-use yii\bootstrap5\Dropdown;
 use yii\bootstrap5\Html;
 use yii\bootstrap5\Widget;
 use yii\helpers\ArrayHelper;
@@ -258,6 +257,7 @@ class NavMenu extends Widget
                                           'items' => $items,
                                           'encodeLabels' => $this->encodeLabels,
                                           'clientOptions' => [],
+                                          'menuHidden' => $this->menuHidden,
                                           'view' => $this->getView(),
                                       ]);
     }

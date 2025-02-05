@@ -73,7 +73,7 @@ $this->title = Yii::t('common', "Профиль") . " - {$user->userProfile->nam
                                         ]); ?>
         <?= Alert::widget() ?>
         <div class="mb-12">
-            <div class="flex gap-x-10 align-items-center">
+            <div class="flex gap-x-10 align-items-center flex-wrap">
                 <p class="p1 text-text-teritiary"><?=Yii::t('common', "Персональный телеграм бот")?></p>
                 <?php if (!empty($model->user->telegram_chat_id)): ?>
                     <button type="submit" name="ProfileForm[telegram_disabled]" value="1" class="button-secondary button-size__s h-36" style="padding-top: 6px; padding-bottom: 6px"><span class="button__text"><?=Yii::t('common', 'Отвязать аккаунт')?></span></button>
