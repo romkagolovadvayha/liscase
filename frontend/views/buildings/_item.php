@@ -23,7 +23,7 @@ $isActive = in_array($model->id, $userLikes);
                 title="<?=Yii::t('common', 'Открыть профиль Steam')?>"
                 target="_blank"
                 class="buildings_content_list_item_footer_profile"
-                href="/stats/player?steamId=<?=$model->user->steam_id?>&server=<?=$model->server_tag?>">
+                href="<?=$model->user->getLink('stats')?>">
             <img src="<?=$model->user->getAvatar()?>" title="<?=$model->user->username?>"/>
             <span class="buildings_content_list_item_footer_profile_name"><?=$model->user->username?></span>
         </a>
