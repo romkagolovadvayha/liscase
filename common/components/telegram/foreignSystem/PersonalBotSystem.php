@@ -112,11 +112,11 @@ class PersonalBotSystem extends AbstractSystem
         }
         $user = User::findByChatId($chatId);
         if (empty($user)) {
-            $return = '🔐 Авторизуйтесь, чтобы получать оповещения о рейдах!' . PHP_EOL . "Для авторизации напишите /start";
+            $return = '🔒 Авторизуйтесь, чтобы получать оповещения о рейдах!' . PHP_EOL . "Для авторизации напишите /start";
             return $return;
         }
         if ($user->status === User::STATUS_BLOCKED) {
-            $return = '🔐 Ваш аккаунт заблокирован!';
+            $return = '🔒 Ваш аккаунт заблокирован!';
             Yii::$app->cache->set($cacheKey, $return, 60);
             return $return;
         }
@@ -142,11 +142,11 @@ class PersonalBotSystem extends AbstractSystem
         }
         $user = User::findByChatId($chatId);
         if (empty($user)) {
-            $return = '🔐 Авторизуйтесь, чтобы получать оповещения о рейдах!' . PHP_EOL . "Для авторизации напишите /start";
+            $return = '🔒 Авторизуйтесь, чтобы получать оповещения о рейдах!' . PHP_EOL . "Для авторизации напишите /start";
             return $return;
         }
         if ($user->status === User::STATUS_BLOCKED) {
-            $return = '🔐 Ваш аккаунт заблокирован!';
+            $return = '🔒 Ваш аккаунт заблокирован!';
             Yii::$app->cache->set($cacheKey, $return, 60);
             return $return;
         }
@@ -236,11 +236,11 @@ class PersonalBotSystem extends AbstractSystem
         }
         $user = User::findByChatId($chatId);
         if (empty($user)) {
-            $return = '🔐 Авторизуйтесь, чтобы получить награду!' . PHP_EOL . "Для авторизации напишите /start";
+            $return = '🔒 Авторизуйтесь, чтобы получить награду!' . PHP_EOL . "Для авторизации напишите /start";
             return $return;
         }
         if ($user->status === User::STATUS_BLOCKED) {
-            $return = '🔐 Ваш аккаунт заблокирован!';
+            $return = '🔒 Ваш аккаунт заблокирован!';
             Yii::$app->cache->set($cacheKey, $return, 60);
             return $return;
         }
