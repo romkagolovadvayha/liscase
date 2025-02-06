@@ -5,6 +5,7 @@ use common\components\bansystem\BanSystemApi;
 use common\components\oauth\Steam;
 use common\models\bans\Bans;
 use common\models\bansystem\BanList;
+use common\models\statistics\Reports;
 use common\models\user\User;
 use yii\console\Controller;
 use yii\helpers\HtmlPurifier;
@@ -141,6 +142,24 @@ class RustotekaController extends Controller
                 $model->user_id = $user->id;
                 $model->ip = $item['ip'];
                 $model->save();
+                try {
+                    if (date('Y-m-d') === date('Y-m-d', strtotime($model->banned_at))) {
+                        /** @var Reports[] $reports */
+                        $reports = Reports::find()
+                                          ->andWhere(['recepient_steam_id' => $model->steam_id])
+                                          ->andWhere(['>=', 'created_at', (new \DateTime())->modify('-14 day')->format('Y-m-d H:i:s')])
+                                          ->all();
+
+                        foreach ($reports as $report) {
+                            $_user = User::findBySteamId($report->steam_id);
+                            if (!empty($_user) && $_user->ban_notify && !empty($_user->telegram_chat_id)) {
+                                \Yii::$app->personalBotTelegram->sendMessage($_user->telegram_chat_id, "Игрок {$_user->username}, на которого вы жаловались забанен по причине {$model->reason}!");
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Yii::$app->telegramChats->sendMessage("actionBanImport\nFile: {$e->getFile()}:{$e->getLine()}\nError: {$e->getMessage()}");
+                }
             }
             echo "project: {$project}; count: " . count($banList) . PHP_EOL;
         }

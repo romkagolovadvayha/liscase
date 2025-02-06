@@ -55,6 +55,7 @@ use yii\web\JsExpression;
  * @property int             $is_gamer
  * @property int             $server_id
  * @property bool            $raid_notify
+ * @property bool            $ban_notify
  * @property bool            $store
  * @property bool            $is_stats
  * @property string          $blocked_support_at

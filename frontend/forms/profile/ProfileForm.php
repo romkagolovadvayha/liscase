@@ -9,6 +9,7 @@ use Yii;
 
 class ProfileForm extends UserProfile
 {
+    public $ban_notify;
     public $raid_notify;
     public $telegram_disabled;
 
@@ -16,13 +17,14 @@ class ProfileForm extends UserProfile
     {
         return [
             [['trade_link'], 'trim'],
-            [['raid_notify', 'telegram_disabled'], 'integer'],
+            [['raid_notify', 'ban_notify', 'telegram_disabled'], 'integer'],
             [['trade_link'], 'string', 'max' => 255],
         ];
     }
 
     public function afterFind()
     {
+        $this->ban_notify = $this->user->ban_notify;
         $this->raid_notify = $this->user->raid_notify;
         parent::afterFind();
     }
@@ -50,6 +52,9 @@ class ProfileForm extends UserProfile
 
         if ($this->raid_notify != $this->user->raid_notify) {
             $this->user->raid_notify = $this->raid_notify;
+        }
+        if ($this->ban_notify != $this->user->ban_notify) {
+            $this->user->ban_notify = $this->ban_notify;
         }
 
         if (!empty($this->telegram_disabled)) {

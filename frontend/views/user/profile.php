@@ -42,6 +42,17 @@ $this->title = Yii::t('common', "Профиль") . " - {$user->userProfile->nam
                     </span>
                 </label>
             </div>
+            <div class="mb-12">
+                <label class="page-stats__show-statistics-block">
+                    <p class="p1 text-text-teritiary"><?=Yii::t('common', "Оповещать о банах игроков, на которых вы отправили жалобу")?></p>
+                    <?=Html::hiddenInput('ProfileForm[ban_notify]', 0)?>
+                    <?=Html::checkbox('ProfileForm[ban_notify]', $model->ban_notify, ['class' => 'show-statistics-block__switch none'])?>
+                    <span>
+                        <span class="icons icons_switch icons_switch_on"></span>
+                        <span class="icons icons_switch icons_switch_off"></span>
+                    </span>
+                </label>
+            </div>
             <label class="p1 text-text-teritiary mb-7" for="profileform-trade_link">
                 <?=Yii::t('common', "Ваша")?> <a class="p1" href="https://steamcommunity.com/id/me/tradeoffers/privacy#trade_offer_access_url" target="_blank"><?=Yii::t('common', "трейд ссылка")?></a> <?=Yii::t('common', "на обмен")?>
             </label>

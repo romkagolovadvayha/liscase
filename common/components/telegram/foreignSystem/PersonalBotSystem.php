@@ -55,7 +55,8 @@ class PersonalBotSystem extends AbstractSystem
                     . PHP_EOL . "<b>/wipe</b> - Календарь вайпов"
                     . PHP_EOL . "<b>/bonus</b> - Получить ежедневный бонус"
                     . PHP_EOL . "<b>/ip</b> - IP серверов"
-                    . PHP_EOL . "<b>/raid_alert</b> - Включить/выключить оповещения о рейде";
+                    . PHP_EOL . "<b>/raid_alert</b> - Включить/выключить оповещения о рейде"
+                    . PHP_EOL . "<b>/ban_alert</b> - Включить/выключить оповещения о банах";
             case '/pop':
                 return $this->getOnline();
             case '/wipe':
@@ -66,6 +67,8 @@ class PersonalBotSystem extends AbstractSystem
                 return $this->getBonus($message);
             case '/raid_alert':
                 return $this->getRaidAlert($message);
+            case '/ban_alert':
+                return $this->getBanAlert($message);
         }
 
         return $answerMessage;
@@ -128,6 +131,36 @@ class PersonalBotSystem extends AbstractSystem
             $user->raid_notify = 1;
             $user->save();
             return "🙌 Поздравляем теперь вам будут приходить оповещения о рейдах!";
+        }
+    }
+
+    public function getBanAlert($message) {
+        $chatId = ArrayHelper::getValue($message, 'chat.id');
+        $cacheKey = 'PersonalBotSystem_getBanAlert_' . $chatId;
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        $user = User::findByChatId($chatId);
+        if (empty($user)) {
+            $return = '🔐 Авторизуйтесь, чтобы получать оповещения о рейдах!' . PHP_EOL . "Для авторизации напишите /start";
+            return $return;
+        }
+        if ($user->status === User::STATUS_BLOCKED) {
+            $return = '🔐 Ваш аккаунт заблокирован!';
+            Yii::$app->cache->set($cacheKey, $return, 60);
+            return $return;
+        }
+
+
+        Yii::$app->cache->set($cacheKey, "Вы пытаетесь использовать команду слишком часто, попробуйте чуть позже!", 10);
+        if ($user->ban_notify) {
+            $user->ban_notify = 0;
+            $user->save();
+            return "🙌 Вы успешно отключили оповещения о банах!";
+        } else {
+            $user->ban_notify = 1;
+            $user->save();
+            return "🙌 Поздравляем теперь вам будут приходить оповещения о банах игроков, на которых вы отправили жалобу!";
         }
     }
 
