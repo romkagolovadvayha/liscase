@@ -337,15 +337,15 @@ class ApiController extends WebController
         $colorPrimary = Yii::$app->settings->get('colors_server-command-primary');
         $result['ru'] = "Добро пожаловать на сервер {0}!" . PHP_EOL;
         $result['ru'] .= '' . $server->name . '' . PHP_EOL;
-        $result['ru'] .= "Для получения информации о командах на сервере введите в чат <color={$colorPrimary}>/help</color>" . PHP_EOL;
-        $result['ru'] .= "Правила сервера и новости можно посмотреть в нашем Discord - <color={$colorPrimary}>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
+        $result['ru'] .= "Для получения информации о командах на сервере введите в чат /help" . PHP_EOL;
+        $result['ru'] .= "Правила сервера и новости можно посмотреть в нашем Discord - " . Yii::$app->params['discordText'] . "" . PHP_EOL;
         $result['ru'] .= "Удачного выживания!";
 
         $nameEn = Yii::t('database', $server->name, [], 'en-US');
         $result['en'] = "Welcome to the server {0}!" . PHP_EOL;
         $result['en'] .= '' . $nameEn . '' . PHP_EOL;
-        $result['en'] .= "To get information about commands on the server, enter into chat <color={$colorPrimary}>/help</color>" . PHP_EOL;
-        $result['en'] .= "Server rules and news can be found on our website - <color={$colorPrimary}>en." . Yii::$app->settings->get('site_domain') . "</color>" . PHP_EOL;
+        $result['en'] .= "To get information about commands on the server, enter into chat /help" . PHP_EOL;
+        $result['en'] .= "Server rules and news can be found on our website - en." . Yii::$app->settings->get('site_domain') . "" . PHP_EOL;
         $result['en'] .= "Happy survival!";
         $result['code'] = 200;
         return json_encode($result,JSON_PRETTY_PRINT);
