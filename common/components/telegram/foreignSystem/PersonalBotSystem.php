@@ -126,11 +126,11 @@ class PersonalBotSystem extends AbstractSystem
         if ($user->raid_notify) {
             $user->raid_notify = 0;
             $user->save();
-            return "🙌 Вы успешно отключили оповещения о рейдах!";
+            return "⛔️ Вы успешно отключили оповещения о рейдах!";
         } else {
             $user->raid_notify = 1;
             $user->save();
-            return "🙌 Поздравляем теперь вам будут приходить оповещения о рейдах!";
+            return "✅ Поздравляем теперь вам будут приходить оповещения о рейдах!";
         }
     }
 
@@ -156,11 +156,11 @@ class PersonalBotSystem extends AbstractSystem
         if ($user->ban_notify) {
             $user->ban_notify = 0;
             $user->save();
-            return "🙌 Вы успешно отключили оповещения о банах!";
+            return "⛔️ Вы успешно отключили оповещения о банах!";
         } else {
             $user->ban_notify = 1;
             $user->save();
-            return "🙌 Поздравляем теперь вам будут приходить оповещения о банах игроков, на которых вы отправили жалобу!";
+            return "✅ Поздравляем теперь вам будут приходить оповещения о банах игроков, на которых вы отправили жалобу!";
         }
     }
 
