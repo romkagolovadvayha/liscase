@@ -53,7 +53,11 @@ class SkinDropsController extends Controller
             ->all();
 
         foreach ($servers as $server) {
-            $server->goDraw();
+            try {
+                $server->goDraw();
+            } catch (\Exception $e) {
+                \Yii::$app->telegramChats->sendMessage("actionGoDraw\nFile: {$e->getFile()}:{$e->getLine()}\nError: {$e->getMessage()}");
+            }
         }
 
     }
