@@ -343,12 +343,12 @@ class ApiController extends WebController
 
         $nameEn = Yii::t('database', $server->name, [], 'en-US');
         $result['en'] = "Welcome to the server {0}!" . PHP_EOL;
-        $result['en'] .= '<color=' . $color . '><size=18>' . $nameEn . '</size></color>' . PHP_EOL;
+        $result['en'] .= '<color=#FFFFFF><size=18>' . $nameEn . '</size></color>' . PHP_EOL;
         $result['en'] .= "To get information about commands on the server, enter into chat <color={$colorPrimary}>/help</color>" . PHP_EOL;
         $result['en'] .= "Server rules and news can be found on our website - <color={$colorPrimary}>en." . Yii::$app->settings->get('site_domain') . "</color>" . PHP_EOL;
         $result['en'] .= "Happy survival!";
         $result['code'] = 200;
-        return json_encode($result);
+        return json_encode($result,JSON_PRETTY_PRINT);
     }
 
     public function actionHelpInfo($serverTag)
