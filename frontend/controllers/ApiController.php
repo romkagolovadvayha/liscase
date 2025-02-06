@@ -336,14 +336,14 @@ class ApiController extends WebController
         $color = Yii::$app->settings->get('colors_server-command');
         $colorPrimary = Yii::$app->settings->get('colors_server-command-primary');
         $result['ru'] = "Добро пожаловать на сервер {0}!" . PHP_EOL;
-        $result['ru'] .= '<color=' . $color . '><size=18>' . $server->name . '</size></color>' . PHP_EOL;
+        $result['ru'] .= '' . $server->name . '' . PHP_EOL;
         $result['ru'] .= "Для получения информации о командах на сервере введите в чат <color={$colorPrimary}>/help</color>" . PHP_EOL;
         $result['ru'] .= "Правила сервера и новости можно посмотреть в нашем Discord - <color={$colorPrimary}>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
         $result['ru'] .= "Удачного выживания!";
 
         $nameEn = Yii::t('database', $server->name, [], 'en-US');
         $result['en'] = "Welcome to the server {0}!" . PHP_EOL;
-        $result['en'] .= '<color=#FFFFFF><size=18>' . $nameEn . '</size></color>' . PHP_EOL;
+        $result['en'] .= '' . $nameEn . '' . PHP_EOL;
         $result['en'] .= "To get information about commands on the server, enter into chat <color={$colorPrimary}>/help</color>" . PHP_EOL;
         $result['en'] .= "Server rules and news can be found on our website - <color={$colorPrimary}>en." . Yii::$app->settings->get('site_domain') . "</color>" . PHP_EOL;
         $result['en'] .= "Happy survival!";
