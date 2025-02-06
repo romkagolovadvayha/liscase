@@ -348,7 +348,7 @@ class ApiController extends WebController
         $result['en'] .= "Server rules and news can be found on our website - <color={$colorPrimary}>en." . Yii::$app->settings->get('site_domain') . "</color>" . PHP_EOL;
         $result['en'] .= "Happy survival!";
         $result['code'] = 200;
-        return json_encode($result,JSON_PRETTY_PRINT);
+        return json_encode($result);
     }
 
     public function actionHelpInfo($serverTag)
