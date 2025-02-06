@@ -299,7 +299,7 @@ class ApiController extends WebController
     public function actionWipeInfo($serverTag)
     {
         header('Content-type: application/json');
-        $color = Yii::$app->settings->get('server-command');
+        $color = Yii::$app->settings->get('colors_server-command');
         /** @var Servers $server */
         $server = Servers::find()
             ->andWhere(['tag' => $serverTag])
@@ -333,8 +333,8 @@ class ApiController extends WebController
             $result['code'] = 104;
             return json_encode($result,JSON_PRETTY_PRINT);
         }
-        $color = Yii::$app->settings->get('server-command');
-        $colorPrimary = Yii::$app->settings->get('server-command-primary');
+        $color = Yii::$app->settings->get('colors_server-command');
+        $colorPrimary = Yii::$app->settings->get('colors_server-command-primary');
         $result['ru'] = "Добро пожаловать на сервер {0}!" . PHP_EOL;
         $result['ru'] .= "<color={$color}><size=18>{$server->name}</size></color>" . PHP_EOL;
         $result['ru'] .= "Для получения информации о командах на сервере введите в чат <color={$colorPrimary}>/help</color>" . PHP_EOL;
@@ -365,8 +365,8 @@ class ApiController extends WebController
             $result['code'] = 104;
             return json_encode($result,JSON_PRETTY_PRINT);
         }
-        $color = Yii::$app->settings->get('server-command');
-        $colorPrimary = Yii::$app->settings->get('server-command-primary');
+        $color = Yii::$app->settings->get('colors_server-command');
+        $colorPrimary = Yii::$app->settings->get('colors_server-command-primary');
         $result['ru'] = "<color={$color}>/pop</color> - Текущий онлайн игроков" . PHP_EOL .
         "<color={$color}>/wipe</color> - Информация о вайпе" . PHP_EOL .
         "<color={$color}>/time</color> - Текущее время на сервере" . PHP_EOL .
