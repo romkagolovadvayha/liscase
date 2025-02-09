@@ -45,6 +45,7 @@ $config = [
                 '/servers/<serverTag:[a-z0-9_-]+>/<steamId:[0-9]+>/' => '/stats/player-new',
                 '/servers/<serverTag:[a-z0-9_-]+>/<steamId:[0-9]+>/report' => '/stats/report',
                 '/servers/<serverTag:[a-z0-9_-]+>/rules' => '/servers/rules',
+                '/servers/<serverTag:[a-z0-9_-]+>/wipe-info' => '/servers/wipe-info',
                 '/maps/vote' => '/maps/vote',
                 '/maps/<serverTag:[a-z0-9_-]+>/' => '/maps',
                 'sitemap.xml' => 'site/sitemap',

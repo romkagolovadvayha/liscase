@@ -241,17 +241,20 @@
     border-radius: var(--button-secondary-radius);
     @media (max-width: 768px) {
       display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
     &_btn {
       @extend .button-secondary;
       &_daily {
         &.active {
-          box-shadow: 4px 0 4px 0 #0000001A;
+          @extend .bg-background-secondary, .transition-all, .transform-click;
         }
       }
       &_achievement {
         &.active {
-          box-shadow: -4px 0 4px 0 #0000001A;
+          @extend .bg-background-secondary, .transition-all, .transform-click;
         }
       }
     }

@@ -48,17 +48,28 @@ table.kv-grid-table {
   //  border-top-left-radius: 8px;
   //  transition: filter 0.25s ease-in-out;
   //}
+  colgroup {
+    @media (max-width: 480px) {
+      display: none;
+    }
+  }
   thead {
     background: transparent;
     tr {
       &.filters {
         background-color: var(--background-secondary);
+        @media (max-width: 480px) {
+          display: none;
+        }
         td {
           @extend .text-text-main;
           background: transparent;
           position: relative;
           z-index: 2;
           padding: 12px;
+          img {
+            display: inline-block;
+          }
           .form-control {
             height: 32px;
             padding-left: 10px;

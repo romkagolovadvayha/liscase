@@ -11,7 +11,7 @@ use common\models\statistics\Statistics;
 /** @var \common\models\user\User $user */
 
 ?>
-<section class="page-stats__block w-50p" style="height: 616px">
+<section class="page-stats__gamer-stats_wrap page-stats__block w-50p" style="height: 616px">
     <h4 class="mb-32"><?=Yii::t('common', 'Статистика по попаданиям')?></h4>
 
     <div class="page-stats__gamer-stats gamer-stats">

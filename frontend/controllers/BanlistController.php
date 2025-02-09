@@ -48,7 +48,7 @@ class BanlistController extends WebController
         $dataProvider = $searchModel->search($this->request->queryParams);
 
         $avatar = function (BansSearch $model) {
-            return Html::img($model->user->getAvatar(), ['class' => 'block w-24 h-24 min-w-24 min-h-24 rounded-6 object-cover']);
+            return Html::img($model->user->getAvatar(), ['class' => 'w-24 h-24 min-w-24 min-h-24 rounded-6 object-cover']);
         };
         $steamId = function (BansSearch $model) {
             return $model->username;

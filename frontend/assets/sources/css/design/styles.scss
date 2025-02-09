@@ -316,7 +316,7 @@ $modal-dialog-margin-y-sm-up: 0;
     max-width 0.25s ease-in-out,
     min-width 0.25s ease-in-out,
     width 0.25s ease-in-out;
-
+  container-type: inline-size;
   @media (min-width: 1921px) {
     min-width: 100%;
   }

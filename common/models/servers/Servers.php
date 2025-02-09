@@ -3,6 +3,7 @@
 namespace common\models\servers;
 
 use common\models\blog\BlogCategory;
+use common\models\map\Map;
 use common\models\profit\Profit;
 use common\models\skindrops\Skindrops;
 use common\models\statistics\Statistics;
@@ -53,6 +54,9 @@ use yii\helpers\ArrayHelper;
  * @property string $rust_app_id
  * @property int $min_map_size
  * @property int $max_map_size
+ * @property int $map_id
+ *
+ * @property Map $mapEntity
  */
 class Servers extends \common\components\base\ActiveRecord
 {
@@ -117,6 +121,7 @@ class Servers extends \common\components\base\ActiveRecord
             'rust_app_id'          => Yii::t('common', 'ID в RustApp'),
             'min_map_size'          => Yii::t('common', 'Минимальный размер карты'),
             'max_map_size'          => Yii::t('common', 'Максимальный размер карты'),
+            'map_id'          => Yii::t('common', 'ID карты'),
         ];
     }
 
@@ -286,6 +291,9 @@ class Servers extends \common\components\base\ActiveRecord
         if ($key === 'user-stats') {
             return "/servers/{$this->tag}/{$steamId}";
         }
+        if ($key === 'wipe-info') {
+            return "/servers/{$this->tag}/wipe-info";
+        }
         if ($key === 'maps') {
             return "/maps/{$this->tag}";
         }
@@ -407,5 +415,15 @@ class Servers extends \common\components\base\ActiveRecord
         $winner->getSkinsBalance()->recalculateBalance();
 
         $winner->sendChatWinnerMessage($price, $name, $image300, $this);
+    }
+
+    /**
+     * Gets query for [[MapEntity]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getMapEntity()
+    {
+        return $this->hasOne(Map::class, ['id' => 'map_id']);
     }
 }

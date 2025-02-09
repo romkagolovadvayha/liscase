@@ -6,11 +6,14 @@
   min-height: 390px;
   overflow: hidden;
   container-type: size;
-
-  @media (max-width: 1785px) {
+  @container (max-width: 1200px) {
+    min-width: 350px;
+    width: 350px;
+  }
+  @container (max-width: 927px) {
+    width: 100%;
     min-width: 100%;
   }
-
   &:before {
     @extend .block, .absolute;
     @include range(286, 286, "px");

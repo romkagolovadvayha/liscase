@@ -89,7 +89,7 @@ if (!empty($this->params['_profile'])) {
     'PROFILE_BLOCK' => $profileBlock,
 //    'ALERT_MESSAGE' => $this->render('@frontend/views/widgets/_alert'),
 //    'SKINDROPS_BLOCK' => $this->render('@frontend/views/widgets/_skindrops'),
-    'SERVERS_BLOCK' => $this->render('@frontend/views/widgets/_servers', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'SETTINGS' => $SETTINGS]),
+    'SERVERS_BLOCK' => $this->render('@frontend/views/widgets/_servers', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'SETTINGS' => $SETTINGS, 'PAGE' => $page]),
 //    'PROMOCODE_FORM' => $this->render('@frontend/views/layouts/_promocode_line'),
     'TOP_BLOCK' => $this->render('@frontend/views/widgets/_top', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]),
     'LIVE_BLOCK' => $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]),

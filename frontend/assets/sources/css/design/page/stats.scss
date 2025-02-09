@@ -110,6 +110,12 @@
         @extend .w-full;
       }
     }
+    @container (max-width: 1024px) {
+      flex-wrap: wrap;
+      & > .w-50p {
+        @extend .w-full;
+      }
+    }
   }
   &__block-without-hover {
     @extend .bg-background-secondary, .px-20, .py-20, .transition-all;
@@ -291,6 +297,11 @@
     }
   }
   &__gamer-stats {
+    &_wrap {
+      @container (max-width: 621px) {
+        display: none;
+      }
+    }
     @extend .relative, .flex, .items-center, .justify-center;
     @include range(584, 509, "px");
     & img {

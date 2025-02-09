@@ -6,15 +6,16 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-
-  @media (min-width: 1720px) {
-    width: 100%;
-    min-width: 713px;
+  container-type: inline-size;
+  @container (max-width: 1200px) {
+    flex: 1 0;
+    width: auto;
+    min-width: auto;
   }
-  @media (max-width: 1720px) {
+  @container (max-width: 927px) {
+    width: 100%;
     min-width: 100%;
   }
-
   &:before {
     @extend .block, .absolute;
     @include range(422, 422, "px");
@@ -39,7 +40,9 @@
   &__stats {
     @extend .grid, .gap-x-8;
     grid-template-columns: repeat(4, 100px);
-
+    @container (max-width: 450px) {
+      grid-template-columns: repeat(3, 100px);
+    }
     &-wrapper {
       @extend .relative, .grid, .gap-y-10, .z-1;
     }
@@ -96,11 +99,14 @@
     height: 431px;
     right: 0;
     bottom: 0;
+    @container (max-width: 681px) {
+      right: -110px;
+    }
   }
 
   &_not-authorized {
     @extend .pt-56, .pr-0, .pb-40, .pl-40;
-    min-height: 390px;
+    min-height: 420px;
 
     & .user__title {
       @extend .mb-12;

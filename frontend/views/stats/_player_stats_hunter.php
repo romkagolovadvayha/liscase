@@ -48,7 +48,7 @@ $hunters = [
     [
         'name'  => Yii::t('common', 'Акулы'),
         'count' => Statistics::getParam($player, 'simpleshark'),
-        'image'  => '/images/hunters/shark.png',
+        'image'  => '/images/hunters/shark2.png',
     ],
 ];
 

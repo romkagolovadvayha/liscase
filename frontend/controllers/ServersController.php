@@ -39,10 +39,38 @@ class ServersController extends WebController
 
         $projectStats = \common\models\statistics\Statistics::projectStats();
         $this->view->title = Yii::t('common', 'Наши сервера Rust');
+        $this->view->params['page'] = 'servers';
 
         return $this->render('servers-list.twig', [
             'SERVERS' => $servers,
-            'PROJECT_STATS' => $projectStats
+            'PROJECT_STATS' => $projectStats,
+            'SETTINGS' => Yii::$app->settings
+        ]);
+    }
+
+    public function actionWipeInfo($serverTag)
+    {
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->cache(30)
+                          ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+
+        foreach ($servers as $item) {
+            if ($item->tag === $serverTag) {
+                $server = $item;
+                break;
+            }
+        }
+
+        if (empty($server)) {
+            throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден!'));
+        }
+        return $this->renderAjax('wipe-info.twig', [
+            'SERVERS' => $servers,
+            'SERVER' => $server,
+            'SETTINGS' => Yii::$app->settings
         ]);
     }
 

@@ -5,6 +5,11 @@ use common\models\servers\Servers;
 /** @var Servers[] $servers */
 /** @var array $PROJECT_STATS */
 /** @var $SETTINGS */
+/** @var $PAGE */
+
+if ($PAGE === 'servers') {
+    return;
+}
 
 $lang = substr(Yii::$app->language, 0, 2);
 $this->registerJs(
