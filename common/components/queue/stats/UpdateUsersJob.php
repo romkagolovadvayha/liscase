@@ -38,19 +38,7 @@ class UpdateUsersJob extends BaseObject implements JobInterface
                              ->cache(60)
                              ->andWhere(['tag' => $this->serverTag])
                              ->one();
-            $steamIds = [];
-            foreach ($request['users'] as $item) {
-                $steamIds[] = $item['steam_id'];
-            }
-            /** @var Statistics[] $playtimes */
-            $playtimes = Statistics::find()
-                                    ->andWhere(['IN', 'steam_id', $steamIds])
-                                    ->andWhere(['server_tag' => $this->serverTag])
-                                    ->andWhere(['key' => 'playtime'])
-                                    ->andWhere(['wipe' => $server->currentWipe()])
-                                    ->indexBy('steam_id')
-                                    ->one();
-            $playTime = 5;
+            $playTimeCount = 5;
             foreach ($request['users'] as $item) {
                 try {
                     $user = User::findBySteamId($item['steam_id']);
@@ -58,22 +46,30 @@ class UpdateUsersJob extends BaseObject implements JobInterface
                     $user->server_id = $server->id;
                     $user->last_visit_server_at = date('Y-m-d H:i:s');
                     $user->save();
-                    if (!empty($playtimes[$item['steam_id']])) {
-                        $playtimes[$item['steam_id']]->value += $playTime;
-                        $playtimes[$item['steam_id']]->save();
+                    /** @var Statistics $playtime */
+                    $playtime = Statistics::find()
+                                           ->andWhere(['steam_id' => $item['steam_id']])
+                                           ->andWhere(['server_tag' => $this->serverTag])
+                                           ->andWhere(['key' => 'playtime'])
+                                           ->andWhere(['wipe' => $server->currentWipe()])
+                                           ->orderBy(['id' => SORT_ASC])
+                                           ->one();
+                    if (!empty($playtime)) {
+                        $playtime->value += $playTimeCount;
+                        $playtime->save();
                     } else {
                         $model = new Statistics();
                         $model->steam_id = $item['steam_id'];
                         $model->server_tag = $this->serverTag;
                         $model->key = 'playtime';
-                        $model->value = $playTime;
+                        $model->value = $playTimeCount;
                         $model->wipe = $server->currentWipe();
                         $model->save();
                     }
                     Yii::$app->queueTop->push(new UpdateTopJob([
                         'userId' => $user->id,
                         'key' => 'playtime',
-                        'value' => $playTime,
+                        'value' => $playTimeCount,
                         'serverId' => $server->id,
                         'wipeDate' => $server->currentWipe(),
                     ]));
