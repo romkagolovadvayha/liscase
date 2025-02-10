@@ -43,7 +43,7 @@
                 {{ t('common', 'Вы на') }} {{ ALL_USER_TOP[KEY]['items'][USER.steam_id].position }} {{ t('common', 'месте') }}
             {% endif %}
         {% else %}
-            {{ t('common', 'Вы на') }} {{ ALL_USER_TOP[KEY]['items']|length}} {{ t('common', 'месте') }}
+            {{ t('common', 'Вы на') }} {{ ALL_USER_TOP[KEY]['items']|length + 1 }} {{ t('common', 'месте') }}
         {% endif %}
         </div>
     {% endif %}
