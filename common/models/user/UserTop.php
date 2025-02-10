@@ -397,7 +397,6 @@ ORDER BY server_id, `key`, value DESC;
                                         ->andWhere(['server_tag' => $server->tag])
                                         ->andWhere(['wipe' => $wipe])
                                         ->orderBy(['value' => SORT_DESC])
-                                        ->limit(3)
                                         ->all();
                 foreach ($statistics as $position => $item) {
                     $items[$key]['items'][$item->steam_id] = [
