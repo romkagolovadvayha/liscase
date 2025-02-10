@@ -98,6 +98,7 @@ class SaveRaidJob extends BaseObject implements JobInterface
                                 $exists = UserRaid::find()
                                                   ->andWhere(['LIKE', 'owners', '%' . $owner . '%', false])
                                                   ->andWhere(['notify' => 1])
+                                                  ->andWhere(['location' => $location])
                                                   ->andWhere(['>=', 'created_at', $startDate])
                                                   ->andWhere(['<=', 'created_at', $endDate])
                                                   ->exists();
