@@ -20,7 +20,7 @@ use yii\bootstrap5\ActiveForm;
 <?= $form->field($model, 'market_status')->dropDownList(Drop::getMarketStatusList(), []) ?>
 <?= $form->field($model, 'command')->textarea(); ?>
 <?= $form->field($model, 'blocked_hour')->dropDownList([
-        0 => 'Нет блока',
+        '' => 'Нет блока',
         2 => '2 часа',
         4 => '4 часа',
         6 => '6 часов',
