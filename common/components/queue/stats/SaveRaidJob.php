@@ -113,6 +113,7 @@ class SaveRaidJob extends BaseObject implements JobInterface
                                              ->one();
                                 Yii::$app->telegramChats->sendMessage('Оповещение о рейде отправлено: ' . $userOwner->username);
                                 if (!empty($userOwner) && !empty($userOwner->telegram_chat_id)) {
+                                    Yii::$app->telegramChats->sendMessage('Не отправлено, нет telegram_chat_id');
                                     Yii::$app->queueTelegram->push(new SendMessageJob([
                                         'telegram_chat_id' => $userOwner->telegram_chat_id,
                                         'message' => $message,
