@@ -59,7 +59,7 @@ class UpdateOnlineJob extends BaseObject implements JobInterface
                                             ->andWhere(['server_tag' => $this->serverTag])
                                             ->andWhere(['key' => 'playtime'])
                                             ->andWhere(['wipe' => $this->wipeDate])
-                                            ->indexBy('key')
+                                            ->indexBy('steam_id')
                                             ->all();
                     Yii::$app->queueTop->push(new UpdateTopJob([
                                                                    'userId' => $user->id,
