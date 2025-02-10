@@ -30,4 +30,21 @@
         </li>
         {% endfor %}
     </ol>
+    {% if ALL_USER_TOP %}
+        <div class="mt-24 p2 text-secondary text-center flex align-center gap-x-5 justify-center">
+        {% if ALL_USER_TOP[KEY] and ALL_USER_TOP[KEY]['items'] and ALL_USER_TOP[KEY]['items'][USER.steam_id] %}
+            {% if ALL_USER_TOP[KEY]['items'][USER.steam_id].position == 1 %}
+                <span class="icons icons_16px icons_16px_trophy bg-system-colors-gold"></span> {{ t('common', 'Вы на первом месте') }}
+            {% elseif ALL_USER_TOP[KEY]['items'][USER.steam_id].position == 2 %}
+                <span class="icons icons_16px icons_16px_trophy bg-system-colors-silver"></span> {{ t('common', 'Вы на втором месте') }}
+            {% elseif ALL_USER_TOP[KEY]['items'][USER.steam_id].position == 3 %}
+                <span class="icons icons_16px icons_16px_trophy bg-system-colors-bronze"></span> {{ t('common', 'Вы на третьем месте') }}
+            {% else %}
+                {{ t('common', 'Вы на') }} {{ ALL_USER_TOP[KEY]['items'][USER.steam_id].position }} {{ t('common', 'месте') }}
+            {% endif %}
+        {% else %}
+            {{ t('common', 'Вы на') }} {{ ALL_USER_TOP[KEY]['items']|length}} {{ t('common', 'месте') }}
+        {% endif %}
+        </div>
+    {% endif %}
 </section>

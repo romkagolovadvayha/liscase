@@ -38,6 +38,11 @@ class StorageController extends Controller
      */
     public function actionUpdate()
     {
+        $cacheKey = "Storage_actionUpdate";
+        if (Yii::$app->cache->get($cacheKey)) {
+            return 'BLOCKED';
+        }
+        Yii::$app->cache->set($cacheKey, 1, 5*60);
         ini_set('memory_limit', '512M');
         try {
             /** @var Servers[] $servers */
@@ -48,7 +53,6 @@ class StorageController extends Controller
 
             foreach ($servers as $server) {
                 Teams::getTeams($server, true);
-                UserTop::getUserTops($server, $server->currentWipe(), true);
                 User::getUsers($server->id, true);
             }
 
@@ -58,6 +62,37 @@ class StorageController extends Controller
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage('storage/update ' . $e->getMessage());
         }
+        Yii::$app->cache->delete($cacheKey);
+    }
+
+    /**
+     * storage/update-tops
+     *
+     * @throws \Exception
+     */
+    public function actionUpdateTops()
+    {
+        $cacheKey = "Storage_actionUpdateTops";
+        if (Yii::$app->cache->get($cacheKey)) {
+            return 'BLOCKED';
+        }
+        Yii::$app->cache->set($cacheKey, 1, 5*60);
+        ini_set('memory_limit', '512M');
+        try {
+            /** @var Servers[] $servers */
+            $servers = Servers::find()
+                              ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                              ->orderBy(['sort' => SORT_ASC])
+                              ->all();
+
+            foreach ($servers as $server) {
+                UserTop::getUserTops($server, $server->currentWipe(), true);
+                UserTop::getAllUserTops($server, $server->currentWipe(), true);
+            }
+        } catch (\Exception $e) {
+            Yii::$app->telegramChats->sendMessage('storage/update ' . $e->getMessage());
+        }
+        Yii::$app->cache->delete($cacheKey);
     }
 
     /**
@@ -67,7 +102,13 @@ class StorageController extends Controller
      */
     public function actionUpdateMarket()
     {
+        $cacheKey = "Storage_actionUpdateMarket";
+        if (Yii::$app->cache->get($cacheKey)) {
+            return 'BLOCKED';
+        }
+        Yii::$app->cache->set($cacheKey, 1, 5*60);
         ini_set('memory_limit', '512M');
         Drop::updateCache();
+        Yii::$app->cache->delete($cacheKey);
     }
 }

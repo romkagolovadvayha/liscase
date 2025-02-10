@@ -66,6 +66,9 @@ class StatsController extends WebController
         $user = Yii::$app->user->identity;
 
         $items = UserTop::getUserTops($server, $server->currentWipe());
+        if (!Yii::$app->user->isGuest) {
+            $allUserTops = UserTop::getAllUserTops($server, $server->currentWipe());
+        }
         $searchJS = User::searchJS();
 
         return $this->render('statistics.twig', [
@@ -74,6 +77,7 @@ class StatsController extends WebController
             'USER'  => $user,
             'ITEMS'  => $items,
             'SEARCH_JS'  => $searchJS,
+            'ALL_USER_TOP'  => $allUserTops,
         ]);
     }
 
