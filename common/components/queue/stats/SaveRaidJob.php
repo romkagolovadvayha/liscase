@@ -104,24 +104,16 @@ class SaveRaidJob extends BaseObject implements JobInterface
                                 }
                             }
                             $model->notify = 1;
-                            Yii::$app->telegramChats->sendMessage(json_encode($owners));
                             foreach ($owners as $owner) {
                                 /** @var User $userOwner */
                                 $userOwner = User::find()
                                              ->andWhere(['steam_id' => $owner])
                                              ->andWhere(['raid_notify' => 1])
                                              ->one();
-                                if (!empty($userOwner)) {
-                                    Yii::$app->telegramChats->sendMessage(
-                                        json_encode($userOwner->toArray())
-                                    );
-                                }
                                 if (!empty($userOwner) && !empty($userOwner->telegram_chat_id)) {
-                                    Yii::$app->telegramChats->sendMessage('Оповещение о рейде отправлено: ' . $userOwner->username);
                                     Yii::$app->personalBotTelegram->sendMessage($userOwner->telegram_chat_id, $message);
                                 }
                             }
-                            Yii::$app->telegramChats->sendMessage($message);
                         }
                         $model->save(false);
                     } catch (\Exception $e) {
