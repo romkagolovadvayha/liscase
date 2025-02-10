@@ -159,11 +159,11 @@ class Servers extends \common\components\base\ActiveRecord
         }
 
         $mName = Yii::t('common', 'минута');
-        if (in_array($h, [2,3,4,22,23,24])) {
+        if (in_array($m, [2,3,4,22,23,24])) {
             $mName = Yii::t('common', 'минуты');
-        } elseif (in_array($h, [1,21])) {
+        } elseif (in_array($m, [1,21])) {
             $mName = Yii::t('common', 'минута');
-        } elseif ($h > 4) {
+        } elseif ($m > 4) {
             $mName = Yii::t('common', 'минут');
         }
 

@@ -72,6 +72,7 @@ $kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam(
             'WRAPPER_CLASS' => $statusClass,
             'USER' => $user,
             'STATS' => [
+                'PLAYTIME' => Statistics::getParam($player, 'playtime'),
                 'ONLINE' => Servers::getPlayTime(Statistics::getParam($player, 'playtime')),
                 'KILLS' => number_format(Statistics::getParam($player, 'kills'), 0),
                 'DEATHS' => number_format(Statistics::getParam($player, 'deaths'), 0),
