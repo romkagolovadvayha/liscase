@@ -146,7 +146,7 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                     <h5 class="category__count-and-img">
                         <span><?=number_format($skinCount, 0, '.', ' ')?></span>
                     </h5>
-                    <p class="category__title"><?=Yii::t('common', "Вы выйграли скинов")?></p>
+                    <p class="category__title"><?=Yii::t('common', "Вы выиграли скинов")?></p>
                 </div>
             </div>
             <h4 class="flex items-center gap-x-12 mt-40 mb-24">

@@ -50,9 +50,6 @@ class RconTasks extends \common\components\base\ActiveRecord
             if (!empty($serversCommand) && !in_array($server->tag, $serversCommand)) {
                 continue;
             }
-            if (in_array($server->tag, ['classicx2'])) {
-                continue;
-            }
             $rconTask = new RconTasks();
             $rconTask->status = RconTasks::STATUS_WAIT;
             $rconTask->command = $command;

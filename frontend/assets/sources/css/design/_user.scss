@@ -1,8 +1,7 @@
 .user {
   @extend .p-40, .relative, .bg-background-secondary;
   border-radius: var(--block-radius);
-  min-width: 848px;
-  width: 848px;
+  flex: 1 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;

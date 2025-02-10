@@ -2,6 +2,7 @@
 
 use yii\web\View;
 use common\models\user\UserDrop;
+use common\models\box\DropBlocked;
 use yii\widgets\ActiveForm;
 use frontend\widgets\Alert;
 
@@ -72,7 +73,7 @@ JS
     <?= Alert::widget() ?>
     <h1><?=Yii::t('common', 'Корзина сервера')?></h1>
     <p><?=Yii::t('common', 'Это ваша корзина с покупками, вы можете забрать их в любой момент')?></p>
-    <?php if (empty($user->server) || $user->server->is_store || $user->store): ?>
+    <?php if (!empty($user->server) && ($user->server->is_store || $user->store)): ?>
         <?php if (!empty($userDrops)):?>
             <div class="store_launcher_categories">
                 <?php foreach ($categories as $category): ?>
@@ -84,9 +85,11 @@ JS
                 <?php endforeach; ?>
             </div>
             <div class="store_launcher_cards" id="products">
+                <?php $serverId = $user->server->id; ?>
                 <?php foreach ($userDrops as $userDrop): ?>
                     <?php foreach ($userDrop->drop as $drop): ?>
-                        <?php $blocked = !empty($drop->blocked_at) && strtotime($drop->blocked_at) > time(); ?>
+                        <?php $blockedAt = DropBlocked::getBlocked($drop->id, $serverId); ?>
+                        <?php $blocked = !empty($blockedAt); ?>
                         <div class="store_launcher_cards_item_wrap" data-category-id="<?=$userDrop->drop[0]->category_id?>">
                             <div class="store_launcher_cards_item" data-id="<?=$userDrop->id?>">
                                 <div class="store_launcher_cards_item_image">
@@ -109,7 +112,7 @@ JS
                             <?php if ($blocked): ?>
                                 <div class="store_launcher_cards_item_blocked_wrap">
                                     <div class="store_launcher_cards_item_blocked_title"><?=Yii::t('common', 'Вайп блок')?></div>
-                                    <div class="store_launcher_cards_item_blocked_timer blocked_products_timer" data-time="<?=strtotime($drop->blocked_at)?>"><?=$drop->blocked_at?></div>
+                                    <div class="store_launcher_cards_item_blocked_timer blocked_products_timer" data-time="<?=strtotime($blockedAt)?>"><?=$blockedAt?></div>
                                 </div>
                             <?php endif; ?>
                         </div>

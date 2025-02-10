@@ -66,7 +66,7 @@ $reports = Reports::find()
             <div class="support_messages_item_message_reports_item_content">
                 <div class="support_messages_item_message_reports_item_content_name"><?=$item->user->username?></div>
                 <div class="support_messages_item_message_reports_item_content_steam_id"><?=$item->user->steam_id?></div>
-                <div class="support_messages_item_message_reports_item_content_date server_timer" data-time="<?=strtotime($item->user->created_at)?>"><?=$item->user->created_at?></div>
+                <div class="support_messages_item_message_reports_item_content_date server_timer" data-time="<?=strtotime($item->user->created_at)?>"><?=$item->created_at?></div>
             </div>
         </a>
         <?php endforeach; ?>

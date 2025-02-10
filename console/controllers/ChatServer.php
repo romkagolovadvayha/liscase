@@ -199,15 +199,38 @@ class ChatServer extends WebSocketServer
                ]));
                return;
            }
+           if (empty($model->user->server)) {
+               $client->send(json_encode([
+                    'type' => 'store.take',
+                    'code' => 500,
+                    'message' => Yii::t('common', "Мы не нашли вас на сервере!", [], $client->user->current_language),
+                    'id' => $model->id,
+               ]));
+               return;
+           }
+           if ($model->drop[0]->blocked($model->user->server->id)) {
+               $client->send(json_encode([
+                    'type' => 'store.take',
+                    'code' => 500,
+                    'message' => Yii::t('common', "Товар в вайп-блоке!", [], $client->user->current_language),
+                    'id' => $model->id,
+               ]));
+               return;
+           }
            if (Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR) || $model->user_id == $client->user->id) {
                 $command = "store.take {$model->user->steam_id} {$model->id}";
-                RconTasks::execute($command);
-               $client->send(json_encode([
-                'type' => 'store.take',
-                'code' => 200,
-                'message' => Yii::t('common', "Товар успешно получен!", [], $client->user->current_language),
-                'id' => $model->id,
-               ]));
+                $rconTask = new RconTasks();
+                $rconTask->status = RconTasks::STATUS_WAIT;
+                $rconTask->command = $command;
+                $rconTask->server_tag = $model->user->server->tag;
+                $rconTask->created_at = date('Y-m-d H:i:s');
+                $rconTask->save();
+                $client->send(json_encode([
+                    'type' => 'store.take',
+                    'code' => 200,
+                    'message' => Yii::t('common', "Товар успешно получен!", [], $client->user->current_language),
+                    'id' => $model->id,
+                ]));
                return;
            }
         }

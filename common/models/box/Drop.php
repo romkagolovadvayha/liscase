@@ -389,8 +389,15 @@ class Drop extends ActiveRecord
         return $items;
     }
 
-    public function blocked() {
-        return !empty($this->blocked_at) && strtotime($this->blocked_at) > time();
+    public function blocked($serverId = null) {
+        if (Yii::$app->user->isGuest) {
+            return false;
+        }
+        if (empty($serverId) && !empty(Yii::$app->user->identity->server)) {
+            $serverId = Yii::$app->user->identity->server->id;
+        }
+        $blockedAt = DropBlocked::getBlocked($this->id, $serverId);
+        return !empty($blockedAt) && strtotime($blockedAt) > time();
     }
 
     public function blockedTime() {
@@ -423,7 +430,28 @@ class Drop extends ActiveRecord
         return $this->image();
     }
 
+    public static function productsImages($update = false) {
+        $cacheKey = 'Drop_productsImages';
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $result = [];
+
+        /** @var Drop[] $drops */
+        $drops = Drop::find()
+                     ->all();
+
+        foreach ($drops as $item) {
+            $result[$item->id] = $item->image();
+        }
+
+        Yii::$app->cache->set($cacheKey, $result, 30*60);
+        return $result;
+    }
+
     public static function updateCache() {
+        Drop::productsImages(true);
         Statistics::productsImages(true);
         Statistics::productsNames(true);
         Sets::getSetsForMarket(true, true);

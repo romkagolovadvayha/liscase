@@ -55,6 +55,7 @@ use yii\helpers\ArrayHelper;
  * @property int $min_map_size
  * @property int $max_map_size
  * @property int $map_id
+ * @property string $secret_key
  *
  * @property Map $mapEntity
  */
@@ -122,6 +123,7 @@ class Servers extends \common\components\base\ActiveRecord
             'min_map_size'          => Yii::t('common', 'Минимальный размер карты'),
             'max_map_size'          => Yii::t('common', 'Максимальный размер карты'),
             'map_id'          => Yii::t('common', 'ID карты'),
+            'secret_key'          => Yii::t('common', 'Секретный ключ'),
         ];
     }
 
@@ -129,7 +131,7 @@ class Servers extends \common\components\base\ActiveRecord
     {
         return [
             [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description', 'min_map_size', 'max_map_size'], 'required'],
-            [['description', 'name', 'ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description'], 'string'],
+            [['description', 'name', 'ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'secret_key'], 'string'],
             [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size'], 'integer'],
             [['wipe', 'next_wipe', 'global_wipe'], 'safe'],
         ];

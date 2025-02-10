@@ -92,6 +92,7 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'commands')->textInput() ?>
 
+    <?= $form->field($model, 'secret_key')->textInput() ?>
     <?= $form->field($model, 'discord_token')->textInput() ?>
     <?= $form->field($model, 'sort')->textInput() ?>
 

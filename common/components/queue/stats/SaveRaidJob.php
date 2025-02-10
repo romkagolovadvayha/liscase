@@ -110,12 +110,12 @@ class SaveRaidJob extends BaseObject implements JobInterface
                                              ->andWhere(['steam_id' => $owner])
                                              ->andWhere(['raid_notify' => 1])
                                              ->one();
-                                if (!empty($userOwner)) {
+                                if (!empty($userOwner) && !empty($userOwner->telegram_chat_id)) {
                                     Yii::$app->queueTelegram->push(new SendMessageJob([
-                                                                                          'telegram_chat_id' => $userOwner->telegram_chat_id,
-                                                                                          'message' => $message,
-                                                                                          'buttons' => [],
-                                                                                      ]));
+                                        'telegram_chat_id' => $userOwner->telegram_chat_id,
+                                        'message' => $message,
+                                        'buttons' => [],
+                                    ]));
                                 }
                             }
                         }

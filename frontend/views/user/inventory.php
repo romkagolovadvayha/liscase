@@ -45,7 +45,8 @@ JS
             <div class="page-stats__categories">
                 <?php foreach ($userDrops as $userDrop): ?>
                     <?php foreach ($userDrop->drop as $drop): ?>
-                        <?php $blocked = !empty($drop->blocked_at) && strtotime($drop->blocked_at) > time(); ?>
+                        <?php $blockedAt = \common\models\box\DropBlocked::getBlocked($drop->id, $user->getCurrentServer()->id); ?>
+                        <?php $blocked = !empty($blockedAt) && strtotime($blockedAt) > time(); ?>
                         <div class="page-stats__category category<?php if ($blocked): ?> blocked<?php endif; ?>">
                             <h5 class="category__count-and-img">
                                 <span>x<?= $userDrop->count ?></span>

@@ -15,13 +15,23 @@ $this->title = Yii::t('common', 'Вайп');
 <?=\frontend\widgets\Alert::widget()?>
 
 <div style="padding: 20px">
-    <div>
-        <h3>Вайп блок</h3>
-        <?= Html::a(Yii::t('common', 'Заблокировать предметы в магазине'),
-                    '/wipe/block',
-                    ['class' => 'btn btn-success']); ?>
+    <div style="margin-top: 10px;">
+        <h3>Заблокировать предметы</h3>
+        <?php
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->cache(30)
+                          ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+        ?>
+        <?php foreach ($servers as $server): ?>
+            <?php $disabled = Yii::$app->cache->get("WIPE_actionBlock_{$server->id}") ? ' btn-default disabled' : ' btn-success' ?>
+            <?= Html::a($server->name,
+                    '/wipe/block?id=' . $server->id,
+                    ['class' => 'btn' . $disabled]); ?>
+        <?php endforeach; ?>
     </div>
-    <hr>
     <div style="margin-top: 10px;">
         <h3>Начислить награды за топы</h3>
         <?php
@@ -33,9 +43,19 @@ $this->title = Yii::t('common', 'Вайп');
                           ->all();
         ?>
         <?php foreach ($servers as $server): ?>
+            <?php $disabled = Yii::$app->cache->get("WIPE_actionTop_{$server->tag}") ? ' btn-default disabled' : ' btn-success' ?>
         <?= Html::a($server->name,
                     '/wipe/top?server=' . $server->tag,
-                    ['class' => 'btn btn-success']); ?>
+                    ['class' => 'btn' . $disabled]); ?>
+        <?php endforeach; ?>
+    </div>
+    <div style="margin-top: 10px;">
+        <h3>Зафиксировать карту</h3>
+        <?php foreach ($servers as $server): ?>
+        <?php $disabled = Yii::$app->cache->get("WIPE_actionSelectMap_{$server->id}") ? ' btn-default disabled' : ' btn-success' ?>
+        <?= Html::a($server->name,
+                    '/wipe/select-map?id=' . $server->id,
+                    ['class' => 'btn' . $disabled, 'disabled' => true]); ?>
         <?php endforeach; ?>
     </div>
     <hr>

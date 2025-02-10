@@ -3,11 +3,13 @@
 namespace frontend\controllers;
 
 use common\controllers\WebController;
+use common\models\box\Drop;
 use common\models\promocode\Promocode;
 use common\models\servers\Servers;
 use common\models\stats\Wipe;
 use common\models\user\User;
 use common\models\user\UserDrop;
+use common\models\box\DropBlocked;
 use WebSocket\Client;
 use yii\web\JsonResponseFormatter;
 use yii\web\NotFoundHttpException;
@@ -16,7 +18,6 @@ use yii\web\Response;
 
 class ApiController extends WebController
 {
-    CONST secretKey = '79f57ce93708fdbd05b57f6e48154737';
 
     /**
      * {@inheritdoc}
@@ -37,23 +38,30 @@ class ApiController extends WebController
 //}
     public function actionIndex($secret, $method, $steam_id = null, $item_id = null, $id = null) {
         header('Content-type: application/json');
-//        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-//        \Yii::$app->response->formatters = [
-//            Response::FORMAT_JSON => [
-//                'class' => JsonResponseFormatter::class,
-//                'prettyPrint' => true
-//            ]
-//        ];
-        if (self::secretKey !== $secret) {
-            return [
-                'result' => 'fail',
-                'message' => 'Магазин с таким ID и SecretKey не найден',
-                'code' => 103,
-            ];
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->cache(60)
+                          ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+        /** @var Servers $server */
+        $server = null;
+        foreach ($servers as $_server) {
+            if ($_server->secret_key == $secret) {
+                $server = $_server;
+                break;
+            }
+        }
+        if (empty($server)) {
+            return json_encode([
+                                   'result' => 'fail',
+                                   'message' => 'Магазин с таким ID и SecretKey не найден',
+                                   'code' => 103,
+                               ]);
         }
 
         if ($method === 'basket') {
-            return json_encode($this->methodBasket($steam_id),JSON_PRETTY_PRINT);
+            return json_encode($this->methodBasket($steam_id, $server->id),JSON_PRETTY_PRINT);
         }
         if ($method === 'take') {
             return json_encode($this->methodTake($item_id),JSON_PRETTY_PRINT);
@@ -232,7 +240,7 @@ class ApiController extends WebController
      *
      * @return array
      */
-    private function methodBasket($steam_id) {
+    private function methodBasket($steam_id, $serverId) {
         /** @var User $user */
         $user = User::find()
                     ->andWhere(['steam_id' => $steam_id])
@@ -254,18 +262,20 @@ class ApiController extends WebController
 
         $result = [];
         $data = [];
+        $images = Drop::productsImages();
         foreach ($userDrops as $userDrop) {
             $item = [
                 'id' => $userDrop->id,
                 'amount' => $userDrop->count,
                 'name' => $userDrop->drop[0]->name,
-                'img' => $userDrop->drop[0]->imageOrig->getImagePubUrl(),
+                'img' => $images[$userDrop->drop_id],
                 'blocked' => false,
                 'block_date' => null,
             ];
-            if (!empty($userDrop->drop[0]->blocked_at) && strtotime($userDrop->drop[0]->blocked_at) > time()) {
+            $blockedAt = DropBlocked::getBlocked($userDrop->drop_id, $serverId);
+            if (!empty($blockedAt)) {
                 $item['blocked'] = true;
-                $item['block_date'] = strtotime($userDrop->drop[0]->blocked_at);
+                $item['block_date'] = strtotime($blockedAt);
             }
             if (!empty($userDrop->drop[0]->command)) {
                 $item['command'] = str_replace("\r", '', $userDrop->drop[0]->command);

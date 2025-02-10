@@ -3,7 +3,10 @@
 namespace backend\controllers;
 
 use common\components\helpers\Role;
+use common\components\queue\process\MapGenerateJob;
 use common\models\box\Drop;
+use common\models\box\DropBlocked;
+use common\models\map\Map;
 use common\models\profit\Profit;
 use common\models\promocode\Promocode;
 use common\models\servers\Servers;
@@ -12,6 +15,7 @@ use common\models\stats\Wipe;
 use common\models\user\User;
 use common\models\user\UserPromocode;
 use common\models\user\UserTask;
+use common\models\user\UserTop;
 use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
 use yii\web\Controller;
@@ -40,26 +44,66 @@ class WipeController extends Controller
         return $this->render('index');
     }
 
-    public function actionBlock()
+    /**
+     * @throws \yii\db\StaleObjectException
+     * @throws \Throwable
+     */
+    public function actionBlock($id)
     {
+        $cacheKey = "WIPE_actionBlock_{$id}";
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
         /** @var Drop[] $drops */
         $drops = Drop::find()
             ->all();
-
+        DropBlocked::unBlocked($id);
         foreach ($drops as $drop) {
             if (!empty($drop->blocked_hour)) {
                 $date = new \DateTime();
                 $date->modify("+{$drop->blocked_hour} hour");
-                $drop->blocked_at = $date->format('Y-m-d H:i:s');
-                $drop->save();
+                DropBlocked::createRecord($drop->id, $id, $date->format('Y-m-d H:i:s'));
             }
         }
+        Yii::$app->cache->set($cacheKey, 1, 5*60);
+
+        $cacheKeyGetBlocked = "DropBlocked_getBlocked_" . $id;
+        Yii::$app->cache->delete($cacheKeyGetBlocked);
+
         Yii::$app->session->addFlash('success', 'Предметы успешно заблокированы!');
+        return $this->redirect('index');
+    }
+
+    public function actionSelectMap($id)
+    {
+        $cacheKey = "WIPE_actionSelectMap_{$id}";
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        Yii::$app->cache->set($cacheKey, 1, 30*60);
+        /** @var Map $map */
+        $map = Map::find()
+            ->andWhere(['server_id' => $id])
+            ->andWhere(['is_archive' => 0])
+            ->orderBy(['votes' => SORT_DESC])
+            ->one();
+
+        $server = Servers::findOne($id);
+        $server->map_id = $map->id;
+        $server->save(false);
+
+        \Yii::$app->queueProcess->push(new MapGenerateJob(['serverId'  => $id]));
+        Yii::$app->session->addFlash('success', 'Карта успешно зафиксирована, будут сгенерированы новые карты!');
         return $this->redirect('index');
     }
 
     public function actionTop($server)
     {
+        $cacheKey = "WIPE_actionTop_{$server}";
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        Yii::$app->cache->set($cacheKey, 1, 30*60);
         ini_set('memory_limit', '512M');
         /** @var Servers[] $servers */
         $servers = Servers::find()
@@ -69,61 +113,45 @@ class WipeController extends Controller
                           ->orderBy(['sort' => SORT_ASC])
                           ->all();
         foreach ($servers as $server) {
-            $stats = Statistics::getStats($server, null, false);
-            if (empty($stats)) {
-                continue;
-            }
-            $tops = [
-                'kills' => 'Киллер',
-                'scientists' => 'Мирный',
-                'hunter' => 'Охотник',
-                'fermer' => 'Фермер',
-                'farmer' => 'Фармер',
-                'fishing' => 'Рыбак',
-                'playtime' => 'Онлайн',
-                'reider' => 'Рейдер',
-            ];
-            $amount = [500, 150, 50];
-            $tgMessage = [];
-            foreach ($tops as $type => $value) {
-                for ($i = 0; $i < 3; $i++) {
-                    $userStats = Statistics::getTopWidgetItem($type, $stats, $i);
-                    if (!empty($userStats) && !empty($userStats['user'])) {
-                        $profit                  = new Profit();
-                        $profit->status          = 1;
-                        $profit->type            = Profit::TYPE_TOP;
-                        $profit->amount          = $amount[$i];
-                        $profit->user_balance_id = $userStats['user']->getPersonalBalance()->id;
-                        $profit->comment         = "Награда за первое место в топе \"{$value}\"";
-                        if ($i === 1) {
-                            $profit->comment = "Награда за второе место в топе \"{$value}\"";
-                        } elseif ($i === 2) {
-                            $profit->comment = "Награда за третье место в топе \"{$value}\"";
-                        }
-                        if (!empty($userStats['user']->telegram_chat_id)) {
-                            $text         = "🥇 Награда за первое место в топе \"{$value}\" - <b>{$profit->amount} РУБ</b>";
-                            if ($i === 1) {
-                                $text = "🥈 Награда за второе место в топе \"{$value}\" - <b>{$profit->amount} РУБ</b>";
-                            } elseif ($i === 2) {
-                                $text = "🥉 Награда за третье место в топе \"{$value}\" - <b>{$profit->amount} РУБ</b>";
-                            }
-                            if (!empty($tgMessage[$userStats['user']->steam_id])) {
-                                $tgMessage[$userStats['user']->steam_id] .= PHP_EOL . $text;
-                            } else {
-                                $tgMessage[$userStats['user']->steam_id] = "Вам начислены награды за ТОП на сервере " . $server->name . PHP_EOL . $text;
-                            }
-                        }
-                        $profit->created_at      = date('Y-m-d H:i:s');
-                        $profit->save(false);
-                        $userStats['user']->getPersonalBalance()->recalculateBalance();
+            $tops = UserTop::getUserTops($server, $server->currentWipe());
+            foreach ($tops as $top) {
+                $value = $top['label'];
+                foreach ($top['items'] as $i => $item) {
+                    $user                    = User::findBySteamId($item['steam_id']);
+                    $profit                  = new Profit();
+                    $profit->status          = 1;
+                    $profit->type            = Profit::TYPE_TOP;
+                    $profit->amount          = $item['amount'];
+                    $profit->user_balance_id = $user->getPersonalBalance()->id;
+                    $profit->comment         = "Награда за первое место в топе \"{$value}\"";
+                    if ($i === 1) {
+                        $profit->comment = "Награда за второе место в топе \"{$value}\"";
+                    } elseif ($i === 2) {
+                        $profit->comment = "Награда за третье место в топе \"{$value}\"";
                     }
+                    if (!empty($user->telegram_chat_id)) {
+                        $text = "🥇 Награда за первое место в топе \"{$value}\" - <b>{$profit->amount} РУБ</b>";
+                        if ($i === 1) {
+                            $text = "🥈 Награда за второе место в топе \"{$value}\" - <b>{$profit->amount} РУБ</b>";
+                        } elseif ($i === 2) {
+                            $text = "🥉 Награда за третье место в топе \"{$value}\" - <b>{$profit->amount} РУБ</b>";
+                        }
+                        if (!empty($tgMessage[$user->steam_id])) {
+                            $tgMessage[$user->steam_id] .= PHP_EOL . $text;
+                        } else {
+                            $tgMessage[$user->steam_id] = "Вам начислены награды за ТОП на сервере "
+                                . $server->name . PHP_EOL . $text;
+                        }
+                    }
+                    $profit->created_at = date('Y-m-d H:i:s');
+                    $profit->save(false);
                 }
             }
-            if (YII_ENV_PROD) {
-                foreach ($tgMessage as $steamId => $message) {
-                    $user = User::findBySteamId($steamId);
-                    Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message);
-                }
+        }
+        if (YII_ENV_PROD) {
+            foreach ($tgMessage as $steamId => $message) {
+                $user = User::findBySteamId($steamId);
+                Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message);
             }
         }
 

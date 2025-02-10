@@ -40,31 +40,13 @@ class SaveStatsJob extends BaseObject implements JobInterface
             if (empty($server)) {
                 return;
             }
-            $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
-            try {
-                Yii::$app->queueOnline->push(new UpdateOnlineJob([
-                    'steam_ids' => array_keys($request['users']),
-                    'serverId' => $server->id,
-                    'serverTag' => $this->serverTag,
-                    'wipeDate' => $wipeDate,
-                ]));
-            } catch (\Exception $e) {
-                Yii::$app->telegramChats->sendMessage("SaveStatsJob::UpdateOnlineJob: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
-            }
-            foreach ($request['users'] as $steamId => $params) {
-                if (empty($params)) {
-                    continue;
-                }
-
-                Yii::$app->queueParams->push(new UpdateStatsUserJob([
-                                                                     'steam_id' => $steamId,
-                                                                     'params' => $params,
+            $wipeDate = $server->currentWipe();
+            Yii::$app->queueParams->push(new UpdateStatsUsersJob([
+                                                                     'users' => $request['users'],
                                                                      'serverTag' => $this->serverTag,
                                                                      'serverId' => $server->id,
                                                                      'wipeDate' => $wipeDate,
                                                                  ]));
-
-            }
             foreach ($request['kills'] as $item) {
                 try {
                     Yii::$app->queueKills->push(new UpdateKillsJob([
