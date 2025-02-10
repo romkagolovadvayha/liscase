@@ -1018,11 +1018,7 @@ class User extends ActiveRecord implements IdentityInterface
             $tgMessage .= PHP_EOL . "Вы выиграли скин <b>{$skinName}</b> (<b>{$price} RUB</b>)";
             $tgMessage .= PHP_EOL . "Получить скин нужно по этой ссылке <a href=\"https://" . Yii::$app->settings->get('site_domain') . "/user/skins\">" . Yii::$app->settings->get('site_domain') . "/user/skins</a>";
             $tgMessage .= PHP_EOL . "Вы можете копить или забрать скин прямо сейчас.";
-            Yii::$app->queueTelegram->push(new SendMessageJob([
-                                                              'telegram_chat_id' => $this->telegram_chat_id,
-                                                              'message' => $tgMessage,
-                                                              'buttons' => [],
-                                                          ]));
+            Yii::$app->personalBotTelegram->sendMessage($this->telegram_chat_id, $tgMessage);
         }
 
         $sound = 'assets/prefabs/misc/easter/painted eggs/effects/eggpickup.prefab';
