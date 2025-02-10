@@ -9,7 +9,7 @@
                 {{ USER.username }} <a href="{{ USER.getLink('steam') }}" class="stats_player_card_body_name_steam" target="_blank" title="<?=Yii::t('common', 'Перейти в профиль Steam')?>"><span class="icons icons_24px icons_24px_steam"></span></a>
             </h2>
             <p class="p1 text-text-main">
-                {{ t('common', 'Онлайн за вайп') }}: {% if PLAYTIME > 0 %}<span style="color: var(--online);">{{ STATS.ONLINE }}</span>{% else %}{{ t('common', 'Не заходил на сервер') }}{% endif %}
+                {{ t('common', 'Онлайн за вайп') }}: {% if STATS.PLAYTIME > 0 %}<span style="color: var(--online);">{{ STATS.ONLINE }}</span>{% else %}{{ t('common', 'Не заходил на сервер') }}{% endif %}
             </p>
         </div>
     </div>
