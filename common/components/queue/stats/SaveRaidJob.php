@@ -65,16 +65,6 @@ class SaveRaidJob extends BaseObject implements JobInterface
                             $endDate = $date->format('Y-m-d H:i:s');
                             $date->modify('-1 hour');
                             $startDate = $date->format('Y-m-d H:i:s');
-                            $exists = UserRaid::find()
-                                ->andWhere(['LIKE', 'owners', '%' . $owners[0] . '%', false])
-                                ->andWhere(['notify' => 1])
-                                ->andWhere(['>=', 'created_at', $startDate])
-                                ->andWhere(['<=', 'created_at', $endDate])
-                                ->exists();
-
-                            if ($exists) {
-                                continue;
-                            }
 
                             $message = "⚠️ <b>Внимание!</b> Ваша постройка в квадрате {$location} атакована!" . PHP_EOL . PHP_EOL;
                             $message .= "Сервер: {$server->name}";
@@ -105,6 +95,15 @@ class SaveRaidJob extends BaseObject implements JobInterface
                             }
                             $model->notify = 1;
                             foreach ($owners as $owner) {
+                                $exists = UserRaid::find()
+                                                  ->andWhere(['LIKE', 'owners', '%' . $owner . '%', false])
+                                                  ->andWhere(['notify' => 1])
+                                                  ->andWhere(['>=', 'created_at', $startDate])
+                                                  ->andWhere(['<=', 'created_at', $endDate])
+                                                  ->exists();
+                                if ($exists) {
+                                    continue;
+                                }
                                 /** @var User $userOwner */
                                 $userOwner = User::find()
                                              ->andWhere(['steam_id' => $owner])
