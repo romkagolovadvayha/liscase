@@ -21,7 +21,7 @@ class BlockedController extends Controller
         if (Yii::$app->user->isGuest || Yii::$app->user->identity->status !== User::STATUS_BLOCKED) {
             return $this->redirect('/');
         }
-        return $this->render('../site/blocked.twig');
+        return $this->render('blocked.twig');
     }
 
 }

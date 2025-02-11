@@ -289,6 +289,17 @@ class Statistics extends ActiveRecord
         return $result;
     }
 
+    public static function getMedicalItem($images, $names, $player, $key) {
+        $result = [];
+
+        $result['count'] = Statistics::getParam($player, $key['param']);
+        $result['image'] = Statistics::getImage($images, $key['param']);
+        $result['name'] = Statistics::getName($names, $key['param']);
+        $result['desc'] = number_format(Statistics::getParam($player, $key['param']), 0);
+
+        return $result;
+    }
+
     public static function getFishItem($images, $player, $key, $name, $score) {
         $result = [];
 

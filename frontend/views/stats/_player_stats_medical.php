@@ -10,11 +10,24 @@ use common\models\statistics\Statistics;
 /** @var string $steamId */
 /** @var \common\models\user\User $user */
 
-$keys = ['largemedkit', 'syringe', 'bandage'];
+$keys = [
+    [
+        'key' => 'largemedkit',
+        'param' => 'mod_largemedkit',
+    ],
+    [
+        'key' => 'syringe',
+        'param' => 'syringe',
+    ],
+    [
+        'key' => 'bandage',
+        'param' => 'bandage',
+    ]
+];
 
 $items = [];
 foreach ($keys as $key) {
-    $items[] = Statistics::getFoodItem($images, $names, $player, $key);
+    $items[] = Statistics::getMedicalItem($images, $names, $player, $key);
 }
 
 ?>
