@@ -64,6 +64,18 @@ class SiteController extends WebController
         return $this->render('index');
     }
 
+    /**
+     * Displays homepage.
+     *
+     * @return string|Response
+     */
+    public function actionTest()
+    {
+        return $this->render('index', [
+            'test' => $test
+        ]);
+    }
+
     private function _botOpenBox() {
         $cacheKey = 'botGenerate';
         if (Yii::$app->cache->get($cacheKey)) {

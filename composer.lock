@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "c27cb0081b98485780bc5e2dd9474996",
+    "content-hash": "51e9c412aa222ab8a544a480ab61d817",
     "packages": [
         {
             "name": "2amigos/qrcode-library",
@@ -5587,6 +5587,116 @@
                 "source": "https://github.com/select2/select2/tree/4.0.13"
             },
             "time": "2020-01-28T05:01:22+00:00"
+        },
+        {
+            "name": "sergeymakinen/yii2-log-message",
+            "version": "v2.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/sergeymakinen/yii2-log-message.git",
+                "reference": "8837893dcb580490be8b9a65ff22dab0fa07ce94"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/sergeymakinen/yii2-log-message/zipball/8837893dcb580490be8b9a65ff22dab0fa07ce94",
+                "reference": "8837893dcb580490be8b9a65ff22dab0fa07ce94",
+                "shasum": ""
+            },
+            "require": {
+                "yiisoft/yii2": "~2.0.13"
+            },
+            "require-dev": {
+                "sergeymakinen/yii2-tests": "^2.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "sergeymakinen\\yii\\logmessage\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Sergey Makinen",
+                    "email": "sergey@makinen.ru",
+                    "homepage": "https://makinen.ru"
+                }
+            ],
+            "description": "Log message object for Yii 2 log targets",
+            "homepage": "https://github.com/sergeymakinen/yii2-log-message",
+            "keywords": [
+                "log",
+                "logging",
+                "message",
+                "yii",
+                "yii2",
+                "yii2-log-message"
+            ],
+            "support": {
+                "issues": "https://github.com/sergeymakinen/yii2-log-message/issues",
+                "source": "https://github.com/sergeymakinen/yii2-log-message"
+            },
+            "abandoned": true,
+            "time": "2018-02-12T10:24:01+00:00"
+        },
+        {
+            "name": "sergeymakinen/yii2-telegram-log",
+            "version": "v2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/sergeymakinen/yii2-telegram-log.git",
+                "reference": "c34a949b699dd39bf0caeacc347370c2e2406094"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/sergeymakinen/yii2-telegram-log/zipball/c34a949b699dd39bf0caeacc347370c2e2406094",
+                "reference": "c34a949b699dd39bf0caeacc347370c2e2406094",
+                "shasum": ""
+            },
+            "require": {
+                "sergeymakinen/yii2-log-message": "^2.0",
+                "yiisoft/yii2": "~2.0.2",
+                "yiisoft/yii2-httpclient": "~2.0.0"
+            },
+            "require-dev": {
+                "sergeymakinen/yii2-tests": "^2.0"
+            },
+            "type": "yii2-extension",
+            "autoload": {
+                "psr-4": {
+                    "sergeymakinen\\yii\\telegramlog\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Sergey Makinen",
+                    "email": "sergey@makinen.ru",
+                    "homepage": "https://makinen.ru"
+                }
+            ],
+            "description": "Telegram log target for Yii 2",
+            "homepage": "https://github.com/sergeymakinen/yii2-telegram-log",
+            "keywords": [
+                "log",
+                "logging",
+                "telegram",
+                "yii",
+                "yii2",
+                "yii2-telegram-log"
+            ],
+            "support": {
+                "issues": "https://github.com/sergeymakinen/yii2-telegram-log/issues",
+                "source": "https://github.com/sergeymakinen/yii2-telegram-log"
+            },
+            "abandoned": true,
+            "time": "2017-01-27T14:13:53+00:00"
         },
         {
             "name": "spatie/data-transfer-object",
