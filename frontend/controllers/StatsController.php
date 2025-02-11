@@ -181,13 +181,13 @@ class StatsController extends WebController
             throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден!'));
         }
 
+        if (Yii::$app->user->isGuest) {
+            throw new NotFoundHttpException(Yii::t('common', 'Авторизуйтесь на сайте!'));
+        }
+
 
         /** @var User $user */
         $user = Yii::$app->user->identity;
-
-        if (empty($user)) {
-            throw new NotFoundHttpException(Yii::t('common', 'Авторизуйтесь на сайте!'));
-        }
 
         /** @var User $_user */
         $_user = User::find()->andWhere(['steam_id' => $steamId])->one();
