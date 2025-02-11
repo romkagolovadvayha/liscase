@@ -184,6 +184,11 @@ class StatsController extends WebController
 
         /** @var User $user */
         $user = Yii::$app->user->identity;
+
+        if (empty($user)) {
+            throw new NotFoundHttpException(Yii::t('common', 'Авторизуйтесь на сайте!'));
+        }
+
         /** @var User $_user */
         $_user = User::find()->andWhere(['steam_id' => $steamId])->one();
 
