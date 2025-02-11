@@ -24,6 +24,7 @@ if (empty($user)) {
 $this->title = $user->username . " " . Yii::t('common', 'статистика на сервере') . " " . Yii::t('database', $server->name);
 $this->params['page'] = 'stats';
 
+$IS_GUEST = Yii::$app->user->isGuest;
 $wipe = $server->currentWipe();
 $player = Statistics::getPlayerStats($server, $user->steam_id, $wipe);
 $images = Statistics::productsImages();
@@ -71,6 +72,7 @@ $kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam(
         <?=Yii::$app->view->render('profile.twig', [
             'WRAPPER_CLASS' => $statusClass,
             'USER' => $user,
+            'IS_GUEST' => $IS_GUEST,
             'STATS' => [
                 'PLAYTIME' => Statistics::getParam($player, 'playtime'),
                 'ONLINE' => Servers::getPlayTime(Statistics::getParam($player, 'playtime')),
