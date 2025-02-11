@@ -380,17 +380,29 @@
         @extend .relative, .z-1, .w-full;
         list-style-type: none;
         &__avatar {
-          width: 50px;
-          height: 50px;
-          min-width: 50px;
-          border-color: var(--icon-main);
-          border-radius: var(--avatar-radius);
-          border-width: 2px;
-          border-style: solid;
-          overflow: hidden;
+          position: relative;
+          &:after {
+            content: "";
+            @extend .absolute,
+            .block,
+            .border-4,
+            .border-solid,
+            .border-background-secondary,
+            .bg-online,
+            .rounded-full;
+            @include range(20, 20, "px");
+            bottom: -6px;
+            right: -6px;
+          }
           img {
-            width: 100%;
+            border-color: var(--icon-main);
+            border-width: 2px;
+            border-style: solid;
             display: block;
+            border-radius: var(--avatar-radius);
+            width: 50px;
+            height: 50px;
+            min-width: 50px;
           }
         }
         &__item {
@@ -401,6 +413,17 @@
           gap: 3px;
           justify-content: space-between;
           align-items: flex-start;
+          &_offline {
+            & .the-best__list__avatar {
+              & img {
+                @extend .border-icon-main;
+              }
+              &:after {
+                content: "";
+                @extend .none;
+              }
+            }
+          }
           &__wrap {
             @extend .py-6, .relative;
             display: flex;

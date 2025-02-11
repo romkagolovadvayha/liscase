@@ -4,7 +4,7 @@
     <ol class="the-best__list">
         {% for ITEM in ITEMS %}
         <li>
-            <a href="{{ ITEM.link }}" class="the-best__list__item__wrap">
+            <a href="{{ ITEM.link }}" class="the-best__list__item__wrap{% if not ITEM.status %} the-best__list__item_offline{% endif %}">
                 <div class="the-best__list__avatar">
                     <img src="{{ ITEM.avatar }}" alt="{{ ITEM.username }}" />
                 </div>

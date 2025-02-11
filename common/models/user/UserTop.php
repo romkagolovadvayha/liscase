@@ -301,10 +301,13 @@ ORDER BY server_id, `key`, value DESC;
         foreach (UserTop::getTopsLabel() as $key => $label) {
             /** @var UserTop[] $userTops */
             $userTops = UserTop::find()
-                               ->andWhere(['key' => $key])
-                               ->andWhere(['server_id' => $server->id])
-                               ->andWhere(['wipe' => $wipe])
-                               ->orderBy(['value' => SORT_DESC])
+                               ->alias('ut')
+                               ->joinWith(['user u'])
+                               ->andWhere(['ut.key' => $key])
+                               ->andWhere(['ut.server_id' => $server->id])
+                               ->andWhere(['ut.wipe' => $wipe])
+                               ->andWhere(['u.is_stats' => 1])
+                               ->orderBy(['ut.value' => SORT_DESC])
                                ->limit(3)
                                ->all();
             $items[$key] = [
@@ -325,6 +328,7 @@ ORDER BY server_id, `key`, value DESC;
                         'link' => "/servers/{$server->tag}/{$user->steam_id}",
                         'username' => $user->username,
                         'avatar' => $user->getAvatar(),
+                        'status' => $user->getStatus(),
                     ];
                 }
             } else {
@@ -349,6 +353,7 @@ ORDER BY server_id, `key`, value DESC;
                         'link' => "/servers/{$server->tag}/{$user->steam_id}",
                         'username' => $user->username,
                         'avatar' => $user->getAvatar(),
+                        'status' => $user->getStatus(),
                     ];
                 }
             }
