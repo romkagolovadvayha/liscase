@@ -66,6 +66,7 @@ class StatsController extends WebController
         $user = Yii::$app->user->identity;
 
         $items = UserTop::getUserTops($server, $server->currentWipe());
+        $allUserTops = [];
         if (!Yii::$app->user->isGuest) {
             $allUserTops = UserTop::getAllUserTops($server, $server->currentWipe());
         }
