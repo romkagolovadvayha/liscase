@@ -147,7 +147,7 @@ class RustotekaController extends Controller
                         /** @var Reports[] $reports */
                         $reports = Reports::find()
                                           ->andWhere(['recepient_steam_id' => $model->steam_id])
-                                          ->andWhere(['>=', 'created_at', (new \DateTime())->modify('-14 day')->format('Y-m-d H:i:s')])
+                                          ->andWhere(['>=', 'created_at', (new \DateTime())->modify('-21 day')->format('Y-m-d H:i:s')])
                                           ->all();
 
                         foreach ($reports as $report) {
