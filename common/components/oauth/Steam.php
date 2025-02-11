@@ -183,6 +183,33 @@ class Steam extends OpenId
                 'server' => 'GGRust Классика X2',
             ];
         }
+        $server = Steam::getSlabiyStats('slabiy1_banlist');
+        if (!empty($server[$steamId])) {
+            $bans[] = [
+                'reason' => $server[$steamId]['Reason'],
+                'date' => $server[$steamId]['BanDate'],
+                'expireDate' => $server[$steamId]['ExpireDate'],
+                'server' => 'Слабый 1',
+            ];
+        }
+        $server = Steam::getSlabiyStats('slabiy2_banlist');
+        if (!empty($server[$steamId])) {
+            $bans[] = [
+                'reason' => $server[$steamId]['Reason'],
+                'date' => $server[$steamId]['BanDate'],
+                'expireDate' => $server[$steamId]['ExpireDate'],
+                'server' => 'Слабый 2',
+            ];
+        }
+        $server = Steam::getSlabiyStats('slabiy3_banlist');
+        if (!empty($server[$steamId])) {
+            $bans[] = [
+                'reason' => $server[$steamId]['Reason'],
+                'date' => $server[$steamId]['BanDate'],
+                'expireDate' => $server[$steamId]['ExpireDate'],
+                'server' => 'Слабый 3',
+            ];
+        }
 
         return $bans;
     }
@@ -271,6 +298,18 @@ class Steam extends OpenId
         }
 
         $apiUrl = "https://stats.ggrust.ru/serverbanlist.php?table={$stable}";
+        $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
+        Yii::$app->cache->set($cacheKey, $response, 60);
+        return $response;
+    }
+
+    public static function getSlabiyStats($stable = 'russian_banlist') {
+        $cacheKey = 'steam_getSlabiyStats_' . $stable;
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $apiUrl = "https://rustaria.ru/slabiy/serverbanlist.php?table={$stable}";
         $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
         Yii::$app->cache->set($cacheKey, $response, 60);
         return $response;
