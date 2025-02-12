@@ -363,6 +363,7 @@ class ApiController extends WebController
 
     public function actionRadioList()
     {
+        Yii::$app->response->format = Response::FORMAT_JSON;
         $list = [
           [
               'name' => 'Русское',
@@ -419,7 +420,9 @@ class ApiController extends WebController
             $str .= ',' . $item['name'] . ',' . $item['url'];
         }
 
-        return substr($str, 1);
+        return [
+            'radioList' => substr($str, 1)
+        ];
     }
 
     public function actionHelpInfo($serverTag)
