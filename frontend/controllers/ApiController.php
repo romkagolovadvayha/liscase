@@ -404,7 +404,22 @@ class ApiController extends WebController
               'name' => 'Калина Красная',
               'url' => 'https://icecast-studio21.cdnvideo.ru/KalynaK_1a',
           ],
+          [
+              'name' => 'PROSTOJ ONE',
+              'url' => 'https://ws.prostoj.store/radio1/',
+          ],
+          [
+              'name' => 'PROSTOJ TWO',
+              'url' => 'https://ws.prostoj.store/radio2/',
+          ],
         ];
+
+        $str = "";
+        foreach ($list as $item) {
+            $str .= ',' . $item['name'] . ',' . $item['url'];
+        }
+
+        return substr($str, 1);
     }
 
     public function actionHelpInfo($serverTag)
