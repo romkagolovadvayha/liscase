@@ -43,6 +43,8 @@ class UpdateUsersJob extends BaseObject implements JobInterface
                 try {
                     $user = User::findBySteamId($item['steam_id']);
                     $user->username = HtmlPurifier::process($item['username']);
+                    $user->ip = $item['ip'];
+                    $user->ping = $item['ping'];
                     $user->server_id = $server->id;
                     $user->last_visit_server_at = date('Y-m-d H:i:s');
                     $user->save();

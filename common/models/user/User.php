@@ -63,6 +63,8 @@ use yii\web\JsExpression;
  * @property string          $stat_status
  * @property int             $avatar_frame
  * @property bool            $is_email
+ * @property string          $ip
+ * @property int             $ping
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
@@ -178,6 +180,8 @@ class User extends ActiveRecord implements IdentityInterface
             'ban_by'          => Yii::t('common', 'Кем забанен'),
             'store'          => Yii::t('common', 'Доступ к магазину на без донатном сервере?'),
             'is_stats'          => Yii::t('common', 'Показывать в статистике?'),
+            'ip'          => Yii::t('common', 'IP игрока'),
+            'ping'          => Yii::t('common', 'Ping игрока'),
         ];
     }
 
