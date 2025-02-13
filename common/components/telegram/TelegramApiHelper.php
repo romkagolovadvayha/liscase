@@ -7,6 +7,16 @@ use yii\helpers\ArrayHelper;
 
 class TelegramApiHelper extends \yii\base\Component
 {
+    public string $token;
+
+    /**
+     * @return mixed
+     */
+    public function setToken($token)
+    {
+        $this->token = $token;
+        return $this;
+    }
 
     /**
      * @return mixed
@@ -78,8 +88,7 @@ class TelegramApiHelper extends \yii\base\Component
             $getParams['text'] = $messageText;
             unset($params['text']);
         }
-        $token = Yii::$app->settings->get('tgbot_botToken');
-        $url = 'https://api.telegram.org/bot' . $token . '/' . $method .
+        $url = 'https://api.telegram.org/bot' . $this->token . '/' . $method .
                (!empty($getParams) ? '?' . http_build_query($getParams) : '');
 
         return [$url, $params];

@@ -198,7 +198,6 @@ $config = [
         ],
         'rustotekaBotTelegram'               => [
             'class'    => \common\components\telegram\TelegramApiHelper::class,
-            'botToken' => '7494504343:AAFL_vGF1V7o5a4SRWvniY-R7NZ6pUqYa8M', //@rustoteka_bot
         ],
         'midjourney'   => [
             'class'  => \common\components\midjourney\MidjourneyApi::class,

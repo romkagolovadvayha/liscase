@@ -230,7 +230,16 @@ class RustotekaBotSystem extends AbstractSystemBots
      */
     public function getTelegramBot()
     {
-        return Yii::$app->rustotekaBotTelegram;
+        return (clone Yii::$app->rustotekaBotTelegram)
+            ->setToken($this->getTelegramToken());
+    }
+
+    /**
+     * @return string
+     */
+    public function getTelegramToken()
+    {
+        return Yii::$app->settings->get('tgbot_botToken');
     }
 
     /**

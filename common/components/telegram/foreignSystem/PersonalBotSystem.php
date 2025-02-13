@@ -28,6 +28,23 @@ class PersonalBotSystem extends AbstractSystem
     }
 
     /**
+     * @return TelegramApiHelper
+     */
+    public function getTelegramBot()
+    {
+        return (clone Yii::$app->rustotekaBotTelegram)
+            ->setToken($this->getTelegramToken());
+    }
+
+    /**
+     * @return string
+     */
+    public function getTelegramToken()
+    {
+        return Yii::$app->settings->get('tgbot_botToken');
+    }
+
+    /**
      * @return string
      */
     public function getSystemName()
@@ -289,14 +306,6 @@ class PersonalBotSystem extends AbstractSystem
     {
         return "Приветствую{$name}!
 Для активации бота перейдите на страницу https://" . Yii::$app->settings->get('site_domain') . "/bot/activate и скопируйте код активации в этот чат.";
-    }
-
-    /**
-     * @return TelegramApiHelper
-     */
-    public function getTelegramBot()
-    {
-        return Yii::$app->personalBotTelegram;
     }
 
     /**

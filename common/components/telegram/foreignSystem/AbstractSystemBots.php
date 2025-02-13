@@ -12,6 +12,7 @@ abstract class AbstractSystemBots
      * @return TelegramApiHelper
      */
     abstract public function getTelegramBot();
+    abstract public function getTelegramToken();
 
     /**
      * @param array $message
