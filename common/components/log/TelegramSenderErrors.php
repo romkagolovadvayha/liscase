@@ -28,11 +28,11 @@ class TelegramSenderErrors extends Target
 
     public $template = '{levelAndRequest}
 
-{text}
+<pre>{text}</pre>
 
 {category}
 {user}
-<pre>{stackTrace}</pre>
+{stackTrace}
 {serverName}';
 
     /**
@@ -217,18 +217,16 @@ class TelegramSenderErrors extends Target
                 'wrapAsCode' => false,
                 'value' => function (Message $message) {
                     $value = [];
+                    $id = $message->getUserId();
+                    if ((string) $id !== '') {
+                        $user = User::findOne($id);
+                        if (!empty($user)) {
+                            $value[] = "<b>{$user->username}</b> (<code>{$user->steam_id}</code>)";
+                        }
+                    }
                     $ip = $message->getUserIp();
                     if ((string) $ip !== '') {
                         $value[] = $ip;
-                    }
-                    $id = $message->getUserId();
-                    $user = User::findOne($id);
-                    if (!empty($user)) {
-                        $value[] = "UserName: <b>{$user->username}</b>";
-                        $value[] = "SteamID: <b>{$user->steam_id}</b>";
-                    }
-                    if ((string) $id !== '') {
-                        $value[] = "ID: <b>{$id}</b>";
                     }
                     return implode(str_repeat(' ', 4), $value);
                 },
