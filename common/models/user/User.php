@@ -1107,8 +1107,7 @@ class User extends ActiveRecord implements IdentityInterface
         try {
             $reader = new Reader(__DIR__ . '/countries/GeoLite2-Country.mmdb');
             $record = $reader->country($this->ip);
-            Yii::$app->telegramChats->sendMessage("{$this->ip} " . $record->country->isoCode);
-            return $record->country->isoCode;
+            return strtolower($record->country->isoCode);
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage("getCountryByIp: {$this->ip} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             return null;
