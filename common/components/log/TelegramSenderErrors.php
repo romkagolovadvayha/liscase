@@ -5,6 +5,7 @@ namespace common\components\log;
 use common\components\telegram\TelegramChats;
 use common\helpers\HDates;
 use common\helpers\HStrings;
+use common\models\user\User;
 use sergeymakinen\yii\logmessage\Message;
 use sergeymakinen\yii\telegramlog\Target;
 use yii\helpers\ArrayHelper;
@@ -31,7 +32,7 @@ class TelegramSenderErrors extends Target
 
 {category}
 {user}
-{stackTrace}
+<pre>{stackTrace}</pre>
 {serverName}';
 
     /**
@@ -221,6 +222,11 @@ class TelegramSenderErrors extends Target
                         $value[] = $ip;
                     }
                     $id = $message->getUserId();
+                    $user = User::findOne($id);
+                    if (!empty($user)) {
+                        $value[] = "UserName: <b>{$user->username}</b>";
+                        $value[] = "SteamID: <b>{$user->steam_id}</b>";
+                    }
                     if ((string) $id !== '') {
                         $value[] = "ID: <b>{$id}</b>";
                     }
