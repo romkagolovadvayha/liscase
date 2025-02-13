@@ -88,6 +88,9 @@ class TelegramApiHelper extends \yii\base\Component
             $getParams['text'] = $messageText;
             unset($params['text']);
         }
+        if (empty($this->token)) {
+            $this->token = Yii::$app->settings->get('tgbot_botToken');
+        }
         $url = 'https://api.telegram.org/bot' . $this->token . '/' . $method .
                (!empty($getParams) ? '?' . http_build_query($getParams) : '');
 
