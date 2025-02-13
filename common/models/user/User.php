@@ -16,6 +16,7 @@ use common\models\servers\Servers;
 use common\models\skindrops\Skindrops;
 use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
+use GeoIp2\Database\Reader;
 use yii\base\BaseObject;
 use yii\base\NotSupportedException;
 use Yii;
@@ -1092,5 +1093,24 @@ class User extends ActiveRecord implements IdentityInterface
         }
 
         return $userData;
+    }
+
+    /**
+     * @return string|null
+     * @throws \GeoIp2\Exception\AddressNotFoundException
+     * @throws \MaxMind\Db\Reader\InvalidDatabaseException
+     */
+    public function getCountryByIp() {
+        if (empty($this->ip)) {
+            return null;
+        }
+        try {
+            $reader = new Reader(__DIR__ . '/countries/GeoLite2-Country.mmdb');
+            $record = $reader->country($this->ip);
+            return $record->country->isoCode;
+        } catch (\Exception $e) {
+            Yii::$app->telegramChats->sendMessage("getCountryByIp: {$this->ip} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+            return null;
+        }
     }
 }
