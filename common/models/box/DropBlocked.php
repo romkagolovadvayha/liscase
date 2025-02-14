@@ -109,6 +109,9 @@ class DropBlocked extends ActiveRecord
                           ->all();
             $items = [];
             foreach ($models as $model) {
+                if (time() < strtotime($model->blocked_at)) {
+                    continue;
+                }
                 $items[$model->drop_id] = $model->blocked_at;
             }
             Yii::$app->cache->set($cacheKey, $items, 3*60);
