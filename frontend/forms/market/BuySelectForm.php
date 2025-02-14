@@ -11,6 +11,7 @@ use yii\helpers\ArrayHelper;
 class BuySelectForm extends Select
 {
     public $drop_id;
+    /** @var Drop */
     public $drop;
 
     public function rules(): array

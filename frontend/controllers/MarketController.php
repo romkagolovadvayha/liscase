@@ -8,6 +8,7 @@ use common\models\box\Select;
 use common\models\box\Sets;
 use common\models\invoice\Invoice;
 use common\models\promotion\Promotion;
+use common\models\rcon\RconTasks;
 use common\models\user\UserDrop;
 use frontend\forms\market\BuyForm;
 use frontend\forms\market\BuySelectForm;
@@ -143,7 +144,12 @@ class MarketController extends WebController
                                 'PARAMS_PREDNAME' => Yii::t('database', $modelForm->drop->name)
                             ]);
                             Invoice::createRecord($user->id, $modelForm->drop->getRealPrice(), Invoice::TYPE_PAYMENT_MARKET_DROP, null, null, $modelForm->drop->id, $comment);
-                            UserDrop::createRecord($user->id, $modelForm->drop->id, null, null,UserDrop::STATUS_ACTIVE, false, $modelForm->drop->count);
+                            if (in_array($modelForm->drop->id, [883, 884])) {
+                                $modelForm->drop->command = str_replace('%STEAMID%', $user->steam_id, $modelForm->drop->command);
+                                RconTasks::execute($modelForm->drop->command);
+                            } else {
+                                UserDrop::createRecord($user->id, $modelForm->drop->id, null, null,UserDrop::STATUS_ACTIVE, false, $modelForm->drop->count);
+                            }
                             $dbTransaction->commit();
                             Yii::$app->session->addFlash('success', Yii::t('common', 'Предмет успешно приобретен!'));
                         } catch (\Exception $e) {
