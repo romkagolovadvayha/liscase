@@ -147,6 +147,9 @@ class MarketController extends WebController
                             if (in_array($modelForm->drop->id, [883, 884])) {
                                 $modelForm->drop->command = str_replace('%STEAMID%', $user->steam_id, $modelForm->drop->command);
                                 RconTasks::execute($modelForm->drop->command);
+                                $model = UserDrop::createRecord($user->id, $modelForm->drop->id, null, null,UserDrop::STATUS_ACTIVE, false, $modelForm->drop->count);
+                                $model->status = UserDrop::STATUS_SENDED;
+                                $model->save(false);
                             } else {
                                 UserDrop::createRecord($user->id, $modelForm->drop->id, null, null,UserDrop::STATUS_ACTIVE, false, $modelForm->drop->count);
                             }

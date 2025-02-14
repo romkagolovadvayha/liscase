@@ -104,9 +104,18 @@ class UserDrop extends ActiveRecord
     }
 
     /**
-     * @throws \Exception
+     * @param       $userId
+     * @param       $dropId
+     * @param null  $boxId
+     * @param null  $setsId
+     * @param null  $status
+     * @param false $auto
+     * @param int   $count
+     * @param null  $createdAt
+     *
+     * @return UserDrop
      */
-    public static function createRecord($userId, $dropId, $boxId = null, $setsId = null, $status = null, $auto = false, $count = 1, $createdAt = null): bool
+    public static function createRecord($userId, $dropId, $boxId = null, $setsId = null, $status = null, $auto = false, $count = 1, $createdAt = null)
     {
         $model = new UserDrop();
         $model->user_id = $userId;
@@ -124,6 +133,6 @@ class UserDrop extends ActiveRecord
             $model->created_at = $createdAt;
         }
         $model->save(false);
-        return true;
+        return $model;
     }
 }
