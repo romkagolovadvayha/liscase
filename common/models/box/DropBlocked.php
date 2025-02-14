@@ -99,7 +99,7 @@ class DropBlocked extends ActiveRecord
 
     public static function getBlocked($dropId, $serverId)
     {
-        $cacheKey = "DropBlocked_getBlocked_" . $serverId;
+        $cacheKey = "DropBlocked_getBlocked2_" . $serverId;
         if (Yii::$app->cache->get($cacheKey)) {
             $items = Yii::$app->cache->get($cacheKey);
         } else {
