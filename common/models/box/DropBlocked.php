@@ -99,7 +99,7 @@ class DropBlocked extends ActiveRecord
 
     public static function getBlocked($dropId, $serverId)
     {
-        $cacheKey = "DropBlocked_getBlocked2_" . $serverId;
+        $cacheKey = "DropBlocked_getBlocked3_" . $serverId;
         if (Yii::$app->cache->get($cacheKey)) {
             $items = Yii::$app->cache->get($cacheKey);
         } else {
@@ -109,7 +109,7 @@ class DropBlocked extends ActiveRecord
                           ->all();
             $items = [];
             foreach ($models as $model) {
-                if (time() < strtotime($model->blocked_at)) {
+                if (time() > strtotime($model->blocked_at)) {
                     continue;
                 }
                 $items[$model->drop_id] = $model->blocked_at;
