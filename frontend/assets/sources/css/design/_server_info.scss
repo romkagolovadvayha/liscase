@@ -1,0 +1,34 @@
+.server_info {
+  &_line {
+    @extend .p2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  &_actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 5px;
+    width: 100%;
+    > a {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
+      display: flex;
+      align-items: center;
+      //transform: scale(0.95);
+    }
+  }
+}
+.ping_success {
+  color: var(--online);
+  font-weight: 600;
+}
+.ping_normal {
+  color: var(--server-command-primary);
+  font-weight: 600;
+}
+.ping_danger {
+  color: var(--color-rules-punishment);
+  font-weight: 600;
+}

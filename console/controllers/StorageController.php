@@ -40,11 +40,14 @@ class StorageController extends Controller
     {
         $cacheKey = "Storage_actionUpdate";
         if (Yii::$app->cache->get($cacheKey)) {
-            return 'BLOCKED';
+            echo 'BLOCKED';
+            return null;
         }
         Yii::$app->cache->set($cacheKey, 1, 5*60);
         ini_set('memory_limit', '512M');
         try {
+            Statistics::projectStats(true);
+
             /** @var Servers[] $servers */
             $servers = Servers::find()
                               ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
@@ -56,7 +59,6 @@ class StorageController extends Controller
                 User::getUsers($server->id, true);
             }
 
-            Statistics::projectStats(true);
             //UserTop::getUserTop($servers, true);
             Kills::getLive($servers, true);
         } catch (\Exception $e) {

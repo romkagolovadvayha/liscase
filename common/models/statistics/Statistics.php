@@ -341,6 +341,22 @@ class Statistics extends ActiveRecord
             ->andWhere(['NOT IN', 'status', [Servers::STATUS_CLOSED]])
             ->count();
 
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->cache(60)
+            ->andWhere(['NOT IN', 'status', [Servers::STATUS_CLOSED]])
+            ->all();
+        $result['servers'] = [];
+        foreach ($servers as $server) {
+            if (empty($result['servers'][$server->id])) {
+                $result['servers'][$server->id] = [];
+            }
+            $result['servers'][$server->id]['ping'] = User::find()
+                                                          ->andWhere(['>=', 'last_visit_server_at', date('Y-m-d H:i:s', time() - 5 * 60)])
+                                                          ->andWhere(['server_id' => $server->id])
+                                                          ->andWhere(['status' => User::STATUS_ACTIVE])
+                                                          ->average('ping') ?? 0;
+        }
 
         Yii::$app->cache->set($cacheKey, $result, 7*24*60*60);
         return $result;

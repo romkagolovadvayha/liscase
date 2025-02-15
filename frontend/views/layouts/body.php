@@ -47,7 +47,17 @@ if (!empty($this->params['_blog_comments_block'])) {
 if (!empty($this->params['_blog_similar_block'])) {
     $blogSimilarBlock = $this->render('../layouts/_side_similar_posts', ['model' => $this->params['_blog_model']]);
 }
-
+$user = Yii::$app->user->identity;
+$serverInfoBlock = null;
+if (!empty($user) && !empty($user->server) && $user->last_visit_server_at > date('Y-m-d H:i:s', time() - 5 * 60)) {
+    $serverInfoBlock = $this->render('@frontend/views/widgets/server_info.twig', [
+                                              'SERVER' => $user->server,
+                                              'USER' => $user,
+                                              'PROJECT_STATS' => $projectStats,
+                                              'SETTINGS' => $SETTINGS,
+                                              'PAGE' => $page
+                                         ]);
+}
 if (!empty($this->params['_user'])) {
     /** @var User $_user */
     $_user = $this->params['_user'];
@@ -86,6 +96,7 @@ if (!empty($this->params['_profile'])) {
     'email' => Yii::$app->params['email'],
     'user' => $userData,
     'MENU_HIDDEN' => $hiddenMenu,
+    'SERVER_INFO_BLOCK' => $serverInfoBlock,
     'PROFILE_BLOCK' => $profileBlock,
 //    'ALERT_MESSAGE' => $this->render('@frontend/views/widgets/_alert'),
 //    'SKINDROPS_BLOCK' => $this->render('@frontend/views/widgets/_skindrops'),

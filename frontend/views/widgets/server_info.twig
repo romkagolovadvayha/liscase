@@ -1,0 +1,44 @@
+{{ use('lo/widgets/magnific/MagnificPopup') }}
+<section class="stats-aside__stat-block stat-block server_info">
+    <h4 class="stat-block__title flex items-center justify-space-between">
+        <span>{{ t('common', 'Ваш сервер') }} {{ t('database', SERVER.monitoring_name) }}</span>
+    </h4>
+
+    <div class="stat-block__list">
+        <article class="stat-block__server server server_item_js server_status{{ SERVER.status }}" data-server-id="{{ SERVER.id }}">
+            <p class="server_info_line">
+                <span>{{ t('common', 'Средний пинг') }}</span>
+                <span class="{% if PROJECT_STATS.servers[SERVER.id].ping < 100 %}ping_success{% elseif PROJECT_STATS.servers[SERVER.id].ping < 200 %}ping_normal{% else %}ping_danger{% endif %}">{{ PROJECT_STATS.servers[SERVER.id].ping|number_format(0, '', ' ') }}</span>
+            </p>
+            <p class="server_info_line">
+                <span>{{ t('common', 'Ваш пинг') }}</span>
+                <span class="{% if USER.ping < 100 %}ping_success{% elseif USER.ping < 200 %}ping_normal{% else %}ping_danger{% endif %}">{{ USER.ping|number_format(0, '', ' ') }}</span>
+            </p>
+
+        </article>
+    </div>
+    <div class="server_info_actions mt-8">
+        <a class="button button-secondary button-size__s h-36 show-modal-link"
+           style="padding-top: 6px; padding-bottom: 6px"
+           href="{{ SERVER.getLink('wipe-info') }}"
+           data-size="modal-sm"
+           data-toggl="modal"
+           data-target="modal-dialog"
+           data-title="{{ t('common', 'Когда вайп?') }}"><span class="button__text">{{ t('common', 'Когда вайп') }}</span></a>
+        <a class="button button-secondary button-size__s h-36" style="padding-top: 6px; padding-bottom: 6px" href="{{ SERVER.getLink('rules') }}">
+            <span class="button__text">{{ t('common', 'Правила') }}</span>
+        </a>
+    </div>
+</section>
+{{
+magnific_popup_widget({
+    'target': '.server_info',
+    'options': {
+        'delegate': '.server_info_actions_image',
+        'gallery': {
+            'enabled': false
+        },
+    },
+    'effect': 'with-zoom'
+})
+}}

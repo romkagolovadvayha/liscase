@@ -406,12 +406,12 @@ class ApiController extends WebController
               'url' => 'https://icecast-studio21.cdnvideo.ru/KalynaK_1a',
           ],
           [
-              'name' => 'PROSTOJ ONE',
-              'url' => 'https://ws.prostoj.store/radio1/',
+              'name' => 'Спутник',
+              'url' => 'https://radio.mediacdn.ru/sputnik_fm.mp3',
           ],
           [
-              'name' => 'PROSTOJ TWO',
-              'url' => 'https://ws.prostoj.store/radio2/',
+              'name' => 'PROSTOJ ONE',
+              'url' => 'https://ws.prostoj.store/radio1/',
           ],
         ];
 
