@@ -207,7 +207,7 @@ class UserTop extends \yii\db\ActiveRecord
               'bear' => 1,
               'boar' => 1,
               'polarbear' => 1,
-              'deer' => 1,
+              'stag' => 1,
               'horse' => 1,
               'wolf2' => 1,
               'wolf' => 1,
