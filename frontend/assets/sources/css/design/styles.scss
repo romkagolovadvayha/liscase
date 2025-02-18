@@ -324,13 +324,13 @@ $modal-dialog-margin-y-sm-up: 0;
 }
 
 .main {
+  overflow: visible;
   @extend .grid, .pr-24, .transition-grid-template-columns, .gap-x-20;
   grid-template-columns: 241px 1fr 335px;
 
   @media (min-width: 1921px) {
     grid-template-columns: 241px 1fr 395px;
   }
-  overflow: visible;
 
   @media (max-width: 768px) {
     display: flex;
