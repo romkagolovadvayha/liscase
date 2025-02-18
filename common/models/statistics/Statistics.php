@@ -326,7 +326,7 @@ class Statistics extends ActiveRecord
     public static function projectStats($update = false) {
         $cacheKey = 'Statistics_projectStats_';
         if (Yii::$app->cache->get($cacheKey) && !$update) {
-            //return Yii::$app->cache->get($cacheKey);
+            return Yii::$app->cache->get($cacheKey);
         }
 
         $result = [];

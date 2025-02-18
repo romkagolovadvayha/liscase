@@ -79,7 +79,7 @@ class SelectForm extends Select
         if (empty($image) || empty($image->tempName)) {
             return null;
         }
-        $uploadDir = Yii::getAlias('@app/web/uploads');
+        $uploadDir = Yii::getAlias('@frontend/web/uploads');
         $fileUrl = "/select/" . $this->id . "_" . $type . "_" . md5(time()) . ".png";
         $filePath = $uploadDir . $fileUrl;
         if (!file_exists(dirname($filePath))) {

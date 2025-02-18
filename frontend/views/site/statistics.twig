@@ -15,7 +15,7 @@
             </div>
             <div class="stats__item">
                 <p>{{ t('common', 'Серверов') }}</p>
-                <p>{{ PROJECT_STATS.servers|number_format(0, '', ' ') }}</p>
+                <p>{{ PROJECT_STATS.count|number_format(0, '', ' ') }}</p>
             </div>
         </div>
         <img src="{{ SETTINGS.get('design_image_not_auth') }}" alt="farmer" class="user__image"/>
