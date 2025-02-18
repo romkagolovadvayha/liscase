@@ -321,6 +321,10 @@ $modal-dialog-margin-y-sm-up: 0;
   @media (min-width: 1921px) {
     min-width: 100%;
   }
+  @media (max-width: 768px) {
+    display: block;
+    padding-bottom: 40px;
+  }
 }
 
 .main {
