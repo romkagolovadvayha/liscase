@@ -1,0 +1,141 @@
+.clans {
+  &_raiting {
+    background-size: contain;
+    background-position: top center;
+    background-repeat: no-repeat;
+    &_list {
+      display: flex;
+      gap: 20px;
+      justify-content: space-around;
+      align-items: flex-end;
+      //grid-template-columns: repeat(auto-fit, minmax(203px, 1fr));
+      //padding-top: 120px;
+      &_item {
+        background-color: var(--background-secondary);
+        border-radius: var(--card-radius);
+        padding: 10px;
+        position: relative;
+        box-shadow: 0 0 6px 3px #00000040;
+        display: flex;
+        &_position {
+          font-size: 203px;
+          font-weight: 700;
+          line-height: 203px;
+          position: absolute;
+          top: 0;
+          left: 0;
+          z-index: -1;
+          opacity: 0.7;
+        }
+        &_header {
+          display: flex;
+          justify-content: center;
+          gap: 12px;
+          align-items: flex-start;
+          width: 100%;
+          &_wrap {
+            left: 0;
+            position: absolute;
+            gap: 10px;
+            bottom: 100%;
+            margin-bottom: 12px;
+            z-index: 1;
+            width: 100%;
+          }
+          &_logo {
+            border-radius: var(--card-radius);
+            min-width: 60px;
+            min-height: 60px;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-size: cover;
+          }
+          &_content {
+            &_title {
+              @extend h2;
+              color: var(--clans-color-title-color);
+              text-shadow: var(--clans-text-shadow-text);
+            }
+            &_status {
+              @extend .p2;
+              margin-top: 5px;
+              color: var(--clans-color-status);
+              text-shadow: var(--clans-text-shadow-text);
+            }
+          }
+        }
+        &_list {
+          @extend .stat-block__list, .gap-y-5, .relative, .z-1, .flex, .flex-column;
+          width: 100%;
+          overflow-y: auto;
+          padding-right: 5px;
+          &::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+            background-color: transparent;
+          }
+          &::-webkit-scrollbar-thumb {
+            background-color: var(--status-background-opacity);
+            border-radius: 8px;
+          }
+        }
+        &_wrap {
+          width: 350px;
+          position: relative;
+          &:hover {
+            .clans_raiting_list_item_image {
+              margin-bottom: 0;
+              margin-top: 0;
+            }
+          }
+        }
+        &_image {
+          display: block;
+          margin: 0 auto;
+          max-width: 100%;
+          margin-bottom: -10px;
+          margin-top: 10px;
+          transition: 0.25s;
+          position: relative;
+          z-index: 0;
+        }
+        &_silver {
+          .clans_raiting_list_item_position {
+            color: var(--clans-color-text-silver);
+          }
+          .clans_raiting_list_item {
+            height: 400px;
+          }
+          .clans_raiting_list_item_image {
+            max-width: 100%;
+            width: 200px;
+          }
+        }
+        &_gold {
+          .clans_raiting_list_item_position {
+            color: var(--clans-color-text-gold);
+          }
+          .clans_raiting_list_item {
+            height: 500px;
+          }
+          .clans_raiting_list_item_image {
+            width: 100%;
+            margin-left: 50px;
+          }
+        }
+        &_bronze {
+          .clans_raiting_list_item_position {
+            color: var(--clans-color-text-bronze);
+          }
+          .clans_raiting_list_item {
+            height: 300px;
+          }
+          .clans_raiting_list_item_image {
+            max-width: 100%;
+            width: 200px;
+          }
+        }
+      }
+    }
+  }
+}

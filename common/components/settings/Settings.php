@@ -51,12 +51,15 @@ class Settings
     public function genColors() {
         /** @var SiteSetting[] $colors */
         $colors = SiteSetting::find()
-                    ->andWhere(['IN', 'category', ['colors', 'design']])
+                    ->andWhere(['IN', 'category', ['colors', 'design', 'clans']])
                     ->all();
 
         $css = ":root {\n";
         foreach ($colors as $color) {
             $code = str_replace('_', '-', $color->code);
+            if ($color->category === 'clans') {
+                $code = $color->category . '-' . $color->type . '-' . $code;
+            }
             if ($color->type === 'image') {
                 $css .= "--{$code}: url({$color->value});\n";
             } else {

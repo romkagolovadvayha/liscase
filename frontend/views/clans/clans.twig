@@ -1,0 +1,534 @@
+<nav class="servers_navbar mb-24">
+    <ul class="servers_navbar_nav">
+        {% for ITEM in SERVERS %}
+            <li>
+                <a href="{{ ITEM.getLink('clans') }}" class="servers_navbar_nav_item{% if ITEM.tag == SERVER.tag %} active{% endif %}">
+                    {{ t('database', ITEM.monitoring_name) }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+</nav>
+<div class="clans_raiting" style="background-image: url({{ SETTINGS.get('clans_background') }})">
+    <div class="clans_raiting_list">
+        <div class="clans_raiting_list_item_wrap clans_raiting_list_item_silver">
+            <div class="clans_raiting_list_item_position">2</div>
+            <img src="{{ SETTINGS.get('clans_silver') }}" class="clans_raiting_list_item_image" />
+            <div class="clans_raiting_list_item">
+                <div class="clans_raiting_list_item_header_wrap">
+                    <div class="clans_raiting_list_item_header">
+                        <div class="clans_raiting_list_item_header_logo" style="background-image: url(http://test.prostoj.store/uploads/avatar/steam/76561198327021542.png)"></div>
+                        <div class="clans_raiting_list_item_header_content">
+                            <div class="clans_raiting_list_item_header_content_title">
+                                [4ert]
+                            </div>
+                            <div class="clans_raiting_list_item_header_content_status">
+                                Лучший клан в мире
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-x-10 mt-12 justify-content-around">
+                        <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                            <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-36">
+                            <p class="p3">40</p>
+                        </div>
+                        <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                            <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-36">
+                            <p class="p3">121</p>
+                        </div>
+                        <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                            <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-36">
+                            <p class="p3">41 424</p>
+                        </div>
+                    </div>
+                </div>
+                <ul class="clans_raiting_list_item_list">
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561199163776027.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="пьяный ниндзя">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561199163776027" class="p2 link font-medium">пьяный ниндзя</a>
+                                <span class="p3 text-text-secondary">Электрик</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">12</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">0</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">123 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561198344778075.png" class="block w-40 h-40 min-w-40 min-h-40 rounded-6 object-cover" alt="P.Drilla">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561198344778075" class="p2 link font-medium">P.Drilla</a>
+                                <span class="p3 text-text-secondary">Комбатер</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">40</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">121</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">41 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561199163776027.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="пьяный ниндзя">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561199163776027" class="p2 link font-medium">пьяный ниндзя</a>
+                                <span class="p3 text-text-secondary">Электрик</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">12</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">0</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">123 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561198344778075.png" class="block w-40 h-40 min-w-40 min-h-40 rounded-6 object-cover" alt="P.Drilla">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561198344778075" class="p2 link font-medium">P.Drilla</a>
+                                <span class="p3 text-text-secondary">Комбатер</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">40</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">121</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">41 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561199163776027.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="пьяный ниндзя">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561199163776027" class="p2 link font-medium">пьяный ниндзя</a>
+                                <span class="p3 text-text-secondary">Электрик</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">12</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">0</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">123 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561198344778075.png" class="block w-40 h-40 min-w-40 min-h-40 rounded-6 object-cover" alt="P.Drilla">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561198344778075" class="p2 link font-medium">P.Drilla</a>
+                                <span class="p3 text-text-secondary">Комбатер</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">40</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">121</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">41 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="clans_raiting_list_item_wrap clans_raiting_list_item_gold">
+            <div class="clans_raiting_list_item_position">1</div>
+            <img src="{{ SETTINGS.get('clans_gold') }}" class="clans_raiting_list_item_image" />
+            <div class="clans_raiting_list_item">
+                <div class="clans_raiting_list_item_header_wrap">
+                    <div class="clans_raiting_list_item_header">
+                        <div class="clans_raiting_list_item_header_logo" style="background-image: url(http://test.prostoj.store/uploads/avatar/steam/76561198327021542.png)"></div>
+                        <div class="clans_raiting_list_item_header_content">
+                            <div class="clans_raiting_list_item_header_content_title">
+                                [4ert]
+                            </div>
+                            <div class="clans_raiting_list_item_header_content_status">
+                                Лучший клан в мире
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-x-10 mt-12 justify-content-around">
+                        <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                            <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-36">
+                            <p class="p3">40</p>
+                        </div>
+                        <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                            <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-36">
+                            <p class="p3">121</p>
+                        </div>
+                        <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                            <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-36">
+                            <p class="p3">41 424</p>
+                        </div>
+                    </div>
+                </div>
+                <ul class="clans_raiting_list_item_list">
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561199163776027.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="пьяный ниндзя">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561199163776027" class="p2 link font-medium">пьяный ниндзя</a>
+                                <span class="p3 text-text-secondary">Электрик</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">12</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">0</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">123 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561198344778075.png" class="block w-40 h-40 min-w-40 min-h-40 rounded-6 object-cover" alt="P.Drilla">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561198344778075" class="p2 link font-medium">P.Drilla</a>
+                                <span class="p3 text-text-secondary">Комбатер</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">40</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">121</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">41 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561199163776027.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="пьяный ниндзя">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561199163776027" class="p2 link font-medium">пьяный ниндзя</a>
+                                <span class="p3 text-text-secondary">Электрик</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">12</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">0</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">123 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561198344778075.png" class="block w-40 h-40 min-w-40 min-h-40 rounded-6 object-cover" alt="P.Drilla">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561198344778075" class="p2 link font-medium">P.Drilla</a>
+                                <span class="p3 text-text-secondary">Комбатер</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">40</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">121</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">41 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561199163776027.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="пьяный ниндзя">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561199163776027" class="p2 link font-medium">пьяный ниндзя</a>
+                                <span class="p3 text-text-secondary">Электрик</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">12</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">0</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">123 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561198344778075.png" class="block w-40 h-40 min-w-40 min-h-40 rounded-6 object-cover" alt="P.Drilla">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561198344778075" class="p2 link font-medium">P.Drilla</a>
+                                <span class="p3 text-text-secondary">Комбатер</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">40</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">121</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">41 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="clans_raiting_list_item_wrap clans_raiting_list_item_bronze">
+            <div class="clans_raiting_list_item_position">3</div>
+            <img src="{{ SETTINGS.get('clans_bronze') }}" class="clans_raiting_list_item_image" />
+            <div class="clans_raiting_list_item">
+                <div class="clans_raiting_list_item_header_wrap">
+                    <div class="clans_raiting_list_item_header">
+                        <div class="clans_raiting_list_item_header_logo" style="background-image: url(http://test.prostoj.store/uploads/avatar/steam/76561198327021542.png)"></div>
+                        <div class="clans_raiting_list_item_header_content">
+                            <div class="clans_raiting_list_item_header_content_title">
+                                [4ert]
+                            </div>
+                            <div class="clans_raiting_list_item_header_content_status">
+                                Лучший клан в мире
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-x-10 mt-12 justify-content-around">
+                        <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                            <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-36">
+                            <p class="p3">40</p>
+                        </div>
+                        <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                            <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-36">
+                            <p class="p3">121</p>
+                        </div>
+                        <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                            <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-36">
+                            <p class="p3">41 424</p>
+                        </div>
+                    </div>
+                </div>
+                <ul class="clans_raiting_list_item_list">
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561199163776027.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="пьяный ниндзя">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561199163776027" class="p2 link font-medium">пьяный ниндзя</a>
+                                <span class="p3 text-text-secondary">Электрик</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">12</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">0</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">123 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561198344778075.png" class="block w-40 h-40 min-w-40 min-h-40 rounded-6 object-cover" alt="P.Drilla">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561198344778075" class="p2 link font-medium">P.Drilla</a>
+                                <span class="p3 text-text-secondary">Комбатер</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">40</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">121</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">41 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561199163776027.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="пьяный ниндзя">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561199163776027" class="p2 link font-medium">пьяный ниндзя</a>
+                                <span class="p3 text-text-secondary">Электрик</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">12</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">0</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">123 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561198344778075.png" class="block w-40 h-40 min-w-40 min-h-40 rounded-6 object-cover" alt="P.Drilla">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561198344778075" class="p2 link font-medium">P.Drilla</a>
+                                <span class="p3 text-text-secondary">Комбатер</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">40</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">121</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">41 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561199163776027.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="пьяный ниндзя">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561199163776027" class="p2 link font-medium">пьяный ниндзя</a>
+                                <span class="p3 text-text-secondary">Электрик</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">12</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">0</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">123 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                        <img src="/uploads/avatar/steam/76561198344778075.png" class="block w-40 h-40 min-w-40 min-h-40 rounded-6 object-cover" alt="P.Drilla">
+                        <div class="flex flex-column w-full gap-y-4">
+                            <p class="flex justify-space-between items-center flex-wrap">
+                                <a href="/servers/classicx2/76561198344778075" class="p2 link font-medium">P.Drilla</a>
+                                <span class="p3 text-text-secondary">Комбатер</span>
+                            </p>
+                            <div class="flex gap-x-10">
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Серная руда">
+                                    <img src="http://test.prostoj.store/images/awards/killer.png" alt="gold" class="w-24">
+                                    <p class="p3">40</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/reyder.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">121</p>
+                                </div>
+                                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="Железная руда">
+                                    <img src="http://test.prostoj.store/images/awards/farmer.png" alt="iron_stone" class="w-24">
+                                    <p class="p3">41 424</p>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

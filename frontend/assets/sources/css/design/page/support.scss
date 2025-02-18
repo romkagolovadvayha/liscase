@@ -539,5 +539,7 @@
   }
 }
 .main.support + .footer {
-  display: none;
+  @media (max-width: 768px) {
+    display: none;
+  }
 }
