@@ -155,7 +155,7 @@
         left: 0;
         width: 1px;
         height: 1px;
-        z-index: 5;
+        z-index: -1;
         color: transparent;
       }
     }
@@ -175,6 +175,7 @@
         left: 0;
         width: 1px;
         height: 1px;
+        z-index: 5;
         color: transparent;
       }
     }
