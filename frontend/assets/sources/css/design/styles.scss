@@ -323,9 +323,7 @@ $modal-dialog-margin-y-sm-up: 0;
   }
   @media (max-width: 768px) {
     display: block;
-    padding-bottom: 40px;
-    position: relative;
-    z-index: 2;
+    position: unset;
   }
 }
 
@@ -343,6 +341,7 @@ $modal-dialog-margin-y-sm-up: 0;
     flex-direction: column-reverse;
     padding-left: 10px;
     padding-right: 10px;
+    position: unset;
   }
   &_menu_hide {
     grid-template-columns: 102px 1fr 395px;
