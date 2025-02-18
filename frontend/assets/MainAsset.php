@@ -16,7 +16,7 @@ class MainAsset extends AssetBundle
 
     public $css = [
 //        'css/design/root-colors.min.css',
-        'css/design/styles.min.css?v=1.22',
+        'css/design/styles.min.css?v=1.23',
     ];
 
     public $js = [
