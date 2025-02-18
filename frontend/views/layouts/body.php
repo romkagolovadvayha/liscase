@@ -139,6 +139,7 @@ if (!empty($this->params['_profile'])) {
         'PAGE' => $page,
     ]),
     'SETTINGS' => $SETTINGS,
+    'PAGE' => $page
 ]);?>
 
 <?=Yii::$app->view->render('metrics.twig')?>
