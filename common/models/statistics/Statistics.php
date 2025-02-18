@@ -326,7 +326,7 @@ class Statistics extends ActiveRecord
     public static function projectStats($update = false) {
         $cacheKey = 'Statistics_projectStats_';
         if (Yii::$app->cache->get($cacheKey) && !$update) {
-            return Yii::$app->cache->get($cacheKey);
+            //return Yii::$app->cache->get($cacheKey);
         }
 
         $result = [];
@@ -337,7 +337,7 @@ class Statistics extends ActiveRecord
         $result['online'] = Servers::find()
             ->sum('players + joined') ?? 0;
 
-        $result['servers'] = Servers::find()
+        $result['count'] = Servers::find()
             ->andWhere(['NOT IN', 'status', [Servers::STATUS_CLOSED]])
             ->count();
 
