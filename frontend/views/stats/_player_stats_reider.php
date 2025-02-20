@@ -21,12 +21,19 @@ $items = [
     ['key' => 'grenade.f1.deployed', 'score' => 0.05],
     ['key' => 'grenade.molotov.deployed', 'score' => 0.05],
     ['key' => 'grenade.beancan.deployed', 'score' => 0.05],
+    ['key' => 'grenade.flashbang.deployed', 'score' => 0],
+    ['key' => 'grenade.supplysignal.deployed', 'score' => 0],
+    ['key' => 'grenade.smoke.deployed', 'score' => 0],
+    ['key' => '40mm_grenade_he', 'score' => 0],
+    ['key' => '40mm_grenade_smoke', 'score' => 0],
+    ['key' => 'rocket_heatseeker', 'score' => 0],
+    ['key' => 'flare.deployed', 'score' => 0],
 ];
 
-$keys = [];
-foreach ($items as $item) {
-    $keys[] = str_replace('.deployed', '', $item['key']);
-}
+//$keys = [];
+//foreach ($items as $item) {
+//    $keys[] = str_replace('.deployed', '', $item['key']);
+//}
 
 $reider = [];
 foreach ($items as $item) {
@@ -60,10 +67,12 @@ foreach ($items as $item) {
         <?php foreach ($reider as $item): ?>
             <div class="page-stats__category category">
                 <h5 class="category__count-and-img">
-                    <span><?= $item['desc'] ?><span class="category__x"
+                    <span>
+                        <?= $item['desc'] ?><?php if (!empty($item['score'])): ?><span class="category__x"
                                   data-bs-toggle="tooltip"
                                   data-bs-placement="bottom"
-                                  data-bs-title="<?=Yii::t('common', 'Множитель для рейтинга игроков') . " x" . $item['score']?>">x<?= $item['score'] ?></span></span>
+                                  data-bs-title="<?=Yii::t('common', 'Множитель для рейтинга игроков') . " x" . $item['score']?>">x<?= $item['score'] ?></span><?php endif; ?>
+                    </span>
                     <img src="<?= $item['image'] ?>" alt="" class="w-64 h-64 object-contain" />
                 </h5>
                 <p class="category__title"><?= Yii::t('database', $item['name']) ?></p>

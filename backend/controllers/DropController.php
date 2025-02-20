@@ -56,6 +56,7 @@ class DropController extends \backend\components\CrudController
                 return \yii\bootstrap5\ActiveForm::validate($formModel);
             }
             if ($formModel->saveRecord()) {
+                Drop::updateCache();
                 return $this->redirect($this->getIndexUrl());
             }
         }
