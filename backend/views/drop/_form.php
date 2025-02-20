@@ -17,6 +17,7 @@ use yii\bootstrap5\ActiveForm;
 <?= $form->field($model, 'category_id')->dropDownList(\common\models\box\Category::getCategoryList(), []) ?>
 <?= $form->field($model, 'preview_file')->fileInput(); ?>
 <?= $form->field($model, 'preview_file_open')->fileInput(); ?>
+<?= $form->field($model, 'eng_name')->textInput(); ?>
 <?= $form->field($model, 'market_status')->dropDownList(Drop::getMarketStatusList(), []) ?>
 <?= $form->field($model, 'command')->textarea(); ?>
 <?= $form->field($model, 'blocked_hour')->dropDownList([

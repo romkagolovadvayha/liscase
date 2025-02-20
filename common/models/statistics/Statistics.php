@@ -319,9 +319,9 @@ class Statistics extends ActiveRecord
 
     public static function getRaiderItem($names, $images, $player, $key, $score) {
         $result = [];
-        $key = str_replace('.deployed', '', $key);
-        $result['image'] = Statistics::getImage($images, $key);
-        $result['name'] = Statistics::getName($names, $key);
+        $_key = str_replace('.deployed', '', $key);
+        $result['image'] = Statistics::getImage($images, $_key);
+        $result['name'] = Statistics::getName($names, $_key);
         $result['count'] = Statistics::getParam($player, $key);
         $result['desc'] = Statistics::getParam($player, $key);
         $result['score'] = $score;

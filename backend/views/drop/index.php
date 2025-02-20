@@ -47,7 +47,7 @@ $this->title = Yii::t('common', 'Предметы');
             },
         ],
         [
-            'attribute' => 'sort',
+            'attribute' => 'eng_name',
             'options'   => ['width' => '100'],
         ],
         [
