@@ -2,23 +2,28 @@
 
 namespace common\models\clan;
 
+use common\models\servers\Servers;
+use common\models\statistics\Statistics;
 use common\models\user\User;
+use common\models\user\UserTop;
 use Yii;
+use yii\helpers\ArrayHelper;
 
 /**
  * This is the model class for table "clan".
  *
- * @property int $id
+ * @property int         $id
  * @property string|null $title
  * @property string|null $description_short
  * @property string|null $description
  * @property string|null $logo_image
  * @property string|null $background_image
- * @property int|null $user_id
+ * @property int|null    $user_id
  * @property string|null $social_youtube
  * @property string|null $social_discord
  * @property string|null $social_vk
  * @property string|null $social_twitch
+ * @property string|null $link_hash
  * @property string|null $created_at
  *
  * @property ClanInvite[] $clanInvites
@@ -61,17 +66,17 @@ class Clan extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'title' => 'Title',
+            'title' => Yii::t('common', 'Название клана'),
             'description_short' => 'Description Short',
             'description' => 'Description',
             'logo_image' => 'Logo Image',
             'background_image' => 'Background Image',
             'user_id' => 'User ID',
-            'social_youtube' => 'Social Youtube',
-            'social_discord' => 'Social Discord',
-            'social_vk' => 'Social Vk',
-            'social_twitch' => 'Social Twitch',
-            'created_at' => 'Created At',
+            'social_youtube' => Yii::t('common', 'Ссылка на Youtube'),
+            'social_discord' => Yii::t('common', 'Ссылка на Discord'),
+            'social_vk' => Yii::t('common', 'Ссылка на VK'),
+            'social_twitch' => Yii::t('common', 'Ссылка на Twitch'),
+            'created_at' => Yii::t('common', 'Дата создания'),
         ];
     }
 
@@ -143,5 +148,153 @@ class Clan extends \yii\db\ActiveRecord
     public function getUserRoles()
     {
         return $this->hasMany(UserRole::class, ['clan_id' => 'id']);
+    }
+
+    public function getLogo($cdn = true) {
+        if (empty($this->logo_image)) {
+            return Yii::$app->params['cdnUrl'] . '/images/design/x400.png';
+        }
+        if ($cdn) {
+            return Yii::$app->params['cdnUrl'] . $this->logo_image;
+        }
+        return $this->logo_image;
+    }
+
+    public function getBackground($cdn = true) {
+        if (empty($this->background_image)) {
+            return Yii::$app->params['cdnUrl'] . '/images/design/x1590.png';
+        }
+        if ($cdn) {
+            return Yii::$app->params['cdnUrl'] . $this->background_image;
+        }
+        return $this->background_image;
+    }
+
+    /**
+     * @param Servers $server
+     * @param false   $update
+     *
+     * @return array
+     */
+    public static function getClans(Servers $server, $update = false) {
+        $cacheKey = 'Clan_getClans_' . $server->tag;
+        $cacheUserClansKey = 'Clan_getUserClans_' . $server->tag;
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            //return Yii::$app->cache->get($cacheKey);
+        }
+
+        $usersStat = Statistics::getAllUsersStats($server, $server->currentWipe());
+
+        $result = [];
+        $userClansResult = [];
+
+        /** @var Clan[] $items */
+        $items = Clan::find()
+                     ->all();
+
+        foreach ($items as $i => $item) {
+            $_server = $item->user->getCurrentServer();
+            $_item = [
+                'title' => $item->title,
+                'description_short' => $item->description_short,
+                'logo' => $item->getLogo(),
+                'user' => $item->user->getData(),
+                'background' => $item->getBackground(),
+                'link' => $item->getLink('profile', $_server->tag),
+                'users' => []
+            ];
+
+            foreach ($item->userClans as $userClan) {
+                $_user = $userClan->user;
+                $_data = $_user->getData();
+                if (!empty($usersStat[$_user->steam_id])) {
+                    foreach ($usersStat[$_user->steam_id] as $key => $value) {
+                        if (!isset($_item[$key])) {
+                            $_item[$key] = 0;
+                        }
+                        $_item[$key] += $value;
+                    }
+                    $_data = ArrayHelper::merge($_data, $usersStat[$_user->steam_id]);
+                }
+                $_item['users'][] = $_data;
+                $userClansResult[$userClan->user_id] = $item->id;
+            }
+
+            $_item['users_count'] = count($_item['users']);
+            $_item['rating'] = self::calculateRating($_item);
+
+            $result[$item->id] = $_item;
+        }
+        uasort($result, function ($a, $b) {
+            if ($a['rating'] == $b['rating']) {
+                return 0;
+            }
+            return ($a['rating'] > $b['rating']) ? -1 : 1;
+        });
+
+        Yii::$app->cache->set($cacheKey, $result, 30*60);
+        Yii::$app->cache->set($cacheUserClansKey, $userClansResult, 30*60);
+        return $result;
+    }
+
+    public static function calculateRating($item) {
+        $result = 0;
+        $result += $item['kills'] ?? 0;
+        if (!empty($item['scrap']) && $item['scrap'] > 0) {
+            $result += round($item['scrap'] * 0.02);
+        }
+        if (!empty($item['stones']) && $item['stones'] > 0) {
+            $result += round($item['stones'] * 0.0002);
+        }
+        if (!empty($item['wood']) && $item['wood'] > 0) {
+            $result += round($item['wood'] * 0.0001);
+        }
+        if (!empty($item['metal.ore']) && $item['metal.ore'] > 0) {
+            $result += round($item['metal.ore'] * 0.0003);
+        }
+        if (!empty($item['sulfur.ore']) && $item['sulfur.ore'] > 0) {
+            $result += round($item['sulfur.ore'] * 0.0005);
+        }
+        if (!empty($item['hq.metal.ore']) && $item['hq.metal.ore'] > 0) {
+            $result += round($item['hq.metal.ore'] * 0.001);
+        }
+        if (!empty($item['nude_kills']) && $item['nude_kills'] > 0) {
+            $result -= round($item['nude_kills'] * 0.5);
+        }
+        if (!empty($item['deaths']) && $item['deaths'] > 0) {
+            $result -= round($item['deaths'] * 0.5);
+        }
+        if (!empty($item['c4thrown']) && $item['c4thrown'] > 0) {
+            $result += round($item['c4thrown'] * 0.2);
+        }
+        if (!empty($item['rocket_basic']) && $item['rocket_basic'] > 0) {
+            $result += round($item['rocket_basic'] * 0.1);
+        }
+        if (!empty($item['ammo_explosive']) && $item['ammo_explosive'] > 0) {
+            $result += round($item['ammo_explosive'] * 0.008);
+        }
+        if (!empty($item['satchelsthrown']) && $item['satchelsthrown'] > 0) {
+            $result += round($item['satchelsthrown'] * 0.08);
+        }
+
+        return $result;
+    }
+
+    public static function getUserClansList($server, $update = false) {
+        $cacheKey = 'Clan_getUserClans_' . $server->tag;
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        self::getClans($server, true);
+
+        return Yii::$app->cache->get($cacheKey);
+    }
+
+    public function getLink($key, $serverTag = null) {
+        if ($key === 'profile') {
+            return "/clans/{$serverTag}/{$this->link_hash}";
+        }
+        return null;
     }
 }

@@ -207,6 +207,79 @@ class Statistics extends ActiveRecord
         return $data;
     }
 
+    /**
+     * @param   Servers    $server
+     * @param false $update
+     */
+    public static function getAllUsersStats($server, $wipe, $update = false) {
+        $cacheKey = "Statistics_getAllUsersStats_{$server->id}_{$wipe}";
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        /** @var Statistics[] $rawData */
+        $rawData = Statistics::find()
+                                ->select(['steam_id', 'key', 'value'])
+                                ->andWhere(['server_tag' => $server->tag])
+                                ->andWhere(['IN', 'key', [
+                                    'kills',
+                                    'nude_kills',
+                                    'deaths',
+                                    'c4thrown',
+                                    'ammo_explosive',
+                                    'hq.metal.ore',
+                                    'metal.ore',
+                                    'sulfur.ore',
+                                    'stones',
+                                    'scientists',
+                                    'rocket_basic',
+                                    'rocket_fire',
+                                    'rocket_heatseeker',
+                                    'rocket_hv',
+                                    'satchelsthrown',
+                                    'scrap',
+                                    'stag',
+                                    'wolf2',
+                                    'polarbear',
+                                    'bear',
+                                    'boar',
+                                    'simpleshark',
+                                    'playtime',
+                                    'wood',
+                                    'card_level_1',
+                                    'card_level_2',
+                                    'card_level_3',
+                                    'bradleys',
+                                    '40mm_grenade_he',
+                                    '40mm_grenade_smoke',
+                                ]])
+                                ->andWhere(['wipe' => $wipe])
+//                                ->orderBy(['value' => SORT_DESC])
+//                                ->indexBy('steam_id')
+                                ->asArray()
+                                ->all();
+
+        $result = [];
+        foreach ($rawData as $row) {
+            $steamId = $row['steam_id'];
+            $key = $row['key'];
+            $value = $row['value'];
+
+            // Инициализируем массив, если его еще нет
+            if (!isset($result[$steamId])) {
+                $result[$steamId] = [];
+            }
+            if (!isset($result[$steamId][$key])) {
+                $result[$steamId][$key] = 0;
+            }
+
+            // Заполняем данные
+            $result[$steamId][$key] = $value;
+        }
+
+        Yii::$app->cache->set($cacheKey, $result, 7*24*60*60);
+        return $result;
+    }
+
     public static function getTopWidgetItem($key, $stats, $index = 0) {
         if (empty($stats[$key])) {
             return [];

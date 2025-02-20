@@ -49,6 +49,26 @@ if (!empty($this->params['_blog_similar_block'])) {
 }
 $user = Yii::$app->user->identity;
 $serverInfoBlock = null;
+$clanProfileBlock = null;
+if (!empty($user) && !empty($this->params['clan_profile_block'])) {
+    $_server = $user->getCurrentServer();
+    $userClans = \common\models\clan\Clan::getUserClansList($_server);
+    $clan = null;
+    if (!empty($userClans[$user->id])) {
+        $clans = \common\models\clan\Clan::getClans($_server);
+        if (!empty($clans[$userClans[$user->id]])) {
+            $clan = $clans[$userClans[$user->id]];
+        }
+    }
+    $clanProfileBlock = $this->render('@frontend/views/widgets/clan_profile.twig', [
+        'SERVER' => $user->server,
+        'USER' => $user,
+        'SETTINGS' => $SETTINGS,
+        'userData' => $userData,
+        'CLAN' => $clan,
+        'PAGE' => $page
+    ]);
+}
 if (!empty($user) && !empty($user->server) && $user->last_visit_server_at > date('Y-m-d H:i:s', time() - 5 * 60)) {
     $serverInfoBlock = $this->render('@frontend/views/widgets/server_info.twig', [
                                               'SERVER' => $user->server,
@@ -98,6 +118,7 @@ if (!empty($this->params['_profile'])) {
     'MENU_HIDDEN' => $hiddenMenu,
     'SERVER_INFO_BLOCK' => $serverInfoBlock,
     'PROFILE_BLOCK' => $profileBlock,
+    'CLAN_PROFILE_BLOCK' => $clanProfileBlock,
 //    'ALERT_MESSAGE' => $this->render('@frontend/views/widgets/_alert'),
 //    'SKINDROPS_BLOCK' => $this->render('@frontend/views/widgets/_skindrops'),
     'SERVERS_BLOCK' => $this->render('@frontend/views/widgets/_servers', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'SETTINGS' => $SETTINGS, 'PAGE' => $page]),

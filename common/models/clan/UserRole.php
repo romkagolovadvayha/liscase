@@ -19,6 +19,27 @@ use Yii;
  */
 class UserRole extends \yii\db\ActiveRecord
 {
+
+    const ROLE_MEMBER = 'ROLE_MEMBER';
+    const ROLE_EDIT_INFO = 'ROLE_EDIT_INFO';
+    const ROLE_QUESTION = 'ROLE_QUESTION';
+    const ROLE_EDIT_MEMBERS = 'ROLE_EDIT_MEMBERS';
+    const ROLE_EDIT_PAGES = 'ROLE_EDIT_PAGES';
+
+    /**
+     * {@inheritdoc}
+     */
+    public static function codes()
+    {
+        return [
+            self::ROLE_MEMBER => 1,
+            self::ROLE_EDIT_INFO => 2,
+            self::ROLE_QUESTION => 3,
+            self::ROLE_EDIT_MEMBERS => 4,
+            self::ROLE_EDIT_PAGES => 5,
+        ];
+    }
+
     /**
      * {@inheritdoc}
      */

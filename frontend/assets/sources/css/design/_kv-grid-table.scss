@@ -112,3 +112,21 @@ table.kv-grid-table {
     }
   }
 }
+
+.kv-grid-loading {
+  position: relative;
+  .kv-loader-overlay {
+    @extend .loader, .active;
+    position: absolute !important;
+    border-radius: var(--status-radius);
+    &:after {
+      right: 50% !important;
+      top: 50% !important;
+      margin-right: -32px !important;
+      margin-top: -32px !important;
+    }
+    .kv-loader {
+      display: none;
+    }
+  }
+}

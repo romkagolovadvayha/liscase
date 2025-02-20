@@ -151,6 +151,9 @@
       mask: url("/images/design/icons/24px/success.svg") no-repeat center;
     }
   }
+  &_36px {
+    @include range(36, 36, "px");
+  }
 
   &_32px {
     @include range(32, 32, "px");
@@ -158,6 +161,10 @@
     &_ban {
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/ban.svg") no-repeat center;
+    }
+    &_users {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/user.svg") no-repeat center;
     }
     &_buildings {
       @extend .bg-icon-main;

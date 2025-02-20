@@ -1,0 +1,60 @@
+<div class="clans_raiting_list_item_wrap {{ CLASS }}">
+    <div class="clans_raiting_list_item_position">{{ POSITION }}</div>
+    <img src="{{ IMAGE }}" class="clans_raiting_list_item_image" />
+    <div class="clans_raiting_list_item">
+        <div class="clans_raiting_list_item_header_wrap">
+            <div class="clans_raiting_list_item_header">
+                <div class="clans_raiting_list_item_header_logo" style="background-image: url({{ ITEM.logo }})"></div>
+                <div class="clans_raiting_list_item_header_content">
+                    <div class="clans_raiting_list_item_header_content_title">
+                        {{ ITEM.title }}
+                    </div>
+                    <div class="clans_raiting_list_item_header_content_status">
+                        {{ ITEM.description_short }}
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-x-10 mt-12 justify-content-around">
+                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="{{ t('database', 'Убийств') }}">
+                    <img src="/images/awards/killer.png" alt="gold" class="w-36">
+                    <p class="p3">{{ ITEM.kills|number_format(0, '', ' ') }}</p>
+                </div>
+                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="{{ t('database', 'Игроков') }}">
+                    <span style="background: var(--text-secondary);" class="icons icons_36px icons_32px_users"></span>
+                    <p class="p3">{{ ITEM.users_count|number_format(0, '', ' ') }}</p>
+                </div>
+                <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="{{ t('database', 'Сера') }}">
+                    <img src="/uploads/drop/312_f1bbbd27a6a2da9e0f82b83ae1ac284a.png" alt="iron_stone" class="w-36">
+                    <p class="p3">{{ ITEM['sulfur.ore']|number_format(0, '', ' ') }}</p>
+                </div>
+            </div>
+        </div>
+        <ul class="clans_raiting_list_item_list">
+            {% for USER in ITEM.users %}
+                <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+                    <img src="{{ USER.avatar }}" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="пьяный ниндзя">
+                    <div class="flex flex-column w-full gap-y-4">
+                        <p class="flex justify-space-between items-center flex-wrap">
+                            <a href="{{ USER.link }}" class="p2 link font-medium">{{ USER.username }}</a>
+{#                            <span class="p3 text-text-secondary">Электрик</span>#}
+                        </p>
+                        <div class="flex gap-x-15">
+                            <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="{{ t('database', 'Убийств') }}">
+                                <img src="/images/awards/killer.png" alt="gold" class="w-24">
+                                <p class="p3 text-text-secondary">{{ USER.kills|number_format(0, '', ' ') }}</p>
+                            </div>
+                            <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="{{ t('database', 'Сера') }}">
+                                <img src="/uploads/drop/312_f1bbbd27a6a2da9e0f82b83ae1ac284a.png" alt="iron_stone" class="w-24">
+                                <p class="p3 text-text-secondary">{{ USER['sulfur.ore']|number_format(0, '', ' ') }}</p>
+                            </div>
+                            <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="{{ t('database', 'Скрап') }}">
+                                <img src="/uploads/drop/305_6949c48b05801055b644b5938b1c427c.png" alt="iron_stone" class="w-24">
+                                <p class="p3 text-text-secondary">{{ USER.scrap|number_format(0, '', ' ') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>

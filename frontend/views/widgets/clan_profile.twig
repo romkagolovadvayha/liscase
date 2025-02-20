@@ -1,0 +1,66 @@
+{{ use('common/components/widgets') }}
+<section class="stats-aside__stat-block stat-block stat-block-profile">
+    {% if CLAN %}
+    <div class="stat-block-profile-image" style="width: 200px; height: 200px;max-width: 100%;margin: 0 auto;">
+        <img src="{{ CLAN.logo }}"/>
+    </div>
+    <h3 class="text-center mt-24" >
+        {{ CLAN.title }}
+    </h3>
+        <div class="flex gap-x-10 mt-24 justify-content-around">
+            <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="{{ t('database', 'Убийств') }}">
+                <img src="/images/awards/killer.png" alt="gold" class="w-36">
+                <p class="p3">{{ CLAN.kills|number_format(0, '', ' ') }}</p>
+            </div>
+            <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="{{ t('database', 'Игроков') }}">
+                <span style="background: var(--text-secondary);" class="icons icons_36px icons_32px_users"></span>
+                <p class="p3">{{ CLAN.users_count|number_format(0, '', ' ') }}</p>
+            </div>
+            <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="{{ t('database', 'Сера') }}">
+                <img src="/uploads/drop/312_f1bbbd27a6a2da9e0f82b83ae1ac284a.png" alt="iron_stone" class="w-36">
+                <p class="p3">{{ CLAN['sulfur.ore']|number_format(0, '', ' ') }}</p>
+            </div>
+        </div>
+    {{ nav_menu_widget({
+        'options': {
+            'class': 'stat-block-profile-menu mt-12',
+        },
+        'items': [
+            {
+                'label': t('common', 'Профиль клана'),
+                'url': CLAN.link,
+                'activeClass': 'active',
+                'active': PAGE == 'user-profile',
+                'spanClass': 'stat-block-profile-menu__item-text',
+                'options': {'class': 'stat-block-profile-menu__item'},
+            },
+        ]
+    })
+    }}
+    {% else %}
+        <p class="p2 text-center text-text-teritiary">{{ t('common', 'Вы не состоите ни в одном клане. Подайте заявку в клан или создайте свой.') }}</p>
+        {{ nav_menu_widget({
+            'options': {
+                'class': 'stat-block-profile-menu mt-24',
+            },
+            'items': [
+                {
+                    'label': t('common', 'Создать клан'),
+                    'iconClass': 'icons icons_16px fas fa-plus-square',
+                    'activeClass': 'active',
+                    'active': PAGE == 'create-clan',
+                    'spanClass': 'stat-block-profile-menu__item-text',
+                    'options': {
+                        'class': 'stat-block-profile-menu__item show-modal-link',
+                        'data-size': 'modal-md',
+                        'data-toggl': 'modal',
+                        'data-target': 'modal-dialog' ,
+                        'data-title': t('common', 'Создать клан'),
+                        'data-href': "/clans/create"
+                    },
+                },
+            ]
+        })
+        }}
+    {% endif %}
+</section>

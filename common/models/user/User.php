@@ -8,6 +8,7 @@ use common\components\oauth\Steam;
 use common\components\queue\telegram\SendMessageJob;
 use common\components\web\Cookie;
 use common\models\auth\AuthAssignment;
+use common\models\clan\UserRole;
 use common\models\invoice\Invoice;
 use common\models\invoice\Deposit;
 use common\models\profit\Profit;
@@ -1112,5 +1113,45 @@ class User extends ActiveRecord implements IdentityInterface
             Yii::$app->telegramChats->sendMessage("getCountryByIp: {$this->ip} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             return null;
         }
+    }
+
+    public function getData() {
+        return [
+          'username' => $this->username,
+          'steam_id' => $this->steam_id,
+          'avatar' => $this->getAvatar(),
+          'link' => $this->getLink('stats'),
+        ];
+    }
+
+    /**
+     * @param $clanId
+     *
+     * @return array
+     */
+    public function getRolesClan($ownerUserId, $clanId): array
+    {
+        /** @var UserRole[] $roles */
+       $roles = UserRole::find()
+           ->andWhere(['user_id' => $this->id])
+           ->andWhere(['clan_id' => $clanId])
+           ->all();
+
+       $result = [];
+       $codes = UserRole::codes();
+       foreach ($codes as $code => $id) {
+           if ($ownerUserId == $this->id) {
+               $result[$code] = true;
+               continue;
+           }
+           foreach ($roles as $role) {
+               if ($role->role == $id) {
+                   $result[$code] = true;
+                   break;
+               }
+           }
+       }
+
+       return $result;
     }
 }

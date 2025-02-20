@@ -18,9 +18,10 @@
         box-shadow: 0 0 6px 3px #00000040;
         display: flex;
         &_position {
-          font-size: 203px;
+          font-size: 180px;
           font-weight: 700;
-          line-height: 203px;
+          line-height: 180px;
+          font-style: italic;
           position: absolute;
           top: 0;
           left: 0;
@@ -135,6 +136,56 @@
             width: 200px;
           }
         }
+      }
+    }
+  }
+}
+
+#clans-list-view-filters {
+  display: none;
+}
+#clans-list-view {
+  .kv-table-header {
+    a {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-direction: row-reverse;
+      justify-content: flex-end;
+      line-height: 36px;
+      width: 100%;
+      .kv-sort-icon {
+        @extend .text-text-secondary;
+      }
+    }
+    .kv-sort-icon {
+      margin-left: 0;
+    }
+  }
+  .item_param {
+    @extend .text-text-secondary;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    line-height: 48px;
+    &_th {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      row-gap: 6px;
+      &_wrap {
+        a {
+          justify-content: flex-start;
+        }
+      }
+    }
+    &_content {
+      &_title {
+        @extend .p1;
+      }
+      &_description {
+        margin-top: 5px;
+        @extend .p3, .text-text-secondary;
       }
     }
   }

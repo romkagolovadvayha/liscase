@@ -1,0 +1,173 @@
+<nav class="servers_navbar mb-24">
+    <ul class="servers_navbar_nav">
+        {% for ITEM in SERVERS %}
+            <li>
+                <a href="{{ CLAN.getLink('profile', ITEM.tag) }}" class="servers_navbar_nav_item{% if ITEM.tag == SERVER.tag %} active{% endif %}">
+                    {{ t('database', ITEM.monitoring_name) }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+</nav>
+<section class="page-stats__block profile flex-row justify-space-between items-flex-end" style="height: 300px;background-image: url({{ CLAN.background }}); background-size: cover; background-position: center center;">
+    <!-- ОНЛАЙН -->
+    <div class="profile__wrapper profile_offline">
+        <div class="profile__image">
+            <img src="{{ CLAN.logo }}" alt="пьяный ниндзя">
+        </div>
+        <div>
+            <h2 class="text-primary-colors-main flex items-center gap-x-12">
+                {{ CLAN.title }}
+            </h2>
+            <p class="p1 text-text-main">{{ t('database', CLAN.description_short) }}</p>
+        </div>
+    </div>
+    <div>
+        {% if ROLES.ROLE_MEMBER %}
+            <button data-href="/clans/create" data-size="modal-md" data-toggl="modal" data-target="modal-dialog" data-title="{{ t('common', 'Создать клан') }}" class="button-primary show-modal-link">
+                <span class="button__text">{{ t('common', 'Покинуть клан') }}</span>
+            </button>
+        {% else %}
+            <button data-href="/clans/create" data-size="modal-md" data-toggl="modal" data-target="modal-dialog" data-title="{{ t('common', 'Создать клан') }}" class="button-primary show-modal-link">
+                <span class="button__text">{{ t('common', 'Вступить в клан') }}</span>
+            </button>
+        {% endif %}
+    </div>
+</section>
+
+<div class="page-stats__two-blocks mt-12">
+    <section class="flex justify-center items-center w-50p">
+        <div class="page-stats__categories page-stats__categories__blocks">
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span>0</span>
+                    <img src="/uploads/drop/390_095e66f2cb4b167db9d27107e9ec7504.png" alt="Прыжков с парашюта" class="w-64 h-64 object-contain">
+                </h5>
+                <p class="category__title">Прыжков с парашюта</p>
+            </div>
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span>0</span>
+                    <img src="/uploads/drop/238_079c4cb5de12af91592f595f0705d38b.png" alt="Выкопано тайников" class="w-64 h-64 object-contain">
+                </h5>
+                <p class="category__title">Выкопано тайников</p>
+            </div>
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span>2922</span>
+                    <img src="/uploads/drop/305_6949c48b05801055b644b5938b1c427c.png" alt="Скрап" class="w-64 h-64 object-contain">
+                </h5>
+                <p class="category__title">Скрап</p>
+            </div>
+        </div>
+    </section>
+    <section class="flex justify-center items-center w-50p">
+        <div class="page-stats__categories page-stats__categories__blocks">
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span>631</span>
+                    <img src="/uploads/drop/306_ce620f151bb8a6cbd1a44c57d801b042.png" alt="Обломки костей" class="w-64 h-64 object-contain">
+                </h5>
+                <p class="category__title">Обломки костей</p>
+            </div>
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span>275</span>
+                    <img src="/uploads/drop/298_911c5ed162dbd022146e25022957757d.png" alt="Животный жир" class="w-64 h-64 object-contain">
+                </h5>
+                <p class="category__title">Животный жир</p>
+            </div>
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span>693</span>
+                    <img src="/uploads/drop/301_75d16b9d76868a7a833e6fb6942614ea.png" alt="Кожа" class="w-64 h-64 object-contain">
+                </h5>
+                <p class="category__title">Кожа</p>
+            </div>
+        </div>
+    </section>
+</div>
+<div class="page-stats__two-blocks mt-12">
+    <section class="flex justify-center items-center w-50p">
+        <div class="page-stats__categories page-stats__categories__blocks">
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span>631</span>
+                    <img src="/uploads/drop/306_ce620f151bb8a6cbd1a44c57d801b042.png" alt="Обломки костей" class="w-64 h-64 object-contain">
+                </h5>
+                <p class="category__title">Обломки костей</p>
+            </div>
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span>275</span>
+                    <img src="/uploads/drop/298_911c5ed162dbd022146e25022957757d.png" alt="Животный жир" class="w-64 h-64 object-contain">
+                </h5>
+                <p class="category__title">Животный жир</p>
+            </div>
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span>693</span>
+                    <img src="/uploads/drop/301_75d16b9d76868a7a833e6fb6942614ea.png" alt="Кожа" class="w-64 h-64 object-contain">
+                </h5>
+                <p class="category__title">Кожа</p>
+            </div>
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span>0</span>
+                    <img src="/uploads/drop/390_095e66f2cb4b167db9d27107e9ec7504.png" alt="Прыжков с парашюта" class="w-64 h-64 object-contain">
+                </h5>
+                <p class="category__title">Прыжков с парашюта</p>
+            </div>
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span>0</span>
+                    <img src="/uploads/drop/238_079c4cb5de12af91592f595f0705d38b.png" alt="Выкопано тайников" class="w-64 h-64 object-contain">
+                </h5>
+                <p class="category__title">Выкопано тайников</p>
+            </div>
+            <div class="page-stats__category category">
+                <h5 class="category__count-and-img">
+                    <span>2922</span>
+                    <img src="/uploads/drop/305_6949c48b05801055b644b5938b1c427c.png" alt="Скрап" class="w-64 h-64 object-contain">
+                </h5>
+                <p class="category__title">Скрап</p>
+            </div>
+        </div>
+    </section>
+    <section class="bg-background-secondary flex justify-center items-center w-50p" style="border-radius: var(--block-radius);">
+        <div class="user__stats stats">
+            <div class="stats__item">
+                <p>Убийств</p>
+                <p>131</p>
+            </div>
+            <div class="stats__item">
+                <p>Смертей</p>
+                <p>120</p>
+            </div>
+            <div class="stats__item">
+                <p>K/D</p>
+                <p>1.09</p>
+            </div>
+            <div class="stats__item">
+                <p>Убил ботов</p>
+                <p>20</p>
+            </div>
+            <div class="stats__item">
+                <p>Нокнут</p>
+                <p>128</p>
+            </div>
+            <div class="stats__item">
+                <p>Зарейдил</p>
+                <p>1</p>
+            </div>
+            <div class="stats__item">
+                <p>Вайпов</p>
+                <p>8</p>
+            </div>
+            <div class="stats__item">
+                <p>Убил голых</p>
+                <p>36</p>
+            </div>
+        </div>
+    </section>
+</div>
