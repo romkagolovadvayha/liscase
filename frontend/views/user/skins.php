@@ -69,14 +69,6 @@ foreach ($payouts as $item) {
     }
     $trades[] = $item;
 }
-foreach ($skins as $item) {
-    if (count($trades) >= 4) {
-        break;
-    }
-    $item['status'] = ArrayHelper::getValue(UserPayoutSkins::getStatusList(), UserPayoutSkins::STATUS_SUCCESS);
-    $item['statusKey'] = UserPayoutSkins::STATUS_SUCCESS;
-    $trades[] = $item;
-}
 
 $personalBalance = $user->getPersonalBalance();
 $transfers = Profit::find()
