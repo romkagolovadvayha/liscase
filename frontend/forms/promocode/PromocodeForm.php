@@ -61,21 +61,24 @@ class PromocodeForm extends Promocode
                 ->one();
 
             if (!empty($userTree) && $userTree->parent_user_id == 509) {
-                $userBalance = $user->getPersonalBalance();
-                $profit = new Profit();
-                $profit->status = 1;
-                $profit->type = Profit::TYPE_REFERRAL;
-                $profit->amount = 50;
-                $profit->user_balance_id = $userBalance->id;
-                $profit->comment = Yii::t('common', 'Активация промокода "{PARAMS_PROMCODE}" на {PARAMS_PROMSUM} RUB', [
-                    'PARAMS_PROMCODE' => $this->code,
-                    'PARAMS_PROMSUM' => $profit->amount,
-                ], 'ru-RU');
-                $profit->created_at = date('Y-m-d H:i:s');
-                $profit->save(false);
-                $model = new Promocode();
-                $model->amount = $profit->amount;
-                return $model;
+                $userTree->parent_user_id = $userCode->id;
+                if ($userTree->save()) {
+                    $userBalance = $user->getPersonalBalance();
+                    $profit = new Profit();
+                    $profit->status = 1;
+                    $profit->type = Profit::TYPE_REFERRAL;
+                    $profit->amount = 50;
+                    $profit->user_balance_id = $userBalance->id;
+                    $profit->comment = Yii::t('common', 'Активация промокода "{PARAMS_PROMCODE}" на {PARAMS_PROMSUM} RUB', [
+                        'PARAMS_PROMCODE' => $this->code,
+                        'PARAMS_PROMSUM' => $profit->amount,
+                    ], 'ru-RU');
+                    $profit->created_at = date('Y-m-d H:i:s');
+                    $profit->save(false);
+                    $model = new Promocode();
+                    $model->amount = $profit->amount;
+                    return $model;
+                }
             } else {
                 $this->addError('code', Yii::t('common', 'Промокод больше не доступен!'));
                 return null;
