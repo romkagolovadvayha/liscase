@@ -1130,7 +1130,7 @@ class User extends ActiveRecord implements IdentityInterface
                 $value += $userStat[$key] * $cof;
             }
             if (!empty($userTops[$this->id]) && !empty($userTops[$this->id][$type])) {
-                $userTops[$this->id][$type]->value = round($value) + 1;
+                $userTops[$this->id][$type]->value = round($value);
                 $userTops[$this->id][$type]->save();
             } else {
                 $userTop = new UserTop();
