@@ -327,7 +327,7 @@ class User extends ActiveRecord implements IdentityInterface
                     Yii::$app->telegramChats->sendMessage("User findBySteamId: {$steamId} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                     throw new \Exception(Yii::t('common', 'Произошла ошибка, попробуйте обновить страницу!'));
                 }
-            } elseif ($updated && (empty($user->updated_at) || strtotime($user->updated_at) + 60*60*24*7 < time())) {
+            } elseif ($updated) {
                 $infoUser       = Steam::getInfoUser($steamId);
                 $user->updated_at = date('Y-m-d H:i:s');
                 $user->username = HtmlPurifier::process($infoUser[0]['personaname']);
@@ -993,7 +993,7 @@ class User extends ActiveRecord implements IdentityInterface
 
         if (!empty(Yii::$app->settings->get('skindrops_discordHook'))) {
             $title = '';
-            $description = "Игрок **[{$this->username}](http://steamcommunity.com/profiles/{$this->steam_id})** выиграл скин **{$skinName}**\nЦена в Steam: **{$price} RUB**";
+            $description = "Игрок **[{$this->username}](http://steamcommunity.com/profiles/{$this->steam_id})** выиграл **{$price} RUB** за которые может купить скины на нашем сайте.";
 
             $countSkins = Skindrops::find()
                 ->andWhere(['steam_id' => $this->steam_id])
@@ -1112,5 +1112,9 @@ class User extends ActiveRecord implements IdentityInterface
             Yii::$app->telegramChats->sendMessage("getCountryByIp: {$this->ip} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             return null;
         }
+    }
+
+    public function calculateTop() {
+
     }
 }

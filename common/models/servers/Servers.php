@@ -416,7 +416,7 @@ class Servers extends \common\components\base\ActiveRecord
         $model->save(false);
         $winner->getSkinsBalance()->recalculateBalance();
 
-        $winner->sendChatWinnerMessage($price, $name, $image300, $this);
+        $winner->sendChatWinnerMessage($price, $name, '', $this);
     }
 
     /**
@@ -427,5 +427,23 @@ class Servers extends \common\components\base\ActiveRecord
     public function getMapEntity()
     {
         return $this->hasOne(Map::class, ['id' => 'map_id']);
+    }
+
+    public function calculateTop()
+    {
+        $date = new \DateTime();
+        $date->modify('-30 day');
+        /** @var User[] $users */
+        $users = User::find()
+                     ->andWhere(['>=', 'last_visit_server_at', $date->format('Y-m-d H:i:s')])
+                     ->andWhere(['status' => User::STATUS_ACTIVE])
+                     ->andWhere(['server_id' => $this->id])
+                     ->andWhere(['is_stats' => true])
+                     ->orderBy(['last_visit_server_at' => SORT_DESC])
+                     ->all();
+
+        foreach ($users as $user) {
+            $user->calculateTop();
+        }
     }
 }
