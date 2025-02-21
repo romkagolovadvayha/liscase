@@ -66,13 +66,13 @@ $config = [
                 'twig' => [
                     'class' => 'yii\twig\ViewRenderer',
                     'cachePath' => '@runtime/Twig/cache',
-                    // Array of twig options:
                     'options' => [
                         'auto_reload' => true,
                     ],
                     'globals' => [
                         'html' => ['class' => '\yii\helpers\Html'],
                         'url' => ['class' => '\yii\helpers\Url'],
+                        'Statistics' => ['class' => '\common\models\statistics\Statistics'],
                     ],
                     'uses' => ['yii\bootstrap'],
                 ],

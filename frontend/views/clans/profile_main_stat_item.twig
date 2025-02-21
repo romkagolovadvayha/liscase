@@ -1,0 +1,7 @@
+<div class="page-stats__category category">
+    <h5 class="category__count-and-img">
+        <span>{{ CLAN_STATS[CODE]|number_format(0, '', ' ') }}</span>
+        <img src="{{ t('database', Statistics.getImage(IMAGES, CODE)) }}" alt="{{ t('database', Statistics.getName(NAMES, CODE)) }}" class="w-64 h-64 object-contain">
+    </h5>
+    <p class="category__title">{{ t('database', Statistics.getName(NAMES, CODE)) }}</p>
+</div>

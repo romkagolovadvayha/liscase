@@ -6,6 +6,7 @@ use common\controllers\WebController;
 use common\models\clan\ClanSearch;
 use common\models\clan\Clan;
 use common\models\servers\Servers;
+use common\models\statistics\Statistics;
 use common\models\user\UserTop;
 use fedemotta\datatables\DataTablesAsset;
 use frontend\forms\clans\ClanForm;
@@ -207,11 +208,25 @@ class ClansController extends WebController
             $roles = $user->getRolesClan($model->user_id, $model->id);
         }
 
+        $clanStats = null;
+        if (!Yii::$app->user->isGuest) {
+            $clans = \common\models\clan\Clan::getClans($server);
+            if (!empty($clans[$model->id])) {
+                $clanStats = $clans[$model->id];
+            }
+        }
+
+        $images = Statistics::productsImages();
+        $names = Statistics::productsNames();
+
         return $this->render('profile.twig', [
             'SERVER'  => $server,
             'SERVERS'  => $servers,
             'CLAN'  => $model,
+            'CLAN_STATS'  => $clanStats,
             'ROLES'  => $roles,
+            'IMAGES'  => $images,
+            'NAMES'  => $names,
             'SETTINGS' => Yii::$app->settings,
         ]);
     }
