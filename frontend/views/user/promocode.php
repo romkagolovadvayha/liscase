@@ -37,6 +37,9 @@ $url = Yii::$app->request->url;
                     ->label(false)
                     ->textInput(['placeholder' => Yii::t('common', 'Введите промокод')]); ?>
         </div>
+        <p class="p3 text-center text-text-teritiary">
+            <?=Yii::t('common', 'Если игрок введет его в течение 15 минут после регистрации, он получит 50 рублей и станет вашим рефералом.')?>
+        </p>
     </div>
 
     <footer class="px-24 pb-24">
