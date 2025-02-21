@@ -15,6 +15,7 @@ use common\models\user\UserDrop;
 use common\models\user\UserTask;
 use frontend\forms\market\PaymentForm;
 use frontend\forms\profile\ProfileForm;
+use frontend\forms\promocode\UserPromocodeForm;
 use frontend\forms\user\SkinsForm;
 use frontend\forms\user\TransferForm;
 use frontend\modules\user\SkinsSearch;
@@ -534,5 +535,22 @@ class UserController extends WebController
         }
 
         return $this->redirect('tasks');
+    }
+
+    public function actionPromocode()
+    {
+        $promocodeForm = UserPromocodeForm::findOne(Yii::$app->user->id);
+        if ($promocodeForm->load(Yii::$app->request->post())) {
+            if ($promocodeForm->saveRecord()) {
+                Yii::$app->session->addFlash('success', Yii::t('common', 'Баланс пополнен на {PARAMS_PROMSUM} RUB', [
+                    'PARAMS_PROMSUM' => 50
+                ]));
+            } else {
+                Yii::$app->session->addFlash('danger', array_values($promocodeForm->getFirstErrors())[0]);
+            }
+        }
+        return $this->renderAjax('promocode', [
+            'promocodeForm' => $promocodeForm
+        ]);
     }
 }

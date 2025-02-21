@@ -62,9 +62,17 @@ $referralBalance = $user->getReferralBalance();
                 <span class="icons icons_16px fas fa-copy"></span>
             </div>
             <button type="button"
-                    class="button-secondary btn-clipboard"
-                    data-clipboard-text="<?=$user->getPartnerLink()?>"
-                    data-message="<?=Yii::t('common', 'Ссылка скопирована в буфер обмена!')?>"><?=Yii::t('common', 'Скопировать ссылку')?></button>
+                    class="button-primary show-modal-link"
+                    data-href="/user/promocode"
+                    data-size="modal-sm"
+                    data-content-overflow="unset"
+                    data-top-image="<?=Yii::$app->settings->get('design_promoPopupImage')?>"
+                    data-top-class="modal-backdrop-image_promo active"
+                    data-toggl="modal"
+                    data-target="modal-dialog"
+                    data-title="<?=Yii::t('common', 'Персональный промокод')?>">
+                <span class="button__text"><?=Yii::t('common', 'Мой промокод')?></span>
+            </button>
             <a href="/referral" class="button button-secondary"><?=Yii::t('common', 'Условия и правила')?></a>
         </section>
         <section class="page-stats__block-without-hover w-50p">
@@ -139,6 +147,9 @@ $referralBalance = $user->getReferralBalance();
                                                           'options'   => ['width' => '50'],
                                                           'format'    => 'raw',
                                                           'value'          => function (UserTree $model) {
+                                                              if (empty($model->user)) {
+                                                                  return null;
+                                                              }
                                                               return Html::img($model->user->getAvatar(), ['class' => 'block w-32 h-32 min-w-32 min-h-32 rounded-6 object-cover']);
                                                           },
                                                       ],
@@ -147,6 +158,9 @@ $referralBalance = $user->getReferralBalance();
                                                           'label'     => Yii::t('common', "Ник"),
                                                           'format'    => 'raw',
                                                           'value'          => function (UserTree $model) {
+                                                              if (empty($model->user)) {
+                                                                  return null;
+                                                              }
                                                               return $model->user->username;
                                                           },
                                                       ],
@@ -156,6 +170,9 @@ $referralBalance = $user->getReferralBalance();
                                                           'label'     => Yii::t('common', "Более часа на сервере"),
                                                           'format'    => 'raw',
                                                           'value'          => function (UserTree $model) {
+                                                              if (empty($model->user)) {
+                                                                  return null;
+                                                              }
                                                               if ($model->user->parent_skin_send || $model->user->userProfile->parent_bonus) {
                                                                   return Yii::t('common', "Да");
                                                               }
@@ -171,6 +188,9 @@ $referralBalance = $user->getReferralBalance();
                                                           'label'     => Yii::t('common', "Дата регистрации"),
                                                           'format'    => 'raw',
                                                           'value'          => function (UserTree $model) {
+                                                              if (empty($model->user)) {
+                                                                  return null;
+                                                              }
                                                               return \common\components\helpers\DateHelper::passed($model->user->created_at);
                                                           },
                                                       ],
@@ -180,6 +200,9 @@ $referralBalance = $user->getReferralBalance();
                                                           'label'     => Yii::t('common', "Награда"),
                                                           'format'    => 'raw',
                                                           'value'          => function (UserTree $model) {
+                                                              if (empty($model->user)) {
+                                                                  return null;
+                                                              }
 //                                                              User::parentBonus($model->user);
                                                               if ($model->user->parent_skin_send && $model->user->userProfile->parent_bonus) {
                                                                   $button = \yii\helpers\Html::button('<span class="button__text">' . Yii::t('common', "Получено") . '</span>', [

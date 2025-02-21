@@ -65,6 +65,7 @@ use yii\web\JsExpression;
  * @property int             $avatar_frame
  * @property bool            $is_email
  * @property string          $ip
+ * @property string          $promocode
  * @property int             $ping
  *
  * @property UserProfile     $userProfile
@@ -183,6 +184,7 @@ class User extends ActiveRecord implements IdentityInterface
             'is_stats'          => Yii::t('common', 'Показывать в статистике?'),
             'ip'          => Yii::t('common', 'IP игрока'),
             'ping'          => Yii::t('common', 'Ping игрока'),
+            'promocode'          => Yii::t('common', 'Промокод'),
         ];
     }
 
@@ -193,6 +195,7 @@ class User extends ActiveRecord implements IdentityInterface
             [['status', 'auto', 'steam_id', 'store', 'is_stats', 'avatar_frame'], 'integer'],
             [['ref_code'], 'number'],
             [['email', 'password_hash', 'stat_status'], 'string', 'max' => 255],
+            [['promocode'], 'string', 'max' => 120, 'min' => 5],
             [['auth_key', 'socket_room'], 'string', 'max' => 32],
             [['current_language', 'created_at'], 'safe'],
         ];
@@ -938,6 +941,9 @@ class User extends ActiveRecord implements IdentityInterface
         $total = 0;
         /** @var User[] $users */
         foreach ($usersTree as $userTree) {
+            if (empty($userTree->user)) {
+                continue;
+            }
             /** @var Deposit $deposit */
             foreach ($userTree->user->deposits as $deposit) {
                 if ($deposit->status !== Deposit::STATUS_SUCCESS) {
