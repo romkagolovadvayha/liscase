@@ -461,6 +461,7 @@ class Servers extends \common\components\base\ActiveRecord
                              ->andWhere(['wipe' => $this->currentWipe()])
                              ->asArray()
                              ->all();
+
         $stats = [];
         foreach ($rawData as $row) {
             $steamId = $row['steam_id'];
@@ -479,6 +480,8 @@ class Servers extends \common\components\base\ActiveRecord
             $stats[$steamId][$key] = $value;
         }
 
+        echo "count stats: " . count($stats) . PHP_EOL;
+
         /** @var UserTop[] $userTopsData */
         $userTopsData = UserTop::find()
                           ->andWhere(['server_id' => $this->id])
@@ -493,6 +496,7 @@ class Servers extends \common\components\base\ActiveRecord
             }
             $userTops[$userTop->user_id][$userTop->key] = $userTop;
         }
+        echo "count tops: " . count($userTops) . PHP_EOL;
 
         foreach ($users as $user) {
             if (empty($stats[$user->steam_id])) {
