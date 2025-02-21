@@ -163,6 +163,17 @@ class UserTop extends \yii\db\ActiveRecord
         ];
     }
 
+    public static function getRaitingKeys() {
+        $list = self::getRaiting();
+        $result = [];
+        foreach ($list as $item) {
+            foreach ($item as $key => $_item) {
+                $result[] = $key;
+            }
+        }
+        return $result;
+    }
+
     public static function getRaiting() {
         return [
           UserTop::TYPE_REIDER => [

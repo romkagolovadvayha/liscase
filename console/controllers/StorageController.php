@@ -68,6 +68,24 @@ class StorageController extends Controller
     }
 
     /**
+     * storage/calculate-tops
+     *
+     * @throws \Exception
+     */
+    public function actionCalculateTops()
+    {
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+
+        foreach ($servers as $server) {
+            $server->calculateTop();
+        }
+    }
+
+    /**
      * storage/update-tops
      *
      * @throws \Exception

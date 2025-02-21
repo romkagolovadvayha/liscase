@@ -328,7 +328,7 @@ class User extends ActiveRecord implements IdentityInterface
                     Yii::$app->telegramChats->sendMessage("User findBySteamId: {$steamId} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                     throw new \Exception(Yii::t('common', 'Произошла ошибка, попробуйте обновить страницу!'));
                 }
-            } elseif ($updated && (empty($user->updated_at) || strtotime($user->updated_at) + 60*60*24*7 < time())) {
+            } elseif ($updated) {
                 $infoUser       = Steam::getInfoUser($steamId);
                 $user->updated_at = date('Y-m-d H:i:s');
                 $user->username = HtmlPurifier::process($infoUser[0]['personaname']);
@@ -994,7 +994,7 @@ class User extends ActiveRecord implements IdentityInterface
 
         if (!empty(Yii::$app->settings->get('skindrops_discordHook'))) {
             $title = '';
-            $description = "Игрок **[{$this->username}](http://steamcommunity.com/profiles/{$this->steam_id})** выиграл скин **{$skinName}**\nЦена в Steam: **{$price} RUB**";
+            $description = "Игрок **[{$this->username}](http://steamcommunity.com/profiles/{$this->steam_id})** выиграл **{$price} RUB** за которые может купить скины на нашем сайте.";
 
             $countSkins = Skindrops::find()
                 ->andWhere(['steam_id' => $this->steam_id])
@@ -1153,5 +1153,35 @@ class User extends ActiveRecord implements IdentityInterface
        }
 
        return $result;
+    }
+
+    /**
+     * @param $userStat
+     * @param $userTops
+     * @param Servers $server
+     */
+    public function calculateTop($userStat, $userTops, $server) {
+        $rating = UserTop::getRaiting();
+        foreach ($rating as $type => $items) {
+            $value = 0;
+            foreach ($items as $key => $cof) {
+                if (empty($userStat[$key])) {
+                    continue;
+                }
+                $value += $userStat[$key] * $cof;
+            }
+            if (!empty($userTops[$this->id]) && !empty($userTops[$this->id][$type])) {
+                $userTops[$this->id][$type]->value = round($value);
+                $userTops[$this->id][$type]->save();
+            } else {
+                $userTop = new UserTop();
+                $userTop->user_id = $this->id;
+                $userTop->key = $type;
+                $userTop->value = round($value);
+                $userTop->server_id = $server->id;
+                $userTop->wipe = $server->currentWipe();
+                $userTop->save();
+            }
+        }
     }
 }

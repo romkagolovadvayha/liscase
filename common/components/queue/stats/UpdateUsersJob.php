@@ -68,13 +68,6 @@ class UpdateUsersJob extends BaseObject implements JobInterface
                         $model->wipe = $server->currentWipe();
                         $model->save();
                     }
-                    Yii::$app->queueTop->push(new UpdateTopJob([
-                        'userId' => $user->id,
-                        'key' => 'playtime',
-                        'value' => $playTimeCount,
-                        'serverId' => $server->id,
-                        'wipeDate' => $server->currentWipe(),
-                    ]));
                 } catch (\Exception $e) {
                     Yii::$app->telegramChats->sendMessage("UpdateOnlinesJob: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                 }

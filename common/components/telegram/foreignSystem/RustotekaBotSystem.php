@@ -110,25 +110,77 @@ class RustotekaBotSystem extends AbstractSystemBots
         return ( $show_number ? "$number " : '' ) . $titles[ $title_index ];
     }
 
-    private function flags() {
-        return [
-          'ru' => [
-              'icon' => '🇷🇺',
-              'name' => 'Россия',
-          ],
-          'by' => [
-              'icon' => '🇧🇾',
-              'name' => 'Баларусь',
-          ],
-          'kz' => [
-              'icon' => '🇰🇿',
-              'name' => 'Казахстан',
-          ],
-          'ua' => [
-              'icon' => '🇺🇦',
-              'name' => 'Украина',
-          ],
+    private function country($code) {
+        $list = [
+            'ru' => ['icon' => '🇷🇺', 'name' => 'Россия'],
+            'by' => ['icon' => '🇧🇾', 'name' => 'Беларусь'],
+            'kz' => ['icon' => '🇰🇿', 'name' => 'Казахстан'],
+            'ua' => ['icon' => '🇺🇦', 'name' => 'Украина'],
+            'us' => ['icon' => '🇺🇸', 'name' => 'США'],
+            'de' => ['icon' => '🇩🇪', 'name' => 'Германия'],
+            'fr' => ['icon' => '🇫🇷', 'name' => 'Франция'],
+            'gb' => ['icon' => '🇬🇧', 'name' => 'Великобритания'],
+            'it' => ['icon' => '🇮🇹', 'name' => 'Италия'],
+            'es' => ['icon' => '🇪🇸', 'name' => 'Испания'],
+            'cn' => ['icon' => '🇨🇳', 'name' => 'Китай'],
+            'jp' => ['icon' => '🇯🇵', 'name' => 'Япония'],
+            'in' => ['icon' => '🇮🇳', 'name' => 'Индия'],
+            'br' => ['icon' => '🇧🇷', 'name' => 'Бразилия'],
+            'ca' => ['icon' => '🇨🇦', 'name' => 'Канада'],
+            'au' => ['icon' => '🇦🇺', 'name' => 'Австралия'],
+            'nl' => ['icon' => '🇳🇱', 'name' => 'Нидерланды'],
+            'se' => ['icon' => '🇸🇪', 'name' => 'Швеция'],
+            'ch' => ['icon' => '🇨🇭', 'name' => 'Швейцария'],
+            'pl' => ['icon' => '🇵🇱', 'name' => 'Польша'],
+            'kr' => ['icon' => '🇰🇷', 'name' => 'Южная Корея'],
+            'sa' => ['icon' => '🇸🇦', 'name' => 'Саудовская Аравия'],
+            'ae' => ['icon' => '🇦🇪', 'name' => 'ОАЭ'],
+            'sg' => ['icon' => '🇸🇬', 'name' => 'Сингапур'],
+            'mx' => ['icon' => '🇲🇽', 'name' => 'Мексика'],
+            'ar' => ['icon' => '🇦🇷', 'name' => 'Аргентина'],
+            'ng' => ['icon' => '🇳🇬', 'name' => 'Нигерия'],
+            'za' => ['icon' => '🇿🇦', 'name' => 'Южноафриканская Республика'],
+            'ke' => ['icon' => '🇰🇪', 'name' => 'Кения'],
+            'gh' => ['icon' => '🇬🇭', 'name' => 'Гана'],
+            'eg' => ['icon' => '🇪🇬', 'name' => 'Египет'],
+            'pk' => ['icon' => '🇵🇰', 'name' => 'Пакистан'],
+            'bd' => ['icon' => '🇧🇩', 'name' => 'Бангладеш'],
+            'vn' => ['icon' => '🇻🇳', 'name' => 'Вьетнам'],
+            'th' => ['icon' => '🇹🇭', 'name' => 'Таиланд'],
+            'ph' => ['icon' => '🇵🇭', 'name' => 'Филиппины'],
+            'ro' => ['icon' => '🇷🇴', 'name' => 'Румыния'],
+            'cz' => ['icon' => '🇨🇿', 'name' => 'Чехия'],
+            'hu' => ['icon' => '🇭🇺', 'name' => 'Венгрия'],
+            'gr' => ['icon' => '🇬🇷', 'name' => 'Греция'],
+            'no' => ['icon' => '🇳🇴', 'name' => 'Норвегия'],
+            'fi' => ['icon' => '🇫🇮', 'name' => 'Финляндия'],
+            'dk' => ['icon' => '🇩🇰', 'name' => 'Дания'],
+            'at' => ['icon' => '🇦🇹', 'name' => 'Австрия'],
+            'be' => ['icon' => '🇧🇪', 'name' => 'Бельгия'],
+            'ie' => ['icon' => '🇮🇪', 'name' => 'Ирландия'],
+            'lu' => ['icon' => '🇱🇺', 'name' => 'Люксембург'],
+            'lt' => ['icon' => '🇱🇹', 'name' => 'Литва'],
+            'lv' => ['icon' => '🇱🇻', 'name' => 'Латвия'],
+            'ee' => ['icon' => '🇪🇪', 'name' => 'Эстония'],
+            'hr' => ['icon' => '🇭🇷', 'name' => 'Хорватия'],
+            'si' => ['icon' => '🇸🇮', 'name' => 'Словения'],
+            'sk' => ['icon' => '🇸🇰', 'name' => 'Словакия'],
+            'bg' => ['icon' => '🇧🇬', 'name' => 'Болгария'],
+            'ba' => ['icon' => '🇧🇦', 'name' => 'Босния и Герцеговина'],
+            'me' => ['icon' => '🇲🇪', 'name' => 'Черногория'],
+            'mk' => ['icon' => '🇲🇰', 'name' => 'Северная Македония'],
+            'rs' => ['icon' => '🇷🇸', 'name' => 'Сербия'],
+            'al' => ['icon' => '🇦🇱', 'name' => 'Албания'],
+            'am' => ['icon' => '🇦🇲', 'name' => 'Армения'],
+            'ge' => ['icon' => '🇬🇪', 'name' => 'Грузия'],
+            'cy' => ['icon' => '🇨🇾', 'name' => 'Кипр'],
+            'mt' => ['icon' => '🇲🇹', 'name' => 'Мальта'],
+            'is' => ['icon' => '🇮🇸', 'name' => 'Исландия'],
         ];
+        if (empty($list[$code])) {
+            return null;
+        }
+        return $list[$code];
     }
 
     public function getCheck($steamId) {
@@ -142,7 +194,7 @@ class RustotekaBotSystem extends AbstractSystemBots
                 }
                 if (!empty($userInfo[0]['loccountrycode'])) {
                     $countryName = "";
-                    $flagItem = $this->flags()[strtolower($userInfo[0]['loccountrycode'])];
+                    $flagItem = $this->country(strtolower($userInfo[0]['loccountrycode']));
                     if (!empty($flagItem)) {
                         $countryName = "{$flagItem['icon']} {$flagItem['name']}";
                     } else {

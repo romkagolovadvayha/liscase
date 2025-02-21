@@ -34,12 +34,6 @@ class UpdateKillsJob extends BaseObject implements JobInterface
     {
         $item = $this->item;
         try {
-            try {
-                $user = User::findBySteamId($item['steam_id']);
-                if (strlen($item['dead']) >= 16) {
-                    $userDead = User::findBySteamId($item['dead']);
-                }
-            } catch (\Exception $ex) {}
             $model = new Kills();
             $model->steam_id = $item['steam_id'];
             $model->type = $item['type'];
@@ -103,16 +97,6 @@ class UpdateKillsJob extends BaseObject implements JobInterface
                         $nModel->wipe = $this->wipeDate;
                         $nModel->save();
                     }
-                    if (!empty($user) && !empty($this->serverId)) {
-                        Yii::$app->queueTop->push(new UpdateTopJob([
-                                                                       'userId' => $user->id,
-                                                                       'key' => 'kills',
-                                                                       'value' => 1,
-                                                                       'serverId' => $this->serverId,
-                                                                       'wipeDate' => $this->wipeDate,
-                                                                   ]));
-
-                    }
                 }
                 /** @var Statistics $paramDeaths */
                 $paramDeaths = Statistics::find()
@@ -132,15 +116,6 @@ class UpdateKillsJob extends BaseObject implements JobInterface
                     $nModel->value = 1;
                     $nModel->wipe = $this->wipeDate;
                     $nModel->save();
-                }
-                if (!empty($userDead) && !empty($this->serverId)) {
-                    Yii::$app->queueTop->push(new UpdateTopJob([
-                                                                   'userId' => $userDead->id,
-                                                                   'key' => 'deaths',
-                                                                   'value' => 1,
-                                                                   'serverId' => $this->serverId,
-                                                                   'wipeDate' => $this->wipeDate,
-                                                               ]));
                 }
             }
         } catch (\Exception $e) {

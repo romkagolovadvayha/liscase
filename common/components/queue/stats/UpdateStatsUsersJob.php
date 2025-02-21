@@ -38,7 +38,6 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
                     continue;
                 }
                 $wipeDate = $this->wipeDate;
-                $user = User::findBySteamId($steamId);
                 $statistics = Statistics::find()
                                         ->andWhere(['steam_id' => $steamId])
                                         ->andWhere(['server_tag' => $this->serverTag])
@@ -53,17 +52,6 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
                     foreach ($params as $key => $value) {
                         if (empty($value)) {
                             continue;
-                        }
-                        try {
-                            Yii::$app->queueTop->push(new UpdateTopJob([
-                                                                           'userId' => $user->id,
-                                                                           'key' => $key,
-                                                                           'value' => $value,
-                                                                           'serverId' => $this->serverId,
-                                                                           'wipeDate' => $wipeDate,
-                                                                       ]));
-                        } catch (\Exception $e) {
-                            Yii::$app->telegramChats->sendMessage("SaveStatsJob::updateTop(user, key, value, server, wipeDate): " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                         }
                         if (!empty($statistics[$key])) {
                             $statistics[$key]->value += $value;

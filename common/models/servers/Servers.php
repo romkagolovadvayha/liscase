@@ -8,6 +8,7 @@ use common\models\profit\Profit;
 use common\models\skindrops\Skindrops;
 use common\models\statistics\Statistics;
 use common\models\user\User;
+use common\models\user\UserTop;
 use WebSocket\Client;
 use Yii;
 use yii\base\BaseObject;
@@ -419,7 +420,7 @@ class Servers extends \common\components\base\ActiveRecord
         $model->save(false);
         $winner->getSkinsBalance()->recalculateBalance();
 
-        $winner->sendChatWinnerMessage($price, $name, $image300, $this);
+        $winner->sendChatWinnerMessage($price, $name, '', $this);
     }
 
     /**
@@ -430,5 +431,82 @@ class Servers extends \common\components\base\ActiveRecord
     public function getMapEntity()
     {
         return $this->hasOne(Map::class, ['id' => 'map_id']);
+    }
+
+    public function calculateTop()
+    {
+        /** @var User[] $users */
+        $users = User::find()
+                     ->andWhere(['>=', 'last_visit_server_at', date('Y-m-d H:i:s', time() - 5 * 60)])
+                     ->andWhere(['status' => User::STATUS_ACTIVE])
+                     ->andWhere(['server_id' => $this->id])
+                     ->andWhere(['is_stats' => true])
+                     ->orderBy(['last_visit_server_at' => SORT_DESC])
+                     ->all();
+
+        echo "count users: " . count($users) . PHP_EOL;
+
+        $userIds = [];
+        $steamIds = [];
+        foreach ($users as $user) {
+            $userIds[] = $user->id;
+            $steamIds[] = $user->steam_id;
+        }
+
+        $keys = UserTop::getRaitingKeys();
+
+        /** @var Statistics[] $rawData */
+        $rawData = Statistics::find()
+                             ->select(['steam_id', 'key', 'value'])
+                             ->andWhere(['server_tag' => $this->tag])
+                             ->andWhere(['IN', 'steam_id', $steamIds])
+                             ->andWhere(['IN', 'key', $keys])
+                             ->andWhere(['wipe' => $this->currentWipe()])
+                             ->asArray()
+                             ->all();
+
+        $stats = [];
+        foreach ($rawData as $row) {
+            $steamId = $row['steam_id'];
+            $key = $row['key'];
+            $value = $row['value'];
+
+            // Инициализируем массив, если его еще нет
+            if (!isset($stats[$steamId])) {
+                $stats[$steamId] = [];
+            }
+            if (!isset($stats[$steamId][$key])) {
+                $stats[$steamId][$key] = 0;
+            }
+
+            // Заполняем данные
+            $stats[$steamId][$key] = $value;
+        }
+
+        echo "count stats: " . count($stats) . PHP_EOL;
+
+        /** @var UserTop[] $userTopsData */
+        $userTopsData = UserTop::find()
+                          ->andWhere(['server_id' => $this->id])
+                          ->andWhere(['IN', 'user_id', $userIds])
+                          ->andWhere(['wipe' => $this->currentWipe()])
+                          ->all();
+
+        $userTops = [];
+        foreach ($userTopsData as $userTop) {
+            if (empty($userTops[$userTop->user_id])) {
+                $userTops[$userTop->user_id] = [];
+            }
+            $userTops[$userTop->user_id][$userTop->key] = $userTop;
+        }
+        echo "count tops: " . count($userTops) . PHP_EOL;
+
+        foreach ($users as $user) {
+            if (empty($stats[$user->steam_id])) {
+                continue;
+            }
+            $userStat = $stats[$user->steam_id];
+            $user->calculateTop($userStat, $userTops, $this);
+        }
     }
 }
