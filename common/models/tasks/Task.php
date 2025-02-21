@@ -399,7 +399,7 @@ class Task extends \common\components\base\ActiveRecord
             }
         }
 
-        if (count($result) == 7) {
+        if (count($awards) == 7) {
             $result[self::TYPE_All] = [
                 'image' => self::awardImage(self::TYPE_All),
                 'name' => ArrayHelper::getValue(self::getTypeList(), self::TYPE_All),
