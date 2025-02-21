@@ -1114,7 +1114,33 @@ class User extends ActiveRecord implements IdentityInterface
         }
     }
 
-    public function calculateTop() {
-
+    /**
+     * @param $userStat
+     * @param $userTops
+     * @param Servers $server
+     */
+    public function calculateTop($userStat, $userTops, $server) {
+        $rating = UserTop::getRaiting();
+        foreach ($rating as $type => $items) {
+            $value = 0;
+            foreach ($items as $key => $cof) {
+                if (empty($userStat[$key])) {
+                    continue;
+                }
+                $value += $userStat[$key] * $cof;
+            }
+            if (!empty($userTops[$this->id]) && !empty($userTops[$this->id][$type])) {
+                $userTops[$this->id][$type]->value = round($value) + 1;
+                $userTops[$this->id][$type]->save();
+            } else {
+                $userTop = new UserTop();
+                $userTop->user_id = $this->id;
+                $userTop->key = $type;
+                $userTop->value = round($value);
+                $userTop->server_id = $server->id;
+                $userTop->wipe = $server->currentWipe();
+                $userTop->save();
+            }
+        }
     }
 }
