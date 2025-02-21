@@ -441,6 +441,8 @@ class Servers extends \common\components\base\ActiveRecord
                      ->orderBy(['last_visit_server_at' => SORT_DESC])
                      ->all();
 
+        echo "count users: " . count($users) . PHP_EOL;
+
         $userIds = [];
         $steamIds = [];
         foreach ($users as $user) {
