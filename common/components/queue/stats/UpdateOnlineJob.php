@@ -61,13 +61,6 @@ class UpdateOnlineJob extends BaseObject implements JobInterface
                                             ->andWhere(['wipe' => $this->wipeDate])
                                             ->indexBy('key')
                                             ->all();
-                    Yii::$app->queueTop->push(new UpdateTopJob([
-                                                                   'userId' => $user->id,
-                                                                   'key' => 'playtime',
-                                                                   'value' => $playTime,
-                                                                   'serverId' => $this->serverId,
-                                                                   'wipeDate' => $this->wipeDate,
-                                                               ]));
                     if (!empty($statistics['playtime'])) {
                         $statistics['playtime']->value += $playTime;
                         $statistics['playtime']->save();
