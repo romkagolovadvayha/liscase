@@ -8,6 +8,7 @@ use common\models\profit\Profit;
 use common\models\skindrops\Skindrops;
 use common\models\statistics\Statistics;
 use common\models\user\User;
+use common\models\user\UserTop;
 use WebSocket\Client;
 use Yii;
 use yii\base\BaseObject;
@@ -441,6 +442,17 @@ class Servers extends \common\components\base\ActiveRecord
                      ->andWhere(['is_stats' => true])
                      ->orderBy(['last_visit_server_at' => SORT_DESC])
                      ->all();
+
+        $keys = UserTop::getRaitingKeys();
+
+        /** @var Statistics[] $rawData */
+        $rawData = Statistics::find()
+                             ->select(['steam_id', 'key', 'value'])
+                             ->andWhere(['server_tag' => $this->tag])
+                             ->andWhere(['IN', 'key', $keys])
+                             ->andWhere(['wipe' => $this->currentWipe()])
+                             ->asArray()
+                             ->all();
 
         foreach ($users as $user) {
             $user->calculateTop();
