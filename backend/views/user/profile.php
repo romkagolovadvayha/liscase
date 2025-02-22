@@ -418,13 +418,13 @@ $checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
                                                       [
                                                           'attribute' => 'replay',
                                                           'options'   => ['width' => '150'],
-                                                          'label'     => Yii::t('common', "Отправить скин"),
+                                                          'label'     => Yii::t('common', ""),
                                                           'format'    => 'raw',
                                                           'value'          => function (UserTree $model) use ($user) {
                                                               if ($model->user->parent_skin_send) {
                                                                   return '';
                                                               }
-                                                              return '<button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-modal-form="skin_form_' . $model->user->id . '" data-bs-target="#modalForm">Отправить</button>';
+                                                              return '<a href="/user/revoke?parentId=' . $model->parent_user_id . '&userId=' . $model->user_id . '" class="btn btn-danger">Отвязать</a>';
                                                           },
                                                       ],
                                                   ],

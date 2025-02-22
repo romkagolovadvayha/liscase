@@ -12,6 +12,7 @@ use common\components\helpers\Role;
 use common\models\rcon\RconTasks;
 use common\models\user\UserChecking;
 use common\models\user\UserSearch;
+use common\models\user\UserTree;
 use Yii;
 use yii\base\BaseObject;
 use yii\filters\AccessControl;
@@ -49,6 +50,19 @@ class UserController extends CrudController
     protected function _getSearchClassName()
     {
         return UserSearch::class;
+    }
+
+    public function actionRevoke($parentId, $userId)
+    {
+        /** @var UserTree $t */
+        $t = UserTree::find()
+            ->andWhere(['user_id' => $userId])
+            ->one();
+
+        $t->parent_user_id = 509;
+        $t->save();
+
+        return $this->redirect(['profile', 'userId' => $parentId]);
     }
 
     public function actionProfile($userId)
