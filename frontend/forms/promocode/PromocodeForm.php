@@ -40,10 +40,10 @@ class PromocodeForm extends Promocode
                          ->andWhere(['promocode' => $this->code])
                          ->one();
 
-            if (empty($userCode)) {
+//            if (empty($userCode)) {
                 $this->addError('code', Yii::t('common', 'Промокод не существует!'));
                 return null;
-            }
+//            }
 
             if ($userCode->id == $user->id) {
                 $this->addError('code', Yii::t('common', 'Вы не можете ввести свой промокод!'));
