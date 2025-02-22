@@ -50,7 +50,7 @@ class PromocodeForm extends Promocode
                 return null;
             }
 
-            if (strtotime($user->created_at) >= time() - 15 * 60) {
+            if (!(strtotime($user->created_at) >= time() - 15 * 60)) {
                 $this->addError('code', Yii::t('common', 'Промокод просрочен!'));
                 return null;
             }
