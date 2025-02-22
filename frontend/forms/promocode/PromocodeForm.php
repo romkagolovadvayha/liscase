@@ -40,17 +40,17 @@ class PromocodeForm extends Promocode
                          ->andWhere(['promocode' => $this->code])
                          ->one();
 
-//            if (empty($userCode)) {
+            if (empty($userCode)) {
                 $this->addError('code', Yii::t('common', 'Промокод не существует!'));
                 return null;
-//            }
+            }
 
             if ($userCode->id == $user->id) {
                 $this->addError('code', Yii::t('common', 'Вы не можете ввести свой промокод!'));
                 return null;
             }
 
-            if (time() <= strtotime($user->created_at) - 15 * 60) {
+            if (strtotime($user->created_at) >= time() - 15 * 60) {
                 $this->addError('code', Yii::t('common', 'Промокод просрочен!'));
                 return null;
             }
