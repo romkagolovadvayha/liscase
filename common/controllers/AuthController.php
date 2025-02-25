@@ -128,6 +128,8 @@ class AuthController extends WebController
                         } else {
                             UserTree::appendUser($user->id, 509);
                         }
+                    } else {
+                        UserTree::appendUser($user->id, 509);
                     }
                     UserProfile::createModel($user, $attributes['username']);
                     try {
