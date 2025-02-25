@@ -1,7 +1,8 @@
 {{ use('kartik/grid/GridView') }}
 {{ use('yii/widgets/ListView') }}
 {{ use('yii/widgets/Pjax') }}
-
+{{ use('frontend/widgets/Alert') }}
+{{ alert_widget() }}
 <nav class="servers_navbar mb-24">
     <ul class="servers_navbar_nav">
         {% for ITEM in SERVERS %}
@@ -80,8 +81,17 @@
                 'value': func.title,
             },
             {
+                'attribute': 'rating',
+                'label': "<span class=\"item_param_th\"><img src=\"/images/awards/all.png\" data-bs-toggle=\"tooltip\" data-bs-title=\"#{t('database', 'Рейтинг')}\" class=\"block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover\"></span>",
+                'format': 'raw',
+                'encodeLabel': false,
+                'options': {'width': '100'},
+                'value': func.rating,
+                'headerOptions': {'class': 'item_param_th_wrap'}
+            },
+            {
                 'attribute': 'kills',
-                'label': '<span class="item_param_th"><img src="/images/awards/killer.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover"></span>',
+                'label': "<span class=\"item_param_th\"><img src=\"/images/awards/killer.png\" data-bs-toggle=\"tooltip\" data-bs-title=\"#{t('database', 'Убийств')}\" class=\"block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover\"></span>",
                 'format': 'raw',
                 'encodeLabel': false,
                 'options': {'width': '100'},
@@ -90,7 +100,7 @@
             },
             {
                 'attribute': 'users_count',
-                'label': '<span class="item_param_th"><span style="background: var(--text-secondary);" class="icons icons_36px icons_32px_users"></span></span>',
+                'label': "<span class=\"item_param_th\" data-bs-toggle=\"tooltip\" data-bs-title=\"#{t('database', 'Человек в команде')}\"><span style=\"background: var(--text-secondary);\" class=\"icons icons_36px icons_32px_users\"></span></span>",
                 'format': 'raw',
                 'encodeLabel': false,
                 'options': {'width': '100'},
@@ -99,7 +109,7 @@
             },
             {
                 'attribute': 'rocket_basic',
-                'label': '<span class="item_param_th"><img src="/uploads/drop/602_0736169c589c86cc02ce3f46ad8edfd4.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover"></span>',
+                'label': "<span class=\"item_param_th\"><img src=\"/uploads/drop/602_0736169c589c86cc02ce3f46ad8edfd4.png\" data-bs-toggle=\"tooltip\" data-bs-title=\"#{t('database', 'Выпущенных ракет')}\" class=\"block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover\"></span>",
                 'format': 'raw',
                 'encodeLabel': false,
                 'options': {'width': '100'},
@@ -108,7 +118,7 @@
             },
             {
                 'attribute': 'c4thrown',
-                'label': '<span class="item_param_th"><img src="/uploads/drop/446_3da715bdfd205544821f8969040465c2.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover"></span>',
+                'label': "<span class=\"item_param_th\"><img src=\"/uploads/drop/446_3da715bdfd205544821f8969040465c2.png\" data-bs-toggle=\"tooltip\" data-bs-title=\"#{t('database', 'Взорванных C4')}\" class=\"block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover\"></span>",
                 'format': 'raw',
                 'encodeLabel': false,
                 'options': {'width': '100'},
@@ -117,7 +127,7 @@
             },
             {
                 'attribute': 'scrap',
-                'label': '<span class="item_param_th"><img src="/uploads/drop/305_6949c48b05801055b644b5938b1c427c.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover"></span>',
+                'label': "<span class=\"item_param_th\"><img src=\"/uploads/drop/305_6949c48b05801055b644b5938b1c427c.png\" data-bs-toggle=\"tooltip\" data-bs-title=\"#{t('database', 'Найденного скрапа')}\" class=\"block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover\"></span>",
                 'format': 'raw',
                 'encodeLabel': false,
                 'options': {'width': '100'},
@@ -126,7 +136,7 @@
             },
             {
                 'attribute': 'sulfur.ore',
-                'label': '<span class="item_param_th"><img src="/uploads/drop/312_f1bbbd27a6a2da9e0f82b83ae1ac284a.png" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover"></span>',
+                'label': "<span class=\"item_param_th\"><img src=\"/uploads/drop/312_f1bbbd27a6a2da9e0f82b83ae1ac284a.png\" data-bs-toggle=\"tooltip\" data-bs-title=\"#{t('database', 'Нафармленной серы')}\" class=\"block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover\"></span>",
                 'format': 'raw',
                 'encodeLabel': false,
                 'options': {'width': '100'},

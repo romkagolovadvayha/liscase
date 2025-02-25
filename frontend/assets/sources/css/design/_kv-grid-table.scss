@@ -119,6 +119,7 @@ table.kv-grid-table {
     @extend .loader, .active;
     position: absolute !important;
     border-radius: var(--status-radius);
+    display: block;
     &:after {
       right: 50% !important;
       top: 50% !important;
@@ -129,4 +130,7 @@ table.kv-grid-table {
       display: none;
     }
   }
+}
+.kv-loader-overlay {
+  display: none;
 }

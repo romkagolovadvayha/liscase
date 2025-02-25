@@ -24,6 +24,11 @@ use Yii;
  */
 class ClanQuestion extends \yii\db\ActiveRecord
 {
+
+    const STATUS_WAIT = 0;
+    const STATUS_SUCCESS = 1;
+    const STATUS_REJECT = 2;
+
     /**
      * {@inheritdoc}
      */
@@ -40,6 +45,8 @@ class ClanQuestion extends \yii\db\ActiveRecord
         return [
             [['user_id', 'clan_id', 'status'], 'integer'],
             [['created_at'], 'safe'],
+            [['description'], 'string', 'min' => 50],
+            [['description'], 'required'],
             [['description', 'social_youtube', 'social_discord', 'social_vk', 'social_twitch'], 'string', 'max' => 255],
             [['clan_id'], 'exist', 'skipOnError' => true, 'targetClass' => Clan::class, 'targetAttribute' => ['clan_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
@@ -55,13 +62,13 @@ class ClanQuestion extends \yii\db\ActiveRecord
             'id' => 'ID',
             'user_id' => 'User ID',
             'clan_id' => 'Clan ID',
-            'description' => 'Description',
-            'social_youtube' => 'Social Youtube',
-            'social_discord' => 'Social Discord',
-            'social_vk' => 'Social Vk',
-            'social_twitch' => 'Social Twitch',
-            'status' => 'Status',
-            'created_at' => 'Created At',
+            'description' => Yii::t('common', 'Информация о себе'),
+            'social_youtube' => Yii::t('common', 'Ссылка на Youtube'),
+            'social_discord' => Yii::t('common', 'Ваш логин Discord'),
+            'social_vk' => Yii::t('common', 'Ссылка на профиль VK'),
+            'social_twitch' => Yii::t('common', 'Ссылка на Twitch'),
+            'status' => Yii::t('common', 'Статус'),
+            'created_at' => Yii::t('common', 'Дата создания'),
         ];
     }
 

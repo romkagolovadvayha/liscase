@@ -34,6 +34,10 @@ class WebController extends Controller
 
         $this->_setRefCookies();
 
+        if ($this->id == 'clans' && $action->id == 'upload') {
+            $this->enableCsrfValidation = false;
+        }
+
         return parent::beforeAction($action);
     }
 

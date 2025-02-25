@@ -3,19 +3,26 @@
 namespace frontend\controllers;
 
 use common\controllers\WebController;
+use common\models\box\SelectImage;
 use common\models\clan\ClanSearch;
 use common\models\clan\Clan;
+use common\models\clan\UserRole;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use common\models\user\UserTop;
 use fedemotta\datatables\DataTablesAsset;
+use frontend\assets\ClanAsset;
 use frontend\forms\clans\ClanForm;
+use frontend\forms\clans\LeaveForm;
+use frontend\forms\clans\QuestionForm;
 use frontend\models\banlist\BansSearch;
 use yii\base\BaseObject;
 use yii\helpers\Html;
+use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use Yii;
+use yii\web\UploadedFile;
 
 class ClansController extends WebController
 {
@@ -82,8 +89,8 @@ class ClansController extends WebController
                 'pageSize' => 20,
             ],
             'sort'  => [
-                'attributes' => ['title', 'kills', 'users_count', 'rocket_basic', 'c4thrown', 'scrap', 'sulfur.ore'],
-                'defaultOrder' => ['kills' => SORT_DESC],
+                'attributes' => ['title', 'rating', 'kills', 'users_count', 'rocket_basic', 'c4thrown', 'scrap', 'sulfur.ore'],
+                'defaultOrder' => ['rating' => SORT_DESC],
             ],
         ]);
 
@@ -91,10 +98,14 @@ class ClansController extends WebController
             return Html::img($model['logo'], ['class' => 'w-48 h-48 min-w-48 min-h-48 rounded-6 object-cover']);
         };
         $title = function ($model) {
-            return "<div class=\"item_param_content\"><div class=\"item_param_content_title\">{$model['title']}</div><div class=\"item_param_content_description\">{$model['description_short']}</div></div>";
+            return "<a href=\"{$model['link']}\" class=\"item_param_content\"><div class=\"item_param_content_title\">{$model['title']}</div><div class=\"item_param_content_description\">{$model['description_short']}</div></a>";
         };
         $kills = function ($model) {
             $str = number_format($model['kills'] ?? 0, 0, '.', ' ');
+            return "<div class=\"item_param\"><span>{$str}</span></div>";
+        };
+        $rating = function ($model) {
+            $str = number_format($model['rating'] ?? 0, 0, '.', ' ');
             return "<div class=\"item_param\"><span>{$str}</span></div>";
         };
         $usersCount = function ($model) {
@@ -158,6 +169,7 @@ class ClansController extends WebController
                 'avatar' => $avatar,
                 'title' => $title,
                 'kills' => $kills,
+                'rating' => $rating,
                 'users_count' => $usersCount,
                 'rocket' => $rocket,
                 'c4' => $c4,
@@ -201,6 +213,7 @@ class ClansController extends WebController
         }
 
         $this->view->params['page'] = 'clans';
+        ClanAsset::register($this->view);
 
         $user = Yii::$app->user->identity;
         $roles = [];
@@ -231,6 +244,94 @@ class ClansController extends WebController
         ]);
     }
 
+    public function actionUpload($hash, $type)
+    {
+        if (!Yii::$app->request->isPut || !Yii::$app->settings->get('section_clans')) {
+            throw new NotFoundHttpException( 'The requested page does not exist.');
+        }
+        $putData = Yii::$app->request->getRawBody();
+        $fileSize = strlen($putData); // Размер файла в байтах
+        $maxFileSize = 3 * 1024 * 1024; // 3 МБ в байтах
+
+        if ($fileSize > $maxFileSize) {
+            Yii::$app->response->statusCode = 415;
+            echo Yii::t('common', 'Файл превышает допустимый размер (3 МБ)');
+            return null;
+        }
+
+        // Получаем имя файла из заголовка
+        $fileName = $_SERVER['HTTP_X_FILE_NAME'] ?? 'uploaded_file';
+
+        // Проверяем, является ли файл изображением
+        $imageInfo = getimagesizefromstring($putData);
+        if ($imageInfo === false) {
+            Yii::$app->response->statusCode = 415;
+            echo Yii::t('common', 'Файл не является изображением');
+            return null;
+        }
+
+        // Допустимые MIME-типы изображений
+        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($imageInfo['mime'], $allowedMimeTypes)) {
+            Yii::$app->response->statusCode = 415;
+            echo Yii::t('common', 'Недопустимый тип изображения. Разрешены только JPEG, PNG и GIF');
+            return null;
+        }
+
+        /** @var Clan $model */
+        $model = Clan::find()
+            ->andWhere(['link_hash' => $hash])
+            ->one();
+        if (empty($model)) {
+            Yii::$app->response->statusCode = 403;
+            echo Yii::t('common', 'Нет доступа');
+            return null;
+        }
+
+        $user = Yii::$app->user->identity;
+        $roles = $user->getRolesClan($model->user_id, $model->id);
+        if (!in_array(UserRole::ROLE_EDIT_INFO, array_keys($roles))) {
+            Yii::$app->response->statusCode = 403;
+            echo Yii::t('common', 'Нет доступа');
+            return null;
+        }
+
+        $fileUrl = $this->_loadImage($putData, $fileName, $model->id);
+
+        if ($type == 'background') {
+            $model->background_image = $fileUrl;
+            $model->save();
+        }
+        if ($type == 'logo') {
+            $model->logo_image = $fileUrl;
+            $model->save();
+        }
+
+        return $fileUrl;
+    }
+
+    private function _loadImage($putData, $fileName, $id) {
+        if (empty($putData)) {
+            return null;
+        }
+        $exp = explode('.', $fileName);
+        $exp = $exp[count($exp) - 1];
+        if (!in_array($exp, ['svg', 'png', 'jpg', 'jpeg', 'webp', 'gif'])) {
+            Yii::$app->response->statusCode = 415;
+            echo Yii::t('common', 'Недопустимый тип изображения. Разрешены только JPEG, PNG и GIF');
+            return null;
+        }
+        $uploadDir = Yii::getAlias('@frontend/web');
+        $fileUrl = "/uploads/clans/" . $id . "_" . md5(time()) . ".{$exp}";
+        $filePath = $uploadDir . $fileUrl;
+        if (!file_exists(dirname($filePath))) {
+            mkdir(dirname($filePath));
+            chmod(dirname($filePath), 0777);
+        }
+        file_put_contents($filePath, $putData);
+        return $fileUrl;
+    }
+
     public function actionCreate()
     {
         if (!Yii::$app->settings->get('section_clans')) {
@@ -256,6 +357,97 @@ class ClansController extends WebController
         }
 
         return $this->renderAjax('clan-form', [
+            'model' => $model,
+        ]);
+    }
+
+    public function actionLeave($hash)
+    {
+        if (!Yii::$app->settings->get('section_clans')) {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+
+        /** @var \common\models\user\User $user */
+        $user = Yii::$app->user->identity;
+        if (empty($user)) {
+            Yii::$app->session->addFlash('danger', Yii::t('common', 'Вы не авторизованы!'));
+            return $this->redirect(['index']);
+        }
+
+        /** @var LeaveForm $model */
+        $model = LeaveForm::find()
+            ->andWhere(['link_hash' => $hash])
+            ->one();
+
+        if (empty($model)) {
+            Yii::$app->session->addFlash('danger', Yii::t('common', 'Клан не найден!'));
+            return $this->redirect(['index']);
+        }
+
+        if ($this->request->isPost) {
+            $server = $model->user->getCurrentServer();
+            if ($model->saveRecord()) {
+                if (!empty($model->id)) {
+                    Yii::$app->session->addFlash('success', Yii::t('common', 'Вы вышли из клана'));
+                    return $this->redirect([$model->getLink('profile', $server->tag)]);
+                } else {
+                    Yii::$app->session->addFlash('success', Yii::t('common', 'Клан удален, так как вы единственный участник'));
+                    return $this->redirect(['/clans']);
+                }
+            } else {
+                if (!empty($model->getFirstError('global'))) {
+                    Yii::$app->session->addFlash('danger', $model->getFirstError('global'));
+                }
+                return $this->redirect([$model->getLink('profile', $server->tag)]);
+            }
+        }
+
+        return $this->renderAjax('leave-form', [
+            'model' => $model,
+        ]);
+    }
+
+    public function actionQuestion($hash)
+    {
+        if (!Yii::$app->settings->get('section_clans')) {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+
+        /** @var \common\models\user\User $user */
+        $user = Yii::$app->user->identity;
+        if (empty($user)) {
+            Yii::$app->session->addFlash('danger', Yii::t('common', 'Вы не авторизованы!'));
+            return $this->redirect(['index']);
+        }
+
+        /** @var Clan $clan = */
+        $clan = Clan::find()
+            ->andWhere(['link_hash' => $hash])
+            ->one();
+
+        if (empty($clan)) {
+            Yii::$app->session->addFlash('danger', Yii::t('common', 'Клан не найден!'));
+            return $this->redirect(['index']);
+        }
+
+        $model = new QuestionForm();
+        $model->clan_id = $clan->id;
+        $model->user_id = $user->id;
+        if ($this->request->isPost) {
+            $server = $clan->user->getCurrentServer();
+            $model->load($this->request->post());
+            if ($model->saveRecord()) {
+                Yii::$app->session->addFlash('success', Yii::t('common', 'Заявка отправлена'));
+                return $this->redirect([$model->clan->getLink('profile', $server->tag)]);
+            } else {
+                if (!empty($model->getFirstError('global'))) {
+                    Yii::$app->session->addFlash('danger', $model->getFirstError('global'));
+                    return $this->redirect([$model->clan->getLink('profile', $server->tag)]);
+                }
+            }
+        }
+
+        return $this->renderAjax('question-form', [
             'model' => $model,
         ]);
     }

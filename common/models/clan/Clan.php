@@ -201,6 +201,7 @@ class Clan extends \yii\db\ActiveRecord
                 'user' => $item->user->getData(),
                 'background' => $item->getBackground(),
                 'link' => $item->getLink('profile', $_server->tag),
+                'link_hash' => $item->link_hash,
                 'users' => []
             ];
 

@@ -3,7 +3,7 @@
     <img src="{{ IMAGE }}" class="clans_raiting_list_item_image" />
     <div class="clans_raiting_list_item">
         <div class="clans_raiting_list_item_header_wrap">
-            <div class="clans_raiting_list_item_header">
+            <a class="clans_raiting_list_item_header" href="{{ ITEM.link }}">
                 <div class="clans_raiting_list_item_header_logo" style="background-image: url({{ ITEM.logo }})"></div>
                 <div class="clans_raiting_list_item_header_content">
                     <div class="clans_raiting_list_item_header_content_title">
@@ -13,7 +13,7 @@
                         {{ ITEM.description_short }}
                     </div>
                 </div>
-            </div>
+            </a>
             <div class="flex gap-x-10 mt-12 justify-content-around">
                 <div class="stats__item flex gap-x-3 items-center" data-bs-toggle="tooltip" data-bs-title="{{ t('database', 'Убийств') }}">
                     <img src="/images/awards/killer.png" alt="gold" class="w-36">

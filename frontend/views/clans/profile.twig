@@ -1,3 +1,5 @@
+{{ use('frontend/widgets/Alert') }}
+{{ alert_widget() }}
 <nav class="servers_navbar mb-24">
     <ul class="servers_navbar_nav">
         {% for ITEM in SERVERS %}
@@ -9,12 +11,40 @@
         {% endfor %}
     </ul>
 </nav>
-<section class="page-stats__block profile flex-row justify-space-between items-flex-end" style="height: 300px;background-image: url({{ CLAN.background }}); background-size: cover; background-position: center center;">
+<section class="page-stats__block profile profile_clan flex-row justify-space-between items-flex-end" style="height: 300px;background-image: url({{ CLAN.background }}); background-size: cover; background-position: center center;">
     <!-- ОНЛАЙН -->
-    <div class="profile__wrapper profile_offline">
-        <div class="profile__image">
-            <img src="{{ CLAN.logo }}" alt="пьяный ниндзя">
+    <div class="kv-loader-overlay"><div class="kv-loader"></div></div>
+    {% if ROLES.ROLE_EDIT_INFO %}
+        <div class="dropdown profile_clan_update_background">
+            <label class="profile_clan_update_background_link" type="button" id="EDIT_INFO" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-cog"></i> <span class="profile_clan_update_background_text">{{ t('common', 'Настройки') }}</span>
+            </label>
+            <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="EDIT_INFO">
+                <li>
+                    <label class="dropdown-item" for="EDIT_BACKGROUND">
+                        <input type="file" id="EDIT_BACKGROUND" accept=".png,.jpg,.gif,.jpeg"/>
+                        <i class="fas fa-image"></i> {{ t('common', 'Изменить обложку') }}
+                    </label>
+                </li>
+                <li>
+                    <label class="dropdown-item" for="EDIT_LOGO">
+                        <input type="file" id="EDIT_LOGO" accept=".png,.jpg,.gif,.jpeg"/>
+                        <i class="fas fa-image"></i> {{ t('common', 'Изменить логотип') }}
+                    </label>
+                </li>
+            </ul>
         </div>
+    {% endif %}
+    <div class="profile__wrapper profile_offline">
+        {% if ROLES.ROLE_EDIT_INFO %}
+            <label class="profile_clan__logo profile_clan__logo_edit" for="EDIT_LOGO" style="background-image: url({{ CLAN.logo }}); background-size: cover; background-position: center center;">
+                <div class="profile_clan__logo_edit_content">
+                    <i class="fas fa-image"></i>
+                </div>
+            </label>
+        {% else %}
+            <div class="profile_clan__logo" style="background-image: url({{ CLAN.logo }}); background-size: cover; background-position: center center;"></div>
+        {% endif %}
         <div>
             <h2 class="text-primary-colors-main flex items-center gap-x-12">
                 {{ CLAN.title }}
@@ -24,11 +54,11 @@
     </div>
     <div>
         {% if ROLES.ROLE_MEMBER %}
-            <button data-href="/clans/create" data-size="modal-md" data-toggl="modal" data-target="modal-dialog" data-title="{{ t('common', 'Создать клан') }}" class="button-primary show-modal-link">
+            <button data-href="/clans/leave?hash={{ CLAN.link_hash }}" data-size="modal-md" data-toggl="modal" data-target="modal-dialog" data-title="{{ t('common', 'Выйти из клана') }}" class="button-primary show-modal-link">
                 <span class="button__text">{{ t('common', 'Покинуть клан') }}</span>
             </button>
         {% else %}
-            <button data-href="/clans/create" data-size="modal-md" data-toggl="modal" data-target="modal-dialog" data-title="{{ t('common', 'Создать клан') }}" class="button-primary show-modal-link">
+            <button data-href="/clans/question?hash={{ CLAN.link_hash }}" data-size="modal-md" data-toggl="modal" data-target="modal-dialog" data-title="{{ t('common', 'Вступить в клан') }}" class="button-primary show-modal-link">
                 <span class="button__text">{{ t('common', 'Вступить в клан') }}</span>
             </button>
         {% endif %}
@@ -90,3 +120,7 @@
 {#        </div>#}
 {#    </section>#}
 {#</div>#}
+
+<script>
+    var CLAN_HASH = "{{ CLAN.link_hash }}";
+</script>
