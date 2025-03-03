@@ -69,6 +69,17 @@ if (!empty($user) && !empty($this->params['clan_profile_block'])) {
         'PAGE' => $page
     ]);
 }
+$clanMenuBlock = null;
+if (!empty($user) && !empty($this->params['clan_menu_block'])) {
+    $clanMenuBlock = $this->render('@frontend/views/widgets/clan_menu.twig', [
+        'SERVER' => $user->server,
+        'USER' => $user,
+        'SETTINGS' => $SETTINGS,
+        'userData' => $userData,
+        'CLAN' => $this->params['clan_menu_block'],
+        'PAGE' => $page
+    ]);
+}
 if (!empty($user) && !empty($user->server) && $user->last_visit_server_at > date('Y-m-d H:i:s', time() - 5 * 60)) {
     $serverInfoBlock = $this->render('@frontend/views/widgets/server_info.twig', [
                                               'SERVER' => $user->server,
@@ -119,6 +130,7 @@ if (!empty($this->params['_profile'])) {
     'SERVER_INFO_BLOCK' => $serverInfoBlock,
     'PROFILE_BLOCK' => $profileBlock,
     'CLAN_PROFILE_BLOCK' => $clanProfileBlock,
+    'CLAN_MENU_BLOCK' => $clanMenuBlock,
 //    'ALERT_MESSAGE' => $this->render('@frontend/views/widgets/_alert'),
 //    'SKINDROPS_BLOCK' => $this->render('@frontend/views/widgets/_skindrops'),
     'SERVERS_BLOCK' => $this->render('@frontend/views/widgets/_servers', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'SETTINGS' => $SETTINGS, 'PAGE' => $page]),

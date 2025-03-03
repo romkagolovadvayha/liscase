@@ -213,6 +213,8 @@ class ClansController extends WebController
         }
 
         $this->view->params['page'] = 'clans';
+        $this->view->params['clan_menu_block'] = true;
+        $this->view->params['clan'] = $model;
         ClanAsset::register($this->view);
 
         $user = Yii::$app->user->identity;

@@ -1,0 +1,35 @@
+{{ use('common/components/widgets') }}
+<section class="stats-aside__stat-block stat-block stat-block-profile">
+        {{ nav_menu_widget({
+            'options': {
+                'class': 'stat-block-profile-menu',
+            },
+            'items': [
+                {
+                    'label': t('common', 'Заявки на вступление'),
+                    'url': CLAN.link,
+                    'activeClass': 'active',
+                    'active': PAGE == 'user-profile',
+                    'spanClass': 'stat-block-profile-menu__item-text',
+                    'options': {'class': 'stat-block-profile-menu__item'},
+                },
+                {
+                    'label': t('common', 'Пригласить игрока'),
+                    'url': CLAN.link,
+                    'activeClass': 'active',
+                    'active': PAGE == 'user-profile',
+                    'spanClass': 'stat-block-profile-menu__item-text',
+                    'options': {'class': 'stat-block-profile-menu__item'},
+                },
+                {
+                    'label': t('common', 'Управление страницами'),
+                    'url': CLAN.link,
+                    'activeClass': 'active',
+                    'active': PAGE == 'user-profile',
+                    'spanClass': 'stat-block-profile-menu__item-text',
+                    'options': {'class': 'stat-block-profile-menu__item'},
+                },
+            ]
+        })
+        }}
+</section>
