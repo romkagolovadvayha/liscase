@@ -14,16 +14,14 @@ $config['components']['user'] = [
 $config['components']['request'] = ['class' => 'console\components\Request'];
 $config['modules']['translateManager'] = [
     'class'                   => \DemonDogSL\translateManager\Module::class,
-    'root'                    => [
-        '@backend',
-        '@frontend',
-        '@common',
-        '@console',
-    ],
-    'scanRootParentDirectory' => true,
-    'ignoredCategories'       => ['yii', 'kvdrp'],
-    'ignoredItems'            => ['assets', 'vendor'],
-    'layout'                  => false,
+//    'root'                    => [
+//        '@frontend',
+//        '@common',
+//    ],
+//    'scanRootParentDirectory' => true,
+//    'ignoredCategories'       => ['yii', 'kvdrp'],
+//    'ignoredItems'            => ['assets', 'vendor'],
+//    'layout'                  => false,
     'allowedIPs'              => ['*'],
     'tables' => [
         [
@@ -66,11 +64,11 @@ $config['modules']['translateManager'] = [
             'table' => '{{%blog_category}}',
             'columns' => ['name', 'description', 'keywords'],
         ],
-        [
-            'connection' => 'db',
-            'table' => '{{%comment}}',
-            'columns' => ['content'],
-        ],
+//        [
+//            'connection' => 'db',
+//            'table' => '{{%comment}}',
+//            'columns' => ['content'],
+//        ],
         [
             'connection' => 'db',
             'table' => '{{%task}}',
@@ -80,11 +78,6 @@ $config['modules']['translateManager'] = [
             'connection' => 'db',
             'table' => '{{%drop_type}}',
             'columns' => ['name'],
-        ],
-        [
-            'connection' => 'db',
-            'table' => '{{%profit}}',
-            'columns' => ['comment'],
         ],
     ],
     'scanners' => [
