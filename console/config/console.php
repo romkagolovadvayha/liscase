@@ -14,14 +14,15 @@ $config['components']['user'] = [
 $config['components']['request'] = ['class' => 'console\components\Request'];
 $config['modules']['translateManager'] = [
     'class'                   => \DemonDogSL\translateManager\Module::class,
-//    'root'                    => [
-//        '@frontend',
-//        '@common',
-//    ],
+    'root'                    => [
+        '@frontend',
+        '@common',
+    ],
 //    'scanRootParentDirectory' => true,
 //    'ignoredCategories'       => ['yii', 'kvdrp'],
 //    'ignoredItems'            => ['assets', 'vendor'],
 //    'layout'                  => false,
+    'patterns'                  => ['*.php', '*.js', '*.twig'],
     'allowedIPs'              => ['*'],
     'tables' => [
         [

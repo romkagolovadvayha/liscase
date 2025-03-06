@@ -3,11 +3,13 @@ namespace common\components\scanners;
 
 use DemonDogSL\translateManager\services\scanners\ScannerFile;
 use DemonDogSL\translateManager\services\Scanner;
+use yii\base\InvalidConfigException;
+use yii\helpers\FileHelper;
 
 class ScannerTwigTemplate extends ScannerFile {
 
     const EXTENSION = '*.twig';
-    protected static $files = ['*.php' => [], '*.js' => [], '*.twig' => []];
+    public static $files = ['*.php' => [], '*.js' => [], '*.twig' => []];
 
     /**
      * @param string $route
@@ -15,6 +17,7 @@ class ScannerTwigTemplate extends ScannerFile {
      * @inheritdoc
      */
     public function run($route, $params = []) {
+        $this->initFiles();
         foreach (self::$files[static::EXTENSION] as $file) {
             if ($this->containsTranslator(['t'], $file)) {
                 $this->extractMessages($file, [
@@ -24,6 +27,48 @@ class ScannerTwigTemplate extends ScannerFile {
                 ]);
             }
         }
+    }
+
+    public function initFiles() {
+        if (!empty(self::$files[static::EXTENSION]) || !in_array(static::EXTENSION, $this->module->patterns)) {
+            return;
+        }
+        self::$files[static::EXTENSION] = [];
+        foreach ($this->_getRoots() as $root) {
+            $root = realpath($root);
+            \Yii::trace('Scanning ' . static::EXTENSION . " files for language elements in: $root", 'translateManager');
+            $files = FileHelper::findFiles($root, [
+                'except' => $this->module->ignoredItems,
+                'only' => [static::EXTENSION],
+            ]);
+            self::$files[static::EXTENSION] = array_merge(self::$files[static::EXTENSION], $files);
+        }
+        self::$files[static::EXTENSION] = array_unique(self::$files[static::EXTENSION]);
+    }
+
+    /**
+     * @return array
+     */
+    private function _getRoots() {
+        $directories = [];
+        $__root = [
+            '@frontend',
+            '@common',
+        ];
+        if (is_string($this->module->root)) {
+            $root = \Yii::getAlias($this->module->root);
+            if ($this->module->scanRootParentDirectory) {
+                $root = dirname($root);
+            }
+            $directories[] = $root;
+        } elseif (is_array($this->module->root)) {
+            foreach ($this->module->root as $root) {
+                $directories[] = \Yii::getAlias($root);
+            }
+        } else {
+            throw new InvalidConfigException('Invalid `root` option value!');
+        }
+        return $directories;
     }
 
     /**
