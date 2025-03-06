@@ -81,6 +81,7 @@ $config['modules']['translateManager'] = [
         ],
     ],
     'scanners' => [
+        \common\components\scanners\ScannerTwigTemplate::class,
         '\DemonDogSL\translateManager\services\scanners\ScannerDatabase',
         '\DemonDogSL\translateManager\services\scanners\ScannerPhpFunction',
         '\DemonDogSL\translateManager\services\scanners\ScannerPhpArray',
