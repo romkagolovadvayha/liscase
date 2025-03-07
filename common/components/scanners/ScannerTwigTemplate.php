@@ -20,7 +20,6 @@ class ScannerTwigTemplate extends ScannerFile {
         $this->initFiles();
         foreach (self::$files[static::EXTENSION] as $file) {
             if ($this->containsTranslator(['t'], $file)) {
-                print_r($file);
                 $this->extractMessages($file, [
                     'translator' => (array) ['{{ t', '{{t'],
                     'begin' => '(',
