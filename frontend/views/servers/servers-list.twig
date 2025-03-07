@@ -37,12 +37,11 @@
                                    data-target="modal-dialog"
                                    data-title="{{ t('common', 'Когда вайп') }}">{{ t('common', 'Когда вайп') }}</a>
 {#                                <a class="button button-secondary" href="{{ SERVER.getLink('map') }}" target="_blank" >{{ t('common', 'О сервере') }}</a>#}
-                                {% if SERVER.map_id %}
-                                    <a class="button button-secondary servers_page_item_actions_r_image" href="{{ SERVER.mapEntity.getImage() }}" title="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}" target="_blank" >
-                                        {{ t('common', 'Текущая карта') }}
-                                        <img style="width: 1px; height: 1px; opacity: 0;" src="{{ SERVER.mapEntity.getPreviewImage() }}" alt="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}">
-                                    </a>
-                                {% endif %}
+{#                                {% if SERVER.map_id %}#}
+{#                                    <a class="button button-secondary servers_page_item_actions_r_image" href="{{ SERVER.mapEntity.getImage() }}" title="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}" target="_blank" >#}
+{#                                        {{ t('common', 'Текущая карта') }}<img style="width: 1px; height: 1px; opacity: 0;" src="{{ SERVER.mapEntity.getPreviewImage() }}" alt="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}">#}
+{#                                    </a>#}
+{#                                {% endif %}#}
                                 <a class="button button-secondary" href="{{ SERVER.getLink('rules') }}">{{ t('common', 'Правила сервера') }}</a>
                                 <a class="button button-secondary" href="{{ SERVER.getLink('stats') }}">{{ t('common', 'Статистика') }}</a>
                             </div>
