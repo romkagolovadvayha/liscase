@@ -20,8 +20,9 @@ class ScannerTwigTemplate extends ScannerFile {
         $this->initFiles();
         foreach (self::$files[static::EXTENSION] as $file) {
             if ($this->containsTranslator(['t'], $file)) {
+                print_r($file);
                 $this->extractMessages($file, [
-                    'translator' => (array) ['t'],
+                    'translator' => (array) ['{{ t', '{{t'],
                     'begin' => '(',
                     'end' => ')',
                 ]);
@@ -55,14 +56,14 @@ class ScannerTwigTemplate extends ScannerFile {
             '@frontend',
             '@common',
         ];
-        if (is_string($this->module->root)) {
-            $root = \Yii::getAlias($this->module->root);
+        if (is_string($__root)) {
+            $root = \Yii::getAlias($__root);
             if ($this->module->scanRootParentDirectory) {
                 $root = dirname($root);
             }
             $directories[] = $root;
-        } elseif (is_array($this->module->root)) {
-            foreach ($this->module->root as $root) {
+        } elseif (is_array($__root)) {
+            foreach ($__root as $root) {
                 $directories[] = \Yii::getAlias($root);
             }
         } else {
