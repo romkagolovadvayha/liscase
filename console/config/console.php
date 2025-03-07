@@ -53,7 +53,7 @@ $config['modules']['translateManager'] = [
         [
             'connection' => 'db',
             'table' => '{{%servers}}',
-            'columns' => ['name', 'description', 'rules'],
+            'columns' => ['name', 'description', 'rules', 'monitoring_name', 'monitoring_description'],
         ],
         [
             'connection' => 'db',
