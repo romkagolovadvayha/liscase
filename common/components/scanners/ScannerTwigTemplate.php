@@ -83,10 +83,6 @@ class ScannerTwigTemplate extends ScannerFile {
                 return null;
             }
             $message = implode('', $this->concatMessage($buffer));
-            print_r([
-                        'category' => $category,
-                        'message' => $message,
-                    ]);
             return [
                 [
                     'category' => $category,
