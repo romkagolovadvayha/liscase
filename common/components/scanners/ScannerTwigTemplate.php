@@ -75,23 +75,40 @@ class ScannerTwigTemplate extends ScannerFile {
      * @inheritdoc
      */
     protected function getLanguageItem($buffer) {
-        if (isset($buffer[0][0]) && $buffer[0][0] === T_CONSTANT_ENCAPSED_STRING) {
-            foreach ($buffer as $data) {
-                if (isset($data[0], $data[1]) && $data[0] === T_CONSTANT_ENCAPSED_STRING) {
-                    $message = stripcslashes($data[1]);
-                    $messages[] = mb_substr($message, 1, mb_strlen($message) - 2);
-                } elseif ($data === ',') {
-                    break;
-                }
+        if (isset($buffer[0][0], $buffer[1], $buffer[2][0]) && $buffer[0][0] === T_CONSTANT_ENCAPSED_STRING && $buffer[1] === ',' && $buffer[2][0] === T_CONSTANT_ENCAPSED_STRING) {
+            // is valid call we can extract
+            $category = stripcslashes($buffer[0][1]);
+            $category = mb_substr($category, 1, mb_strlen($category) - 2);
+            if (!$this->isValidCategory($category)) {
+                return null;
             }
-            $message = implode('', $messages);
+            $message = implode('', $this->concatMessage($buffer));
+            print_r([
+                        'category' => $category,
+                        'message' => $message,
+                    ]);
             return [
                 [
-                    'category' => Scanner::CATEGORY_ARRAY,
+                    'category' => $category,
                     'message' => $message,
                 ],
             ];
         }
         return null;
+    }
+
+    /**
+     * @param array $buffer Array to store language element pieces.
+     * @return array Sorted list of language element pieces.
+     */
+    protected function concatMessage($buffer) {
+        $messages = [];
+        $buffer = array_slice($buffer, 2);
+        $message = stripcslashes($buffer[0][1]);
+        $messages[] = mb_substr($message, 1, mb_strlen($message) - 2);
+        if (isset($buffer[1], $buffer[2][0]) && $buffer[1] === '.' && $buffer[2][0] == T_CONSTANT_ENCAPSED_STRING) {
+            $messages = array_merge_recursive($messages, $this->concatMessage($buffer));
+        }
+        return $messages;
     }
 }
