@@ -41,7 +41,7 @@
             {% for KEY, ITEM in ITEMS %}
                 {% include 'item_top.twig'
                     with {
-                        'TITLE': {{ t('common', ITEM['label']) }},
+                        'TITLE': t('common', ITEM['label']),
                         'ITEMS': ITEM['items'],
                         'KEY': KEY,
                         'USER': USER,
