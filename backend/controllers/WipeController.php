@@ -92,7 +92,6 @@ class WipeController extends Controller
         $server->map_id = $map->id;
         $server->save(false);
 
-        \Yii::$app->queueProcess->push(new MapGenerateJob(['serverId'  => $id]));
         Yii::$app->session->addFlash('success', 'Карта успешно зафиксирована!');
         return $this->redirect('index');
     }
