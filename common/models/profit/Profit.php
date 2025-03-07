@@ -61,7 +61,7 @@ class Profit extends \common\components\base\ActiveRecord
             self::TYPE_TELEGRAM_BOT => Yii::t('common', 'Привязка телеграм бота'),
             self::TYPE_TRANSFER_REFERRAL => Yii::t('common', 'Перевод с счета реферальной системы'),
             self::TYPE_TRANSFER_SKINS => Yii::t('common', 'Перевод с счета скинов'),
-            self::TYPE_WINNER_SKINS => Yii::t('common', 'Выйгран скин'),
+            self::TYPE_WINNER_SKINS => Yii::t('common', 'Выигран скин'),
         ];
     }
 
