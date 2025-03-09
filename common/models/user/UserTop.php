@@ -235,10 +235,10 @@ class UserTop extends \yii\db\ActiveRecord
               'gathered_white.berry' => 0.5,
               'gathered_black.berry' => 1,
               'gathered_potato' => 0.4,
-              'gathered_orchid' => 0.1,
-              'gathered_rose' => 0.1,
-              'gathered_sunflower' => 0.1,
-              'gathered_wheat' => 0.1,
+              'gathered_orchid' => 0.3,
+              'gathered_rose' => 0.3,
+              'gathered_sunflower' => 0.3,
+              'gathered_wheat' => 0.3,
           ],
         ];
     }
