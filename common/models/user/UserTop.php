@@ -310,68 +310,74 @@ ORDER BY server_id, `key`, value DESC;
     {
         $cacheKey = "User_Top___getUserTops_{$server->id}_{$wipe}";
         if (Yii::$app->cache->get($cacheKey) && !$update) {
-            return Yii::$app->cache->get($cacheKey);
+            $items = Yii::$app->cache->get($cacheKey);
         }
-        $items = [];
-        foreach (UserTop::getTopsLabel() as $key => $label) {
-            /** @var UserTop[] $userTops */
-            $userTops = UserTop::find()
-                               ->alias('ut')
-                               ->joinWith(['user u'])
-                               ->andWhere(['ut.key' => $key])
-                               ->andWhere(['ut.server_id' => $server->id])
-                               ->andWhere(['ut.wipe' => $wipe])
-                               ->andWhere(['u.is_stats' => 1])
-                               ->orderBy(['ut.value' => SORT_DESC])
-                               ->limit(3)
-                               ->all();
-            $items[$key] = [
-                'label' => $label,
-                'items' => [],
-            ];
-            if ($key !== 'playtime') {
-                foreach ($userTops as $position => $item) {
-                    $user = $item->user;
-                    $color = UserTop::getColor($position);
-                    $amount = UserTop::getAmount($position);
-                    $items[$key]['items'][] = [
-                        'position' => $position,
-                        'color' => $color,
-                        'amount' => $amount,
-                        'steam_id' => $user->steam_id,
-                        'score' => $item->valueFormat(),
-                        'link' => "/servers/{$server->tag}/{$user->steam_id}",
-                        'username' => $user->username,
-                        'avatar' => $user->getAvatar(),
-                        'status' => $user->getStatus(),
-                    ];
-                }
-            } else {
-                /** @var Statistics[] $statistics */
-                $statistics = Statistics::find()
-                                        ->andWhere(['key' => $key])
-                                        ->andWhere(['server_tag' => $server->tag])
-                                        ->andWhere(['wipe' => $wipe])
-                                        ->orderBy(['value' => SORT_DESC])
-                                        ->limit(3)
-                                        ->all();
-                foreach ($statistics as $position => $item) {
-                    $color = UserTop::getColor($position);
-                    $amount = UserTop::getAmount($position);
-                    $user = $item->user;
-                    $items[$key]['items'][] = [
-                        'position' => $position,
-                        'color' => $color,
-                        'amount' => $amount,
-                        'steam_id' => $user->steam_id,
-                        'score' => Servers::getPlayTime($item->value),
-                        'link' => "/servers/{$server->tag}/{$user->steam_id}",
-                        'username' => $user->username,
-                        'avatar' => $user->getAvatar(),
-                        'status' => $user->getStatus(),
-                    ];
+        if (!isset($items)) {
+            $items = [];
+            foreach (UserTop::getTopsLabel() as $key => $label) {
+                /** @var UserTop[] $userTops */
+                $userTops = UserTop::find()
+                                   ->alias('ut')
+                                   ->joinWith(['user u'])
+                                   ->andWhere(['ut.key' => $key])
+                                   ->andWhere(['ut.server_id' => $server->id])
+                                   ->andWhere(['ut.wipe' => $wipe])
+                                   ->andWhere(['u.is_stats' => 1])
+                                   ->orderBy(['ut.value' => SORT_DESC])
+                                   ->limit(3)
+                                   ->all();
+                $items[$key] = [
+                    'label' => $label,
+                    'items' => [],
+                ];
+                if ($key !== 'playtime') {
+                    foreach ($userTops as $position => $item) {
+                        $user = $item->user;
+                        $color = UserTop::getColor($position);
+                        $amount = UserTop::getAmount($position);
+                        $items[$key]['items'][] = [
+                            'position' => $position,
+                            'color' => $color,
+                            'amount' => $amount,
+                            'steam_id' => $user->steam_id,
+                            'score' => $item->valueFormat(),
+                            'link' => "/servers/{$server->tag}/{$user->steam_id}",
+                            'username' => $user->username,
+                            'avatar' => $user->getAvatar(),
+                            'status' => $user->getStatus(),
+                        ];
+                    }
+                } else {
+                    /** @var Statistics[] $statistics */
+                    $statistics = Statistics::find()
+                                            ->andWhere(['key' => $key])
+                                            ->andWhere(['server_tag' => $server->tag])
+                                            ->andWhere(['wipe' => $wipe])
+                                            ->orderBy(['value' => SORT_DESC])
+                                            ->limit(3)
+                                            ->all();
+                    foreach ($statistics as $position => $item) {
+                        $color = UserTop::getColor($position);
+                        $amount = UserTop::getAmount($position);
+                        $user = $item->user;
+                        $items[$key]['items'][] = [
+                            'position' => $position,
+                            'color' => $color,
+                            'amount' => $amount,
+                            'steam_id' => $user->steam_id,
+                            'score' => Servers::getPlayTime($item->value),
+                            'link' => "/servers/{$server->tag}/{$user->steam_id}",
+                            'username' => $user->username,
+                            'avatar' => $user->getAvatar(),
+                            'status' => $user->getStatus(),
+                        ];
+                    }
                 }
             }
+        }
+
+        foreach ($items as &$item) {
+            $item['label'] = Yii::t('common', $item['label']);
         }
 
         Yii::$app->cache->set($cacheKey, $items, 7*24*60*60);
