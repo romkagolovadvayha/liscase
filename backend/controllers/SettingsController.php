@@ -108,4 +108,19 @@ class SettingsController extends Controller
             'model' => $model,
         ]);
     }
+
+    // Страница добавления новой настройки
+    public function actionUpdate($id)
+    {
+        $model = SiteSetting::findOne($id);
+
+        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            Yii::$app->session->setFlash('success', 'Настройка сохранена');
+            return $this->redirect(['index?category=' . $model->category]);
+        }
+
+        return $this->render('create', [
+            'model' => $model,
+        ]);
+    }
 }

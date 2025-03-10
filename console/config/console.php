@@ -80,10 +80,16 @@ $config['modules']['translateManager'] = [
             'table' => '{{%drop_type}}',
             'columns' => ['name'],
         ],
+        [
+            'connection' => 'db',
+            'table' => '{{%site_settings}}',
+            'columns' => ['value'],
+            'where' => ['is_translate = 1'],
+        ],
     ],
     'scanners' => [
         \common\components\scanners\ScannerTwigTemplate::class,
-        '\DemonDogSL\translateManager\services\scanners\ScannerDatabase',
+        common\components\scanners\ScannerDatabase::class,
         '\DemonDogSL\translateManager\services\scanners\ScannerPhpFunction',
         '\DemonDogSL\translateManager\services\scanners\ScannerPhpArray',
         '\DemonDogSL\translateManager\services\scanners\ScannerJavaScriptFunction',
