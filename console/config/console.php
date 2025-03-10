@@ -84,7 +84,7 @@ $config['modules']['translateManager'] = [
             'connection' => 'db',
             'table' => '{{%site_settings}}',
             'columns' => ['value'],
-            'where' => ['is_translate = 1'],
+            'where' => 'is_translate = 1',
         ],
     ],
     'scanners' => [
