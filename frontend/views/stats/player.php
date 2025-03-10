@@ -226,6 +226,15 @@ $kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam(
             'user' => $user,
         ]);?>
 
+        <?=$this->render('_player_stats_pie', [
+            'images' => $images,
+            'names' => $names,
+            'player' => $player,
+            'server' => $server,
+            'steamId' => $steamId,
+            'user' => $user,
+        ]);?>
+
         <?=$this->render('_player_stats_hunter', [
             'images' => $images,
             'names' => $names,
