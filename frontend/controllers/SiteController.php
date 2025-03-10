@@ -61,6 +61,8 @@ class SiteController extends WebController
     public function actionIndex()
     {
         $this->view->params['page'] = 'home';
+        $this->view->params['meta_description'] = Yii::$app->settings->get('site_description');
+        $this->view->params['meta_keywords']    = Yii::$app->settings->get('site_keywords');
         return $this->render('index');
     }
 

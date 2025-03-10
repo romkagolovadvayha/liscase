@@ -374,13 +374,12 @@ ORDER BY server_id, `key`, value DESC;
                     }
                 }
             }
+            Yii::$app->cache->set($cacheKey, $items, 7*24*60*60);
         }
 
         foreach ($items as &$item) {
             $item['label'] = Yii::t('common', $item['label']);
         }
-
-        Yii::$app->cache->set($cacheKey, $items, 7*24*60*60);
         return $items;
     }
 
@@ -438,7 +437,6 @@ ORDER BY server_id, `key`, value DESC;
         foreach ($items as &$item) {
             $item['label'] = Yii::t('common', $item['label']);
         }
-
         return $items;
     }
 

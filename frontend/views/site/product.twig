@@ -11,7 +11,7 @@
     {% if COUNT %}
         <p class="category-card__boost">x{{ COUNT }}</p>
     {% endif %}
-    <img class="category-card__image" src="{{ IMAGE }}" alt="" />
+    <img class="category-card__image" src="{{ IMAGE }}" alt="{{ t('database', NAME) }}" />
     <p class="category-card__title">{{ t('database', NAME) }}</p>
     <button class="button-teritiary" {% if BLOCKED %}disabled{% endif %}>
                 <span class="button__text">
