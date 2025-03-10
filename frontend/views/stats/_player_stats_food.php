@@ -15,7 +15,7 @@ foreach ($player as $item) {
     if (substr($item['key'], 0, 4) !== 'mod_') {
         continue;
     }
-    if (substr($item['key'], 0, 4) !== 'pie_') {
+    if (strpos($item['key'], 'pie') !== false) {
         continue;
     }
     $key = str_replace('mod_', '', $item['key']);
