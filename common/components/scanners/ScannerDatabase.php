@@ -46,7 +46,7 @@ class ScannerDatabase {
             ->from($tables['table']);
 
         if (!empty($tables['where'])) {
-            $dataQuery->andWhere($tables['where']);
+            $dataQuery->where($tables['where']);
         }
 
         $data = $dataQuery->createCommand(Yii::$app->{$tables['connection']})->queryAll();
