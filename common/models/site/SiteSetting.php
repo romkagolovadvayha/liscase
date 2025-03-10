@@ -36,6 +36,22 @@ class SiteSetting extends ActiveRecord
         ];
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'name' => Yii::t('common', 'Название'),
+            'category' => Yii::t('common', 'Категория'),
+            'type' => Yii::t('common', 'Тип'),
+            'value' => Yii::t('common', 'Значение по умолчанию'),
+            'code' => Yii::t('common', 'Короткий системный код'),
+            'is_translate' => Yii::t('common', 'Переводить на другие языки?'),
+        ];
+    }
+
     // Логика для обработки типов данных, например для файлов или чисел
     public function setValue($value)
     {
