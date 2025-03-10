@@ -61,7 +61,7 @@ if (empty($items)) {
 
     <div class="page-stats__categories">
         <?php foreach ($items as $item): ?>
-            <div class="page-stats__category category">
+            <div class="page-stats__category category <?= $item['key'] ?>">
                 <h5 class="category__count-and-img">
                     <span><?= $item['desc'] ?></span>
                     <img src="<?= $item['image'] ?>" alt="<?= $item['name'] ?>" class="w-64 h-64 object-contain"/>
