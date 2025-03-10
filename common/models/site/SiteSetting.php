@@ -15,6 +15,7 @@ use yii\web\UploadedFile;
  * @property string $type
  * @property string $value
  * @property string $code
+ * @property bool   $is_translate
  */
 class SiteSetting extends ActiveRecord
 {
@@ -30,6 +31,7 @@ class SiteSetting extends ActiveRecord
             [['name', 'category'], 'string', 'max' => 255],
             [['type'], 'in', 'range' => ['text', 'color', 'image', 'number', 'checkbox', 'longtext']],
             [['value'], 'string'],
+            [['is_translate'], 'integer'],
             [['code'], 'string', 'max' => 255],
         ];
     }
