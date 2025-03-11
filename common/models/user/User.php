@@ -185,6 +185,7 @@ class User extends ActiveRecord implements IdentityInterface
             'ip'          => Yii::t('common', 'IP игрока'),
             'ping'          => Yii::t('common', 'Ping игрока'),
             'promocode'          => Yii::t('common', 'Промокод'),
+            'last_visit_server_at'          => Yii::t('common', 'Был онлайн'),
         ];
     }
 
