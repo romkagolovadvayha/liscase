@@ -109,14 +109,6 @@ $kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam(
                'user' => $user,
            ]);?>
        </div>
-        <?=$this->render('_player_stats_hits', [
-            'images' => $images,
-            'names' => $names,
-            'player' => $player,
-            'server' => $server,
-            'steamId' => $steamId,
-            'user' => $user,
-        ]);?>
     </div>
 
     <div class="flex flex-column gap-x-12 gap-y-12">

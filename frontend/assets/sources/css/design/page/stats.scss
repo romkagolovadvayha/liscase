@@ -116,6 +116,12 @@
         @extend .w-full;
       }
     }
+    @media (max-width: 1024px) {
+      flex-wrap: wrap;
+      & > .w-50p {
+        @extend .w-full;
+      }
+    }
   }
   &__block-without-hover {
     @extend .bg-background-secondary, .px-20, .py-20, .transition-all;
@@ -126,7 +132,25 @@
   }
   &__awards {
     @extend .grid, .justify-flex-start, .gap-x-8, .gap-y-8, .w-full;
-    grid-template-columns: repeat(4, minmax(78px, 1fr));
+    grid-template-columns: repeat(8, minmax(78px, 1fr));
+    @container (max-width: 782px) {
+      grid-template-columns: repeat(4, minmax(78px, 1fr));
+    }
+    @media (max-width: 754px) {
+      grid-template-columns: repeat(4, minmax(78px, 1fr));
+    }
+    @container (max-width: 430px) {
+      grid-template-columns: repeat(3, minmax(78px, 1fr));
+    }
+    @media (max-width: 430px) {
+      grid-template-columns: repeat(3, minmax(78px, 1fr));
+    }
+    @container (max-width: 330px) {
+      grid-template-columns: repeat(2, minmax(78px, 1fr));
+    }
+    @media (max-width: 330px) {
+      grid-template-columns: repeat(2, minmax(78px, 1fr));
+    }
     & .award {
       @extend .flex,
       .px-8,
