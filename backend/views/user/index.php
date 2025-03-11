@@ -78,12 +78,7 @@ $this->title = Yii::t('common', 'Пользователи');
             'class' => \common\components\grid\DateColumn::class,
         ],
         [
-            'attribute'       => 'banned_at',
-            'options'   => ['width' => '200'],
-            'class' => \common\components\grid\DateColumn::class,
-        ],
-        [
-            'attribute'       => 'unbanned_at',
+            'attribute'       => 'last_visit_server_at',
             'options'   => ['width' => '200'],
             'class' => \common\components\grid\DateColumn::class,
         ],

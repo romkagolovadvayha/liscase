@@ -92,7 +92,7 @@ class UserSearch extends User
         return new ActiveDataProvider([
             'query' => $query,
             'sort'  => [
-                'defaultOrder' => ['id' => SORT_DESC],
+                'defaultOrder' => ['last_visit_server_at' => SORT_ASC],
             ],
         ]);
     }
