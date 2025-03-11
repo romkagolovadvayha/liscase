@@ -1,7 +1,7 @@
 <section class="stats-aside__stat-block stat-block">
     <h4 class="stat-block__title">{{ t('common', 'Прямой эфир') }}</h4>
 
-    <ul class="nav nav-tabs mb-20" id="myTab" role="tablist">
+    <ul class="nav nav-tabs mb-20" role="tablist">
         {% for SERVER in SERVERS %}
         <li class="nav-item" role="presentation">
             <button class="nav-link{% if USER.SERVER_ACTIVE_ID == SERVER.id %} active{% endif %}" id="{{ SERVER.tag }}-tab" data-bs-toggle="tab" data-bs-target="#live_{{ SERVER.tag }}" type="button" role="tab" aria-controls="{{ SERVER.tag }}-tab-pane" aria-selected="{% if SERVER_ACTIVE_ID == SERVER.id %}true{% else %}false{% endif %}">

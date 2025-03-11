@@ -9,7 +9,22 @@ use common\models\user\UserTop;
 /** @var $SETTINGS */
 
 $top = [];
+$serversList = [];
 foreach ($servers as $server) {
+    if ($userData['SERVER_ACTIVE_ID'] != $server->id) {
+        continue;
+    }
+    $serversList[] = $server;
+    $top[$server->id] = UserTop::getUserTops($server, $server->currentWipe());
+}
+foreach ($servers as $i => $server) {
+    if ($userData['SERVER_ACTIVE_ID'] == $server->id) {
+        continue;
+    }
+    if ($i > 3) {
+        break;
+    }
+    $serversList[] = $server;
     $top[$server->id] = UserTop::getUserTops($server, $server->currentWipe());
 }
 
@@ -20,7 +35,7 @@ $bronzeAmount = Yii::$app->settings->get('tops_bronze_amount');
 ?>
 
 <?=Yii::$app->view->render('top.twig', [
-    'SERVERS' => $servers,
+    'SERVERS' => $serversList,
     'PROJECT_STATS' => $PROJECT_STATS,
     'USER' => $userData,
     'TOP' => $top,
