@@ -16,14 +16,14 @@ foreach ($servers as $server) {
     }
     $serversList[] = $server;
 }
+$count = 0;
 foreach ($servers as $i => $server) {
     if ($userData['SERVER_ACTIVE_ID'] == $server->id) {
         continue;
     }
-    if ($i > 3) {
-        break;
-    }
+    if ($count > 3) break;
     $serversList[] = $server;
+    $count++;
 }
 ?>
 

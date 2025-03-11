@@ -17,15 +17,15 @@ foreach ($servers as $server) {
     $serversList[] = $server;
     $top[$server->id] = UserTop::getUserTops($server, $server->currentWipe());
 }
+$count = 0;
 foreach ($servers as $i => $server) {
     if ($userData['SERVER_ACTIVE_ID'] == $server->id) {
         continue;
     }
-    if ($i > 3) {
-        break;
-    }
+    if ($count > 3) break;
     $serversList[] = $server;
     $top[$server->id] = UserTop::getUserTops($server, $server->currentWipe());
+    $count++;
 }
 
 $goldAmount = Yii::$app->settings->get('tops_gold_amount');
