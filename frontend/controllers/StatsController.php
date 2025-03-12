@@ -59,8 +59,10 @@ class StatsController extends WebController
         }
 
         $this->view->title                      = Yii::t('common', 'Статистика сервера') . ' ' . Yii::t('database', $server->name);
-        $this->view->params['meta_description'] = Yii::t('common', "Статистика игроков Rust.");
-        $this->view->params['meta_keywords']    = Yii::t('common', "стастистика игроков, статистика сервера, статистика rust");
+        $this->view->params['meta_description'] = Yii::t('common', "Топы игроков на сервере {PARAM_SERVER_NAME_SHORT} Rust! Узнайте, кто стал Лучшим рейдером, Лучшим киллером, Лучшим мирным игроком, Топом по онлайну, Лучшим фармером, Лучшим рыбаком, Лучшим охотником и Лучшим фермером. Смотрите рейтинги, следите за лидерами и вдохновляйтесь их достижениями на сервере {PARAM_SERVER_NAME} Rust!", [
+            'PARAM_SERVER_NAME' => Yii::t('database', $server->name),
+            'PARAM_SERVER_NAME_SHORT' => Yii::t('database', $server->monitoring_name),
+        ]);
         $this->view->params['page'] = 'stats';
 
         $user = Yii::$app->user->identity;
@@ -144,9 +146,18 @@ class StatsController extends WebController
         /** @var User $_user */
         $_user = User::find()->andWhere(['steam_id' => $steamId])->one();
 
+        if (empty($_user)) {
+            throw new NotFoundHttpException(Yii::t('common', 'Пользователь не найден или статистика еще не подгрузилась!'));
+        }
+
         $this->view->params['page'] = 'stats';
         $this->view->params['_user'] = $_user;
         $this->view->params['_server'] = $server;
+        $this->view->params['meta_description'] = Yii::t('common', "Статистика игрока {PARAM_USERNAME} на сервере {PARAM_SERVER_NAME_SHORT} Rust. Узнайте всё о его успехах: количество убийств (килов), смертей, собранных ресурсов (фарм), участие в команде и другие ключевые показатели. Следите за прогрессом и достижениями игрока на сервере {PARAM_SERVER_NAME} Rust!", [
+            'PARAM_SERVER_NAME' => Yii::t('database', $server->name),
+            'PARAM_SERVER_NAME_SHORT' => Yii::t('database', $server->monitoring_name),
+            'PARAM_USERNAME' => Yii::t('database', $_user->username),
+        ]);
 
         return $this->render('player', [
             'server'  => $server,

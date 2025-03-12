@@ -23,8 +23,12 @@ if (!Yii::$app->user->isGuest) {
 $this->registerCsrfMetaTags();
 $this->registerMetaTag(['charset' => Yii::$app->charset], 'charset');
 $this->registerMetaTag(['name' => 'viewport', 'content' => 'width=device-width, initial-scale=1, shrink-to-fit=no']);
-$this->registerMetaTag(['name' => 'description', 'content' => $this->params['meta_description'] ?? '']);
-$this->registerMetaTag(['name' => 'keywords', 'content' => $this->params['meta_keywords'] ?? '']);
+if (!empty($this->params['meta_description'])) {
+    $this->registerMetaTag(['name' => 'description', 'content' => $this->params['meta_description'] ?? '']);
+}
+if (!empty($this->params['meta_keywords'])) {
+    $this->registerMetaTag(['name' => 'keywords', 'content' => $this->params['meta_keywords'] ?? '']);
+}
 $this->registerLinkTag(['rel' => 'icon', 'type' => 'image/x-icon', 'href' => Yii::$app->settings->get('design_favicon')]);
 
 $baseUrl = Yii::$app->settings->get('site_domain');
@@ -86,7 +90,11 @@ if (Yii::$app->user->isGuest || !$userData['blocked']) {
     ]);
 }
 
+$link = $_SERVER['REQUEST_SCHEME'] . '://' . Yii::$app->settings->get('site_domain') . $_SERVER['REQUEST_URI'];
+$linkEn = $_SERVER['REQUEST_SCHEME'] . '://' . 'en.' . Yii::$app->settings->get('site_domain') . $_SERVER['REQUEST_URI'];
+
 ?>
+
 <?php $this->beginPage() ?>
 <?=Yii::$app->view->render('main.twig', [
     'title' => Html::encode($this->title),
@@ -96,5 +104,7 @@ if (Yii::$app->user->isGuest || !$userData['blocked']) {
     'head' => '<![CDATA[YII-BLOCK-HEAD]]>',
     'lang' => $lang,
     'body' => $body,
+    'link' => $link,
+    'linkEn' => $linkEn,
 ]);?>
 <?php $this->endPage() ?>

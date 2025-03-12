@@ -231,8 +231,13 @@ class SiteController extends WebController
 
     public function actionRobots()
     {
-        Yii::$app->response->headers->set('Content-Type','application/txt; charset=UTF-8');
-        return $this->renderPartial('robots');
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        Yii::$app->response->headers->set('Content-Type', 'text/plain; charset=UTF-8');
+
+        $robotsTxt = Yii::$app->settings->get('site_robots');
+        $robotsTxt = str_replace('{HOME_PAGE}', Yii::$app->params['homePage'], $robotsTxt);
+
+        return $robotsTxt;
     }
 
     public function actionMute($steamId, $serverTag, $reason)

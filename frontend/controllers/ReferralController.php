@@ -35,6 +35,9 @@ class ReferralController extends WebController
     public function actionIndex()
     {
         $this->view->params['page'] = 'referral';
+
+        $this->view->params['meta_description'] = Yii::t('common', "Зарабатывайте, играя на наших серверах Rust! Узнайте всё о реферальной системе: привлекайте новых игроков, получайте бонусы и уникальные награды. Стримеры и блогеры — получите специальные условия для монетизации вашего контента. Начните зарабатывать уже сегодня, играя в Rust на наших серверах!");
+
         return $this->render('referral');
     }
 

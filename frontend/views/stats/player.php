@@ -17,10 +17,6 @@ use yii\web\View;
 use yii\web\JsExpression;
 use common\models\statistics\Teams;
 
-if (empty($user)) {
-    throw new NotFoundHttpException(Yii::t('common', 'Пользователь не найден или статистика еще не подгрузилась!'));
-}
-
 $this->title = $user->username . " " . Yii::t('common', 'статистика на сервере') . " " . Yii::t('database', $server->name);
 $this->params['page'] = 'stats';
 
