@@ -33,8 +33,7 @@ $silverAmount = Yii::$app->settings->get('tops_silver_amount');
 $silverAmount = Yii::$app->settings->get('tops_silver_amount');
 $bronzeAmount = Yii::$app->settings->get('tops_bronze_amount');
 ?>
-find /prostoj.store/frontend/web/uploads/drop -name "*.png" -exec cwebp -q 85 {} -o {} \;
-find /prostoj.store/frontend/web/uploads/avatar -name "*.png" -exec cwebp -q 85 {} -o {} \;
+
 <?=Yii::$app->view->render('top.twig', [
     'SERVERS' => $serversList,
     'PROJECT_STATS' => $PROJECT_STATS,
