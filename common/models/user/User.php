@@ -1073,8 +1073,6 @@ class User extends ActiveRecord implements IdentityInterface
                           ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
                           ->orderBy(['sort' => SORT_ASC])
                           ->all();
-        $userData['SERVER_ACTIVE_ID'] = $servers[0]->id;
-        $userData['SERVER_ACTIVE_TAG'] = $servers[0]->tag;
         if (!Yii::$app->user->isGuest) {
             $pBalance = Yii::$app->user->identity->getPersonalBalance();
             $balance    = $pBalance->balanceCeil;
@@ -1097,6 +1095,10 @@ class User extends ActiveRecord implements IdentityInterface
                     }
                 }
             }
+        }
+        if (empty($userData['SERVER_ACTIVE_ID'])) {
+            $userData['SERVER_ACTIVE_ID'] = $servers[0]->id;
+            $userData['SERVER_ACTIVE_TAG'] = $servers[0]->tag;
         }
 
         return $userData;
