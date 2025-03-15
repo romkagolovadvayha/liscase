@@ -663,7 +663,7 @@ class User extends ActiveRecord implements IdentityInterface
         if (empty($this->userProfile)) {
             return '';
         }
-        return Yii::$app->params['cdnUrl'] . $this->userProfile->avatar;
+        return Yii::$app->settings->get('site_cdnUrl') . $this->userProfile->avatar;
     }
 
     public function getStatus() {

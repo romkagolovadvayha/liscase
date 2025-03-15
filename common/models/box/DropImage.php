@@ -42,7 +42,7 @@ class DropImage extends ActiveRecord
 
     public function getImagePubUrl($cdn = true) {
         if ($cdn) {
-            return Yii::$app->params['cdnUrl'] . "/uploads" . $this->image;
+            return Yii::$app->settings->get('site_cdnUrl') . "/uploads" . $this->image;
         }
         return "/uploads" . $this->image;
     }

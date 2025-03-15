@@ -24,7 +24,7 @@ $this->title = Yii::t('common', "Активация бонусной прогр�
         <p class="how-works__p"><?=Yii::t('common', "Скрап в Discord {link_rustru} выдается за активность на наших серверах, подробнее читайте ниже в разделе вопрос/ответ.", [
                 'link_rustru' => '<a href="https://discord.gg/rust-ru" target="_blank">RustRu</a>'
             ])?></p>
-        <p class="how-works__p"><a href="https://discord.gg/rust-ru" target="_blank"><img src="<?=Yii::$app->params['cdnUrl']?>/images/rustru.png"/></a></p>
+        <p class="how-works__p"><a href="https://discord.gg/rust-ru" target="_blank"><img src="<?=Yii::$app->settings->get('site_cdnUrl')?>/images/rustru.png"/></a></p>
 
         <div class="trade_link_form">
             <?php if (Yii::$app->user->isGuest || !$user->rustru_activated): ?>
