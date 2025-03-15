@@ -262,7 +262,7 @@ class ApiController extends WebController
 
         $result = [];
         $data = [];
-        $images = Drop::productsImages();
+        $images = Drop::productsImagesShop();
         foreach ($userDrops as $userDrop) {
             $item = [
                 'id' => $userDrop->id,
