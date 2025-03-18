@@ -92,8 +92,20 @@ class WipeController extends Controller
         $server->map_id = $map->id;
         $server->save(false);
 
+        Yii::$app->session->addFlash('success', 'Карта успешно зафиксирована!');
+        return $this->redirect('index');
+    }
+
+    public function actionGenerateMap($id)
+    {
+        $cacheKey = "WIPE_actionGenerateMap_{$id}";
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        Yii::$app->cache->set($cacheKey, 1, 5*60);
+
         \Yii::$app->queueProcess->push(new MapGenerateJob(['serverId'  => $id]));
-        Yii::$app->session->addFlash('success', 'Карта успешно зафиксирована, будут сгенерированы новые карты!');
+        Yii::$app->session->addFlash('success', 'Генерирация запущена!');
         return $this->redirect('index');
     }
 

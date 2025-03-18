@@ -22,6 +22,7 @@ $this->title = 'Добавить настройку';
                                                    ]) ?>
     <?= $form->field($model, 'value')->textInput() ?>
     <?= $form->field($model, 'code')->textInput() ?>
+    <?= $form->field($model, 'is_translate')->checkbox() ?>
 
     <div class="form-group">
         <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>

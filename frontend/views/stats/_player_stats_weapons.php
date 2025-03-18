@@ -34,6 +34,10 @@ foreach ($kills as $item) {
         'count'  => $item['count'],
     ];
 }
+
+if (empty($weapons)) {
+    return;
+}
 ?>
 <!-- Орудия убийства -->
 <section class="page-stats__block-without-hover">

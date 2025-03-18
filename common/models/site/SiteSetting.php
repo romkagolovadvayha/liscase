@@ -15,6 +15,7 @@ use yii\web\UploadedFile;
  * @property string $type
  * @property string $value
  * @property string $code
+ * @property bool   $is_translate
  */
 class SiteSetting extends ActiveRecord
 {
@@ -30,7 +31,24 @@ class SiteSetting extends ActiveRecord
             [['name', 'category'], 'string', 'max' => 255],
             [['type'], 'in', 'range' => ['text', 'color', 'image', 'number', 'checkbox', 'longtext']],
             [['value'], 'string'],
+            [['is_translate'], 'integer'],
             [['code'], 'string', 'max' => 255],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'name' => Yii::t('common', 'Название'),
+            'category' => Yii::t('common', 'Категория'),
+            'type' => Yii::t('common', 'Тип'),
+            'value' => Yii::t('common', 'Значение по умолчанию'),
+            'code' => Yii::t('common', 'Короткий системный код'),
+            'is_translate' => Yii::t('common', 'Переводить на другие языки?'),
         ];
     }
 

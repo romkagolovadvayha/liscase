@@ -17,7 +17,7 @@ foreach ($player as $item) {
         continue;
     }
     $key = str_replace('mod_', '', $item['key']);
-    if (strpos($key, 'tea') === false) {
+    if (strpos($key, 'pie') === false) {
         continue;
     }
     $items[] = Statistics::getFoodItem($images, $names, $player, $key);
@@ -41,11 +41,11 @@ if (empty($items)) {
 <section class="page-stats__block-without-hover">
     <header class="flex items-center justify-space-between mb-24 transition-all">
         <h4 class="flex items-center gap-x-12">
-            <?=Yii::t('common', 'Чаепитие')?><span
+            <?=Yii::t('common', 'Пироги')?><span
                     class="icons icons_24px icons_24px_info icons_hover"
                     data-bs-toggle="tooltip"
                     data-bs-placement="right"
-                    data-bs-title="<?=Yii::t('common', 'В этом блоке отображается сколько чая выпил игрок за вайп.')?>"
+                    data-bs-title="<?=Yii::t('common', 'В этом блоке отображается сколько пирогов сьел игрок за вайп.')?>"
             ></span>
         </h4>
 
@@ -61,7 +61,7 @@ if (empty($items)) {
 
     <div class="page-stats__categories">
         <?php foreach ($items as $item): ?>
-            <div class="page-stats__category category <?= $item['key'] ?>">
+            <div class="page-stats__category category">
                 <h5 class="category__count-and-img">
                     <span><?= $item['desc'] ?></span>
                     <img src="<?= $item['image'] ?>" alt="<?= $item['name'] ?>" class="w-64 h-64 object-contain"/>

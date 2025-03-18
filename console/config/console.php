@@ -15,15 +15,14 @@ $config['components']['request'] = ['class' => 'console\components\Request'];
 $config['modules']['translateManager'] = [
     'class'                   => \DemonDogSL\translateManager\Module::class,
     'root'                    => [
-        '@backend',
         '@frontend',
         '@common',
-        '@console',
     ],
-    'scanRootParentDirectory' => true,
-    'ignoredCategories'       => ['yii', 'kvdrp'],
-    'ignoredItems'            => ['assets', 'vendor'],
-    'layout'                  => false,
+//    'scanRootParentDirectory' => true,
+//    'ignoredCategories'       => ['yii', 'kvdrp'],
+//    'ignoredItems'            => ['assets', 'vendor'],
+//    'layout'                  => false,
+    'patterns'                  => ['*.php', '*.js', '*.twig'],
     'allowedIPs'              => ['*'],
     'tables' => [
         [
@@ -54,7 +53,7 @@ $config['modules']['translateManager'] = [
         [
             'connection' => 'db',
             'table' => '{{%servers}}',
-            'columns' => ['name', 'description', 'rules'],
+            'columns' => ['name', 'description', 'rules', 'monitoring_name', 'monitoring_description'],
         ],
         [
             'connection' => 'db',
@@ -66,11 +65,11 @@ $config['modules']['translateManager'] = [
             'table' => '{{%blog_category}}',
             'columns' => ['name', 'description', 'keywords'],
         ],
-        [
-            'connection' => 'db',
-            'table' => '{{%comment}}',
-            'columns' => ['content'],
-        ],
+//        [
+//            'connection' => 'db',
+//            'table' => '{{%comment}}',
+//            'columns' => ['content'],
+//        ],
         [
             'connection' => 'db',
             'table' => '{{%task}}',
@@ -83,12 +82,14 @@ $config['modules']['translateManager'] = [
         ],
         [
             'connection' => 'db',
-            'table' => '{{%profit}}',
-            'columns' => ['comment'],
+            'table' => '{{%site_settings}}',
+            'columns' => ['value'],
+            'where' => 'is_translate = 1',
         ],
     ],
     'scanners' => [
-        '\DemonDogSL\translateManager\services\scanners\ScannerDatabase',
+        \common\components\scanners\ScannerTwigTemplate::class,
+        common\components\scanners\ScannerDatabase::class,
         '\DemonDogSL\translateManager\services\scanners\ScannerPhpFunction',
         '\DemonDogSL\translateManager\services\scanners\ScannerPhpArray',
         '\DemonDogSL\translateManager\services\scanners\ScannerJavaScriptFunction',

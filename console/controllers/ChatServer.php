@@ -194,7 +194,7 @@ class ChatServer extends WebSocketServer
                $client->send(json_encode([
                     'type' => 'store.take',
                     'code' => 500,
-                    'message' => Yii::t('common', "Товар вам не пренадлежит!", [], $client->user->current_language),
+                    'message' => Yii::t('common', "Товар вам не принадлежит!", [], $client->user->current_language),
                     'id' => $model->id,
                ]));
                return;

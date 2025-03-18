@@ -40,6 +40,7 @@ class ServersController extends WebController
         $projectStats = \common\models\statistics\Statistics::projectStats();
         $this->view->title = Yii::t('common', 'Наши сервера Rust');
         $this->view->params['page'] = 'servers';
+        $this->view->params['meta_description'] = Yii::t('common', "Список всех наших серверов Rust с подробным описанием, датами вайпов и IP-адресами. Узнайте, когда следующий вайп, подключитесь к любимому серверу и начните играть уже сегодня!");
 
         return $this->render('servers-list.twig', [
             'SERVERS' => $servers,

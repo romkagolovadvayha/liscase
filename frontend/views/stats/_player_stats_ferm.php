@@ -21,6 +21,10 @@ $items = [
     ['key' => 'gathered_white.berry', 'name' => Yii::t('common', 'Белые ягоды'), 'score' => 0.5],
     ['key' => 'gathered_green.berry', 'name' => Yii::t('common', 'Зеленые ягоды'), 'score' => 0.5],
     ['key' => 'gathered_black.berry', 'name' => Yii::t('common', 'Черные ягоды'), 'score' => 1],
+    ['key' => 'gathered_orchid', 'name' => Yii::t('common', 'Орхидея'), 'score' => 0.3],
+    ['key' => 'gathered_rose', 'name' => Yii::t('common', 'Розы'), 'score' => 0.3],
+    ['key' => 'gathered_sunflower', 'name' => Yii::t('common', 'Подсолнух'), 'score' => 0.3],
+    ['key' => 'gathered_wheat', 'name' => Yii::t('common', 'Пшеница'), 'score' => 0.3],
 ];
 
 $fermers = [];

@@ -175,7 +175,7 @@ class ApiController extends WebController
         if (!empty($steam_id) && $steam_id != $userDrop->user->steam_id) {
             return [
                 'result' => 'fail',
-                'message' => "Товар вам не пренадлежит!",
+                'message' => "Товар вам не принадлежит!",
                 'code' => 107,
             ];
         }
@@ -262,7 +262,7 @@ class ApiController extends WebController
 
         $result = [];
         $data = [];
-        $images = Drop::productsImages();
+        $images = Drop::productsImagesShop();
         foreach ($userDrops as $userDrop) {
             $item = [
                 'id' => $userDrop->id,

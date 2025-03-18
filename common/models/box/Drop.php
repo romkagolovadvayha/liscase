@@ -418,6 +418,19 @@ class Drop extends ActiveRecord
     }
 
     /**
+     * Получить URL изображения.
+     * Загружает и кэширует изображение, если оно не было загружено ранее.
+     */
+    public function imageShop() {
+        foreach ($this->dropImages as $item) {
+            if ($item->type === DropImage::TYPE_ORIG) {
+                return $item->getImagePubUrlShop();
+            }
+        }
+        return null;
+    }
+
+    /**
      * Получить второй URL изображения.
      * Кэширует значение, чтобы избежать повторных запросов.
      */
@@ -444,6 +457,26 @@ class Drop extends ActiveRecord
 
         foreach ($drops as $item) {
             $result[$item->id] = $item->image();
+        }
+
+        Yii::$app->cache->set($cacheKey, $result, 30*60);
+        return $result;
+    }
+
+    public static function productsImagesShop($update = false) {
+        $cacheKey = 'Drop_productsImagesShop';
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $result = [];
+
+        /** @var Drop[] $drops */
+        $drops = Drop::find()
+                     ->all();
+
+        foreach ($drops as $item) {
+            $result[$item->id] = $item->imageShop();
         }
 
         Yii::$app->cache->set($cacheKey, $result, 30*60);

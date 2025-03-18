@@ -1,7 +1,7 @@
 <section class="stats-aside__stat-block stat-block">
     <h4 class="stat-block__title">{{ t('common', 'Топ игроков') }}</h4>
 
-    <ul class="nav nav-tabs mb-20" id="myTab" role="tablist">
+    <ul class="nav nav-tabs mb-20" role="tablist">
         {% for SERVER in SERVERS %}
             <li class="nav-item" role="presentation">
                 <button class="nav-link{% if USER.SERVER_ACTIVE_ID == SERVER.id %} active{% endif %}" id="{{ SERVER.tag }}-top-tab" data-bs-toggle="tab" data-bs-target="#top_{{ SERVER.tag }}" type="button" role="tab" aria-controls="{{ SERVER.tag }}-top-tab-pane" aria-selected="{% if SERVER_ACTIVE_ID == SERVER.id %}true{% else %}false{% endif %}">
@@ -17,12 +17,12 @@
                 {% for LIST in TOP[SERVER.id] %}
                     <li class="gamer">
                         <img src="{{ LIST['items'][0].avatar }}" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 border-1 border-solid border-system-colors-gold object-cover" alt="{{ ITEM.username }}">
-                        <div class="block w-full">
+                        <div class="block w-full relative z-1">
                             <p class="p2 flex items-center justify-space-between">
                                 <span class="text-text-secondary">{{ LIST['label'] }}</span>
                                 <span class="text-text-main">{{ LIST['items'][0].score }}</span>
                             </p>
-                            <a href="" class="link">{{ LIST['items'][0].username }}</a>
+                            <a href="{{ LIST['items'][0].link }}" class="link">{{ LIST['items'][0].username }}</a>
                         </div>
                     </li>
                 {% endfor %}

@@ -4,7 +4,7 @@
         <span class="p1 flex items-center gap-x-4">
               <span class="icons icons_indicator mr-4"></span>
               <span class="font-bold text-primary-colors-secondary online_counter">{{ PROJECT_STATS.online|number_format(0, '', ' ') }}</span>
-              <span class="text-text-secondary">{{ t('common', 'онлайн') }}</span>
+              <span class="text-text-secondary text-lowercase">{{ t('common', 'Онлайн') }}</span>
         </span>
     </h4>
 
@@ -18,7 +18,7 @@
 
             <p class="server__link">
                 <a href="/servers/{{ SERVER.tag }}">{{ t('database', SERVER.monitoring_description) }}</a>
-                <span>{{ t('common', 'вайп') }} <span class="server_timer" data-time="{{ SERVER.nextWipeTime() }}">{{ SERVER.next_wipe }}</span></span>
+                <span class="text-lowercase">{{ t('common', 'Вайп') }} <span class="server_timer" data-time="{{ SERVER.nextWipeTime() }}">{{ SERVER.next_wipe }}</span></span>
             </p>
 
             <div class="server__progress-wrapper">

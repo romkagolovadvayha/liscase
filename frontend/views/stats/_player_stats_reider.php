@@ -24,6 +24,7 @@ $items = [
     ['key' => 'grenade.flashbang.deployed', 'score' => 0],
     ['key' => 'grenade.supplysignal.deployed', 'score' => 0],
     ['key' => 'grenade.smoke.deployed', 'score' => 0],
+    ['key' => 'grenade.bee.deployed', 'score' => 0],
     ['key' => '40mm_grenade_he', 'score' => 0],
     ['key' => '40mm_grenade_smoke', 'score' => 0],
     ['key' => 'rocket_heatseeker', 'score' => 0],

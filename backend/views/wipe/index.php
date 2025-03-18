@@ -58,6 +58,15 @@ $this->title = Yii::t('common', 'Вайп');
                     ['class' => 'btn' . $disabled, 'disabled' => true]); ?>
         <?php endforeach; ?>
     </div>
+    <div style="margin-top: 10px;">
+        <h3>Генерация новых карт</h3>
+        <?php foreach ($servers as $server): ?>
+        <?php $disabled = Yii::$app->cache->get("WIPE_actionGenerateMap_{$server->id}") ? ' btn-default disabled' : ' btn-success' ?>
+        <?= Html::a($server->name,
+                    '/wipe/generate-map?id=' . $server->id,
+                    ['class' => 'btn' . $disabled, 'disabled' => true]); ?>
+        <?php endforeach; ?>
+    </div>
     <hr>
     <div style="margin-top: 10px;">
         <h3>Обнулить промокод</h3>

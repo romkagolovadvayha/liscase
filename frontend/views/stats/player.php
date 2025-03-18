@@ -17,10 +17,6 @@ use yii\web\View;
 use yii\web\JsExpression;
 use common\models\statistics\Teams;
 
-if (empty($user)) {
-    throw new NotFoundHttpException(Yii::t('common', 'Пользователь не найден или статистика еще не подгрузилась!'));
-}
-
 $this->title = $user->username . " " . Yii::t('common', 'статистика на сервере') . " " . Yii::t('database', $server->name);
 $this->params['page'] = 'stats';
 
@@ -109,14 +105,6 @@ $kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam(
                'user' => $user,
            ]);?>
        </div>
-        <?=$this->render('_player_stats_hits', [
-            'images' => $images,
-            'names' => $names,
-            'player' => $player,
-            'server' => $server,
-            'steamId' => $steamId,
-            'user' => $user,
-        ]);?>
     </div>
 
     <div class="flex flex-column gap-x-12 gap-y-12">
@@ -218,6 +206,15 @@ $kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam(
         </div>
 
         <?=$this->render('_player_stats_tea', [
+            'images' => $images,
+            'names' => $names,
+            'player' => $player,
+            'server' => $server,
+            'steamId' => $steamId,
+            'user' => $user,
+        ]);?>
+
+        <?=$this->render('_player_stats_pie', [
             'images' => $images,
             'names' => $names,
             'player' => $player,

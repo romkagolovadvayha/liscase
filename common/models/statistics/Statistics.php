@@ -356,6 +356,7 @@ class Statistics extends ActiveRecord
 
         $result['count'] = Statistics::getParam($player, 'mod_' . $key);
         $result['image'] = Statistics::getImage($images, $key);
+        $result['key'] = $key;
         $result['name'] = Statistics::getName($names, $key);
         $result['desc'] = number_format(Statistics::getParam($player, 'mod_' . $key), 0);
 

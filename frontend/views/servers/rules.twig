@@ -1,11 +1,11 @@
 <nav class="servers_navbar mb-24">
     <ul class="servers_navbar_nav">
         {% for ITEM in SERVERS %}
-        <li>
-            <a href="{{ ITEM.getLink('rules') }}" class="servers_navbar_nav_item{% if ITEM.tag == SERVER.tag %} active{% endif %}">
-                {{ t('database', ITEM.monitoring_name) }}
-            </a>
-        </li>
+            <li>
+                <a href="{{ ITEM.getLink('rules') }}" class="servers_navbar_nav_item{% if ITEM.tag == SERVER.tag %} active{% endif %}">
+                    {{ t('database', ITEM.monitoring_name) }}
+                </a>
+            </li>
         {% endfor %}
     </ul>
 </nav>
@@ -60,24 +60,24 @@
                 <li>{{ t('common', 'Запрещен стримснайп официальных медиа проекта - использование игровой информации, которая была получена на трансляции другого игрока или целенаправленное преследование игрока, ведущего трансляцию.') }} <span class="rules_punishment">[kick \ ban]</span></li>
                 <li>{{ t('common', 'Запрещена травля отдельных лиц и целенаправленное домогательство | преследование личности игрока и публичное раскрытие личных данных') }} <span class="rules_punishment">[mute 7d \ ban 7d]</span></li>
                 <li>{{ t('common', 'Запрещено целенаправленно абузить топ игроков для получения выгоды. (договорённость нескольких игроков для набора убийств и смертей, набивание смертей на гантрапах, турелях и т.п., тушение сачелей водой и т.д.) АФК, убийство ботов, фарм животных - не абузится') }} <span class="rules_punishment">[{{ t('common', 'аннулирование статистики') }}]</span></li>
-                <li>{{ t('common', 'Все проверки проходят через AnyDesk, отказ будет приравниваться к отказу от проверки') }} <span class="rules_punishment">[ban]</span></li>
-                <li>{{ t('common', 'Запрещено ставить одинаковые ники, в связи с путанницей игроков') }} <span class="rules_punishment">[на усмотрение администрации]</span></li>
+                <li>{{ t('common', 'Все проверки проходят через AnyDesk и Discord, отказ будет приравниваться к отказу от проверки') }} <span class="rules_punishment">[ban]</span></li>
+                <li>{{ t('common', 'Запрещено ставить одинаковые ники, в связи с путанницей игроков') }} <span class="rules_punishment">[{{ t('common', 'на усмотрение администрации') }}]</span></li>
             </ol>
         </li>
         {% if SERVER.team_limit %}
-        <li class="not_num">
+            <li class="not_num">
             <span class="rules_title">
                 <span class="rules_title_icon"><i class="fas fa-user-plus"></i></span>
                 <span>{{ t('common', 'Правила лимита игроков в команде') }}</span>
             </span>
-            <ol>
-                <li>{{ t('common', 'Запрещено кооперироваться больше {PARAMS_LIMIT_PEOPLE} людей. Исключением считается: сейв зона.', {'PARAMS_LIMIT_PEOPLE': SERVER.team_limit}) }} <span class="rules_punishment">[{{ t('common', 'предупреждение') }} \ {{ t('common', 'ban до конца вайпа') }}]</span></li>
-                <li>{{ t('common', 'Запрещено соседям защищать друг друга при рейде или перестрелке, чем разрешено правилами сервера.') }} <span class="rules_punishment">[{{ t('common', 'предупреждение') }} \ {{ t('common', 'ban до конца вайпа') }}]</span></li>
-                <li>{{ t('common', 'Смена членов команды не чаще, чем раз в сутки') }} <span class="rules_punishment">[{{ t('common', 'предупреждение') }} \ {{ t('common', 'ban до конца вайпа') }}]</span></li>
-                <li>{{ t('common', 'Запрещены альянсы игроков, если их общее количество превышает {PARAMS_LIMIT_PEOPLE} человека', {'PARAMS_LIMIT_PEOPLE': SERVER.team_limit}) }} <span class="rules_punishment">[{{ t('common', 'предупреждение') }} \ {{ t('common', 'ban до конца вайпа') }}]</span></li>
-                <li>{{ t('common', 'Заключение мира между собой, не убивать друг друга, обмен (кроме сейв-зоны), подсад и т.д') }} <span class="rules_punishment">[{{ t('common', 'предупреждение') }} \ {{ t('common', 'ban до конца вайпа') }}]</span></li>
-            </ol>
-        </li>
+                <ol>
+                    <li>{{ t('common', 'Запрещено кооперироваться больше {PARAMS_LIMIT_PEOPLE} людей. Исключением считается: сейв зона.', {'PARAMS_LIMIT_PEOPLE': SERVER.team_limit}) }} <span class="rules_punishment">[{{ t('common', 'предупреждение') }} \ {{ t('common', 'ban до конца вайпа') }}]</span></li>
+                    <li>{{ t('common', 'Запрещено соседям защищать друг друга при рейде или перестрелке, чем разрешено правилами сервера.') }} <span class="rules_punishment">[{{ t('common', 'предупреждение') }} \ {{ t('common', 'ban до конца вайпа') }}]</span></li>
+                    <li>{{ t('common', 'Смена членов команды не чаще, чем раз в сутки') }} <span class="rules_punishment">[{{ t('common', 'предупреждение') }} \ {{ t('common', 'ban до конца вайпа') }}]</span></li>
+                    <li>{{ t('common', 'Запрещены альянсы игроков, если их общее количество превышает {PARAMS_LIMIT_PEOPLE} человека', {'PARAMS_LIMIT_PEOPLE': SERVER.team_limit}) }} <span class="rules_punishment">[{{ t('common', 'предупреждение') }} \ {{ t('common', 'ban до конца вайпа') }}]</span></li>
+                    <li>{{ t('common', 'Заключение мира между собой, не убивать друг друга, обмен (кроме сейв-зоны), подсад и т.д') }} <span class="rules_punishment">[{{ t('common', 'предупреждение') }} \ {{ t('common', 'ban до конца вайпа') }}]</span></li>
+                </ol>
+            </li>
         {% endif %}
         <li class="not_num rules_commands">
             <span class="rules_title">

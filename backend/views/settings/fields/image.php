@@ -9,7 +9,7 @@ use common\models\site\SiteSetting;
 
 <div class="setting_items_item_block">
     <span class="setting_items_item_block_name">
-        <span><?= Html::encode($item->name) ?></span>
+        <span><?= Html::encode($item->name) ?> <a href="/settings/update?id=<?=$item->id?>"><i class="fas fa-pen"></i></a></span>
         <span class="setting_items_item_block_code"><?=$item->category?>_<?=$item->code?></span>
     </span>
     <?php if (!empty($item->value)): ?>

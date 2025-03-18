@@ -49,25 +49,10 @@ $this->title = Yii::t('common', 'Пользователи');
             },
         ],
         [
-            'attribute' => 'ref_code',
-            'label'     => 'Реф.код',
-            'options'   => ['width' => '100'],
-            'format'    => 'raw',
-            'value'          => function (UserSearch $model) {
-                $isAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
-                $isModerator = Yii::$app->user->can(Role::ROLE_MODERATOR);
-                if (!$isAdmin && !$isModerator) {
-                    return $model->ref_code;
-                }
-                $url = \yii\helpers\Url::to(['/user/profile', 'userId' => $model->id]);
-                return Html::a($model->ref_code, $url);
-            },
-        ],
-        [
             'attribute'       => 'status',
             'options'   => ['width' => '120'],
             'filterType'  => GridView::FILTER_SELECT2,
-            'filter'          => \common\models\user\User::getStatusList(),
+            'filter'          => \yii\helpers\ArrayHelper::merge(['' => 'Все'], \common\models\user\User::getStatusList()),
             'value'           => function (UserSearch $model) {
                 $statusList = \common\models\user\User::getStatusList();
                 return \yii\helpers\ArrayHelper::getValue($statusList, $model->status);
@@ -78,32 +63,9 @@ $this->title = Yii::t('common', 'Пользователи');
             'class' => \common\components\grid\DateColumn::class,
         ],
         [
-            'attribute'       => 'banned_at',
+            'attribute'       => 'last_visit_server_at',
             'options'   => ['width' => '200'],
             'class' => \common\components\grid\DateColumn::class,
-        ],
-        [
-            'attribute'       => 'unbanned_at',
-            'options'   => ['width' => '200'],
-            'class' => \common\components\grid\DateColumn::class,
-        ],
-        [
-            'attribute' => 'ban_by',
-            'label'     => 'Модератор',
-            'format'    => 'raw',
-            'value'          => function (UserSearch $model) {
-                $isAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
-                $isModerator = Yii::$app->user->can(Role::ROLE_MODERATOR);
-                if (empty($model->ban_by)) {
-                    return null;
-                }
-                $moder = \common\models\user\User::findOne($model->ban_by);
-                if (!$isAdmin && !$isModerator) {
-                    return $moder->username;
-                }
-                $url = \yii\helpers\Url::to(['/user/profile', 'userId' => $moder->id]);
-                return Html::a($moder->username, $url);
-            },
         ],
         [
             'class'    => 'yii\grid\ActionColumn',
