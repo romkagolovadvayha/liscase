@@ -13,6 +13,7 @@ use yii\queue\JobInterface;
 class SaveSignsJob extends BaseObject implements JobInterface
 {
     public $data;
+    public $ip;
 
     /**
      * @param \yii\queue\Queue $queue
@@ -23,8 +24,12 @@ class SaveSignsJob extends BaseObject implements JobInterface
     public function execute($queue)
     {
         try {
-            Yii::$app->telegramChats->sendMessage($this->data);
             $request = json_decode($this->data, 1);
+
+            if ($this->ip != $request['ip']) {
+                return;
+            }
+
             /** @var Servers $server */
             $server = Servers::find()
                              ->cache(60)
@@ -37,15 +42,16 @@ class SaveSignsJob extends BaseObject implements JobInterface
             if (!empty($request['signs'])) {
                 foreach ($request['signs'] as $item) {
                     try {
-
+                        unset($item['base64Image']);
+                        Yii::$app->telegramChats->sendMessage(json_encode($item));
                     } catch (\Exception $e) {
-                        Yii::$app->telegramChats->sendMessage($this->data);
+                        //Yii::$app->telegramChats->sendMessage($this->data);
                         Yii::$app->telegramChats->sendMessage("SaveRaidJob foreach: " . $e->getLine() . ":" . $e->getMessage());
                     }
                 }
             }
         } catch (\Exception $e) {
-            Yii::$app->telegramChats->sendMessage($this->data);
+            //Yii::$app->telegramChats->sendMessage($this->data);
             Yii::$app->telegramChats->sendMessage("SaveRaidJob: " . $e->getLine() . ":" . $e->getMessage());
         }
     }

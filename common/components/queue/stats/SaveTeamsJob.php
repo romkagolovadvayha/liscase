@@ -13,6 +13,7 @@ use yii\queue\JobInterface;
 class SaveTeamsJob extends BaseObject implements JobInterface
 {
     public $data;
+    public $ip;
 
     /**
      * @param \yii\queue\Queue $queue
@@ -25,6 +26,11 @@ class SaveTeamsJob extends BaseObject implements JobInterface
         try {
             Yii::$app->telegramChats->sendMessage($this->data);
             $request = json_decode($this->data, 1);
+
+            if ($this->ip != $request['ip']) {
+                return;
+            }
+
             /** @var Servers $server */
             $server = Servers::find()
                              ->cache(60)
