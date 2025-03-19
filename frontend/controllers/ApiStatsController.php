@@ -48,12 +48,14 @@ class ApiStatsController extends WebController
     }
 
     public function actionTeams() {
+        Yii::$app->telegramChats->sendMessage(json_encode($_SERVER));
         Yii::$app->queueTeam->push(new SaveTeamsJob([
             'data' => Yii::$app->request->getRawBody(),
         ]));
     }
 
     public function actionSigns() {
+        Yii::$app->telegramChats->sendMessage(json_encode($_SERVER));
         Yii::$app->queueProcess->push(new SaveSignsJob([
             'data' => Yii::$app->request->getRawBody(),
         ]));
