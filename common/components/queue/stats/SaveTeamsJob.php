@@ -46,13 +46,13 @@ class SaveTeamsJob extends BaseObject implements JobInterface
                         Teams::updateTeam($item['LeaderSteamId'], $item['Members'], $server->id, $server->currentWipe());
                     } catch (\Exception $e) {
                         Yii::$app->telegramChats->sendMessage($this->data);
-                        Yii::$app->telegramChats->sendMessage("SaveTeamsJob foreach: " . $e->getLine() . ":" . $e->getMessage());
+                        Yii::$app->telegramChats->sendMessage("SaveTeamsJob: " . $e->getFile() . ":" . $e->getLine() . ": " . $e->getMessage());
                     }
                 }
             }
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage($this->data);
-            Yii::$app->telegramChats->sendMessage("SaveTeamsJob: " . $e->getLine() . ":" . $e->getMessage());
+            Yii::$app->telegramChats->sendMessage("SaveTeamsJob: " . $e->getFile() . ":" . $e->getLine() . ": " . $e->getMessage());
         }
     }
 }
