@@ -43,13 +43,11 @@ class SaveSignsJob extends BaseObject implements JobInterface
             if (!empty($request['signs'])) {
                 foreach ($request['signs'] as $item) {
                     try {
-                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 1");
                         $model = Signs::find()
                             ->andWhere(['signId' => $item['signId']])
                             ->andWhere(['server_id' => $server->id])
                             ->one();
 
-                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 2");
                         if (empty($model)) {
                             $model = new Signs();
                             $user = User::findBySteamId($item['steamId']);
@@ -58,16 +56,10 @@ class SaveSignsJob extends BaseObject implements JobInterface
                             $model->signId = $item['signId'];
                             $model->status = Signs::STATUS_ACTIVE;
                         }
-                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 3");
                         $fileName = "{$model->user->steam_id}_{$item['signId']}.png";
 
-                        $base64Image = $item['base64Image'];
-                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 4");
-                        // Убедимся, что это действительно base64-строка
-                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 7");
-
-                        $filePath = $this->_loadImage($base64Image, $server->tag, $fileName);
-                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 8");
+                        $imageData = base64_decode($item['base64Image']);
+                        $filePath = $this->_loadImage($imageData, $server->tag, $fileName);
                         $model->image = $filePath;
                         $model->position = $item['position'];
                         $model->type = $item['type'];
@@ -76,7 +68,6 @@ class SaveSignsJob extends BaseObject implements JobInterface
                         unset($item['base64Image']);
                         Yii::$app->telegramChats->sendMessage(json_encode($item));
                     } catch (\Exception $e) {
-                        Yii::$app->telegramChats->sendMessage("SaveSignsJob foreach: " . $e->getLine());
                         Yii::$app->telegramChats->sendMessage("SaveSignsJob foreach: " . $e->getLine() . ":" . $e->getMessage());
                     }
                 }
