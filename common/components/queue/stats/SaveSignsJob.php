@@ -3,7 +3,7 @@
 namespace common\components\queue\stats;
 
 use common\components\queue\telegram\SendMessageJob;
-use common\models\building\Signs;
+use common\models\signs\Signs;
 use common\models\servers\Servers;
 use common\models\user\User;
 use common\models\user\UserRaid;
@@ -76,12 +76,13 @@ class SaveSignsJob extends BaseObject implements JobInterface
                         unset($item['base64Image']);
                         Yii::$app->telegramChats->sendMessage(json_encode($item));
                     } catch (\Exception $e) {
-                        Yii::$app->telegramChats->sendMessage("SaveRaidJob foreach: " . $e->getLine() . ":" . $e->getMessage());
+                        Yii::$app->telegramChats->sendMessage("SaveSignsJob foreach: " . $e->getLine());
+                        Yii::$app->telegramChats->sendMessage("SaveSignsJob foreach: " . $e->getLine() . ":" . $e->getMessage());
                     }
                 }
             }
         } catch (\Exception $e) {
-            Yii::$app->telegramChats->sendMessage("SaveRaidJob: " . $e->getLine() . ":" . $e->getMessage());
+            Yii::$app->telegramChats->sendMessage("SaveSignsJob: " . $e->getLine() . ":" . $e->getMessage());
         }
     }
 

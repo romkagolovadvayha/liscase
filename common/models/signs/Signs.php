@@ -1,6 +1,6 @@
 <?php
 
-namespace common\models\building;
+namespace common\models\signs;
 
 use common\models\servers\Servers;
 use common\models\user\User;
