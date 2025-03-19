@@ -85,4 +85,31 @@ class UserRaid extends \yii\db\ActiveRecord
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
     }
+
+    public static function getTypeName($type) {
+        $list = [
+            'foundation' => Yii::t('common', 'Фундамент'),
+            'wall' => Yii::t('common', 'Стена'),
+            'cupboard' => Yii::t('common', 'Шкаф'),
+            'door.double.hinged.metal' => Yii::t('common', 'Двойная металическая дверь'),
+            'door.double.hinged.wood' => Yii::t('common', 'Двойная деревянная дверь'),
+            'door.double.hinged.toptier' => Yii::t('common', 'Двойная мвк дверь'),
+            'door.hinged.metal' => Yii::t('common', 'Металическая дверь'),
+            'doo.hinged.wood' => Yii::t('common', 'Деревянная дверь'),
+            'door.hinged.toptier' => Yii::t('common', 'Мвк дверь'),
+            'roof' => Yii::t('common', 'Крыша'),
+            'wall.frame' => Yii::t('common', 'Дверной проем'),
+            'wall.frame.garagedoor' => Yii::t('common', 'Дверной проем'),
+            'gates.external.high.wood' => Yii::t('common', 'Внешние деревянные ворота'),
+            'gates.external.high.stone' => Yii::t('common', 'Внешние каменные ворота'),
+            'wall.external.high.wood' => Yii::t('common', 'Внешняя деревянная стена'),
+            'wall.external.high.stone' => Yii::t('common', 'Внешняя каменная стена'),
+        ];
+
+        if (!empty($list[$type])) {
+            return $list[$type];
+        }
+
+        return null;
+    }
 }

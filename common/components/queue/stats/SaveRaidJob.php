@@ -96,6 +96,10 @@ class SaveRaidJob extends BaseObject implements JobInterface
                                     $message .= PHP_EOL . "Для нанесения урона было использовано: " . implode(',', $names) . ".";
                                 }
                             }
+                            if (!empty($model->type) && !empty(UserRaid::getTypeName($model->type))) {
+                                $message .= PHP_EOL . "Уничтоженно: " . UserRaid::getTypeName($model->type);
+                            }
+                            Yii::$app->telegramChats->sendMessage($message);
                             $model->notify = 1;
                             foreach ($owners as $owner) {
                                 $exists = UserRaid::find()
