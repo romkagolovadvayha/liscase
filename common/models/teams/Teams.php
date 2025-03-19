@@ -102,7 +102,7 @@ class Teams extends \yii\db\ActiveRecord
     public static function updateTeam($leaderSteamId, $members, $serverId, $wipeDate) {
         /** @var User[] $users */
         $users = User::find()
-            ->andWhere(['IN', 'steam_id', ArrayHelper::merge($leaderSteamId, $members)])
+            ->andWhere(['IN', 'steam_id', ArrayHelper::merge([$leaderSteamId], $members)])
             ->indexBy('steam_id')
             ->all();
         if (empty($users[$leaderSteamId])) {
