@@ -43,11 +43,13 @@ class SaveSignsJob extends BaseObject implements JobInterface
             if (!empty($request['signs'])) {
                 foreach ($request['signs'] as $item) {
                     try {
+                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 1");
                         $model = Signs::find()
                             ->andWhere(['signId' => $item['signId']])
                             ->andWhere(['server_id' => $server->id])
                             ->one();
 
+                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 2");
                         if (empty($model)) {
                             $model = new Signs();
                             $user = User::findBySteamId($item['steamId']);
@@ -56,18 +58,24 @@ class SaveSignsJob extends BaseObject implements JobInterface
                             $model->signId = $item['signId'];
                             $model->status = Signs::STATUS_ACTIVE;
                         }
+                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 3");
                         $fileName = "{$model->user->steam_id}_{$item['signId']}.png";
 
                         $base64Image = $item['base64Image'];
+                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 4");
                         // Убедимся, что это действительно base64-строка
                         if (strpos($base64Image, 'data:image') === 0) {
+                            Yii::$app->telegramChats->sendMessage("SaveSignsJob 5");
                             // Удаляем префикс "data:image/png;base64,"
                             $base64Image = preg_replace('/^data:image\/\w+;base64,/', '', $base64Image);
                         }
+                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 6");
                         // Декодируем base64 в бинарные данные
                         $imageData = base64_decode($base64Image);
+                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 7");
 
                         $filePath = $this->_loadImage($imageData, $server->tag, $fileName);
+                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 8");
                         $model->image = $filePath;
                         $model->position = $item['position'];
                         $model->type = $item['type'];
