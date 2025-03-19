@@ -22,9 +22,9 @@ class SaveSignsJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
-        Yii::$app->telegramChats->sendMessage(json_encode($_SERVER));
-        Yii::$app->telegramChats->sendMessage($this->data);
         try {
+            Yii::$app->telegramChats->sendMessage(json_encode($_SERVER));
+            Yii::$app->telegramChats->sendMessage($this->data);
             $request = json_decode($this->data, 1);
             /** @var Servers $server */
             $server = Servers::find()
