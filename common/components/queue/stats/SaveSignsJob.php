@@ -57,7 +57,17 @@ class SaveSignsJob extends BaseObject implements JobInterface
                             $model->status = Signs::STATUS_ACTIVE;
                         }
                         $fileName = "{$model->user->steam_id}_{$item['signId']}.png";
-                        $filePath = $this->_loadImage($item['base64Image'], $server->tag, $fileName);
+
+                        $base64Image = $item['base64Image'];
+                        // Убедимся, что это действительно base64-строка
+                        if (strpos($base64Image, 'data:image') === 0) {
+                            // Удаляем префикс "data:image/png;base64,"
+                            $base64Image = preg_replace('/^data:image\/\w+;base64,/', '', $base64Image);
+                        }
+                        // Декодируем base64 в бинарные данные
+                        $imageData = base64_decode($base64Image);
+
+                        $filePath = $this->_loadImage($imageData, $server->tag, $fileName);
                         $model->image = $filePath;
                         $model->position = $item['position'];
                         $model->type = $item['type'];
