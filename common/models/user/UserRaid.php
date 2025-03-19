@@ -14,6 +14,7 @@ use Yii;
  * @property string|null $explosives
  * @property string|null $owners
  * @property int $notify
+ * @property string|null $type
  * @property string|null $created_at
  * @property int $server_id
  * @property string|null $wipe

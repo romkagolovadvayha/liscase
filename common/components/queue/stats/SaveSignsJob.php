@@ -54,7 +54,7 @@ class SaveSignsJob extends BaseObject implements JobInterface
                             $model->user_id = $user->id;
                             $model->server_id = $server->id;
                             $model->signId = $item['signId'];
-                            $model->status = Signs::STATUS_ACTIVE;
+                            $model->status = Signs::STATUS_DISABLED;
                         }
                         $fileName = "{$model->user->steam_id}_{$item['signId']}.png";
 
@@ -65,8 +65,6 @@ class SaveSignsJob extends BaseObject implements JobInterface
                         $model->type = $item['type'];
                         $model->created_at = date('Y-m-d H:i:s');
                         $model->save();
-                        unset($item['base64Image']);
-                        Yii::$app->telegramChats->sendMessage(json_encode($item));
                     } catch (\Exception $e) {
                         Yii::$app->telegramChats->sendMessage("SaveSignsJob foreach: " . $e->getLine() . ":" . $e->getMessage());
                     }
