@@ -64,17 +64,9 @@ class SaveSignsJob extends BaseObject implements JobInterface
                         $base64Image = $item['base64Image'];
                         Yii::$app->telegramChats->sendMessage("SaveSignsJob 4");
                         // Убедимся, что это действительно base64-строка
-                        if (strpos($base64Image, 'data:image') === 0) {
-                            Yii::$app->telegramChats->sendMessage("SaveSignsJob 5");
-                            // Удаляем префикс "data:image/png;base64,"
-                            $base64Image = preg_replace('/^data:image\/\w+;base64,/', '', $base64Image);
-                        }
-                        Yii::$app->telegramChats->sendMessage("SaveSignsJob 6");
-                        // Декодируем base64 в бинарные данные
-                        $imageData = base64_decode($base64Image);
                         Yii::$app->telegramChats->sendMessage("SaveSignsJob 7");
 
-                        $filePath = $this->_loadImage($imageData, $server->tag, $fileName);
+                        $filePath = $this->_loadImage($base64Image, $server->tag, $fileName);
                         Yii::$app->telegramChats->sendMessage("SaveSignsJob 8");
                         $model->image = $filePath;
                         $model->position = $item['position'];
