@@ -4,6 +4,7 @@ namespace common\components\queue\stats;
 
 use common\components\queue\telegram\SendMessageJob;
 use common\models\servers\Servers;
+use common\models\teams\Teams;
 use common\models\user\User;
 use common\models\user\UserRaid;
 use Yii;
@@ -24,7 +25,6 @@ class SaveTeamsJob extends BaseObject implements JobInterface
     public function execute($queue)
     {
         try {
-            Yii::$app->telegramChats->sendMessage($this->data);
             $request = json_decode($this->data, 1);
 
             if ($this->ip != $request['ip']) {
@@ -43,16 +43,16 @@ class SaveTeamsJob extends BaseObject implements JobInterface
             if (!empty($request['teams'])) {
                 foreach ($request['teams'] as $item) {
                     try {
-
+                        Teams::updateTeam($item['LeaderSteamId'], $item['Members'], $server->id, $server->currentWipe());
                     } catch (\Exception $e) {
                         Yii::$app->telegramChats->sendMessage($this->data);
-                        Yii::$app->telegramChats->sendMessage("SaveRaidJob foreach: " . $e->getLine() . ":" . $e->getMessage());
+                        Yii::$app->telegramChats->sendMessage("SaveTeamsJob foreach: " . $e->getLine() . ":" . $e->getMessage());
                     }
                 }
             }
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage($this->data);
-            Yii::$app->telegramChats->sendMessage("SaveRaidJob: " . $e->getLine() . ":" . $e->getMessage());
+            Yii::$app->telegramChats->sendMessage("SaveTeamsJob: " . $e->getLine() . ":" . $e->getMessage());
         }
     }
 }
