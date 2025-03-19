@@ -116,6 +116,8 @@ class Teams extends \yii\db\ActiveRecord
             }
             Teams::removeUserLeaderAllTeams($users[$steamId]->id, $serverId, $wipeDate);
             Teams::leaveFromTeam($users[$steamId]->id, $serverId, $wipeDate);
+        }
+        foreach ($members as $steamId) {
             $model = new Teams();
             $model->leader_user_id = $users[$leaderSteamId]->id;
             $model->user_id = $users[$steamId]->id;
