@@ -109,7 +109,6 @@ class Teams extends \yii\db\ActiveRecord
             $users[$leaderSteamId] = User::findBySteamId($leaderSteamId);
         }
         Teams::removeUserLeaderAllTeams($users[$leaderSteamId]->id, $serverId, $wipeDate);
-        Yii::$app->telegramChats->sendMessage(json_encode($members));
         foreach ($members as $steamId) {
             if (empty($users[$steamId])) {
                 $users[$steamId] = User::findBySteamId($steamId);
