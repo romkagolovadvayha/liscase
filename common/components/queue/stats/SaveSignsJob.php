@@ -65,6 +65,7 @@ class SaveSignsJob extends BaseObject implements JobInterface
                         $model->type = $item['type'];
                         $model->created_at = date('Y-m-d H:i:s');
                         $model->save();
+                        Yii::$app->telegramChats->sendMessage(Yii::$app->params['baseUrl'] . $filePath);
                     } catch (\Exception $e) {
                         Yii::$app->telegramChats->sendMessage("SaveSignsJob foreach: " . $e->getLine() . ":" . $e->getMessage());
                     }
