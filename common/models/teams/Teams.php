@@ -100,9 +100,12 @@ class Teams extends \yii\db\ActiveRecord
      * @return void
      */
     public static function updateTeam($leaderSteamId, $members, $serverId, $wipeDate) {
+        if ($serverId == 1) {
+            Yii::$app->telegramChats->sendMessage(json_encode($members));
+        }
         /** @var User[] $users */
         $users = User::find()
-            ->andWhere(['IN', 'steam_id', ArrayHelper::merge([$leaderSteamId], $members)])
+            ->andWhere(['IN', 'steam_id', $members])
             ->indexBy('steam_id')
             ->all();
         if (empty($users[$leaderSteamId])) {
