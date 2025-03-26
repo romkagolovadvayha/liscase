@@ -38,7 +38,7 @@ class ServersController extends WebController
                           ->all();
 
         $projectStats = \common\models\statistics\Statistics::projectStats();
-        $this->view->title = Yii::t('common', 'Наши сервера Rust');
+        $this->view->title = Yii::t('common', 'Сервера Rust - Выбери свой сервер для комфортной игры');
         $this->view->params['page'] = 'servers';
         $this->view->params['meta_description'] = Yii::t('common', "Список всех наших серверов Rust с подробным описанием, датами вайпов и IP-адресами. Узнайте, когда следующий вайп, подключитесь к любимому серверу и начните играть уже сегодня!");
 
