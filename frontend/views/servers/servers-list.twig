@@ -57,7 +57,7 @@
                                 <span class="servers_page_item_header_status"><i class="fas fa-gift"></i> {{ t('common', 'Раздача скинов') }}</span>
                             {% endif %}
                             {% if SERVER.team_limit > 0 %}
-                                <span class="servers_page_item_header_status"><i class="fas fa-users"></i> {{ t('common', 'Лимит {PARAM_LIMIT} человека', {PARAM_LIMIT: SERVER.team_limit}) }}</span>
+                                <span class="servers_page_item_header_status"><i class="fas fa-users"></i> {{ t('common', 'Лимит') }} {{ SERVER.team_limit }} {{ t('common', 'человека') }}</span>
                             {% endif %}
                             {% if SERVER.status == 1 %}
                                 <span class="servers_page_item_header_status"><span class="text-online"><i class="fas fa-user"></i> {{ SERVER.players + SERVER.joined }}</span>/{{ SERVER.max }}</span>
