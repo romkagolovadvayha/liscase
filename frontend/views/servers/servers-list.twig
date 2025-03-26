@@ -2,8 +2,46 @@
 <div class="servers_page">
     <div class="page-stats__block-without-hover">
         <div class="relative">
-            <h2 class="flex items-center gap-x-12 pb-24">{{ t('common', 'Наши сервера') }}</h2>
-            <img class="servers_page_image" src="{{ SETTINGS.get('design_servers_image') }}">
+            <h1 class="h2 text-center">{{ t('common', 'Сервера Rust для комфортной игры') }}</h1>
+            <div class="seo-content pb-24">
+                <p class="mt-24 text-center p1 text-text-teritiary">{{ t('common', 'На нашем проекте работают несколько серверов Rust с разными параметрами') }}:</p>
+                <ul class="servers_page_description_list mt-24">
+                    <li class="servers_page_description_list_item">
+                        <span class="servers_page_description_list_item_image"><img src="/images/design/icons/32px/locations.svg"/></span>
+                        <span class="servers_page_description_list_item_text">{{ t('common', 'Физическое расположение в Москве (пинг 30-70 мс для СНГ)') }}</span>
+                    </li>
+                    <li class="servers_page_description_list_item">
+                        <span class="servers_page_description_list_item_image"><img src="/images/design/icons/32px/calendar.svg"/></span>
+                        <span class="servers_page_description_list_item_text">{{ t('common', 'Регулярные вайпы строго по расписанию') }}</span>
+                    </li>
+                    <li class="servers_page_description_list_item">
+                        <span class="servers_page_description_list_item_image"><img src="/images/design/icons/32px/admin.svg"/></span>
+                        <span class="servers_page_description_list_item_text">{{ t('common', 'Защита от читеров с активной модерацией') }}</span>
+                    </li>
+                    <li class="servers_page_description_list_item">
+                        <span class="servers_page_description_list_item_image"><img src="/images/design/icons/32px/training.svg"/></span>
+                        <span class="servers_page_description_list_item_text">{{ t('common', 'Поддержка разных игровых режимов') }}</span>
+                    </li>
+                    <li class="servers_page_description_list_item">
+                        <span class="servers_page_description_list_item_image"><img src="/images/design/icons/32px/gift.svg"/></span>
+                        <span class="servers_page_description_list_item_text">{{ t('common', 'Раздача скинов каждый час') }}</span>
+                    </li>
+                    <li class="servers_page_description_list_item">
+                        <span class="servers_page_description_list_item_image"><img src="/images/design/icons/32px/check.svg"/></span>
+                        <span class="servers_page_description_list_item_text">{{ t('common', 'В рыбацких деревнях, ранчо, амбарах: переработчики, станции дронов и НПЗ') }}</span>
+                    </li>
+                    <li class="servers_page_description_list_item">
+                        <span class="servers_page_description_list_item_image"><img src="/images/design/icons/32px/chart-line.svg"/></span>
+                        <span class="servers_page_description_list_item_text">{{ t('common', 'Сервера с онлайн 1000+ игроков') }}</span>
+                    </li>
+                    <li class="servers_page_description_list_item">
+                        <span class="servers_page_description_list_item_image"><img src="/images/design/icons/32px/procesor.svg"/></span>
+                        <span class="servers_page_description_list_item_text">{{ t('common', 'Мощное железо I9 14900k на сервере') }}</span>
+                    </li>
+                </ul>
+                <p class="mt-24 text-center p1 text-text-teritiary">{{ t('common', 'Вы можете выбрать любой из доступных серверов в зависимости от предпочитаемого режима игры') }}.</p>
+            </div>
+{#            <img class="servers_page_image" src="{{ SETTINGS.get('design_servers_image') }}">#}
         </div>
         <div class="servers_page_items">
             {% for SERVER in SERVERS %}
@@ -12,14 +50,20 @@
                         <header class="servers_page_item_header">
                             <h5 class="servers_page_item_header_title">{{ t('database', SERVER.monitoring_description) }} [{{ t('database', SERVER.monitoring_name) }}]</h5>
                             <span class="servers_page_item_header_status">{{ SERVER.wipeTypeText() }}</span>
-                            <div class="servers_page_item_header_content">
-                                <div class="servers_page_item_progress__wrap">
-                                    <div class="servers_page_item_progress progress_js" style="width: {{ SERVER.monitoring().percentPlayers + SERVER.monitoring().percentJoined }}%;">
-                                        <div class="servers_page_item_progress_players players_progress_js" style="width: {{ SERVER.monitoring().percentPlayersAbsolute + SERVER.monitoring().percentJoinedAbsolute }}%;"></div>
-                                    </div>
-                                </div>
-                                <span class="servers_page_item_progress-value"><span class="players_js">{{ SERVER.players + SERVER.joined }}</span>/{{ SERVER.max }}</span>
-                            </div>
+                            {% if not SERVER.is_store %}
+                                <span class="servers_page_item_header_status"><i class="fas fa-check"></i> {{ t('common', 'Донат выключен') }}</span>
+                            {% endif %}
+                            {% if SERVER.skindrops %}
+                                <span class="servers_page_item_header_status"><i class="fas fa-gift"></i> {{ t('common', 'Раздача скинов') }}</span>
+                            {% endif %}
+                            {% if SERVER.team_limit > 0 %}
+                                <span class="servers_page_item_header_status"><i class="fas fa-users"></i> {{ t('common', 'Лимит {PARAM_LIMIT} человека', {PARAM_LIMIT: SERVER.team_limit}) }}</span>
+                            {% endif %}
+                            {% if SERVER.status == 1 %}
+                                <span class="servers_page_item_header_status"><span class="text-online"><i class="fas fa-user"></i> {{ SERVER.players + SERVER.joined }}</span>/{{ SERVER.max }}</span>
+                            {% elseif SERVER.status == 0 %}
+                                <span class="servers_page_item_header_status text-online">{{ t('common', 'Идет перезагрузка') }}</span>
+                            {% endif %}
                         </header>
                         <div class="servers_page_item_actions">
                             <div class="servers_page_item_ip btn-clipboard"
@@ -30,39 +74,24 @@
                                 <span class="servers_page_item_ip_content">connect {{ SERVER.ip }}:{{ SERVER.port }}</span>
                             </div>
                             <div class="servers_page_item_actions_r">
+                                {% if SERVER.status == 1 %}
+                                    <a class="button button-primary" href="steam://rungameid/252490//+connect {{ SERVER.ip }}:{{ SERVER.port }}"><span class="button__text">{{ t('common', 'Подключиться к серверу') }}</span></a>
+                                {% endif %}
                                 <a class="button button-secondary show-modal-link"
                                    href="{{ SERVER.getLink('wipe-info') }}"
                                    data-size="modal-sm"
                                    data-toggl="modal"
                                    data-target="modal-dialog"
                                    data-title="{{ t('common', 'Когда вайп') }}">{{ t('common', 'Когда вайп') }}</a>
-{#                                <a class="button button-secondary" href="{{ SERVER.getLink('map') }}" target="_blank" >{{ t('common', 'О сервере') }}</a>#}
-{#                                {% if SERVER.map_id %}#}
-{#                                    <a class="button button-secondary servers_page_item_actions_r_image" href="{{ SERVER.mapEntity.getImage() }}" title="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}" target="_blank" >#}
-{#                                        {{ t('common', 'Текущая карта') }}<img style="width: 1px; height: 1px; opacity: 0;" src="{{ SERVER.mapEntity.getPreviewImage() }}" alt="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}">#}
-{#                                    </a>#}
-{#                                {% endif %}#}
+                                {% if SERVER.map_id and SERVER.mapEntity %}
+                                    <a class="button button-secondary servers_page_item_actions_r_image" href="{{ SERVER.mapEntity.getImage() }}" title="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}" target="_blank" >
+                                        {{ t('common', 'Текущая карта') }}<img src="{{ SERVER.mapEntity.getPreviewImage() }}" alt="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}">
+                                    </a>
+                                {% endif %}
                                 <a class="button button-secondary" href="{{ SERVER.getLink('rules') }}">{{ t('common', 'Правила сервера') }}</a>
                                 <a class="button button-secondary" href="{{ SERVER.getLink('stats') }}">{{ t('common', 'Статистика') }}</a>
                             </div>
                         </div>
-                        {#                    <div class="servers_page_item_labels">#}
-                        {#                        {% if not SERVER.is_store %}#}
-                        {#                            <div class="servers_page_item_labels_label"><i class="fas fa-check"></i> {{ t('common', 'Донат выключен') }}</div>#}
-                        {#                        {% endif %}#}
-                        {#                        {% if SERVER.stats_payment %}#}
-                        {#                            <div class="servers_page_item_labels_label"><i class="fas fa-wallet"></i> {{ t('common', 'Оплата за топы') }}</div>#}
-                        {#                        {% endif %}#}
-                        {#                        {% if SERVER.skindrops %}#}
-                        {#                            <div class="servers_page_item_labels_label"><i class="fas fa-gift"></i> {{ t('common', 'Раздача скинов') }}</div>#}
-                        {#                        {% endif %}#}
-                        {#                        {% if SERVER.team_limit %}#}
-                        {#                            <div class="servers_page_item_labels_label"><i class="fas fa-users"></i> {{ t('common', 'Лимит {PARAM_LIMIT} человека', {PARAM_LIMIT: SERVER.team_limit}) }}</div>#}
-                        {#                        {% else %}#}
-                        {#                            <div class="servers_page_item_labels_label"><i class="fas fa-users-slash"></i> {{ t('common', 'Лимит не ограничен') }}</div>#}
-                        {#                        {% endif %}#}
-                        {#                        <div class="servers_page_item_labels_label"><i class="fas fa-bell"></i> {{ t('common', 'Оповещение о рейдах') }}</div>#}
-                        {#                    </div>#}
                     </div>
                 </article>
             {% endfor %}

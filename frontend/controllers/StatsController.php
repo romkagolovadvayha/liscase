@@ -153,8 +153,7 @@ class StatsController extends WebController
         $this->view->params['page'] = 'stats';
         $this->view->params['_user'] = $_user;
         $this->view->params['_server'] = $server;
-        $this->view->params['meta_description'] = Yii::t('common', "Статистика игрока {PARAM_USERNAME} на сервере {PARAM_SERVER_NAME_SHORT} Rust. Узнайте всё о его успехах: количество убийств (килов), смертей, собранных ресурсов (фарм), участие в команде и другие ключевые показатели. Следите за прогрессом и достижениями игрока на сервере {PARAM_SERVER_NAME} Rust!", [
-            'PARAM_SERVER_NAME' => Yii::t('database', $server->name),
+        $this->view->params['meta_description'] = Yii::t('common', "Статистика игрока {PARAM_USERNAME} на сервере {PARAM_SERVER_NAME_SHORT} Rust. Узнайте всё о его успехах: количество убийств (килов), смертей, собранных ресурсов (фарм), участие в команде и другие показатели. Следите за прогрессом и достижениями игрока на сервере Rust.", [
             'PARAM_SERVER_NAME_SHORT' => Yii::t('database', $server->monitoring_name),
             'PARAM_USERNAME' => Yii::t('database', $_user->username),
         ]);
