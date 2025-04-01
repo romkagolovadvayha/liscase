@@ -77,13 +77,13 @@ class BlogImageController extends Controller
 
         if ($this->request->isPost) {
             if ($model->load($this->request->post()) && $model->saveRecord()) {
-                return $this->redirect(['view', 'id' => $model->id]);
+                return $this->redirect(['/blog/update?id=' . $model->blog_id]);
             }
         } else {
             $model->loadDefaultValues();
         }
 
-        return $this->render('create', [
+        return $this->renderAjax('create', [
             'model' => $model,
         ]);
     }
@@ -117,9 +117,11 @@ class BlogImageController extends Controller
      */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        $model = $this->findModel($id);
+        $blogId = $model->blog_id;
+        $model->delete();
 
-        return $this->redirect(['index']);
+        return $this->redirect(['/blog/update?id=' . $blogId]);
     }
 
     /**

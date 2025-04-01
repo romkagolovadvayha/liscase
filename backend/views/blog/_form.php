@@ -44,7 +44,15 @@ use yii\web\JsExpression;
 
     <?= $form->field($model, 'status')->dropDownList(\common\models\blog\BlogCategory::getStatusList()) ?>
 
+    <?=$this->render('list-images', [
+            'blogId' => $model->id,
+        ])?>
+
     <div class="form-group">
+        <a href="/blog-image/create?blogId=<?=$model->id?>" class="btn btn-primary show-modal-link"
+           data-toggl="modal"
+           data-target="modal-dialog"
+           data-title="Загрузить изображение">Загрузить изображение</a>
         <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
     </div>
 
