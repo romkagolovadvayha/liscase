@@ -18,8 +18,8 @@ use yii\web\JsExpression;
 
     <?= $form->field($model, 'keywords')->textInput() ?>
     <?= $form->field($model, 'description')->widget(\dosamigos\tinymce\TinyMce::className(), [
-        'options' => ['rows' => 6],
-        'language' => 'es',
+        'options' => ['rows' => 3],
+        'language' => 'ru',
         'clientOptions' => [
             'plugins' => [
                 "advlist autolink lists link charmap print preview anchor",
@@ -32,15 +32,7 @@ use yii\web\JsExpression;
 
     <?= $form->field($model, 'content')->widget(\dosamigos\tinymce\TinyMce::className(), [
         'options' => ['rows' => 12],
-        'language' => 'es',
-        'clientOptions' => [
-            'plugins' => [
-                "advlist autolink lists link charmap print preview anchor",
-                "searchreplace visualblocks code fullscreen",
-                "insertdatetime media table contextmenu paste"
-            ],
-            'toolbar' => "undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image"
-        ]
+        'language' => 'ru',
     ]);?>
     <?php if (!empty($model->link_name)): ?>
         <?= $form->field($model, 'link_name')->textInput() ?>
