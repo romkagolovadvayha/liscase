@@ -5,6 +5,8 @@ namespace backend\controllers;
 use common\components\helpers\Role;
 use common\models\blog\BlogImage;
 use backend\models\blog\BlogImageSearch;
+use frontend\forms\blog\BlogImageForm;
+use yii\base\BaseObject;
 use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
@@ -68,12 +70,13 @@ class BlogImageController extends Controller
      * If creation is successful, the browser will be redirected to the 'view' page.
      * @return string|\yii\web\Response
      */
-    public function actionCreate()
+    public function actionCreate($blogId)
     {
-        $model = new BlogImage();
+        $model = new BlogImageForm();
+        $model->blog_id = $blogId;
 
         if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
+            if ($model->load($this->request->post()) && $model->saveRecord()) {
                 return $this->redirect(['view', 'id' => $model->id]);
             }
         } else {
@@ -128,7 +131,7 @@ class BlogImageController extends Controller
      */
     protected function findModel($id)
     {
-        if (($model = BlogImage::findOne(['id' => $id])) !== null) {
+        if (($model = BlogImageForm::findOne(['id' => $id])) !== null) {
             return $model;
         }
 

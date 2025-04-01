@@ -31,7 +31,7 @@ class BlogImage extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['link', 'blog_id'], 'required'],
+            [['blog_id'], 'required'],
             [['link', 'description'], 'string'],
             [['blog_id'], 'integer'],
             [['created_at'], 'safe'],
