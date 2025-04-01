@@ -283,10 +283,10 @@ class OpenAiApi
             $complete = $openAi->chat($params);
             $complete = json_decode($complete, 1);
         }
-        print_r($complete);
         if (empty($complete['choices'])) {
             Yii::error($complete, 'warning');
         }
+        Yii::error($complete, 'warning');
         $result = $complete['choices'][0]['message']['content'];
         Yii::error($result, 'warning');
         return $result;
