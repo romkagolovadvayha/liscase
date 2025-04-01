@@ -103,7 +103,11 @@ class TelegramSenderErrors extends Target
      */
     protected function formatMessageRequest($message)
     {
-        $message[0] = HStrings::short($message[0], $this->maxMessageLen);
+        if (is_array($message[0])) {
+            $message[0] = HStrings::short(json_encode($message[0]), $this->maxMessageLen);
+        } else {
+            $message[0] = HStrings::short($message[0], $this->maxMessageLen);
+        }
         $message    = new Message($message, $this);
         if (in_array($message->getCategory(), ['application'])) {
             return '';
