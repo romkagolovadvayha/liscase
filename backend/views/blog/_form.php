@@ -16,7 +16,6 @@ use yii\web\JsExpression;
 
     <?= $form->field($model, 'name')->textInput() ?>
 
-    <?php if (!empty($model->keywords)): ?>
     <?= $form->field($model, 'keywords')->textInput() ?>
     <?= $form->field($model, 'description')->widget(\dosamigos\tinymce\TinyMce::className(), [
         'options' => ['rows' => 6],
@@ -30,7 +29,6 @@ use yii\web\JsExpression;
             'toolbar' => "undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image"
         ]
     ]);?>
-    <?php endif; ?>
 
     <?= $form->field($model, 'content')->widget(\dosamigos\tinymce\TinyMce::className(), [
         'options' => ['rows' => 12],
