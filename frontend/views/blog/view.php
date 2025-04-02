@@ -27,6 +27,10 @@ $this->params['_blog_model'] = $blog;
 $this->params['_blog_comments_block'] = true;
 $this->params['_blog_category_block'] = true;
 $this->params['_blog_similar_block'] = true;
+
+$blog->views++;
+$blog->save();
+
 ?>
 
 <?= Alert::widget() ?>
