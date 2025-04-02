@@ -63,9 +63,11 @@ $blog->save();
                 </div>
                 <?php endif; ?>
                 <div class="blog_item_body_text p1 mb-24"><?=Yii::t('database', $blog->content)?></div>
+                <?php if ($blog->created_at < '2025-03-30 00:00:00'): ?>
                 <p class="p2">
                     <?=Yii::t('common', 'Поставщик новостей')?>: <a href="https://discord.gg/rust-ru" rel="nofollow" class="p2" target="_blank">RustRu</a>
                 </p>
+                <?php endif; ?>
             </div>
             <div class="blog_item_data">
                 <div class="blog_item_data_item blog_item_data_views">
