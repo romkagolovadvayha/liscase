@@ -1,0 +1,35 @@
+<h1 class="main_title"><span>{{ t('common', 'Калькулятор рейдов в Rust') }}</span></h1>
+<p>{{ t('common', 'Планируешь налёт? Узнай точное количество взрывчатки для разрушения:') }}</p>
+<ul class="pl-6">
+    <li><b>{{ t('common', 'Стен') }}</b> {{ t('common', '(дерево, камень, металл, МВК)') }}</li>
+    <li><b>{{ t('common', 'Дверей') }}</b> {{ t('common', '(обычных, бронированных, гаражных)') }}</li>
+    <li><b>{{ t('common', 'Техники') }}</b> {{ t('common', '(Бредли, вертолёт, буксир)') }}</li>
+</ul>
+<p class="mt-12 mb-24"><i>{{ t('common', 'Выбирай цель, сравнивай варианты и экономь ресурсы.') }}</i></p>
+{% for ITEM in ITEMS %}
+<div class="mb-40">
+    <h2>{{ ITEM.name }}</h2>
+    {% for OBJECT in ITEM.items %}
+        <!-- Взрывные устройства -->
+        <section class="page-stats__block-without-hover mt-12">
+            <header class="flex items-center justify-space-between mb-24 transition-all">
+                <h3 class="flex items-center gap-x-12">
+                    <img src="{{ OBJECT.image }}" alt="{{ OBJECT.name }}" class="w-64"/> {{ OBJECT.name }}
+                </h3>
+            </header>
+
+            <div class="page-stats__categories">
+                {% for WEAPON in OBJECT.weapons %}
+                    <div class="page-stats__category category">
+                        <div class="category__count-and-img">
+                            <span>{{ WEAPON.count }}</span>
+                            <img src="{{ WEAPON.image }}" alt="{{ WEAPON.name }}" class="w-64 h-64 object-contain" />
+                        </div>
+                        <p class="category__title">{{ WEAPON.name }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    {% endfor %}
+</div>
+{% endfor %}

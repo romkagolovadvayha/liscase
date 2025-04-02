@@ -47,6 +47,10 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
         <loc><?=Yii::$app->params['homePage']?>/referral</loc>
         <priority>0.9</priority>
     </url>
+    <url>
+        <loc><?=Yii::$app->params['homePage']?>/raid-table</loc>
+        <priority>0.9</priority>
+    </url>
     <?php foreach ($servers as $server): ?>
         <url>
             <loc><?=Yii::$app->params['homePage']?><?=$server->getLink('stats')?></loc>
