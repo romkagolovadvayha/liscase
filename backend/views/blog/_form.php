@@ -17,22 +17,29 @@ use yii\web\JsExpression;
     <?= $form->field($model, 'name')->textInput() ?>
 
     <?= $form->field($model, 'keywords')->textInput() ?>
-    <?= $form->field($model, 'description')->widget(\dosamigos\tinymce\TinyMce::className(), [
-        'options' => ['rows' => 3],
+    <?= $form->field($model, 'description')->textarea(['rows' => 3]) ?>
+
+    <?= $form->field($model, 'content')->widget(\dosamigos\tinymce\TinyMce::className(), [
+        'options' => [
+            'rows' => 12,
+        ],
         'language' => 'ru',
         'clientOptions' => [
             'plugins' => [
-                "advlist autolink lists link charmap print preview anchor",
-                "searchreplace visualblocks code fullscreen",
-                "insertdatetime media table contextmenu paste"
+                //  "advlist",
+                // "paste"
+                'emoticons',
+                'link',
+                'code',
             ],
-            'toolbar' => "undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image"
-        ]
-    ]);?>
-
-    <?= $form->field($model, 'content')->widget(\dosamigos\tinymce\TinyMce::className(), [
-        'options' => ['rows' => 12],
-        'language' => 'ru',
+            'menubar' => false,
+            'resize' => false,
+            'statusbar' => false,
+            'paste_as_text' => true,
+            'toolbar' => "undo redo bold italic emoticons link  | code",
+            'default_link_target' => '_blank',
+            'link_context_toolbar' => true
+        ],
     ]);?>
     <?php if (!empty($model->link_name)): ?>
         <?= $form->field($model, 'link_name')->textInput() ?>
