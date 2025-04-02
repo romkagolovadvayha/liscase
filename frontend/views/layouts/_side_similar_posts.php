@@ -5,7 +5,7 @@ use common\models\blog\Blog;
 use yii\data\ActiveDataProvider;
 
 /** @var Blog $model */
-$models = Blog::getSimilarPosts($model->keywords, [$model->id]);
+$models = Blog::getSimilarPosts($model->name, [$model->id]);
 
 $dataProvider = new ActiveDataProvider([
     'models' => $models,
