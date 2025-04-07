@@ -260,6 +260,7 @@ class Map extends \yii\db\ActiveRecord
                         ->andWhere(['is_archive' => 0])
                         ->andWhere(['size' => $item['size']])
                         ->andWhere(['seed' => $item['seed']])
+                        ->andWhere(['server_id' => $serverId])
                         ->exists();
             if ($exist) {
                 continue;
@@ -375,6 +376,9 @@ class Map extends \yii\db\ActiveRecord
     }
 
     public static function getSearchQuery($size) {
+        if ($size >= 4250) {
+            return '{"searchQuery":{"size":{"min":' . $size . ',"max":' . $size . '},"biomes":[{"type":"Snow","settings":{"min":24,"max":100}},{"type":"Desert","settings":{"min":0,"max":100}},{"type":"Forest","settings":{"min":0,"max":100}},{"type":"Tundra","settings":{"min":0,"max":100}}],"monuments":{"min":0,"max":300},"largeMonuments":[{"type":"Airfield","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Bandit Town","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Excavator","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Ferry Terminal","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Junkyard","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Large Harbor","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Launch Site","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Military Tunnels","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Nuclear Missile Silo","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Outpost","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Powerplant","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Radtown","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Satellite Dish","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Sewer Branch","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Small Harbor","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Sphere Tank","selectionStatus":"Wanted","requiredBiomes":["Snow"],"blockedBiomes":[]},{"type":"Trainyard","selectionStatus":"Wanted","requiredBiomes":[],"blockedBiomes":[]},{"type":"Water Treatment","selectionStatus":"Wanted","requiredBiomes":["Snow"],"blockedBiomes":[]}],"gasStations":{"min":0,"max":4},"supermarkets":{"min":0,"max":4},"warehouses":{"min":0,"max":4},"lighthouses":{"min":0,"max":4},"islands":{"min":0,"max":30},"landPercentageOfMap":{"min":0,"max":100},"caves":{"min":0,"max":20},"swamps":{"min":0,"max":5},"mountains":{"min":0,"max":3},"icebergs":{"min":0,"max":25},"iceLakes":{"min":0,"max":5},"rivers":{"min":0,"max":20},"waterWells":{"min":0,"max":10},"lakes":{"min":0,"max":10},"canyons":{"min":0,"max":10},"oases":{"min":0,"max":10},"buildableRocks":{"min":0,"max":50}}}';
+        }
         return '{
   "searchQuery": {
     "size": {

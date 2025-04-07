@@ -3,12 +3,22 @@
 namespace console\controllers;
 
 use common\components\queue\process\MapGenerateJob;
+use common\models\map\Map;
 use common\models\servers\Servers;
 use yii\base\BaseObject;
 use yii\console\Controller;
 
 class MapsController extends Controller
 {
+
+    public function actionGen($serverTag = null)
+    {
+        $mapList = Map::getMapsList(3750);
+        $i = 0;
+        foreach ($mapList as $item) {
+            echo $item['url'] . PHP_EOL;
+        }
+    }
 
     /**
      * maps/start
