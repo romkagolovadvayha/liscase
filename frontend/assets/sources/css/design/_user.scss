@@ -67,8 +67,9 @@
         }
 
         &.stat {
-          @extend .py-8, .bg-background-teritiary;
+          @extend .py-8;
           border-radius: var(--card-radius);
+          background: var(--opacity-stat-background);
 
           & p:first-of-type {
             @extend .p1, .text-text-main;

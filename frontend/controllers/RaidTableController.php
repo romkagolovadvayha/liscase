@@ -24,6 +24,9 @@ class RaidTableController extends WebController
 {
     public function actionIndex()
     {
+        if (!Yii::$app->settings->get('section_raid_calculator')) {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
         $this->view->title = Yii::t('common', 'Рейд таблица Rust');
         $this->view->params['page'] = 'raid-table';
         $this->view->params['meta_description'] = Yii::t('common', "Точный калькулятор рейдов в Rust. Узнай, сколько взрывчатки нужно для стен, дверей и техники. Экономь ресурсы и планируй налёты без ошибок.");

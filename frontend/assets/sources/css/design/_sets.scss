@@ -2,7 +2,7 @@
   @extend .flex, .flex-wrap, .justify-center, .gap-x-8, .gap-y-44;
 
   &__wrapper {
-    @extend .mb-64, .grid, .gap-y-44;
+    @extend .mb-24, .grid, .gap-y-44;
     justify-items: center;
   }
 

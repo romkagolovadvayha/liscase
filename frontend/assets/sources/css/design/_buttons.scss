@@ -47,12 +47,7 @@ button,
     &:before {
       @extend .block, .absolute, .transition-opacity;
       content: "";
-      background-image: linear-gradient(
-        90deg,
-        var(--primary-colors-main) 0%,
-        var(--primary-colors-secondary) 50.04%,
-        #ffb834 100%
-      );
+      background-image: var(--button-primary-image-hover);
       opacity: 0;
       top: 0;
       left: 0;

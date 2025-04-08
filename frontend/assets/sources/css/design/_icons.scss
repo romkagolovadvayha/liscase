@@ -13,7 +13,9 @@
 
   &_indicator {
     @include range(18, 18, "px");
-    background: url("/images/design/icons/indicator.svg") no-repeat center;
+    background-image: var(--indicator-online);
+    background-position: center;
+    background-repeat: no-repeat;
     animation: 0.5s infinite alternate opacity-indicator;
 
     @keyframes opacity-indicator {

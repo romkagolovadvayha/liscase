@@ -19,38 +19,48 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
         <loc><?=Yii::$app->params['homePage']?>/servers</loc>
         <priority>0.9</priority>
     </url>
+    <?php if (Yii::$app->settings->get('section_skindrops')): ?>
     <url>
         <loc><?=Yii::$app->params['homePage']?>/skindrops</loc>
         <priority>0.9</priority>
     </url>
-    <url>
-        <loc><?=Yii::$app->params['homePage']?>/servers</loc>
-        <priority>0.9</priority>
-    </url>
+    <?php endif; ?>
+    <?php if (Yii::$app->settings->get('section_banlist')): ?>
     <url>
         <loc><?=Yii::$app->params['homePage']?>/banlist</loc>
         <priority>0.9</priority>
     </url>
+    <?php endif; ?>
+    <?php if (Yii::$app->settings->get('section_blog')): ?>
     <url>
         <loc><?=Yii::$app->params['homePage']?>/posts</loc>
         <priority>0.9</priority>
     </url>
+    <?php endif; ?>
+    <?php if (Yii::$app->settings->get('section_buildings')): ?>
     <url>
         <loc><?=Yii::$app->params['homePage']?>/buildings</loc>
         <priority>0.9</priority>
     </url>
+    <?php endif; ?>
+    <?php if (Yii::$app->settings->get('section_support')): ?>
     <url>
         <loc><?=Yii::$app->params['homePage']?>/support</loc>
         <priority>0.9</priority>
     </url>
+    <?php endif; ?>
+    <?php if (Yii::$app->settings->get('section_referral')): ?>
     <url>
         <loc><?=Yii::$app->params['homePage']?>/referral</loc>
         <priority>0.9</priority>
     </url>
+    <?php endif; ?>
+    <?php if (Yii::$app->settings->get('section_raid_calculator')): ?>
     <url>
         <loc><?=Yii::$app->params['homePage']?>/raid-table</loc>
         <priority>0.9</priority>
     </url>
+    <?php endif; ?>
     <?php foreach ($servers as $server): ?>
         <url>
             <loc><?=Yii::$app->params['homePage']?><?=$server->getLink('stats')?></loc>
@@ -69,6 +79,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
             <priority>0.7</priority>
         </url>
     <?php endforeach; ?>
+    <?php if (Yii::$app->settings->get('section_blog')): ?>
     <?php foreach ($categories as $category): ?>
         <url>
             <loc><?=Yii::$app->params['homePage']?><?= $category->getUrl() ?></loc>
@@ -87,4 +98,5 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
             <priority>0.6</priority>
         </url>
     <?php endforeach; ?>
+    <?php endif; ?>
 </urlset>

@@ -380,7 +380,7 @@ figure {
 
 body {
   @extend .text-text-main, .text-left, .bg-background-main;
-  font-family: Roboto, sans-serif;
+  font-family: var(--font-main);
   font-feature-settings: normal;
   font-variation-settings: normal;
   text-underline-position: from-font;
