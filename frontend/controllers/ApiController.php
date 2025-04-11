@@ -2,6 +2,7 @@
 
 namespace frontend\controllers;
 
+use common\components\queue\process\ActivatedDropJob;
 use common\controllers\WebController;
 use common\models\box\Drop;
 use common\models\promocode\Promocode;
@@ -11,6 +12,7 @@ use common\models\user\User;
 use common\models\user\UserDrop;
 use common\models\box\DropBlocked;
 use WebSocket\Client;
+use yii\base\BaseObject;
 use yii\web\JsonResponseFormatter;
 use yii\web\NotFoundHttpException;
 use Yii;
@@ -118,38 +120,7 @@ class ApiController extends WebController
 
         $userDrop->status = UserDrop::STATUS_SENDED;
 
-        try {
-            $client = new Client(Yii::$app->params['ws']);
-            if ($userDrop->save()) {
-                $client->send(
-                    json_encode(
-                        [
-                            'action' => 'activatedDrop',
-                            'code'   => 200,
-                            'id'     => $userDrop->id,
-                        ]
-                    )
-                );
-            } else {
-                $client->send(
-                    json_encode(
-                        [
-                            'action' => 'activatedDrop',
-                            'code'   => 500,
-                            'message'   => Yii::t(
-                                'common',
-                                "Произошла ошибка при получении товара, попробуйте позже!",
-                                [],
-                                $userDrop->user->current_language
-                            ),
-                            'id'     => $userDrop->id,
-                        ]
-                    )
-                );
-            }
-        } catch (\Exception $ex) {
-            Yii::$app->telegramChats->sendMessage('ApiController: ' . $ex->getMessage());
-        }
+        \Yii::$app->queueProcess->push(new ActivatedDropJob(['userDrop'  => $userDrop]));
 
         $result = [];
         $result['result'] = "success";
