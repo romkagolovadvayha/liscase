@@ -179,6 +179,8 @@ class ApiController extends WebController
                 'code' => 107,
             ];
         }
+        $drops = Drop::getDropListAll();
+        $drop = $drops[$userDrop->drop_id];
 
         $result = [];
         $result['result'] = "success";
@@ -186,16 +188,16 @@ class ApiController extends WebController
         $item = [
             'id' => $userDrop->id,
             'amount' => $userDrop->count,
-            'name' => $userDrop->drop[0]->name,
+            'name' => $drop->name,
             'lvl_inspection' => 0,
         ];
-        if (!empty($userDrop->drop[0]->command)) {
-            $item['command'] = str_replace("\r", '', $userDrop->drop[0]->command);
+        if (!empty($drop->command)) {
+            $item['command'] = str_replace("\r", '', $drop->command);
             $item['type'] = "command";
             $item['item_id'] = 0;
         } else {
             $item['type'] = "item";
-            $item['item_id'] = $userDrop->drop[0]->rust_id;
+            $item['item_id'] = $drop->rust_id;
         }
         $result['data'] = $item;
         return $result;
@@ -215,22 +217,24 @@ class ApiController extends WebController
                 'code' => 107,
             ];
         }
+        $drops = Drop::getDropListAll();
+        $drop = $drops[$userDrop->drop_id];
         $result = [];
         $result['result'] = "success";
         $result['code'] = 100;
         $item = [
             'id' => $userDrop->id,
             'amount' => $userDrop->count,
-            'name' => $userDrop->drop[0]->name,
+            'name' => $drop->name,
             'lvl_inspection' => 0,
         ];
-        if (!empty($userDrop->drop[0]->command)) {
-            $item['command'] = str_replace("\r", '', $userDrop->drop[0]->command);
+        if (!empty($drop->command)) {
+            $item['command'] = str_replace("\r", '', $drop->command);
             $item['type'] = "command";
             $item['item_id'] = 0;
         } else {
             $item['type'] = "item";
-            $item['item_id'] = $userDrop->drop[0]->rust_id;
+            $item['item_id'] = $drop->rust_id;
         }
         $result['data'] = $item;
         return $result;
@@ -263,27 +267,31 @@ class ApiController extends WebController
         $result = [];
         $data = [];
         $images = Drop::productsImagesShop();
+        $drops = Drop::getDropListAll();
+        $itemsBlocked = DropBlocked::getBlockedList($serverId);
         foreach ($userDrops as $userDrop) {
+            $drop = $drops[$userDrop->drop_id];
             $item = [
                 'id' => $userDrop->id,
                 'amount' => $userDrop->count,
-                'name' => $userDrop->drop[0]->name,
+                'name' => $drop->name,
                 'img' => $images[$userDrop->drop_id],
                 'blocked' => false,
                 'block_date' => null,
             ];
-            $blockedAt = DropBlocked::getBlocked($userDrop->drop_id, $serverId);
-            if (!empty($blockedAt)) {
-                $item['blocked'] = true;
-                $item['block_date'] = strtotime($blockedAt);
+            if (!empty($drop->blocked_hour)) {
+                if (!empty($itemsBlocked[$userDrop->drop_id])) {
+                    $item['blocked'] = true;
+                    $item['block_date'] = strtotime($itemsBlocked[$userDrop->drop_id]);
+                }
             }
-            if (!empty($userDrop->drop[0]->command)) {
-                $item['command'] = str_replace("\r", '', $userDrop->drop[0]->command);
+            if (!empty($drop->command)) {
+                $item['command'] = str_replace("\r", '', $drop->command);
                 $item['type'] = "command";
                 $item['item_id'] = 0;
             } else {
                 $item['type'] = "item";
-                $item['item_id'] = $userDrop->drop[0]->rust_id;
+                $item['item_id'] = $drop->rust_id;
             }
             $data[] = $item;
         }

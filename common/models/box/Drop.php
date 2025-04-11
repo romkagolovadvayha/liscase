@@ -483,6 +483,31 @@ class Drop extends ActiveRecord
         return $result;
     }
 
+    /**
+     * @param false $update
+     *
+     * @return Drop[]|false|mixed
+     */
+    public static function getDropListAll($update = false) {
+        $cacheKey = 'Drop_getDropListAll';
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $result = [];
+
+        /** @var Drop[] $drops */
+        $drops = Drop::find()
+                     ->all();
+
+        foreach ($drops as $item) {
+            $result[$item->id] = $item;
+        }
+
+        Yii::$app->cache->set($cacheKey, $result, 30*60);
+        return $result;
+    }
+
     public static function updateCache() {
         Drop::productsImages(true);
         Statistics::productsImages(true);
@@ -495,5 +520,6 @@ class Drop extends ActiveRecord
         Drop::getForMarket(false, true);
         Category::getCategories(true, true);
         Category::getCategories(false, true);
+        Drop::getDropListAll(true);
     }
 }

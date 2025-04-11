@@ -4,6 +4,7 @@ namespace console\controllers;
 
 use common\models\box\Category;
 use common\models\box\Drop;
+use common\models\box\DropBlocked;
 use common\models\box\Select;
 use common\models\box\Sets;
 use common\models\servers\Servers;
@@ -108,6 +109,7 @@ class StorageController extends Controller
             foreach ($servers as $server) {
                 UserTop::getUserTops($server, $server->currentWipe(), true);
                 UserTop::getAllUserTops($server, $server->currentWipe(), true);
+                DropBlocked::getBlockedList($server->id, true);
             }
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage('storage/update ' . $e->getMessage());

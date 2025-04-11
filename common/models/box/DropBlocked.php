@@ -96,11 +96,10 @@ class DropBlocked extends ActiveRecord
 
         return true;
     }
-
-    public static function getBlocked($dropId, $serverId)
+    public static function getBlockedList($serverId, $update = false)
     {
         $cacheKey = "DropBlocked_getBlocked3_" . $serverId;
-        if (Yii::$app->cache->get($cacheKey)) {
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
             $items = Yii::$app->cache->get($cacheKey);
         } else {
             /** @var DropBlocked[] $models */
@@ -116,6 +115,13 @@ class DropBlocked extends ActiveRecord
             }
             Yii::$app->cache->set($cacheKey, $items, 3*60);
         }
+
+        return $items;
+    }
+
+    public static function getBlocked($dropId, $serverId)
+    {
+        $items = DropBlocked::getBlockedList($serverId);
 
         if (empty($items[$dropId])) {
             return null;
