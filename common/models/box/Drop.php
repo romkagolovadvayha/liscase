@@ -464,7 +464,7 @@ class Drop extends ActiveRecord
     }
 
     public static function productsImagesShop($update = false) {
-        $cacheKey = 'Drop_productsImagesShop';
+        $cacheKey = 'Drop_productsImagesShop2';
         if (Yii::$app->cache->get($cacheKey) && !$update) {
             return Yii::$app->cache->get($cacheKey);
         }

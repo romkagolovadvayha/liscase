@@ -51,6 +51,9 @@ class DropImage extends ActiveRecord
         $imagePref = explode('/', $this->image);
         $image = "";
         foreach ($imagePref as $i => $pref) {
+            if (empty($pref)) {
+                continue;
+            }
             if ($i == count($imagePref) - 1) {
                 $image .= "/shop_{$pref}";
                 break;
