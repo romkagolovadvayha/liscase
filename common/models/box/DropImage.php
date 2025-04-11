@@ -60,7 +60,7 @@ class DropImage extends ActiveRecord
         if ($cdn) {
             return Yii::$app->settings->get('site_cdnUrl') . "/uploads" . $image;
         }
-        return "/uploads" . $image;
+        return Yii::$app->params['baseUrl'] . "/uploads" . $image;
     }
 
     public function rules(): array
