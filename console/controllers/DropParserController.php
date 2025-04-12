@@ -214,4 +214,39 @@ class DropParserController extends Controller
         file_put_contents($filePath, file_get_contents($imageUrl));
         DropImage::createRecord($fileUrl, DropImage::TYPE_ORIG, $dropId);
     }
+
+    /**
+     * drop-parser/new-items
+     * @throws \Exception
+     */
+    public function actionNewItems() {
+        $curl = clone \Yii::$app->curl;
+        $items = json_decode($curl->get('https://prostoj.store/api/items'), 1);
+
+        $drops = \common\models\box\Drop::find()
+            ->indexBy('eng_name')
+            ->all();
+
+        $isInsert = false;
+        foreach ($items as $item) {
+            if (empty($drops[$item['eng_name']])) {
+                $model = new Drop();
+                $model->name = $item['name'];
+                $model->description = $item['description'];
+                $model->eng_name = $item['eng_name'];
+                $model->rust_id = $item['rust_id'];
+                $model->type_id = $item['type_id'];
+                $model->category_id = $item['category_id'];
+                $model->blocked_hour = $item['blocked_hour'];
+                $model->save();
+                $this->_loadImage($item['image'], $model->id);
+                $isInsert = true;
+            }
+        }
+
+        if ($isInsert) {
+            Drop::updateCache();
+            \Yii::$app->runAction('translate/import-api');
+        }
+    }
 }

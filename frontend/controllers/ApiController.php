@@ -496,7 +496,7 @@ class ApiController extends WebController
               'name' => $item->name,
               'description' => $item->description,
               'eng_name' => $item->eng_name,
-              'image' => $item->image(),
+              'image' => $item->imageShop(),
               'rust_id' => $item->rust_id,
               'type_id' => $item->type_id,
               'category_id' => $item->category_id,
