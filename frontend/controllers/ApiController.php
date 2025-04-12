@@ -479,4 +479,31 @@ class ApiController extends WebController
         $result['code'] = 200;
         return json_encode($result,JSON_PRETTY_PRINT);
     }
+
+    public function actionItems() {
+        Yii::$app->response->statusCode = 200;
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        /** @var Drop[] $list */
+        $list = Drop::find()
+            ->cache(60)
+            ->andWhere(['<>', 'eng_name', ''])
+            ->all();
+
+        $items = [];
+        foreach ($list as $item) {
+            $items[] = [
+              'name' => $item->name,
+              'description' => $item->description,
+              'eng_name' => $item->eng_name,
+              'image' => $item->image(),
+              'rust_id' => $item->rust_id,
+              'type_id' => $item->type_id,
+              'category_id' => $item->category_id,
+              'blocked_hour' => $item->blocked_hour,
+            ];
+        }
+
+        return $items;
+    }
 }
