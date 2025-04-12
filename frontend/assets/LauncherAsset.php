@@ -22,16 +22,17 @@ class LauncherAsset extends AssetBundle
     public $sourcePath = '@frontend/assets/sources';
 
     public $css = [
-        'css/launcher.min.css',
+        'css/launcher.min.css?v=1.1',
     ];
     public $js = [
-        'js/socket.js?v=1.0',
-        'js/launcher.js',
+        'js/launcher.js?v=1.1',
     ];
     public $depends = [
         'yii\web\YiiAsset',
         BootstrapAsset::class,
         ToastrAsset::class,
         MomentAsset::class,
+        SupportAsset::class,
+        SocketAsset::class,
     ];
 }
