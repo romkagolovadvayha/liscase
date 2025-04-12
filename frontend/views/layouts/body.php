@@ -126,6 +126,7 @@ if (!empty($this->params['_profile'])) {
         'NOTIFICATIONS' => $notifications,
         'PAGE' => $page,
         'SETTINGS' => $SETTINGS,
+        'USER_GUEST' => Yii::$app->user->isGuest,
     ]),
     'MODAL' => Yii::$app->view->render('modal.twig', [
         'SETTINGS' => $SETTINGS,
@@ -137,6 +138,7 @@ if (!empty($this->params['_profile'])) {
         'HOME_URL' => Yii::$app->homeUrl,
         'DOMAIN' => Yii::$app->settings->get('site_domain'),
         'PAGE' => $page,
+        'USER_GUEST' => Yii::$app->user->isGuest,
     ]),
     'SETTINGS' => $SETTINGS,
     'PAGE' => $page

@@ -62,6 +62,20 @@
       border-right-color 0.25s ease-in-out;
     cursor: pointer;
     border-right: 3px solid transparent;
+    &.get_items_menu {
+      a {
+        background: var(--icon-main);
+        .icons {
+          background-color: var(--text-main);
+        }
+        .main-menu-text {
+          color: var(--text-main);
+        }
+        &:hover {
+          opacity: 0.9;
+        }
+      }
+    }
     &_hide {
       display: none;
     }

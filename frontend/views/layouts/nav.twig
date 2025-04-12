@@ -42,6 +42,17 @@
             'options': {'class': "#{CLASS_ITEM} menu__item_mobile"},
         },
         {
+            'label': t('common', 'Получение предметов'),
+            'url': "/store",
+            'iconClass': "icons icons_32px icons_32px_items #{CLASS_ICON}",
+            'activeClass': CLASS_ITEM_ACTIVE,
+            'active': PAGE == 'store',
+            'spanClass': CLASS_ITEM_SPAN_TEXT,
+            'visibility': SETTINGS.get('site_basketSite') and not USER_GUEST,
+            'options': {'class': "#{CLASS_ITEM} get_items_menu"},
+            'linkOptions': {'target': '_blank'},
+        },
+        {
             'label': t('common', 'Бан-лист'),
             'url': '/banlist',
             'iconClass': "icons icons_32px icons_32px_ban #{CLASS_ICON}",

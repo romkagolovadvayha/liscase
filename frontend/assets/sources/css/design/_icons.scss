@@ -189,6 +189,10 @@
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/shop.svg") no-repeat center;
     }
+    &_items {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/items.svg") no-repeat center;
+    }
     &_promocode {
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/promocode.svg") no-repeat center;

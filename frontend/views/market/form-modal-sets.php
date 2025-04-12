@@ -39,7 +39,7 @@ use yii\widgets\Pjax;
         <p class="p2 p-12 bg-background-teritiary rounded-8 flex items-center gap-x-12">
             <span class="icons icons_24px icons_24px_info"></span>
             <span>
-                <?php if (!Yii::$app->params['basketSite']): ?>
+                <?php if (!Yii::$app->settings->get('site_basketSite')): ?>
                     <?=Yii::t('common', 'Чтобы получить, введите /store в чат')?>
                 <?php else: ?>
                     <?=Yii::t('common', 'Чтобы получить, перейдите на эту страницу')?> <a href="/store" target="_blank"><?=Yii::$app->settings->get('site_domain')?>/store</a>
