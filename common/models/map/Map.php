@@ -311,7 +311,7 @@ class Map extends \yii\db\ActiveRecord
         $background = imagecreatefromstring($image);
 
         // Загружаем накладываемое изображение
-        $overlay = imagecreatefrompng(\Yii::getAlias('@frontend/web') . '/images/watermark/maps.png'); // для прозрачного изображения используем PNG
+        $overlay = imagecreatefrompng(\Yii::getAlias('@frontend/web') . Yii::$app->settings->get('design_watemark')); // для прозрачного изображения используем PNG
 
         // Проверка на ошибку при загрузке накладываемого изображения
         if (empty($overlay)) {
