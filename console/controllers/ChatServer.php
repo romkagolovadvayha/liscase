@@ -557,7 +557,7 @@ class ChatServer extends WebSocketServer
 
             //$client->send( json_encode($result) );
         } catch (\Exception $e) {
-            echo "commandChat:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
+            echo "commandChat:" . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
         }
     }
 
