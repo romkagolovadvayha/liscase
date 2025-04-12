@@ -302,7 +302,11 @@ class Map extends \yii\db\ActiveRecord
     public static function upload($imageUrl, $filename, $previewFilename) {
         $filePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$filename}";
         $previewfilePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$previewFilename}";
-        Map::watermark(file_get_contents($imageUrl), $filePath, $previewfilePath);
+        $image = (clone Yii::$app->curl)
+            ->setOption(CURLOPT_PROXY, '154.196.30.165:62742') // Установка прокси
+            ->setOption(CURLOPT_PROXYUSERPWD, 'XyQREbm5:AZ1zUkyc') // Если требуется аутентификация
+            ->get($imageUrl);
+        Map::watermark($image, $filePath, $previewfilePath);
         //        file_put_contents($filePath, $image);
     }
 
