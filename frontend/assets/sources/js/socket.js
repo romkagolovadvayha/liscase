@@ -69,7 +69,7 @@ function moneyNotification(response) {
 chat.onopen = function(e) {
     if (token !== undefined) {
         chat.send( JSON.stringify({'action' : 'auth', 'token' : token, 'steam_id' : steam_id}) );
-        if ($('#supportMessage')) {
+        if ($('#supportMessage').length) {
             initChat();
         }
     }

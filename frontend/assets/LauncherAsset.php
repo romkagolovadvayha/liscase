@@ -32,7 +32,6 @@ class LauncherAsset extends AssetBundle
         BootstrapAsset::class,
         ToastrAsset::class,
         MomentAsset::class,
-        SupportAsset::class,
         SocketAsset::class,
     ];
 }
