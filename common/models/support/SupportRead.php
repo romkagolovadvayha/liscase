@@ -100,6 +100,9 @@ class SupportRead extends \yii\db\ActiveRecord
             ->andWhere(['IN', 'item_name', ['ADMIN', 'MODERATOR']])
             ->all();
         foreach ($admins as $admin) {
+            if (empty($admin->user)) {
+                continue;
+            }
             if ($admin->user->id === $ownerId) {
                 continue;
             }
