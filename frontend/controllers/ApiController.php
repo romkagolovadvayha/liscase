@@ -492,6 +492,10 @@ class ApiController extends WebController
 
         $items = [];
         foreach ($list as $item) {
+            $categoryName = null;
+            if (!empty($item->category)) {
+                $categoryName = $item->category->name;
+            }
             $items[] = [
               'name' => $item->name,
               'description' => $item->description,
@@ -500,7 +504,7 @@ class ApiController extends WebController
               'rust_id' => $item->rust_id,
               'type_id' => $item->type_id,
               'category_id' => $item->category_id,
-              'category_name' => $item->category->name,
+              'category_name' => $categoryName,
               'blocked_hour' => $item->blocked_hour,
             ];
         }
