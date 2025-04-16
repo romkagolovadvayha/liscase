@@ -500,6 +500,7 @@ class ApiController extends WebController
               'rust_id' => $item->rust_id,
               'type_id' => $item->type_id,
               'category_id' => $item->category_id,
+              'category_name' => $item->category->name,
               'blocked_hour' => $item->blocked_hour,
             ];
         }
