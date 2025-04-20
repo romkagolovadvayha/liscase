@@ -247,22 +247,22 @@ class GamestoresController extends Controller
             }
 
             if ($user['balance'] > 0) {
-                $userBalance = $model->getPersonalBalance();
-                $exists = Profit::find()
-                    ->andWhere(['user_balance_id' => $userBalance->id])
-                    ->andWhere(['type' => Profit::TYPE_TRANSFER_BALANCE])
-                    ->exists();
-                if (!$exists) {
-                    $profit                  = new Profit();
-                    $profit->status          = 1;
-                    $profit->type            = Profit::TYPE_TRANSFER_BALANCE;
-                    $profit->amount          = $user['balance'];
-                    $profit->user_balance_id = $userBalance->id;
-                    $profit->comment         = 'Перенос баланса с старого сайта';
-                    $profit->created_at      = date('Y-m-d H:i:s');
-                    $profit->save(false);
-                    $userBalance->recalculateBalance();
-                }
+//                $userBalance = $model->getPersonalBalance();
+//                $exists = Profit::find()
+//                    ->andWhere(['user_balance_id' => $userBalance->id])
+//                    ->andWhere(['type' => Profit::TYPE_TRANSFER_BALANCE])
+//                    ->exists();
+//                if (!$exists) {
+//                    $profit                  = new Profit();
+//                    $profit->status          = 1;
+//                    $profit->type            = Profit::TYPE_TRANSFER_BALANCE;
+//                    $profit->amount          = $user['balance'];
+//                    $profit->user_balance_id = $userBalance->id;
+//                    $profit->comment         = 'Перенос баланса с старого сайта';
+//                    $profit->created_at      = date('Y-m-d H:i:s');
+//                    $profit->save(false);
+//                    $userBalance->recalculateBalance();
+//                }
             }
         }
     }
