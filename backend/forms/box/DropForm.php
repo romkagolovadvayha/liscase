@@ -16,11 +16,12 @@ class DropForm extends Drop
 
     public $preview_file;
     public $preview_file_open;
+    public $isSubmit;
 
     public function rules(): array
     {
         return ArrayHelper::merge([
-                                      [['name', 'eng_name', 'market_status', 'min_box', 'max_box', 'description', 'rust_id', 'type_id', 'price', 'count', 'discount', 'preview_file', 'command', 'blocked_hour'], 'trim'],
+                                      [['name', 'eng_name', 'isSubmit', 'market_status', 'min_box', 'max_box', 'description', 'rust_id', 'type_id', 'price', 'count', 'discount', 'preview_file', 'command', 'blocked_hour'], 'trim'],
                                       [['preview_file', 'preview_file_open'], 'file', 'skipOnEmpty' => true, 'extensions' => ['svg', 'jpg', 'png']],
                                   ], parent::rules());
     }
@@ -54,6 +55,9 @@ class DropForm extends Drop
             $this->created_at = date('Y-m-d H:i:s');
         }
         if (!$this->validate()) {
+            return false;
+        }
+        if (!$this->isSubmit) {
             return false;
         }
 

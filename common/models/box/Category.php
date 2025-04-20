@@ -42,7 +42,7 @@ class Category extends ActiveRecord
         ];
     }
 
-    public function rules(): array
+    public function rules()
     {
         return [
             [['name'], 'required'],

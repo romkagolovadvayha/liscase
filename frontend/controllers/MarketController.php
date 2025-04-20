@@ -70,7 +70,7 @@ class MarketController extends WebController
                         'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
                     ]);
                     Invoice::createRecord($user->id, $drop->getRealPrice(), Invoice::TYPE_PAYMENT_MARKET_DROP, null, null, $drop->id, $comment);
-                    UserDrop::createRecord($user->id, $drop->id, null, null,UserDrop::STATUS_ACTIVE, false, $drop->count);
+                    $drop->give($user->id, $drop->count);
                     $dbTransaction->commit();
                     Yii::$app->session->addFlash('success', Yii::t('common', 'Предмет успешно приобретен!'));
                 } catch (\Exception $e) {

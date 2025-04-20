@@ -4,11 +4,11 @@ use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 
 /** @var yii\web\View $this */
-/** @var backend\models\map\MapSearch $model */
+/** @var common\models\box\CategorySearch $model */
 /** @var yii\widgets\ActiveForm $form */
 ?>
 
-<div class="map-search">
+<div class="category-search">
 
     <?php $form = ActiveForm::begin([
         'action' => ['index'],
@@ -17,21 +17,17 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'id') ?>
 
-    <?= $form->field($model, 'mapId') ?>
+    <?= $form->field($model, 'name') ?>
 
-    <?= $form->field($model, 'link') ?>
+    <?= $form->field($model, 'sort') ?>
 
-    <?= $form->field($model, 'seed') ?>
+    <?= $form->field($model, 'created_at') ?>
 
-    <?= $form->field($model, 'size') ?>
+    <?= $form->field($model, 'tag') ?>
 
-    <?php // echo $form->field($model, 'version') ?>
+    <?php // echo $form->field($model, 'image') ?>
 
-    <?php // echo $form->field($model, 'image_link') ?>
-
-    <?php // echo $form->field($model, 'image_link_icons') ?>
-
-    <?php // echo $form->field($model, 'created_at') ?>
+    <?php // echo $form->field($model, 'show_main_block') ?>
 
     <div class="form-group">
         <?= Html::submitButton('Search', ['class' => 'btn btn-primary']) ?>

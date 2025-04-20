@@ -76,7 +76,7 @@ class UserController extends WebController
         if (!empty($post['sell'])) {
             $userBalance = Yii::$app->user->identity->getPersonalBalance();
             $userDrop = UserDrop::findOne($post['sell']);
-            if (!empty($userDrop->box_id) || !empty($userDrop->sets_id)) {
+            if (!empty($userDrop->box_id) || !empty($userDrop->sets_id) || !empty($userDrop->parent_drop_id)) {
                 throw new HttpException(402, Yii::t('common', 'Не подлежит возврату!'));
             }
             if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
@@ -116,7 +116,7 @@ class UserController extends WebController
         if (!empty($post['sell'])) {
             $userBalance = Yii::$app->user->identity->getPersonalBalance();
             $userDrop = UserDrop::findOne($post['sell']);
-            if (!empty($userDrop->box_id) || !empty($userDrop->sets_id)) {
+            if (!empty($userDrop->box_id) || !empty($userDrop->sets_id) || !empty($userDrop->parent_drop_id)) {
                 throw new HttpException(402, Yii::t('common', 'Не подлежит возврату!'));
             }
             if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {

@@ -175,7 +175,12 @@ class Map extends \yii\db\ActiveRecord
         $exists = Servers::find()
                          ->andWhere(['map_id' => $this->id])
                          ->exists();
-        if ($this->save() && !$exists) {
+        $existsMap = Map::find()
+                         ->andWhere(['seed' => $this->seed])
+                         ->andWhere(['size' => $this->size])
+                         ->andWhere(['is_archive' => false])
+                         ->exists();
+        if ($this->save() && !$exists && !$existsMap) {
             if (file_exists(\Yii::getAlias('@frontend/web') . "/uploads/maps/{$this->image_link}")) {
                 unlink(\Yii::getAlias('@frontend/web') . "/uploads/maps/{$this->image_link}");
             }

@@ -1,5 +1,5 @@
 .categories {
-  @extend .flex, .flex-column, .mt-12, .items-center, .gap-y-24, .content-visibility-auto;
+  @extend .flex, .flex-column, .mt-12, .items-center, .gap-y-24;
 
   @media (max-width: 560px) {
     row-gap: 0;
@@ -113,7 +113,7 @@
 
     &__cards {
       @extend .grid, .justify-flex-start, .gap-x-12, .gap-y-12, .w-full;
-      grid-template-columns: repeat(auto-fit, minmax(203px, 1fr));
+      grid-template-columns: var(--category-cards-grid);
       @media (max-width: 560px) {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       }
@@ -121,8 +121,7 @@
         @extend .p-8,
           .relative,
           .text-center,
-          .bg-background-secondary,
-          .content-visibility-auto;
+          .bg-background-secondary;
         border-radius: var(--card-radius);
         max-width: 100%;
         min-width: 203px;
@@ -141,10 +140,28 @@
           top: 8px;
           left: 8px;
         }
+        &__discount {
+          @extend .p1, .absolute, .text-left, .text-text-main;
+          top: -10px;
+          right: -10px;
+          border-radius: 50%;
+          height: 50px;
+          width: 50px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          line-height: 50px;
+          background: var(--background-teritiary);
+          border: 5px solid var(--background-main);
+        }
 
         &__image {
           @extend .object-contain, .transition-transform;
-          @include range(100, 100, "px");
+          width: var(--category-card-image-size);
+          height: var(--category-card-image-size);
+          max-width: 100%;
+          min-width: var(--category-card-image-size);
+          min-height: var(--category-card-image-size);
         }
 
         &__title {
@@ -188,6 +205,27 @@
           .category-card__title {
             @extend .text-text-teritiary;
           }
+        }
+        &_discount {
+          top: -10px;
+          right: -10px;
+          width: 60px;
+          height: 60px;
+          line-height: 40px;
+          text-align: center;
+          z-index: 1;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-size: var(--default-font-size);
+          font-weight: var(--default-font-weight);
+          border-radius: 50%;
+          padding: unset;
+          transition: background-color 0.15s;
+          border-width: 5px;
+          border-style: solid;
+          border-color: rgb(20, 21, 26);
+          border-image: initial;
         }
       }
     }

@@ -137,12 +137,6 @@ class MainMenu
                         'active' => $this->_checkActive('/box/'),
                     ],
                     [
-                        'label'  => Yii::t('common', 'Сеты'),
-                        'url'    => '/sets/index',
-                        'icon'   => 'bi bi-dropbox',
-                        'active' => $this->_checkActive('/sets/'),
-                    ],
-                    [
                         'label'  => Yii::t('common', 'Предметы'),
                         'url'    => '/drop/index',
                         'icon'   => 'bi bi-dropbox',

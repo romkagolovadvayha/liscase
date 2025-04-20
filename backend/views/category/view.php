@@ -4,14 +4,14 @@ use yii\helpers\Html;
 use yii\widgets\DetailView;
 
 /** @var yii\web\View $this */
-/** @var common\models\map\Map $model */
+/** @var common\models\box\Category $model */
 
-$this->title = $model->id;
-$this->params['breadcrumbs'][] = ['label' => 'Maps', 'url' => ['index']];
+$this->title = $model->name;
+$this->params['breadcrumbs'][] = ['label' => 'Categories', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 \yii\web\YiiAsset::register($this);
 ?>
-<div class="map-view">
+<div class="category-view">
 
     <h1><?= Html::encode($this->title) ?></h1>
 
@@ -30,14 +30,12 @@ $this->params['breadcrumbs'][] = $this->title;
         'model' => $model,
         'attributes' => [
             'id',
-            'mapId',
-            'link',
-            'seed',
-            'size',
-            'version',
-            'image_link',
-            'image_link_icons',
+            'name:ntext',
+            'sort:ntext',
             'created_at',
+            'tag:ntext',
+            'image',
+            'show_main_block',
         ],
     ]) ?>
 

@@ -5,6 +5,7 @@ namespace common\models\box;
 use common\components\base\ActiveRecord;
 use common\components\helpers\CurrencyHelper;
 use common\models\statistics\Statistics;
+use common\models\user\UserDrop;
 use Yii;
 use yii\web\JsExpression;
 
@@ -21,6 +22,7 @@ use yii\web\JsExpression;
  * @property int         $count
  * @property int         $discount
  * @property int         $category_id
+ * @property int         $drop_type
  * @property string      $rust_id
  * @property string      $command
  * @property string      $type_id
@@ -33,6 +35,7 @@ use yii\web\JsExpression;
  * @property int         $sort
  *
  * @property DropImage[] $dropImages
+ * @property DropDrop[] $subDrops
  * @property DropImage   $imageOrig
  * @property DropImage   $imageOrig2
  * @property DropType    $type
@@ -52,6 +55,23 @@ class Drop extends ActiveRecord
     const MARKET_STATUS_NOT_ACTIVE   = 0;
     const MARKET_STATUS_ACTIVE       = 1;
 
+    const TYPE_DROP    = 0;
+    const TYPE_COMMAND = 1;
+    const TYPE_SET     = 2;
+    const TYPE_SELECT  = 3;
+
+    /**
+     * @return array
+     */
+    public static function getDropTypesList(): array
+    {
+        return [
+            self::TYPE_DROP       => Yii::t('common', 'Предмет'),
+            self::TYPE_COMMAND       => Yii::t('common', 'Команда'),
+            self::TYPE_SET       => Yii::t('common', 'Набор предметов'),
+            self::TYPE_SELECT       => Yii::t('common', 'Товар с выбором'),
+        ];
+    }
     /**
      * @return array
      */
@@ -89,12 +109,12 @@ class Drop extends ActiveRecord
         return [
             'id'                  => Yii::t('common', 'ID'),
             'name'               => Yii::t('common', 'Название'),
-            'eng_name'               => Yii::t('common', 'Название'),
+            'eng_name'               => Yii::t('common', 'short_key (в игре)'),
             'quality'               => Yii::t('common', 'Качество'),
             'description'               => Yii::t('common', 'Описание'),
             'category_id'               => Yii::t('common', 'Категория'),
             'market_id'               => Yii::t('common', 'ID в маргете'),
-            'rust_id'               => Yii::t('common', 'Индитификатор'),
+            'rust_id'               => Yii::t('common', 'Идентификатор в игре'),
             'market_status'               => Yii::t('common', 'Статус в магазине'),
             'count'               => Yii::t('common', 'Количество в маркете'),
             'discount'               => Yii::t('common', 'Скидка'),
@@ -108,6 +128,7 @@ class Drop extends ActiveRecord
             'blocked_hour'          => Yii::t('common', 'Вайп блок (часов)'),
             'show_main_block'              => Yii::t('common', 'Показывать в главном блоке главной страницы'),
             'sort'          => Yii::t('common', 'Сортировка'),
+            'drop_type'          => Yii::t('common', 'Тип предмета'),
         ];
     }
 
@@ -179,7 +200,7 @@ class Drop extends ActiveRecord
     public function rules(): array
     {
         return [
-            [['status', 'type_id', 'category_id', 'sort', 'show_main_block'], 'integer'],
+            [['status', 'type_id', 'category_id', 'sort', 'show_main_block', 'drop_type'], 'integer'],
             [['name', 'market_id', 'eng_name', 'quality'], 'string', 'max' => 255],
             [['description'], 'string'],
             [['created_at','price'], 'safe'],
@@ -208,6 +229,16 @@ class Drop extends ActiveRecord
     public function getDropImages()
     {
         return $this->hasMany(DropImage::class, ['drop_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[SubDrops]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getSubDrops()
+    {
+        return $this->hasMany(DropDrop::class, ['parent_drop_id' => 'id']);
     }
 
     /**
@@ -533,4 +564,21 @@ class Drop extends ActiveRecord
         Category::getCategories(false, true);
         Drop::getDropListAll(true);
     }
+
+    public function give($userId, $count, $parentId = null) {
+        if (empty($this->subDrops)) {
+            if (in_array($this->rust_id, ['-2139580305'])) {
+                for ($i = 0; $i < $count; $i++) {
+                    UserDrop::createRecord($userId, $this->id, null, null,UserDrop::STATUS_ACTIVE, false, 1, null, $parentId);
+                }
+            } else {
+                UserDrop::createRecord($userId, $this->id, null, null,UserDrop::STATUS_ACTIVE, false, $count, null, $parentId);
+            }
+        } else {
+            foreach ($this->subDrops as $subDrop) {
+                $subDrop->drop->give($userId, $subDrop->count, $this->id);
+            }
+        }
+    }
+
 }

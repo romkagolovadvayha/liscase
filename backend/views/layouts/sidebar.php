@@ -149,39 +149,51 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                             ],
                         ]
                     ],
-                    [
-                        'label' => 'Товары',
-                        'icon' => 'fa-solid fa-list',
-                        'url' => ['/rbac/permission'],
-                        'visibility' => $admin,
-                        'active' => _checkActive('/box/') || _checkActive('/sets/') || _checkActive('/drop/') || _checkActive('/select/'),
-                        'items' => [
-                            [
-                                'label'  => Yii::t('common', 'Рулетки'),
-                                'url'    => '/box/index',
-                                'icon'   => 'fa-solid fa-gift',
-                                'active' => _checkActive('/box/'),
-                            ],
-                            [
-                                'label'  => Yii::t('common', 'Наборы'),
-                                'url'    => '/sets/index',
-                                'icon'   => 'fa-solid fa-suitcase',
-                                'active' => _checkActive('/sets/'),
-                            ],
-                            [
-                                'label'  => Yii::t('common', 'Наборы с выбором'),
-                                'url'    => '/select/index',
-                                'icon'   => 'fa-solid fa-object-ungroup',
-                                'active' => _checkActive('/select/'),
-                            ],
-                            [
-                                'label'  => Yii::t('common', 'Предметы'),
-                                'url'    => '/drop/index',
-                                'icon'   => 'fa-solid fa-table-cells',
-                                'active' => _checkActive('/drop/'),
-                            ],
-                        ]
-                    ],
+                   [
+                       'label'  => Yii::t('common', 'Предметы'),
+                       'url'    => '/drop/index',
+                       'icon'   => 'fa-solid fa-table-cells',
+                       'active' => _checkActive('/drop/'),
+                   ],
+                   [
+                       'label'  => Yii::t('common', 'Категории'),
+                       'url'    => '/category/index',
+                       'icon'   => 'fa-solid fa-table-cells',
+                       'active' => _checkActive('/category/'),
+                   ],
+//                    [
+//                        'label' => 'Товары',
+//                        'icon' => 'fa-solid fa-list',
+//                        'url' => ['/rbac/permission'],
+//                        'visibility' => $admin,
+//                        'active' => _checkActive('/box/') || _checkActive('/sets/') || _checkActive('/drop/') || _checkActive('/select/'),
+//                        'items' => [
+//                            [
+//                                'label'  => Yii::t('common', 'Рулетки'),
+//                                'url'    => '/box/index',
+//                                'icon'   => 'fa-solid fa-gift',
+//                                'active' => _checkActive('/box/'),
+//                            ],
+//                            [
+//                                'label'  => Yii::t('common', 'Наборы'),
+//                                'url'    => '/sets/index',
+//                                'icon'   => 'fa-solid fa-suitcase',
+//                                'active' => _checkActive('/sets/'),
+//                            ],
+//                            [
+//                                'label'  => Yii::t('common', 'Наборы с выбором'),
+//                                'url'    => '/select/index',
+//                                'icon'   => 'fa-solid fa-object-ungroup',
+//                                'active' => _checkActive('/select/'),
+//                            ],
+//                            [
+//                                'label'  => Yii::t('common', 'Предметы'),
+//                                'url'    => '/drop/index',
+//                                'icon'   => 'fa-solid fa-table-cells',
+//                                'active' => _checkActive('/drop/'),
+//                            ],
+//                        ]
+//                    ],
                    [
                        'label'  => Yii::t('common', 'Блог'),
                        'icon'   => 'fa-regular fa-newspaper',

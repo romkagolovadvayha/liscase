@@ -1,24 +1,21 @@
 <?php
 
-use common\models\map\Map;
+use common\models\box\Category;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
 use yii\grid\GridView;
 
 /** @var yii\web\View $this */
-/** @var backend\models\map\MapSearch $searchModel */
+/** @var common\models\box\CategorySearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-$this->title = 'Maps';
+$this->title = 'Категории';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
-<div class="map-index">
-
-    <h1><?= Html::encode($this->title) ?></h1>
-
+<div class="category-index">
     <p>
-        <?= Html::a('Create Map', ['create'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('Добавить', ['create'], ['class' => 'btn btn-success']) ?>
     </p>
 
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
@@ -27,20 +24,19 @@ $this->params['breadcrumbs'][] = $this->title;
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'columns' => [
-            ['class' => 'yii\grid\SerialColumn'],
-
-            'id',
-            'mapId',
-            'link',
-            'seed',
-            'size',
-            //'version',
-            //'image_link',
-            //'image_link_icons',
-            //'created_at',
+            [
+                'attribute' => 'id',
+                'options'   => ['width' => '50'],
+            ],
+            'name:ntext',
+            [
+                'attribute' => 'tag',
+                'options'   => ['width' => '200'],
+            ],
             [
                 'class' => ActionColumn::className(),
-                'urlCreator' => function ($action, Map $model, $key, $index, $column) {
+                'options'   => ['width' => '80'],
+                'urlCreator' => function ($action, Category $model, $key, $index, $column) {
                     return Url::toRoute([$action, 'id' => $model->id]);
                  }
             ],

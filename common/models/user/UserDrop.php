@@ -11,6 +11,7 @@ use Yii;
  * @property int                 $id
  * @property int                 $user_id
  * @property int                 $drop_id
+ * @property int                 $parent_drop_id
  * @property int                 $box_id
  * @property int                 $sets_id
  * @property int                 $count
@@ -19,6 +20,7 @@ use Yii;
  * @property string              $created_at
  *
  * @property Drop[] $drop
+ * @property Drop $parentDrop
  * @property User $user
  * @property Box  $box
  */
@@ -91,6 +93,16 @@ class UserDrop extends ActiveRecord
     }
 
     /**
+     * Gets query for [[ParentDrop]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getParentDrop(): \yii\db\ActiveQuery
+    {
+        return $this->hasOne(Drop::class, ['id' => 'parentDrop']);
+    }
+
+    /**
      * @return UserDrop[]
      */
     public static function getUsersDropLast() {
@@ -115,13 +127,14 @@ class UserDrop extends ActiveRecord
      *
      * @return UserDrop
      */
-    public static function createRecord($userId, $dropId, $boxId = null, $setsId = null, $status = null, $auto = false, $count = 1, $createdAt = null)
+    public static function createRecord($userId, $dropId, $boxId = null, $setsId = null, $status = null, $auto = false, $count = 1, $createdAt = null, $parentDropId = null)
     {
         $model = new UserDrop();
         $model->user_id = $userId;
         $model->drop_id = $dropId;
         $model->box_id = $boxId;
         $model->sets_id = $setsId;
+        $model->parent_drop_id = $parentDropId;
         $model->auto = $auto;
         $model->count = $count;
         $model->status = UserDrop::STATUS_ACTIVE;

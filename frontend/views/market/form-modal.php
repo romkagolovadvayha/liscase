@@ -10,12 +10,30 @@ use yii\widgets\Pjax;
 
 ?>
 <div class="grid gap-y-24 px-24 mb-24">
-    <figure class="mb-5 flex items-center justify-center w-full relative">
+    <figure class="mb-6 flex items-center justify-center w-full relative">
         <img src="/images/design/modal/light.png" alt="" class="absolute">
         <img src="<?= $drop->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $drop->name) ?>" class="w-180 h-180 relative z-1">
     </figure>
 
     <div class="relative z-1 grid gap-y-16">
+        <?php if (!empty($drop->subDrops)): ?>
+            <div class="inventory__list mb-10">
+                <?php foreach ($drop->subDrops as $subDrop): ?>
+                    <?php $blocked = !empty($subDrop->drop->blocked_at) && strtotime($subDrop->drop->blocked_at) > time(); ?>
+                    <div class="inventory"<?=$blocked ? ' aria-disabled="true"' : ''?>>
+                        <p class="inventory__boost">x<?=$subDrop->count?></p>
+                        <img class="inventory__image" src="<?= $subDrop->drop->imageOrig->getImagePubUrl() ?>" alt="<?= Yii::t('database', $subDrop->drop->name) ?>">
+                        <p class="inventory__title"><?= Yii::t('database', $subDrop->drop->name) ?></p>
+                    </div>
+                    <!--<?php if ($blocked): ?>
+                            <div class="modal_form_products_item_blocked_wrap">
+                                <div class="modal_form_products_item_blocked_title"><?=Yii::t('common', 'Вайп блок')?></div>
+                                <div class="modal_form_products_item_blocked_timer blocked_products_timer" data-time="<?=strtotime($subDrop->drop->blocked_at)?>"><?=$subDrop->drop->blocked_at?></div>
+                            </div>
+                        <?php endif; ?>-->
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
         <h2 class="mb-8">
             <?=$drop->getRealPrice()?>
             <span class="icons icons_16px icons_16px_coin"></span>
@@ -23,7 +41,9 @@ use yii\widgets\Pjax;
         <p class="p3 text-text-teritiary">
             <?=Yii::t('database', $drop->description)?>
         </p>
-        <p class="p2 text-text-secondary"><?=Yii::t('common', 'Количество')?>: х<?=$drop->count?></p>
+        <?php if (empty($drop->subDrops)): ?>
+            <p class="p2 text-text-secondary"><?=Yii::t('common', 'Количество')?>: х<?=$drop->count?></p>
+        <?php endif; ?>
         <p class="p2 p-12 bg-background-teritiary rounded-8 flex items-center gap-x-12">
             <span class="icons icons_24px icons_24px_info"></span>
             <span>

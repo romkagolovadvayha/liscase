@@ -4,6 +4,7 @@ namespace console\controllers;
 
 use common\components\google\TranslateApi;
 use common\models\box\Box;
+use common\models\box\Category;
 use common\models\box\Drop;
 use common\models\box\DropImage;
 use common\models\box\DropType;
@@ -228,6 +229,7 @@ class DropParserController extends Controller
             ->all();
 
         $isInsert = false;
+        $google = new TranslateApi();
         foreach ($items as $item) {
             if (empty($drops[$item['eng_name']])) {
                 $model = new Drop();
@@ -236,11 +238,25 @@ class DropParserController extends Controller
                 $model->eng_name = $item['eng_name'];
                 $model->rust_id = $item['rust_id'];
                 $model->type_id = $item['type_id'];
-                $model->category_id = $item['category_id'];
+                if (!empty($item['category_name'])) {
+                    $categoryBD = Category::find()
+                                          ->andWhere(['name' => $item['category_name']])
+                                          ->one();
+                    if (!empty($categoryBD)) {
+                        $model->category_id = $categoryBD->id;
+                    } else {
+                        $categoryTag = strtolower($google->translateText($item['category_name']));
+                        $lastId = Category::createRecord($item['category_name'], $categoryTag);
+                        $model->category_id = $lastId;
+                    }
+                }
                 $model->blocked_hour = $item['blocked_hour'];
                 $model->save();
                 $this->_loadImage($item['image'], $model->id);
                 $isInsert = true;
+            } else {
+                $drops[$item['eng_name']]->name = $item['name'];
+                $drops[$item['eng_name']]->save();
             }
         }
 

@@ -47,21 +47,12 @@ $this->title = Yii::t('common', 'Промокоды');
                     'options'   => ['width' => '50'],
                 ],
                 [
-                    'attribute' => 'created_at',
-                    'options'   => ['width' => '180'],
-                    'class' => \common\components\grid\DateColumn::class,
-                    'format'    => 'raw',
-                    'value'          => function (Promocode $model) {
-                        return date('d.m.Y H:i:s', strtotime($model->created_at));
-                    },
-                ],
-                [
                     'attribute' => 'finished_at',
                     'options'   => ['width' => '180'],
                     'class' => \common\components\grid\DateColumn::class,
                     'format'    => 'raw',
                     'value'          => function (Promocode $model) {
-                        return date('d.m.Y H:i:s', strtotime($model->created_at));
+                        return date('d.m.Y H:i:s', strtotime($model->finished_at));
                     },
                 ],
                 [
