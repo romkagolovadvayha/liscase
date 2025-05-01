@@ -2,6 +2,7 @@
 
 namespace backend\controllers;
 
+use common\components\helpers\Role;
 use Yii;
 use yii\filters\AccessControl;
 use yii\web\Controller;
@@ -10,27 +11,23 @@ use yii\filters\VerbFilter;
 
 class SiteController extends Controller
 {
-    /**
-     * {@inheritdoc}
-     */
+
     public function behaviors()
     {
         return [
             'access' => [
-                'class' => AccessControl::class,
-                'only' => ['logout'],
+                'class' => \yii\filters\AccessControl::class,
                 'rules' => [
                     [
-                        'actions' => ['logout'],
                         'allow' => true,
-                        'roles' => ['@'],
+                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
                     ],
                 ],
             ],
             'verbs' => [
-                'class' => VerbFilter::class,
+                'class' => VerbFilter::className(),
                 'actions' => [
-                    'logout' => ['post'],
+                    'delete' => ['POST'],
                 ],
             ],
         ];
