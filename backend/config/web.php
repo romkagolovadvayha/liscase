@@ -27,7 +27,7 @@ $config = [
         ],
         'user'         => [
             'identityClass'   => 'common\models\user\User',
-            'loginUrl'        => ['auth/oauth?authclient=steam'],
+            'loginUrl'        => ['auth/index'],
             'enableAutoLogin' => true,
             'identityCookie'  => [
                 'name'   => '_identity',

@@ -43,6 +43,12 @@ class AuthController extends Controller
         return 'Ошибка доступа!';
     }
 
+    public function actionIndex()
+    {
+        $this->layout = '@common/views/layouts/blank';
+        return 'Ошибка доступа!';
+    }
+
     public function actionLogout()
     {
         Yii::$app->user->logout();
