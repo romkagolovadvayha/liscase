@@ -8,6 +8,7 @@ use common\models\box\Category;
 use common\models\box\Drop;
 use common\models\box\DropImage;
 use common\models\box\DropType;
+use common\models\site\SiteSetting;
 use common\models\user\User;
 use common\models\user\UserBox;
 use common\models\user\UserDrop;
@@ -262,6 +263,42 @@ class DropParserController extends Controller
 
         if ($isInsert) {
             Drop::updateCache();
+            \Yii::$app->runAction('translate/import-api');
+        }
+    }
+
+    /**
+     * drop-parser/new-settings
+     * @throws \Exception
+     */
+    public function actionNewSettings() {
+        $curl = clone \Yii::$app->curl;
+        $items = json_decode($curl->get('https://prostoj.store/api/settings'), 1);
+
+        /** @var SiteSetting[] $drops */
+        $drops = SiteSetting::find()
+            ->all();
+
+        $list = [];
+        foreach ($drops as $item) {
+            $list[$item->category . "_" . $item->code] = $item;
+        }
+
+        $isInsert = false;
+        foreach ($items as $item) {
+            if (empty($list[$item['system_code']])) {
+                $model = new SiteSetting();
+                $model->name = $item['name'];
+                $model->code = $item['code'];
+                $model->category = $item['category'];
+                $model->type = $item['type'];
+                $model->is_translate = $item['is_translate'];
+                $model->save();
+                $isInsert = true;
+            }
+        }
+
+        if ($isInsert) {
             \Yii::$app->runAction('translate/import-api');
         }
     }

@@ -7,6 +7,7 @@ use common\controllers\WebController;
 use common\models\box\Drop;
 use common\models\promocode\Promocode;
 use common\models\servers\Servers;
+use common\models\site\SiteSetting;
 use common\models\stats\Wipe;
 use common\models\user\User;
 use common\models\user\UserDrop;
@@ -506,6 +507,30 @@ class ApiController extends WebController
               'category_id' => $item->category_id,
               'category_name' => $categoryName,
               'blocked_hour' => $item->blocked_hour,
+            ];
+        }
+
+        return $items;
+    }
+
+    public function actionSettings() {
+        Yii::$app->response->statusCode = 200;
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        /** @var SiteSetting[] $list */
+        $list = SiteSetting::find()
+            ->cache(60)
+            ->all();
+
+        $items = [];
+        foreach ($list as $item) {
+            $items[] = [
+              'name' => $item->name,
+              'code' => $item->code,
+              'category' => $item->category,
+              'type' => $item->type,
+              'system_code' => $item->category . "_" . $item->code,
+              'is_translate' => $item->is_translate,
             ];
         }
 
