@@ -544,6 +544,8 @@ class ApiController extends WebController
         /** @var Servers[] $list */
         $list = Servers::find()
             ->cache(60)
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->orderBy(['sort' => SORT_ASC])
             ->all();
 
         $items = [];
