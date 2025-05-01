@@ -536,4 +536,26 @@ class ApiController extends WebController
 
         return $items;
     }
+
+    public function actionServers() {
+        Yii::$app->response->statusCode = 200;
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        /** @var Servers[] $list */
+        $list = Servers::find()
+            ->cache(60)
+            ->all();
+
+        $items = [];
+        foreach ($list as $item) {
+            $items[] = [
+              'name' => $item->name,
+              'ip' => $item->ip,
+              'port' => $item->port,
+              'query' => $item->query,
+            ];
+        }
+
+        return $items;
+    }
 }
