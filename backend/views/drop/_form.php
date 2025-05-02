@@ -31,6 +31,7 @@ JS
     <div class="col-md-4"><?= $form->field($model, 'rust_id')->textInput(); ?></div>
     <div class="col-md-4"><?= $form->field($model, 'category_id')->dropDownList(\common\models\box\Category::getCategoryList(), []) ?></div>
 </div>
+<?= $form->field($model, 'description')->textarea(['rows' => 3]); ?>
 <div class="row">
     <div class="col-md-6"><?= $form->field($model, 'preview_file')->fileInput(); ?></div>
     <div class="col-md-6"><?= $form->field($model, 'preview_file_open')->fileInput(); ?></div>
