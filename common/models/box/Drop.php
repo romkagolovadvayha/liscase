@@ -569,7 +569,10 @@ class Drop extends ActiveRecord
         if (empty($this->subDrops)) {
             if (in_array($this->rust_id, ['-2139580305'])) {
                 for ($i = 0; $i < $count; $i++) {
-                    UserDrop::createRecord($userId, $this->id, 14, $setId,UserDrop::STATUS_ACTIVE, false, 1, null, $parentId);
+                    if (empty($parentId) && empty($setId) && empty($boxId)) {
+                        $boxId = 14;
+                    }
+                    UserDrop::createRecord($userId, $this->id, $boxId, $setId,UserDrop::STATUS_ACTIVE, false, 1, null, $parentId);
                 }
             } else {
                 UserDrop::createRecord($userId, $this->id, $boxId, $setId,UserDrop::STATUS_ACTIVE, false, $count, null, $parentId);
