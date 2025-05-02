@@ -38,7 +38,7 @@ class StatsController extends WebController
      * @return \yii\web\Response | string
      * @throws NotFoundHttpException
      */
-    public function actionStats($serverTag)
+    public function actionStats($serverTag, $wipe = null)
     {
         /** @var Servers[] $servers */
         $servers = Servers::find()
@@ -58,6 +58,10 @@ class StatsController extends WebController
             throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден!'));
         }
 
+        if (empty($wipe)) {
+            $wipe = $server->currentWipe();
+        }
+
         $this->view->title                      = Yii::t('common', 'Статистика сервера') . ' ' . Yii::t('database', $server->name);
         $this->view->params['meta_description'] = Yii::t('common', "Топы игроков на сервере {PARAM_SERVER_NAME_SHORT} Rust! Узнайте, кто стал Лучшим рейдером, Лучшим киллером, Лучшим мирным игроком, Топом по онлайну, Лучшим фармером, Лучшим рыбаком, Лучшим охотником и Лучшим фермером. Смотрите рейтинги, следите за лидерами и вдохновляйтесь их достижениями на сервере {PARAM_SERVER_NAME} Rust!", [
             'PARAM_SERVER_NAME' => Yii::t('database', $server->name),
@@ -67,10 +71,10 @@ class StatsController extends WebController
 
         $user = Yii::$app->user->identity;
 
-        $items = UserTop::getUserTops($server, $server->currentWipe());
+        $items = UserTop::getUserTops($server, $wipe);
         $allUserTops = [];
         if (!Yii::$app->user->isGuest) {
-            $allUserTops = UserTop::getAllUserTops($server, $server->currentWipe());
+            $allUserTops = UserTop::getAllUserTops($server, $wipe);
         }
         $searchJS = User::searchJS();
 
