@@ -60,6 +60,15 @@ class DropForm extends Drop
         if (!$this->isSubmit) {
             return false;
         }
+        if (empty($this->min_box)) {
+            $this->min_box = 0;
+        }
+        if (empty($this->max_box)) {
+            $this->max_box = 0;
+        }
+        if (empty($this->price)) {
+            $this->price = 1;
+        }
 
         if (!$this->save()) {
             throw new \Exception('Drop not saved');
