@@ -565,18 +565,18 @@ class Drop extends ActiveRecord
         Drop::getDropListAll(true);
     }
 
-    public function give($userId, $count, $parentId = null) {
+    public function give($userId, $count, $parentId = null, $boxId = null, $setId = null) {
         if (empty($this->subDrops)) {
             if (in_array($this->rust_id, ['-2139580305'])) {
                 for ($i = 0; $i < $count; $i++) {
-                    UserDrop::createRecord($userId, $this->id, null, null,UserDrop::STATUS_ACTIVE, false, 1, null, $parentId);
+                    UserDrop::createRecord($userId, $this->id, 14, $setId,UserDrop::STATUS_ACTIVE, false, 1, null, $parentId);
                 }
             } else {
-                UserDrop::createRecord($userId, $this->id, null, null,UserDrop::STATUS_ACTIVE, false, $count, null, $parentId);
+                UserDrop::createRecord($userId, $this->id, $boxId, $setId,UserDrop::STATUS_ACTIVE, false, $count, null, $parentId);
             }
         } else {
             foreach ($this->subDrops as $subDrop) {
-                $subDrop->drop->give($userId, $subDrop->count, $this->id);
+                $subDrop->drop->give($userId, $subDrop->count, $this->id, $boxId, $setId);
             }
         }
     }
