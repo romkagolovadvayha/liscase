@@ -64,6 +64,9 @@ class Kills extends ActiveRecord
             'autoturret_deployed' => 'турель',
             'zombie' => 'зомби',
             'simpleshark' => 'акула',
+            'panther' => 'пантера',
+            'crocodile' => 'крокодил',
+            'tiger' => 'тигр',
         ];
     }
 
@@ -80,6 +83,9 @@ class Kills extends ActiveRecord
             'stag' => 'оленя',
             'zombie' => 'зомби',
             'simpleshark' => 'акулу',
+            'panther' => 'пантеру',
+            'crocodile' => 'крокодила',
+            'tiger' => 'тигра',
         ];
     }
 

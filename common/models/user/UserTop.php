@@ -223,6 +223,9 @@ class UserTop extends \yii\db\ActiveRecord
               'wolf2' => 1,
               'wolf' => 1,
               'simpleshark' => 1,
+              'panther' => 1,
+              'crocodile' => 1,
+              'tiger' => 1,
           ],
           UserTop::TYPE_FERMER => [
               'gathered_cloth' => 0.05,
