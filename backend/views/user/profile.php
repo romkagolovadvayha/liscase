@@ -280,9 +280,6 @@ $checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
                 <button type="button" class="list-group-item list-group-item-action list-group-item-info" data-bs-toggle="modal" data-bs-modal-form="role_form" data-bs-target="#modalForm">
                     Роль пользователя
                 </button>
-                <button type="button" class="list-group-item list-group-item-action list-group-item-warning" data-bs-toggle="modal" data-bs-modal-form="bonus_form" data-bs-target="#modalForm">
-                    Пополнить баланс
-                </button>
                 <button type="button" class="list-group-item list-group-item-action list-group-item-warning" data-bs-toggle="modal" data-bs-modal-form="payout_form" data-bs-target="#modalForm">
                     Вывод с реф. системы
                 </button>
@@ -299,6 +296,9 @@ $checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
                 <?php else: ?>
                     <?= Html::a('Завершить проверку', '/user/checking-stop?userId=' . $user->id, ['data-confirm' => 'Вы действительно уверены?', 'class' => 'list-group-item list-group-item-action list-group-item-success']) ?>
                 <?php endif; ?>
+            <button type="button" class="list-group-item list-group-item-action list-group-item-warning" data-bs-toggle="modal" data-bs-modal-form="bonus_form" data-bs-target="#modalForm">
+                Пополнить баланс
+            </button>
             <button type="button" class="list-group-item list-group-item-action list-group-item-danger" data-bs-toggle="modal" data-bs-modal-form="mute_form" data-bs-target="#modalForm">
                 Выдать мут игроку
             </button>
