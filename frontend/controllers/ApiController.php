@@ -191,6 +191,7 @@ class ApiController extends WebController
             ];
         }
 
+        Yii::$app->telegramChats->sendMessage("rust_id: " . $userDrop->drop[0]->rust_id);
         $gangRustIds = [-742865266, -1843426638, 1248356124, -1878475007, -1321651331];
         if (in_array($userDrop->drop[0]->rust_id, $gangRustIds)) {
             $dropBlockedIds = Drop::find()
@@ -198,6 +199,7 @@ class ApiController extends WebController
                 ->andWhere(['IN', 'rust_id', $gangRustIds])
                 ->createCommand()
                 ->queryColumn();
+            Yii::$app->telegramChats->sendMessage("dropBlockedIds: " . json_encode($dropBlockedIds));
             $dateSendend = (new \DateTime())->modify('-5 minute')->format('Y-m-d H:i:s');
             $exist = UserDrop::find()
                              ->andWhere(['status' => UserDrop::STATUS_SENDED])
@@ -283,6 +285,7 @@ class ApiController extends WebController
                     $item['block_date'] = strtotime($itemsBlocked[$userDrop->drop_id]);
                 }
             }
+            Yii::$app->telegramChats->sendMessage("rust_id: " . $userDrop->drop[0]->rust_id);
             $gangRustIds = [-742865266, -1843426638, 1248356124, -1878475007, -1321651331];
             if (in_array($userDrop->drop[0]->rust_id, $gangRustIds)) {
                 $dropBlockedIds = Drop::find()
@@ -290,6 +293,7 @@ class ApiController extends WebController
                                       ->andWhere(['IN', 'rust_id', $gangRustIds])
                                       ->createCommand()
                                       ->queryColumn();
+                Yii::$app->telegramChats->sendMessage("dropBlockedIds: " . json_encode($dropBlockedIds));
                 $dateSendend = (new \DateTime())->modify('-5 minute')->format('Y-m-d H:i:s');
                 /** @var UserDrop $dropBlock */
                 $dropBlock = UserDrop::find()
@@ -298,6 +302,7 @@ class ApiController extends WebController
                                  ->andWhere(['IN', 'user_id', $dropBlockedIds])
                                  ->andWhere(['>=', 'sended_at', $dateSendend])
                                  ->one();
+                Yii::$app->telegramChats->sendMessage("dropBlock: " . $dropBlock->drop[0]->name);
                 if (!empty($dropBlock)) {
                     $endBlockedDate = (new \DateTime($dropBlock->sended_at))->modify('+5 minute')->format('Y-m-d H:i:s');
                     $item['blocked'] = true;
