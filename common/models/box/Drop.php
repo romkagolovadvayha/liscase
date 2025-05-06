@@ -44,6 +44,7 @@ use yii\web\JsExpression;
  * @property string      $currency
  * @property BoxDrop     $boxDrop
  * @property Category     $category
+ * @property DropStat     $dropStat
  */
 class Drop extends ActiveRecord
 {
@@ -340,6 +341,16 @@ class Drop extends ActiveRecord
     public function getCategory()
     {
         return $this->hasOne(Category::class, ['id' => 'category_id']);
+    }
+
+    /**
+     * Gets query for [DropStat].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getDropStat()
+    {
+        return $this->hasOne(DropStat::class, ['drop_id' => 'id']);
     }
 
     public function getRealPrice()

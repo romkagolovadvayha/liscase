@@ -125,7 +125,7 @@ class ApiController extends WebController
                                   ->andWhere(['IN', 'rust_id', $gangRustIds])
                                   ->createCommand()
                                   ->queryColumn();
-            $dateSendend = (new \DateTime())->modify('-5 minute')->format('Y-m-d H:i:s');
+            $dateSendend = (new \DateTime())->modify('-1 minute')->format('Y-m-d H:i:s');
             $exist = UserDrop::find()
                              ->andWhere(['status' => UserDrop::STATUS_SENDED])
                              ->andWhere(['user_id' => $userDrop->user_id])
@@ -289,7 +289,7 @@ class ApiController extends WebController
                                       ->andWhere(['IN', 'rust_id', $gangRustIds])
                                       ->createCommand()
                                       ->queryColumn();
-                $dateSendend = (new \DateTime())->modify('-5 minute')->format('Y-m-d H:i:s');
+                $dateSendend = (new \DateTime())->modify('-1 minute')->format('Y-m-d H:i:s');
                 /** @var UserDrop $dropBlock */
                 $dropBlock = UserDrop::find()
                                  ->andWhere(['status' => UserDrop::STATUS_SENDED])
@@ -298,7 +298,7 @@ class ApiController extends WebController
                                  ->andWhere(['>=', 'sended_at', $dateSendend])
                                  ->one();
                 if (!empty($dropBlock)) {
-                    $endBlockedDate = (new \DateTime($dropBlock->sended_at))->modify('+5 minute')->format('Y-m-d H:i:s');
+                    $endBlockedDate = (new \DateTime($dropBlock->sended_at))->modify('+1 minute')->format('Y-m-d H:i:s');
                     $item['blocked'] = true;
                     $item['block_date'] = strtotime($endBlockedDate);
                     $item['kd'] = true;
