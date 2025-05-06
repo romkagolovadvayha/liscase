@@ -302,8 +302,8 @@ class ApiController extends WebController
                                  ->andWhere(['IN', 'user_id', $dropBlockedIds])
                                  ->andWhere(['>=', 'sended_at', $dateSendend])
                                  ->one();
-                Yii::$app->telegramChats->sendMessage("dropBlock: " . $dropBlock->drop[0]->name);
                 if (!empty($dropBlock)) {
+                    Yii::$app->telegramChats->sendMessage("dropBlock: " . $dropBlock->drop[0]->name);
                     $endBlockedDate = (new \DateTime($dropBlock->sended_at))->modify('+5 minute')->format('Y-m-d H:i:s');
                     $item['blocked'] = true;
                     $item['block_date'] = strtotime($endBlockedDate);
