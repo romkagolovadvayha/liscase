@@ -76,6 +76,18 @@ JS
     <?php endforeach; ?>
 </div>
 <?php endif; ?>
+
+<?=$this->render('list-drop-stat', [
+    'dropId' => $model->id,
+])?>
+
+<div class="form-group">
+    <a href="/drop-stat/create?dropId=<?=$model->id?>" class="btn btn-primary show-modal-link"
+       data-toggl="modal"
+       data-target="modal-dialog"
+       data-title="Добавить в статистику">Добавить в статистику</a>
+</div>
+
 <div style="margin-top: 10px;">
     <?= $form->field($model, 'isSubmit')
              ->label(false)

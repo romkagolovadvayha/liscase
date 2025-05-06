@@ -40,7 +40,7 @@ class DropStat extends ActiveRecord
     public function rules(): array
     {
         return [
-            [['drop_id', 'stat_key', 'created_at'], 'required'],
+            [['drop_id', 'stat_key', 'created_at', 'value'], 'required'],
             [['created_at'], 'safe'],
         ];
     }

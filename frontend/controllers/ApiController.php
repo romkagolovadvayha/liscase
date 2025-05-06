@@ -8,6 +8,7 @@ use common\models\box\Drop;
 use common\models\promocode\Promocode;
 use common\models\servers\Servers;
 use common\models\site\SiteSetting;
+use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
 use common\models\user\User;
 use common\models\user\UserDrop;
@@ -73,7 +74,7 @@ class ApiController extends WebController
             return json_encode($this->methodItem($id, $steam_id),JSON_PRETTY_PRINT);
         }
         if ($method === 'gived') {
-            return json_encode($this->methodGived($id),JSON_PRETTY_PRINT);
+            return json_encode($this->methodGived($id, $server),JSON_PRETTY_PRINT);
         }
         if ($method === 'basket.commands.instant') {
             return json_encode($this->methodInstant(),JSON_PRETTY_PRINT);
@@ -105,10 +106,12 @@ class ApiController extends WebController
     }
 
     /**
+     * @param      $item_id
+     * @param Servers $server
      *
      * @return array
      */
-    private function methodGived($item_id) {
+    private function methodGived($item_id, $server = null) {
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
         if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
@@ -143,6 +146,34 @@ class ApiController extends WebController
 
         $userDrop->sended_at = date('Y-m-d H:i:s');
         $userDrop->status = UserDrop::STATUS_SENDED;
+
+        if (!empty($server) && !empty($userDrop->drop[0]->dropStat)) {
+            $steamId = $userDrop->user->steam_id;
+            $statistics = Statistics::find()
+                                    ->andWhere(['steam_id' => $steamId])
+                                    ->andWhere(['server_tag' => $server->tag])
+                                    ->andWhere(['wipe' => $server->currentWipe()])
+                                    ->indexBy('key')
+                                    ->all();
+
+            foreach ($userDrop->drop[0]->dropStat as $dropStat) {
+                if (empty($dropStat->value)) {
+                    continue;
+                }
+                if (!empty($statistics[$dropStat->stat_key])) {
+                    $statistics[$dropStat->stat_key]->value += $dropStat->value;
+                    $statistics[$dropStat->stat_key]->save();
+                } else {
+                    $model = new Statistics();
+                    $model->steam_id = $steamId;
+                    $model->server_tag = $server->tag;
+                    $model->key = $dropStat->stat_key;
+                    $model->value = $dropStat->value;
+                    $model->wipe = $server->currentWipe();
+                    $model->save();
+                }
+            }
+        }
 
         \Yii::$app->queueProcess->push(new ActivatedDropJob(['userDrop'  => $userDrop]));
 
