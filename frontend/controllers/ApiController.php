@@ -135,7 +135,7 @@ class ApiController extends WebController
             $exist = UserDrop::find()
                              ->andWhere(['status' => UserDrop::STATUS_SENDED])
                              ->andWhere(['user_id' => $userDrop->user_id])
-                             ->andWhere(['IN', 'user_id', $dropBlockedIds])
+                             ->andWhere(['IN', 'drop_id', $dropBlockedIds])
                              ->andWhere(['>=', 'sended_at', $dateSendend])
                              ->exists();
             if ($exist) {
@@ -306,7 +306,7 @@ class ApiController extends WebController
                 $dropBlock = UserDrop::find()
                                  ->andWhere(['status' => UserDrop::STATUS_SENDED])
                                  ->andWhere(['user_id' => $userDrop->user_id])
-                                 ->andWhere(['IN', 'user_id', $dropBlockedIds])
+                                 ->andWhere(['IN', 'drop_id', $dropBlockedIds])
                                  ->andWhere(['>=', 'sended_at', $dateSendend])
                                  ->one();
                 if (!empty($dropBlock)) {
