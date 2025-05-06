@@ -161,14 +161,14 @@ class ApiController extends WebController
                     continue;
                 }
                 if (!empty($statistics[$dropStat->stat_key])) {
-                    $statistics[$dropStat->stat_key]->value += $dropStat->value;
+                    $statistics[$dropStat->stat_key]->value += $userDrop->count * $dropStat->value;
                     $statistics[$dropStat->stat_key]->save();
                 } else {
                     $model = new Statistics();
                     $model->steam_id = $steamId;
                     $model->server_tag = $server->tag;
                     $model->key = $dropStat->stat_key;
-                    $model->value = $dropStat->value;
+                    $model->value = $userDrop->count * $dropStat->value;
                     $model->wipe = $server->currentWipe();
                     $model->save();
                 }
