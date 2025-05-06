@@ -191,10 +191,11 @@ class ApiController extends WebController
             ];
         }
 
-        if (in_array($userDrop->drop[0]->rust_id, [-742865266, -1843426638, 1248356124, -1878475007])) {
+        $gangRustIds = [-742865266, -1843426638, 1248356124, -1878475007, -1321651331];
+        if (in_array($userDrop->drop[0]->rust_id, $gangRustIds)) {
             $dropBlockedIds = Drop::find()
                 ->select('DISTINCT(id)')
-                ->andWhere(['IN', 'rust_id', [-742865266, -1843426638, 1248356124, -1878475007]])
+                ->andWhere(['IN', 'rust_id', $gangRustIds])
                 ->createCommand()
                 ->queryColumn();
             $dateSendend = (new \DateTime())->modify('-5 minute')->format('Y-m-d H:i:s');
@@ -282,10 +283,11 @@ class ApiController extends WebController
                     $item['block_date'] = strtotime($itemsBlocked[$userDrop->drop_id]);
                 }
             }
-            if (in_array($userDrop->drop[0]->rust_id, [-742865266, -1843426638, 1248356124, -1878475007])) {
+            $gangRustIds = [-742865266, -1843426638, 1248356124, -1878475007, -1321651331];
+            if (in_array($userDrop->drop[0]->rust_id, $gangRustIds)) {
                 $dropBlockedIds = Drop::find()
                                       ->select('DISTINCT(id)')
-                                      ->andWhere(['IN', 'rust_id', [-742865266, -1843426638, 1248356124, -1878475007]])
+                                      ->andWhere(['IN', 'rust_id', $gangRustIds])
                                       ->createCommand()
                                       ->queryColumn();
                 $dateSendend = (new \DateTime())->modify('-5 minute')->format('Y-m-d H:i:s');
