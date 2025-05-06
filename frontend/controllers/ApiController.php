@@ -118,6 +118,34 @@ class ApiController extends WebController
                 'code' => 107,
             ];
         }
+        if ($userDrop->user_id == 509) {
+            Yii::$app->telegramChats->sendMessage("rust_id: " . $userDrop->drop[0]->rust_id);
+        }
+        $gangRustIds = [-742865266, -1843426638, 1248356124, -1878475007, -1321651331];
+        if (in_array($userDrop->drop[0]->rust_id, $gangRustIds)) {
+            $dropBlockedIds = Drop::find()
+                                  ->select('DISTINCT(id)')
+                                  ->andWhere(['IN', 'rust_id', $gangRustIds])
+                                  ->createCommand()
+                                  ->queryColumn();
+            if ($userDrop->user_id == 509) {
+                Yii::$app->telegramChats->sendMessage("dropBlockedIds: " . json_encode($dropBlockedIds));
+            }
+            $dateSendend = (new \DateTime())->modify('-5 minute')->format('Y-m-d H:i:s');
+            $exist = UserDrop::find()
+                             ->andWhere(['status' => UserDrop::STATUS_SENDED])
+                             ->andWhere(['user_id' => $userDrop->user_id])
+                             ->andWhere(['IN', 'user_id', $dropBlockedIds])
+                             ->andWhere(['>=', 'sended_at', $dateSendend])
+                             ->exists();
+            if ($exist) {
+                return [
+                    'result' => 'fail',
+                    'message' => "КД на взрывчатку, попробуйте позже",
+                    'code' => 107,
+                ];
+            }
+        }
 
         $userDrop->sended_at = date('Y-m-d H:i:s');
         $userDrop->status = UserDrop::STATUS_SENDED;
@@ -189,35 +217,6 @@ class ApiController extends WebController
                 'message' => "Предмет уже получен/продан",
                 'code' => 107,
             ];
-        }
-
-        if ($userDrop->user_id == 509) {
-            Yii::$app->telegramChats->sendMessage("rust_id: " . $userDrop->drop[0]->rust_id);
-        }
-        $gangRustIds = [-742865266, -1843426638, 1248356124, -1878475007, -1321651331];
-        if (in_array($userDrop->drop[0]->rust_id, $gangRustIds)) {
-            $dropBlockedIds = Drop::find()
-                ->select('DISTINCT(id)')
-                ->andWhere(['IN', 'rust_id', $gangRustIds])
-                ->createCommand()
-                ->queryColumn();
-            if ($userDrop->user_id == 509) {
-                Yii::$app->telegramChats->sendMessage("dropBlockedIds: " . json_encode($dropBlockedIds));
-            }
-            $dateSendend = (new \DateTime())->modify('-5 minute')->format('Y-m-d H:i:s');
-            $exist = UserDrop::find()
-                             ->andWhere(['status' => UserDrop::STATUS_SENDED])
-                             ->andWhere(['user_id' => $userDrop->user_id])
-                             ->andWhere(['IN', 'user_id', $dropBlockedIds])
-                             ->andWhere(['>=', 'sended_at', $dateSendend])
-                             ->exists();
-            if ($exist) {
-                return [
-                    'result' => 'fail',
-                    'message' => "КД на взрывчатку, попробуйте позже",
-                    'code' => 107,
-                ];
-            }
         }
 
         $drops = Drop::getDropListAll();
