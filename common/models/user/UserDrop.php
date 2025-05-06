@@ -18,6 +18,7 @@ use Yii;
  * @property int                 $status
  * @property int                 $auto
  * @property string              $created_at
+ * @property string              $sended_at
  *
  * @property Drop[] $drop
  * @property Drop $parentDrop

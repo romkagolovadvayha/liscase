@@ -119,6 +119,7 @@ class ApiController extends WebController
             ];
         }
 
+        $userDrop->sended_at = date('Y-m-d H:i:s');
         $userDrop->status = UserDrop::STATUS_SENDED;
 
         \Yii::$app->queueProcess->push(new ActivatedDropJob(['userDrop'  => $userDrop]));
@@ -189,6 +190,29 @@ class ApiController extends WebController
                 'code' => 107,
             ];
         }
+
+        if (in_array($userDrop->drop[0]->rust_id, [-742865266, -1843426638, 1248356124, -1878475007])) {
+            $dropBlockedIds = Drop::find()
+                ->select('DISTINCT(id)')
+                ->andWhere(['IN', 'rust_id', [-742865266, -1843426638, 1248356124, -1878475007]])
+                ->createCommand()
+                ->queryColumn();
+            $dateSendend = (new \DateTime())->modify('-5 minute')->format('Y-m-d H:i:s');
+            $exist = UserDrop::find()
+                             ->andWhere(['status' => UserDrop::STATUS_SENDED])
+                             ->andWhere(['user_id' => $userDrop->user_id])
+                             ->andWhere(['IN', 'user_id', $dropBlockedIds])
+                             ->andWhere(['>=', 'sended_at', $dateSendend])
+                             ->exists();
+            if ($exist) {
+                return [
+                    'result' => 'fail',
+                    'message' => "КД на взрывчатку, попробуйте позже",
+                    'code' => 107,
+                ];
+            }
+        }
+
         $drops = Drop::getDropListAll();
         $drop = $drops[$userDrop->drop_id];
         $result = [];
@@ -250,11 +274,33 @@ class ApiController extends WebController
                 'img' => $images[$userDrop->drop_id],
                 'blocked' => false,
                 'block_date' => null,
+                'kd' => false,
             ];
             if (!empty($drop->blocked_hour)) {
                 if (!empty($itemsBlocked[$userDrop->drop_id])) {
                     $item['blocked'] = true;
                     $item['block_date'] = strtotime($itemsBlocked[$userDrop->drop_id]);
+                }
+            }
+            if (in_array($userDrop->drop[0]->rust_id, [-742865266, -1843426638, 1248356124, -1878475007])) {
+                $dropBlockedIds = Drop::find()
+                                      ->select('DISTINCT(id)')
+                                      ->andWhere(['IN', 'rust_id', [-742865266, -1843426638, 1248356124, -1878475007]])
+                                      ->createCommand()
+                                      ->queryColumn();
+                $dateSendend = (new \DateTime())->modify('-5 minute')->format('Y-m-d H:i:s');
+                /** @var UserDrop $dropBlock */
+                $dropBlock = UserDrop::find()
+                                 ->andWhere(['status' => UserDrop::STATUS_SENDED])
+                                 ->andWhere(['user_id' => $userDrop->user_id])
+                                 ->andWhere(['IN', 'user_id', $dropBlockedIds])
+                                 ->andWhere(['>=', 'sended_at', $dateSendend])
+                                 ->one();
+                if (!empty($dropBlock)) {
+                    $endBlockedDate = (new \DateTime($dropBlock->sended_at))->modify('+5 minute')->format('Y-m-d H:i:s');
+                    $item['blocked'] = true;
+                    $item['block_date'] = strtotime($endBlockedDate);
+                    $item['kd'] = true;
                 }
             }
             if (!empty($drop->command)) {
