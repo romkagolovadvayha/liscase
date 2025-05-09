@@ -2,7 +2,7 @@
 
 <aside {% if not MOBILE %}class="menu" id="main-menu" {% if MENU_HIDDEN %}style="width: 102px;"{% endif %}{% endif %}>
     {% if not MOBILE %}
-        <button class="menu__button" id="menu-toggle-button" type="button">
+        <button class="menu__button" id="menu-toggle-button" type="button" title="{{ t('common', 'Свернуть') }}">
             <span class="icons icons_16px icons_16px_arrow_left" id="menu-button-arrow-left"></span>
             <span class="icons icons_16px icons_16px_arrow_right" id="menu-button-arrow-right"></span>
         </button>
