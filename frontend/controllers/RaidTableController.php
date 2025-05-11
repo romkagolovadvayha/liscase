@@ -446,8 +446,8 @@ class RaidTableController extends WebController
                                 'count' => 12
                             ],
                             [
-                                'name' => Statistics::getName($names, 'homing-missile'),
-                                'image' => Statistics::getImage($images, 'homing-missile'),
+                                'name' => Statistics::getName($names, 'rocket_heatseeker'),
+                                'image' => Statistics::getImage($images, 'rocket_heatseeker'),
                                 'count' => 7
                             ],
                             [
