@@ -379,9 +379,10 @@ class Drop extends ActiveRecord
 
         $result = [];
         foreach ($drops as $item) {
+            $image = !empty($item->imageOrig) ? $item->imageOrig->getImagePubUrl() : null;
             $result[$item->id] = json_encode([
                                                  'name' => $item->name,
-                                                 'image' => $item->imageOrig->getImagePubUrl(),
+                                                 'image' => $image,
                                              ]);
         }
         return $result;
