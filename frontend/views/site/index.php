@@ -96,14 +96,10 @@ $SETTINGS = Yii::$app->settings;
 //    'ROULETTE_ACCESS' => !empty($getNextOpenFreeBoxDate),
     'USER_GUEST' => Yii::$app->user->isGuest,
     'PRODUCTS_MAIN_BLOCK' => Yii::$app->view->render('products_main.twig', [
-        'PRODUCT_DROPS_SETS' => \common\models\box\Sets::getSetsForMarket(true),
-        'PRODUCT_DROPS_SELECT' => Select::getForMarket(true),
         'PRODUCT_DROPS' => Drop::getForMarket(true),
         'SETTINGS' => $SETTINGS,
     ]),
     'PRODUCTS' => Yii::$app->view->render('products.twig', [
-        'PRODUCT_DROPS_SETS' => \common\models\box\Sets::getSetsForMarket(),
-        'PRODUCT_DROPS_SELECT' => Select::getForMarket(),
         'PRODUCT_DROPS' => Drop::getForMarket(),
         'SETTINGS' => $SETTINGS,
     ]),

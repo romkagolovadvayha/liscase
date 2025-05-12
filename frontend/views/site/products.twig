@@ -1,38 +1,5 @@
 <div class="category__cards" id="products">
     {% set i = 0 %}
-    {% for item in PRODUCT_DROPS_SETS %}
-        {% include 'product.twig'
-            with {
-            'URL': "/market/form-modal-set?id=#{item.id}",
-            'PRICE': item.price,
-            'DISCOUNT': item.discount,
-            'PRICE_REAL': item.getRealPrice(),
-            'CURRENCY': 'RUB',
-            'NAME': item.name,
-            'CATEGORY_ID': 1,
-            'IMAGE': item.image(),
-            'BLOCKED': false,
-            'INDEX': i,
-        }
-        %}
-        {% set i = i + 1 %}
-    {% endfor %}
-    {% for item in PRODUCT_DROPS_SELECT %}
-        {% include 'product.twig'
-            with {
-            'URL': "/market/form-modal-select?id=#{item.id}",
-            'PRICE': item.price,
-            'PRICE_REAL': item.getRealPrice(),
-            'CURRENCY': 'RUB',
-            'NAME': item.name,
-            'CATEGORY_ID': 1,
-            'IMAGE': item.image(),
-            'BLOCKED': false,
-            'INDEX': i,
-        }
-        %}
-        {% set i = i + 1 %}
-    {% endfor %}
     {% for item in PRODUCT_DROPS %}
         {% include 'product.twig'
             with {
