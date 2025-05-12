@@ -332,7 +332,7 @@ class DropParserController extends Controller
 
             foreach ($select->selectDrop as $drop) {
                 $_model = new DropDrop();
-                $_model->drop_id = $drop->id;
+                $_model->drop_id = $drop->drop->id;
                 $_model->parent_drop_id = $model->id;
                 $_model->count = 1;
                 $_model->created_at = $drop->created_at;
@@ -360,7 +360,7 @@ class DropParserController extends Controller
 
             foreach ($box->setsDrop as $drop) {
                 $_model = new DropDrop();
-                $_model->drop_id = $drop->id;
+                $_model->drop_id = $drop->drop->id;
                 $_model->parent_drop_id = $model->id;
                 $_model->count = $drop->count;
                 $_model->created_at = $drop->created_at;
