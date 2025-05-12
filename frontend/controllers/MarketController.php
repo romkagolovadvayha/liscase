@@ -54,28 +54,35 @@ class MarketController extends WebController
     public function actionFormModal($id)
     {
         $this->layout = 'service';
-        $drop = Drop::findOne($id);
-        if (empty($drop) || $drop->status !== Drop::STATUS_ACTIVE) {
+        $drop = BuyForm::findOne($id);
+        if (empty($drop) || $drop->status !== BuyForm::STATUS_ACTIVE) {
             throw new NotFoundHttpException(Yii::t('common', 'Предмет не найден!'));
         }
-        if (!empty($_POST['buy'])) {
-            $user = Yii::$app->user->identity;
-            $balance = $user->getPersonalBalance();
-            if ($drop->getRealPrice() > $balance->balanceCeil) {
-                Yii::$app->session->addFlash('danger', Yii::t('common', 'Недостаточно средств на счете!'));
-            } else {
-                $dbTransaction = Yii::$app->db->beginTransaction();
-                try {
-                    $comment = Yii::t('common', 'Покупка предмета "{PARAMS_PREDNAME}"', [
-                        'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
-                    ]);
-                    Invoice::createRecord($user->id, $drop->getRealPrice(), Invoice::TYPE_PAYMENT_MARKET_DROP, null, null, $drop->id, $comment);
-                    $drop->give($user->id, $drop->count);
-                    $dbTransaction->commit();
-                    Yii::$app->session->addFlash('success', Yii::t('common', 'Предмет успешно приобретен!'));
-                } catch (\Exception $e) {
-                    $dbTransaction->rollBack();
-                    Yii::$app->session->addFlash('danger', Yii::t('common', 'Произошла ошибка при оплате!'));
+        $drop->load(Yii::$app->request->post());
+        if ($drop->validate()) {
+            if (!empty($_POST['buy'])) {
+                $user = Yii::$app->user->identity;
+                $balance = $user->getPersonalBalance();
+                if ($drop->getRealPrice() > $balance->balanceCeil) {
+                    Yii::$app->session->addFlash('danger', Yii::t('common', 'Недостаточно средств на счете!'));
+                } else {
+                    $entity = $drop;
+                    if (!empty($drop->drop)) {
+                        $entity = $drop->drop;
+                    }
+                    $dbTransaction = Yii::$app->db->beginTransaction();
+                    try {
+                        $comment = Yii::t('common', 'Покупка предмета "{PARAMS_PREDNAME}"', [
+                            'PARAMS_PREDNAME' => Yii::t('database', $entity->name)
+                        ]);
+                        Invoice::createRecord($user->id, $entity->getRealPrice(), Invoice::TYPE_PAYMENT_MARKET_DROP, null, null, $entity->id, $comment);
+                        $entity->give($user->id, $entity->count);
+                        $dbTransaction->commit();
+                        Yii::$app->session->addFlash('success', Yii::t('common', 'Предмет успешно приобретен!'));
+                    } catch (\Exception $e) {
+                        $dbTransaction->rollBack();
+                        Yii::$app->session->addFlash('danger', Yii::t('common', 'Произошла ошибка при оплате!'));
+                    }
                 }
             }
         }

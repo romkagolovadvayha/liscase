@@ -5,6 +5,7 @@ namespace backend\controllers;
 use common\components\helpers\Role;
 use common\models\blog\BlogImage;
 use backend\models\blog\BlogImageSearch;
+use common\models\box\DropDrop;
 use common\models\box\DropStat;
 use frontend\forms\blog\BlogImageForm;
 use yii\base\BaseObject;
@@ -16,7 +17,7 @@ use yii\filters\VerbFilter;
 /**
  * BlogImageController implements the CRUD actions for BlogImage model.
  */
-class DropStatController extends Controller
+class DropDropController extends Controller
 {
 
     /**
@@ -44,8 +45,8 @@ class DropStatController extends Controller
      */
     public function actionCreate($dropId)
     {
-        $model = new DropStat();
-        $model->drop_id = $dropId;
+        $model = new DropDrop();
+        $model->parent_drop_id = $dropId;
         $model->created_at = date('Y-m-d H:i:s');
 
         if ($this->request->isPost) {
@@ -73,7 +74,7 @@ class DropStatController extends Controller
         $model = $this->findModel($id);
 
         if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            return $this->redirect(['/drop/update?id=' . $model->drop_id]);
+            return $this->redirect(['/drop/update?id=' . $model->parent_drop_id]);
         }
 
         return $this->render('update', [
@@ -91,7 +92,7 @@ class DropStatController extends Controller
     public function actionDelete($id)
     {
         $model = $this->findModel($id);
-        $dropId = $model->drop_id;
+        $dropId = $model->parent_drop_id;
         $model->delete();
 
         return $this->redirect(['/drop/update?id=' . $dropId]);
@@ -101,15 +102,16 @@ class DropStatController extends Controller
      * Finds the BlogImage model based on its primary key value.
      * If the model is not found, a 404 HTTP exception will be thrown.
      * @param int $id ID
-     * @return DropStat the loaded model
+     * @return DropDrop the loaded model
      * @throws NotFoundHttpException if the model cannot be found
      */
     protected function findModel($id)
     {
-        if (($model = DropStat::findOne(['id' => $id])) !== null) {
+        if (($model = DropDrop::findOne(['id' => $id])) !== null) {
             return $model;
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
 }

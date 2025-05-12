@@ -6,12 +6,17 @@ use common\components\google\TranslateApi;
 use common\models\box\Box;
 use common\models\box\Category;
 use common\models\box\Drop;
+use common\models\box\DropDrop;
 use common\models\box\DropImage;
 use common\models\box\DropType;
+use common\models\box\Select;
+use common\models\box\SelectDrop;
+use common\models\box\Sets;
 use common\models\site\SiteSetting;
 use common\models\user\User;
 use common\models\user\UserBox;
 use common\models\user\UserDrop;
+use yii\base\BaseObject;
 use yii\console\Controller;
 
 class DropParserController extends Controller
@@ -300,6 +305,67 @@ class DropParserController extends Controller
 
         if ($isInsert) {
             \Yii::$app->runAction('translate/import-api');
+        }
+    }
+
+
+    /**
+     * drop-parser/migrate-drop
+     * @throws \Exception
+     */
+    public function actionMigrateDrop() {
+        /** @var Select[] $selects */
+        $selects = Select::find()->all();
+        foreach ($selects as $select) {
+            $model = new Drop();
+            $model->name = $select->name;
+            $model->drop_type = Drop::TYPE_SELECT;
+            $model->description = $select->description;
+            $model->price = 0;
+            $model->discount = 0;
+            $model->count = 1;
+            $model->category_id = 1;
+            $model->status = Drop::STATUS_ACTIVE;
+            $model->market_status = Drop::MARKET_STATUS_NOT_ACTIVE;
+            $model->created_at = $select->created_at;
+            $model->save();
+
+            foreach ($select->selectDrop as $drop) {
+                $_model = new DropDrop();
+                $_model->drop_id = $drop->id;
+                $_model->parent_drop_id = $model->id;
+                $_model->count = 1;
+                $_model->created_at = $drop->created_at;
+                $_model->save();
+            }
+        }
+
+
+        /** @var Sets[] $boxes */
+        $boxes = Sets::find()->all();
+        foreach ($boxes as $box) {
+            $model = new Drop();
+            $model->name = $box->name;
+            $model->description = $box->description;
+            $model->drop_type = Drop::TYPE_SET;
+            $model->price = $box->price;
+            $model->eng_name = $box->eng_name;
+            $model->discount = $box->discount;
+            $model->count = 1;
+            $model->category_id = 1;
+            $model->status = Drop::STATUS_ACTIVE;
+            $model->market_status = Drop::MARKET_STATUS_NOT_ACTIVE;
+            $model->created_at = $select->created_at;
+            $model->save();
+
+            foreach ($box->setsDrop as $drop) {
+                $_model = new DropDrop();
+                $_model->drop_id = $drop->id;
+                $_model->parent_drop_id = $model->id;
+                $_model->count = $drop->count;
+                $_model->created_at = $drop->created_at;
+                $_model->save();
+            }
         }
     }
 }

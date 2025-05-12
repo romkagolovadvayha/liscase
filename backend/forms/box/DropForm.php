@@ -67,7 +67,7 @@ class DropForm extends Drop
             $this->max_box = 0;
         }
         if (empty($this->price)) {
-            $this->price = 1;
+            $this->price = 0;
         }
 
         if (!$this->save()) {

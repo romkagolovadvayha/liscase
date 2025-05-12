@@ -47,6 +47,11 @@ $(document).on('pjax:complete', function() {
             new bootstrap.Tooltip(tooltip);
         });
     }
+    if (document.getElementById('buy-container')) {
+        document.getElementById('buy-container').querySelectorAll('[data-bs-toggle="tooltip"]').forEach((tooltip) => {
+            new bootstrap.Tooltip(tooltip);
+        });
+    }
 });
 var categories = $('.categories .category');
 var more_products_button = $('#more_products');

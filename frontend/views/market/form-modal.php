@@ -1,14 +1,32 @@
 <?php
 
 /** @var yii\web\View $this */
-/** @var \common\models\box\Drop $drop */
+/** @var \frontend\forms\market\BuyForm $drop */
 
-use common\models\box\Box;
+use yii\helpers\Html;
 use yii\bootstrap5\ActiveForm;
 use frontend\widgets\Alert;
 use yii\widgets\Pjax;
+use common\models\box\Drop;
+use common\models\box\DropDrop;
 
 ?>
+<?php Pjax::begin(
+    [
+        'id'              => 'buy-container-pjax',
+        'enablePushState' => false
+    ]
+); ?>
+<?php $form = ActiveForm::begin(
+    [
+        'enableClientValidation' => false,
+        'enableAjaxValidation'   => false,
+        'id'                     => 'buy-container',
+        'options'                => [
+            'data-pjax' => 1,
+        ],
+    ]
+); ?>
 <div class="grid gap-y-24 px-24 mb-24">
     <figure class="mb-6 flex items-center justify-center w-full relative">
         <img src="/images/design/modal/light.png" alt="" class="absolute">
@@ -16,7 +34,7 @@ use yii\widgets\Pjax;
     </figure>
 
     <div class="relative z-1 grid gap-y-16">
-        <?php if (!empty($drop->subDrops)): ?>
+        <?php if ($drop->drop_type !== Drop::TYPE_SELECT && !empty($drop->subDrops)): ?>
             <div class="inventory__list mb-10">
                 <?php foreach ($drop->subDrops as $subDrop): ?>
                     <?php $blocked = !empty($subDrop->drop->blocked_at) && strtotime($subDrop->drop->blocked_at) > time(); ?>
@@ -33,13 +51,64 @@ use yii\widgets\Pjax;
                         <?php endif; ?>-->
                 <?php endforeach; ?>
             </div>
+        <?php elseif ($drop->drop_type === Drop::TYPE_SELECT): ?>
+                    <?= $form->field($drop, 'drop_id',
+                             [
+                                 'errorOptions'   => [
+                                     'encode' => false,
+                                     'class'  => 'help-block',
+                                 ],
+                             ])
+                     ->radioList($drop->subDrops, [
+                         'class'  => 'access-card__list mb-10',
+                         'item' => function ($index, DropDrop $label, $name, $checked, $value) use ($drop) {
+                             $id = 'option_' . $label->drop->id . '_' . $index;
+                             $return = Html::radio($name, $label->drop_id == $drop->drop_id, [
+                                 'id'    => $id,
+                                 'value' => $label->drop->id,
+                                 'class' => 'modal_form_product_select_item_radio access-card__radio',
+                             ]);
+                             $img = Html::img($label->drop->imageOrig->getImagePubUrl(), [
+                                 'class' => 'access-card__image',
+                             ]);
+                             $text = Html::tag('span', $label->drop->getRealPrice());
+                             $textWrap = Html::tag('span', $text . ' <span class="icons icons_16px icons_16px_coin"></span>', [
+                                 'class' => 'access-card__title',
+                             ]);
+                             $wrapClass = ($label->drop_id == $drop->drop_id) ? 'access-card access-card_active' : 'access-card';
+                             $return .= Html::label($img . $textWrap, $id, [
+                                 'class' => $wrapClass,
+                             ]);
+                             $wrap = Html::tag('div', $return, [
+                                 'class' => 'access-card__wrap',
+                                 'data-bs-toggle' => 'tooltip',
+                                 'data-bs-placement' => 'bottom',
+                                 'data-bs-title' => Yii::t('database', $label->drop->name),
+                             ]);
+                             return $wrap;
+                         },
+                     ])
+                     ->label(false); ?>
+        <?php endif; ?>
+        <?php if (!empty($drop->drop)): ?>
+            <div class="mb-1">
+                <?=$drop->drop->name?>
+            </div>
         <?php endif; ?>
         <h2 class="mb-8">
-            <?=$drop->getRealPrice()?>
+            <?php if (!empty($drop->drop)): ?>
+                <?=$drop->drop->getRealPrice()?>
+            <?php else: ?>
+                <?=$drop->getRealPrice()?>
+            <?php endif; ?>
             <span class="icons icons_16px icons_16px_coin"></span>
         </h2>
         <p class="p3 text-text-teritiary">
-            <?=Yii::t('database', $drop->description)?>
+            <?php if (!empty($drop->drop)): ?>
+                <?=Yii::t('database', $drop->drop->description)?>
+            <?php else: ?>
+                <?=Yii::t('database', $drop->description)?>
+            <?php endif; ?>
         </p>
         <?php if (empty($drop->subDrops)): ?>
             <p class="p2 text-text-secondary"><?=Yii::t('common', 'Количество')?>: х<?=$drop->count?></p>
@@ -65,31 +134,15 @@ use yii\widgets\Pjax;
             </a>
         </button>
     <?php else: ?>
-        <?php Pjax::begin(
-            [
-                'id'              => 'buy-container-pjax',
-                'enablePushState' => false
-            ]
-        ); ?>
-        <?php $form = ActiveForm::begin(
-            [
-                'enableClientValidation' => false,
-                'enableAjaxValidation'   => false,
-                'id'                     => 'buy-container',
-                'options'                => [
-                    'data-pjax' => 1,
-                ],
-            ]
-        ); ?>
         <?= Alert::widget() ?>
-        <input type="hidden" name="buy" value="1"/>
+        <input type="hidden" class="modal_form_product_buy" name="buy" value="1"/>
         <div class="modal_form_product_buttons">
             <button class="button-primary w-full" id="buy_product" type="submit">
                 <span class="button__text"><?=Yii::t('common', 'Оплатить')?></span>
             </button>
         </div>
-        <?php ActiveForm::end(); ?>
-        <?php Pjax::end(); ?>
     <?php endif; ?>
 </footer>
+<?php ActiveForm::end(); ?>
+<?php Pjax::end(); ?>
 <div class="modal_preloader" id="product-loader"></div>

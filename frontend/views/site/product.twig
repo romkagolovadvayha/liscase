@@ -19,7 +19,7 @@
     <button class="button-teritiary" {% if BLOCKED %}disabled{% endif %}>
                 <span class="button__text">
                     {% if not BLOCKED %}
-                        {% if PRICE %}
+                        {% if PRICE > 0 %}
                             {% if PRICE_REAL != PRICE %}
                                 <span class="old-price">{{ PRICE }}</span>
                             {% endif %}
