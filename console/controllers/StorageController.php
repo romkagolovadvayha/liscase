@@ -133,4 +133,31 @@ class StorageController extends Controller
         Drop::updateCache();
         Yii::$app->cache->delete($cacheKey);
     }
+
+    /**
+     * storage/update-servers
+     *
+     * @throws \Exception
+     */
+    public function actionUpdateServers()
+    {
+        $cacheKey = "Storage_actionUpdateServers";
+        if (Yii::$app->cache->get($cacheKey)) {
+            return 'BLOCKED';
+        }
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+
+        Yii::$app->cache->set($cacheKey, 1, 5*60);
+        ini_set('memory_limit', '512M');
+        foreach ($servers as $server) {
+            $result = $server->getWipes(true);
+            print_r($server->name);
+            print_r($result);
+        }
+        Yii::$app->cache->delete($cacheKey);
+    }
 }
