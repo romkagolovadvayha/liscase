@@ -514,14 +514,24 @@ class Servers extends \common\components\base\ActiveRecord
             return Yii::$app->cache->get($cacheKey);
         }
 
-        //$result = [];
+        $result = [];
         $wipes = Statistics::find()
                   ->select('DISTINCT(wipe)')
                   ->andWhere(['server_tag' => $this->tag])
+                  ->orderBy(['id' => SORT_DESC])
                   ->createCommand()
                   ->queryColumn();
 
-        //Yii::$app->cache->set($cacheKey, $result, 30*60);
-        return $wipes;
+        $count = 0;
+        foreach ($wipes as $wipe) {
+            $result[$wipe] = $wipe;
+            $count++;
+            if ($count > 10) {
+                break;
+            }
+        }
+
+        Yii::$app->cache->set($cacheKey, $result, 24*60*60);
+        return $result;
     }
 }

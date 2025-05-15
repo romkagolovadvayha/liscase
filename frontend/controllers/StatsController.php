@@ -78,11 +78,15 @@ class StatsController extends WebController
         }
         $searchJS = User::searchJS();
 
+        $wipes = $server->getWipes(true);
+
         return $this->render('statistics.twig', [
             'SERVER'  => $server,
             'SERVERS'  => $servers,
             'USER'  => $user,
             'ITEMS'  => $items,
+            'WIPES'  => $wipes,
+            'WIPE'  => $wipe,
             'SEARCH_JS'  => $searchJS,
             'ALL_USER_TOP'  => $allUserTops,
         ]);

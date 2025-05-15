@@ -154,9 +154,7 @@ class StorageController extends Controller
         Yii::$app->cache->set($cacheKey, 1, 5*60);
         ini_set('memory_limit', '512M');
         foreach ($servers as $server) {
-            $result = $server->getWipes(true);
-            print_r($server->name);
-            print_r($result);
+            $server->getWipes(true);
         }
         Yii::$app->cache->delete($cacheKey);
     }
