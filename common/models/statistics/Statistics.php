@@ -33,6 +33,35 @@ class Statistics extends ActiveRecord
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function rules()
+    {
+        return [
+            [['value'], 'integer'],
+            [['steam_id'], 'string', 'max' => 19],
+            [['key'], 'string', 'max' => 60],
+            [['server_tag'], 'string', 'max' => 11],
+            [['wipe'], 'string', 'max' => 30],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'steam_id' => 'Steam ID',
+            'key' => 'Key',
+            'value' => 'Value',
+            'server_tag' => 'Server Tag',
+            'wipe' => 'Wipe',
+        ];
+    }
+
+    /**
      * @return \yii\db\ActiveQuery
      */
     public function getUser()

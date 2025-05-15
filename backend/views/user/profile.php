@@ -299,9 +299,9 @@ $checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
             <button type="button" class="list-group-item list-group-item-action list-group-item-warning" data-bs-toggle="modal" data-bs-modal-form="bonus_form" data-bs-target="#modalForm">
                 Пополнить баланс
             </button>
-            <button type="button" class="list-group-item list-group-item-action list-group-item-danger" data-bs-toggle="modal" data-bs-modal-form="mute_form" data-bs-target="#modalForm">
-                Выдать мут игроку
-            </button>
+            <a type="button" class="list-group-item list-group-item-action list-group-item-primary" href="/statistics?StatisticsSearch%5Bsteam_id%5D=<?=$user->steam_id?>&StatisticsSearch%5Bkey%5D=&StatisticsSearch%5Bvalue%5D=&StatisticsSearch%5Bserver_tag%5D=<?=$user->server->tag?>&StatisticsSearch%5Bwipe%5D=<?=$user->server->currentWipe()?>">
+                Статистика игрока
+            </a>
         </div>
     </div>
     <div class="col-md-10">

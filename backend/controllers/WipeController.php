@@ -203,4 +203,12 @@ class WipeController extends Controller
         return $this->redirect('index');
     }
 
+    public function actionClearCache()
+    {
+        Yii::$app->runAction('translate/clear-translate-cache');
+
+        Yii::$app->session->addFlash('success', 'Кэш очищен!');
+        return $this->redirect('index');
+    }
+
 }
