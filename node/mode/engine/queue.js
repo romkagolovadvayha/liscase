@@ -5,7 +5,7 @@ const { PassThrough } = require('stream');
 
 const Throttle = require('throttle');
 const NeoBlessed = require('neo-blessed');
-const { ffprobeSync } = require('@dropb/ffprobe');
+const { ffprobe } = require('@dropb/ffprobe');
 
 const AbstractClasses = require('./shared/abstract-classes');
 const Utils = require('../utils');
@@ -49,26 +49,25 @@ class Queue extends AbstractClasses.TerminalItemBox {
         }
     }
 
-    _getBitRate(song) {
+    async _getBitRate(song) {
         try {
-            const bitRate = ffprobeSync(Path.join(process.cwd(), song)).format.bit_rate;
+            const result = await ffprobe(Path.join(process.cwd(), song));
+            const bitRate = result.format.bit_rate;
             return parseInt(bitRate);
-        }
-        catch (err) {
+        } catch (err) {
             return 128000; // reasonable default
         }
     }
 
-    _playLoop() {
-
+    async _playLoop() {
         this._currentSong = this._songs.length
             ? this.removeFromQueue({ fromTop: true })
             : this._currentSong;
-        const bitRate = this._getBitRate(this._currentSong);
 
+        const bitRate = await this._getBitRate(this._currentSong);
         const songReadable = Fs.createReadStream(this._currentSong);
-
         const throttleTransformable = new Throttle(bitRate / 8);
+
         throttleTransformable.on('data', (chunk) => this._broadcastToEverySink(chunk));
         throttleTransformable.on('end', () => this._playLoop());
 
