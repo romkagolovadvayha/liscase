@@ -517,6 +517,13 @@ class ChatServer extends WebSocketServer
                 $model->created_at = date('Y-m-d H:i:s');
                 $model->save();
 
+                $domain = Yii::$app->settings->get('site_domain');
+                $text = "💬 Новое сообщение.";
+                $text .= PHP_EOL. "Имя: {$user->username}";
+                $text .= PHP_EOL. "Сообщение: {$model->message}";
+                $text .= PHP_EOL. "<a href=\"https://{$domain}/support/ticket?id={$model->getNumber()}\">Перейти к тикету</a>";
+                Yii::$app->telegramSupport->sendMessage($text);
+
                 SupportRead::createRecord($chat->user_id, $user->id, $model->id, $chat->id);
 
                 $this->commandTicketUpdate($client, json_encode(['user_id' => $chat->user_id]));

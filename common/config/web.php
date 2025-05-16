@@ -152,6 +152,9 @@ $config = [
         'telegramChats'   => [
             'class'  => \common\components\telegram\TelegramChats::class,
         ],
+        'telegramSupport'   => [
+            'class'  => \common\components\telegram\TelegramSupport::class,
+        ],
         'telegramReport'   => [
             'class'  => \common\components\telegram\TelegramReport::class,
         ],
