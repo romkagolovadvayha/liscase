@@ -33,7 +33,6 @@ const _addPlaylistAndQueueListeners = () => {
      * listeners for the playlist box (playlist's view layer events)
      */
     const playlistOnScroll = (scrollKey) => {
-       
         playlist.scroll(scrollKey);
         view.render();
     };
@@ -41,7 +40,6 @@ const _addPlaylistAndQueueListeners = () => {
     playlist.box.key(keys.SCROLL_DOWN, playlistOnScroll);
 
     playlist.box.key(keys.QUEUE_ADD, () => {
-
         const focusedSong = playlist.getFocusedSong();
         const formattedSong = Utils.discardFirstWord(focusedSong);
         queue.createAndAppendToQueue(formattedSong);
@@ -102,9 +100,16 @@ const _addPlaylistAndQueueListeners = () => {
 };
 
 exports.start = () => {
-
     _addPlaylistAndQueueListeners();
     playlist.fillWithItems(Utils.readSongs());
+
+    // ➕ Добавляем все треки в очередь при запуске
+    const allSongs = playlist.getAllSongs();
+    allSongs.forEach(song => {
+        const formattedSong = Utils.discardFirstWord(song);
+        queue.createAndAppendToQueue(formattedSong);
+    });
+
     view.appendBoxes([playlist.box, queue.box, nowPlaying.box, controls.box]);
     view.render();
     queue.init();

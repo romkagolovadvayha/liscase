@@ -29,6 +29,10 @@ class Playlist extends AbstractClasses.TerminalItemBox {
         return child && child.content;
     }
 
+    getAllSongs() {
+        return this.box.children.map(child => child.content);
+    }
+
     _doChildrenOverflow() {
         return this._getHeight() < this.box.children.length;
     }
