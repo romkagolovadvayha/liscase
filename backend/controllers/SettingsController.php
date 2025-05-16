@@ -81,6 +81,7 @@ class SettingsController extends Controller
             }
             Yii::$app->settings->getSettings(true);
             Yii::$app->session->setFlash('success', 'Настройки успешно сохранены!');
+            Yii::$app->cache->delete('Settings_getSettings');
         }
 
         return $this->render('pages/form', [
