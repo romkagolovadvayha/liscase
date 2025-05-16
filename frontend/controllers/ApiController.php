@@ -468,7 +468,11 @@ class ApiController extends WebController
               'url' => 'https://radio.mediacdn.ru/sputnik_fm.mp3',
           ],
           [
-              'name' => 'PROSTOJ NEW',
+              'name' => 'PROSTOJ ONE',
+              'url' => 'https://ws.prostoj.store/radio1/stream',
+          ],
+          [
+              'name' => 'PROSTOJ TWO',
               'url' => 'https://myradio24.org/46527',
           ],
         ];
