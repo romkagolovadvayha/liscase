@@ -38,11 +38,7 @@ class Statistics extends ActiveRecord
     public function rules()
     {
         return [
-            [['value'], 'integer'],
-            [['steam_id'], 'string', 'max' => 19],
-            [['key'], 'string', 'max' => 60],
-            [['server_tag'], 'string', 'max' => 11],
-            [['wipe'], 'string', 'max' => 30],
+            [['wipe', 'server_tag', 'key', 'steam_id', 'value'], 'safe'],
         ];
     }
 
