@@ -104,11 +104,12 @@ exports.start = () => {
     playlist.fillWithItems(Utils.readSongs());
 
     // ➕ Добавляем все треки в очередь при запуске
-    const allSongs = playlist.getAllSongs();
-    allSongs.forEach(song => {
-        const formattedSong = Utils.discardFirstWord(song);
-        queue.createAndAppendToQueue(formattedSong);
-    });
+    const songPaths = Utils.readSongs(); // массив путей к файлам
+    playlist.fillWithItems(songPaths);
+
+    for (const songPath of songPaths) {
+        queue.createAndAppendToQueue(songPath);
+    }
 
     view.appendBoxes([playlist.box, queue.box, nowPlaying.box, controls.box]);
     view.render();
