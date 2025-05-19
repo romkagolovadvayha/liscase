@@ -64,6 +64,7 @@ class MirrorController extends Controller
 
         $text = "📡 Новое подключение по зеркалу";
         $text .= PHP_EOL . "Название зеркала: {$title}";
+        $text .= PHP_EOL . "SteamId: {$steamId}";
 
 
         if (empty($user)) {
