@@ -144,6 +144,16 @@ class DropImage extends ActiveRecord
             'flatten' => false, // сохраняет прозрачность
         ]);
 
+        if ($newSize == 150) {
+            \Tinify\setKey("dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8"); // ← сюда свой ключ
+            try {
+                $source = \Tinify\fromFile($destinationPath);
+                $source->toFile($destinationPath); // перезаписывает исходный файл
+            } catch(\Tinify\Exception $e) {
+                Yii::error("TinyPNG compression error: " . $e->getMessage());
+            }
+        }
+
         return true;
     }
 }
