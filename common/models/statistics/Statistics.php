@@ -402,7 +402,7 @@ class Statistics extends ActiveRecord
             ->all();
 
         foreach ($drops as $item) {
-            $result[$item->eng_name] = $item->image();
+            $result[$item->eng_name] = $item->image64();
         }
 
         Yii::$app->cache->set($cacheKey, $result, 30*60);

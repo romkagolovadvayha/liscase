@@ -475,6 +475,45 @@ class Drop extends ActiveRecord
      * Получить URL изображения.
      * Загружает и кэширует изображение, если оно не было загружено ранее.
      */
+    public function image64() {
+        foreach ($this->dropImages as $item) {
+            if ($item->type === DropImage::TYPE_64) {
+                return $item->getImagePubUrl();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Получить URL изображения.
+     * Загружает и кэширует изображение, если оно не было загружено ранее.
+     */
+    public function image150() {
+        foreach ($this->dropImages as $item) {
+            if ($item->type === DropImage::TYPE_150) {
+                return $item->getImagePubUrl();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Получить URL изображения.
+     * Загружает и кэширует изображение, если оно не было загружено ранее.
+     */
+    public function image100() {
+        foreach ($this->dropImages as $item) {
+            if ($item->type === DropImage::TYPE_100) {
+                return $item->getImagePubUrl();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Получить URL изображения.
+     * Загружает и кэширует изображение, если оно не было загружено ранее.
+     */
     public function imageShop() {
         foreach ($this->dropImages as $item) {
             if ($item->type === DropImage::TYPE_ORIG) {
@@ -510,7 +549,12 @@ class Drop extends ActiveRecord
                      ->all();
 
         foreach ($drops as $item) {
-            $result[$item->id] = $item->image();
+            $result[$item->id] = [
+                'full' => $item->image(),
+                '64px' => $item->image64(),
+                '100px' => $item->image100(),
+                '150px' => $item->image150(),
+            ];
         }
 
         Yii::$app->cache->set($cacheKey, $result, 30*60);

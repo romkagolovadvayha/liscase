@@ -78,7 +78,7 @@ if (!Yii::$app->user->isGuest) {
         }
     }
 }
-
+$images = Drop::productsImages();
 $SETTINGS = Yii::$app->settings;
 ?>
 
@@ -97,10 +97,12 @@ $SETTINGS = Yii::$app->settings;
     'USER_GUEST' => Yii::$app->user->isGuest,
     'PRODUCTS_MAIN_BLOCK' => Yii::$app->view->render('products_main.twig', [
         'PRODUCT_DROPS' => Drop::getForMarket(true),
+        'IMAGES' => $images,
         'SETTINGS' => $SETTINGS,
     ]),
     'PRODUCTS' => Yii::$app->view->render('products.twig', [
         'PRODUCT_DROPS' => Drop::getForMarket(),
+        'IMAGES' => $images,
         'SETTINGS' => $SETTINGS,
     ]),
     'CATEGORIES' => Yii::$app->view->render('categories.twig', [
