@@ -140,7 +140,7 @@ class DropImage extends ActiveRecord
         // Сохранение в PNG с уровнем сжатия 6 (примерно 70%)
         $resizedImage->save($destinationPath, [
             'format' => 'png',
-            'png_compression_level' => 6, // 0 — без сжатия, 9 — максимум
+            'png_compression_level' => 9, // 0 — без сжатия, 9 — максимум
             'flatten' => false, // сохраняет прозрачность
         ]);
 
