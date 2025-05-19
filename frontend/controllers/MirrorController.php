@@ -2,6 +2,7 @@
 
 namespace frontend\controllers;
 
+use common\models\mirrors\Mirrors;
 use common\models\user\User;
 use yii\base\BaseObject;
 use yii\filters\AccessControl;
@@ -44,9 +45,7 @@ class MirrorController extends Controller
     {
         Yii::$app->response->statusCode = 200;
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-        Yii::$app->telegramChats->sendMessage(Yii::$app->request->rawBody);
         $data = json_decode(Yii::$app->request->rawBody, 1);
-        Yii::$app->telegramChats->sendMessage($data);
         //$data = json_decode('{"username":"Rust Connections","embeds":[{"title":"Новое подключение на МОСКВА [NOLIMIT|SKINS] Wi","color":8388863,"fields":[{"name":"SteamID","value":"76561199261574995","inline":true},{"name":"IP","value":"2.73.239.192:25254","inline":true},{"name":"Уникальных подключений","value":"5","inline":true}],"footer":{"text":"При перезапуске подключения обнуляются"}}]}', 1);
 
         $title = str_replace('Новое подключение на ', '', $data['embeds'][0]['title']);
