@@ -67,6 +67,8 @@ use yii\web\JsExpression;
  * @property string          $ip
  * @property string          $promocode
  * @property int             $ping
+ * @property bool            $is_mirror_registration
+ * @property bool            $is_mirror_returned
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances

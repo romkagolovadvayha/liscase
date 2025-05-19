@@ -294,6 +294,12 @@ class Deposit extends \common\components\base\ActiveRecord
         if (!empty($user->server)) {
             $message .= PHP_EOL . "Сервер: {$user->server->name}";
         }
+        if ($user->is_mirror_returned) {
+            $message .= PHP_EOL . "<b>Игрок вернулся с зеркала</b>";
+        }
+        if ($user->is_mirror_registration) {
+            $message .= PHP_EOL . "<b>Игрок пришел к нам зеркала</b>";
+        }
 
         $depositsSum = Deposit::find()
             ->andWhere(['user_id' => $user->id])
