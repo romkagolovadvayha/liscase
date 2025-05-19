@@ -108,6 +108,12 @@ class DropImage extends ActiveRecord
 
     public static function resizeImage($sourcePath, $destinationPath, $newSize)
     {
+        $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+        if ($extension === 'svg') {
+            // Не обрабатывать SVG — пропускаем или логируем
+            return false;
+        }
+
         // Открытие оригинального изображения
         $image = Image::getImagine()->open($sourcePath);
         $size = $image->getSize();
