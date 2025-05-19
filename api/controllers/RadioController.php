@@ -2,22 +2,7 @@
 
 namespace api\controllers;
 
-use common\components\queue\process\ActivatedDropJob;
-use common\controllers\WebController;
-use common\models\box\Drop;
-use common\models\promocode\Promocode;
-use common\models\servers\Servers;
-use common\models\site\SiteSetting;
-use common\models\statistics\Statistics;
-use common\models\stats\Wipe;
-use common\models\user\User;
-use common\models\user\UserDrop;
-use common\models\box\DropBlocked;
-use WebSocket\Client;
-use yii\base\BaseObject;
 use yii\web\Controller;
-use yii\web\JsonResponseFormatter;
-use yii\web\NotFoundHttpException;
 use Yii;
 use yii\web\Response;
 
