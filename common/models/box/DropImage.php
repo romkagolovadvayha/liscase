@@ -5,6 +5,7 @@ namespace common\models\box;
 use common\components\base\ActiveRecord;
 use common\models\news\NewsContent;
 use Yii;
+use yii\imagine\Image;
 
 /**
  * @property int                 $id
@@ -17,6 +18,9 @@ class DropImage extends ActiveRecord
 {
     const TYPE_ORIG = 1;
     const TYPE_ORIG_2 = 2;
+    const TYPE_64 = 3;
+    const TYPE_150 = 4;
+    const TYPE_100 = 5;
 
     /**
      * @inheritdoc
@@ -102,4 +106,38 @@ class DropImage extends ActiveRecord
         return true;
     }
 
+    public static function resizeImage($sourcePath, $destinationPath, $newSize)
+    {
+        // Открытие оригинального изображения
+        $image = Image::getImagine()->open($sourcePath);
+        $size = $image->getSize();
+
+        $maxWidth = $newSize;
+        $maxHeight = $newSize;
+
+        // Расчет масштабного коэффициента
+        $ratio = min($maxWidth / $size->getWidth(), $maxHeight / $size->getHeight(), 1);
+
+        // Новые размеры
+        $newWidth = (int)($size->getWidth() * $ratio);
+        $newHeight = (int)($size->getHeight() * $ratio);
+        $box = new \Imagine\Image\Box($newWidth, $newHeight);
+
+        // Создание уменьшенного изображения с сохранением пропорций
+        $resizedImage = $image->resize($box);
+
+        if (!file_exists(dirname($destinationPath))) {
+            mkdir(dirname($destinationPath));
+            chmod(dirname($destinationPath), 0777);
+        }
+
+        // Сохранение в PNG с уровнем сжатия 6 (примерно 70%)
+        $resizedImage->save($destinationPath, [
+            'format' => 'png',
+            'png_compression_level' => 6, // 0 — без сжатия, 9 — максимум
+            'flatten' => false, // сохраняет прозрачность
+        ]);
+
+        return true;
+    }
 }

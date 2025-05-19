@@ -27,6 +27,7 @@ $config = [
             'class'                   => 'DemonDogSL\translateManager\Module',
             'root'                    => [
                 '@backend',
+                '@api',
                 '@frontend',
                 '@common',
                 '@console',
