@@ -277,7 +277,7 @@ class ShopController extends Controller
 
         $result = [];
         $data = [];
-        $images = Drop::productsImagesShop();
+        $images = Drop::productsImages();
         $drops = Drop::getDropListAll();
         $itemsBlocked = DropBlocked::getBlockedList($serverId);
         foreach ($userDrops as $userDrop) {
@@ -286,7 +286,7 @@ class ShopController extends Controller
                 'id' => $userDrop->id,
                 'amount' => $userDrop->count,
                 'name' => $drop->name,
-                'img' => $images[$userDrop->drop_id],
+                'img' => $images[$userDrop->drop_id]['64px'],
                 'blocked' => false,
                 'block_date' => null,
                 'kd' => false,
