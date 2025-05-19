@@ -144,13 +144,31 @@ class DropImage extends ActiveRecord
             'flatten' => false, // сохраняет прозрачность
         ]);
 
-        if ($newSize == 150) {
+        if ($newSize == 150 || $newSize == 64) {
             \Tinify\setKey("dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8"); // ← сюда свой ключ
             try {
                 $source = \Tinify\fromFile($destinationPath);
                 $source->toFile($destinationPath); // перезаписывает исходный файл
             } catch(\Tinify\Exception $e) {
-                Yii::error("TinyPNG compression error: " . $e->getMessage());
+                \Tinify\setKey("SQMyJN0ZNs1zQfzrwBjMcsRHCnpffCbl"); // ← сюда свой ключ
+                try {
+                    $source = \Tinify\fromFile($destinationPath);
+                    $source->toFile($destinationPath); // перезаписывает исходный файл
+                } catch(\Tinify\Exception $e) {
+                    \Tinify\setKey("8DTWnyW4m99062qs1X7p6dGgFcjM3Gb7"); // ← сюда свой ключ
+                    try {
+                        $source = \Tinify\fromFile($destinationPath);
+                        $source->toFile($destinationPath); // перезаписывает исходный файл
+                    } catch(\Tinify\Exception $e) {
+                        \Tinify\setKey("yq4GXtx6DlyJhqWmgH0f5JPYYw68JNZY"); // ← сюда свой ключ
+                        try {
+                            $source = \Tinify\fromFile($destinationPath);
+                            $source->toFile($destinationPath); // перезаписывает исходный файл
+                        } catch(\Tinify\Exception $e) {
+                            Yii::error("TinyPNG compression error: " . $e->getMessage());
+                        }
+                    }
+                }
             }
         }
 
