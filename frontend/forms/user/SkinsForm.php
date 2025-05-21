@@ -18,6 +18,7 @@ class SkinsForm extends \common\components\base\ActiveRecord
 {
     public string $id;
     public string $amount;
+    public $market;
 
     public function rules(): array
     {
@@ -51,7 +52,7 @@ class SkinsForm extends \common\components\base\ActiveRecord
         }
         Yii::$app->cache->set($cacheKey, time() + 5, 5);
 
-        $data = \Yii::$app->rustTm->items();
+        $data = $this->market->items();
         if (empty($data[$this->id])) {
             $this->addError('id', Yii::t('common', 'Этот скин ксожалению уже купили, выберите другой!'));
             return false;

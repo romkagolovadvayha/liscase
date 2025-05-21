@@ -303,6 +303,11 @@ class UserController extends WebController
         $provider = $data->search(Yii::$app->request->get(), $type);
 
         $form = new SkinsForm();
+        if ($type == 'rust') {
+            $form->market = Yii::$app->rustTm;
+        } else {
+            $form->market = Yii::$app->csGoMarket;
+        }
         if (Yii::$app->request->isPost && $form->load(Yii::$app->request->post())) {
             if ($form->saveRecord()) {
                 Yii::$app->session->addFlash('success', Yii::t('common', 'Скин отправляется, ожидайте трейд-обмен'));
