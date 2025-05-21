@@ -159,6 +159,7 @@ class CsGoMarket
                 "diff" => $diff,
                 "name_search" => $item->market_hash_name . $item->ru_name,
                 "name" => $title,
+                "market_hash_name" => $item->market_hash_name,
                 "ru_name" => $titleRu,
                 "category" => $category,
                 "price" => ceil($item->price * 1.3),
