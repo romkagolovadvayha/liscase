@@ -52,7 +52,6 @@ class CsGoMarket
      */
     public function prices(): array
     {
-        ini_set('memory_limit', '512M');
         $uploadDir = Yii::getAlias('@frontend/web/uploads/prices');
         return json_decode(file_get_contents($uploadDir . '/csmarket.json'), true);
     }
@@ -72,6 +71,7 @@ class CsGoMarket
      */
     public function items(): array
     {
+        ini_set('memory_limit', '512M');
         $cacheKey = "CSGO_items";
         $cacheKeyCategories = "CSGO_categories";
         if (Yii::$app->cache->get($cacheKey)) {
