@@ -155,7 +155,7 @@ class RustTm
                 "name_search" => $item['market_hash_name'] . $item['ru_name'],
                 "name" => $title,
                 "ru_name" => $titleRu,
-                "market_hash_name" => $item->market_hash_name,
+                "market_hash_name" => $item['market_hash_name'],
                 "category" => $category,
                 "price" => ceil($item['price'] * 1.3),
                 "popularity_7d" => $item['popularity_7d'],
