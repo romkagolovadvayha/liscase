@@ -33,8 +33,7 @@ class CsGoMarket
     public function buy($name, $price, $partner, $token): array
     {
         $secretKey = Yii::$app->settings->get('rusttm_secretKey');
-        $name = urlencode($name);
-        $name = str_replace('+', '%20', $name);
+        $name = rawurlencode($name);
         $url = $this->baseUrl . "/buy-for?key={$secretKey}&hash_name=".$name."&price={$price}&partner={$partner}&token={$token}";
         $response = Yii::$app->curl->get($url);
         if (empty($response)) {
