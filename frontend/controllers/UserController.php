@@ -306,8 +306,10 @@ class UserController extends WebController
         if ($type == 'rust') {
             $form->market = Yii::$app->rustTm;
         } else {
+            $type = 'cs2';
             $form->market = Yii::$app->csGoMarket;
         }
+        $form->type = $type;
         if (Yii::$app->request->isPost && $form->load(Yii::$app->request->post())) {
             if ($form->saveRecord()) {
                 Yii::$app->session->addFlash('success', Yii::t('common', 'Скин отправляется, ожидайте трейд-обмен'));

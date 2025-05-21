@@ -19,6 +19,7 @@ class SkinsForm extends \common\components\base\ActiveRecord
     public string $id;
     public string $amount;
     public $market;
+    public $type;
 
     public function rules(): array
     {
@@ -78,6 +79,7 @@ class SkinsForm extends \common\components\base\ActiveRecord
         $userPayout->user_id  = $user->id;
         $userPayout->name  = $item['name'];
         $userPayout->image  = $item['image'];
+        $userPayout->type  = $this->type;
         $userPayout->image300  = $item['image300'];
         $userPayout->status  = UserPayoutSkins::STATUS_WAIT;
         $userPayout->amount  = $item['price'];
