@@ -54,7 +54,22 @@ class CsGoMarket
     {
         try {
             $uploadDir = Yii::getAlias('@frontend/web/uploads/prices');
-            $d = json_decode(file_get_contents($uploadDir . '/csmarket.json'), true);
+            $path = $uploadDir . '/csmarket.json';
+
+            if (!file_exists($path)) {
+                throw new \Exception("Файл не найден: $path");
+            }
+
+            $content = file_get_contents($path);
+            if ($content === false) {
+                throw new \Exception("Не удалось прочитать файл: $path");
+            }
+
+            $d = json_decode($content, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception("JSON decode error: " . json_last_error_msg());
+            }
             Yii::$app->telegramChats->sendMessage('CSGO SUCCESS');
             return $d;
         } catch (\Exception $ex) {
