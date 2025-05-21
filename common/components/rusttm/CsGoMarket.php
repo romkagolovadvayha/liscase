@@ -52,6 +52,7 @@ class CsGoMarket
      */
     public function prices(): array
     {
+        ini_set('memory_limit', '512M');
         $uploadDir = Yii::getAlias('@frontend/web/uploads/prices');
         return json_decode(file_get_contents($uploadDir . '/csmarket.json'), true);
     }
