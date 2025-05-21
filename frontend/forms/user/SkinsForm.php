@@ -101,7 +101,7 @@ class SkinsForm extends \common\components\base\ActiveRecord
                 $this->addError('id', Yii::t('common', 'Неверная ссылка для обмена, проверьте или попробуйте еще раз'));
                 return false;
             }
-            $trade = Yii::$app->rustTm->buy($item['name'], $item['price'] * 100, $partner, $token);
+            $trade = $this->market->buy($item['name'], $item['price'] * 100, $partner, $token);
             if (empty($trade)) {
                 $this->addError('id', Yii::t('common', 'Произошла ошибка при получении скина!'));
                 $userPayout->status = UserPayoutSkins::STATUS_REJECT;
