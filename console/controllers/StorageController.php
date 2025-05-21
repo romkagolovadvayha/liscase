@@ -158,4 +158,13 @@ class StorageController extends Controller
         }
         Yii::$app->cache->delete($cacheKey);
     }
+
+    /**
+     * storage/update-price-cs-go
+     *
+     * @throws \Exception
+     */
+    public function actionUpdatePriceCsGo() {
+        Yii::$app->csGoMarket->items(true);
+    }
 }

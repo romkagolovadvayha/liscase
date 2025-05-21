@@ -72,12 +72,11 @@ class CsGoMarket
     /**
      * {@inheritdoc}
      */
-    public function items(): array
+    public function items($update = false): array
     {
         ini_set('memory_limit', '512M');
         $cacheKey = "CSGO_items";
-        $cacheKeyCategories = "CSGO_categories";
-        if (Yii::$app->cache->get($cacheKey)) {
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
             return Yii::$app->cache->get($cacheKey);
         }
         $result = [];
@@ -169,8 +168,7 @@ class CsGoMarket
                 "statTrak" => $statTrak,
             ];
         }
-        Yii::$app->cache->set($cacheKey, $result, 60);
-        Yii::$app->cache->set($cacheKeyCategories, $categories, 60);
+        Yii::$app->cache->set($cacheKey, $result, 24*60*60);
         return $result;
     }
 }
