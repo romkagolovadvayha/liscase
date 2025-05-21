@@ -52,8 +52,14 @@ class CsGoMarket
      */
     public function prices(): array
     {
-        $uploadDir = Yii::getAlias('@frontend/web/uploads/prices');
-        return json_decode(file_get_contents($uploadDir . '/csmarket.json'), true);
+        try {
+            $uploadDir = Yii::getAlias('@frontend/web/uploads/prices');
+            $d = json_decode(file_get_contents($uploadDir . '/csmarket.json'), true);
+            Yii::$app->telegramChats->sendMessage('CSGO SUCCESS');
+            return $d;
+        } catch (\Exception $ex) {
+            Yii::$app->telegramChats->sendMessage('Error CSGO: ' . $ex->getMessage());
+        }
     }
 
     public function categories(): array
