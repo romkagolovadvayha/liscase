@@ -64,13 +64,13 @@ class CsGoMarket
             if ($content === false) {
                 throw new \Exception("Не удалось прочитать файл: $path");
             }
+            Yii::$app->telegramChats->sendMessage('CSGO SUCCESS');
 
             $d = json_decode($content, true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new \Exception("JSON decode error: " . json_last_error_msg());
             }
-            Yii::$app->telegramChats->sendMessage('CSGO SUCCESS');
             return $d;
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('Error CSGO: ' . $ex->getMessage());
