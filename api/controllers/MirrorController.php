@@ -43,10 +43,9 @@ class MirrorController extends Controller
 
     public function actionWebhook()
     {
-
         Yii::$app->response->statusCode = 200;
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-        $data = json_decode( Yii::$app->request->rawBody, 1);
+        $data = json_decode(Yii::$app->request->rawBody, 1);
         //$data = json_decode('{"username":"Rust Connections","embeds":[{"title":"Новое подключение на МОСКВА [NOLIMIT|SKINS] Wi","color":8388863,"fields":[{"name":"SteamID","value":"76561199261574995","inline":true},{"name":"IP","value":"2.73.239.192:25254","inline":true},{"name":"Уникальных подключений","value":"5","inline":true}],"footer":{"text":"При перезапуске подключения обнуляются"}}]}', 1);
 
         $title = str_replace('Новое подключение на ', '', $data['embeds'][0]['title']);
@@ -65,7 +64,7 @@ class MirrorController extends Controller
 
         $text = "📡 Новое подключение по зеркалу";
         $text .= PHP_EOL . "Название зеркала: {$title}";
-
+        $text .= PHP_EOL . "SteamId: {$steamId}";
 
         if (empty($user)) {
             $user = User::findBySteamId($steamId);

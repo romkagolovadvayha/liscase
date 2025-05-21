@@ -179,6 +179,9 @@ $config = [
         'rustTm'   => [
             'class' => \common\components\rusttm\RustTm::class,
         ],
+        'csGoMarket'   => [
+            'class' => \common\components\rusttm\CsGoMarket::class,
+        ],
         'rustCheck'   => [
             'class' => \common\components\rustcheck\RustCheck::class,
         ],

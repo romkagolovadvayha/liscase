@@ -7,13 +7,13 @@ use Yii;
 use yii\base\Component;
 use yii\web\NotFoundHttpException;
 
-class RustTm
+class CsGoMarket
 {
 
     /**
      * {@inheritdoc}
      */
-    public $baseUrl = 'https://rust.tm/api/v2';
+    public $baseUrl = 'https://market.csgo.com/api/v2';
 
     /**
      * {@inheritdoc}
@@ -37,12 +37,12 @@ class RustTm
         if (empty($response)) {
             sleep(2);
             $response = Yii::$app->curl->get($url);
-            Yii::error('RustTm buy 2: ' .  $response);
+            Yii::error('CSGO buy 2: ' .  $response);
         }
         if (empty($response)) {
             sleep(3);
             $response = Yii::$app->curl->get($url);
-            Yii::error('RustTm buy 3: ' .  $response);
+            Yii::error('CSGO buy 3: ' .  $response);
         }
         return json_decode($response, 1);
     }
@@ -53,13 +53,13 @@ class RustTm
     public function prices(): array
     {
         $uploadDir = Yii::getAlias('@frontend/web/uploads/prices');
-        return json_decode(file_get_contents($uploadDir . '/rusttm.json'), true);
+        return json_decode(file_get_contents($uploadDir . '/csmarket.json'), true);
     }
 
     public function categories(): array
     {
         $this->items();
-        $cacheKeyCategories = "RustTm5_categories";
+        $cacheKeyCategories = "CSGO_categories";
         if (Yii::$app->cache->get($cacheKeyCategories)) {
             return Yii::$app->cache->get($cacheKeyCategories);
         }
@@ -71,8 +71,8 @@ class RustTm
      */
     public function items(): array
     {
-        $cacheKey = "RustTm4_items";
-        $cacheKeyCategories = "RustTm5_categories";
+        $cacheKey = "CSGO_items";
+        $cacheKeyCategories = "CSGO_categories";
         if (Yii::$app->cache->get($cacheKey)) {
             return Yii::$app->cache->get($cacheKey);
         }
@@ -84,7 +84,7 @@ class RustTm
             if ($item['price'] > 5000) {
                 continue;
             }
-            if ($item['price'] < 5) {
+            if ($item['price'] < 10) {
                 continue;
             }
             if (empty($item['avg_price'])) {
@@ -160,8 +160,8 @@ class RustTm
                 "popularity_7d" => $item['popularity_7d'],
                 "ru_quality" => $item['ru_quality'],
                 "text_color" => $item['text_color'],
-                "image" => "https://cdn.rust.tm/item/" . $name . "/100.png",
-                "image300" => "https://cdn.rust.tm/item/" . $name . "/300.png",
+                "image" => "https://cdn2.csgo.com/item/" . $name . "/100.png",
+                "image300" => "https://cdn2.csgo.com/item/" . $name . "/300.png",
                 "statTrak" => $statTrak,
             ];
         }

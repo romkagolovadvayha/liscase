@@ -293,14 +293,14 @@ class UserController extends WebController
      * @return \yii\web\Response | string
      * @throws NotFoundHttpException
      */
-    public function actionSkins()
+    public function actionSkins($type = 'rust')
     {
         if (!Yii::$app->settings->get('section_skindrops')) {
             throw new NotFoundHttpException(Yii::t('common', "Страница не найдена"));
         }
 
         $data = new SkinsSearch();
-        $provider = $data->search(Yii::$app->request->get());
+        $provider = $data->search(Yii::$app->request->get(), $type);
 
         $form = new SkinsForm();
         if (Yii::$app->request->isPost && $form->load(Yii::$app->request->post())) {
