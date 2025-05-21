@@ -57,7 +57,8 @@
         "geoip2/geoip2": "^2.13",
         "kartik-v/yii2-widgets": "^3.4",
         "kartik-v/yii2-widget-datetimepicker": "^1.5",
-        "tinify/tinify": "^1.6"
+        "tinify/tinify": "^1.6",
+        "halaxa/json-machine": "^1.2"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",

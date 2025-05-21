@@ -2,6 +2,7 @@
 
 namespace common\components\rusttm;
 
+use JsonMachine\Items;
 use linslin\yii2\curl\Curl;
 use Yii;
 use yii\base\Component;
@@ -48,33 +49,14 @@ class CsGoMarket
     }
 
     /**
-     * {@inheritdoc}
+     * @return Items
+     * @throws \Exception
      */
-    public function prices(): array
+    public function prices()
     {
-        try {
             $uploadDir = Yii::getAlias('@frontend/web/uploads/prices');
-            $path = $uploadDir . '/csmarket.json';
-
-            if (!file_exists($path)) {
-                throw new \Exception("Файл не найден: $path");
-            }
-
-            $content = file_get_contents($path);
-            if ($content === false) {
-                throw new \Exception("Не удалось прочитать файл: $path");
-            }
-            Yii::$app->telegramChats->sendMessage('CSGO SUCCESS');
-
-            $d = json_decode($content, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception("JSON decode error: " . json_last_error_msg());
-            }
-            return $d;
-        } catch (\Exception $ex) {
-            Yii::$app->telegramChats->sendMessage('Error CSGO: ' . $ex->getMessage());
-        }
+            $items = Items::fromFile($uploadDir . '/csmarket.json', ['pointer' => '/items']);
+            return $items;
     }
 
     public function categories(): array
@@ -99,62 +81,62 @@ class CsGoMarket
             return Yii::$app->cache->get($cacheKey);
         }
         $result = [];
-        $items = $this->prices()['items'];
+        $items = $this->prices();
         $itemsName = [];
         $categories = [];
         foreach ($items as $id => $item) {
-            if ($item['price'] > 5000) {
+            if ($item->price > 5000) {
                 continue;
             }
-            if ($item['price'] < 10) {
+            if ($item->price < 10) {
                 continue;
             }
-            if (empty($item['avg_price'])) {
+            if (empty($item->avg_price)) {
                 continue;
             }
-            if (strpos($item['market_hash_name'], 'Key') !== false) {
+            if (strpos($item->market_hash_name, 'Key') !== false) {
                 continue;
             }
-            if (strpos($item['market_hash_name'], 'Case') !== false) {
+            if (strpos($item->market_hash_name, 'Case') !== false) {
                 continue;
             }
-            if (strpos($item['ru_name'], 'Наклейка') !== false) {
+            if (strpos($item->ru_name, 'Наклейка') !== false) {
                 continue;
             }
-            if (strpos($item['market_hash_name'], '2017') !== false
-                || strpos($item['market_hash_name'], '2018') !== false
-                || strpos($item['market_hash_name'], '2019') !== false
-                || strpos($item['market_hash_name'], '2020') !== false
-                || strpos($item['market_hash_name'], '2021') !== false
-                || strpos($item['market_hash_name'], '2022') !== false
-                || strpos($item['market_hash_name'], '2023') !== false
-                || strpos($item['market_hash_name'], '2024') !== false
-                || strpos($item['market_hash_name'], 'Operation') !== false
-                || strpos($item['market_hash_name'], 'Music') !== false
-                || strpos($item['market_hash_name'], 'Patch ') !== false
-                || strpos($item['market_hash_name'], 'Graffiti') !== false
-                || strpos($item['market_hash_name'], 'Capsule') !== false
-                || strpos($item['market_hash_name'], ' Pin') !== false
-                || strpos($item['market_hash_name'], 'Sticker') !== false) {
+            if (strpos($item->market_hash_name, '2017') !== false
+                || strpos($item->market_hash_name, '2018') !== false
+                || strpos($item->market_hash_name, '2019') !== false
+                || strpos($item->market_hash_name, '2020') !== false
+                || strpos($item->market_hash_name, '2021') !== false
+                || strpos($item->market_hash_name, '2022') !== false
+                || strpos($item->market_hash_name, '2023') !== false
+                || strpos($item->market_hash_name, '2024') !== false
+                || strpos($item->market_hash_name, 'Operation') !== false
+                || strpos($item->market_hash_name, 'Music') !== false
+                || strpos($item->market_hash_name, 'Patch ') !== false
+                || strpos($item->market_hash_name, 'Graffiti') !== false
+                || strpos($item->market_hash_name, 'Capsule') !== false
+                || strpos($item->market_hash_name, ' Pin') !== false
+                || strpos($item->market_hash_name, 'Sticker') !== false) {
                 continue;
             }
-            $diff = round(($item['avg_price'] - $item['price']) / $item['price'] * 100, 2);
+            $diff = round(($item->avg_price - $item->price) / $item->price * 100, 2);
             if ($diff < 0) {
                 continue;
             }
-//            if (in_array($item['market_hash_name'], ['Weapon Barrel','Neanderthal Chestplate','Tooth Monster Pants','Pumpkin Hoodie','Cargo Heli Hatchet','Twisted Metal Furnace','Cardboard Sheet Metal Door','Cargo Heli Hatchet','Gore AR','Gingerbread Python','Gift Stack Backpack','Slime Monster Helmet','Adobe Furnace','Cheese Poncho','Air Conditioner Box','White Holographic Pants','Heater AR','Air Conditioner Box','Nightmare Clown Burlap Pants','Tooth Monster Hoodie','Oasis Door','Zombie Facemask','Beyond Reason Wood Door','Nightmare Clown Balaclava','Danger Barricade','High Quality Bag', 'High Quality Crate', 'Low Quality Bag', 'Black Diamond Gloves', 'Ultramarine Small Box', 'Ultramarine Large Box', 'Pumpkin Pants', 'Wrapped Facemask', 'Nightmare Clown Burlap Shirt', 'Mummy Wrap Jacket'])) {
+//            if (in_array($item->market_hash_name, ['Weapon Barrel','Neanderthal Chestplate','Tooth Monster Pants','Pumpkin Hoodie','Cargo Heli Hatchet','Twisted Metal Furnace','Cardboard Sheet Metal Door','Cargo Heli Hatchet','Gore AR','Gingerbread Python','Gift Stack Backpack','Slime Monster Helmet','Adobe Furnace','Cheese Poncho','Air Conditioner Box','White Holographic Pants','Heater AR','Air Conditioner Box','Nightmare Clown Burlap Pants','Tooth Monster Hoodie','Oasis Door','Zombie Facemask','Beyond Reason Wood Door','Nightmare Clown Balaclava','Danger Barricade','High Quality Bag', 'High Quality Crate', 'Low Quality Bag', 'Black Diamond Gloves', 'Ultramarine Small Box', 'Ultramarine Large Box', 'Pumpkin Pants', 'Wrapped Facemask', 'Nightmare Clown Burlap Shirt', 'Mummy Wrap Jacket'])) {
 //                continue;
 //            }
-            $ceilPrice = ceil($item['price']);
-            if (in_array($item['market_hash_name'] . "_" . $ceilPrice, $itemsName)) {
+            $ceilPrice = ceil($item->price);
+            if (in_array($item->market_hash_name . "_" . $ceilPrice, $itemsName)) {
                 continue;
             }
-            $title = explode(' | ', $item['market_hash_name']);
+            $title = explode(' | ', $item->market_hash_name);
             $title = $title[count($title) - 1];
-            $name = urlencode($item['market_hash_name']);
+            $name = urlencode($item->market_hash_name);
             $name = str_replace('+', '%20', $name);
 
-            $category = $item['market_hash_name'];
+            $category = $item->market_hash_name;
             $statTrak = false;
             if (strpos($category, 'StatTrak™') !== false) {
                 $category = str_replace('StatTrak™ ', ' ', $category);
@@ -167,21 +149,21 @@ class CsGoMarket
                 $categories[] = $category;
             }
 
-            $titleRu = explode(' | ', $item['ru_name']);
+            $titleRu = explode(' | ', $item->ru_name);
             $titleRu = $titleRu[count($titleRu) - 1];
-            $titleRu = str_replace(' (' . $item['ru_quality'] . ')', '', $titleRu);
-            $itemsName[] = $item['market_hash_name'] . "_" . $ceilPrice;
+            $titleRu = str_replace(' (' . $item->ru_quality . ')', '', $titleRu);
+            $itemsName[] = $item->market_hash_name . "_" . $ceilPrice;
             $result[$id] = [
                 "id" => $id,
                 "diff" => $diff,
-                "name_search" => $item['market_hash_name'] . $item['ru_name'],
+                "name_search" => $item->market_hash_name . $item->ru_name,
                 "name" => $title,
                 "ru_name" => $titleRu,
                 "category" => $category,
-                "price" => ceil($item['price'] * 1.3),
-                "popularity_7d" => $item['popularity_7d'],
-                "ru_quality" => $item['ru_quality'],
-                "text_color" => $item['text_color'],
+                "price" => ceil($item->price * 1.3),
+                "popularity_7d" => $item->popularity_7d,
+                "ru_quality" => $item->ru_quality,
+                "text_color" => $item->text_color,
                 "image" => "https://cdn2.csgo.com/item/" . $name . "/100.png",
                 "image300" => "https://cdn2.csgo.com/item/" . $name . "/300.png",
                 "statTrak" => $statTrak,
