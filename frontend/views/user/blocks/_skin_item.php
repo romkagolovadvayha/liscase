@@ -4,6 +4,7 @@
 /** @var yii\web\View $this */
 /** @var integer $index */
 /** @var integer $balance */
+/** @var SkinsForm $skinsForm */
 
 use yii\base\BaseObject;
 use frontend\forms\user\SkinsForm;
@@ -11,7 +12,6 @@ use yii\widgets\Pjax;
 use yii\widgets\ActiveForm;
 use frontend\widgets\Alert;
 
-$skinsForm = new SkinsForm();
 ?>
 <?php $form = ActiveForm::begin(
     [

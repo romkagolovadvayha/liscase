@@ -327,6 +327,7 @@ class UserController extends WebController
         return $this->render('skins', [
             'providerSkins' => $provider,
             'filterSkins' => $data,
+            'form' => $form,
         ]);
     }
 

@@ -12,6 +12,7 @@ use yii\widgets\Pjax;
 /** @var View $this */
 /** @var $providerSkins */
 /** @var $filterSkins */
+/** @var \frontend\forms\user\SkinsForm $form */
 
 $user = Yii::$app->user->identity;
 $this->title = Yii::t('common', "Выдача скинов") . " - {$user->userProfile->name}";
@@ -238,6 +239,7 @@ $dataProvider = new \yii\data\ArrayDataProvider([
                                                   'itemView'     => 'blocks/_skin_item',
                                                   'viewParams' => [
                                                       'balance' => $balance->balance,
+                                                      'skinsForm' => $form,
                                                   ],
                                                   'options' => [
                                                       'class' => 'list-view',
