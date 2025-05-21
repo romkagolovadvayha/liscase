@@ -55,7 +55,6 @@ class SkinsForm extends \common\components\base\ActiveRecord
 
         $data = $this->market->items();
         if (empty($data[$this->id])) {
-            Yii::$app->telegramChats->sendMessage(json_encode($data));
             $this->addError('id', Yii::t('common', 'Этот скин ксожалению уже купили, выберите другой!'));
             return false;
         }
@@ -64,7 +63,6 @@ class SkinsForm extends \common\components\base\ActiveRecord
 
         $item = $data[$this->id];
         if ($item['price'] > $this->amount) {
-            Yii::$app->telegramChats->sendMessage($item);
             $this->addError('id', Yii::t('common', 'Этот скин ксожалению уже купили, выберите другой!'));
             return false;
         }
@@ -112,7 +110,6 @@ class SkinsForm extends \common\components\base\ActiveRecord
                 return false;
             }
             if (!empty($trade['error'])) {
-                Yii::$app->telegramChats->sendMessage($trade['error']);
                 if ($trade['error'] === "Не найден предмет по указанной цене или ниже") {
                     $this->addError('id', Yii::t('common', 'Этот скин, к сожалению, уже купили. Пожалуйста, выберите другой.'));
                 } elseif (strpos($trade['error'],'проверьте возможность оффлайн') !== false) {

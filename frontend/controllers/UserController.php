@@ -304,16 +304,18 @@ class UserController extends WebController
 
         $form = new SkinsForm();
         if ($type == 'rust') {
+            $this->view->params['page'] = 'user-skins-rust';
             $form->market = Yii::$app->rustTm;
         } else {
             $type = 'cs2';
+            $this->view->params['page'] = 'user-skins-csgo';
             $form->market = Yii::$app->csGoMarket;
         }
         $form->type = $type;
         if (Yii::$app->request->isPost && $form->load(Yii::$app->request->post())) {
             if ($form->saveRecord()) {
                 Yii::$app->session->addFlash('success', Yii::t('common', 'Скин отправляется, ожидайте трейд-обмен'));
-                return $this->redirect('/user/skins');
+                return $this->redirect('/user/skins?type=' . $type);
             } else {
                 if (!empty($form->getFirstErrors())) {
                     Yii::$app->session->addFlash('danger', array_values($form->getFirstErrors())[0]);
@@ -325,7 +327,6 @@ class UserController extends WebController
         }
 
         $this->view->params['_profile'] = true;
-        $this->view->params['page'] = 'user-skins';
         return $this->render('skins', [
             'providerSkins' => $provider,
             'filterSkins' => $data,
