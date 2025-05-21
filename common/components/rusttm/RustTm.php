@@ -32,7 +32,8 @@ class RustTm
     public function buy($name, $price, $partner, $token): array
     {
         $secretKey = Yii::$app->settings->get('rusttm_secretKey');
-        $url = $this->baseUrl . "/buy-for?key={$secretKey}&hash_name=".urlencode($name)."&price={$price}&partner={$partner}&token={$token}";
+        $name = rawurlencode($name);
+        $url = $this->baseUrl . "/buy-for?key={$secretKey}&hash_name=".$name."&price={$price}&partner={$partner}&token={$token}";
         $response = Yii::$app->curl->get($url);
         if (empty($response)) {
             sleep(2);
