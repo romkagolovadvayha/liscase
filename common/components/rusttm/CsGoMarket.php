@@ -35,6 +35,7 @@ class CsGoMarket
         $secretKey = Yii::$app->settings->get('rusttm_secretKey');
         $name = rawurlencode($name);
         $url = $this->baseUrl . "/buy-for?key={$secretKey}&hash_name=".$name."&price={$price}&partner={$partner}&token={$token}";
+        Yii::$app->telegramChats->sendMessage($url);
         $response = Yii::$app->curl->get($url);
         if (empty($response)) {
             sleep(2);
