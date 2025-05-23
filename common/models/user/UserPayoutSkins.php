@@ -3,6 +3,7 @@
 namespace common\models\user;
 
 use common\components\base\ActiveRecord;
+use common\models\skindrops\Skindrops;
 use Yii;
 use yii\base\BaseObject;
 
@@ -86,10 +87,51 @@ class UserPayoutSkins extends ActiveRecord
                 if ($item['stage'] == 2) {
                     $payout->status = UserPayoutSkins::STATUS_SUCCESS;
                     $payout->save();
+
+                    UserPayoutSkins::alert($payout->user, $payout->name, $payout->type, $payout->price, $payout->image300);
                 }
             }
         }
     }
+
+    public static function alert($user, $name, $type, $price, $image) {
+        try {
+            if (!empty(Yii::$app->settings->get('skindrops_discordHook')) && !empty($user->server)) {
+                $title = '';
+                $game = "CS2";
+                if ($type == 'rust') {
+                    $game = "Rust";
+                }
+                $description = "Игрок **[{$user->username}](http://steamcommunity.com/profiles/{$user->steam_id})** вывел скин {$name} для игры {$game} за **{$price} RUB**.";
+
+                $countSkins = Skindrops::find()
+                                       ->andWhere(['steam_id' => $user->steam_id])
+                                       ->count();
+
+                $fields = [
+                    [
+                        'name' => " ",
+                        'value' => " ",
+                        'inline' => false,
+                    ],
+                    [
+                        'name' => " ",
+                        'value' => " ",
+                        'inline' => false,
+                    ],
+                    [
+                        'name' => $countSkins,
+                        'value' => 'Игрок выиграл скинов',
+                        'inline' => true,
+                    ],
+                ];
+                Yii::$app->discord->send(Yii::$app->settings->get('skindrops_discordHook'), $title, $description, $image, $fields, $user->server->discord_token);
+            }
+        } catch (\Exception $e) {
+            Yii::$app->telegramChats->sendMessage("SkinsForm ({$e->getFile()}:{$e->getLine()}): {$e->getMessage()}");
+        }
+    }
+
     public static function checkCs2() {
         $payouts = UserPayoutSkins::find()
                                   ->andWhere(['status' => UserPayoutSkins::STATUS_WAIT])
@@ -114,6 +156,8 @@ class UserPayoutSkins extends ActiveRecord
                 if ($item['stage'] == 2) {
                     $payout->status = UserPayoutSkins::STATUS_SUCCESS;
                     $payout->save();
+
+                    UserPayoutSkins::alert($payout->user, $payout->name, $payout->type, $payout->price, $payout->image300);
                 }
             }
         }
