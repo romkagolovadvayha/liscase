@@ -105,9 +105,7 @@ class MirrorController extends Controller
             $totalDay++;
         }
         foreach ($types as $hash => $type) {
-            $message .= "<i>{$type}</i>" . PHP_EOL;
-            $message .= "Количество подключений: {$count[$hash]}" . PHP_EOL;
-            $message .= "Новых участников: {$count[$hash]}" . PHP_EOL;
+            $message .= "<i>{$type}</i> - Подключений {$count[$hash]}" . PHP_EOL;
             $message .= PHP_EOL;
         }
 
