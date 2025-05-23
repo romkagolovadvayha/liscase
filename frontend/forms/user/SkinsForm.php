@@ -90,6 +90,39 @@ class SkinsForm extends \common\components\base\ActiveRecord
             Yii::$app->telegramChats->sendMessage(json_encode($userPayout->getErrors()));
             return false;
         }
+
+        try {
+            if (!empty(Yii::$app->settings->get('skindrops_discordHook')) && !empty($user->server)) {
+                $title = '';
+                $description = "Игрок **[{$user->username}](http://steamcommunity.com/profiles/{$user->steam_id})** вывел скин {$item['name']} за **{$item['price']} RUB**.";
+
+                $countSkins = Skindrops::find()
+                                       ->andWhere(['steam_id' => $user->steam_id])
+                                       ->count();
+
+                $fields = [
+                    [
+                        'name' => " ",
+                        'value' => " ",
+                        'inline' => false,
+                    ],
+                    [
+                        'name' => " ",
+                        'value' => " ",
+                        'inline' => false,
+                    ],
+                    [
+                        'name' => $countSkins,
+                        'value' => 'Игрок выиграл скинов',
+                        'inline' => true,
+                    ],
+                ];
+                Yii::$app->discord->send(Yii::$app->settings->get('skindrops_discordHook'), $title, $description, $item['image300'], $fields, $user->server->discord_token);
+            }
+        } catch (\Exception $e) {
+            Yii::$app->telegramChats->sendMessage("SkinsForm ({$e->getFile()}:{$e->getLine()}): {$e->getMessage()}");
+        }
+
         $user->getSkinsBalance()->recalculateBalance();
         try {
             $partner = Skindrops::getUrlQuery($user->userProfile->trade_link, 'partner');
