@@ -81,26 +81,26 @@ class MirrorController extends Controller
             }
             if (empty($playtimes[$hash])) {
                 $playtimes[$hash] = 0;
+                /** @var Statistics $stats */
+                $stats = Statistics::find()
+                                   ->andWhere(['steam_id' => $model->steam_id])
+                                   ->andWhere(['key' => 'playtime'])
+                                   ->orderBy(['id' => SORT_DESC])
+                                   ->one();
+
+                if (!empty($stats)) {
+                    $playtimes[$hash] = $stats->value;
+                }
+
+                if ($playtimes[$hash] > 30) {
+                    $playtimes30++;
+                }
+                if ($playtimes[$hash] > 60) {
+                    $playtimes60++;
+                }
             }
             $count[$hash]++;
 
-            /** @var Statistics $stats */
-            $stats = Statistics::find()
-                ->andWhere(['steam_id' => $model->steam_id])
-                ->andWhere(['key' => 'playtime'])
-                ->orderBy(['id' => SORT_DESC])
-                ->one();
-
-            if (!empty($stats)) {
-                $playtimes[$hash] += $stats->value;
-            }
-
-            if ($playtimes[$hash] > 30) {
-                $playtimes30++;
-            }
-            if ($playtimes[$hash] > 60) {
-                $playtimes60++;
-            }
 
             $totalDay++;
         }
