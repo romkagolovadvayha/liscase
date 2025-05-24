@@ -44,8 +44,9 @@ function connectWebRcon(tag, ip, port, password) {
 // Отправка команды в RCON
 function sendCommand(ws, command, timeout = 3000) {
     return new Promise((resolve, reject) => {
+        const id = Math.floor(Math.random() * 1000000000); // уникальный ID
         const payload = {
-            Identifier: 0,
+            Identifier: id,
             Message: command,
             Name: "WebRcon"
         };
@@ -55,7 +56,8 @@ function sendCommand(ws, command, timeout = 3000) {
         function onMessage(data) {
             try {
                 const msg = JSON.parse(data.toString());
-                if ((msg.Type === 1 || msg.Type === "Generic") && typeof msg.Message === 'string') {
+                // Сравниваем именно по Identifier
+                if ((msg.Type === 1 || msg.Type === "Generic") && msg.Identifier === id && typeof msg.Message === 'string') {
                     resolved = true;
                     ws.removeListener('message', onMessage);
                     resolve(msg.Message);
