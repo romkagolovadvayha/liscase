@@ -106,24 +106,35 @@ class Steam extends OpenId
 
         $key = Yii::$app->params['steamApiKey'];
         $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$user->steam_id}";
-        $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
-        $usersInfo = $response['response']['players'];
-        $user->username = $usersInfo[0]['personaname'];
-        $user->userProfile->name = $usersInfo[0]['personaname'];
-        $user->userProfile->save(false);
-        $user->save(false);
+        $response = "";
+        try {
+            $response = Yii::$app->curl->get($apiUrl);
+            $data = json_decode($response, 1);
+            $usersInfo = $data['response']['players'];
+            $user->username = $usersInfo[0]['personaname'];
+            $user->userProfile->name = $usersInfo[0]['personaname'];
+            $user->userProfile->save(false);
+            $user->save(false);
+        } catch (\Exception $e) {
+            Yii::$app->telegramChats->sendMessage('updateUser: ' . $response);
+        }
 
         return $user;
     }
 
     public static function getInfoUser($steamId) {
-        $key = Yii::$app->params['steamApiKey'];
-        $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$steamId}";
-        $response = (clone Yii::$app->curl)->get($apiUrl);
-        $response = json_decode($response, 1);
-        $usersInfo = $response['response']['players'];
-
-        return $usersInfo;
+        $response = "";
+        try {
+            $key = Yii::$app->params['steamApiKey'];
+            $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$steamId}";
+            $response = (clone Yii::$app->curl)->get($apiUrl);
+            $data = json_decode($response, 1);
+            $usersInfo = $data['response']['players'];
+            return $usersInfo;
+        } catch (\Exception $e) {
+            Yii::$app->telegramChats->sendMessage('response: ' . $response);
+        }
+        return null;
     }
 
     public static function getGameInfo($steamId) {

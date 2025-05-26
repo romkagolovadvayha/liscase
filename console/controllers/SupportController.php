@@ -36,7 +36,7 @@ class SupportController extends Controller
                 ->orderBy(['id' => SORT_DESC])
                 ->one();
 
-            if ($message->user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+            if (empty($message->user) || $message->user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
                 continue;
             }
 
