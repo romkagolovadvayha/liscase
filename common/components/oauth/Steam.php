@@ -132,7 +132,7 @@ class Steam extends OpenId
             $usersInfo = $data['response']['players'];
             return $usersInfo;
         } catch (\Exception $e) {
-            Yii::$app->telegramChats->sendMessage('response: ' . $response);
+            Yii::$app->telegramChats->sendMessage('getInfoUser: ' . $response);
         }
         return null;
     }
