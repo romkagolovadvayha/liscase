@@ -1037,16 +1037,26 @@ class User extends ActiveRecord implements IdentityInterface
 
         $sound = 'assets/prefabs/misc/easter/painted eggs/effects/eggpickup.prefab';
         $command = "helper message \"{$chatAlertPlayerTextRu}\" \"{$chatAlertPlayerTextEn}\" \"\" \"{$this->steam_id}\"";
+        $response = (Yii::$app->curl)
+            ->setHeaders(['Content-Type' => 'application/json'])
+            ->setRawPostData(json_encode(['server' => $server->tag, 'command' => $command]))
+            ->post(Yii::$app->settings->get('site_rconUrl') . '/send');
         $rconTask = new RconTasks();
-        $rconTask->status = RconTasks::STATUS_WAIT;
+        $rconTask->status = RconTasks::STATUS_DONE;
         $rconTask->command = $command;
+        $rconTask->result = $response;
         $rconTask->server_tag = $server->tag;
         $rconTask->created_at = date('Y-m-d H:i:s');
         $rconTask->save();
         $command = "helper globalMessage \"{$chatAlertTextRu}\" \"{$chatAlertTextEn}\" \"{$sound}\"";
+        $response = (Yii::$app->curl)
+            ->setHeaders(['Content-Type' => 'application/json'])
+            ->setRawPostData(json_encode(['server' => $server->tag, 'command' => $command]))
+            ->post(Yii::$app->settings->get('site_rconUrl') . '/send');
         $rconTask = new RconTasks();
-        $rconTask->status = RconTasks::STATUS_WAIT;
+        $rconTask->status = RconTasks::STATUS_DONE;
         $rconTask->command = $command;
+        $rconTask->result = $response;
         $rconTask->server_tag = $server->tag;
         $rconTask->created_at = date('Y-m-d H:i:s');
         $rconTask->save();

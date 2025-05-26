@@ -4,9 +4,11 @@ namespace common\models\box;
 
 use common\components\base\ActiveRecord;
 use common\components\helpers\CurrencyHelper;
+use common\components\queue\process\BuyDropJob;
 use common\models\statistics\Statistics;
 use common\models\user\UserDrop;
 use Yii;
+use yii\base\BaseObject;
 use yii\web\JsExpression;
 
 /**
@@ -628,10 +630,12 @@ class Drop extends ActiveRecord
                     if (empty($parentId) && empty($setId) && empty($boxId)) {
                         $boxId = 14;
                     }
-                    UserDrop::createRecord($userId, $this->id, $boxId, $setId,UserDrop::STATUS_ACTIVE, false, 1, null, $parentId);
+                    $userDrop = UserDrop::createRecord($userId, $this->id, $boxId, $setId,UserDrop::STATUS_ACTIVE, false, 1, null, $parentId);
+                    \Yii::$app->queueProcess->push(new BuyDropJob(['userDrop'  => $userDrop]));
                 }
             } else {
-                UserDrop::createRecord($userId, $this->id, $boxId, $setId,UserDrop::STATUS_ACTIVE, false, $count, null, $parentId);
+                $userDrop = UserDrop::createRecord($userId, $this->id, $boxId, $setId,UserDrop::STATUS_ACTIVE, false, $count, null, $parentId);
+                \Yii::$app->queueProcess->push(new BuyDropJob(['userDrop'  => $userDrop]));
             }
         } else {
             foreach ($this->subDrops as $subDrop) {

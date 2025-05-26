@@ -21,17 +21,24 @@ class LauncherAsset extends AssetBundle
 {
     public $sourcePath = '@frontend/assets/sources';
 
-    public $css = [
-        'css/launcher.min.css?v=1.1',
-    ];
-    public $js = [
-        'js/launcher.js?v=1.1',
-    ];
+    public function init()
+    {
+        parent::init();
+
+        $this->js = [
+            'js/launcher.js?v=' . \Yii::$app->settings->get('site_version'),
+        ];
+        $this->css = [
+            'css/launcher.min.css?v=' . \Yii::$app->settings->get('site_version'),
+        ];
+    }
+
     public $depends = [
         'yii\web\YiiAsset',
         BootstrapAsset::class,
         ToastrAsset::class,
         MomentAsset::class,
+        BalanceAsset::class,
         SocketAsset::class,
     ];
 }

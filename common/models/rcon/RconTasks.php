@@ -13,6 +13,7 @@ use yii\base\BaseObject;
  * @property int    $id
  * @property string $command
  * @property int    $status
+ * @property string    $result
  * @property string $server_tag
  * @property string $created_at
  */
@@ -50,9 +51,14 @@ class RconTasks extends \common\components\base\ActiveRecord
             if (!empty($serversCommand) && !in_array($server->tag, $serversCommand)) {
                 continue;
             }
+            $response = (Yii::$app->curl)
+                ->setHeaders(['Content-Type' => 'application/json'])
+                ->setRawPostData(json_encode(['server' => $server->tag, 'command' => $command]))
+                ->post(Yii::$app->settings->get('site_rconUrl') . '/send');
             $rconTask = new RconTasks();
-            $rconTask->status = RconTasks::STATUS_WAIT;
+            $rconTask->status = RconTasks::STATUS_DONE;
             $rconTask->command = $command;
+            $rconTask->result = $response;
             $rconTask->server_tag = $server->tag;
             $rconTask->created_at = date('Y-m-d H:i:s');
             $rconTask->save();

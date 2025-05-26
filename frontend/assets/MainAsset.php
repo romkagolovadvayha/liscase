@@ -14,18 +14,21 @@ class MainAsset extends AssetBundle
 {
     public $sourcePath = '@frontend/assets/sources';
 
-    public $css = [
-//        'css/design/root-colors.min.css',
-        'css/design/styles.min.css?v=1.39',
-    ];
+    public function init()
+    {
+        parent::init();
 
-    public $js = [
-        'js/cookie.js?v=1.0',
-        'js/clipboard.min.js?v=1.0',
-        'js/design/main.js?v=1.0',
-        'js/design/menu.js?v=1.0',
-        'js/main.js?v=1.1',
-    ];
+        $this->js = [
+            'js/cookie.js?v=' . \Yii::$app->settings->get('site_version'),
+            'js/clipboard.min.js?v=' . \Yii::$app->settings->get('site_version'),
+            'js/design/main.js?v=' . \Yii::$app->settings->get('site_version'),
+            'js/design/menu.js?v=' . \Yii::$app->settings->get('site_version'),
+            'js/main.js?v=' . \Yii::$app->settings->get('site_version'),
+        ];
+        $this->css = [
+            'css/design/styles.min.css?v=' . \Yii::$app->settings->get('site_version'),
+        ];
+    }
 
     public $depends = [
         AppAsset::class,

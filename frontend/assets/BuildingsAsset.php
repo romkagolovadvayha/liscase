@@ -8,10 +8,14 @@ class BuildingsAsset extends AssetBundle
 {
     public $sourcePath = '@frontend/assets/sources';
 
-    public $js
-        = [
-            'js/buildings.js?v=1.0',
+    public function init()
+    {
+        parent::init();
+
+        $this->js = [
+            'js/buildings.js?v=' . \Yii::$app->settings->get('site_version'),
         ];
+    }
 
     public $depends
         = [

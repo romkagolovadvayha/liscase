@@ -171,12 +171,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
             if (!empty($countryItem)) {
                 $message .= "Страна: {$countryItem['icon']} {$countryItem['name']}" . PHP_EOL;
             }
-            if ($user->is_mirror_returned) {
-                $message .= "<b>Игрок вернулся с зеркала</b>" . PHP_EOL;
-            }
-            if ($user->is_mirror_registration) {
-                $message .= "<b>Игрок пришел к нам зеркала</b>" . PHP_EOL;
-            }
 
             $hoursExist = false;
             $hours = 0;

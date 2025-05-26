@@ -28,6 +28,9 @@ class ChatServer extends WebSocketServer
         });
         $this->on(self::EVENT_CLIENT_DISCONNECTED, function(WSClientEvent $e) {
             foreach ($this->clients as $chatClient) {
+                if (empty($chatClient->chat) || empty($chatClient->user) || empty($e->client->user)) {
+                    continue;
+                }
                 if ($chatClient->chat !== $e->client->chat || $e->client->user->id === $chatClient->user->id) {
                     continue;
                 }
@@ -219,18 +222,57 @@ class ChatServer extends WebSocketServer
            }
            if (Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR) || $model->user_id == $client->user->id) {
                 $command = "store.take {$model->user->steam_id} {$model->id}";
+                $response = (Yii::$app->curl)
+                   ->setHeaders(['Content-Type' => 'application/json'])
+                   ->setRawPostData(json_encode(['server' => $model->user->server->tag, 'command' => $command]))
+                   ->post(Yii::$app->settings->get('site_rconUrl') . '/send');
                 $rconTask = new RconTasks();
-                $rconTask->status = RconTasks::STATUS_WAIT;
+                $rconTask->status = RconTasks::STATUS_DONE;
                 $rconTask->command = $command;
+                $rconTask->result = $response;
                 $rconTask->server_tag = $model->user->server->tag;
                 $rconTask->created_at = date('Y-m-d H:i:s');
                 $rconTask->save();
-                $client->send(json_encode([
-                    'type' => 'store.take',
-                    'code' => 200,
-                    'message' => Yii::t('common', "Товар успешно получен!", [], $client->user->current_language),
-                    'id' => $model->id,
-                ]));
+
+               try {
+                   $data = json_decode(json_decode($response, 1)['result'], 1);
+                   if (!isset($data['success'])) {
+                       $client->send(json_encode([
+                                                     'type' => 'store.take',
+                                                     'code' => 500,
+                                                     'message' => Yii::t('common', "Произошла ошибка, попробуйте позже!", [], $client->user->current_language),
+                                                     'id' => $model->id,
+                                                 ]));
+                       return;
+                   }
+                   if (!$data['success']) {
+                       $client->send(json_encode([
+                                                     'type' => 'store.take',
+                                                     'code' => 500,
+                                                     'message' => $data['error'],
+                                                     'id' => $model->id,
+                                                 ]));
+                       return;
+                   }
+                   if ($data['success']) {
+                       $client->send(json_encode([
+                                                     'type' => 'store.take',
+                                                     'code' => 200,
+                                                     'message' => Yii::t('common', "Товар успешно получен!", [], $client->user->current_language),
+                                                     'id' => $model->id,
+                                                 ]));
+                       return;
+                   }
+               } catch (\Exception $e) {
+                   Yii::$app->telegramChats->sendMessage($e->getFile() . ":" . $e->getLine() . "; " . $e->getMessage());
+                   $client->send(json_encode([
+                                                 'type' => 'store.take',
+                                                 'code' => 500,
+                                                 'message' => Yii::t('common', "Произошла ошибка, попробуйте позже!", [], $client->user->current_language),
+                                                 'id' => $model->id,
+                                             ]));
+               }
+
                return;
            }
         }
@@ -288,6 +330,47 @@ class ChatServer extends WebSocketServer
             }
             $this->commandTicketUpdate($client, json_encode(['user_id' => $request['user_id']]));
         }
+    }
+
+    public function commandBuyDrop(ConnectionInterface $client, $msg)
+    {
+        $request = json_decode($msg, true);
+        $result = ['message' => ''];
+
+        if (!empty($request['id'])) {
+            $model = UserDrop::findOne($request['id']);
+            if (empty($model->user->server_id)) {
+                return;
+            }
+            foreach ($this->clients as $chatClient) {
+                if (empty($chatClient->user)) {
+                    continue;
+                }
+                if ($chatClient->user->id == $model->user->id) {
+                    if ($request['code'] == 200) {
+                        try {
+                            $chatClient->send(
+                                json_encode(
+                                    [
+                                        'type'    => 'store.buy.items',
+                                        'code'    => 200,
+                                        'id'      => $model->id,
+                                        'product'      => Yii::$app->view->renderFile(Yii::getAlias('@frontend/views/store') . '/_product.php', [
+                                            'drop' => $model->drop[0],
+                                            'serverId' => $model->user->server_id,
+                                            'userDrop' => $model,
+                                        ]),
+                                    ]
+                                )
+                            );
+                        } catch (\Exception $e) {
+                            print_r($e->getFile() . ":" . $e->getLine() . PHP_EOL . $e->getMessage());
+                        }
+                    }
+                }
+            }
+        }
+        $client->send( json_encode($result) );
     }
 
     public function commandActivatedDrop(ConnectionInterface $client, $msg)
@@ -475,6 +558,7 @@ class ChatServer extends WebSocketServer
 
             if (empty($client->chat)) {
                 $client->send( json_encode($result) );
+                return;
             }
 
             if (!empty($client->user) && !empty($request['message']) && $message = trim($request['message']) ) {
@@ -483,7 +567,9 @@ class ChatServer extends WebSocketServer
                     $client->send(json_encode(['type' => 'error', 'error' => Yii::$app->cache->get($cacheKey)]));
                     return;
                 }
-                Yii::$app->cache->set($cacheKey, Yii::t('common', "Нельзя отправлять сообщения слишком часто!", [], $client->user->current_language), 5);
+                if (!$client->user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+                    Yii::$app->cache->set($cacheKey, Yii::t('common', "Нельзя отправлять сообщения слишком часто!", [], $client->user->current_language), 3);
+                }
                 /** @var User $user */
                 $user = $client->user;
                 if ($user->blocked_support || $user->status == User::STATUS_BLOCKED || strtotime($user->blocked_support_at) > time()) {
