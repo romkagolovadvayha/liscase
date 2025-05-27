@@ -25,20 +25,25 @@ async function getServersFromDB(db) {
 
 // Установка WebSocket соединения
 function connectWebRcon(tag, ip, port, password) {
-    return new Promise((resolve, reject) => {
+    const connect = () => {
         const ws = new WebSocket(`ws://${ip}:${port}/${password}`);
+
         ws.on('open', () => {
             console.log(`[${tag}] ✅ Подключено`);
-            resolve(ws);
+            connections[tag] = ws;
         });
+
         ws.on('error', err => {
             console.error(`[${tag}] ❌ Ошибка:`, err.message);
-            reject(err);
         });
+
         ws.on('close', () => {
-            console.warn(`[${tag}] 🔌 Соединение закрыто`);
+            console.warn(`[${tag}] 🔌 Соединение закрыто, повтор через 5 секунд...`);
+            setTimeout(connect, 5000);
         });
-    });
+    };
+
+    connect(); // первоначальный запуск
 }
 
 // Отправка команды в RCON
