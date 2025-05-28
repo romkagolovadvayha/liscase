@@ -105,7 +105,7 @@ class ServerSkinForm extends ServerSkin
         $newPath150 = "/uploads/server-skin-x150/" . $filename;
         $fullNewPath150 = \Yii::getAlias('@frontend/web') . $newPath150;
         if (file_exists($filePath)) {
-            DropImage::resizeImage($filePath, $fullNewPath150, 150);
+            DropImage::resizeImage($filePath, $fullNewPath150, 200);
         }
         return $newPath150;
     }
