@@ -11,25 +11,24 @@ use frontend\widgets\Alert;
 /** @var yii\web\View $this */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-$userBuildingsWait = Building::find()
+$userBuildingsWait = \common\models\serverskin\ServerSkin::find()
                              ->andWhere(['user_id' => Yii::$app->user->id])
-                             ->andWhere(['status' => Building::STATUS_WAIT])
+                             ->andWhere(['status' => \common\models\serverskin\ServerSkin::STATUS_WAIT])
                              ->exists();
 
-$userLikes = \common\models\building\BuildingLike::find()
-    ->select('DISTINCT(building_id)')
+$userLikes = \common\models\serverskin\ServerSkinLike::find()
+    ->select('DISTINCT(server_skin_id)')
     ->andWhere(['user_id' => Yii::$app->user->id])
     ->createCommand()
     ->queryColumn();
 
-BuildingsAsset::register($this);
+\frontend\assets\CustomSkinAsset::register($this);
 
 $this->title = Yii::t('common', 'Скины из мастерской');
 ?>
 <?= Alert::widget() ?>
 <div class="server_info_page">
     <div class="custom-skins">
-        <?php if (!$userBuildingsWait): ?>
             <div class="custom-skins_buttons">
                 <?= Html::a(Yii::t('common', 'Добавить скин'), ['create'], [
                         'class' => 'button button-secondary show-modal-link',
@@ -39,11 +38,10 @@ $this->title = Yii::t('common', 'Скины из мастерской');
                         'data-target' => 'modal-dialog'
                     ]) ?>
             </div>
-        <?php endif; ?>
         <div class="custom-skins_content">
             <?php if ($userBuildingsWait): ?>
                 <div class="custom-skins_content_moderation">
-                    <?=Yii::t('common', 'Ваша постройка ожидает проверки, как только ее проверят она появится в списке ниже.')?>
+                    <?=Yii::t('common', 'Ваш скин проверки, как только его проверят он появится в списке ниже и на серверах.')?>
                 </div>
             <?php endif; ?>
             <div class="custom-skins_content_list">
