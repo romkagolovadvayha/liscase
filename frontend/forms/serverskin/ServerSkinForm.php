@@ -83,7 +83,7 @@ class ServerSkinForm extends ServerSkin
         $this->save();
 
         Yii::$app->telegramChats->sendMessage("👕 Новый скин отправлен на модерацию!");
-        //Yii::$app->personalBotTelegram->sendMessage(Yii::$app->user->identity->telegram_chat_id, "👕 Скин отправлен на модерацию!");
+        Yii::$app->personalBotTelegram->sendMessage(Yii::$app->user->identity->telegram_chat_id, "👕 Скин отправлен на модерацию!");
         return true;
     }
 

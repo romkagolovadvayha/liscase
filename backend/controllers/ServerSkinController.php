@@ -112,7 +112,7 @@ class ServerSkinController extends Controller
         $model->status = ServerSkin::STATUS_ACTIVE;
         if ($model->save()) {
             if (!empty($model->user->telegram_chat_id)) {
-                //Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '👕 Ваш скин успешно прошел модерацию и добавлен на сервера!');
+                Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '👕 Ваш скин успешно прошел модерацию и добавлен на сервера!');
             }
             RconTasks::execute("skinbox.addskin {$model->skin_id}");
             return $this->redirect(['view', 'id' => $model->id]);
