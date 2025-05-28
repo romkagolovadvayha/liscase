@@ -15,6 +15,9 @@ $jobBadges = 0;
 $buildingBadge = \common\models\building\Building::find()
     ->andWhere(['status' => \common\models\building\Building::STATUS_WAIT])
     ->count();
+$skinsBadge = \common\models\serverskin\ServerSkin::find()
+    ->andWhere(['status' => \common\models\serverskin\ServerSkin::STATUS_WAIT])
+    ->count();
 
 $usersBadge = \common\models\user\User::find()
                                                  ->cache(60)
@@ -88,6 +91,14 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'url' => ['/building'],
                        'visibility' => Yii::$app->settings->get('section_buildings') && $moder,
                        'active' => _checkActive('/building'),
+                   ],
+                   [
+                       'label' =>  Yii::t('common', 'Свои скины'),
+                       'icon' => 'fa-solid fa-house',
+                       'badgeDanger' => $skinsBadge,
+                       'url' => ['/server-skin'],
+                       'visibility' => Yii::$app->settings->get('section_skins') && $moder,
+                       'active' => _checkActive('/server-skin'),
                    ],
                    [
                        'label' => 'Отчеты',

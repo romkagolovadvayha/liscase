@@ -16,10 +16,12 @@ use Yii;
  * @property int         $status
  * @property string      $image
  * @property int         $likes
+ * @property int         $creator_user_id
  * @property string|null $created_at
  *
  * @property ServerSkinLike[] $serverSkinLikes
  * @property User $user
+ * @property User $creatorUser
  */
 class ServerSkin extends \yii\db\ActiveRecord
 {
@@ -96,11 +98,34 @@ class ServerSkin extends \yii\db\ActiveRecord
         return $this->hasOne(User::class, ['id' => 'user_id']);
     }
 
+    /**
+     * Gets query for [[CreatorUser]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCreatorUser()
+    {
+        return $this->hasOne(User::class, ['id' => 'creator_user_id']);
+    }
+
     public function passed($time_format = 'H:i', $month_format = 'd.m.Y', $year_format = 'd.m.Y') {
         return DateHelper::passed($this->created_at);
     }
 
     public function getLink() {
         return '/skins/view?id=' . $this->id;
+    }
+
+    public static function getInfoSkin($publishedFileId) {
+        $postData = [
+            'itemcount' => 1,
+            'publishedfileids[0]' => $publishedFileId,
+        ];
+
+        $response = Yii::$app->curl->setPostParams($postData)
+                                   ->post('https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/');
+
+        $data = json_decode($response, true);
+        return $data['response']['publishedfiledetails'][0] ?? null;
     }
 }
