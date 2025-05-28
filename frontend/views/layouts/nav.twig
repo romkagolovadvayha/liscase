@@ -93,6 +93,16 @@
             'options': {'class': CLASS_ITEM},
         },
         {
+            'label': t('common', 'Ваши скины'),
+            'url': '/custom-skins',
+            'iconClass': "icons icons_32px icons_32px_training #{CLASS_ICON}",
+            'activeClass': CLASS_ITEM_ACTIVE,
+            'spanClass': CLASS_ITEM_SPAN_TEXT,
+            'active': PAGE == 'custom-skins',
+            'visibility': SETTINGS.get('section_skins'),
+            'options': {'class': CLASS_ITEM},
+        },
+        {
             'label': t('common', 'Правила серверов'),
             'url': "/servers/#{USER.SERVER_ACTIVE_TAG}/rules",
             'iconClass': "icons icons_32px icons_32px_rules #{CLASS_ICON}",

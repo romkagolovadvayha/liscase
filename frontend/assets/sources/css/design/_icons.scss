@@ -169,6 +169,10 @@
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/faq.svg") no-repeat center;
     }
+    &_training {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/training.svg") no-repeat center;
+    }
     &_gift {
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/gift.svg") no-repeat center;
