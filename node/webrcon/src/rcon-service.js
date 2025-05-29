@@ -27,23 +27,39 @@ async function getServersFromDB(db) {
 function connectWebRcon(tag, ip, port, password) {
     const connect = () => {
         const ws = new WebSocket(`ws://${ip}:${port}/${password}`);
+        let isConnected = false;
 
         ws.on('open', () => {
             console.log(`[${tag}] ✅ Подключено`);
             connections[tag] = ws;
+            isConnected = true;
+
+            ws.on('message', data => {
+                // Проброс сообщений в текущую очередь
+                // (обрабатываются в sendCommand)
+            });
+
+            ws.on('close', () => {
+                console.warn(`[${tag}] 🔌 Соединение закрыто, попытка переподключения через 5 секунд...`);
+                delete connections[tag];
+                setTimeout(connect, 5000);
+            });
+
+            ws.on('error', err => {
+                console.error(`[${tag}] ❌ Ошибка: ${err.message}`);
+                // Не удаляем соединение здесь, оно удаляется в on('close')
+            });
         });
 
         ws.on('error', err => {
-            console.error(`[${tag}] ❌ Ошибка:`, err.message);
-        });
-
-        ws.on('close', () => {
-            console.warn(`[${tag}] 🔌 Соединение закрыто, повтор через 5 секунд...`);
-            setTimeout(connect, 5000);
+            if (!isConnected) {
+                console.warn(`[${tag}] ❌ Сервер недоступен, повтор через 5 секунд...`);
+                setTimeout(connect, 5000);
+            }
         });
     };
 
-    connect(); // первоначальный запуск
+    connect();
 }
 
 // Отправка команды в RCON
@@ -129,12 +145,7 @@ async function processQueue(tag) {
 
     for (const server of servers) {
         const { tag, ip, rcon: port, rcon_password: password } = server;
-        try {
-            const ws = await connectWebRcon(tag, ip, port, password);
-            connections[tag] = ws;
-        } catch (err) {
-            console.error(`[${tag}] ❌ Не удалось подключиться: ${err.message}`);
-        }
+        connectWebRcon(tag, ip, port, password);
     }
 
     const app = express();
