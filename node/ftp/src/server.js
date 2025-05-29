@@ -13,7 +13,7 @@ app.post('/download-map', async (req, res) => {
         return res.status(400).json({ error: 'Все поля обязательны: host, user, password, remoteDir' });
     }
 
-    const client = new ftp.Client(20000); // 20 секунд
+    const client = new ftp.Client(30000); // 30 секунд
     client.ftp.verbose = true;
     const localDir = path.resolve(__dirname, '../../../frontend/web/maps');
 
@@ -22,7 +22,8 @@ app.post('/download-map', async (req, res) => {
             host,
             user,
             password,
-            secure: false
+            secure: false,
+            passive: true
         });
 
         await client.cd(remoteDir);
