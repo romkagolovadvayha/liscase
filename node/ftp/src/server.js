@@ -53,5 +53,5 @@ app.post('/download-map', async (req, res) => {
 });
 
 app.listen(3044, () => {
-    console.log('Server started on http://localhost:3000');
+    console.log('Server started on http://localhost:3044');
 });
