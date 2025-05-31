@@ -2,8 +2,10 @@
 
 namespace backend\controllers;
 
+use common\components\helpers\Role;
 use common\models\achievements\AchievementsDaily;
 use backend\models\achievements\AchievementsDailySearch;
+use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -13,22 +15,29 @@ use yii\filters\VerbFilter;
  */
 class AchievementsDailyController extends Controller
 {
+
     /**
-     * @inheritDoc
+     * @return array
      */
     public function behaviors()
     {
-        return array_merge(
-            parent::behaviors(),
-            [
-                'verbs' => [
-                    'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
+        return array_merge(parent::behaviors(), [
+            'access' => [
+                'class' => AccessControl::class,
+                'rules' => [
+                    [
+                        'allow' => true,
+                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
                     ],
                 ],
-            ]
-        );
+            ],
+            'verbs' => [
+                'class' => VerbFilter::className(),
+                'actions' => [
+                    'delete' => ['POST'],
+                ],
+            ],
+        ]);
     }
 
     /**

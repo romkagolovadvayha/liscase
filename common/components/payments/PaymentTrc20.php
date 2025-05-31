@@ -17,7 +17,9 @@ class PaymentTrc20
     public function create($deposit)
     {
         $deposit->payment_id = Yii::$app->settings->get('trc20_wallet');
-        $deposit->amount_exchange = round($deposit->amount / Deposit::getExchange('RUB'), 2);
+        $commission = !empty(Yii::$app->settings->get('trc20_percent')) ? round($deposit->amount * (Yii::$app->settings->get('trc20_percent') / 100)) : 0;
+        $deposit->commission = $commission;
+        $deposit->amount_exchange = round(($deposit->amount + $commission) / Deposit::getExchange('RUB'), 2);
         $deposit->save(false);
 
         return [

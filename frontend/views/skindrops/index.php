@@ -29,12 +29,6 @@ if (!Yii::$app->user->isGuest && strpos(mb_strtolower($user->username), strtolow
     $usernameCompleted = true;
 }
 $allCompleted = $usernameCompleted && $tradeLinkCompleted && $authCompleted;
-if (!Yii::$app->user->isGuest) {
-    $updateUser = \common\components\oauth\Steam::updateUser($user->id);
-    if (!empty($updateUser)) {
-        $user = $updateUser;
-    }
-}
 
 $result = [];
 /** @var \common\models\skindrops\Skindrops[] $skindrops */

@@ -55,6 +55,9 @@ class SaveRaidJob extends BaseObject implements JobInterface
                         $model->created_at = $createdAt;
                         $model->server_id = $server->id;
                         $model->wipe = $wipeDate;
+                        if (!empty($item['type'])) {
+                            $model->type = $item['type'];
+                        }
 
                         if (!empty($model->getErrors())) {
                             Yii::$app->telegramChats->sendMessage("SaveRaidJob save UserRaid: " . json_encode($model->getErrors()));
@@ -90,8 +93,11 @@ class SaveRaidJob extends BaseObject implements JobInterface
                                 }
 
                                 if (!empty($names)) {
-                                    $message .= PHP_EOL . "Для нанесения урона было использовано: " . implode(',', $names) . ".";
+                                    $message .= PHP_EOL . "Для нанесения урона было использовано: " . implode(',', $names);
                                 }
+                            }
+                            if (!empty($model->type) && !empty(UserRaid::getTypeName($model->type))) {
+                                $message .= PHP_EOL . "Уничтоженно: " . UserRaid::getTypeName($model->type);
                             }
                             $model->notify = 1;
                             foreach ($owners as $owner) {

@@ -13,7 +13,9 @@
 
   &_indicator {
     @include range(18, 18, "px");
-    background: url("/images/design/icons/indicator.svg") no-repeat center;
+    background-image: var(--indicator-online);
+    background-position: center;
+    background-repeat: no-repeat;
     animation: 0.5s infinite alternate opacity-indicator;
 
     @keyframes opacity-indicator {
@@ -174,6 +176,10 @@
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/faq.svg") no-repeat center;
     }
+    &_training {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/training.svg") no-repeat center;
+    }
     &_gift {
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/gift.svg") no-repeat center;
@@ -193,6 +199,10 @@
     &_shop {
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/shop.svg") no-repeat center;
+    }
+    &_items {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/items.svg") no-repeat center;
     }
     &_promocode {
       @extend .bg-icon-main;

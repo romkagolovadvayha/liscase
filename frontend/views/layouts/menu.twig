@@ -2,7 +2,7 @@
 
 <aside {% if not MOBILE %}class="menu" id="main-menu" {% if MENU_HIDDEN %}style="width: 102px;"{% endif %}{% endif %}>
     {% if not MOBILE %}
-        <button class="menu__button" id="menu-toggle-button" type="button">
+        <button class="menu__button" id="menu-toggle-button" type="button" title="{{ t('common', 'Свернуть') }}">
             <span class="icons icons_16px icons_16px_arrow_left" id="menu-button-arrow-left"></span>
             <span class="icons icons_16px icons_16px_arrow_right" id="menu-button-arrow-right"></span>
         </button>
@@ -23,7 +23,7 @@
                         'iconClass': 'icons icons_hover icons_32px icons_32px_telegram',
                         'options': {'class': ''},
                         'visibility': SETTINGS.get('social_telegram'),
-                        'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "Telegram"}
+                        'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "Telegram", 'title': "Telegram"}
                     },
                     {
                         'label': '',
@@ -31,7 +31,7 @@
                         'iconClass': 'icons icons_hover icons_32px icons_32px_vk',
                         'options': {'class': ''},
                         'visibility': SETTINGS.get('social_vk'),
-                        'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "VK"}
+                        'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "VK", 'title': "VK"}
                     },
                     {
                         'label': '',
@@ -39,7 +39,7 @@
                         'iconClass': 'icons icons_hover icons_32px icons_32px_discord',
                         'options': {'class': ''},
                         'visibility': SETTINGS.get('social_discord'),
-                        'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "Discord"}
+                        'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "Discord", 'title': "Discord"}
                     },
                 ]
             })
@@ -52,6 +52,7 @@
                 'SETTINGS': SETTINGS,
                 'PAGE': PAGE,
                 'USER': USER,
+                'USER_GUEST': USER_GUEST,
                 'CLASS': 'menu__list',
                 'CLASS_ITEM': 'menu__item',
                 'CLASS_ITEM_ACTIVE': 'menu__item_active',

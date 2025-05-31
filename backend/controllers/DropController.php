@@ -121,6 +121,8 @@ class DropController extends \backend\components\CrudController
             ->orderBy(['sort' => SORT_ASC])
             ->all();
 
+        Drop::updateCache();
+
         return $this->render('sort', [
             'items' => $drops
         ]);

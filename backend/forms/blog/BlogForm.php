@@ -28,15 +28,6 @@ class BlogForm extends Blog
         if (!$this->validate()) {
             return false;
         }
-        
-        if (empty($this->keywords)) {
-            $description = Yii::$app->openAi->getPostMeta($this->name, ' Сейчас содержание статьи такое: "' . $this->content . '". Ты должен переписать статью более удобно для читателя.', $this->blogCategory->name, $this->blogCategory->description);
-            preg_match_all('#<keywords>(.+?)</keywords>#is', $description, $keywords);
-            preg_match_all('#<descriptionShort>(.+?)</descriptionShort>#is', $description, $descriptionShort);
-
-            $this->keywords = $keywords[1][0];
-            $this->description = $descriptionShort[1][0];
-        }
 
         if (!$this->save()) {
             throw new \Exception('Blog not saved');

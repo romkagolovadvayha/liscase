@@ -37,6 +37,10 @@ $tabs = [
         'title' => 'Оплата через TG',
     ],
     [
+        'category' => 'funpay',
+        'title' => 'FunPay',
+    ],
+    [
         'category' => 'personal_info_ip',
         'title' => 'Информация о вас',
     ],

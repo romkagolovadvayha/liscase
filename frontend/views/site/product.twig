@@ -8,15 +8,18 @@
         data-target="modal-dialog"
         {% if INDEX > 24 %}style="display: none;"{% endif %}
         {% if BLOCKED %}aria-disabled="true"{% endif %}>
-    {% if COUNT %}
+    {% if COUNT > 1 %}
         <p class="category-card__boost">x{{ COUNT }}</p>
+    {% endif %}
+    {% if DISCOUNT > 1 %}
+        <p class="category-card__discount">-{{ DISCOUNT }}%</p>
     {% endif %}
     <img class="category-card__image" src="{{ IMAGE }}" alt="{{ t('database', NAME) }}" />
     <p class="category-card__title">{{ t('database', NAME) }}</p>
     <button class="button-teritiary" {% if BLOCKED %}disabled{% endif %}>
                 <span class="button__text">
                     {% if not BLOCKED %}
-                        {% if PRICE %}
+                        {% if PRICE > 0 %}
                             {% if PRICE_REAL != PRICE %}
                                 <span class="old-price">{{ PRICE }}</span>
                             {% endif %}

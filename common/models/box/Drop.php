@@ -4,8 +4,11 @@ namespace common\models\box;
 
 use common\components\base\ActiveRecord;
 use common\components\helpers\CurrencyHelper;
+use common\components\queue\process\BuyDropJob;
 use common\models\statistics\Statistics;
+use common\models\user\UserDrop;
 use Yii;
+use yii\base\BaseObject;
 use yii\web\JsExpression;
 
 /**
@@ -21,6 +24,7 @@ use yii\web\JsExpression;
  * @property int         $count
  * @property int         $discount
  * @property int         $category_id
+ * @property int         $drop_type
  * @property string      $rust_id
  * @property string      $command
  * @property string      $type_id
@@ -33,6 +37,7 @@ use yii\web\JsExpression;
  * @property int         $sort
  *
  * @property DropImage[] $dropImages
+ * @property DropDrop[] $subDrops
  * @property DropImage   $imageOrig
  * @property DropImage   $imageOrig2
  * @property DropType    $type
@@ -40,6 +45,8 @@ use yii\web\JsExpression;
  * @property string      $priceMarket
  * @property string      $currency
  * @property BoxDrop     $boxDrop
+ * @property Category     $category
+ * @property DropStat[]     $dropStat
  */
 class Drop extends ActiveRecord
 {
@@ -51,6 +58,23 @@ class Drop extends ActiveRecord
     const MARKET_STATUS_NOT_ACTIVE   = 0;
     const MARKET_STATUS_ACTIVE       = 1;
 
+    const TYPE_DROP    = 0;
+    const TYPE_COMMAND = 1;
+    const TYPE_SET     = 2;
+    const TYPE_SELECT  = 3;
+
+    /**
+     * @return array
+     */
+    public static function getDropTypesList(): array
+    {
+        return [
+            self::TYPE_DROP       => Yii::t('common', 'Предмет'),
+            self::TYPE_COMMAND       => Yii::t('common', 'Команда'),
+            self::TYPE_SET       => Yii::t('common', 'Набор предметов'),
+            self::TYPE_SELECT       => Yii::t('common', 'Товар с выбором'),
+        ];
+    }
     /**
      * @return array
      */
@@ -88,12 +112,12 @@ class Drop extends ActiveRecord
         return [
             'id'                  => Yii::t('common', 'ID'),
             'name'               => Yii::t('common', 'Название'),
-            'eng_name'               => Yii::t('common', 'Название'),
+            'eng_name'               => Yii::t('common', 'short_key (в игре)'),
             'quality'               => Yii::t('common', 'Качество'),
             'description'               => Yii::t('common', 'Описание'),
             'category_id'               => Yii::t('common', 'Категория'),
             'market_id'               => Yii::t('common', 'ID в маргете'),
-            'rust_id'               => Yii::t('common', 'Индитификатор'),
+            'rust_id'               => Yii::t('common', 'Идентификатор в игре'),
             'market_status'               => Yii::t('common', 'Статус в магазине'),
             'count'               => Yii::t('common', 'Количество в маркете'),
             'discount'               => Yii::t('common', 'Скидка'),
@@ -107,6 +131,7 @@ class Drop extends ActiveRecord
             'blocked_hour'          => Yii::t('common', 'Вайп блок (часов)'),
             'show_main_block'              => Yii::t('common', 'Показывать в главном блоке главной страницы'),
             'sort'          => Yii::t('common', 'Сортировка'),
+            'drop_type'          => Yii::t('common', 'Тип предмета'),
         ];
     }
 
@@ -178,7 +203,7 @@ class Drop extends ActiveRecord
     public function rules(): array
     {
         return [
-            [['status', 'type_id', 'category_id', 'sort', 'show_main_block'], 'integer'],
+            [['status', 'type_id', 'category_id', 'sort', 'show_main_block', 'drop_type'], 'integer'],
             [['name', 'market_id', 'eng_name', 'quality'], 'string', 'max' => 255],
             [['description'], 'string'],
             [['created_at','price'], 'safe'],
@@ -207,6 +232,16 @@ class Drop extends ActiveRecord
     public function getDropImages()
     {
         return $this->hasMany(DropImage::class, ['drop_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[SubDrops]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getSubDrops()
+    {
+        return $this->hasMany(DropDrop::class, ['parent_drop_id' => 'id']);
     }
 
     /**
@@ -300,6 +335,26 @@ class Drop extends ActiveRecord
         return $this->hasOne(DropType::class, ['id' => 'type_id']);
     }
 
+    /**
+     * Gets query for [Category].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCategory()
+    {
+        return $this->hasOne(Category::class, ['id' => 'category_id']);
+    }
+
+    /**
+     * Gets query for [DropStat].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getDropStat()
+    {
+        return $this->hasMany(DropStat::class, ['drop_id' => 'id']);
+    }
+
     public function getRealPrice()
     {
         return ceil($this->price - ($this->price * $this->discount / 100));
@@ -326,9 +381,10 @@ class Drop extends ActiveRecord
 
         $result = [];
         foreach ($drops as $item) {
+            $image = !empty($item->imageOrig) ? $item->imageOrig->getImagePubUrl() : null;
             $result[$item->id] = json_encode([
                                                  'name' => $item->name,
-                                                 'image' => $item->imageOrig->getImagePubUrl(),
+                                                 'image' => $image,
                                              ]);
         }
         return $result;
@@ -421,6 +477,45 @@ class Drop extends ActiveRecord
      * Получить URL изображения.
      * Загружает и кэширует изображение, если оно не было загружено ранее.
      */
+    public function image64() {
+        foreach ($this->dropImages as $item) {
+            if ($item->type === DropImage::TYPE_64) {
+                return $item->getImagePubUrl();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Получить URL изображения.
+     * Загружает и кэширует изображение, если оно не было загружено ранее.
+     */
+    public function image150() {
+        foreach ($this->dropImages as $item) {
+            if ($item->type === DropImage::TYPE_150) {
+                return $item->getImagePubUrl();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Получить URL изображения.
+     * Загружает и кэширует изображение, если оно не было загружено ранее.
+     */
+    public function image100() {
+        foreach ($this->dropImages as $item) {
+            if ($item->type === DropImage::TYPE_100) {
+                return $item->getImagePubUrl();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Получить URL изображения.
+     * Загружает и кэширует изображение, если оно не было загружено ранее.
+     */
     public function imageShop() {
         foreach ($this->dropImages as $item) {
             if ($item->type === DropImage::TYPE_ORIG) {
@@ -456,7 +551,12 @@ class Drop extends ActiveRecord
                      ->all();
 
         foreach ($drops as $item) {
-            $result[$item->id] = $item->image();
+            $result[$item->id] = [
+                'full' => $item->image(),
+                '64px' => $item->image64(),
+                '100px' => $item->image100(),
+                '150px' => $item->image150(),
+            ];
         }
 
         Yii::$app->cache->set($cacheKey, $result, 30*60);
@@ -464,7 +564,7 @@ class Drop extends ActiveRecord
     }
 
     public static function productsImagesShop($update = false) {
-        $cacheKey = 'Drop_productsImagesShop';
+        $cacheKey = 'Drop_productsImagesShop2';
         if (Yii::$app->cache->get($cacheKey) && !$update) {
             return Yii::$app->cache->get($cacheKey);
         }
@@ -483,6 +583,31 @@ class Drop extends ActiveRecord
         return $result;
     }
 
+    /**
+     * @param false $update
+     *
+     * @return Drop[]|false|mixed
+     */
+    public static function getDropListAll($update = false) {
+        $cacheKey = 'Drop_getDropListAll';
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $result = [];
+
+        /** @var Drop[] $drops */
+        $drops = Drop::find()
+                     ->all();
+
+        foreach ($drops as $item) {
+            $result[$item->id] = $item;
+        }
+
+        Yii::$app->cache->set($cacheKey, $result, 30*60);
+        return $result;
+    }
+
     public static function updateCache() {
         Drop::productsImages(true);
         Statistics::productsImages(true);
@@ -495,5 +620,28 @@ class Drop extends ActiveRecord
         Drop::getForMarket(false, true);
         Category::getCategories(true, true);
         Category::getCategories(false, true);
+        Drop::getDropListAll(true);
     }
+
+    public function give($userId, $count, $parentId = null, $boxId = null, $setId = null) {
+        if (empty($this->subDrops)) {
+            if (in_array($this->rust_id, ['-2139580305'])) {
+                for ($i = 0; $i < $count; $i++) {
+                    if (empty($parentId) && empty($setId) && empty($boxId)) {
+                        $boxId = 14;
+                    }
+                    $userDrop = UserDrop::createRecord($userId, $this->id, $boxId, $setId,UserDrop::STATUS_ACTIVE, false, 1, null, $parentId);
+                    \Yii::$app->queueProcess->push(new BuyDropJob(['userDrop'  => $userDrop]));
+                }
+            } else {
+                $userDrop = UserDrop::createRecord($userId, $this->id, $boxId, $setId,UserDrop::STATUS_ACTIVE, false, $count, null, $parentId);
+                \Yii::$app->queueProcess->push(new BuyDropJob(['userDrop'  => $userDrop]));
+            }
+        } else {
+            foreach ($this->subDrops as $subDrop) {
+                $subDrop->drop->give($userId, $subDrop->count, $this->id, $boxId, $setId);
+            }
+        }
+    }
+
 }

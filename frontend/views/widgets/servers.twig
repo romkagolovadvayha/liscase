@@ -31,6 +31,7 @@
                 <span class="server__progress-value"><span class="players_js">{{ SERVER.players + SERVER.joined }}</span>/{{ SERVER.max }}</span>
 
                 <button
+                        title="{{ t('common', 'Скопировать IP') }}"
                         class="server__button-copy btn-clipboard"
                         data-clipboard-text="connect {{ SERVER.ip }}:{{ SERVER.port }}"
                         data-message="{{ t('common', 'IP адрес скопирован в буфер обмена!') }}"

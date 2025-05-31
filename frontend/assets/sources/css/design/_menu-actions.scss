@@ -45,6 +45,8 @@
     opacity: 0;
     top: 0;
     right: 0;
+    max-height: 0;
+    overflow: hidden;
 
     & li {
      a {
@@ -77,6 +79,7 @@
     .menu-actions__list {
       opacity: 1;
       top: 38px;
+      max-height: 500px;
     }
 
     .menu-actions__balance-photo {

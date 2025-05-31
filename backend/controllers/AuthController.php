@@ -21,7 +21,7 @@ class AuthController extends Controller
                 'rules'        => [
                     [
                         'allow'   => true,
-                        'actions' => ['login'],
+                        'actions' => ['login', 'index'],
                         'roles'   => ['?'],
                     ],
                     [
@@ -38,6 +38,12 @@ class AuthController extends Controller
     }
 
     public function actionLogin()
+    {
+        $this->layout = '@common/views/layouts/blank';
+        return 'Ошибка доступа!';
+    }
+
+    public function actionIndex()
     {
         $this->layout = '@common/views/layouts/blank';
         return 'Ошибка доступа!';

@@ -3,9 +3,11 @@
 namespace frontend\forms\serverskin;
 
 use common\models\box\BoxImage;
+use common\models\box\DropImage;
 use common\models\building\BuildingResident;
 use common\models\servers\Servers;
 use common\models\serverskin\ServerSkin;
+use common\models\user\User;
 use Imagine\Image\Box;
 use common\models\building\Building;
 use common\models\building\BuildingImage;
@@ -66,20 +68,45 @@ class ServerSkinForm extends ServerSkin
             return false;
         }
 
-//      $fileName = $this->_loadImages($imageLink, $this->id);
-//        Yii::$app->telegramChats->sendMessage("👕 Новый скин отправлен на модерацию!");
+
+        $info = ServerSkin::getInfoSkin($skinId);
+        $preview = $info['preview_url'];
+        $title = $info['title'];
+        $creatorSteamId = $info['creator'];
+        $creatorUser = User::findBySteamId($creatorSteamId);
+
+        $imagePath = $this->_loadImage(file_get_contents($preview));
+        $this->name = $title;
+        $this->skin_id = $skinId;
+        $this->image = $imagePath;
+        $this->creator_user_id = $creatorUser->id;
+        $this->save();
+
+        Yii::$app->telegramChats->sendMessage("👕 Новый скин отправлен на модерацию!");
+        Yii::$app->personalBotTelegram->sendMessage(Yii::$app->user->identity->telegram_chat_id, "👕 Скин отправлен на модерацию!");
         return true;
     }
 
-    private function _loadImages($imageLink) {
-        $uploadDir = Yii::getAlias('@app/web/uploads');
-        $fileName = "" . $this->id . "_" . md5(time()) . ".png";
-        $filePath = $uploadDir . "/custom-skins/" . $fileName;
+
+    private function _loadImage($image) {
+        if (empty($image)) {
+            return null;
+        }
+        $uploadDir = Yii::getAlias('@app/web');
+        $filename = $this->id . "_" . md5(time()) . ".png";
+        $fileUrl = "/uploads/server-skin/{$filename}";
+        $filePath = $uploadDir . $fileUrl;
         if (!file_exists(dirname($filePath))) {
             mkdir(dirname($filePath));
             chmod(dirname($filePath), 0777);
         }
-        file_put_contents($filePath, file_get_contents($imageLink));
-        return $fileName;
+        file_put_contents($filePath, $image);
+
+        $newPath150 = "/uploads/server-skin-x150/" . $filename;
+        $fullNewPath150 = \Yii::getAlias('@frontend/web') . $newPath150;
+        if (file_exists($filePath)) {
+            DropImage::resizeImage($filePath, $fullNewPath150, 200);
+        }
+        return $newPath150;
     }
 }

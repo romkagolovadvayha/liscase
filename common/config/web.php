@@ -27,6 +27,7 @@ $config = [
             'class'                   => 'DemonDogSL\translateManager\Module',
             'root'                    => [
                 '@backend',
+                '@api',
                 '@frontend',
                 '@common',
                 '@console',
@@ -152,6 +153,9 @@ $config = [
         'telegramChats'   => [
             'class'  => \common\components\telegram\TelegramChats::class,
         ],
+        'telegramSupport'   => [
+            'class'  => \common\components\telegram\TelegramSupport::class,
+        ],
         'telegramReport'   => [
             'class'  => \common\components\telegram\TelegramReport::class,
         ],
@@ -174,6 +178,9 @@ $config = [
         ],
         'rustTm'   => [
             'class' => \common\components\rusttm\RustTm::class,
+        ],
+        'csGoMarket'   => [
+            'class' => \common\components\rusttm\CsGoMarket::class,
         ],
         'rustCheck'   => [
             'class' => \common\components\rustcheck\RustCheck::class,

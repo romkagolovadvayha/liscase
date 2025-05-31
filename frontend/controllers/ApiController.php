@@ -2,15 +2,19 @@
 
 namespace frontend\controllers;
 
+use common\components\queue\process\ActivatedDropJob;
 use common\controllers\WebController;
 use common\models\box\Drop;
 use common\models\promocode\Promocode;
 use common\models\servers\Servers;
+use common\models\site\SiteSetting;
+use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
 use common\models\user\User;
 use common\models\user\UserDrop;
 use common\models\box\DropBlocked;
 use WebSocket\Client;
+use yii\base\BaseObject;
 use yii\web\JsonResponseFormatter;
 use yii\web\NotFoundHttpException;
 use Yii;
@@ -70,7 +74,7 @@ class ApiController extends WebController
             return json_encode($this->methodItem($id, $steam_id),JSON_PRETTY_PRINT);
         }
         if ($method === 'gived') {
-            return json_encode($this->methodGived($id),JSON_PRETTY_PRINT);
+            return json_encode($this->methodGived($id, $server),JSON_PRETTY_PRINT);
         }
         if ($method === 'basket.commands.instant') {
             return json_encode($this->methodInstant(),JSON_PRETTY_PRINT);
@@ -102,10 +106,12 @@ class ApiController extends WebController
     }
 
     /**
+     * @param      $item_id
+     * @param Servers $server
      *
      * @return array
      */
-    private function methodGived($item_id) {
+    private function methodGived($item_id, $server = null) {
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
         if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
@@ -115,41 +121,61 @@ class ApiController extends WebController
                 'code' => 107,
             ];
         }
+//        $gangRustIds = [-742865266, -1843426638, 1248356124, -1878475007, -1321651331];
+//        if (in_array($userDrop->drop[0]->rust_id, $gangRustIds)) {
+//            $dropBlockedIds = Drop::find()
+//                                  ->select('DISTINCT(id)')
+//                                  ->andWhere(['IN', 'rust_id', $gangRustIds])
+//                                  ->createCommand()
+//                                  ->queryColumn();
+//            $dateSendend = (new \DateTime())->modify('-1 minute')->format('Y-m-d H:i:s');
+//            $exist = UserDrop::find()
+//                             ->andWhere(['status' => UserDrop::STATUS_SENDED])
+//                             ->andWhere(['user_id' => $userDrop->user_id])
+//                             ->andWhere(['IN', 'drop_id', $dropBlockedIds])
+//                             ->andWhere(['>=', 'sended_at', $dateSendend])
+//                             ->exists();
+//            if ($exist) {
+//                return [
+//                    'result' => 'fail',
+//                    'message' => "КД на взрывчатку, попробуйте позже",
+//                    'code' => 107,
+//                ];
+//            }
+//        }
 
+        $userDrop->sended_at = date('Y-m-d H:i:s');
         $userDrop->status = UserDrop::STATUS_SENDED;
 
-        try {
-            $client = new Client(Yii::$app->params['ws']);
-            if ($userDrop->save()) {
-                $client->send(
-                    json_encode(
-                        [
-                            'action' => 'activatedDrop',
-                            'code'   => 200,
-                            'id'     => $userDrop->id,
-                        ]
-                    )
-                );
-            } else {
-                $client->send(
-                    json_encode(
-                        [
-                            'action' => 'activatedDrop',
-                            'code'   => 500,
-                            'message'   => Yii::t(
-                                'common',
-                                "Произошла ошибка при получении товара, попробуйте позже!",
-                                [],
-                                $userDrop->user->current_language
-                            ),
-                            'id'     => $userDrop->id,
-                        ]
-                    )
-                );
+        if (!empty($server) && !empty($userDrop->drop[0]->dropStat)) {
+            $steamId = $userDrop->user->steam_id;
+            $statistics = Statistics::find()
+                                    ->andWhere(['steam_id' => $steamId])
+                                    ->andWhere(['server_tag' => $server->tag])
+                                    ->andWhere(['wipe' => $server->currentWipe()])
+                                    ->indexBy('key')
+                                    ->all();
+
+            foreach ($userDrop->drop[0]->dropStat as $dropStat) {
+                if (empty($dropStat->value)) {
+                    continue;
+                }
+                if (!empty($statistics[$dropStat->stat_key])) {
+                    $statistics[$dropStat->stat_key]->value += $userDrop->count * $dropStat->value;
+                    $statistics[$dropStat->stat_key]->save();
+                } else {
+                    $model = new Statistics();
+                    $model->steam_id = $steamId;
+                    $model->server_tag = $server->tag;
+                    $model->key = $dropStat->stat_key;
+                    $model->value = $userDrop->count * $dropStat->value;
+                    $model->wipe = $server->currentWipe();
+                    $model->save();
+                }
             }
-        } catch (\Exception $ex) {
-            Yii::$app->telegramChats->sendMessage('ApiController: ' . $ex->getMessage());
         }
+
+        \Yii::$app->queueProcess->push(new ActivatedDropJob(['userDrop'  => $userDrop]));
 
         $result = [];
         $result['result'] = "success";
@@ -179,6 +205,8 @@ class ApiController extends WebController
                 'code' => 107,
             ];
         }
+        $drops = Drop::getDropListAll();
+        $drop = $drops[$userDrop->drop_id];
 
         $result = [];
         $result['result'] = "success";
@@ -186,16 +214,16 @@ class ApiController extends WebController
         $item = [
             'id' => $userDrop->id,
             'amount' => $userDrop->count,
-            'name' => $userDrop->drop[0]->name,
+            'name' => $drop->name,
             'lvl_inspection' => 0,
         ];
-        if (!empty($userDrop->drop[0]->command)) {
-            $item['command'] = str_replace("\r", '', $userDrop->drop[0]->command);
+        if (!empty($drop->command)) {
+            $item['command'] = str_replace("\r", '', $drop->command);
             $item['type'] = "command";
             $item['item_id'] = 0;
         } else {
             $item['type'] = "item";
-            $item['item_id'] = $userDrop->drop[0]->rust_id;
+            $item['item_id'] = $drop->rust_id;
         }
         $result['data'] = $item;
         return $result;
@@ -215,22 +243,25 @@ class ApiController extends WebController
                 'code' => 107,
             ];
         }
+
+        $drops = Drop::getDropListAll();
+        $drop = $drops[$userDrop->drop_id];
         $result = [];
         $result['result'] = "success";
         $result['code'] = 100;
         $item = [
             'id' => $userDrop->id,
             'amount' => $userDrop->count,
-            'name' => $userDrop->drop[0]->name,
+            'name' => $drop->name,
             'lvl_inspection' => 0,
         ];
-        if (!empty($userDrop->drop[0]->command)) {
-            $item['command'] = str_replace("\r", '', $userDrop->drop[0]->command);
+        if (!empty($drop->command)) {
+            $item['command'] = str_replace("\r", '', $drop->command);
             $item['type'] = "command";
             $item['item_id'] = 0;
         } else {
             $item['type'] = "item";
-            $item['item_id'] = $userDrop->drop[0]->rust_id;
+            $item['item_id'] = $drop->rust_id;
         }
         $result['data'] = $item;
         return $result;
@@ -262,28 +293,55 @@ class ApiController extends WebController
 
         $result = [];
         $data = [];
-        $images = Drop::productsImagesShop();
+        $images = Drop::productsImages();
+        $drops = Drop::getDropListAll();
+        $itemsBlocked = DropBlocked::getBlockedList($serverId);
         foreach ($userDrops as $userDrop) {
+            $drop = $drops[$userDrop->drop_id];
             $item = [
                 'id' => $userDrop->id,
                 'amount' => $userDrop->count,
-                'name' => $userDrop->drop[0]->name,
-                'img' => $images[$userDrop->drop_id],
+                'name' => $drop->name,
+                'img' => $images[$userDrop->drop_id]['64px'],
                 'blocked' => false,
                 'block_date' => null,
+                'kd' => false,
             ];
-            $blockedAt = DropBlocked::getBlocked($userDrop->drop_id, $serverId);
-            if (!empty($blockedAt)) {
-                $item['blocked'] = true;
-                $item['block_date'] = strtotime($blockedAt);
+            if (!empty($drop->blocked_hour)) {
+                if (!empty($itemsBlocked[$userDrop->drop_id])) {
+                    $item['blocked'] = true;
+                    $item['block_date'] = strtotime($itemsBlocked[$userDrop->drop_id]);
+                }
             }
-            if (!empty($userDrop->drop[0]->command)) {
-                $item['command'] = str_replace("\r", '', $userDrop->drop[0]->command);
+//            $gangRustIds = [-742865266, -1843426638, 1248356124, -1878475007, -1321651331];
+//            if (in_array($userDrop->drop[0]->rust_id, $gangRustIds)) {
+//                $dropBlockedIds = Drop::find()
+//                                      ->select('DISTINCT(id)')
+//                                      ->andWhere(['IN', 'rust_id', $gangRustIds])
+//                                      ->createCommand()
+//                                      ->queryColumn();
+//                $dateSendend = (new \DateTime())->modify('-1 minute')->format('Y-m-d H:i:s');
+//                /** @var UserDrop $dropBlock */
+//                $dropBlock = UserDrop::find()
+//                                 ->andWhere(['status' => UserDrop::STATUS_SENDED])
+//                                 ->andWhere(['user_id' => $userDrop->user_id])
+//                                 ->andWhere(['IN', 'drop_id', $dropBlockedIds])
+//                                 ->andWhere(['>=', 'sended_at', $dateSendend])
+//                                 ->one();
+//                if (!empty($dropBlock)) {
+//                    $endBlockedDate = (new \DateTime($dropBlock->sended_at))->modify('+1 minute')->format('Y-m-d H:i:s');
+//                    $item['blocked'] = true;
+//                    $item['block_date'] = strtotime($endBlockedDate);
+//                    $item['kd'] = true;
+//                }
+//            }
+            if (!empty($drop->command)) {
+                $item['command'] = str_replace("\r", '', $drop->command);
                 $item['type'] = "command";
                 $item['item_id'] = 0;
             } else {
                 $item['type'] = "item";
-                $item['item_id'] = $userDrop->drop[0]->rust_id;
+                $item['item_id'] = $drop->rust_id;
             }
             $data[] = $item;
         }
@@ -411,7 +469,11 @@ class ApiController extends WebController
           ],
           [
               'name' => 'PROSTOJ ONE',
-              'url' => 'https://ws.prostoj.store/radio1/',
+              'url' => 'https://ws.prostoj.store/radio1/stream',
+          ],
+          [
+              'name' => 'PROSTOJ TWO',
+              'url' => 'https://myradio24.org/46527',
           ],
         ];
 
@@ -499,5 +561,85 @@ class ApiController extends WebController
 
         $result['code'] = 200;
         return json_encode($result,JSON_PRETTY_PRINT);
+    }
+
+    public function actionItems() {
+        Yii::$app->response->statusCode = 200;
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        /** @var Drop[] $list */
+        $list = Drop::find()
+            ->cache(60)
+            ->andWhere(['<>', 'eng_name', ''])
+            ->all();
+
+        $items = [];
+        foreach ($list as $item) {
+            $categoryName = null;
+            if (!empty($item->category)) {
+                $categoryName = $item->category->name;
+            }
+            $items[] = [
+              'name' => $item->name,
+              'description' => $item->description,
+              'eng_name' => $item->eng_name,
+              'image' => $item->image(),
+              'rust_id' => $item->rust_id,
+              'type_id' => $item->type_id,
+              'category_id' => $item->category_id,
+              'category_name' => $categoryName,
+              'blocked_hour' => $item->blocked_hour,
+            ];
+        }
+
+        return $items;
+    }
+
+    public function actionSettings() {
+        Yii::$app->response->statusCode = 200;
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        /** @var SiteSetting[] $list */
+        $list = SiteSetting::find()
+            ->cache(60)
+            ->all();
+
+        $items = [];
+        foreach ($list as $item) {
+            $items[] = [
+              'name' => $item->name,
+              'code' => $item->code,
+              'category' => $item->category,
+              'type' => $item->type,
+              'system_code' => $item->category . "_" . $item->code,
+              'is_translate' => $item->is_translate,
+            ];
+        }
+
+        return $items;
+    }
+
+    public function actionServers() {
+        Yii::$app->response->statusCode = 200;
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        /** @var Servers[] $list */
+        $list = Servers::find()
+            ->cache(60)
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        $items = [];
+        foreach ($list as $item) {
+            $items[] = [
+              'name' => $item->name,
+              'ip' => $item->ip,
+              'port' => $item->port,
+              'query' => $item->query,
+            ];
+        }
+
+        return $items;
     }
 }

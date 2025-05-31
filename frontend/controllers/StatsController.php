@@ -38,7 +38,7 @@ class StatsController extends WebController
      * @return \yii\web\Response | string
      * @throws NotFoundHttpException
      */
-    public function actionStats($serverTag)
+    public function actionStats($serverTag, $wipe = null)
     {
         /** @var Servers[] $servers */
         $servers = Servers::find()
@@ -58,6 +58,10 @@ class StatsController extends WebController
             throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден!'));
         }
 
+        if (empty($wipe)) {
+            $wipe = $server->currentWipe();
+        }
+
         $this->view->title                      = Yii::t('common', 'Статистика сервера') . ' ' . Yii::t('database', $server->name);
         $this->view->params['meta_description'] = Yii::t('common', "Топы игроков на сервере {PARAM_SERVER_NAME_SHORT} Rust! Узнайте, кто стал Лучшим рейдером, Лучшим киллером, Лучшим мирным игроком, Топом по онлайну, Лучшим фармером, Лучшим рыбаком, Лучшим охотником и Лучшим фермером. Смотрите рейтинги, следите за лидерами и вдохновляйтесь их достижениями на сервере {PARAM_SERVER_NAME} Rust!", [
             'PARAM_SERVER_NAME' => Yii::t('database', $server->name),
@@ -67,18 +71,22 @@ class StatsController extends WebController
 
         $user = Yii::$app->user->identity;
 
-        $items = UserTop::getUserTops($server, $server->currentWipe());
+        $items = UserTop::getUserTops($server, $wipe);
         $allUserTops = [];
         if (!Yii::$app->user->isGuest) {
-            $allUserTops = UserTop::getAllUserTops($server, $server->currentWipe());
+            $allUserTops = UserTop::getAllUserTops($server, $wipe);
         }
         $searchJS = User::searchJS();
+
+        $wipes = $server->getWipes(true);
 
         return $this->render('statistics.twig', [
             'SERVER'  => $server,
             'SERVERS'  => $servers,
             'USER'  => $user,
             'ITEMS'  => $items,
+            'WIPES'  => $wipes,
+            'WIPE'  => $wipe,
             'SEARCH_JS'  => $searchJS,
             'ALL_USER_TOP'  => $allUserTops,
         ]);
@@ -153,8 +161,7 @@ class StatsController extends WebController
         $this->view->params['page'] = 'stats';
         $this->view->params['_user'] = $_user;
         $this->view->params['_server'] = $server;
-        $this->view->params['meta_description'] = Yii::t('common', "Статистика игрока {PARAM_USERNAME} на сервере {PARAM_SERVER_NAME_SHORT} Rust. Узнайте всё о его успехах: количество убийств (килов), смертей, собранных ресурсов (фарм), участие в команде и другие ключевые показатели. Следите за прогрессом и достижениями игрока на сервере {PARAM_SERVER_NAME} Rust!", [
-            'PARAM_SERVER_NAME' => Yii::t('database', $server->name),
+        $this->view->params['meta_description'] = Yii::t('common', "Статистика игрока {PARAM_USERNAME} на сервере {PARAM_SERVER_NAME_SHORT} Rust. Узнайте всё о его успехах: количество убийств (килов), смертей, собранных ресурсов (фарм), участие в команде и другие показатели. Следите за прогрессом и достижениями игрока на сервере Rust.", [
             'PARAM_SERVER_NAME_SHORT' => Yii::t('database', $server->monitoring_name),
             'PARAM_USERNAME' => Yii::t('database', $_user->username),
         ]);

@@ -1,9 +1,11 @@
 <?php
 namespace backend\controllers;
 
+use common\components\helpers\Role;
 use common\models\box\BoxImage;
 use Yii;
 use yii\base\BaseObject;
+use yii\filters\VerbFilter;
 use yii\web\Controller;
 use common\models\site\SiteSetting;
 use yii\web\UploadedFile;
@@ -11,6 +13,28 @@ use yii\helpers\ArrayHelper;
 
 class SettingsController extends Controller
 {
+
+    public function behaviors()
+    {
+        return [
+            'access' => [
+                'class' => \yii\filters\AccessControl::class,
+                'rules' => [
+                    [
+                        'allow' => true,
+                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
+                    ],
+                ],
+            ],
+            'verbs' => [
+                'class' => VerbFilter::className(),
+                'actions' => [
+                    'delete' => ['POST'],
+                ],
+            ],
+        ];
+    }
+
     // Страница отображения настроек
     public function actionIndex($category)
     {
@@ -57,6 +81,7 @@ class SettingsController extends Controller
             }
             Yii::$app->settings->getSettings(true);
             Yii::$app->session->setFlash('success', 'Настройки успешно сохранены!');
+            Yii::$app->cache->delete('Settings_getSettings');
         }
 
         return $this->render('pages/form', [

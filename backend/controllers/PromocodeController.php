@@ -67,10 +67,14 @@ class PromocodeController extends \backend\components\CrudController
     public function actionCreate()
     {
         $model = new PromocodeForm();
+        $model->type = 2;
+        $date = new \DateTime();
+        $date->modify('+1 day');
+        $model->finished_at = $date->format('Y-m-d H:i:s');
 
         if ($this->request->isPost) {
             if ($model->load($this->request->post()) && $model->save()) {
-                return $this->redirect(['view', 'id' => $model->id]);
+                return $this->redirect(['/promocode']);
             }
         } else {
             $model->loadDefaultValues();

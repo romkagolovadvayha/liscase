@@ -141,9 +141,6 @@ $teamsProvider2 = new \yii\data\ArrayDataProvider([
                 <button type="button" class="list-group-item list-group-item-action list-group-item-info" data-bs-toggle="modal" data-bs-modal-form="role_form" data-bs-target="#modalForm">
                     Роль пользователя
                 </button>
-                <button type="button" class="list-group-item list-group-item-action list-group-item-warning" data-bs-toggle="modal" data-bs-modal-form="bonus_form" data-bs-target="#modalForm">
-                    Пополнить баланс
-                </button>
                 <button type="button" class="list-group-item list-group-item-action list-group-item-warning" data-bs-toggle="modal" data-bs-modal-form="payout_form" data-bs-target="#modalForm">
                     Вывод с реф. системы
                 </button>
@@ -155,9 +152,15 @@ $teamsProvider2 = new \yii\data\ArrayDataProvider([
                 <?php else: ?>
                 <?= Html::a('Снять бан', '/user/unban?userId=' . $user->id, ['data-confirm' => 'Вы действительно уверены?', 'class' => 'list-group-item list-group-item-action list-group-item-success']) ?>
                 <?php endif; ?>
-            <button type="button" class="list-group-item list-group-item-action list-group-item-danger" data-bs-toggle="modal" data-bs-modal-form="mute_form" data-bs-target="#modalForm">
-                Выдать мут игроку
+            <button type="button" class="list-group-item list-group-item-action list-group-item-warning" data-bs-toggle="modal" data-bs-modal-form="bonus_form" data-bs-target="#modalForm">
+                Пополнить баланс
             </button>
+            <a type="button" class="list-group-item list-group-item-action list-group-item-primary" href="/statistics?StatisticsSearch%5Bsteam_id%5D=<?=$user->steam_id?>&StatisticsSearch%5Bkey%5D=&StatisticsSearch%5Bvalue%5D=&StatisticsSearch%5Bserver_tag%5D=<?=$user->server->tag?>&StatisticsSearch%5Bwipe%5D=<?=$user->server->currentWipe()?>">
+                Статистика игрока
+            </a>
+            <a type="button" class="list-group-item list-group-item-action list-group-item-primary" href="/user-top?UserTopSearch%5Buser_id%5D=<?=$user->id?>&UserTopSearch%5Bkey%5D=&UserTopSearch%5Bvalue%5D=&UserTopSearch%5Bserver_id%5D=<?=$user->server->id?>&UserTopSearch%5Bwipe%5D=<?=$user->server->currentWipe()?>">
+                Топ игрока
+            </a>
         </div>
     </div>
     <div class="col-md-10">

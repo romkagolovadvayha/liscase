@@ -43,7 +43,10 @@ $this->title = Yii::t('common', 'Предметы');
             'filter'    => ArrayHelper::merge(['' => 'Все'], \common\models\box\Category::getCategoryList()),
             'options'   => ['width' => '150'],
             'value'     => function (Drop $model) {
-                return $model->type->name;
+                if (empty($model->category)) {
+                    return null;
+                }
+                return $model->category->name;
             },
         ],
         [

@@ -15,6 +15,9 @@ $jobBadges = 0;
 $buildingBadge = \common\models\building\Building::find()
     ->andWhere(['status' => \common\models\building\Building::STATUS_WAIT])
     ->count();
+$skinsBadge = \common\models\serverskin\ServerSkin::find()
+    ->andWhere(['status' => \common\models\serverskin\ServerSkin::STATUS_WAIT])
+    ->count();
 
 $usersBadge = \common\models\user\User::find()
                                                  ->cache(60)
@@ -90,6 +93,14 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'active' => _checkActive('/building'),
                    ],
                    [
+                       'label' =>  Yii::t('common', 'Свои скины'),
+                       'icon' => 'fa-solid fa-house',
+                       'badgeDanger' => $skinsBadge,
+                       'url' => ['/server-skin'],
+                       'visibility' => Yii::$app->settings->get('section_skins') && $moder,
+                       'active' => _checkActive('/server-skin'),
+                   ],
+                   [
                        'label' => 'Отчеты',
                        'icon' => 'fa-solid fa-table-list',
                        'url' => [''],
@@ -149,39 +160,51 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                             ],
                         ]
                     ],
-                    [
-                        'label' => 'Товары',
-                        'icon' => 'fa-solid fa-list',
-                        'url' => ['/rbac/permission'],
-                        'visibility' => $admin,
-                        'active' => _checkActive('/box/') || _checkActive('/sets/') || _checkActive('/drop/') || _checkActive('/select/'),
-                        'items' => [
-                            [
-                                'label'  => Yii::t('common', 'Рулетки'),
-                                'url'    => '/box/index',
-                                'icon'   => 'fa-solid fa-gift',
-                                'active' => _checkActive('/box/'),
-                            ],
-                            [
-                                'label'  => Yii::t('common', 'Наборы'),
-                                'url'    => '/sets/index',
-                                'icon'   => 'fa-solid fa-suitcase',
-                                'active' => _checkActive('/sets/'),
-                            ],
-                            [
-                                'label'  => Yii::t('common', 'Наборы с выбором'),
-                                'url'    => '/select/index',
-                                'icon'   => 'fa-solid fa-object-ungroup',
-                                'active' => _checkActive('/select/'),
-                            ],
-                            [
-                                'label'  => Yii::t('common', 'Предметы'),
-                                'url'    => '/drop/index',
-                                'icon'   => 'fa-solid fa-table-cells',
-                                'active' => _checkActive('/drop/'),
-                            ],
-                        ]
-                    ],
+                   [
+                       'label'  => Yii::t('common', 'Предметы'),
+                       'url'    => '/drop/index',
+                       'icon'   => 'fa-solid fa-table-cells',
+                       'active' => _checkActive('/drop/'),
+                   ],
+                   [
+                       'label'  => Yii::t('common', 'Категории'),
+                       'url'    => '/category/index',
+                       'icon'   => 'fa-solid fa-table-cells',
+                       'active' => _checkActive('/category/'),
+                   ],
+//                    [
+//                        'label' => 'Товары',
+//                        'icon' => 'fa-solid fa-list',
+//                        'url' => ['/rbac/permission'],
+//                        'visibility' => $admin,
+//                        'active' => _checkActive('/box/') || _checkActive('/sets/') || _checkActive('/drop/') || _checkActive('/select/'),
+//                        'items' => [
+//                            [
+//                                'label'  => Yii::t('common', 'Рулетки'),
+//                                'url'    => '/box/index',
+//                                'icon'   => 'fa-solid fa-gift',
+//                                'active' => _checkActive('/box/'),
+//                            ],
+//                            [
+//                                'label'  => Yii::t('common', 'Наборы'),
+//                                'url'    => '/sets/index',
+//                                'icon'   => 'fa-solid fa-suitcase',
+//                                'active' => _checkActive('/sets/'),
+//                            ],
+//                            [
+//                                'label'  => Yii::t('common', 'Наборы с выбором'),
+//                                'url'    => '/select/index',
+//                                'icon'   => 'fa-solid fa-object-ungroup',
+//                                'active' => _checkActive('/select/'),
+//                            ],
+//                            [
+//                                'label'  => Yii::t('common', 'Предметы'),
+//                                'url'    => '/drop/index',
+//                                'icon'   => 'fa-solid fa-table-cells',
+//                                'active' => _checkActive('/drop/'),
+//                            ],
+//                        ]
+//                    ],
                    [
                        'label'  => Yii::t('common', 'Блог'),
                        'icon'   => 'fa-regular fa-newspaper',

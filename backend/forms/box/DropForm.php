@@ -16,11 +16,12 @@ class DropForm extends Drop
 
     public $preview_file;
     public $preview_file_open;
+    public $isSubmit;
 
     public function rules(): array
     {
         return ArrayHelper::merge([
-                                      [['name', 'eng_name', 'market_status', 'min_box', 'max_box', 'description', 'rust_id', 'type_id', 'price', 'count', 'discount', 'preview_file', 'command', 'blocked_hour'], 'trim'],
+                                      [['name', 'eng_name', 'isSubmit', 'market_status', 'min_box', 'max_box', 'description', 'rust_id', 'type_id', 'price', 'count', 'discount', 'preview_file', 'command', 'blocked_hour'], 'trim'],
                                       [['preview_file', 'preview_file_open'], 'file', 'skipOnEmpty' => true, 'extensions' => ['svg', 'jpg', 'png']],
                                   ], parent::rules());
     }
@@ -56,6 +57,18 @@ class DropForm extends Drop
         if (!$this->validate()) {
             return false;
         }
+        if (!$this->isSubmit) {
+            return false;
+        }
+        if (empty($this->min_box)) {
+            $this->min_box = 0;
+        }
+        if (empty($this->max_box)) {
+            $this->max_box = 0;
+        }
+        if (empty($this->price)) {
+            $this->price = 0;
+        }
 
         if (!$this->save()) {
             throw new \Exception('Drop not saved');
@@ -82,13 +95,30 @@ class DropForm extends Drop
             return null;
         }
         $uploadDir = Yii::getAlias('@app/web/uploads');
-        $fileUrl = "/drop/" . $this->id . "_" . $type . "_" . md5(time()) . ".{$exp}";
+        $filename = $this->id . "_" . $type . "_" . md5(time()) . ".{$exp}";
+        $fileUrl = "/drop/{$filename}";
         $filePath = $uploadDir . $fileUrl;
         if (!file_exists(dirname($filePath))) {
             mkdir(dirname($filePath));
             chmod(dirname($filePath), 0777);
         }
         file_put_contents($filePath, file_get_contents($image->tempName));
+
+        $newPath150 = "/drop150/" . $filename;
+        $fullNewPath150 = \Yii::getAlias('@frontend/web/uploads') . $newPath150;
+        $newPath64 = "/drop64/" . $filename;
+        $fullNewPath64 = \Yii::getAlias('@frontend/web/uploads') . $newPath64;
+        $newPath100 = "/drop100/" . $filename;
+        $fullNewPath100 = \Yii::getAlias('@frontend/web/uploads') . $newPath100;
+        if (file_exists($filePath)) {
+            DropImage::resizeImage($filePath, $fullNewPath150, 150);
+            DropImage::createRecord($newPath150, DropImage::TYPE_150, $boxId);
+            DropImage::resizeImage($filePath, $fullNewPath64, 64);
+            DropImage::createRecord($newPath64, DropImage::TYPE_64, $boxId);
+            DropImage::resizeImage($filePath, $fullNewPath100, 100);
+            DropImage::createRecord($newPath100, DropImage::TYPE_100, $boxId);
+        }
+
         DropImage::createRecord($fileUrl, $type, $boxId);
         return $filePath;
     }

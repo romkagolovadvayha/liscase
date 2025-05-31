@@ -10,9 +10,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^2.2.0",
     "dateformat": "^5.0.3",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mysql": "^2.18.1",
+    "mysql2": "^3.14.1",
     "rcon": "^1.1.0",
     "rustrcon": "^1.0.2",
-    "mysql": "^2.18.1"
+    "ws": "^8.18.2"
   }
 }

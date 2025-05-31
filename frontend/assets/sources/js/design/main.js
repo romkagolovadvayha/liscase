@@ -47,6 +47,11 @@ $(document).on('pjax:complete', function() {
             new bootstrap.Tooltip(tooltip);
         });
     }
+    if (document.getElementById('buy-container')) {
+        document.getElementById('buy-container').querySelectorAll('[data-bs-toggle="tooltip"]').forEach((tooltip) => {
+            new bootstrap.Tooltip(tooltip);
+        });
+    }
 });
 var categories = $('.categories .category');
 var more_products_button = $('#more_products');
@@ -100,30 +105,6 @@ more_sets_button.click(function () {
     more_sets_button.hide();
 });
 
-var notificationSound = undefined;
-function sound(file, hash) {
-    notificationSound = new Audio(file);
-    notificationSound.volume = 0.2;  // Устанавливаем громкость от 0 до 1
-    notificationSound.loop = false;  // Повторять ли звук
-
-    // Проверяем, если на других вкладках уже был запущен звук
-    if (localStorage.getItem('soundPlayed') === 'true') {
-        console.log('Звук уже воспроизведен на другой вкладке.');
-        return;
-    }
-    localStorage.setItem('soundPlayed', 'true');
-
-    notificationSound.play().catch((error) => {
-        console.error('Ошибка при воспроизведении звука:', error);
-    });
-
-    // Обработчик события завершения воспроизведения
-    notificationSound.onended = () => {
-        // Когда звук заканчивается, сбрасываем флаг
-        localStorage.setItem('soundPlayed', 'false');
-        notificationSound = undefined;
-    };
-}
 // Слушаем событие изменения localStorage (для других вкладок)
 window.addEventListener('storage', (event) => {
     if (event.key === 'soundPlayed' && event.newValue === 'true') {

@@ -18,11 +18,13 @@ class PaymentTinkoff
     {
         $terminalKey = Yii::$app->settings->get('tinkoffpay_terminalKey');
         $secretKey = Yii::$app->settings->get('tinkoffpay_secretKey');
+        $commission = !empty(Yii::$app->settings->get('tinkoffpay_percent')) ? round($deposit->amount * (Yii::$app->settings->get('tinkoffpay_percent') / 100)) : 0;
         $TBank = new TBankMerchantAPI($terminalKey, $secretKey);
-        $request = $TBank->create($deposit->amount, 'sbp', 'Донат на игровой сервер', $deposit->id, null, null, $deposit->user->email);
+        $request = $TBank->create($deposit->amount + $commission, 'sbp', 'Донат на игровой сервер', $deposit->id, null, null, $deposit->user->email);
         if (!$request['Success']) {
             return null;
         }
+        $deposit->commission = $commission;
         $deposit->payment_id = $request["PaymentId"];
         $deposit->save(false);
 

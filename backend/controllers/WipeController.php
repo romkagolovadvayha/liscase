@@ -109,7 +109,7 @@ class WipeController extends Controller
         return $this->redirect('index');
     }
 
-    public function actionTop($server)
+    public function actionTop($server, $wipe = null)
     {
         $cacheKey = "WIPE_actionTop_{$server}";
         if (Yii::$app->cache->get($cacheKey)) {
@@ -125,7 +125,10 @@ class WipeController extends Controller
                           ->orderBy(['sort' => SORT_ASC])
                           ->all();
         foreach ($servers as $server) {
-            $tops = UserTop::getUserTops($server, $server->currentWipe());
+            if (empty($wipe)) {
+                $wipe = $server->currentWipe();
+            }
+            $tops = UserTop::getUserTops($server, $wipe);
             foreach ($tops as $top) {
                 $value = $top['label'];
                 foreach ($top['items'] as $i => $item) {
@@ -197,6 +200,14 @@ class WipeController extends Controller
         }
 
         Yii::$app->session->addFlash('success', 'Задания обнулены!');
+        return $this->redirect('index');
+    }
+
+    public function actionClearCache()
+    {
+        Yii::$app->runAction('translate/clear-translate-cache');
+
+        Yii::$app->session->addFlash('success', 'Кэш очищен!');
         return $this->redirect('index');
     }
 

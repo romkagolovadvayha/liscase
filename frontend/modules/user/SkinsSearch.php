@@ -35,13 +35,13 @@ class SkinsSearch extends Model
      * This method returns ArrayDataProvider.
      * Filtered and sorted if required.
      */
-    public function search($params)
+    public function search($params, $type)
     {
         if ($this->load($params) && $this->validate()) {
             $this->_filtered = true;
         }
 
-        $data = $this->getData();
+        $data = $this->getData($type);
 
         return new \yii\data\ArrayDataProvider([
                                                    // ArrayDataProvider here takes the actual data source
@@ -62,16 +62,20 @@ class SkinsSearch extends Model
      * Here we are preparing the data source and applying the filters
      * if _filtered property is set to true.
      */
-    protected function getData()
+    protected function getData($type)
     {
-        $data = \Yii::$app->rustTm->items();
+        if ($type == 'rust') {
+            $data = \Yii::$app->rustTm->items();
+        } else {
+            $data = \Yii::$app->csGoMarket->items();
+        }
 
-        if ($this->_filtered) {
+        if ($this->_filtered && !empty($this->name)) {
             $sName = mb_strtolower($this->name);
             $data = array_filter($data, function ($value) use ($sName) {
                 $conditions = [true];
                 if (!empty($this->name)) {
-                    $conditions[] = strpos(mb_strtolower($value['name']), $sName) !== false;
+                    $conditions[] = strpos(mb_strtolower($value['name_search']), $sName) !== false;
                 }
                 return array_product($conditions);
             });

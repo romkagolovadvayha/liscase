@@ -4,12 +4,19 @@ namespace console\controllers;
 
 use common\components\google\TranslateApi;
 use common\models\box\Box;
+use common\models\box\Category;
 use common\models\box\Drop;
+use common\models\box\DropDrop;
 use common\models\box\DropImage;
 use common\models\box\DropType;
+use common\models\box\Select;
+use common\models\box\SelectDrop;
+use common\models\box\Sets;
+use common\models\site\SiteSetting;
 use common\models\user\User;
 use common\models\user\UserBox;
 use common\models\user\UserDrop;
+use yii\base\BaseObject;
 use yii\console\Controller;
 
 class DropParserController extends Controller
@@ -213,5 +220,152 @@ class DropParserController extends Controller
         $filePath = $uploadDir . $fileUrl;
         file_put_contents($filePath, file_get_contents($imageUrl));
         DropImage::createRecord($fileUrl, DropImage::TYPE_ORIG, $dropId);
+    }
+
+    /**
+     * drop-parser/new-items
+     * @throws \Exception
+     */
+    public function actionNewItems() {
+        $curl = clone \Yii::$app->curl;
+        $items = json_decode($curl->get('https://prostoj.store/api/items'), 1);
+
+        $drops = \common\models\box\Drop::find()
+            ->indexBy('eng_name')
+            ->all();
+
+        $isInsert = false;
+        $google = new TranslateApi();
+        foreach ($items as $item) {
+            if (empty($drops[$item['eng_name']])) {
+                $model = new Drop();
+                $model->name = $item['name'];
+                $model->description = $item['description'];
+                $model->eng_name = $item['eng_name'];
+                $model->rust_id = $item['rust_id'];
+                $model->type_id = $item['type_id'];
+                if (!empty($item['category_name'])) {
+                    $categoryBD = Category::find()
+                                          ->andWhere(['name' => $item['category_name']])
+                                          ->one();
+                    if (!empty($categoryBD)) {
+                        $model->category_id = $categoryBD->id;
+                    } else {
+                        $categoryTag = strtolower($google->translateText($item['category_name']));
+                        $lastId = Category::createRecord($item['category_name'], $categoryTag);
+                        $model->category_id = $lastId;
+                    }
+                }
+                $model->blocked_hour = $item['blocked_hour'];
+                $model->save();
+                $this->_loadImage($item['image'], $model->id);
+                $isInsert = true;
+            } else {
+                $drops[$item['eng_name']]->name = $item['name'];
+                $drops[$item['eng_name']]->save();
+            }
+        }
+
+        if ($isInsert) {
+            Drop::updateCache();
+            \Yii::$app->runAction('translate/import-api');
+        }
+    }
+
+    /**
+     * drop-parser/new-settings
+     * @throws \Exception
+     */
+    public function actionNewSettings() {
+        $curl = clone \Yii::$app->curl;
+        $items = json_decode($curl->get('https://prostoj.store/api/settings'), 1);
+
+        /** @var SiteSetting[] $drops */
+        $drops = SiteSetting::find()
+            ->all();
+
+        $list = [];
+        foreach ($drops as $item) {
+            $list[$item->category . "_" . $item->code] = $item;
+        }
+
+        $isInsert = false;
+        foreach ($items as $item) {
+            if (empty($list[$item['system_code']])) {
+                $model = new SiteSetting();
+                $model->name = $item['name'];
+                $model->code = $item['code'];
+                $model->category = $item['category'];
+                $model->type = $item['type'];
+                $model->is_translate = $item['is_translate'];
+                $model->save();
+                $isInsert = true;
+            }
+        }
+
+        if ($isInsert) {
+            \Yii::$app->runAction('translate/import-api');
+        }
+    }
+
+
+    /**
+     * drop-parser/migrate-drop
+     * @throws \Exception
+     */
+    public function actionMigrateDrop() {
+        /** @var Select[] $selects */
+        $selects = Select::find()->all();
+        foreach ($selects as $select) {
+            $model = new Drop();
+            $model->name = $select->name;
+            $model->drop_type = Drop::TYPE_SELECT;
+            $model->description = $select->description;
+            $model->price = 0;
+            $model->discount = 0;
+            $model->count = 1;
+            $model->category_id = 1;
+            $model->status = Drop::STATUS_ACTIVE;
+            $model->market_status = Drop::MARKET_STATUS_NOT_ACTIVE;
+            $model->created_at = $select->created_at;
+            $model->save();
+
+            foreach ($select->selectDrop as $drop) {
+                $_model = new DropDrop();
+                $_model->drop_id = $drop->drop->id;
+                $_model->parent_drop_id = $model->id;
+                $_model->count = 1;
+                $_model->created_at = $drop->created_at;
+                $_model->save();
+            }
+        }
+
+
+        /** @var Sets[] $boxes */
+        $boxes = Sets::find()->all();
+        foreach ($boxes as $box) {
+            $model = new Drop();
+            $model->name = $box->name;
+            $model->description = $box->description;
+            $model->drop_type = Drop::TYPE_SET;
+            $model->price = $box->price;
+            $model->eng_name = $box->eng_name;
+            $model->discount = $box->discount;
+            $model->count = 1;
+            $model->category_id = 1;
+            $model->status = Drop::STATUS_ACTIVE;
+            $model->market_status = Drop::MARKET_STATUS_NOT_ACTIVE;
+            $model->created_at = $select->created_at;
+            $model->save();
+
+            foreach ($box->setsDrop as $drop) {
+                $_model = new DropDrop();
+                $_model->drop_id = $drop->drop->id;
+                $_model->parent_drop_id = $model->id;
+                $_model->count = $drop->count;
+                $_model->created_at = $drop->created_at;
+                $_model->save();
+            }
+        }
     }
 }

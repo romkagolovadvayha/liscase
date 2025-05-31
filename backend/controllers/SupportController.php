@@ -2,6 +2,7 @@
 
 namespace backend\controllers;
 
+use common\components\helpers\Role;
 use common\models\support\Support;
 use backend\models\support\SupportSearch;
 use yii\web\Controller;
@@ -13,22 +14,26 @@ use yii\filters\VerbFilter;
  */
 class SupportController extends Controller
 {
-    /**
-     * @inheritDoc
-     */
+
     public function behaviors()
     {
-        return array_merge(
-            parent::behaviors(),
-            [
-                'verbs' => [
-                    'class' => VerbFilter::className(),
-                    'actions' => [
-                        'delete' => ['POST'],
+        return [
+            'access' => [
+                'class' => \yii\filters\AccessControl::class,
+                'rules' => [
+                    [
+                        'allow' => true,
+                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
                     ],
                 ],
-            ]
-        );
+            ],
+            'verbs' => [
+                'class' => VerbFilter::className(),
+                'actions' => [
+                    'delete' => ['POST'],
+                ],
+            ],
+        ];
     }
 
     /**

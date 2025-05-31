@@ -12,7 +12,7 @@
     </ul>
     <div class="tab-content mb-8">
         {% for SERVER in SERVERS %}
-        <div id="live_{{ SERVER.tag }}" class="tab-pane{% if USER.SERVER_ACTIVE_ID == SERVER.id %} active{% else %} fade{% endif %}" role="tabpanel" aria-labelledby="#{{ SERVER.tag }}-tab">
+        <div id="live_{{ SERVER.tag }}" class="tab-pane{% if USER.SERVER_ACTIVE_ID == SERVER.id %} active{% else %} fade{% endif %}" role="tabpanel">
             <ul class="stat-block__list">
                 {% for ITEM in KILLS[SERVER.id] %}
                     {% include 'live_item.twig'

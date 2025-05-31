@@ -11,29 +11,49 @@
         {% endfor %}
     </ul>
 </nav>
-<div class="mb-24">
-    {{ select2_widget({
-        'name': 'stats-search',
-        'options': { 'placeholder': t('common', 'Введите ник или Steam ID...') },
-        'pluginOptions': {
-            'allowClear': true,
-            'minimumInputLength': 1,
-            'ajax': {
-                'url': '/stats/search?serverId=' ~ SERVER.id,
-                'dataType': 'json',
-                'delay': 250,
-                'data': SEARCH_JS.ajaxData,
-                'processResults': SEARCH_JS.processResults,
-                'cache': true
+<div class="mb-24 statistics_control">
+    <div class="statistics_control_search">
+        {{ select2_widget({
+            'name': 'stats-search',
+            'options': { 'placeholder': t('common', 'Введите ник или Steam ID...') },
+            'pluginOptions': {
+                'allowClear': true,
+                'minimumInputLength': 1,
+                'ajax': {
+                    'url': '/stats/search?serverId=' ~ SERVER.id,
+                    'dataType': 'json',
+                    'delay': 250,
+                    'data': SEARCH_JS.ajaxData,
+                    'processResults': SEARCH_JS.processResults,
+                    'cache': true
+                },
+                'escapeMarkup': SEARCH_JS.escapeMarkup,
+                'templateResult': SEARCH_JS.templateResult,
+                'templateSelection': SEARCH_JS.templateSelection
             },
-            'escapeMarkup': SEARCH_JS.escapeMarkup,
-            'templateResult': SEARCH_JS.templateResult,
-            'templateSelection': SEARCH_JS.templateSelection
-        },
-        'pluginEvents': {
-            "select2:select": SEARCH_JS.eventSelect2,
-        },
-    }) }}
+            'pluginEvents': {
+                "select2:select": SEARCH_JS.eventSelect2,
+            },
+        }) }}
+    </div>
+    <div class="statistics_control_wipe">
+        {{ select2_widget({
+            'name': 'stats-wipe',
+            'value': WIPE,
+            'data': WIPES,
+            'options': { 'placeholder': t('common', 'Выберите вайп...') },
+            'pluginOptions': {
+                'maximumInputLength': 10,
+                'tags': true,
+                'tokenSeparators': [',', ' '],
+            },
+            'pluginEvents': {
+                "select2:select": 'function(e) {
+                    window.location.href = "/servers/' ~ SERVER.tag ~ '?wipe=" + e.params.data.id;
+                }',
+            },
+        }) }}
+    </div>
 </div>
 <div class="flex flex-column gap-x-12 gap-y-12 tab-pane active" id="Max3">
     <div class="flex justify-space-between gap-x-12">

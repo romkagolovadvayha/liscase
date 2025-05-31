@@ -17,7 +17,9 @@ class PaymentTon
     public function create($deposit)
     {
         $deposit->payment_id = Yii::$app->settings->get('ton_wallet');
-        $amountExchangeUSDT = round($deposit->amount / Deposit::getExchange('RUB'), 2);
+        $commission = !empty(Yii::$app->settings->get('ton_percent')) ? round($deposit->amount * (Yii::$app->settings->get('ton_percent') / 100)) : 0;
+        $amountExchangeUSDT = round(($deposit->amount + $commission) / Deposit::getExchange('RUB'), 2);
+        $deposit->commission = $commission;
         $deposit->amount_exchange = round($amountExchangeUSDT / Deposit::getExchange('TON'), 2);
         $deposit->save(false);
 

@@ -1,23 +1,26 @@
 .categories {
-  @extend .flex, .flex-column, .mt-24, .items-center, .gap-y-32, .content-visibility-auto;
+  @extend .flex, .flex-column, .mt-12, .items-center, .gap-y-24;
 
   @media (max-width: 560px) {
     row-gap: 0;
+  }
+  .owl-dots {
+    display: none;
   }
   &__carousel {
     @extend .relative;
 
     &:after {
       @extend .absolute, .block;
-      @include range(194, 100, "px");
+      width: 100px;
       content: "";
-      background-image: url("/images/design/categories/shadow.svg");
+      background-image: var(--categories-image-shadow);
       right: 0;
       top: 0;
       bottom: 0;
       transform: rotate(180deg);
       background-repeat: no-repeat;
-      background-size: 194px 100px;
+      background-size: cover;
       z-index: 1;
       @media (max-width: 560px) {
         @include range(100, 60, "px");
@@ -25,7 +28,6 @@
       }
     }
   }
-
   & .category {
     @extend .text-center, .p-12, .relative;
     border-radius: var(--card-radius);
@@ -54,7 +56,7 @@
       @include range(167, 100, "px");
       content: "";
       opacity: 0;
-      background: url("/images/design/categories/glow.svg");
+      background: var(--categories-image-glow);
       right: 0;
       bottom: 0;
       background-repeat: no-repeat;
@@ -111,7 +113,7 @@
 
     &__cards {
       @extend .grid, .justify-flex-start, .gap-x-12, .gap-y-12, .w-full;
-      grid-template-columns: repeat(auto-fit, minmax(203px, 1fr));
+      grid-template-columns: var(--category-cards-grid);
       @media (max-width: 560px) {
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       }
@@ -119,8 +121,7 @@
         @extend .p-8,
           .relative,
           .text-center,
-          .bg-background-secondary,
-          .content-visibility-auto;
+          .bg-background-secondary;
         border-radius: var(--card-radius);
         max-width: 100%;
         min-width: 203px;
@@ -139,10 +140,20 @@
           top: 8px;
           left: 8px;
         }
+        &__discount {
+          @extend .p2, .absolute, .text-left;
+          top: 8px;
+          right: 8px;
+          color: var(--link-color-default);
+        }
 
         &__image {
           @extend .object-contain, .transition-transform;
-          @include range(100, 100, "px");
+          width: var(--category-card-image-size);
+          height: var(--category-card-image-size);
+          max-width: 100%;
+          min-width: var(--category-card-image-size);
+          min-height: var(--category-card-image-size);
         }
 
         &__title {
@@ -187,6 +198,27 @@
             @extend .text-text-teritiary;
           }
         }
+        &_discount {
+          top: -10px;
+          right: -10px;
+          width: 60px;
+          height: 60px;
+          line-height: 40px;
+          text-align: center;
+          z-index: 1;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-size: var(--default-font-size);
+          font-weight: var(--default-font-weight);
+          border-radius: 50%;
+          padding: unset;
+          transition: background-color 0.15s;
+          border-width: 5px;
+          border-style: solid;
+          border-color: rgb(20, 21, 26);
+          border-image: initial;
+        }
       }
     }
 
@@ -197,6 +229,16 @@
       max-height: 60px;
       min-width: 100px;
       min-height: 60px;
+    }
+  }
+  &_not_images {
+    & .category {
+      max-width: none;
+      max-height: none;
+      min-height: 0;
+      min-width: 0;
+      width: auto;
+      height: auto;
     }
   }
 }

@@ -18,6 +18,8 @@ class SkinsForm extends \common\components\base\ActiveRecord
 {
     public string $id;
     public string $amount;
+    public $market;
+    public $type;
 
     public function rules(): array
     {
@@ -51,7 +53,7 @@ class SkinsForm extends \common\components\base\ActiveRecord
         }
         Yii::$app->cache->set($cacheKey, time() + 5, 5);
 
-        $data = \Yii::$app->rustTm->items();
+        $data = $this->market->items();
         if (empty($data[$this->id])) {
             $this->addError('id', Yii::t('common', 'Этот скин ксожалению уже купили, выберите другой!'));
             return false;
@@ -75,6 +77,7 @@ class SkinsForm extends \common\components\base\ActiveRecord
         $userPayout->user_id  = $user->id;
         $userPayout->name  = $item['name'];
         $userPayout->image  = $item['image'];
+        $userPayout->type  = $this->type;
         $userPayout->image300  = $item['image300'];
         $userPayout->status  = UserPayoutSkins::STATUS_WAIT;
         $userPayout->amount  = $item['price'];
@@ -87,6 +90,7 @@ class SkinsForm extends \common\components\base\ActiveRecord
             Yii::$app->telegramChats->sendMessage(json_encode($userPayout->getErrors()));
             return false;
         }
+
         $user->getSkinsBalance()->recalculateBalance();
         try {
             $partner = Skindrops::getUrlQuery($user->userProfile->trade_link, 'partner');
@@ -98,7 +102,7 @@ class SkinsForm extends \common\components\base\ActiveRecord
                 $this->addError('id', Yii::t('common', 'Неверная ссылка для обмена, проверьте или попробуйте еще раз'));
                 return false;
             }
-            $trade = Yii::$app->rustTm->buy($item['name'], $item['price'] * 100, $partner, $token);
+            $trade = $this->market->buy($item['market_hash_name'], $item['price'] * 100, $partner, $token);
             if (empty($trade)) {
                 $this->addError('id', Yii::t('common', 'Произошла ошибка при получении скина!'));
                 $userPayout->status = UserPayoutSkins::STATUS_REJECT;

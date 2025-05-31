@@ -3,6 +3,7 @@
 namespace common\models\user;
 
 use common\components\base\ActiveRecord;
+use common\models\skindrops\Skindrops;
 use Yii;
 use yii\base\BaseObject;
 
@@ -17,6 +18,7 @@ use yii\base\BaseObject;
  * @property string $image
  * @property string $image300
  * @property string $created_at
+ * @property string $type
  *
  * @property User $user
  */
@@ -57,29 +59,106 @@ class UserPayoutSkins extends ActiveRecord
     }
 
     public static function check() {
+        UserPayoutSkins::checkRust();
+        UserPayoutSkins::checkCs2();
+    }
+
+    public static function checkRust() {
         $payouts = UserPayoutSkins::find()
                                   ->andWhere(['status' => UserPayoutSkins::STATUS_WAIT])
                                   ->orderBy(['created_at' => SORT_DESC])
+                                  ->orderBy(['type' => 'rust'])
                                   ->indexBy('skin_id')
                                   ->all();
 
         if (!empty($payouts)) {
             $items = Yii::$app->rustTm->history()['data'];
             foreach ($items as $item) {
-               if (empty($payouts[$item['item_id']])) {
-                   continue;
-               }
-               /** @var UserPayoutSkins $payout */
-               $payout = $payouts[$item['item_id']];
-               if ($item['stage'] == 5) {
-                   $payout->status = UserPayoutSkins::STATUS_REJECT;
-                   $payout->save();
-                   $payout->user->getSkinsBalance()->recalculateBalance();
-               }
-               if ($item['stage'] == 2) {
-                   $payout->status = UserPayoutSkins::STATUS_SUCCESS;
-                   $payout->save();
-               }
+                if (empty($payouts[$item['item_id']])) {
+                    continue;
+                }
+                /** @var UserPayoutSkins $payout */
+                $payout = $payouts[$item['item_id']];
+                if ($item['stage'] == 5) {
+                    $payout->status = UserPayoutSkins::STATUS_REJECT;
+                    $payout->save();
+                    $payout->user->getSkinsBalance()->recalculateBalance();
+                }
+                if ($item['stage'] == 2) {
+                    $payout->status = UserPayoutSkins::STATUS_SUCCESS;
+                    $payout->save();
+
+                    UserPayoutSkins::alert($payout->user, $payout->name, $payout->type, $payout->price, $payout->image300);
+                }
+            }
+        }
+    }
+
+    public static function alert($user, $name, $type, $price, $image) {
+        try {
+            if (!empty(Yii::$app->settings->get('skindrops_discordHook')) && !empty($user->server)) {
+                $title = '';
+                $game = "CS2";
+                if ($type == 'rust') {
+                    $game = "Rust";
+                }
+                $description = "Игрок **[{$user->username}](http://steamcommunity.com/profiles/{$user->steam_id})** вывел скин {$name} для игры {$game} за **{$price} RUB**.";
+
+                $countSkins = Skindrops::find()
+                                       ->andWhere(['steam_id' => $user->steam_id])
+                                       ->count();
+
+                $fields = [
+                    [
+                        'name' => " ",
+                        'value' => " ",
+                        'inline' => false,
+                    ],
+                    [
+                        'name' => " ",
+                        'value' => " ",
+                        'inline' => false,
+                    ],
+                    [
+                        'name' => $countSkins,
+                        'value' => 'Игрок выиграл скинов',
+                        'inline' => true,
+                    ],
+                ];
+                Yii::$app->discord->send(Yii::$app->settings->get('skindrops_discordHook'), $title, $description, $image, $fields, $user->server->discord_token);
+            }
+        } catch (\Exception $e) {
+            Yii::$app->telegramChats->sendMessage("SkinsForm ({$e->getFile()}:{$e->getLine()}): {$e->getMessage()}");
+        }
+    }
+
+    public static function checkCs2() {
+        $payouts = UserPayoutSkins::find()
+                                  ->andWhere(['status' => UserPayoutSkins::STATUS_WAIT])
+                                  ->orderBy(['created_at' => SORT_DESC])
+                                  ->orderBy(['type' => 'cs2'])
+                                  ->indexBy('skin_id')
+                                  ->all();
+
+        if (!empty($payouts)) {
+            $items = Yii::$app->csGoMarket->history()['data'];
+            foreach ($items as $item) {
+                if (empty($payouts[$item['item_id']])) {
+                    continue;
+                }
+                /** @var UserPayoutSkins $payout */
+                $payout = $payouts[$item['item_id']];
+                if ($item['stage'] == 5) {
+                    $payout->status = UserPayoutSkins::STATUS_REJECT;
+                    $payout->save();
+                    $payout->user->getSkinsBalance()->recalculateBalance();
+                }
+                if ($item['stage'] == 2) {
+                    $payout->status = UserPayoutSkins::STATUS_SUCCESS;
+                    $payout->save();
+
+                    UserPayoutSkins::alert($payout->user, $payout->name, $payout->type, $payout->price, $payout->image300);
+                }
             }
         }
     }

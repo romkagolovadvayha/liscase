@@ -16,33 +16,30 @@ use yii\web\JsExpression;
 
     <?= $form->field($model, 'name')->textInput() ?>
 
-    <?php if (!empty($model->keywords)): ?>
     <?= $form->field($model, 'keywords')->textInput() ?>
-    <?= $form->field($model, 'description')->widget(\dosamigos\tinymce\TinyMce::className(), [
-        'options' => ['rows' => 6],
-        'language' => 'es',
-        'clientOptions' => [
-            'plugins' => [
-                "advlist autolink lists link charmap print preview anchor",
-                "searchreplace visualblocks code fullscreen",
-                "insertdatetime media table contextmenu paste"
-            ],
-            'toolbar' => "undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image"
-        ]
-    ]);?>
-    <?php endif; ?>
+    <?= $form->field($model, 'description')->textarea(['rows' => 3]) ?>
 
     <?= $form->field($model, 'content')->widget(\dosamigos\tinymce\TinyMce::className(), [
-        'options' => ['rows' => 12],
-        'language' => 'es',
+        'options' => [
+            'rows' => 12,
+        ],
+        'language' => 'ru',
         'clientOptions' => [
             'plugins' => [
-                "advlist autolink lists link charmap print preview anchor",
-                "searchreplace visualblocks code fullscreen",
-                "insertdatetime media table contextmenu paste"
+                //  "advlist",
+                // "paste"
+                'emoticons',
+                'link',
+                'code',
             ],
-            'toolbar' => "undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image"
-        ]
+            'menubar' => false,
+            'resize' => false,
+            'statusbar' => false,
+            'paste_as_text' => true,
+            'toolbar' => "undo redo bold italic emoticons link  | code",
+            'default_link_target' => '_blank',
+            'link_context_toolbar' => true
+        ],
     ]);?>
     <?php if (!empty($model->link_name)): ?>
         <?= $form->field($model, 'link_name')->textInput() ?>
@@ -54,7 +51,15 @@ use yii\web\JsExpression;
 
     <?= $form->field($model, 'status')->dropDownList(\common\models\blog\BlogCategory::getStatusList()) ?>
 
+    <?=$this->render('list-images', [
+            'blogId' => $model->id,
+        ])?>
+
     <div class="form-group">
+        <a href="/blog-image/create?blogId=<?=$model->id?>" class="btn btn-primary show-modal-link"
+           data-toggl="modal"
+           data-target="modal-dialog"
+           data-title="Загрузить изображение">Загрузить изображение</a>
         <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
     </div>
 

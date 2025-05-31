@@ -12,7 +12,7 @@
     </ul>
     <div class="tab-content">
         {% for SERVER in SERVERS %}
-        <div id="top_{{ SERVER.tag }}" class="tab-pane{% if USER.SERVER_ACTIVE_ID == SERVER.id %} active{% else %} fade{% endif %}" role="tabpanel" aria-labelledby="#{{ SERVER.tag }}-top-tab">
+        <div id="top_{{ SERVER.tag }}" class="tab-pane{% if USER.SERVER_ACTIVE_ID == SERVER.id %} active{% else %} fade{% endif %}" role="tabpanel">
             <ul class="stat-block__list">
                 {% for LIST in TOP[SERVER.id] %}
                     <li class="gamer">

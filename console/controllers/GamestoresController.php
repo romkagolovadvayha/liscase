@@ -8,6 +8,9 @@ use common\models\box\Box;
 use common\models\box\BoxDrop;
 use common\models\box\Category;
 use common\models\box\Drop;
+use common\models\box\DropDrop;
+use common\models\box\DropImage;
+use common\models\box\DropType;
 use common\models\box\Sets;
 use common\models\box\SetsDrop;
 use common\models\profit\Profit;
@@ -29,32 +32,161 @@ class GamestoresController extends Controller
      */
     public function actionProductParsing()
     {
-        $result = json_decode(file_get_contents(__DIR__ . "/../../products.json"), 1)['data'];
+        $result = json_decode(file_get_contents(__DIR__ . "/../../drops.json"), 1)['data'];
         $products = $result['products'];
         $categories = $result['categories'];
-        print_r(count($products));
+
         $cats = [];
+        $types = [];
         $google = new TranslateApi();
         foreach ($categories as $category) {
+            $categoryBD = Category::find()
+                ->andWhere(['name' => $category['name']])
+                ->one();
+            if (!empty($categoryBD)) {
+                $cats[$category['id']] = $categoryBD->id;
+                continue;
+            }
             $categoryTag = strtolower($google->translateText($category['name']));
             $lastId = Category::createRecord($category['name'], $categoryTag);
             $cats[$category['id']] = $lastId;
         }
+        foreach ($categories as $category) {
+            /** @var DropType $categoryBD */
+            $categoryBD = DropType::find()
+                ->andWhere(['name' => $category['name']])
+                ->one();
+            if (!empty($categoryBD)) {
+                $types[$category['id']] = $categoryBD->id;
+                continue;
+            }
+            $categoryTag = strtolower($google->translateText($category['name']));
+            $id = DropType::createRecord($category['name'], $categoryTag);
+            $types[$category['id']] = $id;
+        }
 
-        foreach ($products as $product) {
+
+        for ($i = count($products) - 1; $i >= 0; $i--) {
+            $product = $products[$i];
             if ($product['type'] === 'item') {
                 /** @var Drop $model */
                 $model = Drop::find()
                     ->andWhere(['rust_id' => $product['data']['itemId']])
                     ->one();
 
-                if (!empty($model)) {
-                    $model->price = $product['price'];
+                if (empty($model)) {
+                    $model = new Drop();
+                    $model->name = $product['name'];
+                }
+                $model->price = $product['price'];
+                $model->rust_id = $product['data']['itemId'];
+                if ($product['itemEnabled']) {
                     $model->market_status = Drop::MARKET_STATUS_ACTIVE;
-                    $model->count = $product['amount'];
-                    $model->discount = $product['discount'];
-                    $model->category_id = !empty($cats[$product['categoryId']]) ? $cats[$product['categoryId']] : NULL;
-                    $model->save();
+                } else {
+                    $model->market_status = Drop::MARKET_STATUS_NOT_ACTIVE;
+                }
+                $model->status = Drop::STATUS_ACTIVE;
+                $model->count = $product['amount'];
+                if (!empty($product['about'])) {
+                    $model->description = $product['about'];
+                }
+                $model->discount = $product['discount'];
+                $model->category_id = !empty($cats[$product['categoryId']]) ? $cats[$product['categoryId']] : NULL;
+                $model->type_id = !empty($types[$product['categoryId']]) ? $types[$product['categoryId']] : NULL;
+                $model->save();
+                if (!empty($product['img'])) {
+                    $image = DropImage::find()
+                                      ->andWhere(['drop_id' => $model->id])
+                                      ->one();
+                    if (empty($image)) {
+                        $this->_loadImageDrop($product['img'], $model->id);
+                    }
+                }
+            }
+            if ($product['type'] === 'command') {
+                /** @var Drop $model */
+                $model = Drop::find()
+                             ->andWhere(['name' => $product['name']])
+                             ->one();
+
+                if (empty($model)) {
+                    $model = new Drop();
+                    $model->name = $product['name'];
+                }
+                $model->price = $product['price'];
+                if ($product['itemEnabled']) {
+                    $model->market_status = Drop::MARKET_STATUS_ACTIVE;
+                } else {
+                    $model->market_status = Drop::MARKET_STATUS_NOT_ACTIVE;
+                }
+                $model->status = Drop::STATUS_ACTIVE;
+                $model->count = $product['amount'];
+                if (!empty($product['about'])) {
+                    $model->description = $product['about'];
+                }
+                if (!empty($product['data']) && !empty($product['data']['commands'])) {
+                    $model->command = $product['data']['commands'];
+                }
+                $model->discount = $product['discount'];
+                $model->category_id = !empty($cats[$product['categoryId']]) ? $cats[$product['categoryId']] : NULL;
+                $model->type_id = !empty($types[$product['categoryId']]) ? $types[$product['categoryId']] : NULL;
+                $model->save();
+                if (!empty($product['img'])) {
+                    $image = DropImage::find()
+                                      ->andWhere(['drop_id' => $model->id])
+                                      ->one();
+                    if (empty($image)) {
+                        $this->_loadImageDrop($product['img'], $model->id);
+                    }
+                }
+            }
+            if ($product['type'] === 'set') {
+                /** @var Drop $model */
+                $model = Drop::find()
+                             ->andWhere(['name' => $product['name']])
+                             ->one();
+
+                if (empty($model)) {
+                    $model = new Drop();
+                    $model->name = $product['name'];
+                }
+                $model->price = $product['price'];
+                if ($product['itemEnabled']) {
+                    $model->market_status = Drop::MARKET_STATUS_ACTIVE;
+                } else {
+                    $model->market_status = Drop::MARKET_STATUS_NOT_ACTIVE;
+                }
+                $model->status = Drop::STATUS_ACTIVE;
+                $model->count = $product['amount'];
+                if (!empty($product['about'])) {
+                    $model->description = $product['about'];
+                }
+                if (!empty($product['data']) && !empty($product['data']['commands'])) {
+                    $model->command = $product['data']['commands'];
+                }
+                $model->discount = $product['discount'];
+                $model->category_id = !empty($cats[$product['categoryId']]) ? $cats[$product['categoryId']] : NULL;
+                $model->type_id = !empty($types[$product['categoryId']]) ? $types[$product['categoryId']] : NULL;
+                $model->save();
+                if (!empty($product['subItems'])) {
+                    foreach ($product['subItems'] as $subItem) {
+                        /** @var Drop $model */
+                        $subModel = Drop::find()
+                                     ->andWhere(['rust_id' => $subItem['data']['itemId']])
+                                     ->one();
+
+                        if (!empty($subModel)) {
+                            DropDrop::createRecord($model->id, $subModel->id, $subItem['amount']);
+                        }
+                    }
+                }
+                if (!empty($product['img'])) {
+                    $image = DropImage::find()
+                                      ->andWhere(['drop_id' => $model->id])
+                                      ->one();
+                    if (empty($image)) {
+                        $this->_loadImageDrop($product['img'], $model->id);
+                    }
                 }
             }
         }
@@ -115,22 +247,22 @@ class GamestoresController extends Controller
             }
 
             if ($user['balance'] > 0) {
-                $userBalance = $model->getPersonalBalance();
-                $exists = Profit::find()
-                    ->andWhere(['user_balance_id' => $userBalance->id])
-                    ->andWhere(['type' => Profit::TYPE_TRANSFER_BALANCE])
-                    ->exists();
-                if (!$exists) {
-                    $profit                  = new Profit();
-                    $profit->status          = 1;
-                    $profit->type            = Profit::TYPE_TRANSFER_BALANCE;
-                    $profit->amount          = $user['balance'];
-                    $profit->user_balance_id = $userBalance->id;
-                    $profit->comment         = 'Перенос баланса с старого сайта';
-                    $profit->created_at      = date('Y-m-d H:i:s');
-                    $profit->save(false);
-                    $userBalance->recalculateBalance();
-                }
+//                $userBalance = $model->getPersonalBalance();
+//                $exists = Profit::find()
+//                    ->andWhere(['user_balance_id' => $userBalance->id])
+//                    ->andWhere(['type' => Profit::TYPE_TRANSFER_BALANCE])
+//                    ->exists();
+//                if (!$exists) {
+//                    $profit                  = new Profit();
+//                    $profit->status          = 1;
+//                    $profit->type            = Profit::TYPE_TRANSFER_BALANCE;
+//                    $profit->amount          = $user['balance'];
+//                    $profit->user_balance_id = $userBalance->id;
+//                    $profit->comment         = 'Перенос баланса с старого сайта';
+//                    $profit->created_at      = date('Y-m-d H:i:s');
+//                    $profit->save(false);
+//                    $userBalance->recalculateBalance();
+//                }
             }
         }
     }
@@ -185,6 +317,31 @@ class GamestoresController extends Controller
                 }
             }
             UserDrop::createRecord($user->id, $drop->id, $boxId, $setId, UserDrop::STATUS_ACTIVE, false, $basket['amount'], $basket['date_created']);
+        }
+    }
+
+    private function _loadImageDrop($imageUrl, $dropId) {
+        try {
+            $image = DropImage::find()
+                              ->andWhere(['drop_id' => $dropId])
+                              ->one();
+            if (!empty($image)) {
+                $image->delete();
+            }
+            $uploadDir = \Yii::getAlias('@frontend/web/uploads');
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir);
+                chmod($uploadDir, 0777);
+            }
+            $fileUrl = "/drop/" . $dropId . "_" . md5(time()) . ".png";
+            $filePath = $uploadDir . $fileUrl;
+            file_put_contents($filePath, file_get_contents($imageUrl));
+            DropImage::createRecord($fileUrl, DropImage::TYPE_ORIG, $dropId);
+        } catch (\Exception $ex) {
+            echo $imageUrl . PHP_EOL;
+            echo $ex->getMessage() . PHP_EOL;
+            echo "DropId: " . $dropId . PHP_EOL;
+            echo PHP_EOL;
         }
     }
 

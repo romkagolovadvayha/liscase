@@ -8,10 +8,14 @@ class BalanceAsset extends AssetBundle
 {
     public $sourcePath = '@frontend/assets/sources';
 
-    public $js
-        = [
-            'js/balance.js?v=1.0',
+    public function init()
+    {
+        parent::init();
+
+        $this->js = [
+            'js/balance.js?v=' . \Yii::$app->settings->get('site_version'),
         ];
+    }
 
     public $depends
         = [

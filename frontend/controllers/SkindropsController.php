@@ -29,7 +29,7 @@ class SkindropsController extends WebController
      */
     public function actionIndex()
     {
-        if (!Yii::$app->params['skindrops']) {
+        if (!Yii::$app->settings->get('section_skindrops')) {
             throw new NotFoundHttpException('The requested page does not exist.');
         }
         $model = null;

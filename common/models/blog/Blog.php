@@ -177,7 +177,7 @@ class Blog extends \yii\db\ActiveRecord
         $list = $query->all();
         $similars = [];
         foreach($list as $model) {
-            $verifiable = ArrayValIterator::getMinificationArray($model->keywords);
+            $verifiable = ArrayValIterator::getMinificationArray($model->name);
             $similar_counter = 0;
             foreach ($text as $text_row) {
                 foreach ($verifiable as $verifiable_row){

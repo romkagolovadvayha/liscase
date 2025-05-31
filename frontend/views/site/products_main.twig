@@ -3,40 +3,6 @@
 <section class="sets__wrapper mobile_hide">
     <div class="sets">
         {% set i = 0 %}
-        {% for item in PRODUCT_DROPS_SETS %}
-            {% include 'product_main.twig'
-                with {
-                'URL': "/market/form-modal-set?id=#{item.id}",
-                'PRICE': item.price,
-                'PRICE_REAL': item.getRealPrice(),
-                'CURRENCY': 'RUB',
-                'NAME': item.name,
-                'CATEGORY_ID': 1,
-                'IMAGE': item.image(),
-                'IMAGE2': item.image2(),
-                'BLOCKED': false,
-                'INDEX': i,
-            }
-            %}
-            {% set i = i + 1 %}
-        {% endfor %}
-        {% for item in PRODUCT_DROPS_SELECT %}
-            {% include 'product_main.twig'
-                with {
-                'URL': "/market/form-modal-select?id=#{item.id}",
-                'PRICE': item.price,
-                'PRICE_REAL': item.getRealPrice(),
-                'CURRENCY': 'RUB',
-                'NAME': item.name,
-                'CATEGORY_ID': 1,
-                'IMAGE': item.image(),
-                'IMAGE2': item.image2(),
-                'BLOCKED': false,
-                'INDEX': i,
-            }
-            %}
-            {% set i = i + 1 %}
-        {% endfor %}
         {% for item in PRODUCT_DROPS %}
             {% include 'product_main.twig'
                 with {
@@ -46,7 +12,7 @@
                 'CURRENCY': 'RUB',
                 'NAME': item.name,
                 'CATEGORY_ID': item.category_id,
-                'IMAGE': item.image(),
+                'IMAGE': IMAGES[item.id]['150px'],
                 'IMAGE2': item.image2(),
                 'COUNT': item.count,
                 'BLOCKED': item.blocked(),

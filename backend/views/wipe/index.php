@@ -80,5 +80,8 @@ $this->title = Yii::t('common', 'Вайп');
         <?= Html::a(Yii::t('common', 'Обнулить задания'),
                     '/wipe/task-clear',
                     ['class' => 'btn btn-success']); ?>
+        <?= Html::a(Yii::t('common', 'Очистить кэш'),
+                    '/wipe/clear-cache',
+                    ['class' => 'btn btn-success']); ?>
     </div>
 </div>

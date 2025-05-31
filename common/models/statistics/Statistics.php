@@ -33,6 +33,31 @@ class Statistics extends ActiveRecord
     }
 
     /**
+     * {@inheritdoc}
+     */
+    public function rules()
+    {
+        return [
+            [['wipe', 'server_tag', 'key', 'steam_id', 'value'], 'safe'],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'steam_id' => 'Steam ID',
+            'key' => 'Key',
+            'value' => 'Value',
+            'server_tag' => 'Server Tag',
+            'wipe' => 'Wipe',
+        ];
+    }
+
+    /**
      * @return \yii\db\ActiveQuery
      */
     public function getUser()
@@ -450,7 +475,7 @@ class Statistics extends ActiveRecord
             ->all();
 
         foreach ($drops as $item) {
-            $result[$item->eng_name] = $item->image();
+            $result[$item->eng_name] = $item->image64();
         }
 
         Yii::$app->cache->set($cacheKey, $result, 30*60);

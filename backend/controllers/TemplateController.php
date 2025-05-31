@@ -1,13 +1,37 @@
 <?php
 namespace backend\controllers;
 
+use common\components\helpers\Role;
 use Yii;
+use yii\filters\VerbFilter;
 use yii\web\Controller;
 use common\models\template\Template;
 use yii\web\NotFoundHttpException;
 
 class TemplateController extends Controller
 {
+
+    public function behaviors()
+    {
+        return [
+            'access' => [
+                'class' => \yii\filters\AccessControl::class,
+                'rules' => [
+                    [
+                        'allow' => true,
+                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
+                    ],
+                ],
+            ],
+            'verbs' => [
+                'class' => VerbFilter::className(),
+                'actions' => [
+                    'delete' => ['POST'],
+                ],
+            ],
+        ];
+    }
+
     public function actionIndex()
     {
         $templates = Template::find()->all();

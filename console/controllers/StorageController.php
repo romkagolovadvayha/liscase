@@ -4,6 +4,7 @@ namespace console\controllers;
 
 use common\models\box\Category;
 use common\models\box\Drop;
+use common\models\box\DropBlocked;
 use common\models\box\Select;
 use common\models\box\Sets;
 use common\models\servers\Servers;
@@ -108,6 +109,7 @@ class StorageController extends Controller
             foreach ($servers as $server) {
                 UserTop::getUserTops($server, $server->currentWipe(), true);
                 UserTop::getAllUserTops($server, $server->currentWipe(), true);
+                DropBlocked::getBlockedList($server->id, true);
             }
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage('storage/update ' . $e->getMessage());
@@ -130,5 +132,39 @@ class StorageController extends Controller
         ini_set('memory_limit', '512M');
         Drop::updateCache();
         Yii::$app->cache->delete($cacheKey);
+    }
+
+    /**
+     * storage/update-servers
+     *
+     * @throws \Exception
+     */
+    public function actionUpdateServers()
+    {
+        $cacheKey = "Storage_actionUpdateServers";
+        if (Yii::$app->cache->get($cacheKey)) {
+            return 'BLOCKED';
+        }
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+                          ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+
+        Yii::$app->cache->set($cacheKey, 1, 5*60);
+        ini_set('memory_limit', '512M');
+        foreach ($servers as $server) {
+            $server->getWipes(true);
+        }
+        Yii::$app->cache->delete($cacheKey);
+    }
+
+    /**
+     * storage/update-price-cs-go
+     *
+     * @throws \Exception
+     */
+    public function actionUpdatePriceCsGo() {
+        Yii::$app->csGoMarket->items(true);
     }
 }

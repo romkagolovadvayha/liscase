@@ -18,6 +18,7 @@ use yii\helpers\ArrayHelper;
  * @property int    $amount
  * @property int    $amount_exchange
  * @property string $payment_id
+ * @property float  $commission
  * @property int    $status
  * @property string $created_at
  *
@@ -42,6 +43,7 @@ class Deposit extends \common\components\base\ActiveRecord
     const TYPE_PAYMENT_TON        = 19;
     const TYPE_PAYMENT_SKINS        = 20;
     const TYPE_PAYMENT_TELEGRAM        = 21;
+    const TYPE_PAYMENT_FUNPAY        = 22;
 
     const STATUS_WAIT_CONFIRM = 1;
     const STATUS_CANCELED     = 2;
@@ -75,7 +77,7 @@ class Deposit extends \common\components\base\ActiveRecord
         return [
             [['user_id', 'payment_type', 'amount', 'status'], 'required'],
             [['user_id', 'payment_type'], 'integer'],
-            [['payment_id'], 'trim'],
+            [['payment_id', 'commission'], 'trim'],
             [['amount'], 'integer', 'min' => 1],
             [['created_at'], 'safe'],
         ];
@@ -154,6 +156,7 @@ class Deposit extends \common\components\base\ActiveRecord
             self::TYPE_PAYMENT_TON     => Yii::t('common', 'Оплата TON'),
             self::TYPE_PAYMENT_SKINS     => Yii::t('common', 'Оплата скинами'),
             self::TYPE_PAYMENT_TELEGRAM     => Yii::t('common', 'Оплата любой картой'),
+            self::TYPE_PAYMENT_FUNPAY     => Yii::t('common', 'Оплата FunPay'),
         ];
     }
 
@@ -193,6 +196,9 @@ class Deposit extends \common\components\base\ActiveRecord
         }
         if (Yii::$app->settings->get('telegrampay_enabled')) {
             $icons[self::TYPE_PAYMENT_TELEGRAM] = Yii::$app->settings->get('telegrampay_logo');
+        }
+        if (Yii::$app->settings->get('funpay_enabled')) {
+            $icons[self::TYPE_PAYMENT_FUNPAY] = Yii::$app->settings->get('funpay_logo');
         }
 
         return $icons;
@@ -236,6 +242,7 @@ class Deposit extends \common\components\base\ActiveRecord
             self::TYPE_PAYMENT_CARD_TINKOFF  => [10, 100000],
             self::TYPE_PAYMENT_SKINS  => [50, 100000],
             self::TYPE_PAYMENT_TELEGRAM  => [50, 100000],
+            self::TYPE_PAYMENT_FUNPAY  => [Yii::$app->settings->get('funpay_minSum'), 100000],
         ];
     }
 
@@ -286,6 +293,12 @@ class Deposit extends \common\components\base\ActiveRecord
 
         if (!empty($user->server)) {
             $message .= PHP_EOL . "Сервер: {$user->server->name}";
+        }
+        if ($user->is_mirror_returned) {
+            $message .= PHP_EOL . "<b>Игрок вернулся с зеркала</b>";
+        }
+        if ($user->is_mirror_registration) {
+            $message .= PHP_EOL . "<b>Игрок пришел к нам зеркала</b>";
         }
 
         $depositsSum = Deposit::find()

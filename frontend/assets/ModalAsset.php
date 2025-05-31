@@ -10,10 +10,14 @@ class ModalAsset extends AssetBundle
 {
     public $sourcePath = '@frontend/assets/sources';
 
-    public $js
-        = [
-            'js/modal.js?v=1.1',
+    public function init()
+    {
+        parent::init();
+
+        $this->js = [
+            'js/modal.js?v=' . \Yii::$app->settings->get('site_version'),
         ];
+    }
 
     public $depends
         = [

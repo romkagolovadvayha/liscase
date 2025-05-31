@@ -27,7 +27,7 @@ $config = [
         ],
         'user'         => [
             'identityClass'   => 'common\models\user\User',
-            'loginUrl'        => ['auth/oauth?authclient=steam'],
+            'loginUrl'        => ['auth/index'],
             'enableAutoLogin' => true,
             'identityCookie'  => [
                 'name'   => '_identity',
@@ -52,8 +52,21 @@ $config = [
             'traceLevel' => YII_DEBUG ? 3 : 0,
             'targets' => [
                 [
-                    'class' => 'yii\log\FileTarget',
+                    'class' => \yii\log\FileTarget::class,
                     'levels' => ['error', 'warning'],
+                ],
+                'telegram-error' => [
+                    'class' => 'common\components\log\TelegramSenderErrors',
+                    'levels'  => ['error'],
+                    'except'  => [
+                        'yii\web\HttpException:403',
+                        'yii\web\HttpException:404',
+                        'yii\web\HttpException:400',
+                        'EthereumRPC\Exception\ContractsException',
+                        'yii\i18n\PhpMessageSource::loadFallbackMessages',
+                    ],
+                    'enabled' => true,
+                    'exportInterval' => 1,
                 ],
             ],
         ],

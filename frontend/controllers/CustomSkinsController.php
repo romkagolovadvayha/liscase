@@ -89,7 +89,7 @@ class CustomSkinsController extends WebController
 
         $userLike = ServerSkinLike::find()
                                 ->andWhere(['user_id' => Yii::$app->user->id])
-                                ->andWhere(['building_id' => $model->id])
+                                ->andWhere(['server_skin_id' => $model->id])
                                 ->one();
         if (!empty($userLike)) {
             $model->likes -= 1;
@@ -98,7 +98,7 @@ class CustomSkinsController extends WebController
         } else {
             $like = new ServerSkinLike();
             $like->user_id = Yii::$app->user->id;
-            $like->building_id = $model->id;
+            $like->server_skin_id = $model->id;
             $like->type = ServerSkinLike::TYPE_LIKE;
             $like->created_at = date('Y-m-d H:i:s');
             $like->save();

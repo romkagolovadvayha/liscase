@@ -38,7 +38,7 @@ class ServersController extends WebController
                           ->all();
 
         $projectStats = \common\models\statistics\Statistics::projectStats();
-        $this->view->title = Yii::t('common', 'Наши сервера Rust');
+        $this->view->title = Yii::t('common', 'Сервера Rust | Выберите сервер для комфортной игры');
         $this->view->params['page'] = 'servers';
         $this->view->params['meta_description'] = Yii::t('common', "Список всех наших серверов Rust с подробным описанием, датами вайпов и IP-адресами. Узнайте, когда следующий вайп, подключитесь к любимому серверу и начните играть уже сегодня!");
 
@@ -103,6 +103,9 @@ class ServersController extends WebController
         $commands = json_decode($server->commands, 1);
         $this->view->title = Yii::t('common', 'Правила сервера') . " " . Yii::t('database', $server->name);
         $this->view->params['page'] = 'rules';
+        $this->view->params['meta_description'] = Yii::t('common', "Правила сервера {PARAM_SERVER_NAME_SHORT}. Узнайте все ограничения и возможности на серверах, чтобы не попасть в блокировку.", [
+            'PARAM_SERVER_NAME_SHORT' => Yii::t('database', $server->monitoring_name),
+        ]);
 
         return $this->render('rules.twig', [
             'SERVER' => $server,

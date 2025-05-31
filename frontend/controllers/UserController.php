@@ -76,7 +76,7 @@ class UserController extends WebController
         if (!empty($post['sell'])) {
             $userBalance = Yii::$app->user->identity->getPersonalBalance();
             $userDrop = UserDrop::findOne($post['sell']);
-            if (!empty($userDrop->box_id) || !empty($userDrop->sets_id)) {
+            if (!empty($userDrop->box_id) || !empty($userDrop->sets_id) || !empty($userDrop->parent_drop_id)) {
                 throw new HttpException(402, Yii::t('common', 'Не подлежит возврату!'));
             }
             if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
@@ -116,7 +116,7 @@ class UserController extends WebController
         if (!empty($post['sell'])) {
             $userBalance = Yii::$app->user->identity->getPersonalBalance();
             $userDrop = UserDrop::findOne($post['sell']);
-            if (!empty($userDrop->box_id) || !empty($userDrop->sets_id)) {
+            if (!empty($userDrop->box_id) || !empty($userDrop->sets_id) || !empty($userDrop->parent_drop_id)) {
                 throw new HttpException(402, Yii::t('common', 'Не подлежит возврату!'));
             }
             if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
@@ -293,20 +293,29 @@ class UserController extends WebController
      * @return \yii\web\Response | string
      * @throws NotFoundHttpException
      */
-    public function actionSkins()
+    public function actionSkins($type = 'rust')
     {
         if (!Yii::$app->settings->get('section_skindrops')) {
             throw new NotFoundHttpException(Yii::t('common', "Страница не найдена"));
         }
 
         $data = new SkinsSearch();
-        $provider = $data->search(Yii::$app->request->get());
+        $provider = $data->search(Yii::$app->request->get(), $type);
 
         $form = new SkinsForm();
+        if ($type == 'rust') {
+            $this->view->params['page'] = 'user-skins-rust';
+            $form->market = Yii::$app->rustTm;
+        } else {
+            $type = 'cs2';
+            $this->view->params['page'] = 'user-skins-csgo';
+            $form->market = Yii::$app->csGoMarket;
+        }
+        $form->type = $type;
         if (Yii::$app->request->isPost && $form->load(Yii::$app->request->post())) {
             if ($form->saveRecord()) {
                 Yii::$app->session->addFlash('success', Yii::t('common', 'Скин отправляется, ожидайте трейд-обмен'));
-                return $this->redirect('/user/skins');
+                return $this->redirect('/user/skins?type=' . $type);
             } else {
                 if (!empty($form->getFirstErrors())) {
                     Yii::$app->session->addFlash('danger', array_values($form->getFirstErrors())[0]);
@@ -318,10 +327,10 @@ class UserController extends WebController
         }
 
         $this->view->params['_profile'] = true;
-        $this->view->params['page'] = 'user-skins';
         return $this->render('skins', [
             'providerSkins' => $provider,
             'filterSkins' => $data,
+            'form' => $form,
         ]);
     }
 

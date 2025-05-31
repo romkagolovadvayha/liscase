@@ -1,7 +1,7 @@
 <footer class="footer">
     <div class="footer__main-links footer_logo_block">
-        <a href="{{ HOME_URL }}" class="footer_logo mb-48">
-            <img src="{{ SETTINGS.get('design_logo') }}" alt="" />
+        <a href="{{ HOME_URL }}" class="footer_logo mb-48" title="{{ t('common', 'Перейти на главную страницу') }}">
+            <img src="{{ SETTINGS.get('design_logo') }}" alt="Логотип сайта" />
         </a>
 
         <a href="mailto:{{ SETTINGS.get('site_email') }}" class="mb-24 p1">{{ SETTINGS.get('site_email') }}</a>
@@ -46,6 +46,7 @@
             with {
                 'SETTINGS': SETTINGS,
                 'PAGE': PAGE,
+                'USER_GUEST': USER_GUEST,
                 'CLASS': '',
                 'CLASS_ITEM': 'text-text-teritiary',
                 'CLASS_ITEM_ACTIVE': '',

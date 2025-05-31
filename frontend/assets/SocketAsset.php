@@ -8,10 +8,14 @@ class SocketAsset extends AssetBundle
 {
     public $sourcePath = '@frontend/assets/sources';
 
-    public $js
-        = [
-            'js/socket.js?v=1.0',
+    public function init()
+    {
+        parent::init();
+
+        $this->js = [
+            'js/socket.js?v=' . \Yii::$app->settings->get('site_version'),
         ];
+    }
 
     public $depends
         = [

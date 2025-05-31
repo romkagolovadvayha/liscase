@@ -39,6 +39,10 @@ $tabs = [
                 'category' => 'tgbotAlert',
                 'title' => 'Телеграм канал для прочих оповещений',
             ],
+            [
+                'category' => 'tgbotSupportAlert',
+                'title' => 'Поддержка, оповещения о сообщениях',
+            ],
         ],
     ],
 ];

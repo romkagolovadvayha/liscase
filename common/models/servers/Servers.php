@@ -509,4 +509,32 @@ class Servers extends \common\components\base\ActiveRecord
             $user->calculateTop($userStat, $userTops, $this);
         }
     }
+
+    public function getWipes($update = false)
+    {
+        $cacheKey = 'Servers_getWipes_' . $this->id;
+        if (Yii::$app->cache->get($cacheKey) && !$update) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $result = [];
+        $wipes = Statistics::find()
+                  ->select('DISTINCT(wipe)')
+                  ->andWhere(['server_tag' => $this->tag])
+                  ->orderBy(['id' => SORT_DESC])
+                  ->createCommand()
+                  ->queryColumn();
+
+        $count = 0;
+        foreach ($wipes as $wipe) {
+            $result[$wipe] = $wipe;
+            $count++;
+            if ($count > 10) {
+                break;
+            }
+        }
+
+        Yii::$app->cache->set($cacheKey, $result, 24*60*60);
+        return $result;
+    }
 }
