@@ -31,7 +31,6 @@ use Yii;
 class Steam extends OpenId
 {
 
-    public $sslVerifyPeer;
     public $key;
 
     /**
