@@ -70,18 +70,6 @@ class Steam extends OpenId
         $url = $this->getClaimedId();
         $id = preg_replace("/[^0-9]/", '', $url);
         $result = ['id' => $id];
-        $infoUser = Steam::getInfoUser($id);
-        $username = $id;
-        $avatar = Yii::$app->settings->get('design_avatar_default');
-        if (!empty($infoUser)) {
-            $username = HtmlPurifier::process($infoUser[0]['personaname']);
-            if (empty($username)) {
-                $username = $id;
-            }
-            $avatar = $infoUser[0]['avatarfull'];
-        }
-        $result['username'] = $username;
-        $result['avatar_link'] = $avatar;
 
         return array_merge($result, $this->fetchAttributes());
     }

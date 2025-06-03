@@ -3,6 +3,7 @@
 namespace common\controllers;
 
 use common\components\oauth\AuthAction;
+use common\components\oauth\Steam;
 use common\forms\user\LoginForm;
 use common\models\profit\Profit;
 use common\models\user\Auth;
@@ -11,6 +12,7 @@ use common\models\user\UserTree;
 use Yii;
 use yii\base\BaseObject;
 use yii\filters\AccessControl;
+use yii\helpers\HtmlPurifier;
 use yii\web\BadRequestHttpException;
 use common\components\web\Cookie;
 use common\models\user\User;
@@ -96,23 +98,34 @@ class AuthController extends WebController
             if ($auth) {
                 // авторизация
                 $user = $auth->user;
-                try {
-                    $avatar = $this->_loadImage($attributes['avatar_link'], $attributes['id']);
-                    $user->userProfile->avatar = $avatar;
-                } catch (\Exception $ex) {}
-                try {
-                    $user->userProfile->name = $attributes['username'];
-                    $user->userProfile->save(false);
-                    $user->username = $attributes['username'];
-                    $user->save(false);
-                } catch (\Exception $ex) {}
+//                try {
+//                    $avatar = $this->_loadImage($attributes['avatar_link'], $attributes['id']);
+//                    $user->userProfile->avatar = $avatar;
+//                } catch (\Exception $ex) {}
+//                try {
+//                    $user->userProfile->name = $attributes['username'];
+//                    $user->userProfile->save(false);
+//                    $user->username = $attributes['username'];
+//                    $user->save(false);
+//                } catch (\Exception $ex) {}
                 Yii::$app->user->login($user,3600*24*7);
             } else {
+
+                $infoUser = Steam::getInfoUser($attributes['id']);
+                $username = $attributes['id'];
+                $avatarLink = Yii::$app->settings->get('design_avatar_default');
+                if (!empty($infoUser)) {
+                    $username = HtmlPurifier::process($infoUser[0]['personaname']);
+                    if (empty($username)) {
+                        $username = $attributes['id'];
+                    }
+                    $avatarLink = $infoUser[0]['avatarfull'];
+                }
                 // регистрация
                 $user     = new User();
                 $user->email = "{$attributes['id']}@steam.com";
                 $user->steam_id = $attributes['id'];
-                $user->username = $attributes['username'];
+                $user->username = $username;
                 $user->setPassword(Yii::$app->security->generateRandomString());
                 $user->status = User::STATUS_ACTIVE;
                 $user->generateAuthKey();
@@ -131,9 +144,9 @@ class AuthController extends WebController
                     } else {
                         UserTree::appendUser($user->id, 509);
                     }
-                    UserProfile::createModel($user, $attributes['username']);
+                    UserProfile::createModel($user, $username);
                     try {
-                        $avatar = $this->_loadImage($attributes['avatar_link'], $attributes['id']);
+                        $avatar = $this->_loadImage($avatarLink, $attributes['id']);
                         $user->userProfile->avatar = $avatar;
                     } catch (\Exception $ex) {}
                     $user->userProfile->save();
