@@ -134,14 +134,7 @@ $config = [
             'clients' => [
                 'steam' => [
                     'class' => \common\components\oauth\Steam::class,
-                    'authUrl' => 'https://steamcommunity.com/openid/login',
-                    'transport' => 'yii\httpclient\CurlTransport',
                     'key' => $params['steamApiKey'],
-                    'requestConfig' => [
-                        'timeout' => 30,
-                        'sslVerifyPeer' => true,
-                        'sslCafile' => '/etc/ssl/certs/ca-certificates.crt', // обязательно укажите свой путь
-                    ],
                 ],
             ],
         ],
