@@ -43,7 +43,7 @@ class UpdateUsersJob extends BaseObject implements JobInterface
                 try {
                     $user = User::findBySteamId($item['steam_id']);
                     if (empty($user)) {
-                        Yii::$app->telegramChats->sendMessage("UpdateUsersJob: user empty ");
+                        Yii::$app->telegramChats->sendMessage("UpdateUsersJob: user empty " . $item['steam_id']);
                         return;
                     }
                     $user->username = HtmlPurifier::process($item['username']);
