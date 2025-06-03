@@ -53,6 +53,7 @@ class Steam extends OpenId
     protected function initUserAttributes(): array
     {
         $url = $this->getClaimedId();
+        Yii::$app->telegramChats->sendMessage("initUserAttributes: {$url}");
         $id = preg_replace("/[^0-9]/", '', $url);
         $result = ['id' => $id];
         $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$this->key}&steamids={$id}";
