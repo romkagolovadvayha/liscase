@@ -40,7 +40,7 @@ class Steam extends OpenId
     /**
      * {@inheritdoc}
      */
-    public $authUrl = 'https://steamcommunity.com/openid';
+    public $authUrl = 'https://steamcommunity.com/openid/login';
 
 
     /**
