@@ -53,17 +53,13 @@ class Steam extends OpenId
     protected function initUserAttributes(): array
     {
         $url = $this->getClaimedId();
-        Yii::$app->telegramChats->sendMessage("initUserAttributes: {$url}");
         $id = preg_replace("/[^0-9]/", '', $url);
         $result = ['id' => $id];
         $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$this->key}&steamids={$id}";
         $response = (clone Yii::$app->curl)->get($apiUrl);
-        Yii::$app->telegramChats->sendMessage("initUserAttributes: {$response}");
         $usersInfo = json_decode($response, 1)['response']['players'];
-//        if (!empty($usersInfo)) {
-            $result['username'] = $usersInfo[0]['personaname'];
-            $result['avatar_link'] = $usersInfo[0]['avatarfull'];
-//        }
+        $result['username'] = $usersInfo[0]['personaname'];
+        $result['avatar_link'] = $usersInfo[0]['avatarfull'];
 
         return array_merge($result, $this->fetchAttributes());
     }
@@ -111,7 +107,6 @@ class Steam extends OpenId
         $response = "";
         try {
             $response = Yii::$app->curl->get($apiUrl);
-            Yii::$app->telegramChats->sendMessage("updateUser: {$response}");
             $data = json_decode($response, 1);
             $usersInfo = $data['response']['players'];
             $user->username = $usersInfo[0]['personaname'];
@@ -130,11 +125,7 @@ class Steam extends OpenId
         try {
             $key = Yii::$app->params['steamApiKey'];
             $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$steamId}";
-            $response = (clone Yii::$app->curl)
-                ->setOption(CURLOPT_PROXY, '154.196.30.165:62742') // Установка прокси
-                ->setOption(CURLOPT_PROXYUSERPWD, 'XyQREbm5:AZ1zUkyc') // Если требуется аутентификация
-                ->get($apiUrl);
-            Yii::$app->telegramChats->sendMessage("getInfoUser: {$response}");
+            $response = (clone Yii::$app->curl)->get($apiUrl);
             $data = json_decode($response, 1);
             $usersInfo = $data['response']['players'];
             return $usersInfo;
@@ -148,7 +139,6 @@ class Steam extends OpenId
         $key = Yii::$app->params['steamApiKey'];
         $apiUrl = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key={$key}&steamid={$steamId}&include_played_free_games=1";
         $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
-        Yii::$app->telegramChats->sendMessage("getGameInfo: {$response}");
         if (empty($response['response'])) {
             return [];
         }
