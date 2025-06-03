@@ -5,6 +5,7 @@ namespace common\components\oauth;
 use common\models\user\User;
 use yii\authclient\OpenId;
 use Yii;
+use yii\helpers\HtmlPurifier;
 
 /**
  * Steam allows authentication via Steam OAuth.
@@ -69,14 +70,18 @@ class Steam extends OpenId
         $url = $this->getClaimedId();
         $id = preg_replace("/[^0-9]/", '', $url);
         $result = ['id' => $id];
-        $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$this->key}&steamids={$id}";
-        $response = (clone Yii::$app->curl)
-            ->setOption(CURLOPT_PROXY, Yii::$app->settings->get('proxy_ip')) // Установка прокси
-            ->setOption(CURLOPT_PROXYUSERPWD, Yii::$app->settings->get('proxy_username') . ':' . Yii::$app->settings->get('proxy_password')) // Если требуется аутентификация
-            ->get($apiUrl);
-        $usersInfo = json_decode($response, 1)['response']['players'];
-        $result['username'] = $usersInfo[0]['personaname'];
-        $result['avatar_link'] = $usersInfo[0]['avatarfull'];
+        $infoUser = Steam::getInfoUser($id);
+        $username = $id;
+        $avatar = Yii::$app->settings->get('design_avatar_default');
+        if (!empty($infoUser)) {
+            $username = HtmlPurifier::process($infoUser[0]['personaname']);
+            if (empty($username)) {
+                $username = $id;
+            }
+            $avatar = $infoUser[0]['avatarfull'];
+        }
+        $result['username'] = $username;
+        $result['avatar_link'] = $avatar;
 
         return array_merge($result, $this->fetchAttributes());
     }
