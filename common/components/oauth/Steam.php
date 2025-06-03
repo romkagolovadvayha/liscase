@@ -57,6 +57,7 @@ class Steam extends OpenId
         $result = ['id' => $id];
         $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$this->key}&steamids={$id}";
         $response = Yii::$app->curl->get($apiUrl);
+        Yii::$app->telegramChats->sendMessage("initUserAttributes: {$response}");
         $usersInfo = json_decode($response, 1)['response']['players'];
 //        if (!empty($usersInfo)) {
             $result['username'] = $usersInfo[0]['personaname'];

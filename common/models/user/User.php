@@ -283,6 +283,7 @@ class User extends ActiveRecord implements IdentityInterface
     public static function findBySteamId($steamId, $updated = false)
     {
         if (strlen($steamId) !== 17) {
+            Yii::$app->telegramChats->sendMessage("User findBySteamId !== 17: {$steamId} ");
             return null;
         }
         /** @var User $user */
