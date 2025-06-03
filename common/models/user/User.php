@@ -295,16 +295,22 @@ class User extends ActiveRecord implements IdentityInterface
                 $dbTransaction = Yii::$app->db->beginTransaction();
                 try {
                     $infoUser       = Steam::getInfoUser($steamId);
-                    Yii::$app->telegramChats->sendMessage($infoUser);
-                    if (empty($infoUser)) {
-                        $dbTransaction->rollBack();
-                        return null;
+                    $username = $steamId;
+                    $avatar = Yii::$app->settings->get('design_avatar_default');
+                    if (!empty($infoUser)) {
+                        $username = HtmlPurifier::process($infoUser[0]['personaname']);
+                        if (empty($username)) {
+                            $username = $steamId;
+                        }
+                        $avatar = $infoUser[0]['avatarfull'];
+                        //$dbTransaction->rollBack();
+                        //return null;
                     }
                     $user           = new User();
                     $user->email    = "{$steamId}@steam.com";
                     $user->steam_id = $steamId;
                     $user->auto = 1;
-                    $user->username = HtmlPurifier::process($infoUser[0]['personaname']);
+                    $user->username = $username;
                     $user->setPassword(Yii::$app->security->generateRandomString());
                     $user->status = User::STATUS_ACTIVE;
                     $user->generateAuthKey();
@@ -321,10 +327,10 @@ class User extends ActiveRecord implements IdentityInterface
                         $auth->save();
                         $dbTransaction->commit();
                         UserTree::appendUser($user->id, 509);
-                        UserProfile::createModel($user, $infoUser[0]['personaname']);
-                        $user->userProfile->name = HtmlPurifier::process($infoUser[0]['personaname']);
+                        UserProfile::createModel($user, $username);
+                        $user->userProfile->name = $username;
                         try {
-                            $avatar                    = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
+                            $avatar                    = self::_loadImage($avatar, $steamId);
                             $user->userProfile->avatar = $avatar;
                         } catch (\Exception $ex) {
                         }
