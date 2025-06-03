@@ -9,6 +9,7 @@ use common\models\profit\Profit;
 use common\models\user\Auth;
 use common\models\user\UserProfile;
 use common\models\user\UserTree;
+use Vikas5914\SteamAuth;
 use Yii;
 use yii\base\BaseObject;
 use yii\filters\AccessControl;
@@ -16,6 +17,7 @@ use yii\helpers\HtmlPurifier;
 use yii\web\BadRequestHttpException;
 use common\components\web\Cookie;
 use common\models\user\User;
+use yii\web\HttpException;
 
 class AuthController extends WebController
 {
@@ -61,14 +63,31 @@ class AuthController extends WebController
         ];
     }
 
-    public function actions()
+//    public function actions()
+//    {
+//        return [
+//            'oauth' => [
+//                'class'           => AuthAction::class,
+//                'successCallback' => [$this, 'onAuthSuccess'],
+//            ],
+//        ];
+//    }
+
+    public function actionOauth()
     {
-        return [
-            'oauth' => [
-                'class'           => AuthAction::class,
-                'successCallback' => [$this, 'onAuthSuccess'],
-            ],
+        $config = [
+            'apikey' => Yii::$app->settings->get('steam_apiKey'), // Steam API KEY
+            'domainname' => Yii::$app->params['homePage'] . '/', // Displayed domain in the login-screen
+            'loginpage' => Yii::$app->params['homePage'] . '/auth/oauth', // Returns to last page if not set
+            "logoutpage" => "",
+            "skipAPI" => true, // true = dont get the data from steam, just return the steamid64
         ];
+
+        $steam = new SteamAuth($config);
+        if ($steam->loggedIn()) {
+            return $this->redirect($this->onAuthSuccess($_SESSION['steamdata']['steamid']));
+        }
+        return $this->redirect($steam->loginUrl());
     }
 
     public function init()
@@ -83,13 +102,13 @@ class AuthController extends WebController
         return '@common/views/auth';
     }
 
-    public function onAuthSuccess($client)
+    public function onAuthSuccess($steamId)
     {
-        $attributes = $client->getUserAttributes();
+        $source = 'steam';
         /* @var $auth Auth */
         $auth = Auth::find()->where([
-                'source' => $client->getId(),
-                'source_id' => $attributes['id'],
+                'source' => $source,
+                'source_id' => $steamId,
             ])->one();
 
         if (Yii::$app->user->isGuest) {
@@ -111,20 +130,20 @@ class AuthController extends WebController
                 Yii::$app->user->login($user,3600*24*7);
             } else {
 
-                $infoUser = Steam::getInfoUser($attributes['id']);
-                $username = $attributes['id'];
+                $infoUser = Steam::getInfoUser($steamId);
+                $username = $steamId;
                 $avatarLink = Yii::$app->settings->get('design_avatar_default');
                 if (!empty($infoUser)) {
                     $username = HtmlPurifier::process($infoUser[0]['personaname']);
                     if (empty($username)) {
-                        $username = $attributes['id'];
+                        $username = $steamId;
                     }
                     $avatarLink = $infoUser[0]['avatarfull'];
                 }
                 // регистрация
                 $user     = new User();
-                $user->email = "{$attributes['id']}@steam.com";
-                $user->steam_id = $attributes['id'];
+                $user->email = "{$steamId}@steam.com";
+                $user->steam_id = $steamId;
                 $user->username = $username;
                 $user->setPassword(Yii::$app->security->generateRandomString());
                 $user->status = User::STATUS_ACTIVE;
@@ -146,15 +165,15 @@ class AuthController extends WebController
                     }
                     UserProfile::createModel($user, $username);
                     try {
-                        $avatar = $this->_loadImage($avatarLink, $attributes['id']);
+                        $avatar = $this->_loadImage($avatarLink, $steamId);
                         $user->userProfile->avatar = $avatar;
                     } catch (\Exception $ex) {}
                     $user->userProfile->save();
                     $auth = new Auth(
                         [
                             'user_id'   => $user->id,
-                            'source' => $client->getId(),
-                            'source_id' => (string)$attributes['id'],
+                            'source' => $source,
+                            'source_id' => (string)$steamId,
                         ]
                     );
                     if ($auth->save(false)) {
@@ -187,13 +206,15 @@ class AuthController extends WebController
                 $auth = new Auth(
                     [
                         'user_id'   => Yii::$app->user->id,
-                        'source' => $client->getId(),
-                        'source_id' => $attributes['id'],
+                        'source' => $source,
+                        'source_id' => $steamId,
                     ]
                 );
                 $auth->save();
             }
         }
+
+        return '/';
     }
 
     private function _loadImage($imageUrl, $id) {

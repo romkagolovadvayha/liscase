@@ -129,16 +129,6 @@ $config = [
             ],
         ],
         */
-        'authClientCollection' => [
-            'class' => 'yii\authclient\Collection',
-            'clients' => [
-                'steam' => [
-                    'class' => \common\components\oauth\Steam::class,
-                    'authUrl' => 'https://steamcommunity.com/openid',
-                    'key' => $params['steamApiKey'],
-                ],
-            ],
-        ],
     ],
     'params' => $params,
 ];

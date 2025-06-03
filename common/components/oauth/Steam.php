@@ -96,7 +96,7 @@ class Steam extends OpenId
             return Yii::$app->cache->get($cacheKey);
         }
 
-        $key = Yii::$app->params['steamApiKey'];
+        $key = Yii::$app->settings->get('steam_apiKey');
         $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$steamId}";
         $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
         $avatar = $response['response']['players'][0]['avatarfull'];
@@ -128,7 +128,7 @@ class Steam extends OpenId
     public static function updateUser($id) {
         $user = User::findOne($id);
 
-        $key = Yii::$app->params['steamApiKey'];
+        $key = Yii::$app->settings->get('steam_apiKey');
         $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$user->steam_id}";
         $response = "";
         try {
@@ -149,7 +149,7 @@ class Steam extends OpenId
     public static function getInfoUser($steamId) {
         $response = "";
         try {
-            $key = Yii::$app->params['steamApiKey'];
+            $key = Yii::$app->settings->get('steam_apiKey');
             $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$steamId}";
             $response = (clone Yii::$app->curl)
                 ->setOption(CURLOPT_PROXY, Yii::$app->settings->get('proxy_ip')) // Установка прокси
@@ -165,7 +165,7 @@ class Steam extends OpenId
     }
 
     public static function getGameInfo($steamId) {
-        $key = Yii::$app->params['steamApiKey'];
+        $key = Yii::$app->settings->get('steam_apiKey');
         $apiUrl = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key={$key}&steamid={$steamId}&include_played_free_games=1";
         $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
         if (empty($response['response'])) {

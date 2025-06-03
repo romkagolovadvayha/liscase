@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3413b513772a177b617f8ab30f449194",
+    "content-hash": "3390e72aa1ff101e8a4294f5bcd08dcb",
     "packages": [
         {
             "name": "2amigos/qrcode-library",
@@ -8989,6 +8989,56 @@
                 }
             ],
             "time": "2024-11-07T12:34:41+00:00"
+        },
+        {
+            "name": "vikas5914/steam-auth",
+            "version": "v1.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/vikas5914/steam-auth.git",
+                "reference": "430fbcfce209d5c3512b94da2ff418dd8c934c3a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/vikas5914/steam-auth/zipball/430fbcfce209d5c3512b94da2ff418dd8c934c3a",
+                "reference": "430fbcfce209d5c3512b94da2ff418dd8c934c3a",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Vikas5914\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Vikas Kapadiya",
+                    "email": "vikas@kapadiya.net",
+                    "homepage": "https://www.kapadiya.net"
+                }
+            ],
+            "description": "A simple PHP Steam login and User Detail package",
+            "keywords": [
+                "steam",
+                "steam auth",
+                "steam login",
+                "steam user",
+                "steam-auth",
+                "steam-login",
+                "steam-user"
+            ],
+            "support": {
+                "issues": "https://github.com/vikas5914/steam-auth/issues",
+                "source": "https://github.com/vikas5914/steam-auth/tree/v1.0.4"
+            },
+            "time": "2025-02-12T14:33:27+00:00"
         },
         {
             "name": "wikimedia/less.php",

@@ -69,15 +69,6 @@ $config = [
             ],
         ],
         'db' => $db,
-        'authClientCollection' => [
-            'class' => 'yii\authclient\Collection',
-            'clients' => [
-                'steam' => [
-                    'class' => \common\components\oauth\Steam::class,
-                    'key' => $params['steamApiKey'],
-                ],
-            ],
-        ],
     ],
     'params' => $params,
 ];
