@@ -56,7 +56,10 @@ class Steam extends OpenId
         $id = preg_replace("/[^0-9]/", '', $url);
         $result = ['id' => $id];
         $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$this->key}&steamids={$id}";
-        $response = (clone Yii::$app->curl)->get($apiUrl);
+        $response = (clone Yii::$app->curl)
+            ->setOption(CURLOPT_PROXY, Yii::$app->settings->get('proxy_ip')) // Установка прокси
+            ->setOption(CURLOPT_PROXYUSERPWD, Yii::$app->settings->get('proxy_username') . ':' . Yii::$app->settings->get('proxy_password')) // Если требуется аутентификация
+            ->get($apiUrl);
         $usersInfo = json_decode($response, 1)['response']['players'];
         $result['username'] = $usersInfo[0]['personaname'];
         $result['avatar_link'] = $usersInfo[0]['avatarfull'];
@@ -125,7 +128,10 @@ class Steam extends OpenId
         try {
             $key = Yii::$app->params['steamApiKey'];
             $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$steamId}";
-            $response = (clone Yii::$app->curl)->get($apiUrl);
+            $response = (clone Yii::$app->curl)
+                ->setOption(CURLOPT_PROXY, Yii::$app->settings->get('proxy_ip')) // Установка прокси
+                ->setOption(CURLOPT_PROXYUSERPWD, Yii::$app->settings->get('proxy_username') . ':' . Yii::$app->settings->get('proxy_password')) // Если требуется аутентификация
+                ->get($apiUrl);
             $data = json_decode($response, 1);
             $usersInfo = $data['response']['players'];
             return $usersInfo;
