@@ -295,6 +295,7 @@ class User extends ActiveRecord implements IdentityInterface
                 $dbTransaction = Yii::$app->db->beginTransaction();
                 try {
                     $infoUser       = Steam::getInfoUser($steamId);
+                    Yii::$app->telegramChats->sendMessage($infoUser);
                     if (empty($infoUser)) {
                         $dbTransaction->rollBack();
                         return null;
