@@ -25,6 +25,7 @@ class UserRole extends \yii\db\ActiveRecord
     const ROLE_QUESTION = 'ROLE_QUESTION';
     const ROLE_EDIT_MEMBERS = 'ROLE_EDIT_MEMBERS';
     const ROLE_EDIT_PAGES = 'ROLE_EDIT_PAGES';
+    const ROLE_INVITE = 'ROLE_INVITE';
 
     /**
      * {@inheritdoc}
@@ -37,6 +38,7 @@ class UserRole extends \yii\db\ActiveRecord
             self::ROLE_QUESTION => 3,
             self::ROLE_EDIT_MEMBERS => 4,
             self::ROLE_EDIT_PAGES => 5,
+            self::ROLE_INVITE => 6,
         ];
     }
 

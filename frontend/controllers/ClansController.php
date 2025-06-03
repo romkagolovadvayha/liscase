@@ -10,7 +10,6 @@ use common\models\clan\UserRole;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use common\models\user\UserTop;
-use fedemotta\datatables\DataTablesAsset;
 use frontend\assets\ClanAsset;
 use frontend\forms\clans\ClanForm;
 use frontend\forms\clans\LeaveForm;
@@ -23,6 +22,10 @@ use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use Yii;
 use yii\web\UploadedFile;
+use common\models\clan\{ClanInvite, ClanPage, ClanQuestion, ClanResource, UserClan};
+use common\models\user\User;
+use yii\web\ForbiddenHttpException;
+use yii\helpers\Url;
 
 class ClansController extends WebController
 {
@@ -453,4 +456,5 @@ class ClansController extends WebController
             'model' => $model,
         ]);
     }
+
 }
