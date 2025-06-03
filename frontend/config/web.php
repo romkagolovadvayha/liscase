@@ -134,7 +134,9 @@ $config = [
             'clients' => [
                 'steam' => [
                     'class' => \common\components\oauth\Steam::class,
+                    'authUrl' => 'https://steamcommunity.com/openid',
                     'key' => $params['steamApiKey'],
+                    'sslVerifyPeer' => true,
                 ],
             ],
         ],

@@ -31,6 +31,7 @@ use Yii;
 class Steam extends OpenId
 {
 
+    public $sslVerifyPeer;
     public $key;
 
     /**
@@ -45,6 +46,20 @@ class Steam extends OpenId
     protected function defaultName()
     {
         return 'steam';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function defaultRequestOptions()
+    {
+        return [
+            'userAgent' => Yii::$app->name . ' OpenID Client',
+            'timeout' => 30,
+            'followLocation' => true,
+            'Origin' => 'https://steamcommunity.com/',
+            'Referer' => 'https://steamcommunity.com/',
+        ];
     }
 
     /**
