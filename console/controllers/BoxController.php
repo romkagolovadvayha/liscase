@@ -48,8 +48,8 @@ class BoxController extends Controller
                 DropImage::createRecord($newPath150, DropImage::TYPE_150, $image->drop_id);
                 DropImage::resizeImage($path, $fullNewPath64, 64);
                 DropImage::createRecord($newPath64, DropImage::TYPE_64, $image->drop_id);
-                DropImage::resizeImage($path, $fullNewPath100, 100);
-                DropImage::createRecord($newPath100, DropImage::TYPE_100, $image->drop_id);
+//                DropImage::resizeImage($path, $fullNewPath100, 100);
+//                DropImage::createRecord($newPath100, DropImage::TYPE_100, $image->drop_id);
             }
         }
 
