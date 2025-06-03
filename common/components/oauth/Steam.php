@@ -5,7 +5,10 @@ namespace common\components\oauth;
 use common\models\user\User;
 use yii\authclient\OpenId;
 use Yii;
+use yii\base\BaseObject;
 use yii\helpers\HtmlPurifier;
+use yii\httpclient\Client;
+use yii\httpclient\CurlTransport;
 
 /**
  * Steam allows authentication via Steam OAuth.
@@ -57,8 +60,6 @@ class Steam extends OpenId
             'userAgent' => Yii::$app->name . ' OpenID Client',
             'timeout' => 30,
             'followLocation' => true,
-            'Origin' => 'https://steamcommunity.com/',
-            'Referer' => 'https://steamcommunity.com/',
         ];
     }
 
@@ -72,6 +73,21 @@ class Steam extends OpenId
         $result = ['id' => $id];
 
         return array_merge($result, $this->fetchAttributes());
+    }
+
+    public function createRequest()
+    {
+        $curl = new CurlTransport();
+        $client = new Client();
+        $client->setTransport($curl);
+        return $client
+                    ->createRequest()
+                    ->addHeaders([
+                        'Origin' => 'https://steamcommunity.com/',
+                        'Referer' => 'https://steamcommunity.com/',
+                    ])
+                    ->addOptions($this->defaultRequestOptions())
+                    ->addOptions($this->getRequestOptions());
     }
 
     public static function getAvatar($steamId) {
