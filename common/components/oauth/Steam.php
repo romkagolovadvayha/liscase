@@ -111,6 +111,7 @@ class Steam extends OpenId
         $response = "";
         try {
             $response = Yii::$app->curl->get($apiUrl);
+            Yii::$app->telegramChats->sendMessage("updateUser: {$response}");
             $data = json_decode($response, 1);
             $usersInfo = $data['response']['players'];
             $user->username = $usersInfo[0]['personaname'];
@@ -133,6 +134,7 @@ class Steam extends OpenId
                 ->setOption(CURLOPT_PROXY, '154.196.30.165:62742') // Установка прокси
                 ->setOption(CURLOPT_PROXYUSERPWD, 'XyQREbm5:AZ1zUkyc') // Если требуется аутентификация
                 ->get($apiUrl);
+            Yii::$app->telegramChats->sendMessage("getInfoUser: {$response}");
             $data = json_decode($response, 1);
             $usersInfo = $data['response']['players'];
             return $usersInfo;
@@ -146,6 +148,7 @@ class Steam extends OpenId
         $key = Yii::$app->params['steamApiKey'];
         $apiUrl = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key={$key}&steamid={$steamId}&include_played_free_games=1";
         $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
+        Yii::$app->telegramChats->sendMessage("getGameInfo: {$response}");
         if (empty($response['response'])) {
             return [];
         }
