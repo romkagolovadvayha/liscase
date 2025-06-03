@@ -165,7 +165,31 @@ class DropImage extends ActiveRecord
                             $source = \Tinify\fromFile($destinationPath);
                             $source->toFile($destinationPath); // перезаписывает исходный файл
                         } catch(\Tinify\Exception $e) {
-                            Yii::error("TinyPNG compression error: " . $e->getMessage());
+                            \Tinify\setKey("vtKS1W5X6sFdtyxgkvMfB58NzCPYT31X"); // ← сюда свой ключ
+                            try {
+                                $source = \Tinify\fromFile($destinationPath);
+                                $source->toFile($destinationPath); // перезаписывает исходный файл
+                            } catch(\Tinify\Exception $e) {
+                                \Tinify\setKey("WmKCQdqXYJFhYtC2H8LgJwsk83Lm8L3h"); // ← сюда свой ключ
+                                try {
+                                    $source = \Tinify\fromFile($destinationPath);
+                                    $source->toFile($destinationPath); // перезаписывает исходный файл
+                                } catch(\Tinify\Exception $e) {
+                                    \Tinify\setKey("Lzh9MLcXk3NVNw9cNDZLGl6jWGkdHySw"); // ← сюда свой ключ
+                                    try {
+                                        $source = \Tinify\fromFile($destinationPath);
+                                        $source->toFile($destinationPath); // перезаписывает исходный файл
+                                    } catch(\Tinify\Exception $e) {
+                                        \Tinify\setKey("DFtVM70njvNkKXNBTkbQBB2nRHXjh59s"); // ← сюда свой ключ
+                                        try {
+                                            $source = \Tinify\fromFile($destinationPath);
+                                            $source->toFile($destinationPath); // перезаписывает исходный файл
+                                        } catch(\Tinify\Exception $e) {
+                                            Yii::error("TinyPNG compression error: " . $e->getMessage());
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
