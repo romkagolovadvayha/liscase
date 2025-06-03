@@ -214,7 +214,7 @@ class AuthController extends WebController
             }
         }
 
-        return '/';
+        return Yii::$app->params['homePage'];
     }
 
     private function _loadImage($imageUrl, $id) {
