@@ -61,38 +61,6 @@ $payoutSum = \common\models\user\UserPayoutReferral::find()
                                                    ->sum('amount') ?? 0;
 $payoutTotal = $total * ($user->userProfile->referral_bonus/100) - $payoutSum;
 
-
-$minPrice = 20;
-$maxPrice = 50;
-$items = [];
-$data = Yii::$app->rustTm->prices()['items'];
-shuffle($data);
-foreach ($data as $item) {
-    if ($item['price'] > $item['avg_price'] + 5) {
-        continue;
-    }
-    if ($item['price'] > $maxPrice || $item['price'] < $minPrice) {
-        continue;
-    }
-    $items[] = [
-        "name" => $item['market_hash_name'],
-        "price" => $item['price'],
-        "image" => "https://cdn.rust.tm/item/" . urlencode($item['market_hash_name']) . "/100.png",
-        "image300" => "https://cdn.rust.tm/item/" . urlencode($item['market_hash_name']) . "/300.png"
-    ];
-    if (count($items) > 40) {
-        break;
-    }
-}
-$items = array_slice($items, 0, 60);
-$dataProviderSkins = new \yii\data\ArrayDataProvider([
-                                                    'allModels' => $items,
-                                                    'totalCount' => count($items),
-                                                    'pagination' => [
-                                                        'pageSize' => 60,
-                                                    ],
-                                                ]);
-
 $statusClass = "bg-success";
 if ($user->status === 5) {
     $statusClass = "bg-danger";
@@ -531,15 +499,6 @@ $checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
             <div id="mute_form">
                 <?= $this->render('_form_mute_form', compact('muteForm')); ?>
             </div>
-            <?php foreach ($usersTree as $userTree): ?>
-                <div id="skin_form_<?=$userTree->user->id?>">
-                    <?= $this->render('_form_skin_form', [
-                        'childId' => $userTree->user->id,
-                        'dataProviderSkins' => $dataProviderSkins,
-                        'user' => $user,
-                    ]); ?>
-                </div>
-            <?php endforeach; ?>
         </div>
     </div>
 </div>
