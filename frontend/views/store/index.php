@@ -73,7 +73,7 @@ JS
     <?= Alert::widget() ?>
     <h1><?=Yii::t('common', 'Корзина сервера')?></h1>
     <p><?=Yii::t('common', 'Это ваша корзина с покупками, вы можете забрать их в любой момент')?></p>
-    <?php if (!empty($user->server) && (in_array($user->server->tag, ['nolimit', 'max3'])) && strtotime('2025-05-31 07:00') > time()): ?>
+    <?php if (!empty($user->server) && (in_array($user->server->tag, ['nolimit', 'max3'])) && strtotime('2025-06-06 21:00') > time()): ?>
         <div class="content_text">
             <?=Yii::t('common', 'Магазин на сервере котором вы находитесь закрыт до 31.05.2025 07:00 МСК!')?>
         </div>
