@@ -75,7 +75,7 @@ JS
     <p><?=Yii::t('common', 'Это ваша корзина с покупками, вы можете забрать их в любой момент')?></p>
     <?php if (!empty($user->server) && (in_array($user->server->tag, ['nolimit', 'max3'])) && strtotime('2025-06-06 21:00') > time()): ?>
         <div class="content_text">
-            <?=Yii::t('common', 'Магазин на сервере котором вы находитесь закрыт до 31.05.2025 07:00 МСК!')?>
+            <?=Yii::t('common', 'Магазин на сервере котором вы находитесь закрыт до 06.06.2025 21:00 МСК!')?>
         </div>
     <?php elseif (!empty($user->server) && ($user->server->is_store || $user->store)): ?>
         <?php if (!empty($userDrops)):?>
