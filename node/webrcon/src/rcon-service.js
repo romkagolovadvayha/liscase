@@ -38,43 +38,35 @@ async function getServersFromDB(db) {
 // Установка WebSocket соединения
 function connectWebRcon(tag, ip, port, password) {
     const connect = () => {
-        const ws = new WebSocket(`ws://${ip}:${port}/${password}`);
-        let isConnected = false;
+        try {
+            const ws = new WebSocket(`ws://${ip}:${port}/${password}`);
+            let isConnected = false;
 
-        ws.on('open', () => {
-            console.log(`[${tag}] ✅ Подключено`);
-            connections[tag] = ws;
-            isConnected = true;
+            ws.on('open', () => {
+                console.log(`[${tag}] ✅ Подключено`);
+                connections[tag] = ws;
+                isConnected = true;
 
-            ws.on('message', data => {
-                // Обработка сообщений по необходимости
-            });
-
-            ws.on('close', () => {
-                console.warn(`[${tag}] 🔌 Соединение закрыто, переподключение через 5 сек...`);
-                delete connections[tag];
-                setTimeout(connect, 5000);
+                ws.on('message', data => {});
+                ws.on('close', () => {
+                    console.warn(`[${tag}] 🔌 Закрыто. Переподключение через 5с...`);
+                    delete connections[tag];
+                    setTimeout(connect, 5000);
+                });
             });
 
             ws.on('error', err => {
-                console.error(`[${tag}] ❌ Ошибка WebSocket: ${err.message}`);
+                console.error(`[${tag}] ❌ Ошибка соединения: ${err.message}`);
+                if (!isConnected) {
+                    setTimeout(connect, 5000);
+                }
             });
-        });
-
-        ws.on('error', err => {
-            if (!isConnected) {
-                console.warn(`[${tag}] ❌ Не удалось подключиться, повтор через 5 сек...`);
-                setTimeout(connect, 5000);
-            }
-        });
+        } catch (err) {
+            console.error(`[${tag}] ❌ Фатальная ошибка при подключении: ${err.message}`);
+            setTimeout(connect, 5000);
+        }
     };
-
-    try {
-        connect();
-    } catch (err) {
-        console.error(`[${tag}] ❌ Ошибка при попытке подключения: ${err.message}`);
-        setTimeout(() => connectWebRcon(tag, ip, port, password), 5000);
-    }
+    connect();
 }
 
 // Отправка команды
