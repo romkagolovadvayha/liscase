@@ -38,7 +38,7 @@ class BuyDropJob extends BaseObject implements JobInterface
                 )
             );
         } catch (\Exception $ex) {
-            Yii::$app->telegramChats->sendMessage('BuyDropJob: ' . $ex->getMessage());
+            Yii::$app->telegramChats->sendMessage('BuyDropJob: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
 
