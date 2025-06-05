@@ -4,7 +4,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mysql = require('mysql2/promise');
 
-// Чтение конфигурации БД из .env
+// Глобальный хендлинг ошибок
+process.on('unhandledRejection', err => {
+    console.error('🚨 UnhandledRejection:', err);
+});
+process.on('uncaughtException', err => {
+    console.error('🚨 UncaughtException:', err);
+});
+
 const dbConfig = {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -12,15 +19,20 @@ const dbConfig = {
     database: process.env.DB_NAME
 };
 
-const connections = {}; // tag => WebSocket
-const queues = {}; // tag => очередь команд
+const connections = {};
+const queues = {};
 
 // Получение серверов из базы
 async function getServersFromDB(db) {
-    const [rows] = await db.execute(
-        "SELECT * FROM `servers` WHERE `rcon_password` IS NOT NULL AND `status` <> 3"
-    );
-    return rows;
+    try {
+        const [rows] = await db.execute(
+            "SELECT * FROM `servers` WHERE `rcon_password` IS NOT NULL AND `status` <> 3"
+        );
+        return rows;
+    } catch (err) {
+        console.error("Ошибка при получении серверов из БД:", err.message);
+        return [];
+    }
 }
 
 // Установка WebSocket соединения
@@ -35,25 +47,23 @@ function connectWebRcon(tag, ip, port, password) {
             isConnected = true;
 
             ws.on('message', data => {
-                // Проброс сообщений в текущую очередь
-                // (обрабатываются в sendCommand)
+                // Обработка сообщений по необходимости
             });
 
             ws.on('close', () => {
-                console.warn(`[${tag}] 🔌 Соединение закрыто, попытка переподключения через 5 секунд...`);
+                console.warn(`[${tag}] 🔌 Соединение закрыто, переподключение через 5 сек...`);
                 delete connections[tag];
                 setTimeout(connect, 5000);
             });
 
             ws.on('error', err => {
-                console.error(`[${tag}] ❌ Ошибка: ${err.message}`);
-                // Не удаляем соединение здесь, оно удаляется в on('close')
+                console.error(`[${tag}] ❌ Ошибка WebSocket: ${err.message}`);
             });
         });
 
         ws.on('error', err => {
             if (!isConnected) {
-                console.warn(`[${tag}] ❌ Сервер недоступен, повтор через 5 секунд...`);
+                console.warn(`[${tag}] ❌ Не удалось подключиться, повтор через 5 сек...`);
                 setTimeout(connect, 5000);
             }
         });
@@ -61,15 +71,16 @@ function connectWebRcon(tag, ip, port, password) {
 
     try {
         connect();
-    } catch (ex) {
-        console.log(`error: ${ex.message}`);
+    } catch (err) {
+        console.error(`[${tag}] ❌ Ошибка при попытке подключения: ${err.message}`);
+        setTimeout(() => connectWebRcon(tag, ip, port, password), 5000);
     }
 }
 
-// Отправка команды в RCON
+// Отправка команды
 function sendCommand(ws, command, timeout = 3000) {
     return new Promise((resolve, reject) => {
-        const id = Math.floor(Math.random() * 1000000000); // уникальный ID
+        const id = Math.floor(Math.random() * 1000000000);
         const payload = {
             Identifier: id,
             Message: command,
@@ -78,17 +89,16 @@ function sendCommand(ws, command, timeout = 3000) {
 
         let resolved = false;
 
-        function onMessage(data) {
+        const onMessage = data => {
             try {
                 const msg = JSON.parse(data.toString());
-                // Сравниваем именно по Identifier
                 if ((msg.Type === 1 || msg.Type === "Generic") && msg.Identifier === id && typeof msg.Message === 'string') {
                     resolved = true;
                     ws.removeListener('message', onMessage);
                     resolve(msg.Message);
                 }
             } catch (e) {}
-        }
+        };
 
         ws.on('message', onMessage);
 
@@ -108,11 +118,9 @@ function sendCommand(ws, command, timeout = 3000) {
     });
 }
 
-// Добавление задачи в очередь
+// Очередь
 function enqueueCommand(tag, commandFn) {
-    if (!queues[tag]) {
-        queues[tag] = [];
-    }
+    if (!queues[tag]) queues[tag] = [];
 
     return new Promise((resolve, reject) => {
         queues[tag].push({ commandFn, resolve, reject });
@@ -122,7 +130,6 @@ function enqueueCommand(tag, commandFn) {
     });
 }
 
-// Выполнение очереди
 async function processQueue(tag) {
     const task = queues[tag][0];
     if (!task) return;
@@ -134,50 +141,55 @@ async function processQueue(tag) {
         task.reject(err);
     } finally {
         queues[tag].shift();
-        if (queues[tag].length > 0) {
-            processQueue(tag);
-        }
+        if (queues[tag].length > 0) processQueue(tag);
     }
 }
 
 // Основной запуск
 (async () => {
-    const db = await mysql.createConnection(dbConfig);
-    console.log("✅ Подключение к БД");
+    try {
+        const db = await mysql.createConnection(dbConfig);
+        console.log("✅ Подключение к БД");
 
-    const servers = await getServersFromDB(db);
+        const servers = await getServersFromDB(db);
+        for (const server of servers) {
+            try {
+                const { tag, ip, rcon: port, rcon_password: password } = server;
+                connectWebRcon(tag, ip, port, password);
+            } catch (err) {
+                console.error(`Ошибка подключения к серверу ${server.tag}:`, err.message);
+            }
+        }
 
-    for (const server of servers) {
-        const { tag, ip, rcon: port, rcon_password: password } = server;
-        connectWebRcon(tag, ip, port, password);
+        const app = express();
+        app.use(bodyParser.json());
+
+        app.post('/send', async (req, res) => {
+            try {
+                const { server, command } = req.body;
+                if (!server || !command) {
+                    return res.status(400).json({ success: false, error: 'Поля server и command обязательны' });
+                }
+
+                const ws = connections[server];
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    return res.status(400).json({ success: false, error: 'Нет активного соединения с сервером' });
+                }
+
+                const result = await enqueueCommand(server, () => sendCommand(ws, command));
+                return res.json({ success: true, result });
+
+            } catch (err) {
+                console.error("Ошибка в /send:", err);
+                return res.status(500).json({ success: false, error: err.message });
+            }
+        });
+
+        const PORT = 3010;
+        app.listen(PORT, () => {
+            console.log(`🚀 RCON API работает: http://localhost:${PORT}/send`);
+        });
+    } catch (err) {
+        console.error("💥 Ошибка при старте сервера:", err.message);
     }
-
-    const app = express();
-    app.use(bodyParser.json());
-
-    // HTTP POST /send
-    app.post('/send', async (req, res) => {
-        const { server, command } = req.body;
-
-        if (!server || !command) {
-            return res.status(400).json({ success: false, error: 'Поля server и command обязательны' });
-        }
-
-        const ws = connections[server];
-        if (!ws || ws.readyState !== WebSocket.OPEN) {
-            return res.status(400).json({ success: false, error: 'Нет активного соединения с сервером' });
-        }
-
-        try {
-            const result = await enqueueCommand(server, () => sendCommand(ws, command));
-            return res.json({ success: true, result });
-        } catch (err) {
-            return res.json({ success: false, error: err.message });
-        }
-    });
-
-    const PORT = 3010;
-    app.listen(PORT, () => {
-        console.log(`🚀 RCON API работает: http://localhost:${PORT}/send`);
-    });
 })();
