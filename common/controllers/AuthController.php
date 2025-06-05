@@ -4,6 +4,7 @@ namespace common\controllers;
 
 use common\components\oauth\AuthAction;
 use common\components\oauth\Steam;
+use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\forms\user\LoginForm;
 use common\models\profit\Profit;
 use common\models\user\Auth;
@@ -210,6 +211,7 @@ class AuthController extends WebController
                         'source_id' => $steamId,
                     ]
                 );
+                Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
                 $auth->save();
             }
         }
