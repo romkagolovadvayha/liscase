@@ -118,6 +118,7 @@ class AuthController extends WebController
             if ($auth) {
                 // авторизация
                 $user = $auth->user;
+                Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
 //                try {
 //                    $avatar = $this->_loadImage($attributes['avatar_link'], $attributes['id']);
 //                    $user->userProfile->avatar = $avatar;
