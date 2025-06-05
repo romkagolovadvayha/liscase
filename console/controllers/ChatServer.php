@@ -264,7 +264,7 @@ class ChatServer extends WebSocketServer
                        return;
                    }
                } catch (\Exception $e) {
-                   Yii::$app->telegramChats->sendMessage($e->getFile() . ":" . $e->getLine() . "; " . $e->getMessage());
+                   Yii::$app->telegramChats->sendMessage($e->getFile() . ":" . $e->getLine() . "; " . $e->getMessage() . "; " . $command . "; " . $response);
                    $client->send(json_encode([
                                                  'type' => 'store.take',
                                                  'code' => 500,
