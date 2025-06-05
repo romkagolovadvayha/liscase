@@ -59,7 +59,11 @@ function connectWebRcon(tag, ip, port, password) {
         });
     };
 
-    connect();
+    try {
+        connect();
+    } catch (ex) {
+        console.log(`error: ${ex.message}`);
+    }
 }
 
 // Отправка команды в RCON
