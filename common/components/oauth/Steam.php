@@ -151,10 +151,7 @@ class Steam extends OpenId
         try {
             $key = Yii::$app->settings->get('steam_apiKey');
             $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$steamId}";
-            $response = (clone Yii::$app->curl)
-                ->setOption(CURLOPT_PROXY, Yii::$app->settings->get('proxy_ip')) // Установка прокси
-                ->setOption(CURLOPT_PROXYUSERPWD, Yii::$app->settings->get('proxy_username') . ':' . Yii::$app->settings->get('proxy_password')) // Если требуется аутентификация
-                ->get($apiUrl);
+            $response = (clone Yii::$app->curl)->get($apiUrl);
             $data = json_decode($response, 1);
             $usersInfo = $data['response']['players'];
             return $usersInfo;
