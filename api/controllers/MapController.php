@@ -47,7 +47,7 @@ class MapController extends Controller
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         //$data = json_decode(Yii::$app->request->rawBody, 1);
 
-        Yii::$app->telegramChats->sendMessage(ii::$app->request->rawBody);
+        Yii::$app->telegramChats->sendMessage(Yii::$app->request->rawBody);
 
         return [
             'success' => true
