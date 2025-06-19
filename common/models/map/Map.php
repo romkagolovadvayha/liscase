@@ -2,6 +2,7 @@
 
 namespace common\models\map;
 
+use common\components\queue\process\CustomMapGenerateJob;
 use common\models\servers\Servers;
 use common\models\User;
 use Yii;
@@ -250,6 +251,19 @@ class Map extends \yii\db\ActiveRecord
         return $result;
     }
 
+    public static function getCustomMapsList($size = 0) {
+        $result = [];
+        $cacheKey = 'MapsController_getCustomMapsList2_' . $size;
+        if (Yii::$app->cache->get($cacheKey)) {
+            //return null;
+        }
+        //for ($i = 0; $i < 20; $i++) {
+            \Yii::$app->queueProcess->push(new CustomMapGenerateJob(['size'  => $size]));
+        //}
+        Yii::$app->cache->set($cacheKey, 1, 60*60);
+        return null;
+    }
+
     /**
      * Парсит карты
      * maps/parsing
@@ -312,7 +326,6 @@ class Map extends \yii\db\ActiveRecord
             ->setOption(CURLOPT_PROXYUSERPWD, 'XyQREbm5:AZ1zUkyc') // Если требуется аутентификация
             ->get($imageUrl);
         Map::watermark($image, $filePath, $previewfilePath);
-        //        file_put_contents($filePath, $image);
     }
 
     public static function watermark($image, $filePath, $previewfilePath) {
@@ -360,8 +373,8 @@ class Map extends \yii\db\ActiveRecord
         imagejpeg($background, $filePath);
 
         // Сжимаем изображение до 200x200
-        $resize_width = 400;
-        $resize_height = 400;
+        $resize_width = 200;
+        $resize_height = 200;
         $resized_image = imagecreatetruecolor($resize_width, $resize_height);
 
         // Устанавливаем прозрачность для нового изображения
