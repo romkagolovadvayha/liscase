@@ -45,9 +45,15 @@ class MapController extends Controller
     {
         Yii::$app->response->statusCode = 200;
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-        //$data = json_decode(Yii::$app->request->rawBody, 1);
+        $data = json_decode(Yii::$app->request->rawBody, 1);
+        $response = (clone \Yii::$app->curl)
+            ->setHeader('X-API-Key', '03f6a4103d7d4820bed03f4322f72f26')
+            ->setHeader('x-org-id', '80768c5712f64555bab1e2cae7441429')
+            ->setHeader('Content-Type', 'application/json')
+            ->get('https://api.rustmaps.com/v4/maps/' . $data['Id']);
 
-        Yii::$app->telegramChats->sendMessage(Yii::$app->request->rawBody);
+        Yii::$app->telegramChats->sendMessage($response);
+        $response = json_decode($response, 1);
 
         return [
             'success' => true
