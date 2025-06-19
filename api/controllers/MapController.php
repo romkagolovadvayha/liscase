@@ -2,6 +2,7 @@
 
 namespace api\controllers;
 
+use common\models\box\DropImage;
 use common\models\map\Map;
 use common\models\map\MapList;
 use common\models\mirrors\Mirrors;
@@ -70,10 +71,12 @@ class MapController extends Controller
                     $model->url = '/maps/' . $newFileName;
 
                     $fileIconPathFileName = "{$response['data']['id']}.jpg";
-                    $filePathFileName = "{$response['data']['id']}_200x200.jpg";
-                    Map::upload($response['data']['imageIconUrl'], $fileIconPathFileName, $filePathFileName);
+                    $filePathFileName = "/uploads/maps/{$response['data']['id']}_200x200.jpg";
+                    $filePath = Map::upload($response['data']['imageIconUrl'], $fileIconPathFileName);
+                    $fullNewPath150 = \Yii::getAlias('@frontend/web') . $filePathFileName;
+                    DropImage::resizeImage($filePath, $fullNewPath150, 200);
                     $model->image = '/uploads/maps/' . $fileIconPathFileName;
-                    $model->image_preview = '/uploads/maps/' . $filePathFileName;
+                    $model->image_preview = $filePathFileName;
 
                     $model->save(false);
                 }

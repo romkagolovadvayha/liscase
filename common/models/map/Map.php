@@ -318,17 +318,18 @@ class Map extends \yii\db\ActiveRecord
         }
     }
 
-    public static function upload($imageUrl, $filename, $previewFilename) {
+    public static function upload($imageUrl, $filename, $depecate = null) {
         $filePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$filename}";
-        $previewfilePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$previewFilename}";
         $image = (clone Yii::$app->curl)
             ->setOption(CURLOPT_PROXY, '154.196.30.165:62742') // Установка прокси
             ->setOption(CURLOPT_PROXYUSERPWD, 'XyQREbm5:AZ1zUkyc') // Если требуется аутентификация
             ->get($imageUrl);
-        Map::watermark($image, $filePath, $previewfilePath);
+        Map::watermark($image, $filePath);
+
+        return $filePath;
     }
 
-    public static function watermark($image, $filePath, $previewfilePath) {
+    public static function watermark($image, $filePath) {
         // Загружаем основное изображение
         $background = imagecreatefromstring($image);
 
@@ -372,29 +373,9 @@ class Map extends \yii\db\ActiveRecord
 
         imagejpeg($background, $filePath);
 
-        // Сжимаем изображение до 200x200
-        $resize_width = 200;
-        $resize_height = 200;
-        $resized_image = imagecreatetruecolor($resize_width, $resize_height);
-
-        // Устанавливаем прозрачность для нового изображения
-        imagealphablending($resized_image, false);
-        imagesavealpha($resized_image, true);
-
-        // Масштабируем изображение
-        imagecopyresampled($resized_image, $background, 0, 0, 0, 0, $resize_width, $resize_height, $bg_width, $bg_height);
-
-        // Создаем каталог, если его нет
-        if (!file_exists(dirname($previewfilePath))) {
-            mkdir(dirname($previewfilePath), 0777, true);
-        }
-
-        imagejpeg($resized_image, $previewfilePath);
-
         // Освобождаем память
         imagedestroy($background);
         imagedestroy($overlay);
-        imagedestroy($resized_image);
     }
 
     public static function getSearchQuery($size) {
