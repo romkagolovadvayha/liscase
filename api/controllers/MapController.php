@@ -64,11 +64,11 @@ class MapController extends Controller
                     ->andWhere(['hash' => $response['data']['id']])
                     ->one();
                 if (!empty($model)) {
-                    $decodedData = file_get_contents($response['data']['downloadUrl']);
-                    $p = explode('/', $response['data']['downloadUrl']);
-                    $newFileName = $p[count($p) - 1];
-                    Yii::$app->s3Api->uploadFile('maps/' . $newFileName, $decodedData);
-                    $model->url = '/maps/' . $newFileName;
+//                    $decodedData = file_get_contents($response['data']['downloadUrl']);
+//                    $p = explode('/', $response['data']['downloadUrl']);
+//                    $newFileName = $p[count($p) - 1];
+                    //Yii::$app->s3Api->uploadFile('maps/' . $newFileName, $decodedData);
+                    $model->url = $response['data']['downloadUrl'];
 
                     $fileIconPathFileName = "{$response['data']['id']}.jpg";
                     $filePathFileName = "/uploads/maps/{$response['data']['id']}_200x200.jpg";
