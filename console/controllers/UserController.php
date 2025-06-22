@@ -26,9 +26,10 @@ class UserController extends Controller
         /** @var User[] $users */
         $users = User::find()
             ->orderBy(['id' => SORT_DESC])
+            ->limit(10)
             ->all();
         foreach ($users as $user) {
-            \Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $user->id]));
+            \Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $user->steam_id]));
         }
     }
 
