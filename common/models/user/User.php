@@ -327,7 +327,6 @@ class User extends ActiveRecord implements IdentityInterface
                         );
                         $auth->save();
                         $dbTransaction->commit();
-                        Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
                         UserTree::appendUser($user->id, 509);
                         UserProfile::createModel($user, $username);
                         $user->userProfile->name = $username;
@@ -343,6 +342,7 @@ class User extends ActiveRecord implements IdentityInterface
                     Yii::$app->telegramChats->sendMessage("User findBySteamId: {$steamId} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                     throw new \Exception(Yii::t('common', 'Произошла ошибка, попробуйте обновить страницу!'));
                 }
+                Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
             } elseif ($updated) {
                 $infoUser       = Steam::getInfoUser($steamId);
                 $user->updated_at = date('Y-m-d H:i:s');
