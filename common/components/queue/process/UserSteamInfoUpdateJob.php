@@ -31,11 +31,11 @@ class UserSteamInfoUpdateJob extends BaseObject implements JobInterface
             }
             if (!in_array($this->steamId, $steamList)) {
                 $user = User::findBySteamId($this->steamId);
-                if (strtotime($user->updated_at) < time() - 1 * 60) {
+                if (strtotime($user->updated_at) < time() - 5 * 60) {
                     $steamList[] = $this->steamId;
                 }
             }
-            if (count($steamList) > 3) {
+            if (count($steamList) > 5) {
                 $infoUsers       = Steam::getInfoUsers($steamList);
                 if (empty($infoUsers)) {
                     sleep(60);
@@ -43,7 +43,6 @@ class UserSteamInfoUpdateJob extends BaseObject implements JobInterface
                     return;
                 }
                 Yii::$app->telegramChats->sendMessage('Успешное обновление ' . count($infoUsers) . " аккаунтов.");
-                Yii::$app->telegramChats->sendMessage(implode(',', $steamList));
                 foreach ($infoUsers as $infoUser) {
                     $user = User::findBySteamId($infoUser['steamid']);
                     $user->updated_at = date('Y-m-d H:i:s');
@@ -53,7 +52,6 @@ class UserSteamInfoUpdateJob extends BaseObject implements JobInterface
                     $user->userProfile->name = HtmlPurifier::process($infoUser['personaname']);
                     $user->userProfile->avatar = $avatar;
                     $user->userProfile->save();
-                    Yii::$app->telegramChats->sendMessage( "{$user->username} ({$infoUser['steamid']}): " . $infoUser['avatarfull']);
                 }
                 $steamList = [];
             }
