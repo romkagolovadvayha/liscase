@@ -49,7 +49,7 @@ class UserSteamInfoUpdateJob extends BaseObject implements JobInterface
                     $user->updated_at = date('Y-m-d H:i:s');
                     $user->username = HtmlPurifier::process($infoUser['personaname']);
                     $user->save();
-                    $avatar = self::_loadImage($infoUser['avatarfull'], $infoUser['steamid']);
+                    $avatar = $this->_loadImage($infoUser['avatarfull'], $infoUser['steamid']);
                     $user->userProfile->name = HtmlPurifier::process($infoUser['personaname']);
                     $user->userProfile->avatar = $avatar;
                     $user->userProfile->save();
