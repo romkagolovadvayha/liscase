@@ -5,6 +5,7 @@ namespace common\models\user;
 use common\components\helpers\DateHelper;
 use common\components\helpers\Role;
 use common\components\oauth\Steam;
+use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\components\queue\telegram\SendMessageJob;
 use common\components\web\Cookie;
 use common\models\auth\AuthAssignment;
@@ -294,18 +295,19 @@ class User extends ActiveRecord implements IdentityInterface
             if (empty($user)) {
                 $dbTransaction = Yii::$app->db->beginTransaction();
                 try {
-                    $infoUser       = Steam::getInfoUser($steamId);
+//                    $infoUser       = Steam::getInfoUser($steamId);
                     $username = $steamId;
                     $avatar = Yii::$app->settings->get('design_avatar_default');
-                    if (!empty($infoUser)) {
-                        $username = HtmlPurifier::process($infoUser[0]['personaname']);
-                        if (empty($username)) {
-                            $username = $steamId;
-                        }
-                        $avatar = $infoUser[0]['avatarfull'];
-                        //$dbTransaction->rollBack();
-                        //return null;
-                    }
+//                    if (!empty($infoUser)) {
+//                        $username = HtmlPurifier::process($infoUser[0]['personaname']);
+//                        if (empty($username)) {
+//                            $username = $steamId;
+//                        }
+//                        $avatar = $infoUser[0]['avatarfull'];
+//                        //$dbTransaction->rollBack();
+//                        //return null;
+//                    }
+                    Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
                     $user           = new User();
                     $user->email    = "{$steamId}@steam.com";
                     $user->steam_id = $steamId;
