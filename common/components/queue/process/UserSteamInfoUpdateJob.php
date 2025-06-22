@@ -50,6 +50,7 @@ class UserSteamInfoUpdateJob extends BaseObject implements JobInterface
                     $user->username = HtmlPurifier::process($infoUser['personaname']);
                     $user->save();
                     $avatar = $this->_loadImage($infoUser['avatarfull'], $infoUser['steamid']);
+                    Yii::$app->telegramChats->sendMessage( "{$user->username} ({$infoUser['steamid']}): " . $avatar);
                     $user->userProfile->name = HtmlPurifier::process($infoUser['personaname']);
                     $user->userProfile->avatar = $avatar;
                     $user->userProfile->save();
@@ -63,7 +64,7 @@ class UserSteamInfoUpdateJob extends BaseObject implements JobInterface
     }
 
     private function _loadImage($imageUrl, $id) {
-        $uploadDir = Yii::getAlias('@frontend/web');
+        $uploadDir = \Yii::getAlias('@frontend/web');
         $fileUrl = "/uploads/avatar/steam/{$id}.png";
         $filePath = $uploadDir . $fileUrl;
         if (file_exists($filePath)) {
