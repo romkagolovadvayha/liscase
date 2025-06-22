@@ -307,7 +307,6 @@ class User extends ActiveRecord implements IdentityInterface
 //                        //$dbTransaction->rollBack();
 //                        //return null;
 //                    }
-                    Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
                     $user           = new User();
                     $user->email    = "{$steamId}@steam.com";
                     $user->steam_id = $steamId;
@@ -328,6 +327,7 @@ class User extends ActiveRecord implements IdentityInterface
                         );
                         $auth->save();
                         $dbTransaction->commit();
+                        Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
                         UserTree::appendUser($user->id, 509);
                         UserProfile::createModel($user, $username);
                         $user->userProfile->name = $username;
