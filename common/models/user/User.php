@@ -297,7 +297,7 @@ class User extends ActiveRecord implements IdentityInterface
                 try {
 //                    $infoUser       = Steam::getInfoUser($steamId);
                     $username = $steamId;
-                    $avatar = Yii::$app->settings->get('design_avatar_default');
+                    $avatar = 'https://' . Yii::$app->settings->get('site_domain') . Yii::$app->settings->get('design_avatar_default');
 //                    if (!empty($infoUser)) {
 //                        $username = HtmlPurifier::process($infoUser[0]['personaname']);
 //                        if (empty($username)) {
