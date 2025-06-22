@@ -32,7 +32,7 @@ class UserSteamInfoUpdateJob extends BaseObject implements JobInterface
             if (!in_array($this->steamId, $steamList)) {
                 $steamList[] = $this->steamId;
             }
-            if (count($steamList) > 20) {
+            if (count($steamList) > 10) {
                 $infoUsers       = Steam::getInfoUsers($steamList);
                 if (empty($infoUsers)) {
                     sleep(60);
