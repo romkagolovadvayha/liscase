@@ -161,6 +161,24 @@ class Steam extends OpenId
         return null;
     }
 
+    public static function getInfoUsers($steamIds) {
+        $response = "";
+        try {
+            $key = Yii::$app->settings->get('steam_apiKey');
+            $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids=" . implode(',', $steamIds);
+            $response = (clone Yii::$app->curl)->get($apiUrl);
+            $data = json_decode($response, 1);
+            if (empty($data) || empty($data['response']) || empty($data['response']['players'])) {
+                return [];
+            }
+            $usersInfo = $data['response']['players'];
+            return $usersInfo;
+        } catch (\Exception $e) {
+            Yii::$app->telegramChats->sendMessage('getInfoUser: ' . $response);
+        }
+        return null;
+    }
+
     public static function getGameInfo($steamId) {
         $key = Yii::$app->settings->get('steam_apiKey');
         $apiUrl = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key={$key}&steamid={$steamId}&include_played_free_games=1";

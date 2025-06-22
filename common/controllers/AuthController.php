@@ -132,16 +132,17 @@ class AuthController extends WebController
                 Yii::$app->user->login($user,3600*24*7);
             } else {
 
-                $infoUser = Steam::getInfoUser($steamId);
+//                $infoUser = Steam::getInfoUser($steamId);
                 $username = $steamId;
                 $avatarLink = Yii::$app->settings->get('design_avatar_default');
-                if (!empty($infoUser)) {
-                    $username = HtmlPurifier::process($infoUser[0]['personaname']);
-                    if (empty($username)) {
-                        $username = $steamId;
-                    }
-                    $avatarLink = $infoUser[0]['avatarfull'];
-                }
+//                if (!empty($infoUser)) {
+//                    $username = HtmlPurifier::process($infoUser[0]['personaname']);
+//                    if (empty($username)) {
+//                        $username = $steamId;
+//                    }
+//                    $avatarLink = $infoUser[0]['avatarfull'];
+//                }
+                Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
                 // регистрация
                 $user     = new User();
                 $user->email = "{$steamId}@steam.com";
