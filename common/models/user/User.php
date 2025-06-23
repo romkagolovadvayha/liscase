@@ -312,6 +312,7 @@ class User extends ActiveRecord implements IdentityInterface
                     $user->steam_id = $steamId;
                     $user->auto = 1;
                     $user->username = $username;
+                    $user->updated_at = null;
                     $user->setPassword(Yii::$app->security->generateRandomString());
                     $user->status = User::STATUS_ACTIVE;
                     $user->generateAuthKey();
