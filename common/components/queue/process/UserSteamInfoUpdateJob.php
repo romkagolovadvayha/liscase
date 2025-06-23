@@ -30,8 +30,11 @@ class UserSteamInfoUpdateJob extends BaseObject implements JobInterface
                 $steamList = Yii::$app->cache->get($cacheKey);
             }
             if (!in_array($this->steamId, $steamList)) {
-                $user = User::findBySteamId($this->steamId);
-                if (strtotime($user->updated_at) < time() - 5 * 60) {
+                /** @var User $user */
+                $user = User::find()
+                            ->andWhere(['steam_id' => $this->steamId])
+                            ->one();
+                if (!empty($user) && strtotime($user->updated_at) < time() - 5 * 60) {
                     $steamList[] = $this->steamId;
                 }
             }
