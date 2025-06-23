@@ -43,6 +43,7 @@ class UserController extends Controller
             return CacheArrayHelper::popFromCacheArray($cacheKey, 63);
         });
         if (empty($steamList)) {
+            echo 'Empty steam Ids list.' . PHP_EOL;
             return;
         }
         $infoUsers       = Steam::getInfoUsers($steamList);
