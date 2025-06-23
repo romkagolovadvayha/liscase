@@ -331,8 +331,8 @@ class User extends ActiveRecord implements IdentityInterface
                         UserProfile::createModel($user, $username);
                         $user->userProfile->name = $username;
                         try {
-                            $avatar                    = self::_loadImage($avatar, $steamId);
-                            $user->userProfile->avatar = $avatar;
+                            //$avatar                    = self::_loadImage($avatar, $steamId);
+                            $user->userProfile->avatar = null;
                         } catch (\Exception $ex) {
                         }
                         $user->userProfile->save();
@@ -348,9 +348,9 @@ class User extends ActiveRecord implements IdentityInterface
                 $user->updated_at = date('Y-m-d H:i:s');
                 $user->username = HtmlPurifier::process($infoUser[0]['personaname']);
                 $user->save();
-                $avatar = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
+                //$avatar = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
                 $user->userProfile->name = HtmlPurifier::process($infoUser[0]['personaname']);
-                $user->userProfile->avatar = $avatar;
+                $user->userProfile->avatar = null;
                 $user->userProfile->save();
             }
 
