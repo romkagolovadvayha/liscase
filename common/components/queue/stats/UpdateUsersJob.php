@@ -3,6 +3,7 @@
 namespace common\components\queue\stats;
 
 use common\components\oauth\Steam;
+use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
 use common\models\statistics\Chats;
