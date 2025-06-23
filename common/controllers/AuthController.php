@@ -142,7 +142,6 @@ class AuthController extends WebController
 //                    }
 //                    $avatarLink = $infoUser[0]['avatarfull'];
 //                }
-                Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
                 // регистрация
                 $user     = new User();
                 $user->email = "{$steamId}@steam.com";
@@ -182,6 +181,7 @@ class AuthController extends WebController
                     if ($auth->save(false)) {
                         $transaction->commit();
                         Yii::$app->telegramChats->sendMessage('Новая регистрация на сайте: ' . $user->username);
+                        Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $user->steam_id]));
 //                        $userBalance = $user->getPersonalBalance();
 //                        $model = new Profit();
 //                        $model->user_balance_id   = $userBalance->id;
