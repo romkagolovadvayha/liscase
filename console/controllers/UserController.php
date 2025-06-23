@@ -26,67 +26,11 @@ class UserController extends Controller
         /** @var User[] $users */
         $users = User::find()
             ->orderBy(['id' => SORT_DESC])
-            ->limit(10)
+            ->limit(40)
             ->all();
         foreach ($users as $user) {
             \Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $user->steam_id]));
         }
-    }
-
-    /**
-     * user-tree/change-tree USER_ID TO_USER_ID
-     *
-     * @param $userId
-     * @param $toUserId
-     *
-     * @throws StaleObjectException
-     */
-    public function actionChangeTree($userId, $toUserId)
-    {
-        /** @var User $user */
-        $user = User::findOne($userId);
-
-        /** @var UserTree[] $childrenUserTrees */
-        $childrenUserTrees = [];
-        if ($user->userTree) {
-            $childrenUserTrees = $user
-                ->getChildrenUserTreeQuery()
-                ->all();
-        }
-
-        foreach ($childrenUserTrees as $childrenUserTree) {
-            echo $childrenUserTree->level . ' - ' . $childrenUserTree->user_id . ' - '
-                . $childrenUserTree->parent_user_id . PHP_EOL;
-        }
-
-        if (!empty($user->userTree)) {
-            $user->userTree->delete();
-        }
-
-        UserTree::appendUser($userId, $toUserId);
-
-        foreach ($childrenUserTrees as $childrenUserTree) {
-            $childrenUserId       = $childrenUserTree->user_id;
-            $childrenParentUserId = $childrenUserTree->parent_user_id;
-
-            $childrenUserTree->delete();
-            UserTree::appendUser($childrenUserId, $childrenParentUserId);
-        }
-    }
-
-    /**
-     * user-tree/change-password
-     * @param $userId
-     * @param $password
-     */
-    public function actionChangePassword($userId, $password)
-    {
-        $user = User::findOne($userId);
-        $user->setPassword($password);
-        $user->generateAuthKey();
-        $user->save(false);
-
-        echo 'success';
     }
 
 }
