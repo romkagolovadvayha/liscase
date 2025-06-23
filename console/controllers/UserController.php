@@ -49,7 +49,6 @@ class UserController extends Controller
             CacheArrayHelper::withLock($cacheKey, function() use ($cacheKey, $steamList) {
                 CacheArrayHelper::pushBackToCacheArray($cacheKey, $steamList);
             });
-            sleep(60);
             return;
         }
         Yii::$app->telegramChats->sendMessage('Успешное обновление ' . count($infoUsers) . " аккаунтов.");
