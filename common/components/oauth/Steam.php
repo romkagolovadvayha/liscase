@@ -169,6 +169,7 @@ class Steam extends OpenId
             $response = (clone Yii::$app->curl)->get($apiUrl);
             $data = json_decode($response, 1);
             if (empty($data) || empty($data['response']) || empty($data['response']['players'])) {
+                Yii::$app->telegramChats->sendMessage('getInfoUser: ' . $response);
                 return [];
             }
             $usersInfo = $data['response']['players'];
