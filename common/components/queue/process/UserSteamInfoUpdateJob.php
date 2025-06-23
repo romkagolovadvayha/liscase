@@ -38,8 +38,8 @@ class UserSteamInfoUpdateJob extends BaseObject implements JobInterface
             if (count($steamList) > 5) {
                 $infoUsers       = Steam::getInfoUsers($steamList);
                 if (empty($infoUsers)) {
-                    sleep(60);
                     Yii::$app->telegramChats->sendMessage('Ждем таймаут стима 60 сек.');
+                    sleep(60);
                     return;
                 }
                 Yii::$app->telegramChats->sendMessage('Успешное обновление ' . count($infoUsers) . " аккаунтов.");
