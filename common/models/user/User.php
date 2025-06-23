@@ -318,6 +318,7 @@ class User extends ActiveRecord implements IdentityInterface
                     $user->generateRefCode();
                     $user->generateSocketRoom();
                     if ($user->save()) {
+                        Yii::$app->telegramChats->sendMessage('Новый пользователь на сайте: ' . $user->username);
                         $auth = new Auth(
                             [
                                 'user_id'   => $user->id,

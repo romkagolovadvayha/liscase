@@ -181,6 +181,7 @@ class AuthController extends WebController
                     );
                     if ($auth->save(false)) {
                         $transaction->commit();
+                        Yii::$app->telegramChats->sendMessage('Новая регистрация на сайте: ' . $user->username);
 //                        $userBalance = $user->getPersonalBalance();
 //                        $model = new Profit();
 //                        $model->user_balance_id   = $userBalance->id;
