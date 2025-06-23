@@ -30,7 +30,7 @@ class UserSteamInfoUpdateJob extends BaseObject implements JobInterface
             $user = User::find()
                         ->andWhere(['steam_id' => $this->steamId])
                         ->one();
-            if (!empty($user) && strtotime($user->updated_at) < time() - 5 * 60) {
+            if (!empty($user)) {
                 CacheArrayHelper::withLock($cacheKey, function() use ($cacheKey) {
                     CacheArrayHelper::addToCacheArray($cacheKey, $this->steamId);
                 });
