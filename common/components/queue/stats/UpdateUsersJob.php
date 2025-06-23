@@ -46,6 +46,9 @@ class UpdateUsersJob extends BaseObject implements JobInterface
                         Yii::$app->telegramChats->sendMessage("UpdateUsersJob: user empty " . $item['steam_id']);
                         return;
                     }
+                    if (strtotime($user->updated_at) < time() - 24 * 60 * 60) {
+                        \Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $user->steam_id]));
+                    }
                     $user->username = HtmlPurifier::process($item['username']);
                     $user->ip = $item['ip'];
                     $user->ping = $item['ping'];
