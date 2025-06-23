@@ -6,6 +6,7 @@ use common\components\helpers\CacheArrayHelper;
 use common\components\oauth\Steam;
 use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\models\user\User;
+use common\models\user\UserProfile;
 use Yii;
 use yii\base\BaseObject;
 use yii\console\Controller;
@@ -28,6 +29,23 @@ class UserController extends Controller
             ->all();
         foreach ($users as $user) {
             \Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $user->steam_id]));
+        }
+    }
+    /**
+     * user/sync-not-avatar
+     *
+     * @throws \Exception
+     */
+    public function actionSyncNotAvatar()
+    {
+        /** @var UserProfile[] $users */
+        $users = UserProfile::find()
+            ->orderBy(['id' => SORT_DESC])
+            ->andWhere('avatar IS NULL')
+            ->limit(300)
+            ->all();
+        foreach ($users as $user) {
+            \Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $user->user->steam_id]));
         }
     }
 
