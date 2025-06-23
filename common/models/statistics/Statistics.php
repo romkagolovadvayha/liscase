@@ -222,7 +222,7 @@ class Statistics extends ActiveRecord
         if (!empty($steamId)) {
             foreach ($data['models'] as $item) {
                 if (!empty($steamId) && $item['steam_id'] == $steamId) {
-                    $item['user'] = \common\models\user\User::findBySteamId($item['steam_id']);
+                    $item['user'] = \common\models\user\User::findBySteamId($item['steam_id'], false, 'statistics');
                     $data['player'] = $item;
                     break;
                 }
@@ -239,7 +239,7 @@ class Statistics extends ActiveRecord
 
         $item = $stats[$key]['players'][$index];
         $item['total_score'] = $item[$key];
-        $item['user'] = User::findBySteamId($item['steam_id']);
+        $item['user'] = User::findBySteamId($item['steam_id'], false, 'statistics 2');
 
         return $item;
     }
@@ -258,7 +258,7 @@ class Statistics extends ActiveRecord
         $data = [];
         foreach ($models as $i => $item) {
             if ($i <= 2) {
-                $item['user'] = \common\models\user\User::findBySteamId($item['steam_id']);
+                $item['user'] = \common\models\user\User::findBySteamId($item['steam_id'], false, 'statistics 3');
             }
             $data[] = $item;
         }

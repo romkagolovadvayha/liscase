@@ -18,7 +18,7 @@ use common\models\stats\Teams;
         <?php foreach ($teams as $model): ?>
             <?php
             $authorLink = "";
-            $_user2 = \common\models\user\User::findBySteamId($model['team_author']);
+            $_user2 = \common\models\user\User::findBySteamId($model['team_author'], false, 'teams');
             if (empty($_user2)) {
                 $authorLink = "<span class=\"stats_player_teams_item_desc_name\">".Yii::t('common', 'Не известный')."</span>";
             } elseif ($model['team_author'] === $steam_id) {
@@ -31,7 +31,7 @@ use common\models\stats\Teams;
             ?>
             <?php
             $link = "";
-            $_user = \common\models\user\User::findBySteamId($model['steam_id']);
+            $_user = \common\models\user\User::findBySteamId($model['steam_id'], false, 'teams2');
             if (empty($_user)) {
                 $link = "<span class=\"stats_player_teams_item_desc_name\">".Yii::t('common', 'Не известный')."</span>";
             } elseif ($model['steam_id'] === $steam_id) {

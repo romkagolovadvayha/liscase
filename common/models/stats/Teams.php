@@ -145,7 +145,7 @@ class Teams extends ActiveRecord
 
     public static function getItemTeams($steamId, $statsModels, $createdAt, $isTeamAuthor = false) {
         $result = ['name' => null];
-        $user = User::findBySteamId($steamId);
+        $user = User::findBySteamId($steamId, false, 'teams 5');
         $result['name'] = $user->username;
         $result['steam_id'] = $steamId;
         $result['created_at'] = $createdAt;

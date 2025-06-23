@@ -53,7 +53,7 @@ class UpdateOnlineJob extends BaseObject implements JobInterface
 
             if (time() - $data['time'] >= 5 * 60) {
                 foreach ($data['items'] as $steamId => $playTime) {
-                    $user = User::findBySteamId($steamId);
+                    $user = User::findBySteamId($steamId, false, 'online');
                     $statistics = Statistics::find()
                                             ->andWhere(['steam_id' => $steamId])
                                             ->andWhere(['server_tag' => $this->serverTag])

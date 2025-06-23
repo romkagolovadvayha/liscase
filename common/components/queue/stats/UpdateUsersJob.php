@@ -41,7 +41,7 @@ class UpdateUsersJob extends BaseObject implements JobInterface
             $playTimeCount = 5;
             foreach ($request['users'] as $item) {
                 try {
-                    $user = User::findBySteamId($item['steam_id']);
+                    $user = User::findBySteamId($item['steam_id'], false, 'update user');
                     if (empty($user)) {
                         Yii::$app->telegramChats->sendMessage("UpdateUsersJob: user empty " . $item['steam_id']);
                         return;

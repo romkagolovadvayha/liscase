@@ -132,7 +132,7 @@ class WipeController extends Controller
             foreach ($tops as $top) {
                 $value = $top['label'];
                 foreach ($top['items'] as $i => $item) {
-                    $user                    = User::findBySteamId($item['steam_id']);
+                    $user                    = User::findBySteamId($item['steam_id'], false, 'top');
                     $profit                  = new Profit();
                     $profit->status          = 1;
                     $profit->type            = Profit::TYPE_TOP;
@@ -165,7 +165,7 @@ class WipeController extends Controller
         }
         if (YII_ENV_PROD) {
             foreach ($tgMessage as $steamId => $message) {
-                $user = User::findBySteamId($steamId);
+                $user = User::findBySteamId($steamId, false, 'top2');
                 Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message);
             }
         }

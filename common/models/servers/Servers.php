@@ -352,7 +352,7 @@ class Servers extends \common\components\base\ActiveRecord
             return null;
         }
 
-        $user = User::findBySteamId($_user->steam_id);
+        $user = User::findBySteamId($_user->steam_id, false, 'servers');
 
         if (strpos(mb_strtolower($user->username), $prefix) === false) {
             return $this->getWinner($i + 1, $all);

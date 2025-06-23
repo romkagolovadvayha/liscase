@@ -121,7 +121,7 @@ class Team extends \yii\db\ActiveRecord
      * @return void
      */
     public static function inviteAccepted($item, $server, $wipeDate) {
-        $user = User::findBySteamId($item->steam_id);
+        $user = User::findBySteamId($item->steam_id, false, 'teams 6');
         $userTeam = UserTeam::find()
             ->andWhere(['user_id' => $user->id])
             ->andWhere(['server_id' => $server->id])
@@ -132,7 +132,7 @@ class Team extends \yii\db\ActiveRecord
             $userTeam->delete();
         }
 
-        $author = User::findBySteamId($item->team_author);
+        $author = User::findBySteamId($item->team_author, false, 'teams 7');
         /** @var UserTeam $authorTeam */
         $authorTeam = UserTeam::find()
                             ->andWhere(['user_id' => $author->id])

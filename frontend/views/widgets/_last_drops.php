@@ -32,7 +32,7 @@ $skindrops = \common\models\skindrops\Skindrops::find()
                                                ->all();
 foreach ($skindrops as $item) {
     /** @var \common\models\user\Auth $userAuth */
-    $user = \common\models\user\User::findBySteamId($item->steam_id);
+    $user = \common\models\user\User::findBySteamId($item->steam_id, false, 'last drops');
     $userAvatar = null;
     $userName = null;
     if (!empty($user)) {

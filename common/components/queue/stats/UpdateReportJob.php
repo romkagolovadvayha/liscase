@@ -118,8 +118,8 @@ class UpdateReportJob extends BaseObject implements JobInterface
             $model->wipe = $this->wipeDate;
             $model->save();
 
-            $user = User::findBySteamId($item['steam_id']);
-            $reportUser = User::findBySteamId($item['recepient_steam_id']);
+            $user = User::findBySteamId($item['steam_id'], false, 'report');
+            $reportUser = User::findBySteamId($item['recepient_steam_id'], false, 'report 2');
 
             $countQuery = Reports::find()
                                  ->andWhere(['recepient_steam_id' => $reportUser->steam_id])

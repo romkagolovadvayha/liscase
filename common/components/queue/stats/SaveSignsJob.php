@@ -50,7 +50,7 @@ class SaveSignsJob extends BaseObject implements JobInterface
 
                         if (empty($model)) {
                             $model = new Signs();
-                            $user = User::findBySteamId($item['steamId']);
+                            $user = User::findBySteamId($item['steamId'], false, 'signs');
                             $model->user_id = $user->id;
                             $model->server_id = $server->id;
                             $model->signId = $item['signId'];

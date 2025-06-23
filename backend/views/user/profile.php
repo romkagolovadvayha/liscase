@@ -144,7 +144,7 @@ try {
             $lastCheckExist = true;
             $moder = null;
             if (!empty($_lastCheck['moderSteamID'])) {
-                $moder = User::findBySteamId($_lastCheck['moderSteamID']);
+                $moder = User::findBySteamId($_lastCheck['moderSteamID'], false, 'profile');
             }
             $date = new DateTime();
             $date->setTimestamp($_lastCheck['time']);
@@ -305,7 +305,7 @@ $checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
                                                           'label'     => Yii::t('common', "Ник"),
                                                           'format'    => 'raw',
                                                           'value'          => function ($model) {
-                                                              $user = User::findBySteamId($model['steam_id']);
+                                                              $user = User::findBySteamId($model['steam_id'], false, 'profile2');
                                                               return "<a href=\"/user/profile?userId={$user->id}\">{$model['name']}</a>";
                                                           },
                                                       ],

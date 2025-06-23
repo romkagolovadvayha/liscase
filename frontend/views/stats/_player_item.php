@@ -25,7 +25,7 @@ $isCurrent = false;
                             $isCurrentTop = true;
                         }
                     }
-                    $_user = \common\models\user\User::findBySteamId($item['steamid']);
+                    $_user = \common\models\user\User::findBySteamId($item['steamid'], false, 'player item');
                 ?>
                 <tr class="stats_player_item_player<?= $isCurrent ? ' stats_player_item_player_current' : ''?>">
                     <td class="stats_player_item_player_position<?=$i + 1?>" title="<?=$i + 1?> место"><i class="fas fa-crown"></i></td>

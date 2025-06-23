@@ -32,7 +32,7 @@ class WarGmController extends Controller
                 continue;
             }
             foreach ($votes['responce']['data'] as $vote) {
-                $user = User::findBySteamId($vote['user_steam_id']);
+                $user = User::findBySteamId($vote['user_steam_id'], false, 'wargm');
                 if (empty($user)) {
                     continue;
                 }

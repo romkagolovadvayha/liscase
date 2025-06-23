@@ -281,7 +281,7 @@ class User extends ActiveRecord implements IdentityInterface
         return static::findOne($attributes);
     }
 
-    public static function findBySteamId($steamId, $updated = false)
+    public static function findBySteamId($steamId, $updated = false, $source = "unknown")
     {
         if (strlen($steamId) !== 17) {
             Yii::$app->telegramChats->sendMessage("User findBySteamId !== 17: {$steamId} ");
@@ -318,7 +318,7 @@ class User extends ActiveRecord implements IdentityInterface
                     $user->generateRefCode();
                     $user->generateSocketRoom();
                     if ($user->save()) {
-                        Yii::$app->telegramChats->sendMessage('Новый пользователь на сайте: ' . $user->username);
+                        Yii::$app->telegramChats->sendMessage('Новый пользователь на сайте (' . $source . '): ' . $user->username);
                         $auth = new Auth(
                             [
                                 'user_id'   => $user->id,
