@@ -44,7 +44,14 @@ class UserSteamInfoUpdateJob extends BaseObject implements JobInterface
                 }
                 Yii::$app->telegramChats->sendMessage('Успешное обновление ' . count($infoUsers) . " аккаунтов.");
                 foreach ($infoUsers as $infoUser) {
-                    $user = User::findBySteamId($infoUser['steamid']);
+                    /** @var User $user */
+                    $user = User::find()
+                                  ->andWhere(['steam_id' => $infoUser['steamid']])
+                                  ->one();
+                    if (empty($user)) {
+                        Yii::$app->telegramChats->sendMessage('Пользователь для обновления не найден: ' . $infoUser['steamid']);
+                        continue;
+                    }
                     $user->updated_at = date('Y-m-d H:i:s');
                     $user->username = HtmlPurifier::process($infoUser['personaname']);
                     $user->save();
