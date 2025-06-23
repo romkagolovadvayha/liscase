@@ -80,7 +80,6 @@ class UserController extends Controller
         $fileUrl = "/uploads/avatar/steam/{$id}.png";
         $filePath = $uploadDir . $fileUrl;
         if (file_exists($filePath)) {
-            Yii::$app->telegramChats->sendMessage('Удален старый аватар и загружен новый: ' . $imageUrl);
             unlink($filePath);
         }
         if (!file_exists(dirname(dirname($filePath)))) {

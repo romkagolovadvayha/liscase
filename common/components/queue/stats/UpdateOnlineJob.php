@@ -3,6 +3,7 @@
 namespace common\components\queue\stats;
 
 use common\components\oauth\Steam;
+use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
 use common\models\statistics\Chats;
@@ -54,6 +55,9 @@ class UpdateOnlineJob extends BaseObject implements JobInterface
             if (time() - $data['time'] >= 5 * 60) {
                 foreach ($data['items'] as $steamId => $playTime) {
                     $user = User::findBySteamId($steamId, false, 'online');
+                    if (strtotime($user->updated_at) < time() - 24 * 60 * 60) {
+                        \Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $user->steam_id]));
+                    }
                     $statistics = Statistics::find()
                                             ->andWhere(['steam_id' => $steamId])
                                             ->andWhere(['server_tag' => $this->serverTag])
