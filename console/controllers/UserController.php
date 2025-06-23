@@ -42,6 +42,9 @@ class UserController extends Controller
         $steamList = CacheArrayHelper::withLock($cacheKey, function() use ($cacheKey) {
             return CacheArrayHelper::popFromCacheArray($cacheKey, 63);
         });
+        if (empty($steamList)) {
+            return;
+        }
         $infoUsers       = Steam::getInfoUsers($steamList);
         if (empty($infoUsers)) {
             Yii::$app->telegramChats->sendMessage('Ждем таймаут стима 60 сек.');
