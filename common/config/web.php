@@ -63,7 +63,7 @@ $config = [
         ],
         'view' => [
             'class' => '\rmrevin\yii\minify\View',
-            //'enableMinify' => !YII_DEBUG,
+            'enableMinify' => false,
             'concatCss' => true, // concatenate css
             'minifyCss' => true, // minificate css
             'concatJs' => true, // concatenate js
