@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2181f3df190748eff64e238154210d6e",
+    "content-hash": "e23d26aa6f3e18be3c5df50a75e70f2c",
     "packages": [
         {
             "name": "2amigos/qrcode-library",
@@ -5759,6 +5759,21 @@
             "license": [
                 "MIT"
             ]
+        },
+        {
+            "name": "npm-asset/font-awesome",
+            "version": "6.7.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/FortAwesome/Font-Awesome.git",
+                "reference": "af620534bfc3c2d4cbefcfeec29603bbe7809e64"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/FortAwesome/Font-Awesome/zipball/af620534bfc3c2d4cbefcfeec29603bbe7809e64",
+                "reference": "af620534bfc3c2d4cbefcfeec29603bbe7809e64"
+            },
+            "type": "npm-asset"
         },
         {
             "name": "npm-asset/fontawesome",
