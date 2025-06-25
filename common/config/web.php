@@ -76,7 +76,9 @@ $config = [
             'forceCharset' => 'UTF-8', // charset forcibly assign, otherwise will use all of the files found charset
             'expandImports' => true, // whether to change @import on content
             'compressOptions' => ['extra' => true], // options for compress
-            'excludeFiles' => [],
+            'excludeFiles' => [
+                'circle-progress.min.js'
+            ],
             'excludeBundles' => [],
             'renderers' => [
                 'twig' => [
