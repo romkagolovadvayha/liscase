@@ -22,14 +22,14 @@ foreach ($keys as $key) {
 <!-- Использование карт доступа -->
 <section class="page-stats__block-without-hover w-50p">
     <header class="flex items-center justify-space-between mb-24 transition-all">
-        <h4 class="flex items-center gap-x-12">
+        <h3 class="flex items-center gap-x-12">
             <?=Yii::t('common', 'Карты доступа')?><span
                     class="icons icons_24px icons_24px_info icons_hover"
                     data-bs-toggle="tooltip"
                     data-bs-placement="right"
                     data-bs-title="<?=Yii::t('common', 'Количество использованных карт доступа.')?>"
             ></span>
-        </h4>
+        </h3>
 
 <!--        <label class="page-stats__show-statistics-block">-->
 <!--            <p class="p1 text-text-teritiary">--><?//=Yii::t('common', 'Показывать')?><!--</p>-->

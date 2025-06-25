@@ -12,7 +12,7 @@ use common\models\statistics\Statistics;
 
 ?>
 <section class="page-stats__gamer-stats_wrap page-stats__block w-50p" style="height: 616px">
-    <h4 class="mb-32"><?=Yii::t('common', 'Статистика по попаданиям')?></h4>
+    <h3 class="mb-32"><?=Yii::t('common', 'Статистика по попаданиям')?></h3>
 
     <div class="page-stats__gamer-stats gamer-stats">
         <span class="gamer-stats__item gamer-stats__head"><?=Statistics::getParam($player, 'hits_head')?></span>
