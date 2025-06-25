@@ -13,7 +13,6 @@ class SupportAsset extends AssetBundle
         parent::init();
 
         $this->js = [
-            'js/circle-progress.min.js',
             'js/support.js?v=' . \Yii::$app->settings->get('site_version'),
         ];
     }
@@ -22,5 +21,6 @@ class SupportAsset extends AssetBundle
         = [
             'frontend\assets\AppAsset',
             MomentAsset::class,
+            CircleProgressAsset::class,
         ];
 }
