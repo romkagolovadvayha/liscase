@@ -12,7 +12,7 @@ use yii\web\AssetBundle;
  */
 class CircleProgressAsset extends AssetBundle
 {
-    public $sourcePath = '@frontend/assets/sources';
+    public $sourcePath = '@npm/js-circle-progress/dist';
 
     public $css = [];
 

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e23d26aa6f3e18be3c5df50a75e70f2c",
+    "content-hash": "d0ff3d1ead4ca30c744e74ab248d02a4",
     "packages": [
         {
             "name": "2amigos/qrcode-library",
@@ -5797,6 +5797,18 @@
             "type": "npm-asset",
             "license": [
                 "ISC"
+            ]
+        },
+        {
+            "name": "npm-asset/js-circle-progress",
+            "version": "0.2.4",
+            "dist": {
+                "type": "tar",
+                "url": "https://registry.npmjs.org/js-circle-progress/-/js-circle-progress-0.2.4.tgz"
+            },
+            "type": "npm-asset",
+            "license": [
+                "MIT"
             ]
         },
         {
