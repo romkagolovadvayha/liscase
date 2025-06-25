@@ -18,7 +18,7 @@
                 <p>{{ PROJECT_STATS.count|number_format(0, '', ' ') }}</p>
             </div>
         </div>
-        <img src="{{ SETTINGS.get('design_image_not_auth') }}" alt="farmer" class="user__image"/>
+        <img src="{{ SETTINGS.get('design_image_not_auth') }}" alt="farmer" class="user__image" loading="lazy"/>
         <div class="user__stats_footer">
             <a href="/auth/oauth?authclient=steam" class="button button-primary h-48" style="padding-top: 15px;">
               <span class="button__text">
@@ -56,19 +56,19 @@
                 </div>
                 <div class="user__stats stats">
                     <div class="stats__item stat" data-bs-toggle="tooltip" data-bs-title="{{ t('common', 'Серная руда') }}">
-                        <img src="/images/design/user/gold.png" alt="gold" class="stat__image"/>
+                        <img src="/images/design/user/gold.png" alt="gold" class="stat__image" loading="lazy"/>
                         <p class="p0">{{ STATS.getParam(USER_STATS, 'sulfur.ore')|number_format(0, '', ' ') }}</p>
                     </div>
                     <div class="stats__item stat" data-bs-toggle="tooltip" data-bs-title="{{ t('common', 'Железная руда') }}">
-                        <img src="/images/design/user/iron_stone.png" alt="iron_stone" class="stat__image"/>
+                        <img src="/images/design/user/iron_stone.png" alt="iron_stone" class="stat__image" loading="lazy"/>
                         <p class="p0">{{ STATS.getParam(USER_STATS, 'metal.ore')|number_format(0, '', ' ') }}</p>
                     </div>
                     <div class="stats__item stat" data-bs-toggle="tooltip" data-bs-title="{{ t('common', 'Камень') }}">
-                        <img src="/images/design/user/stone.png" alt="stone" class="stat__image"/>
+                        <img src="/images/design/user/stone.png" alt="stone" class="stat__image" loading="lazy"/>
                         <p class="p0">{{ STATS.getParam(USER_STATS, 'stones')|number_format(0, '', ' ') }}</p>
                     </div>
                     <div class="stats__item stat" data-bs-toggle="tooltip" data-bs-title="{{ t('common', 'Дерево') }}">
-                        <img src="/images/design/user/wood.png" alt="wood" class="stat__image"/>
+                        <img src="/images/design/user/wood.png" alt="wood" class="stat__image" loading="lazy"/>
                         <p class="p0">{{ STATS.getParam(USER_STATS, 'wood')|number_format(0, '', ' ') }}</p>
                     </div>
                 </div>
@@ -106,7 +106,7 @@
                 </div>
                 {% endif %}
             </div>
-            <img src="{{ SETTINGS.get('design_statsBlockImage') }}" alt="farmer" class="user__image"/>
+            <img src="{{ SETTINGS.get('design_statsBlockImage') }}" alt="farmer" class="user__image" loading="lazy"/>
             <div class="user__stats_footer">
                 {% if USER.USER_STATS_LINK %}
                     <a href="{{ USER.USER_STATS_LINK }}" class="button button-primary">
