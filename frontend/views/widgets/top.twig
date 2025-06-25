@@ -4,7 +4,7 @@
     <ul class="nav nav-tabs mb-20" role="tablist">
         {% for SERVER in SERVERS %}
             <li class="nav-item" role="presentation">
-                <button class="nav-link{% if USER.SERVER_ACTIVE_ID == SERVER.id %} active{% endif %}" id="{{ SERVER.tag }}-top-tab" data-bs-toggle="tab" data-bs-target="#top_{{ SERVER.tag }}" type="button" role="tab" aria-controls="{{ SERVER.tag }}-top-tab-pane" aria-selected="{% if SERVER_ACTIVE_ID == SERVER.id %}true{% else %}false{% endif %}">
+                <button class="nav-link{% if USER.SERVER_ACTIVE_ID == SERVER.id %} active{% endif %}" id="{{ SERVER.tag }}-top-tab" data-bs-toggle="tab" data-bs-target="#top_{{ SERVER.tag }}" type="button" role="tab" aria-controls="{{ SERVER.tag }}-top-tab" aria-selected="{% if SERVER_ACTIVE_ID == SERVER.id %}true{% else %}false{% endif %}">
                     {{ SERVER.monitoring_name }}
                 </button>
             </li>
