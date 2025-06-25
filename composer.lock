@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d35a37fd1d731fcba31bc3cd31cffc3f",
+    "content-hash": "2181f3df190748eff64e238154210d6e",
     "packages": [
         {
             "name": "2amigos/qrcode-library",
@@ -5770,6 +5770,18 @@
             "type": "npm-asset",
             "license": [
                 "MIT"
+            ]
+        },
+        {
+            "name": "npm-asset/fontawesome-free",
+            "version": "1.0.4",
+            "dist": {
+                "type": "tar",
+                "url": "https://registry.npmjs.org/fontawesome-free/-/fontawesome-free-1.0.4.tgz"
+            },
+            "type": "npm-asset",
+            "license": [
+                "ISC"
             ]
         },
         {
