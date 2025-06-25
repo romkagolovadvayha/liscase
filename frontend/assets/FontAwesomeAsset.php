@@ -10,18 +10,17 @@ use yii\web\AssetBundle;
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
  */
-class MomentAsset extends AssetBundle
+class FontAwesomeAsset extends AssetBundle
 {
-    public $sourcePath = '@npm/moment';
+    public $sourcePath = '@frontend/assets/sources';
 
     public $css = [];
 
     public $js = [
-        'min/moment.min.js',
-        'min/moment-with-locales.js',
+        'js/fontawesome-free-6.7.2/js/all.min.js',
     ];
 
     public $depends = [
-        AppAsset::class
+        'yii\web\YiiAsset',
     ];
 }
