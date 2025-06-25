@@ -66,21 +66,21 @@ class UserController extends Controller
         }
         $infoUsers       = Steam::getInfoUsers($steamList);
         if (empty($infoUsers)) {
-            Yii::$app->telegramChats->sendMessage('Ждем таймаут стима 60 сек.');
+            //Yii::$app->telegramChats->sendMessage('Ждем таймаут стима 60 сек.');
             // Возврат обратно в очередь
             CacheArrayHelper::withLock($cacheKey, function() use ($cacheKey, $steamList) {
                 CacheArrayHelper::pushBackToCacheArray($cacheKey, $steamList);
             });
             return;
         }
-        Yii::$app->telegramChats->sendMessage('Успешное обновление ' . count($infoUsers) . " аккаунтов.");
+        //Yii::$app->telegramChats->sendMessage('Успешное обновление ' . count($infoUsers) . " аккаунтов.");
         foreach ($infoUsers as $infoUser) {
             /** @var User $user */
             $user = User::find()
                         ->andWhere(['steam_id' => $infoUser['steamid']])
                         ->one();
             if (empty($user)) {
-                Yii::$app->telegramChats->sendMessage('Пользователь для обновления не найден: ' . $infoUser['steamid']);
+                //Yii::$app->telegramChats->sendMessage('Пользователь для обновления не найден: ' . $infoUser['steamid']);
                 continue;
             }
             $user->updated_at = date('Y-m-d H:i:s');
