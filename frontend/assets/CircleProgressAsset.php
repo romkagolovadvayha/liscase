@@ -17,7 +17,7 @@ class CircleProgressAsset extends AssetBundle
     public $css = [];
 
     public $js = [
-        'js/circle-progress.min.js',
+        'circle-progress.min.js',
     ];
 
     public $depends = [
