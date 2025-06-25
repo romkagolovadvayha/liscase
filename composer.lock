@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "39ea51a06af62c551048fd2fcd67ee14",
+    "content-hash": "d35a37fd1d731fcba31bc3cd31cffc3f",
     "packages": [
         {
             "name": "2amigos/qrcode-library",
@@ -5754,6 +5754,30 @@
             "dist": {
                 "type": "tar",
                 "url": "https://registry.npmjs.org/bootstrap-icons/-/bootstrap-icons-1.11.3.tgz"
+            },
+            "type": "npm-asset",
+            "license": [
+                "MIT"
+            ]
+        },
+        {
+            "name": "npm-asset/fontawesome",
+            "version": "5.6.3",
+            "dist": {
+                "type": "tar",
+                "url": "https://registry.npmjs.org/fontawesome/-/fontawesome-5.6.3.tgz"
+            },
+            "type": "npm-asset",
+            "license": [
+                "MIT"
+            ]
+        },
+        {
+            "name": "npm-asset/moment",
+            "version": "2.30.1",
+            "dist": {
+                "type": "tar",
+                "url": "https://registry.npmjs.org/moment/-/moment-2.30.1.tgz"
             },
             "type": "npm-asset",
             "license": [

@@ -60,7 +60,9 @@
         "tinify/tinify": "^1.6",
         "halaxa/json-machine": "^1.2",
         "vikas5914/steam-auth": "1.*",
-        "rmrevin/yii2-minify-view": "^2.0"
+        "rmrevin/yii2-minify-view": "^2.0",
+        "npm-asset/moment": "^2.30",
+        "npm-asset/fontawesome": "^5.6"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.1.0",
