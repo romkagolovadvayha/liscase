@@ -141,7 +141,7 @@
                         data-bs-title="{{ t('common', 'Скопировать команду') }}">/bonus</span> {{ t('common', 'в боте, чтобы получить награду') }}</span>
         </p>
 
-        <img src="{{ SETTINGS.get('design_bonusBlockImage') }}" alt="symbol" class="daily-reward__image"/>
+        <img src="{{ SETTINGS.get('design_bonusBlockImage') }}" alt="symbol" loading="lazy" class="daily-reward__image"/>
         <a href="{{ BOT_LINK }}" target="_blank" class="button button-secondary" style="padding-top: 15px;">
             <span class="button__text">{{ t('common', 'Получить бонус') }}</span>
         </a>
