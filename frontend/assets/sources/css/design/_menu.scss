@@ -49,6 +49,16 @@
   &__social-network {
     @extend .pl-30, .relative, .mb-26, .transition-opacity;
     opacity: 1;
+    a {
+      .icons {
+        background-color: var(--icon-social-main);
+      }
+      &:hover {
+        .icons {
+          background-color: var(--icon-hover);
+        }
+      }
+    }
   }
 
   &__list {
