@@ -605,6 +605,7 @@ class ChatServer extends WebSocketServer
                 $model->created_at = date('Y-m-d H:i:s');
                 $model->save();
 
+                Yii::$app->telegramChats->sendMessage("BeforeMessageJob Start");
                 Yii::$app->queueProcess->push(new BeforeMessageJob([
                     'chatId' => $model->support_id,
                     'userId' => $model->user_id,
@@ -622,7 +623,11 @@ class ChatServer extends WebSocketServer
                             'username' => $user->username,
                             'chatNumber' => $chat->getNumber(),
                         ]));
+                    } else {
+                        Yii::$app->telegramChats->sendMessage("is_bot != 1");
                     }
+                } else {
+                    Yii::$app->telegramChats->sendMessage("{$model->user_id} != {$chat->user_id}");
                 }
 
                 SupportRead::createRecord($chat->user_id, $user->id, $model->id, $chat->id);
@@ -663,8 +668,8 @@ class ChatServer extends WebSocketServer
             }
 
             //$client->send( json_encode($result) );
-        } catch (\Exception $e) {
-            echo "commandChat:" . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
+        } catch (\Exception $ex) {
+            Yii::$app->telegramChats->sendMessage('commandChat: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
 
