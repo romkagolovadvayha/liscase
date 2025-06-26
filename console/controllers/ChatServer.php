@@ -592,6 +592,7 @@ class ChatServer extends WebSocketServer
                     $mModel->support_id = $chat->id;
                     $mModel->created_at = date('Y-m-d H:i:s');
                     $mModel->save();
+                    Yii::$app->telegramChats->sendMessage("Новый тикет");
                     $client->send(json_encode(['type' => 'redirect', 'url' => $chat->getUrl()]));
                 } else {
                     $chat->updated_at = date('Y-m-d H:i:s');
