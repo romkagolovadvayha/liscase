@@ -28,6 +28,7 @@ class BeforeMessageJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
+        Yii::$app->telegramChats->sendMessage("BeforeMessageJob Start");
         try {
             $domain = Yii::$app->settings->get('site_domain');
             $text = "💬 Новое сообщение.";
