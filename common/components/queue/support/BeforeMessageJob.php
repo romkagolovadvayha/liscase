@@ -28,15 +28,12 @@ class BeforeMessageJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
-        Yii::$app->telegramChats->sendMessage("BeforeMessageJob Start");
-        Yii::$app->telegramChats->sendMessage($this->chatNumber);
-        Yii::$app->telegramChats->sendMessage($this->username);
-        Yii::$app->telegramChats->sendMessage($this->message);
         try {
             $domain = Yii::$app->settings->get('site_domain');
             $text = "💬 Новое сообщение.";
             $text .= PHP_EOL. "Имя: {$this->username}";
-            $text .= PHP_EOL. "Сообщение: " . $this->message;
+            $message = str_replace('<br>', PHP_EOL, $this->message);
+            $text .= PHP_EOL. "Сообщение: " . $message;
             $text .= PHP_EOL. "<a href=\"https://{$domain}/support/ticket?id={$this->chatNumber}\">Перейти к тикету</a>";
             Yii::$app->telegramSupport->sendMessage($text);
         } catch (\Exception $e) {
