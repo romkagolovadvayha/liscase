@@ -70,6 +70,13 @@ class OpenAiJob extends BaseObject implements JobInterface
             $modelBot->save();
             SupportRead::createRecord($this->ownerUserId, $admin->id, $modelBot->id, $this->chatId);
 
+            Yii::$app->queueProcess->push(new BeforeMessageJob([
+                'chatId' => $this->chatId,
+                'userId' => $this->userId,
+                'message' => $reply,
+                'username' => "Chat GPT",
+                'chatNumber' => $this->chatNumber,
+            ]));
             try {
                 $client = new Client(Yii::$app->params['ws']);
                 $client->send(
