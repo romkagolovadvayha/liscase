@@ -35,6 +35,10 @@ class OpenAiJob extends BaseObject implements JobInterface
         echo $this->message . PHP_EOL;
         try {
             sleep(300);
+            $chat = Support::findOne($this->chatId);
+            if ($chat->status !== Support::STATUS_OPEN) {
+                return;
+            }
             $chatHistory = [];
             /** @var SupportMessage[] $histories */
             $histories = SupportMessage::find()
@@ -51,7 +55,6 @@ class OpenAiJob extends BaseObject implements JobInterface
             }
             $reply = Yii::$app->openAiSupport->getReply(trim($this->message), $chatHistory);
             if ($reply == 'unknown') {
-                $chat = Support::findOne($this->chatId);
                 $chat->is_bot = false;
                 $chat->save(false);
                 return;
