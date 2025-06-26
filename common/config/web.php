@@ -228,7 +228,7 @@ $config = [
         ],
         'openAiSupport' => [
             'class' => \common\components\openAi\OpenAiSupport::class,
-            'model' => 'gpt-4', // или gpt-3.5-turbo
+            'model' => 'gpt-3.5-turbo', // или gpt-3.5-turbo
         ],
         's3Api'   => [
             'class'  => \common\components\storage\S3Api::class,
