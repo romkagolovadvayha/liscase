@@ -47,7 +47,7 @@ class OpenAiJob extends BaseObject implements JobInterface
                                        ->all();
             $isReplay = false;
             foreach ($histories as $history) {
-                if ($history->user_id == $this->userId) {
+                if ($history->user_id == $chat->user_id) {
                     $chatHistory[] = ['user' => $history->message];
                     $isReplay = false;
                 } else {
@@ -71,14 +71,14 @@ class OpenAiJob extends BaseObject implements JobInterface
             $modelBot = new SupportMessage();
             $modelBot->user_id = $admin->id;
             $modelBot->message = trim($reply);
-            $modelBot->support_id = $this->chatId;
+            $modelBot->support_id = $chat->id;
             $modelBot->created_at = date('Y-m-d H:i:s');
             $modelBot->save();
-            SupportRead::createRecord($this->ownerUserId, $admin->id, $modelBot->id, $this->chatId);
+            SupportRead::createRecord($chat->user_id, $admin->id, $modelBot->id, $chat->id);
 
             Yii::$app->queueProcess->push(new BeforeMessageJob([
-                'chatId' => $this->chatId,
-                'userId' => $this->userId,
+                'chatId' => $chat->id,
+                'userId' => $admin->id,
                 'message' => $reply,
                 'username' => "Chat GPT",
                 'chatNumber' => $this->chatNumber,
