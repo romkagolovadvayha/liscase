@@ -34,7 +34,7 @@ class OpenAiJob extends BaseObject implements JobInterface
     {
         echo $this->message . PHP_EOL;
         try {
-            sleep(30);
+            sleep(120);
             $chat = Support::findOne($this->chatId);
             if ($chat->status !== Support::STATUS_OPEN) {
                 return;
@@ -46,12 +46,18 @@ class OpenAiJob extends BaseObject implements JobInterface
                                        ->andWhere('user_id IS NOT NULL')
                                        ->orderBy(['id' => SORT_ASC])
                                        ->all();
+            $isReplay = false;
             foreach ($histories as $history) {
                 if ($history->user_id == $this->userId) {
                     $chatHistory[] = ['user' => $history->message];
+                    $isReplay = false;
                 } else {
                     $chatHistory[] = ['bot' => $history->message];
+                    $isReplay = true;
                 }
+            }
+            if ($isReplay) {
+                return;
             }
             $reply = Yii::$app->openAiSupport->getReply(trim($this->message), $chatHistory);
             if ($reply == 'unknown') {
