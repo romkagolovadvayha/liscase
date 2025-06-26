@@ -76,6 +76,7 @@ class OpenAiJob extends BaseObject implements JobInterface
             $modelBot->save();
             SupportRead::createRecord($chat->user_id, $admin->id, $modelBot->id, $chat->id);
 
+            Yii::$app->telegramChats->sendMessage("BeforeMessageJob Run");
             Yii::$app->queueProcess->push(new BeforeMessageJob([
                 'chatId' => $chat->id,
                 'userId' => $admin->id,
