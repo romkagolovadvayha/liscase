@@ -251,6 +251,23 @@
       position: relative;
       &_text {
         @extend .p1;
+        line-height: 28px;
+        a {
+          @extend .p1;
+        }
+        ul {
+          list-style: square;
+          padding-left: 20px;
+          margin-top: 10px;
+          margin-bottom: 10px;
+        }
+        code {
+          display: inline-block;
+          border-radius: var(--card-radius);
+          background-color: var(--background-teritiary);
+          color: var(--text-main);
+          padding: 10px;
+        }
       }
       &_success {
         color: #A8DC4DFF;
