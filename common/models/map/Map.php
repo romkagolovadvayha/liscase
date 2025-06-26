@@ -299,7 +299,7 @@ class Map extends \yii\db\ActiveRecord
 
             $fileIconPathFileName = "{$item['size']}_{$item['seed']}.jpg";
             $filePathFileName = "{$item['size']}_{$item['seed']}_400x400.jpg";
-            Map::upload($imageIconUrl, $fileIconPathFileName, $filePathFileName);
+            Map::uploadOld($imageIconUrl, $fileIconPathFileName, $filePathFileName);
 
             $model = new Map();
             $model->mapId = $mapId;
@@ -316,6 +316,85 @@ class Map extends \yii\db\ActiveRecord
             sleep(1);
             $i++;
         }
+    }
+
+    public static function uploadOld($imageUrl, $filename, $previewFilename) {
+        $filePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$filename}";
+        $previewfilePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$previewFilename}";
+        $image = (clone Yii::$app->curl)
+            ->setOption(CURLOPT_PROXY, '154.196.30.165:62742') // Установка прокси
+            ->setOption(CURLOPT_PROXYUSERPWD, 'XyQREbm5:AZ1zUkyc') // Если требуется аутентификация
+            ->get($imageUrl);
+        Map::watermarkOld($image, $filePath, $previewfilePath);
+    }
+
+    public static function watermarkOld($image, $filePath, $previewfilePath) {
+        // Загружаем основное изображение
+        $background = imagecreatefromstring($image);
+
+        // Загружаем накладываемое изображение
+        $overlay = imagecreatefrompng(\Yii::getAlias('@frontend/web') . Yii::$app->settings->get('design_watemark')); // для прозрачного изображения используем PNG
+
+        // Проверка на ошибку при загрузке накладываемого изображения
+        if (empty($overlay)) {
+            die('Ошибка при загрузке накладываемого изображения');
+        }
+
+        // Включаем поддержку альфа-канала (для PNG)
+        imagealphablending($background, true); // Включаем смешивание (по умолчанию оно отключено)
+        imagesavealpha($background, true); // Сохраняем альфа-канал для прозрачности
+
+        // Включаем поддержку альфа-канала для накладываемого изображения
+        imagealphablending($overlay, false); // Отключаем смешивание для накладываемого изображения
+        imagesavealpha($overlay, false); // Сохраняем альфа-канал для накладываемого изображения
+
+        // Получаем размеры основного изображения
+        $bg_width = imagesx($background);
+        $bg_height = imagesy($background);
+
+        // Получаем размеры накладываемого изображения
+        $overlay_width = imagesx($overlay);
+        $overlay_height = imagesy($overlay);
+
+        // Позиция наложения (можно выбрать любое положение, здесь верхний левый угол)
+        $pos_x = ($bg_width - $overlay_width) / 2; // Центрируем по горизонтали
+        $pos_y = 50; // Центрируем по вертикали
+
+        // Накладываем одно изображение на другое с учетом прозрачности
+        imagecopymerge($background, $overlay, $pos_x, $pos_y, 0, 0, $overlay_width, $overlay_height, 15);
+
+        // Сохраняем результат в файл или выводим его в браузер
+        //header('Content-Type: image/jpeg');
+        if (!file_exists(dirname($filePath))) {
+            mkdir(dirname($filePath));
+            chmod(dirname($filePath), 0777);
+        }
+
+        imagejpeg($background, $filePath);
+
+        // Сжимаем изображение до 200x200
+        $resize_width = 200;
+        $resize_height = 200;
+        $resized_image = imagecreatetruecolor($resize_width, $resize_height);
+
+        // Устанавливаем прозрачность для нового изображения
+        imagealphablending($resized_image, false);
+        imagesavealpha($resized_image, true);
+
+        // Масштабируем изображение
+        imagecopyresampled($resized_image, $background, 0, 0, 0, 0, $resize_width, $resize_height, $bg_width, $bg_height);
+
+        // Создаем каталог, если его нет
+        if (!file_exists(dirname($previewfilePath))) {
+            mkdir(dirname($previewfilePath), 0777, true);
+        }
+
+        imagejpeg($resized_image, $previewfilePath);
+
+        // Освобождаем память
+        imagedestroy($background);
+        imagedestroy($overlay);
+        imagedestroy($resized_image);
     }
 
     public static function upload($imageUrl, $filename, $depecate = null) {
