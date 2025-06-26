@@ -16,6 +16,7 @@ use Yii;
  * @property int $status
  * @property string|null $updated_at
  * @property string|null $created_at
+ * @property bool $is_bot
  *
  * @property SupportMessage[] $supportMessages
  * @property User $user

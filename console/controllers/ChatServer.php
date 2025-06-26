@@ -1,6 +1,8 @@
 <?php
 namespace console\controllers;
 
+use common\components\queue\support\BeforeMessageJob;
+use common\components\queue\support\OpenAiJob;
 use common\models\rcon\RconTasks;
 use common\models\support\SupportFile;
 use common\models\support\SupportMessage;
@@ -603,15 +605,27 @@ class ChatServer extends WebSocketServer
                 $model->created_at = date('Y-m-d H:i:s');
                 $model->save();
 
-                $domain = Yii::$app->settings->get('site_domain');
-                $text = "💬 Новое сообщение.";
-                $text .= PHP_EOL. "Имя: {$user->username}";
-                $text .= PHP_EOL. "Сообщение: {$model->message}";
-                $text .= PHP_EOL. "<a href=\"https://{$domain}/support/ticket?id={$chat->getNumber()}\">Перейти к тикету</a>";
-                Yii::$app->telegramSupport->sendMessage($text);
+                Yii::$app->queueProcess->push(new BeforeMessageJob([
+                    'chatId' => $model->support_id,
+                    'userId' => $model->user_id,
+                    'message' => $model->message,
+                    'username' => $user->username,
+                    'chatNumber' => $chat->getNumber(),
+                ]));
+                if ($model->user_id == $chat->user_id) {
+                    if ($chat->is_bot) {
+                        Yii::$app->queueSupport->push(new OpenAiJob([
+                            'chatId' => $model->support_id,
+                            'userId' => $model->user_id,
+                            'ownerUserId' => $chat->user_id,
+                            'message' => $model->message,
+                            'username' => $user->username,
+                            'chatNumber' => $chat->getNumber(),
+                        ]));
+                    }
+                }
 
                 SupportRead::createRecord($chat->user_id, $user->id, $model->id, $chat->id);
-
                 $this->commandTicketUpdate($client, json_encode(['user_id' => $chat->user_id]));
                 $hash = md5(time());
                 foreach ($this->clients as $chatClient) {

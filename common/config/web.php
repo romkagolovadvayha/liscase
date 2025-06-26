@@ -226,6 +226,10 @@ $config = [
             'discordChannelId'      => '1150211599395737601',
             'discordUserToken'      => 'MTE1MDIxMDQ4MTI2NTU5MDI5Mg.GZhegP.iSny8xdLjtgnETPDiiYygmJr4sHVu_hjEA-5R0',
         ],
+        'openAiSupport' => [
+            'class' => \common\components\openAi\OpenAiSupport::class,
+            'model' => 'gpt-4', // или gpt-3.5-turbo
+        ],
         's3Api'   => [
             'class'  => \common\components\storage\S3Api::class,
             'baseUrl'      => 'https://s3.timeweb.cloud',
