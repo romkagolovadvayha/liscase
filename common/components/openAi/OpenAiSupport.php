@@ -9,7 +9,6 @@ use Yii;
 
 class OpenAiSupport extends \yii\base\Component
 {
-    public $model = 'gpt-4';
     public $temperature = 0.2;
 
     /**
@@ -78,7 +77,7 @@ class OpenAiSupport extends \yii\base\Component
         // Отправляем запрос в OpenAI
         $response = $this->client->post('chat/completions', [
             'json' => [
-                'model' => $this->model,
+                'model' => Yii::$app->settings->get('openAi_model'),
                 'messages' => $messages,
                 'temperature' => $this->temperature,
             ],
