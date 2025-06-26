@@ -592,7 +592,6 @@ class ChatServer extends WebSocketServer
                     $mModel->support_id = $chat->id;
                     $mModel->created_at = date('Y-m-d H:i:s');
                     $mModel->save();
-                    Yii::$app->telegramChats->sendMessage("Новый тикет");
                     $client->send(json_encode(['type' => 'redirect', 'url' => $chat->getUrl()]));
                 } else {
                     $chat->updated_at = date('Y-m-d H:i:s');
@@ -606,7 +605,6 @@ class ChatServer extends WebSocketServer
                 $model->created_at = date('Y-m-d H:i:s');
                 $model->save();
 
-                Yii::$app->telegramChats->sendMessage("BeforeMessageJob Start");
                 Yii::$app->queueProcess->push(new BeforeMessageJob([
                     'chatId' => $model->support_id,
                     'userId' => $model->user_id,
@@ -614,22 +612,6 @@ class ChatServer extends WebSocketServer
                     'username' => $user->username,
                     'chatNumber' => $chat->getNumber(),
                 ]));
-                if ($model->user_id == $chat->user_id) {
-                    if ($chat->is_bot) {
-                        Yii::$app->queueSupport->push(new OpenAiJob([
-                            'chatId' => $model->support_id,
-                            'userId' => $model->user_id,
-                            'ownerUserId' => $chat->user_id,
-                            'message' => $model->message,
-                            'username' => $user->username,
-                            'chatNumber' => $chat->getNumber(),
-                        ]));
-                    } else {
-                        Yii::$app->telegramChats->sendMessage("is_bot != 1");
-                    }
-                } else {
-                    Yii::$app->telegramChats->sendMessage("{$model->user_id} != {$chat->user_id}");
-                }
 
                 SupportRead::createRecord($chat->user_id, $user->id, $model->id, $chat->id);
                 $this->commandTicketUpdate($client, json_encode(['user_id' => $chat->user_id]));

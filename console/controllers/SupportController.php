@@ -3,6 +3,7 @@
 namespace console\controllers;
 
 use common\components\helpers\Role;
+use common\components\queue\support\OpenAiJob;
 use common\models\support\Support;
 use common\models\support\SupportMessage;
 use common\models\user\User;
@@ -26,7 +27,7 @@ class SupportController extends Controller
             ->all();
 
         $createdAt = new \DateTime();
-        $createdAt->modify('-10 minute');
+        $createdAt->modify('-' . Yii::$app->settings->get('openAi_sleep') . ' second');
 
         foreach ($tickets as $ticket) {
             /** @var SupportMessage $message */
@@ -40,14 +41,26 @@ class SupportController extends Controller
                 continue;
             }
 
-            $domain = Yii::$app->settings->get('site_domain');
 
-            $text = "❗️Имеется не отвеченный тикет более 10 минут.";
-            $text .= PHP_EOL. "Имя: {$message->user->username}";
-            $text .= PHP_EOL. "Сообщение: {$message->message}";
-            $text .= PHP_EOL. "<a href=\"https://{$domain}/support/ticket?id={$ticket->getNumber()}\">Перейти к тикету</a>";
+            if ($ticket->is_bot) {
+                Yii::$app->queueSupport->push(new OpenAiJob([
+                                                                'chatId' => $ticket->id,
+                                                                'userId' => $message->user_id,
+                                                                'ownerUserId' => $ticket->user_id,
+                                                                'message' => $message->message,
+                                                                'username' => $message->user->username,
+                                                                'chatNumber' => $ticket->getNumber(),
+                                                            ]));
+            }
 
-            Yii::$app->telegramSupport->sendMessage($text);
+//            $domain = Yii::$app->settings->get('site_domain');
+
+//            $text = "❗️Имеется не отвеченный тикет более 10 минут.";
+//            $text .= PHP_EOL. "Имя: {$message->user->username}";
+//            $text .= PHP_EOL. "Сообщение: {$message->message}";
+//            $text .= PHP_EOL. "<a href=\"https://{$domain}/support/ticket?id={$ticket->getNumber()}\">Перейти к тикету</a>";
+
+//            Yii::$app->telegramSupport->sendMessage($text);
         }
 
     }
