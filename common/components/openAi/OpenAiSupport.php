@@ -43,11 +43,13 @@ class OpenAiSupport extends \yii\base\Component
     /**
      * Основной метод: отвечает на сообщение, используя базу знаний
      */
-    public function getReply(string $userMessage, array $chatHistory = []): ?string
+    public function getReply(string $userMessage, array $chatHistory = [], $username, $server): ?string
     {
         $knowledge = $this->loadKnowledgeBase();
 
         $p = new PersonalBotSystem();
+        $knowledge .= "\n\nНик игрока который пишет: " . $username;
+        $knowledge .= "\n\nСервер на котором играет игрок: " . $server;
         $knowledge .= "\n\nКак подключиться к серверу?";
         $knowledge .= "\nПодключиться можно через консоль F1, Вот список IP серверов:\n";
         $knowledge .= $p->getIp();
