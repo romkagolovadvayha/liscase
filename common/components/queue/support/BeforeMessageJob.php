@@ -36,7 +36,7 @@ class BeforeMessageJob extends BaseObject implements JobInterface
             $domain = Yii::$app->settings->get('site_domain');
             $text = "💬 Новое сообщение.";
             $text .= PHP_EOL. "Имя: {$this->username}";
-            $text .= PHP_EOL. "Сообщение: {$this->message}";
+            $text .= PHP_EOL. "Сообщение: " . $this->message;
             $text .= PHP_EOL. "<a href=\"https://{$domain}/support/ticket?id={$this->chatNumber}\">Перейти к тикету</a>";
             Yii::$app->telegramSupport->sendMessage($text);
         } catch (\Exception $e) {

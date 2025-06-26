@@ -80,7 +80,7 @@ class OpenAiJob extends BaseObject implements JobInterface
             Yii::$app->queueProcess->push(new BeforeMessageJob([
                 'chatId' => $chat->id,
                 'userId' => $admin->id,
-                'message' => $reply,
+                'message' => trim($reply),
                 'username' => "Chat GPT",
                 'chatNumber' => $this->chatNumber,
             ]));
