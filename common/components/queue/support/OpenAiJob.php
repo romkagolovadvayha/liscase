@@ -34,7 +34,7 @@ class OpenAiJob extends BaseObject implements JobInterface
     {
         echo $this->message . PHP_EOL;
         try {
-            sleep(180);
+            sleep(Yii::$app->settings->get('openAi_sleep'));
             $chat = Support::findOne($this->chatId);
             if ($chat->status !== Support::STATUS_OPEN) {
                 return;
