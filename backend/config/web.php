@@ -25,6 +25,10 @@ $config = [
             'class' => 'yii\web\AssetManager',
             'forceCopy' => YII_DEBUG,
         ],
+        'view' => [
+            'class' => '\rmrevin\yii\minify\View',
+            'enableMinify' => false,
+        ],
         'user'         => [
             'identityClass'   => 'common\models\user\User',
             'loginUrl'        => ['auth/index'],
