@@ -7,6 +7,7 @@ const {
     ButtonBuilder,
     ButtonStyle
 } = require('discord.js');
+const axios = require('axios');
 
 const client = new Client({
     partials: [Partials.Channel, Partials.Message],
