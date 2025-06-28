@@ -97,6 +97,19 @@ async function checkMembers(guild) {
 }
 
 client.on(Events.MessageCreate, async (message) => {
+    if (message.content === '!support') {
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setLabel('Связаться с администрацией')
+                .setStyle(ButtonStyle.Link)
+                .setURL('https://prostoj.store/support')
+        );
+
+        await message.channel.send({
+            content: 'Чтобы связаться с администрацией нажмите на кнопку ниже:',
+            components: [row]
+        });
+    }
     if (message.guildId === '1199050277773385728' && message.channelId === '1211335821555142736') {
         const messageLower = message.content.toLowerCase();
         if (messageLower.indexOf("админ") >= 0
