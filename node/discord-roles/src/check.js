@@ -115,7 +115,12 @@ client.on(Events.MessageCreate, async (message) => {
         );
 
         await message.channel.send({
-            content: 'Чтобы связаться с администрацией нажмите на кнопку ниже:\n',
+            content: [
+                '**📩 Обратная связь**',
+                'Если у вас возник вопрос или жалоба — мы всегда готовы помочь.',
+                '👇 Нажмите на кнопку ниже 👇',
+                '',
+            ].join('\n\n'),
             components: [row]
         });
     }
