@@ -115,7 +115,7 @@ client.on(Events.MessageCreate, async (message) => {
         );
 
         await message.channel.send({
-            content: 'Чтобы связаться с администрацией нажмите на кнопку ниже:',
+            content: 'Чтобы связаться с администрацией нажмите на кнопку ниже:\n',
             components: [row]
         });
     }
