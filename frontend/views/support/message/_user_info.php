@@ -28,21 +28,28 @@ $reports = Reports::find()
     ->all();
 
 ?>
-<?php if (!empty($ticketUser->userProfile->trade_link)): ?>
-<div class="support_messages_item_message_text">
-    <?php if ($isUser): ?>
-        <?=Yii::t('common', 'Ваша трейд ссылка')?>:
-    <?php else: ?>
-        <?=Yii::t('common', 'Трейд ссылка игрока')?>:
-    <?php endif; ?> <a href="<?=$ticketUser->userProfile->trade_link?>" target="_blank"><?=Yii::t('common', 'Перейти')?></a>
-</div>
-<?php endif; ?>
 <div class="support_messages_item_message_text">
     <?php if ($isUser): ?>
         <?=Yii::t('common', 'Сервер на котором вы играете')?>:
     <?php else: ?>
         <?=Yii::t('common', 'Сервер игрока')?>:
     <?php endif; ?> <?=(!empty($server)) ? Yii::t('database', $server->name) : Yii::t('common', 'неизвестно')?>
+</div>
+<?php if (!empty($ticketUser->userProfile->trade_link)): ?>
+    <div class="support_messages_item_message_text">
+        <?php if ($isUser): ?>
+            <?=Yii::t('common', 'Ваша трейд ссылка')?>:
+        <?php else: ?>
+            <?=Yii::t('common', 'Трейд ссылка игрока')?>:
+        <?php endif; ?> <a href="<?=$ticketUser->userProfile->trade_link?>" target="_blank"><?=Yii::t('common', 'Перейти')?></a>
+    </div>
+<?php endif; ?>
+<div class="support_messages_item_message_text">
+    <?php if ($isUser): ?>
+        <?=Yii::t('common', 'Ваш Steam ID')?>:
+    <?php else: ?>
+        <?=Yii::t('common', 'Steam ID')?>:
+    <?php endif; ?> <a href="<?=$ticketUser->getLink('steam')?>" target="_blank"><?=$ticketUser->steam_id?></a>
 </div>
 <div class="support_messages_item_message_text">
     <?php if ($isUser): ?>
