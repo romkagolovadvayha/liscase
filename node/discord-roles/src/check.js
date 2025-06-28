@@ -106,6 +106,37 @@ async function checkMembers(guild) {
 }
 
 client.on(Events.MessageCreate, async (message) => {
+    if (message.content === '!rules') {
+        try {
+            const response = await axios.get('https://api.prostoj.store/servers/rules');
+            const servers = response.data;
+
+            // Создаём ActionRows с кнопками (по 5 в строке)
+            const components = [];
+            for (let i = 0; i < servers.length; i += 5) {
+                const row = new ActionRowBuilder();
+                servers.slice(i, i + 5).forEach(server => {
+                    row.addComponents(
+                        new ButtonBuilder()
+                            .setLabel(server.name)
+                            .setStyle(ButtonStyle.Link)
+                            .setURL(`https://prostoj.store${server.link}`)
+                    );
+                });
+                components.push(row);
+            }
+
+            await message.channel.send({
+                content: '**📜 Правила серверов ПРОСТОЙ**\nВыберите сервер ниже, чтобы ознакомиться с его правилами:',
+                components
+            });
+
+        } catch (error) {
+            console.error('Ошибка при получении правил:', error);
+            await message.channel.send('❌ Не удалось загрузить список серверов. Попробуйте позже.');
+        }
+        await message.delete();
+    }
     if (message.content === '!support') {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
@@ -123,6 +154,7 @@ client.on(Events.MessageCreate, async (message) => {
             ].join('\n\n'),
             components: [row]
         });
+        await message.delete();
     }
     if (message.guildId === '1199050277773385728' && message.channelId === '1211335821555142736') {
         const messageLower = message.content.toLowerCase();
