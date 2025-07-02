@@ -227,10 +227,53 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                         'active' => _checkActive('/wipe'),
                     ],
                    [
+                       'label' => 'Задания',
+                       'icon' => 'fas fa-cog',
+                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'active' => _checkActive('/tasks'),
+                       'items' => [
+                           [
+                               'label' => 'Задания',
+                               'icon' => 'fa-solid fa-percent',
+                               'url' => ['/tasks'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/tasks') && !_checkActive('/tasks-'),
+                           ],
+                           [
+                               'label' => 'Проекты',
+                               'icon' => 'fa-solid fa-percent',
+                               'url' => ['/tasks-projects'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/tasks-projects'),
+                           ],
+                           [
+                               'label' => 'Локации',
+                               'icon' => 'fa-solid fa-percent',
+                               'url' => ['/tasks-publish-place'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/tasks-publish-place'),
+                           ],
+                           [
+                               'label' => 'Теги',
+                               'icon' => 'fa-solid fa-percent',
+                               'url' => ['/tasks-tags'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/tasks-tags') && !_checkActive('/tasks-tags-'),
+                           ],
+                           [
+                               'label' => 'Связь тегов',
+                               'icon' => 'fa-solid fa-percent',
+                               'url' => ['/tasks-tags-appointments'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/tasks-tags-appointments'),
+                           ],
+                       ]
+                   ],
+                   [
                        'label' => 'Бонусы',
                        'icon' => 'fas fa-cog',
                        'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
-                       'active' => _checkActive('/achievements-daily') || _checkActive('/payment-bonuses') || _checkActive('/promocode') || _checkActive('/task') || _checkActive('/settings/index?category=referral'),
+                       'active' => _checkActive('/achievements-daily') || _checkActive('/payment-bonuses') || _checkActive('/promocode') || _checkActive('/settings/index?category=referral'),
                        'items' => [
                            [
                                'label' => 'Промокоды',

@@ -1,0 +1,998 @@
+$check_color: #FFAD33;
+$error_color: #EB5757;
+$gradient_bg: linear-gradient(91.59deg, #4efb7b 12.62%, #E34EFB 98.4%);
+$greyTxtColor: #526679;
+
+@mixin flex_space {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+
+//------------ICONS------------
+.tg_img_item {
+  background-position: center;
+  background-size: cover;
+  width: 100%;
+  height: 100%;
+  max-width: 120px;
+  max-height: 120px;
+  display: inline-block;
+}
+
+.email_img_item {
+  background: url('../img/email_img.png');
+  background-position: center;
+  background-size: cover;
+  width: 100%;
+  height: 100%;
+  max-width: 200px;
+  max-height: 200px;
+  display: inline-block;
+}
+
+.u_icon {
+  background: url('../icons/u_icon.svg');
+  background-position: center;
+  background-size: cover;
+  width: 100%;
+  height: 100%;
+  min-width: 22px;
+  min-height: 22px;
+  display: inline-block;
+}
+
+@mixin cross_icon {
+  background: url('../icons/cross_icon.svg');
+  background-position: center;
+  background-size: cover;
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.tick_ico {
+  border-right: 2px solid #717E8B;
+  border-bottom: 2px solid #717E8B;
+  transform: rotate(45deg);
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+
+.digiu_darker_ico {
+  background: url('../icons/u_darker_logo.svg');
+  background-position: center;
+  background-size: cover;
+  width: 32px;
+  height: 32px;
+  display: inline-block;
+}
+
+@mixin yelow_loop_icon {
+  background: url('../icons/yellow_loop_icon.svg');
+  background-position: center;
+  background-size: cover;
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+}
+
+@mixin blue_success_icon {
+  background: url('../icons/blue_success_icon.svg');
+  background-position: center;
+  background-size: cover;
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+}
+
+@mixin red_close_icon {
+  background: url('../icons/red_close_icon.svg');
+  background-position: center;
+  background-size: cover;
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+}
+
+@mixin green_gift_icon {
+  background: url('../icons/green_gift_icon.svg');
+  background-position: center;
+  background-size: cover;
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+}
+
+@mixin check_mark_white_glass {
+  background: url('../img/check-mark-white-glass.png');
+  background-position: center;
+  background-size: cover;
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  min-height: 80px;
+  display: inline-block;
+}
+
+//------------ICONS------------
+
+
+//------------default task popup------------
+@mixin task_popup {
+  background-color: rgba(148, 159, 168, 0.7);
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10000;
+
+  .close_popup_btn {
+    @include cross_icon;
+    position: absolute;
+    top: 18px;
+    right: 18px;
+  }
+
+  &__container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #fff;
+    -webkit-box-shadow: 2px 4px 8px 0px #526679;
+    -moz-box-shadow: 2px 4px 8px 0px #526679;
+    box-shadow: 2px 4px 8px 0px #526679;
+    width: 400px;
+    padding: 32px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-height: 580px;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  &__img_row {
+    height: 120px;
+    width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .tg_img_item {
+      display: block;
+    }
+
+    .email_img_item {
+      display: none;
+    }
+  }
+
+  &__tag_row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__text_row {
+    text-align: center;
+
+    h3 {
+      @extend .h3;
+      font-weight: 500;
+      margin: 0;
+    }
+
+    p {
+      @extend .p1;
+      margin-top: 8px !important;
+      margin-bottom: 0;
+    }
+
+    a {
+      color: #333333;
+      text-decoration: underline;
+      margin-top: 8px;
+      display: none;
+    }
+  }
+
+  &__input_row {
+    gap: 16px;
+    display: flex;
+    align-items: center;
+
+    .form-group {
+      margin-bottom: 0;
+    }
+
+    input {
+      border: 1px solid #dddddd;
+      padding: 12px;
+      display: none;
+
+      &::placeholder {
+        color: #949FA8;
+      }
+    }
+
+    .link_btn {
+      cursor: pointer;
+    }
+
+    .send_btn {
+      cursor: pointer;
+      display: none;
+    }
+  }
+
+  &__status_txt {
+    @extend .p3;
+    margin-top: 8px;
+    display: none;
+  }
+
+  &__partners_txt {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    display: none;
+
+    a {
+      text-decoration: underline;
+    }
+  }
+
+  &__partners_num {
+    @extend .h2;
+    color: #4efb7b;
+  }
+
+  &__points_txt {
+    margin-left: 10px;
+    width: 75px;
+    display: none;
+  }
+
+  &__submit_row {
+    display: flex;
+    width: 100%;
+    margin-top: 20px;
+
+    .check_task_btn {
+      flex: 1;
+
+      &__disabled {
+        flex: 1;
+        pointer-events: none;
+        background-color: #E8EAF3;
+        color: #717E8B;
+      }
+    }
+  }
+}
+
+.task_popup {
+  @include task_popup;
+
+  &__reuse_block {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    width: 80%;
+
+    .reuse_icon {
+      cursor: pointer;
+    }
+  }
+}
+
+.task_popup--review {
+  @include task_popup;
+
+  .task_popup__status_txt {
+    color: $check_color;
+    display: block;
+  }
+}
+
+.task_popup--error {
+  @include task_popup;
+
+  .task_popup__status_txt {
+    color: $error_color;
+    display: block;
+  }
+}
+
+.task_popup--success {
+  @include task_popup;
+
+  .task_popup__img_row>span {
+    display: none;
+  }
+
+  .task_popup__input_row {
+    display: none;
+  }
+
+  .task_popup__tag_row {
+    display: none;
+  }
+}
+
+//------------default task popup------------
+
+
+//-------------email task popup-------------
+.task_popup--email-type {
+  @include task_popup;
+
+  .task_popup__img_row {
+    .tg_img_item {
+      display: none;
+    }
+
+    .email_img_item {
+      display: block;
+    }
+  }
+
+  .task_popup__text_row {
+    p {
+      display: none;
+    }
+
+    a {
+      display: block;
+    }
+  }
+
+  .task_popup__input_row {
+    gap: 16px;
+    display: flex;
+    align-items: center;
+
+    input {
+      display: block;
+
+      &::placeholder {
+        color: #949FA8;
+      }
+    }
+
+    .send_btn {
+      display: block;
+    }
+
+    .link_btn {
+      display: none;
+    }
+  }
+
+  .task_popup__status_txt {
+    display: none;
+  }
+}
+
+//-------------email task popup-------------
+
+
+//-----------partners task popup-----------
+.task_popup--partners-type {
+  @include task_popup;
+
+  .task_popup__img_row>span {
+    display: none;
+  }
+
+  .task_popup__tag_row {
+    display: none;
+  }
+
+  .task_popup__input_row {
+    display: none;
+  }
+
+  .task_popup__partners_txt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+
+    a {
+      text-decoration: underline;
+    }
+
+    .task_popup__partners_num {
+      @extend .h2;
+      color: #4efb7b;
+      display: none;
+    }
+  }
+
+  .task_popup__points_txt {
+    display: block;
+  }
+}
+
+.task_popup--partners-type-success {
+  @include task_popup;
+
+  .task_popup__img_row>span {
+    display: none;
+  }
+
+  .task_popup__input_row {
+    display: none;
+  }
+
+  .task_popup__partners_txt {
+    display: flex;
+
+    .task_popup__partners_num {
+      display: block;
+    }
+  }
+}
+
+//-----------partners task popup-----------
+
+
+.user_points {
+  @extend .p2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  line-height: 17px;
+}
+
+
+//-----------------tag item-----------------
+@mixin tag_item {
+  @extend .p3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  border-radius: 10px;
+  padding: 4px 12px;
+  color: #333333;
+  background: #C3DAFE;
+}
+
+.tag_item {
+  @include tag_item;
+}
+
+.tag_item--colored {
+  @include tag_item;
+  background: #FFCF88;
+}
+
+.tag_item--gradient {
+  @include tag_item;
+  background: $gradient_bg;
+  color: #fff;
+}
+
+//-----------------tag item-----------------
+
+
+//--------------tasktab_content--------------
+.tasktab_content {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  &__h_row {
+    h2 {
+      font-weight: 500;
+    }
+
+    div {
+      color: $greyTxtColor;
+      line-height: 16px;
+    }
+  }
+
+  .timer_banner {
+    margin-top: 10px;
+  }
+
+}
+
+
+//----------------fold_block----------------
+.fold_block {
+  &.folded {
+    .fold_block__content {
+      display: none;
+    }
+
+    .tick_ico {
+      transform: rotate(-45deg);
+      transition: 0.3s;
+    }
+  }
+
+  &__h {
+    display: flex;
+    align-items: center;
+
+    h3 {
+      @extend .h3;
+      font-weight: 500;
+    }
+
+    .tick_ico {
+      margin-left: 8px;
+      transition: 0.3s;
+      position: relative;
+      top: -4px;
+    }
+  }
+
+  &__text {
+    p {
+      @extend .p1;
+      color: #526679;
+    }
+
+    a {
+      text-decoration: underline;
+    }
+  }
+}
+
+//----------------fold_block----------------
+
+
+//---------------project_tasks--------------
+.project_tasks {
+  margin-top: 18px;
+
+  &__h {
+    display: flex;
+    align-items: center;
+
+    h4 {
+      @extend .h4;
+      margin-left: 8px;
+    }
+  }
+
+  &__content {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+  }
+
+  @media (max-width: 990px) {
+    &__content {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    .task_item {
+      &__img {
+        min-width: 45px;
+        min-height: 45px;
+      }
+    }
+  }
+}
+
+//---------------project_tasks---------------
+
+
+//-----------------task item-----------------
+@mixin task_item {
+  padding: 16px;
+  border-radius: var(--block-radius);
+  background-color: var(--background-secondary);
+  //border: 1px solid var(--background-secondary);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  &.task_active {
+    &:after {
+      content: "";
+      @extend .absolute;
+      background: var(--light-the-best-background);
+      background-repeat: repeat-y;
+      background-size: 100%;
+      @include range(100, 100, "%");
+      top: 0;
+      left: 0;
+      bottom: 0;
+      transition: filter 0.15s ease-in-out;
+    }
+    &:hover {
+      &:after {
+        filter: drop-shadow(2px 4px 6px var(--primary-colors-main));
+      }
+    }
+  }
+  //&.status_2 {
+  //  box-shadow: inset 0 0 12px #55fb4e;
+  //  border: 1px solid #4efb7b;
+  //  opacity: 0.4;
+  //}
+  &__img {
+    min-width: 60px;
+    min-height: 60px;
+    position: relative;
+    z-index: 2;
+  }
+
+  &__content {
+    margin-left: 16px;
+    position: relative;
+    z-index: 2;
+    flex: 1 0;
+  }
+
+  &__h {
+    @extend .p1;
+  }
+
+  &__info {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 24px;
+    margin-top: 8px;
+    justify-content: space-between;
+  }
+
+  &__timer {
+    display: flex;
+    gap: 4px;
+
+    * {
+      @extend .p3;
+      display: flex;
+    }
+  }
+}
+
+.task_item {
+  @include task_item;
+}
+
+.task_item--completed {
+  @include task_item;
+  pointer-events: none;
+}
+
+.task_item--archieve {
+  @include task_item;
+  pointer-events: none;
+  background: #E8EAF3;
+
+  .task_item__info>*+* {
+    display: none;
+  }
+
+  .task_item__img,
+  .u_icon {
+    filter: grayscale(100%);
+  }
+}
+
+//-----------------task item-----------------
+
+
+//--------------task status item--------------
+@mixin task_status_item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+
+  &__label {
+    @extend .p3;
+  }
+}
+
+.task_status_item--review {
+  @include task_status_item;
+
+  .task_status_item__icon {
+    @include yelow_loop_icon;
+  }
+
+  .task_status_item__label {
+    color: #FFAD33;
+    @extend .p3;
+  }
+}
+
+.task_status_item--completed {
+  @include task_status_item;
+
+  .task_status_item__icon {
+    @include blue_success_icon;
+  }
+
+  .task_status_item__label {
+    color: #4efb7b;
+    @extend .p3;
+  }
+}
+
+.task_status_item--failed {
+  @include task_status_item;
+
+  .task_status_item__icon {
+    @include red_close_icon;
+  }
+
+  .task_status_item__label {
+    color: #EB5757;
+    @extend .p3;
+  }
+}
+
+.task_status_item--gift {
+  @include task_status_item;
+
+  .task_status_item__icon {
+    @include green_gift_icon;
+  }
+
+  .task_status_item__label {
+    color: #0FBB80;
+    @extend .p3;
+  }
+}
+
+.prepay_task {
+  background: url('../img/prepay_task.png');
+  background-position: center;
+  background-size: cover;
+  width: 100%;
+  height: 100%;
+  max-width: 200px;
+  max-height: 200px;
+  display: inline-block;
+}
+
+.reuse_icon {
+  background: url('../img/reuse_icon.png');
+  background-position: center;
+  background-size: cover;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  display: inline-block;
+}
+
+.checkbox_cont {
+  .checkbox {
+    .form-label {
+      color: #717E8B;
+      font-size: 14px;
+      padding-left: 18px;
+      &:before {
+        width: 25px;
+        height: 25px;
+        border-color: #DDDDDD;
+        border-radius: 4px;
+        top: -3px;
+      }
+    }
+    input[type="checkbox"] {
+      &:checked + label::after {
+        color: #4efb7b;
+        font-size: 15px;       
+        left: 2px;       
+        top: -1px;
+      }
+      &:checked + label::before {
+        background-color: #fff;
+        border-color: #DDDDDD;
+      }
+    }
+  }
+}
+
+.confirm_famil_btn {
+  width: 284px;
+  @media (max-width: 550px) {
+    width: 100%;
+  }
+}
+
+.promo_common {
+  &.mt24 {
+    margin-top: 24px;
+  }
+
+  .txt {
+    font-size: 16px;
+    line-height: 120%;
+    font-weight: 400;
+    color: #526679;
+  }
+
+  .h1 {
+    font-size: 28px;
+    font-weight: 500;
+    color: #333333;
+    line-height: 125%;
+  }
+
+  .h2 {
+    font-size: 22px;
+    line-height: 125%;
+    color: #333333;
+    font-weight: 600;
+  }
+
+  .h3 {
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 125%;
+    color: #333333;
+  }
+
+  .h4 {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 125%;
+    color: #333333;
+  }
+
+  ul {
+    padding-left: 28px;
+
+    li {
+      font-size: 16px;
+      color: #526679;
+      line-height: 120%;
+      font-weight: 400;
+      margin-top: 6px;
+    }
+  }
+
+  &__block {
+    margin-top: 16px;
+  }
+  b {
+    color: #333;
+  }
+}
+
+.colored_block_ui {
+  padding: 24px;
+  background-color: #EEF2FF;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+
+  p {
+    color: #717E8B;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 120%;
+  }
+}
+
+.contest_tables {
+  overflow: auto;
+  table {
+    width: 600px;
+    min-width: 600px;
+  }
+  &.season_prizes_table {
+    tr {
+      th:nth-child(1) {
+        width: 200px;
+      }
+
+      th:nth-child(2) {
+        width: 200px;
+      }
+
+      th:nth-child(3) {
+        width: 200px;
+      }
+    }
+  }
+
+  &.current_progress_table {
+    tr {
+      th:nth-child(1) {
+        width: 300px;
+      }
+
+      th:nth-child(2) {
+        width: 300px;
+      }
+    }
+  }
+
+  &.general_rate_table {
+    tr {
+      th:nth-child(1) {
+        width: 173px;
+      }
+
+      th:nth-child(2) {
+        width: 80px;
+      }
+      th:nth-child(3) {
+        width: 173px;
+      }
+
+      th:nth-child(4) {
+        width: 173px;
+      }
+    }
+  }
+}
+
+.progress_bar_block {
+  margin-top: 14px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  &__line {
+    background-color: #E8EAF3;
+    border-radius: 16px;
+    width: 100%;
+    overflow: hidden;
+    height: 16px;
+  }
+  &__line_progress_val {
+    border-radius: 16px;
+    background: linear-gradient(91.59deg, #3663E7 12.62%, #4efb7b 41.78%, #E34EFB 98.4%);
+    height: 100%;
+  }
+  &__info_cont {
+    display: flex;
+    gap: 40px;
+    align-items: flex-end;
+    @media (max-width: 500px) {
+      align-items: normal;
+      flex-direction: column;
+      gap: 16px;
+    }
+  }
+  &__val_cont {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;  
+  }
+  &__val {
+    font-size: 22px;
+    line-height: 125%;
+    color: #4efb7b !important;
+    font-weight: 600;
+  }
+  &__btn {
+
+  }
+}
