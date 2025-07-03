@@ -35,14 +35,14 @@ class ClansController extends Controller
     "is_authorization_code_lock": true,
     "is_authorization_turrets": true,
     "is_authorization_air_defense": true,
-    "users": [76561199110561385, 76561199789423224, 76561198032733861, 76561198394504608, 76561199517593518]
+    "users": [76561199670355029, 76561199789423224, 76561198032733861, 76561198394504608, 76561199517593518]
   },
   {
     "tag": "4ert",
     "is_authorization_code_lock": true,
     "is_authorization_turrets": true,
     "is_authorization_air_defense": true,
-    "users": [76561199148011505, 76561198147904870,76561199670355029]
+    "users": [76561199148011505, 76561198147904870]
   }
 ]', 1);
 
