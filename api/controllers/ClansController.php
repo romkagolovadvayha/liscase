@@ -32,6 +32,7 @@ class ClansController extends Controller
         $items = json_decode('[
   {
     "tag": "5hp",
+    "update_at": "2025-07-03 13:00",
     "is_authorization_code_lock": false,
     "is_authorization_turrets": true,
     "is_authorization_air_defense": true,
@@ -39,6 +40,7 @@ class ClansController extends Controller
   },
   {
     "tag": "4ert",
+    "update_at": "2025-07-01 13:00",
     "is_authorization_code_lock": true,
     "is_authorization_turrets": true,
     "is_authorization_air_defense": true,
