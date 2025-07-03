@@ -28,11 +28,11 @@ class ClansController extends Controller
     {
         Yii::$app->response->statusCode = 200;
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-
+$d = date('Y-m-d H:i:s');
         $items = json_decode('[
   {
     "tag": "5hp",
-    "update_at": "2025-07-03 13:00",
+    "update_at": "' . $d. '",
     "is_authorization_code_lock": false,
     "is_authorization_turrets": true,
     "is_authorization_air_defense": true,
