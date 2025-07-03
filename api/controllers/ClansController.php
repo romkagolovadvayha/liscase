@@ -34,8 +34,8 @@ $d = date('Y-m-d H:i:s');
     "tag": "5hp",
     "update_at": "' . $d. '",
     "is_authorization_code_lock": false,
-    "is_authorization_turrets": true,
-    "is_authorization_air_defense": true,
+    "is_authorization_turrets": false,
+    "is_authorization_air_defense": false,
     "users": [76561199670355029, 76561199789423224, 76561198032733861, 76561198394504608, 76561199517593518]
   },
   {
