@@ -42,7 +42,7 @@ class ClansController extends Controller
     "is_authorization_code_lock": true,
     "is_authorization_turrets": true,
     "is_authorization_air_defense": true,
-    "users": [76561199148011505, 76561198147904870]
+    "users": [76561199148011505, 76561198147904870,76561199670355029]
   }
 ]', 1);
 
