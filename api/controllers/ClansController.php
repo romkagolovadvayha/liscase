@@ -24,7 +24,7 @@ use yii\web\Response;
 class ClansController extends Controller
 {
 
-    public function actionList($ip, $port)
+    public function actionList($ip = null, $port = null)
     {
         Yii::$app->response->statusCode = 200;
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
