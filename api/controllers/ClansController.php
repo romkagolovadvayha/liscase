@@ -32,6 +32,7 @@ $d = date('Y-m-d H:i:s');
         $items = json_decode('[
   {
     "tag": "5hp",
+    "color_tag": "#b2b2b2",
     "update_at": "' . $d. '",
     "is_authorization_code_lock": false,
     "is_authorization_turrets": false,
@@ -40,6 +41,7 @@ $d = date('Y-m-d H:i:s');
   },
   {
     "tag": "4ert",
+    "color_tag": "#b2b2b2",
     "update_at": "2025-07-01 13:00",
     "is_authorization_code_lock": true,
     "is_authorization_turrets": true,
