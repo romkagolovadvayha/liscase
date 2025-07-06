@@ -34,19 +34,43 @@ $d = date('Y-m-d H:i:s');
     "tag": "5hp",
     "color_tag": "#b2b2b2",
     "update_at": "' . $d. '",
-    "is_authorization_code_lock": false,
-    "is_authorization_turrets": false,
-    "is_authorization_air_defense": false,
-    "users": [76561199670355029, 76561199789423224, 76561198032733861, 76561198394504608, 76561199517593518]
+    "users": [
+      {
+        "steam_id": "76561199670355029",
+        "lock": true,
+        "turrets": true,
+        "defense": true,
+        "cupboard_auth": false
+      },
+      {
+        "steam_id": "76561198394504608",
+        "lock": true,
+        "turrets": true,
+        "defense": true,
+        "cupboard_auth": true
+      }
+    ]
   },
   {
     "tag": "4ert",
     "color_tag": "#b2b2b2",
     "update_at": "2025-07-01 13:00",
-    "is_authorization_code_lock": true,
-    "is_authorization_turrets": true,
-    "is_authorization_air_defense": true,
-    "users": [76561199148011505, 76561198147904870]
+       "users": [
+      {
+        "steam_id": "76561198000000005",
+        "lock": true,
+        "turrets": true,
+        "defense": false,
+        "cupboard_auth": false
+      },
+      {
+        "steam_id": "76561198000000006",
+        "lock": false,
+        "turrets": true,
+        "defense": true,
+        "cupboard_auth": true
+      }
+    ]
   }
 ]', 1);
 
