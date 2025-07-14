@@ -63,8 +63,8 @@ $config = [
         ],
         'view' => [
             'class' => '\rmrevin\yii\minify\View',
-//            'enableMinify' => !YII_DEBUG,
-            'enableMinify' => true,
+            'enableMinify' => !YII_DEBUG,
+//            'enableMinify' => true,
             'concatCss' => true, // concatenate css
             'minifyCss' => true, // minificate css
             'concatJs' => true, // concatenate js
@@ -77,7 +77,7 @@ $config = [
             'forceCharset' => 'UTF-8', // charset forcibly assign, otherwise will use all of the files found charset
             'expandImports' => true, // whether to change @import on content
             'compressOptions' => ['extra' => true], // options for compress
-            'excludeFiles' => ['yii.js'],
+            'excludeFiles' => ['yii.js', 'bootstrap.css'],
             'excludeBundles' => [],
             'renderers' => [
                 'twig' => [
