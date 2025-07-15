@@ -96,7 +96,7 @@
   &__image {
     @extend .absolute, .object-contain;
     width: auto;
-    height: 431px;
+    height: 512px;
     right: 0;
     bottom: 0;
     @container (max-width: 681px) {

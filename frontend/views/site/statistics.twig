@@ -106,7 +106,9 @@
                 </div>
                 {% endif %}
             </div>
-            <img src="{{ SETTINGS.get('design_statsBlockImage') }}" alt="farmer" class="user__image" loading="lazy"/>
+            <video class="user__image" playsinline preload="auto" loop autoplay muted>
+                <source type="video/webm" src="{{ SETTINGS.get('design_statsBlockImageVideo') }}">
+            </video>
             <div class="user__stats_footer">
                 {% if USER.USER_STATS_LINK %}
                     <a href="{{ USER.USER_STATS_LINK }}" class="button button-primary">
@@ -141,7 +143,9 @@
                         data-bs-title="{{ t('common', 'Скопировать команду') }}">/bonus</span> {{ t('common', 'в боте, чтобы получить награду') }}</span>
         </p>
 
-        <img src="{{ SETTINGS.get('design_bonusBlockImage') }}" alt="symbol" loading="lazy" class="daily-reward__image"/>
+        <video class="daily-reward__image" playsinline preload="auto" loop autoplay muted>
+            <source type="video/webm" src="{{ SETTINGS.get('design_bonusBlockImageVideo') }}">
+        </video>
         <a href="{{ BOT_LINK }}" target="_blank" class="button button-secondary" style="padding-top: 15px;">
             <span class="button__text">{{ t('common', 'Получить бонус') }}</span>
         </a>
