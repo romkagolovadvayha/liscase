@@ -9,7 +9,7 @@ use frontend\widgets\Alert;
 /** @var View $this */
 
 $user = Yii::$app->user->identity;
-$this->title = Yii::t('common', "Корзина") . " - {$user->userProfile->name}";
+$this->title = Yii::t('common', "Корзина") . " - {$user->username}";
 
 /** @var UserDrop[] $userDrops */
 $userDrops = $user->getUserDrop()
