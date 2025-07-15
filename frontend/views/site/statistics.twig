@@ -18,7 +18,9 @@
                 <p>{{ PROJECT_STATS.count|number_format(0, '', ' ') }}</p>
             </div>
         </div>
-        <img src="{{ SETTINGS.get('design_image_not_auth') }}" alt="farmer" class="user__image" loading="lazy"/>
+        <video class="user__image" playsinline preload="auto" loop autoplay muted>
+            <source type="video/webm" src="{{ SETTINGS.get('design_statsBlockImageVideo') }}">
+        </video>
         <div class="user__stats_footer">
             <a href="/auth/oauth?authclient=steam" class="button button-primary h-48" style="padding-top: 15px;">
               <span class="button__text">
