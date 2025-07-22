@@ -230,6 +230,9 @@ $config = [
         'openAiSupport' => [
             'class' => \common\components\openAi\OpenAiSupport::class,
         ],
+        'drop' => [
+            'class' => \common\components\drop\Drop::class
+        ],
         's3Api'   => [
             'class'  => \common\components\storage\S3Api::class,
             'baseUrl'      => 'https://s3.timeweb.cloud',

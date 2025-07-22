@@ -91,13 +91,12 @@ JS
             <div class="store_launcher_cards" id="products">
                 <?php $serverId = $user->server->id; ?>
                 <?php foreach ($userDrops as $userDrop): ?>
-                    <?php foreach ($userDrop->drop as $drop): ?>
-                        <?=Yii::$app->view->render('_product', [
-                                'drop' => $drop,
-                                'serverId' => $serverId,
-                                'userDrop' => $userDrop,
-                        ])?>
-                    <?php endforeach; ?>
+                    <?php $drop = Yii::$app->drop->getActiveDropById($userDrop->drop_id); ?>
+                    <?=Yii::$app->view->render('_product', [
+                        'drop' => $drop,
+                        'serverId' => $serverId,
+                        'userDrop' => $userDrop,
+                    ])?>
                 <?php endforeach; ?>
             </div>
         <?php else:?>

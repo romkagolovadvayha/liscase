@@ -58,6 +58,7 @@ Yii::$container = new yii\di\Container;
  * @property \common\components\telegram\TelegramApiHelper $rustotekaBotTelegram
  * @property \common\components\storage\S3Api              $s3Api
  * @property \common\components\settings\Settings          $settings
+ * @property \common\components\drop\Drop                  $drop
  */
 abstract class BaseApplication extends yii\base\Application
 {

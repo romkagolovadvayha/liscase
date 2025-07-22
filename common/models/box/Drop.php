@@ -589,7 +589,7 @@ class Drop extends ActiveRecord
      * @return Drop[]|false|mixed
      */
     public static function getDropListAll($update = false) {
-        $cacheKey = 'Drop_getDropListAll';
+        $cacheKey = 'Drop_getDropListAll2';
         if (Yii::$app->cache->get($cacheKey) && !$update) {
             return Yii::$app->cache->get($cacheKey);
         }
@@ -598,6 +598,7 @@ class Drop extends ActiveRecord
 
         /** @var Drop[] $drops */
         $drops = Drop::find()
+                     ->with('dropImages')
                      ->all();
 
         foreach ($drops as $item) {

@@ -10,7 +10,7 @@ use common\models\box\DropBlocked;
 
 <?php $blockedAt = DropBlocked::getBlocked($drop->id, $serverId); ?>
 <?php $blocked = !empty($blockedAt); ?>
-<div class="store_launcher_cards_item_wrap" data-category-id="<?=$userDrop->drop[0]->category_id?>">
+<div class="store_launcher_cards_item_wrap" data-category-id="<?=$drop->category_id?>">
     <div class="store_launcher_cards_item" data-id="<?=$userDrop->id?>">
         <div class="store_launcher_cards_item_image">
             <img src="<?= $drop->image100() ?>" alt="<?=Yii::t('database', $drop->name)?>">
