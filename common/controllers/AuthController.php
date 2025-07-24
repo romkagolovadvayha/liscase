@@ -149,6 +149,7 @@ class AuthController extends WebController
                 $user->username = $username;
                 $user->setPassword(Yii::$app->security->generateRandomString());
                 $user->status = User::STATUS_ACTIVE;
+                $user->register_date = time();
                 $user->generateAuthKey();
                 $user->generateRefCode();
                 $user->generateSocketRoom();

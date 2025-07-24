@@ -38,6 +38,7 @@ class GenUsersJob extends BaseObject implements JobInterface
                $model->username              = $item['nickname'];
                $model->email            = $item['nickname'] . "@test" . rand(1, 999) . ".com";
                $model->current_language = Yii::$app->language;
+               $model->register_date = time();
                $model->setPassword(Yii::$app->security->generateRandomString());
                $model->generateAuthKey();
                $model->generateRefCode();

@@ -52,6 +52,7 @@ use yii\web\JsExpression;
  * @property int             $ban_reason
  * @property int             $ban_by
  * @property string          $discord
+ * @property string          $register_date
  * @property bool            $rustru_activated
  * @property int             $rustru_scrap_confirm
  * @property int             $rustru_scrap_wait
@@ -316,6 +317,7 @@ class User extends ActiveRecord implements IdentityInterface
                     $user->updated_at = null;
                     $user->setPassword(Yii::$app->security->generateRandomString());
                     $user->status = User::STATUS_ACTIVE;
+                    $user->register_date = time();
                     $user->generateAuthKey();
                     $user->generateRefCode();
                     $user->generateSocketRoom();
@@ -1178,5 +1180,24 @@ class User extends ActiveRecord implements IdentityInterface
                 $userTop->save();
             }
         }
+    }
+
+    public function createXfUserOption() {
+        Yii::$app->db->createCommand("
+                    INSERT INTO `xf_user_option` (
+                        `user_id`, `show_dob_year`, `show_dob_date`, `content_show_signature`,
+                        `receive_admin_email`, `email_on_conversation`, `push_on_conversation`,
+                        `is_discouraged`, `creation_watch_state`, `interaction_watch_state`,
+                        `alert_optout`, `push_optout`, `use_tfa`
+                    ) VALUES (
+                        {$this->id}, 0, 1, 1, 0, 1, 1, 0, 'watch_email', 'watch_email', '', '', 0
+                    )
+                ")->execute();
+    }
+    public function createXfUserPrivacy() {
+        Yii::$app->db->createCommand("
+                INSERT INTO `xf_user_privacy` (`user_id`, `allow_view_profile`, `allow_post_profile`, `allow_send_personal_conversation`, `allow_view_identities`, `allow_receive_news_feed`) VALUES
+                ({$this->id}, 'everyone', 'members', 'members', 'everyone', 'everyone');
+                ")->execute();
     }
 }

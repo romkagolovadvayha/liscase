@@ -215,6 +215,7 @@ class GamestoresController extends Controller
                 $model->setPassword(\Yii::$app->security->generateRandomString());
                 $model->status     = User::STATUS_ACTIVE;
                 $model->created_at = $user['registrationDate'];
+                $model->register_date = strtotime($user['registrationDate']);
                 $model->generateAuthKey();
                 $model->generateRefCode();
                 $model->generateSocketRoom();
