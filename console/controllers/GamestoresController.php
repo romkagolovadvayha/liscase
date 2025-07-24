@@ -219,6 +219,8 @@ class GamestoresController extends Controller
                 $model->generateRefCode();
                 $model->generateSocketRoom();
                 if ($model->save()) {
+                    $model->user_id = $model->id;
+                    $model->update(false, ['user_id']);
                     $transaction = $model->getDb()->beginTransaction();
                     UserProfile::createModel($model, $user['username']);
                     try {

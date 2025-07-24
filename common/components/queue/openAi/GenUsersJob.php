@@ -42,7 +42,10 @@ class GenUsersJob extends BaseObject implements JobInterface
                $model->generateAuthKey();
                $model->generateRefCode();
                $model->generateSocketRoom();
-               $model->save(false);
+               if ($model->save(false)) {
+                   $model->user_id = $model->id;
+                   $model->update(false, ['user_id']);
+               }
 
                if (!UserProfile::createModel($model)) {
                    throw new \Exception('Error save user profile');

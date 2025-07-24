@@ -29,6 +29,7 @@ use yii\web\JsExpression;
 
 /**
  * @property int             $id
+ * @property int             $user_id
  * @property string          $email
  * @property string          $steam_id
  * @property int             $telegram_chat_id
@@ -319,6 +320,8 @@ class User extends ActiveRecord implements IdentityInterface
                     $user->generateRefCode();
                     $user->generateSocketRoom();
                     if ($user->save()) {
+                        $user->user_id = $user->id;
+                        $user->update(false, ['user_id']);
                         $auth = new Auth(
                             [
                                 'user_id'   => $user->id,
