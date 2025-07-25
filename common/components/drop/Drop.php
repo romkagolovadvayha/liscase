@@ -30,10 +30,10 @@ class Drop
 
     public function getBlockedByDropId($serverId, $dropId) {
         $items = $this->getBlocked($serverId);
-        if (empty($items[$serverId]) || empty($items[$serverId][$dropId])) {
+        if (empty($items[$dropId])) {
             return null;
         }
-        return $items[$serverId][$dropId];
+        return $items[$dropId];
     }
 
     public function getActiveDropById($dropId) {
