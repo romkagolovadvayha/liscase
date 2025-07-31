@@ -243,6 +243,9 @@ class ApiController extends WebController
             $item['type'] = "item";
             $item['item_id'] = $drop->rust_id;
         }
+        if ($drop->full_only) {
+            Yii::$app->telegramChats->sendMessage($item);
+        }
         $result['data'] = $item;
         return $result;
     }
