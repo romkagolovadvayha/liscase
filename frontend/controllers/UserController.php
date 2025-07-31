@@ -138,7 +138,7 @@ class UserController extends WebController
             $profit = new Profit();
             $profit->status = 1;
             $profit->type = Profit::TYPE_SELL_DROP;
-            $profit->amount = $drop->getRealPrice();
+            $profit->amount = $drop->getRealPrice(false);
             $profit->user_balance_id = $userBalanceId;
             $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
                 'PARAMS_PREDNAME' => Yii::t('database', $drop->name)

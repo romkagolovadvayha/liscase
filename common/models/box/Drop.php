@@ -362,10 +362,10 @@ class Drop extends ActiveRecord
         return $this->hasMany(DropStat::class, ['drop_id' => 'id']);
     }
 
-    public function getRealPrice()
+    public function getRealPrice($floating = true)
     {
         $price = $this->price - ($this->price * $this->discount / 100);
-        if (!Yii::$app->user->isGuest && $this->floating_price_percent > 0) {
+        if ($floating && !Yii::$app->user->isGuest && $this->floating_price_percent > 0) {
             $counts = Yii::$app->drop->getCountBuy(Yii::$app->user->id);
             if (!empty($counts[$this->id])) {
                 for ($i = 0; $i < $counts[$this->id]; $i++) {

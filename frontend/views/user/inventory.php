@@ -58,7 +58,7 @@ JS
                                 <input type="hidden" name="sell" value="<?=$userDrop->id?>"/>
                                 <?php if (empty($userDrop->box_id) && empty($userDrop->sets_id) && empty($userDrop->parent_drop_id)): ?>
                                     <button type="submit" class="button-secondary button-size__s h-36 w-full" style="padding-top: 6px; padding-bottom: 6px" data-bs-dismiss="modal">
-                                        <span class="button__text"><?=Yii::t('common', 'Вернуть')?> <span class="badge bg-danger">+<?=$drop->getRealPrice()?></span></span>
+                                        <span class="button__text"><?=Yii::t('common', 'Вернуть')?> <span class="badge bg-danger">+<?=$drop->getRealPrice(false)?></span></span>
                                     </button>
                                 <?php else: ?>
                                     <button type="submit" class="button-secondary button-size__s h-36 w-full" style="padding-top: 6px; padding-bottom: 6px" disabled>
