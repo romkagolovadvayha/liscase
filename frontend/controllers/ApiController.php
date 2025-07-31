@@ -216,12 +216,10 @@ class ApiController extends WebController
             'amount' => $userDrop->count,
             'name' => $drop->name,
             'lvl_inspection' => 0,
-//            'full_only' => $drop->full_only,
-//            'subDrop' => [],
+            'full_only' => $drop->full_only,
+            'subDrop' => [],
         ];
         if ($drop->full_only) {
-            $item['full_only'] = $drop->full_only;
-            $item['subDrop'] = [];
             foreach ($drop->subDrops as $subDrop) {
                 $_subDrop = [];
                 if (!empty($subDrop->drop->command)) {
@@ -242,9 +240,6 @@ class ApiController extends WebController
         } else {
             $item['type'] = "item";
             $item['item_id'] = $drop->rust_id;
-        }
-        if ($drop->full_only) {
-            Yii::$app->telegramChats->sendMessage(json_encode($item));
         }
         $result['data'] = $item;
         return $result;
