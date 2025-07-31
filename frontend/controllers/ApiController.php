@@ -219,20 +219,22 @@ class ApiController extends WebController
 //            'full_only' => $drop->full_only,
 //            'subDrop' => [],
         ];
-//        if ($drop->full_only) {
-//            foreach ($drop->subDrops as $subDrop) {
-//                $_subDrop = [];
-//                if (!empty($subDrop->drop->command)) {
-//                    $_subDrop['command'] = str_replace("\r", '', $subDrop->drop->command);
-//                    $_subDrop['type'] = "command";
-//                    $_subDrop['item_id'] = 0;
-//                } else {
-//                    $_subDrop['type'] = "item";
-//                    $_subDrop['item_id'] = $subDrop->drop->rust_id;
-//                }
-//                $item['subDrop'][] = $_subDrop;
-//            }
-//        }
+        if ($drop->full_only) {
+            $item['full_only'] = $drop->full_only;
+            $item['subDrop'] = [];
+            foreach ($drop->subDrops as $subDrop) {
+                $_subDrop = [];
+                if (!empty($subDrop->drop->command)) {
+                    $_subDrop['command'] = str_replace("\r", '', $subDrop->drop->command);
+                    $_subDrop['type'] = "command";
+                    $_subDrop['item_id'] = 0;
+                } else {
+                    $_subDrop['type'] = "item";
+                    $_subDrop['item_id'] = $subDrop->drop->rust_id;
+                }
+                $item['subDrop'][] = $_subDrop;
+            }
+        }
         if (!empty($drop->command)) {
             $item['command'] = str_replace("\r", '', $drop->command);
             $item['type'] = "command";
