@@ -5,6 +5,7 @@ namespace common\models\box;
 use common\components\base\ActiveRecord;
 use common\components\helpers\CurrencyHelper;
 use common\components\queue\process\BuyDropJob;
+use common\models\invoice\Invoice;
 use common\models\statistics\Statistics;
 use common\models\user\UserDrop;
 use Yii;
@@ -35,6 +36,8 @@ use yii\web\JsExpression;
  * @property string      $created_at
  * @property bool        $show_main_block
  * @property int         $sort
+ * @property int         $floating_price_percent  Максимальный процент колебания цены
+ * @property int         $full_only 1 - можно выводить только целиком, 0 - можно частично
  *
  * @property DropImage[] $dropImages
  * @property DropDrop[] $subDrops
@@ -132,6 +135,8 @@ class Drop extends ActiveRecord
             'show_main_block'              => Yii::t('common', 'Показывать в главном блоке главной страницы'),
             'sort'          => Yii::t('common', 'Сортировка'),
             'drop_type'          => Yii::t('common', 'Тип предмета'),
+            'floating_price_percent' => Yii::t('common', 'Плавающая цена (%)'),
+            'full_only' => Yii::t('common', 'Выводить только целиком'),
         ];
     }
 
@@ -207,6 +212,8 @@ class Drop extends ActiveRecord
             [['name', 'market_id', 'eng_name', 'quality'], 'string', 'max' => 255],
             [['description'], 'string'],
             [['created_at','price'], 'safe'],
+            ['floating_price_percent', 'integer', 'min' => 0, 'max' => 100],
+            [['full_only'], 'integer'],
         ];
     }
 
@@ -357,7 +364,17 @@ class Drop extends ActiveRecord
 
     public function getRealPrice()
     {
-        return ceil($this->price - ($this->price * $this->discount / 100));
+        $price = $this->price - ($this->price * $this->discount / 100);
+        if (!Yii::$app->user->isGuest && $this->floating_price_percent > 0) {
+            $counts = Yii::$app->drop->getCountBuy(Yii::$app->user->id);
+            if (!empty($counts[$this->id])) {
+                for ($i = 0; $i < $counts[$this->id]; $i++) {
+                    $price += $price * ($this->floating_price_percent / 100);
+                }
+            }
+        }
+
+        return ceil($price);
     }
 
     /**
@@ -625,7 +642,7 @@ class Drop extends ActiveRecord
     }
 
     public function give($userId, $count, $parentId = null, $boxId = null, $setId = null) {
-        if (empty($this->subDrops)) {
+        if (empty($this->subDrops) || (in_array($this->drop_type, [Drop::TYPE_SET]) && $this->full_only)) {
             if (in_array($this->rust_id, ['-2139580305'])) {
                 for ($i = 0; $i < $count; $i++) {
                     if (empty($parentId) && empty($setId) && empty($boxId)) {

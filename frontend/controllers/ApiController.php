@@ -306,6 +306,8 @@ class ApiController extends WebController
                 'blocked' => false,
                 'block_date' => null,
                 'kd' => false,
+                'full_only' => $drop->full_only,
+                'subDrop' => [],
             ];
             if (!empty($drop->blocked_hour)) {
                 if (!empty($itemsBlocked[$userDrop->drop_id])) {
@@ -335,6 +337,20 @@ class ApiController extends WebController
 //                    $item['kd'] = true;
 //                }
 //            }
+            if ($drop->full_only) {
+                foreach ($drop->subDrops as $subDrop) {
+                    $_subDrop = [];
+                    if (!empty($subDrop->drop->command)) {
+                        $_subDrop['command'] = str_replace("\r", '', $subDrop->drop->command);
+                        $_subDrop['type'] = "command";
+                        $_subDrop['item_id'] = 0;
+                    } else {
+                        $_subDrop['type'] = "item";
+                        $_subDrop['item_id'] = $subDrop->drop->rust_id;
+                    }
+                    $item['subDrop'][] = $_subDrop;
+                }
+            }
             if (!empty($drop->command)) {
                 $item['command'] = str_replace("\r", '', $drop->command);
                 $item['type'] = "command";

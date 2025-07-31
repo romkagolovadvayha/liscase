@@ -78,6 +78,7 @@ class MarketController extends WebController
                         Invoice::createRecord($user->id, $entity->getRealPrice(), Invoice::TYPE_PAYMENT_MARKET_DROP, null, null, $entity->id, $comment);
                         $entity->give($user->id, $entity->count);
                         $dbTransaction->commit();
+                        Yii::$app->drop->clearCountBuy(Yii::$app->user->id);
                         Yii::$app->session->addFlash('success', Yii::t('common', 'Предмет успешно приобретен!'));
                     } catch (\Exception $e) {
                         $dbTransaction->rollBack();
