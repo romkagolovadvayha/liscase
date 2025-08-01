@@ -222,6 +222,7 @@ class ApiController extends WebController
         if ($drop->full_only) {
             foreach ($drop->subDrops as $subDrop) {
                 $_subDrop = [];
+                $_subDrop['count'] = $subDrop->count;
                 if (!empty($subDrop->drop->command)) {
                     $_subDrop['command'] = str_replace("\r", '', $subDrop->drop->command);
                     $_subDrop['type'] = "command";
