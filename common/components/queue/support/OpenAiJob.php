@@ -63,7 +63,7 @@ class OpenAiJob extends BaseObject implements JobInterface
                 return;
             }
             $server = $chat->user->getCurrentServer();
-            $reply = Yii::$app->openAiSupport->getReply(trim($this->message), $chatHistory, $chat->user->username, $server->monitoring_name);
+            $reply = Yii::$app->openAiSupport->getReply(trim($this->message), $chatHistory, $chat->user->username, $server->monitoring_name, $chat->getNumber(), $chat->user);
             if ($reply == 'unknown') {
                 $chat->is_bot = false;
                 $chat->save(false);

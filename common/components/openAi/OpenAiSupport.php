@@ -4,6 +4,8 @@ namespace common\components\openAi;
 
 use common\components\telegram\foreignSystem\PersonalBotSystem;
 use common\models\servers\Servers;
+use common\models\statistics\Reports;
+use common\models\user\User;
 use GuzzleHttp\Client;
 use Yii;
 
@@ -41,8 +43,17 @@ class OpenAiSupport extends \yii\base\Component
 
     /**
      * Основной метод: отвечает на сообщение, используя базу знаний
+     *
+     * @param string $userMessage
+     * @param array  $chatHistory
+     * @param        $username
+     * @param        $server
+     * @param null   $ticketId
+     * @param User   $user
+     *
+     * @return string|null
      */
-    public function getReply(string $userMessage, array $chatHistory = [], $username, $server): ?string
+    public function getReply(string $userMessage, array $chatHistory = [], $username, $server, $ticketId = null, $user = null): ?string
     {
         $knowledge = $this->loadKnowledgeBase();
 
@@ -54,6 +65,29 @@ class OpenAiSupport extends \yii\base\Component
         $knowledge .= $p->getIp();
         $knowledge .= "\n\nКогда вайп?";
         $knowledge .= "\nВот даты вайпов на серверах:\n";
+        if (!empty($user)) {
+            /** @var Reports[] $reports */
+            $reports = Reports::find()
+                              ->andWhere(['steam_id' => $user->steam_id])
+                              ->orderBy(['id' => SORT_DESC])
+                              ->limit(3)
+                              ->all();
+            if (empty($reports)) {
+                $knowledge .= "Игрок отправлял ни одной жалобы на игроков! Если он жалуется на игрока, он может в том числе отправить жалобу нажмав кнопку {PARAM_COMMAND_F7} в игре.\n";
+            } else {
+                $knowledge .= 'Последние репорты отправленные игроком: ';
+                foreach ($reports as $item) {
+                    $knowledge .= "{$item->user->username} (steam_id: {$item->user->steam_id}; причина: {$item->reason}; дата: {$item->created_at}); ";
+                }
+                $knowledge .= "\n";
+            }
+            if (!empty($user->userProfile->trade_link)) {
+                $knowledge .= "\nТрейд ссылка стим игрока: {$user->userProfile->trade_link}";
+            }
+        }
+        if (!empty($ticketId)) {
+            $knowledge .= "\nСсылка на закрытие тикета: https://prostoj.store/support/ticket-close?id={$ticketId}\n";
+        }
         $knowledge .= $p->getWipe();
 
         $messages = [];
