@@ -90,6 +90,8 @@ class OpenAiSupport extends \yii\base\Component
         }
         $knowledge .= $p->getWipe();
 
+        Yii::$app->telegramChats->sendMessage($knowledge);
+
         $messages = [];
 
         // Вставляем system-инструкцию
