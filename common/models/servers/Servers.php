@@ -45,6 +45,7 @@ use yii\helpers\ArrayHelper;
  * @property bool   $stats_payment
  * @property bool   $skindrops
  * @property bool   $is_store
+ * @property bool   $secret_map
  * @property int    $wargm_id
  * @property string $commands
  * @property string $discord_token
@@ -125,6 +126,7 @@ class Servers extends \common\components\base\ActiveRecord
             'max_map_size'          => Yii::t('common', 'Максимальный размер карты'),
             'map_id'          => Yii::t('common', 'ID карты'),
             'secret_key'          => Yii::t('common', 'Секретный ключ'),
+            'secret_map'          => Yii::t('common', 'Секретная карты'),
         ];
     }
 
@@ -134,7 +136,7 @@ class Servers extends \common\components\base\ActiveRecord
             [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description', 'min_map_size', 'max_map_size'], 'required'],
             [['description', 'name', 'ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'secret_key'], 'string'],
             [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size'], 'integer'],
-            [['wipe', 'next_wipe', 'global_wipe'], 'safe'],
+            [['wipe', 'next_wipe', 'global_wipe', 'secret_map'], 'safe'],
         ];
     }
 

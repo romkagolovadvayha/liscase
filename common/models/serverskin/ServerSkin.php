@@ -78,6 +78,13 @@ class ServerSkin extends \yii\db\ActiveRecord
         ];
     }
 
+    public function getImagePubUrl($cdn = true) {
+        if ($cdn) {
+            return Yii::$app->settings->get('site_cdnUrl') . $this->image;
+        }
+        return $this->image;
+    }
+
     /**
      * Gets query for [[ServerSkinLikes]].
      *

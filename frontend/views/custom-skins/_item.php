@@ -8,7 +8,7 @@ $isActive = in_array($model->id, $userLikes);
 <div class="custom-skins_content_list_item">
     <div class="custom-skins_content_list_item_images">
         <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=<?=$model->skin_id?>" target="_blank">
-            <img src="<?=$model->image?>">
+            <img src="<?=$model->getImagePubUrl(true)?>">
         </a>
         <div class="custom-skins_content_list_item_images_name"><?=Yii::t('database', $model->name)?></div>
         <div class="custom-skins_content_list_item_images_like<?=($isActive) ? ' active' : ''?>" data-id="<?=$model->id?>" data-guest="<?=Yii::$app->user->isGuest ? 1 : 0?>">
