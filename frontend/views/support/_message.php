@@ -16,9 +16,12 @@ if (!empty($model->user) && $model->user->canRoles([Role::ROLE_ADMIN])) {
 if (empty($model->user)) {
     $usernameClass = 'bot';
 }
-
-$avatar = $model->user->getAvatar();
-$username = $model->user->getUsername();
+$avatar = null;
+$username = null;
+if (!empty($model->user_id)) {
+    $avatar   = $model->user->getAvatar();
+    $username = $model->user->getUsername();
+}
 
 ?>
 <?php if (!empty($model->user_id)): ?>
