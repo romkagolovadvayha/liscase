@@ -124,6 +124,14 @@ class User extends ActiveRecord implements IdentityInterface
         ];
     }
 
+    public function getUsername()
+    {
+        if ($this->steam_id === 777) {
+            return Yii::$app->settings->get('openAi_username');
+        }
+        return $this->username;
+    }
+
     /**
      * @return array
      */
@@ -677,6 +685,9 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     public function getAvatar() {
+        if ($this->steam_id === 777) {
+            return 'https://' . Yii::$app->settings->get('site_domain') . Yii::$app->settings->get('openAi_avatar');
+        }
         if (empty($this->userProfile)) {
             return '';
         }

@@ -2,14 +2,18 @@
 
 namespace common\components\queue\support;
 
+use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\components\queue\telegram\SendMessageJob;
 use common\models\signs\Signs;
 use common\models\servers\Servers;
 use common\models\support\Support;
 use common\models\support\SupportMessage;
 use common\models\support\SupportRead;
+use common\models\user\Auth;
 use common\models\user\User;
+use common\models\user\UserProfile;
 use common\models\user\UserRaid;
+use common\models\user\UserTree;
 use WebSocket\Client;
 use Yii;
 use yii\base\BaseObject;
@@ -66,7 +70,13 @@ class OpenAiJob extends BaseObject implements JobInterface
                 return;
             }
 
-            $admin = User::findBySteamId(76561198394504608);
+            $admin = User::find()
+                ->andWhere(['steam_id' => 777])
+                ->one();
+
+            if (empty($admin)) {
+                $admin = $this->createUser(777, Yii::$app->settings->get('openAi_username'));
+            }
 
             $modelBot = new SupportMessage();
             $modelBot->user_id = $admin->id;
@@ -103,5 +113,66 @@ class OpenAiJob extends BaseObject implements JobInterface
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage("OpenAiJob: " . $e->getLine() . ":" . $e->getMessage());
         }
+    }
+
+    private function createUser($steamId, $username) {
+        $dbTransaction = Yii::$app->db->beginTransaction();
+        try {
+            $avatar = 'https://' . Yii::$app->settings->get('site_domain') . Yii::$app->settings->get('openAi_avatar');
+            $user           = new User();
+            $user->email    = "chatgpt@steam.com";
+            $user->steam_id = $steamId;
+            $user->auto = 1;
+            $user->username = $username;
+            $user->updated_at = null;
+            $user->setPassword(Yii::$app->security->generateRandomString());
+            $user->status = User::STATUS_ACTIVE;
+            $user->generateAuthKey();
+            $user->generateRefCode();
+            $user->generateSocketRoom();
+            if ($user->save()) {
+                $user->user_id = $user->id;
+                $user->update(false, ['user_id']);
+                $auth = new Auth(
+                    [
+                        'user_id'   => $user->id,
+                        'source'    => 'steam',
+                        'source_id' => (string)$steamId,
+                    ]
+                );
+                $auth->save();
+                $dbTransaction->commit();
+                UserTree::appendUser($user->id, 509);
+                UserProfile::createModel($user, $username);
+                $user->userProfile->name = $username;
+                try {
+                    $avatar                    = self::_loadImage($avatar, $steamId);
+                    $user->userProfile->avatar = $avatar;
+                } catch (\Exception $ex) {
+                }
+                $user->userProfile->save();
+                return $user;
+            }
+        } catch (\Exception $e) {
+            $dbTransaction->rollBack();
+            Yii::$app->telegramChats->sendMessage("User findBySteamId: {$steamId} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+            throw new \Exception(Yii::t('common', 'Произошла ошибка, попробуйте обновить страницу!'));
+        }
+    }
+
+    public static function _loadImage($imageUrl, $id) {
+        $uploadDir = \Yii::getAlias('@frontend/web');
+        $fileUrl = "/uploads/avatar/steam/{$id}.png";
+        $filePath = $uploadDir . $fileUrl;
+        if (!file_exists(dirname(dirname($filePath)))) {
+            mkdir(dirname(dirname($filePath)));
+            chmod(dirname(dirname($filePath)), 0777);
+        }
+        if (!file_exists(dirname($filePath))) {
+            mkdir(dirname($filePath));
+            chmod(dirname($filePath), 0777);
+        }
+        file_put_contents($filePath, file_get_contents($imageUrl));
+        return $fileUrl;
     }
 }
