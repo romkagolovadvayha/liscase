@@ -1106,6 +1106,7 @@ class User extends ActiveRecord implements IdentityInterface
 
     public static function userData() {
         $userData = [];
+        /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->cache(30)
                           ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
@@ -1129,6 +1130,9 @@ class User extends ActiveRecord implements IdentityInterface
                     if ($server->id == $userData['server']->id) {
                         $userData['SERVER_ACTIVE_ID'] = $userData['server']->id;
                         $userData['SERVER_ACTIVE_TAG'] = $userData['server']->tag;
+                        if (!$server->secret_map) {
+                            $userData['SERVER_MAP_TAG'] = $userData['server']->tag;
+                        }
                         break;
                     }
                 }
@@ -1137,6 +1141,7 @@ class User extends ActiveRecord implements IdentityInterface
         if (empty($userData['SERVER_ACTIVE_ID'])) {
             $userData['SERVER_ACTIVE_ID'] = $servers[0]->id;
             $userData['SERVER_ACTIVE_TAG'] = $servers[0]->tag;
+            $userData['SERVER_MAP_TAG'] = $servers[0]->tag;
         }
 
         return $userData;
