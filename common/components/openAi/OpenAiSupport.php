@@ -88,7 +88,7 @@ class OpenAiSupport extends \yii\base\Component
             }
         }
         if (!empty($ticketId)) {
-            $knowledge .= "\nСсылка на закрытие тикета: https://prostoj.store/support/ticket-close?id={$ticketId}\n";
+            $knowledge .= "\nСсылка на закрытие тикета: <a href=\"https://prostoj.store/support/ticket-close?id={$ticketId}\">Закрыть тикет</a>\n";
         }
         $knowledge .= $p->getWipe();
 
