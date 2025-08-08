@@ -75,7 +75,7 @@ class OpenAiSupport extends \yii\base\Component
             if (empty($reports)) {
                 $knowledge .= "Игрок отправлял ни одной жалобы на игроков! Если он жалуется на игрока, он может в том числе отправить жалобу нажмав кнопку {PARAM_COMMAND_F7} в игре.\n";
             } else {
-                $knowledge .= 'Последние репорты отправленные игроком: ';
+                $knowledge .= 'Если игрок жалуется, но не сказал на кого, ты можешь догадаться сам судя по его последним жалобам на сервере: ';
                 foreach ($reports as $item) {
                     $usernameitem = htmlspecialchars($item->user->username);
                     $reason = htmlspecialchars($item->reason);
