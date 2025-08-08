@@ -58,7 +58,7 @@ class OpenAiSupport extends \yii\base\Component
         $knowledge = $this->loadKnowledgeBase();
 
         $p = new PersonalBotSystem();
-        $knowledge .= "\n\nНик игрока который пишет: " . $username;
+        $knowledge .= "\n\nНик игрока который пишет: " . htmlspecialchars($username);
         $knowledge .= "\n\nСервер на котором играет игрок: " . $server;
         $knowledge .= "\n\nКак подключиться к серверу?";
         $knowledge .= "\nПодключиться можно через консоль F1, Вот список IP серверов:\n";
@@ -77,7 +77,9 @@ class OpenAiSupport extends \yii\base\Component
             } else {
                 $knowledge .= 'Последние репорты отправленные игроком: ';
                 foreach ($reports as $item) {
-                    $knowledge .= "{$item->user->username} (steam_id: {$item->user->steam_id}; причина: {$item->reason}; дата: {$item->created_at}); ";
+                    $usernameitem = htmlspecialchars($item->user->username);
+                    $reason = htmlspecialchars($item->reason);
+                    $knowledge .= "{$usernameitem} (steam_id: {$item->user->steam_id}; причина: {$reason}; дата: {$item->created_at}); ";
                 }
                 $knowledge .= "\n";
             }
