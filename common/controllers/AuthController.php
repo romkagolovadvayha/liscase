@@ -119,6 +119,20 @@ class AuthController extends WebController
                 // авторизация
                 $user = $auth->user;
                 Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
+
+
+                $refCode = Cookie::getValue('refCode');
+                if (!empty($refCode)) {
+                    $parentUser = User::findByRefCode($refCode);
+                    if (!empty($parentUser) && !empty($parentUser->telegram_chat_id) && !empty($user->getParentUser()) && !$user->getParentUser()->id != $parentUser->id) {
+                        $dateTime = new \DateTime();
+                        $currentDate = $dateTime->format('d.m.Y H:i:s');
+                        $dateTime = new \DateTime($user->created_at);
+                        $regDate = $dateTime->format('d.m.Y H:i:s');
+                        Cookie::remove('refCode');
+                        Yii::$app->personalBotTelegram->sendMessage($parentUser->telegram_chat_id, "По вашей ссылке пытился авторизоваться пользователь, но он уже был зарегистрирован на сайте.\nПользователь: {$user->steam_id}\nДата регистрации: {$regDate}\nТекущая дата: {$currentDate}");
+                    }
+                }
 //                try {
 //                    $avatar = $this->_loadImage($attributes['avatar_link'], $attributes['id']);
 //                    $user->userProfile->avatar = $avatar;
@@ -160,6 +174,9 @@ class AuthController extends WebController
                     if (!empty($refCode)) {
                         $parentUser = User::findByRefCode($refCode);
                         if (!empty($parentUser)) {
+                            if (!empty($parentUser->telegram_chat_id)) {
+                                Yii::$app->personalBotTelegram->sendMessage($parentUser->telegram_chat_id, "По вашей ссылке зарегистировался новый пользователь.\nПользователь: {$user->steam_id}");
+                            }
                             UserTree::appendUser($user->id, $parentUser->id);
                         } else {
                             UserTree::appendUser($user->id, 509);
