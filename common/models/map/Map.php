@@ -232,7 +232,7 @@ class Map extends \yii\db\ActiveRecord
                     ->setHeader('X-API-Key', '03f6a4103d7d4820bed03f4322f72f26')
                     ->setHeader('Content-Type', 'application/json')
                     ->setRawPostData(Map::getSearchQuery($size))
-                    ->post('https://api.rustmaps.com/v4/maps/search?page=' . $i . '&staging=true&includeAllProtocols=false&customMaps=false');
+                    ->post('https://api.rustmaps.com/v4/maps/search?page=' . $i . '&staging=false&includeAllProtocols=false&customMaps=false');
 
                 $response = json_decode($response, 1);
 
