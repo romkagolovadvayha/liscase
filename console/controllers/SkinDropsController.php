@@ -21,7 +21,11 @@ class SkinDropsController extends Controller
      */
     public function actionStatusCheck()
     {
-        UserPayoutSkins::check();
+        try {
+            UserPayoutSkins::check();
+        } catch (\Exception $ex) {
+
+        }
     }
 
     /**
