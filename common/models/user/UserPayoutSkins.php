@@ -60,6 +60,7 @@ class UserPayoutSkins extends ActiveRecord
 
     public static function check() {
         UserPayoutSkins::checkRust();
+        sleep(5);
         UserPayoutSkins::checkCs2();
     }
 

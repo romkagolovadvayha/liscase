@@ -168,7 +168,7 @@ class ServerController extends Controller
             ];
             foreach ($steamIds as $_steamId) {
                 $params = $userList[$_steamId];
-                $user = User::findBySteamId($_steamId);
+                $user = User::findBySteamId($_steamId, false, 'servers 5');
                 foreach ($tops as $type => $value) {
                     /** @var UserTop $userTop */
                     $userTop = UserTop::find()

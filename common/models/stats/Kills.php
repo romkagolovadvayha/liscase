@@ -188,11 +188,11 @@ class Kills extends ActiveRecord
                 $model['dead_name'] = $user->username;
             }
             if (empty($model['name']) && strlen($model['steam_id']) === 17) {
-                $_user = User::findBySteamId($model['steam_id']);
+                $_user = User::findBySteamId($model['steam_id'], false, 'kills 3');
                 $model['name'] = $_user->username;
             }
             if (empty($model['dead_name']) && strlen($model['dead']) === 17) {
-                $_user = User::findBySteamId($model['dead']);
+                $_user = User::findBySteamId($model['dead'], false, 'kills 4');
                 $model['dead_name'] = $_user->username;
             }
             if ($model['type'] !== 'deaths' && $model['type'] !== 'suicides') {

@@ -52,14 +52,14 @@ foreach ($items as $item) {
 <!-- Ресурсы -->
 <section class="page-stats__block-without-hover w-50p">
     <header class="flex items-center justify-space-between mb-24 transition-all">
-        <h4 class="flex items-center gap-x-12">
+        <h3 class="flex items-center gap-x-12">
             <?=Yii::t('common', 'Ресурсы')?><span
                     class="icons icons_24px icons_24px_info icons_hover"
                     data-bs-toggle="tooltip"
                     data-bs-placement="right"
                     data-bs-title="<?=Yii::t('common', 'Количество нафармленных ресурсов игроком за вайп')?>"
             ></span>
-        </h4>
+        </h3>
     </header>
 
     <div class="page-stats__categories">

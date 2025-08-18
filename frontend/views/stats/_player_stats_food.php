@@ -42,14 +42,14 @@ $items = array_slice($items, 0, 10);
 <!-- Любимая еда -->
 <section class="page-stats__block-without-hover w-50p">
     <header class="flex items-center justify-space-between mb-24 transition-all">
-        <h4 class="flex items-center gap-x-12">
+        <h3 class="flex items-center gap-x-12">
             <?=Yii::t('common', 'Любимая еда')?><span
                     class="icons icons_24px icons_24px_info icons_hover"
                     data-bs-toggle="tooltip"
                     data-bs-placement="right"
                     data-bs-title="<?=Yii::t('common', 'В этом блоке отображается все, что сьел игрок за вайп.')?>"
             ></span>
-        </h4>
+        </h3>
 
 <!--        <label class="page-stats__show-statistics-block">-->
 <!--            <p class="p1 text-text-teritiary">--><?//=Yii::t('common', 'Показывать')?><!--</p>-->

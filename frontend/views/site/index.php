@@ -13,7 +13,6 @@ use common\models\servers\Servers;
 $this->title = Yii::t('database', Yii::$app->settings->get('site_title'));
 
 \frontend\assets\LastDropAsset::register($this);
-\frontend\assets\UserBoxAsset::register($this);
 
 /** @var \common\models\box\Category[] $categories */
 $categories = \common\models\box\Category::getCategories(true);

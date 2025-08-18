@@ -35,6 +35,22 @@ $reports = Reports::find()
         <?=Yii::t('common', 'Сервер игрока')?>:
     <?php endif; ?> <?=(!empty($server)) ? Yii::t('database', $server->name) : Yii::t('common', 'неизвестно')?>
 </div>
+<?php if (!empty($ticketUser->userProfile->trade_link)): ?>
+    <div class="support_messages_item_message_text">
+        <?php if ($isUser): ?>
+            <?=Yii::t('common', 'Ваша трейд ссылка')?>:
+        <?php else: ?>
+            <?=Yii::t('common', 'Трейд ссылка игрока')?>:
+        <?php endif; ?> <a href="<?=$ticketUser->userProfile->trade_link?>" target="_blank"><?=Yii::t('common', 'Перейти')?></a>
+    </div>
+<?php endif; ?>
+<div class="support_messages_item_message_text">
+    <?php if ($isUser): ?>
+        <?=Yii::t('common', 'Ваш Steam ID')?>:
+    <?php else: ?>
+        <?=Yii::t('common', 'Steam ID')?>:
+    <?php endif; ?> <a href="<?=$ticketUser->getLink('steam')?>" target="_blank"><?=$ticketUser->steam_id?></a>
+</div>
 <div class="support_messages_item_message_text">
     <?php if ($isUser): ?>
         <?=Yii::t('common', 'Ваши последние жалобы на игроков')?>:
@@ -66,7 +82,7 @@ $reports = Reports::find()
             <div class="support_messages_item_message_reports_item_content">
                 <div class="support_messages_item_message_reports_item_content_name"><?=$item->user->username?></div>
                 <div class="support_messages_item_message_reports_item_content_steam_id"><?=$item->user->steam_id?></div>
-                <div class="support_messages_item_message_reports_item_content_date server_timer" data-time="<?=strtotime($item->user->created_at)?>"><?=$item->created_at?></div>
+                <div class="support_messages_item_message_reports_item_content_date server_timer" data-time="<?=strtotime($item->created_at)?>"><?=$item->created_at?></div>
             </div>
         </a>
         <?php endforeach; ?>

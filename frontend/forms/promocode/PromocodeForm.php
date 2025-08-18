@@ -36,6 +36,7 @@ class PromocodeForm extends Promocode
         $model = Promocode::findByCode($this->code);
         if (empty($model)) {
             $user = Yii::$app->user->identity;
+            /** @var User $userCode */
             $userCode = User::find()
                          ->andWhere(['promocode' => $this->code])
                          ->one();
@@ -45,12 +46,20 @@ class PromocodeForm extends Promocode
                 return null;
             }
 
+            $dateTime = new \DateTime();
+            $currentDate = $dateTime->format('d.m.Y H:i:s');
+            $dateTime = new \DateTime($user->created_at);
+            $regDate = $dateTime->format('d.m.Y H:i:s');
+
             if ($userCode->id == $user->id) {
                 $this->addError('code', Yii::t('common', 'Вы не можете ввести свой промокод!'));
                 return null;
             }
 
             if (!(strtotime($user->created_at) >= time() - 15 * 60)) {
+                if (!empty($userCode->telegram_chat_id)) {
+                    Yii::$app->personalBotTelegram->sendMessage($userCode->telegram_chat_id, "Пользователь пытался ввести ваш промокод, но с даты регистрации пользователя прошло более 15 минут.\nПользователь: {$user->steam_id}\nДата регистрации: {$regDate}\nТекущая дата: {$currentDate}");
+                }
                 $this->addError('code', Yii::t('common', 'Промокод просрочен!'));
                 return null;
             }
@@ -63,6 +72,9 @@ class PromocodeForm extends Promocode
             if (!empty($userTree) && $userTree->parent_user_id == 509) {
                 $userTree->parent_user_id = $userCode->id;
                 if ($userTree->save()) {
+                    if (!empty($userCode->telegram_chat_id)) {
+                        Yii::$app->personalBotTelegram->sendMessage($userCode->telegram_chat_id, "По вашму промокоду зарегистировался новый пользователь.\nПользователь: {$user->steam_id}");
+                    }
                     $userBalance = $user->getPersonalBalance();
                     $profit = new Profit();
                     $profit->status = 1;
@@ -80,6 +92,9 @@ class PromocodeForm extends Promocode
                     return $model;
                 }
             } else {
+                if (!empty($userCode->telegram_chat_id)) {
+                    Yii::$app->personalBotTelegram->sendMessage($userCode->telegram_chat_id, "Пользователь пытался ввести ваш промокод, но он уже был зарегистирован под другим пользователем.\nПользователь: {$user->steam_id}\nДата регистрации: {$regDate}\nТекущая дата: {$currentDate}");
+                }
                 $this->addError('code', Yii::t('common', 'Промокод больше не доступен!'));
                 return null;
             }

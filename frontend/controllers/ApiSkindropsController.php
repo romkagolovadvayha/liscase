@@ -99,7 +99,7 @@ class ApiSkindropsController extends WebController
 
         $winner = $members[0];
         /** @var User $user */
-        $user = User::findBySteamId($winner);
+        $user = User::findBySteamId($winner, false, 'skindrops');
 
        $data = Skindrops::sendSkin($user);
         $response = $data['response'];

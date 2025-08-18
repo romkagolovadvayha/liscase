@@ -9,7 +9,6 @@ use common\models\user\UserBox;
 $this->title = Yii::t('database', $userBox->box->name) . ' ' . Yii::t('common', "кейс для CS GO");
 
 \common\assets\SlickCarouselAsset::register($this);
-\frontend\assets\UserBoxAsset::register($this);
 
 $boxDropCarousel = $userBox->box->boxDropCarousel;
 ?>

@@ -20,6 +20,7 @@ class MapsController extends Controller
         $servers = Servers::find()
                           ->cache(30)
                           ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                          ->andWhere(['secret_map' => 0])
                           ->orderBy(['sort' => SORT_ASC])
                           ->all();
 

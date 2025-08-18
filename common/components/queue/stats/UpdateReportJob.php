@@ -118,8 +118,8 @@ class UpdateReportJob extends BaseObject implements JobInterface
             $model->wipe = $this->wipeDate;
             $model->save();
 
-            $user = User::findBySteamId($item['steam_id']);
-            $reportUser = User::findBySteamId($item['recepient_steam_id']);
+            $user = User::findBySteamId($item['steam_id'], false, 'report');
+            $reportUser = User::findBySteamId($item['recepient_steam_id'], false, 'report 2');
 
             $countQuery = Reports::find()
                                  ->andWhere(['recepient_steam_id' => $reportUser->steam_id])
@@ -172,24 +172,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 $message .= "Страна: {$countryItem['icon']} {$countryItem['name']}" . PHP_EOL;
             }
 
-            $hoursExist = false;
-            $hours = 0;
-            try {
-                $games = Steam::getGameInfo($reportUser->steam_id);
-                foreach ($games as $game) {
-                    if ($game['appid'] == 252490) {
-                        $hoursExist = true;
-                        $hours = $game['playtime_forever'];
-                        break;
-                    }
-                }
-            } catch (\Exception $e) {
-                Yii::$app->telegramChats->sendMessage("UpdateReportJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
-            }
-            if ($hoursExist) {
-                $hours = round($hours/60, 1);
-                $message .=  PHP_EOL . "Часов в Steam: " . number_format($hours, 0, '.', ' ') . " ч.";
-            }
             $message .=  PHP_EOL . "Килы: {$kills}/{$deaths} (К/Д: {$kd})";
 
             $bans = "";

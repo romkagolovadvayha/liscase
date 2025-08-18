@@ -216,19 +216,6 @@ class RustotekaBotSystem extends AbstractSystemBots
 
         $message .=  PHP_EOL . "SteamId: <a href=\"https://steamcommunity.com/profiles/{$steamId}\">{$steamId}</a>";
 
-        try {
-            $games = Steam::getGameInfo($steamId);
-            foreach ($games as $game) {
-                if ($game['appid'] == 252490) {
-                    $hours = $game['playtime_forever'];
-                    $message .=  PHP_EOL . "Часов в Steam: " . $hours;
-                    break;
-                }
-            }
-        } catch (\Exception $e) {
-            Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
-        }
-
         /** @var BanList[] $banList */
         $banList = BanList::find()
             ->andWhere(['steam_id' => $steamId])

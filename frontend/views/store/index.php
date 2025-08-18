@@ -9,7 +9,7 @@ use frontend\widgets\Alert;
 /** @var View $this */
 
 $user = Yii::$app->user->identity;
-$this->title = Yii::t('common', "Корзина") . " - {$user->userProfile->name}";
+$this->title = Yii::t('common', "Корзина") . " - {$user->username}";
 
 /** @var UserDrop[] $userDrops */
 $userDrops = $user->getUserDrop()
@@ -73,9 +73,9 @@ JS
     <?= Alert::widget() ?>
     <h1><?=Yii::t('common', 'Корзина сервера')?></h1>
     <p><?=Yii::t('common', 'Это ваша корзина с покупками, вы можете забрать их в любой момент')?></p>
-    <?php if (!empty($user->server) && (in_array($user->server->tag, ['nolimit', 'max3'])) && strtotime('2025-05-31 07:00') > time()): ?>
+    <?php if (!empty($user->server) && (in_array($user->server->tag, ['nolimit', 'max3'])) && strtotime('2025-06-06 21:00') > time()): ?>
         <div class="content_text">
-            <?=Yii::t('common', 'Магазин на сервере котором вы находитесь закрыт до 31.05.2025 07:00 МСК!')?>
+            <?=Yii::t('common', 'Магазин на сервере котором вы находитесь закрыт до 06.06.2025 21:00 МСК!')?>
         </div>
     <?php elseif (!empty($user->server) && ($user->server->is_store || $user->store)): ?>
         <?php if (!empty($userDrops)):?>
@@ -91,13 +91,12 @@ JS
             <div class="store_launcher_cards" id="products">
                 <?php $serverId = $user->server->id; ?>
                 <?php foreach ($userDrops as $userDrop): ?>
-                    <?php foreach ($userDrop->drop as $drop): ?>
-                        <?=Yii::$app->view->render('_product', [
-                                'drop' => $drop,
-                                'serverId' => $serverId,
-                                'userDrop' => $userDrop,
-                        ])?>
-                    <?php endforeach; ?>
+                    <?php $drop = Yii::$app->drop->getActiveDropById($userDrop->drop_id); ?>
+                    <?=Yii::$app->view->render('_product', [
+                        'drop' => $drop,
+                        'serverId' => $serverId,
+                        'userDrop' => $userDrop,
+                    ])?>
                 <?php endforeach; ?>
             </div>
         <?php else:?>

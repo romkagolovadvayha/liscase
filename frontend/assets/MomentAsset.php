@@ -12,14 +12,13 @@ use yii\web\AssetBundle;
  */
 class MomentAsset extends AssetBundle
 {
-    public $sourcePath = '@frontend/assets/sources';
+    public $sourcePath = '@npm/moment';
 
     public $css = [];
 
     public $js = [
-        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js',
-        'https://momentjs.com/downloads/moment.min.js',
-        'https://momentjs.com/downloads/moment-with-locales.min.js',
+        'min/moment.min.js',
+        'min/moment-with-locales.js',
     ];
 
     public $depends = [

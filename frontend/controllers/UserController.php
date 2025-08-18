@@ -12,6 +12,7 @@ use common\models\skindrops\Skindrops;
 use common\models\tasks\Task;
 use common\models\user\User;
 use common\models\user\UserDrop;
+use common\models\user\UserProfile;
 use common\models\user\UserTask;
 use frontend\forms\market\PaymentForm;
 use frontend\forms\profile\ProfileForm;
@@ -137,7 +138,7 @@ class UserController extends WebController
             $profit = new Profit();
             $profit->status = 1;
             $profit->type = Profit::TYPE_SELL_DROP;
-            $profit->amount = $drop->getRealPrice();
+            $profit->amount = $drop->getRealPrice(false);
             $profit->user_balance_id = $userBalanceId;
             $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
                 'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
@@ -273,6 +274,14 @@ class UserController extends WebController
         $this->view->params['_profile'] = true;
         $this->view->params['page'] = 'user-profile';
         $user  = Yii::$app->user->identity;
+
+        if (empty($user->userProfile)) {
+            UserProfile::createModel($user, $user->username);
+            $user->userProfile->name = $user->username;
+            $user->userProfile->avatar = null;
+            $user->userProfile->save(false);
+        }
+
         $model = ProfileForm::findOne($user->userProfile->id);
         if (Yii::$app->request->isPost && $model->load(Yii::$app->request->post())) {
             if ($model->saveRecord()) {

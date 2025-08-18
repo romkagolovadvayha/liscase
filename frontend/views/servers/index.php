@@ -107,7 +107,9 @@ $this->registerJs($formatJs, \yii\web\View::POS_END);
                     </div>
                 </div>
                 <a href="/servers/rules?server=<?=$server->tag?>" class="server_info_profile_link"><span><?=Yii::t('common', 'Правила сервера')?></span></a>
-                <a href="https://rustmaps.com/map/<?=$server->map?>" target="_blank" class="server_info_profile_link"><span><?=Yii::t('common', 'Текущая карта')?></span></a>
+                <?php if (!$server->secret_map): ?>
+                    <a href="https://rustmaps.com/map/<?=$server->map?>" target="_blank" class="server_info_profile_link"><span><?=Yii::t('common', 'Текущая карта')?></span></a>
+                <?php endif; ?>
             </div>
             <div class="server_info_description">
                 <?=Yii::t('database', trim($server->description))?>

@@ -106,12 +106,12 @@ class Teams extends \yii\db\ActiveRecord
             ->indexBy('steam_id')
             ->all();
         if (empty($users[$leaderSteamId])) {
-            $users[$leaderSteamId] = User::findBySteamId($leaderSteamId);
+            $users[$leaderSteamId] = User::findBySteamId($leaderSteamId, false, 'teams 8');
         }
         Teams::removeUserLeaderAllTeams($users[$leaderSteamId]->id, $serverId, $wipeDate);
         foreach ($members as $steamId) {
             if (empty($users[$steamId])) {
-                $users[$steamId] = User::findBySteamId($steamId);
+                $users[$steamId] = User::findBySteamId($steamId, false, 'teams 9');
             }
             Teams::removeUserLeaderAllTeams($users[$steamId]->id, $serverId, $wipeDate);
             Teams::leaveFromTeam($users[$steamId]->id, $serverId, $wipeDate);

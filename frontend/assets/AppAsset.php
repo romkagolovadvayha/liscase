@@ -32,5 +32,6 @@ class AppAsset extends AssetBundle
         BootstrapAsset::class,
         ToastrAsset::class,
         OwlCarouselAsset::class,
+        FontAwesomeAsset::class,
     ];
 }

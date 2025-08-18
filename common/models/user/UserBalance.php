@@ -203,7 +203,7 @@ class UserBalance extends \common\components\base\ActiveRecord
                 );
             }
         } catch (\Exception $ex) {
-            Yii::$app->telegramChats->sendMessage('UserBalance recalculateBalance: ' . $ex->getMessage());
+            Yii::$app->telegramChats->sendMessage('UserBalance recalculateBalance: ' . Yii::$app->params['ws'] . " " . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
 

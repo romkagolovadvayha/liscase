@@ -151,12 +151,12 @@ class Kills extends ActiveRecord
                 $model['dead_link'] = $user->getLink('stats');
             }
             if (empty($model['name']) && strlen($model['steam_id']) === 17) {
-                $_user = User::findBySteamId($model['steam_id']);
+                $_user = User::findBySteamId($model['steam_id'], false, 'kills');
                 $model['name'] = $_user->username;
                 $model['link'] = $_user->getLink('stats');
             }
             if (empty($model['dead_name']) && strlen($model['dead']) === 17) {
-                $_user = User::findBySteamId($model['dead']);
+                $_user = User::findBySteamId($model['dead'], false, 'kills 2');
                 $model['dead_name'] = $_user->username;
                 $model['dead_link'] = $_user->getLink('stats');
             }

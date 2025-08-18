@@ -44,12 +44,18 @@ class BoxController extends Controller
             $newPath100 = "/drop100/" . $filename;
             $fullNewPath100 = \Yii::getAlias('@frontend/web/uploads') . $newPath100;
             if (file_exists($path)) {
-                DropImage::resizeImage($path, $fullNewPath150, 150);
-                DropImage::createRecord($newPath150, DropImage::TYPE_150, $image->drop_id);
-                DropImage::resizeImage($path, $fullNewPath64, 64);
-                DropImage::createRecord($newPath64, DropImage::TYPE_64, $image->drop_id);
-                DropImage::resizeImage($path, $fullNewPath100, 100);
-                DropImage::createRecord($newPath100, DropImage::TYPE_100, $image->drop_id);
+                if (!DropImage::find()->andWhere(['type' => DropImage::TYPE_150, 'drop_id' => $image->drop_id])->exists()) {
+                    DropImage::resizeImage($path, $fullNewPath150, 150);
+                    DropImage::createRecord($newPath150, DropImage::TYPE_150, $image->drop_id);
+                }
+                if (!DropImage::find()->andWhere(['type' => DropImage::TYPE_64, 'drop_id' => $image->drop_id])->exists()) {
+                    DropImage::resizeImage($path, $fullNewPath64, 64);
+                    DropImage::createRecord($newPath64, DropImage::TYPE_64, $image->drop_id);
+                }
+                if (!DropImage::find()->andWhere(['type' => DropImage::TYPE_100, 'drop_id' => $image->drop_id])->exists()) {
+                    DropImage::resizeImage($path, $fullNewPath100, 100);
+                    DropImage::createRecord($newPath100, DropImage::TYPE_100, $image->drop_id);
+                }
             }
         }
 

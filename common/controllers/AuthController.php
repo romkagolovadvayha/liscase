@@ -3,17 +3,22 @@
 namespace common\controllers;
 
 use common\components\oauth\AuthAction;
+use common\components\oauth\Steam;
+use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\forms\user\LoginForm;
 use common\models\profit\Profit;
 use common\models\user\Auth;
 use common\models\user\UserProfile;
 use common\models\user\UserTree;
+use Vikas5914\SteamAuth;
 use Yii;
 use yii\base\BaseObject;
 use yii\filters\AccessControl;
+use yii\helpers\HtmlPurifier;
 use yii\web\BadRequestHttpException;
 use common\components\web\Cookie;
 use common\models\user\User;
+use yii\web\HttpException;
 
 class AuthController extends WebController
 {
@@ -59,14 +64,31 @@ class AuthController extends WebController
         ];
     }
 
-    public function actions()
+//    public function actions()
+//    {
+//        return [
+//            'oauth' => [
+//                'class'           => AuthAction::class,
+//                'successCallback' => [$this, 'onAuthSuccess'],
+//            ],
+//        ];
+//    }
+
+    public function actionOauth()
     {
-        return [
-            'oauth' => [
-                'class'           => AuthAction::class,
-                'successCallback' => [$this, 'onAuthSuccess'],
-            ],
+        $config = [
+            'apikey' => Yii::$app->settings->get('steam_apiKey'), // Steam API KEY
+            'domainname' => Yii::$app->params['homePage'] . '/', // Displayed domain in the login-screen
+            'loginpage' => Yii::$app->params['homePage'] . '/auth/oauth', // Returns to last page if not set
+            "logoutpage" => "",
+            "skipAPI" => true, // true = dont get the data from steam, just return the steamid64
         ];
+
+        $steam = new SteamAuth($config);
+        if ($steam->loggedIn()) {
+            return $this->redirect($this->onAuthSuccess($_SESSION['steamdata']['steamid']));
+        }
+        return $this->redirect($steam->loginUrl());
     }
 
     public function init()
@@ -81,13 +103,13 @@ class AuthController extends WebController
         return '@common/views/auth';
     }
 
-    public function onAuthSuccess($client)
+    public function onAuthSuccess($steamId)
     {
-        $attributes = $client->getUserAttributes();
+        $source = 'steam';
         /* @var $auth Auth */
         $auth = Auth::find()->where([
-                'source' => $client->getId(),
-                'source_id' => $attributes['id'],
+                'source' => $source,
+                'source_id' => $steamId,
             ])->one();
 
         if (Yii::$app->user->isGuest) {
@@ -96,23 +118,49 @@ class AuthController extends WebController
             if ($auth) {
                 // авторизация
                 $user = $auth->user;
-                try {
-                    $avatar = $this->_loadImage($attributes['avatar_link'], $attributes['id']);
-                    $user->userProfile->avatar = $avatar;
-                } catch (\Exception $ex) {}
-                try {
-                    $user->userProfile->name = $attributes['username'];
-                    $user->userProfile->save(false);
-                    $user->username = $attributes['username'];
-                    $user->save(false);
-                } catch (\Exception $ex) {}
+                Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
+
+
+                $refCode = Cookie::getValue('refCode');
+                if (!empty($refCode)) {
+                    $parentUser = User::findByRefCode($refCode);
+                    if (!empty($parentUser) && !empty($parentUser->telegram_chat_id) && !empty($user->getParentUser()) && !$user->getParentUser()->id != $parentUser->id) {
+                        $dateTime = new \DateTime();
+                        $currentDate = $dateTime->format('d.m.Y H:i:s');
+                        $dateTime = new \DateTime($user->created_at);
+                        $regDate = $dateTime->format('d.m.Y H:i:s');
+                        Cookie::remove('refCode');
+                        Yii::$app->personalBotTelegram->sendMessage($parentUser->telegram_chat_id, "По вашей ссылке пытился авторизоваться пользователь, но он уже был зарегистрирован на сайте.\nПользователь: {$user->steam_id}\nДата регистрации: {$regDate}\nТекущая дата: {$currentDate}");
+                    }
+                }
+//                try {
+//                    $avatar = $this->_loadImage($attributes['avatar_link'], $attributes['id']);
+//                    $user->userProfile->avatar = $avatar;
+//                } catch (\Exception $ex) {}
+//                try {
+//                    $user->userProfile->name = $attributes['username'];
+//                    $user->userProfile->save(false);
+//                    $user->username = $attributes['username'];
+//                    $user->save(false);
+//                } catch (\Exception $ex) {}
                 Yii::$app->user->login($user,3600*24*7);
             } else {
+
+//                $infoUser = Steam::getInfoUser($steamId);
+                $username = $steamId;
+                $avatarLink = 'https://' . Yii::$app->settings->get('site_domain') . Yii::$app->settings->get('design_avatar_default');
+//                if (!empty($infoUser)) {
+//                    $username = HtmlPurifier::process($infoUser[0]['personaname']);
+//                    if (empty($username)) {
+//                        $username = $steamId;
+//                    }
+//                    $avatarLink = $infoUser[0]['avatarfull'];
+//                }
                 // регистрация
                 $user     = new User();
-                $user->email = "{$attributes['id']}@steam.com";
-                $user->steam_id = $attributes['id'];
-                $user->username = $attributes['username'];
+                $user->email = "{$steamId}@steam.com";
+                $user->steam_id = $steamId;
+                $user->username = $username;
                 $user->setPassword(Yii::$app->security->generateRandomString());
                 $user->status = User::STATUS_ACTIVE;
                 $user->generateAuthKey();
@@ -121,9 +169,14 @@ class AuthController extends WebController
                 $refCode = Cookie::getValue('refCode');
                 $transaction = $user->getDb()->beginTransaction();
                 if ($user->save(false)) {
+                    $user->user_id = $user->id;
+                    $user->update(false, ['user_id']);
                     if (!empty($refCode)) {
                         $parentUser = User::findByRefCode($refCode);
                         if (!empty($parentUser)) {
+                            if (!empty($parentUser->telegram_chat_id)) {
+                                Yii::$app->personalBotTelegram->sendMessage($parentUser->telegram_chat_id, "По вашей ссылке зарегистировался новый пользователь.\nПользователь: {$user->steam_id}");
+                            }
                             UserTree::appendUser($user->id, $parentUser->id);
                         } else {
                             UserTree::appendUser($user->id, 509);
@@ -131,21 +184,23 @@ class AuthController extends WebController
                     } else {
                         UserTree::appendUser($user->id, 509);
                     }
-                    UserProfile::createModel($user, $attributes['username']);
+                    UserProfile::createModel($user, $username);
                     try {
-                        $avatar = $this->_loadImage($attributes['avatar_link'], $attributes['id']);
+                        $avatar = $this->_loadImage($avatarLink, $steamId);
                         $user->userProfile->avatar = $avatar;
                     } catch (\Exception $ex) {}
                     $user->userProfile->save();
                     $auth = new Auth(
                         [
                             'user_id'   => $user->id,
-                            'source' => $client->getId(),
-                            'source_id' => (string)$attributes['id'],
+                            'source' => $source,
+                            'source_id' => (string)$steamId,
                         ]
                     );
                     if ($auth->save(false)) {
                         $transaction->commit();
+                        Yii::$app->telegramChats->sendMessage('Новая регистрация на сайте: ' . $user->username);
+                        Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $user->steam_id]));
 //                        $userBalance = $user->getPersonalBalance();
 //                        $model = new Profit();
 //                        $model->user_balance_id   = $userBalance->id;
@@ -174,13 +229,16 @@ class AuthController extends WebController
                 $auth = new Auth(
                     [
                         'user_id'   => Yii::$app->user->id,
-                        'source' => $client->getId(),
-                        'source_id' => $attributes['id'],
+                        'source' => $source,
+                        'source_id' => $steamId,
                     ]
                 );
+                Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
                 $auth->save();
             }
         }
+
+        return Yii::$app->params['homePage'];
     }
 
     private function _loadImage($imageUrl, $id) {

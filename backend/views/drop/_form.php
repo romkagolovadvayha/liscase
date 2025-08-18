@@ -51,15 +51,24 @@ JS
     </div>
 </div>
 <div class="row">
-    <div class="col-md-3"><?= $form->field($model, 'price')->textInput(); ?></div>
-    <div class="col-md-3"><?= $form->field($model, 'discount')->textInput(['value' => $model->isNewRecord ? 0 : $model->discount]); ?></div>
-    <div class="col-md-3"><?= $form->field($model, 'count')->textInput(['value' => $model->isNewRecord ? 1 : $model->count]); ?></div>
-    <div class="col-md-3"><?= $form->field($model, 'eng_name')->textInput(); ?></div>
+    <div class="col-md-2"><?= $form->field($model, 'price')->textInput(); ?></div>
+    <div class="col-md-2"><?= $form->field($model, 'discount')->textInput(['value' => $model->isNewRecord ? 0 : $model->discount]); ?></div>
+    <div class="col-md-2"><?= $form->field($model, 'count')->textInput(['value' => $model->isNewRecord ? 1 : $model->count]); ?></div>
+    <div class="col-md-2"><?= $form->field($model, 'floating_price_percent')->textInput(); ?></div>
+    <div class="col-md-4"><?= $form->field($model, 'eng_name')->textInput(); ?></div>
 </div>
 
 <?= $form->field($model, 'drop_type')->dropDownList(Drop::getDropTypesList(), []) ?>
 <?php if ($model->drop_type == Drop::TYPE_COMMAND): ?>
     <?= $form->field($model, 'command')->textarea(); ?>
+<?php endif; ?>
+<?php if (in_array($model->drop_type, [Drop::TYPE_SET])): ?>
+    <div>
+        <?= $form->field($model, 'full_only')->dropDownList([
+                                                                1 => 'Да',
+                                                                0 => 'Нет',
+                                                            ], []); ?>
+    </div>
 <?php endif; ?>
 <?php if (in_array($model->drop_type, [Drop::TYPE_SET, Drop::TYPE_SELECT])): ?>
     <div class="form-group">

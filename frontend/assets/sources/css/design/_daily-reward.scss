@@ -37,10 +37,10 @@
 
   &__image {
     @extend .absolute, .object-contain;
-    width: 198px;
-    height: 198px;
-    right: -35px;
-    bottom: -23px;
+    width: 211px;
+    height: 218px;
+    right: -2px;
+    bottom: -4px;
   }
 
   & .button {
@@ -51,8 +51,8 @@
 
   @container (max-height: 290px) {
     .daily-reward__image {
-      right: -34px;
-      bottom: -75px;
+      right: -2px;
+      bottom: -4px;
     }
   }
   @container (min-height: 290px) {

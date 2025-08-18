@@ -220,6 +220,7 @@ class SiteController extends WebController
 
     public function actionMenu($page = null)
     {
+        $this->layout = 'service';
         $userData = \common\models\user\User::userData();
         return $this->renderAjax('@frontend/views/layouts/menu.twig', [
             'MENU_HIDDEN' => false,

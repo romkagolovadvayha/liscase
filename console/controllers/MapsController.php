@@ -10,6 +10,14 @@ use yii\console\Controller;
 
 class MapsController extends Controller
 {
+    /**
+     * maps/gen-custom
+     */
+    public function actionGenCustom()
+    {
+        Map::getCustomMapsList(3750);
+        Map::getCustomMapsList(4000);
+    }
 
     public function actionGen($serverTag = null)
     {

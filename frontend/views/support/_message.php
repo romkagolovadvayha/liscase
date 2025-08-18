@@ -16,15 +16,22 @@ if (!empty($model->user) && $model->user->canRoles([Role::ROLE_ADMIN])) {
 if (empty($model->user)) {
     $usernameClass = 'bot';
 }
+$avatar = null;
+$username = null;
+if (!empty($model->user_id)) {
+    $avatar   = $model->user->getAvatar();
+    $username = $model->user->getUsername();
+}
+
 ?>
 <?php if (!empty($model->user_id)): ?>
     <div class="support_messages_item">
         <div class="support_messages_item_profile">
-            <div class="support_messages_item_profile_avatar"><img src="<?=$model->user->getAvatar()?>"></div>
+            <div class="support_messages_item_profile_avatar"><img src="<?=$avatar?>"></div>
         </div>
         <div class="support_messages_item_message">
             <?php if ($model->user->id !== $user->id): ?>
-                <div class="support_messages_item_message_username <?=$usernameClass?>"><?=$model->user->username?></div>
+                <div class="support_messages_item_message_username <?=$usernameClass?>"><?=$username?></div>
             <?php endif; ?>
             <?php if (!empty($model->message)): ?>
                 <div class="support_messages_item_message_content">

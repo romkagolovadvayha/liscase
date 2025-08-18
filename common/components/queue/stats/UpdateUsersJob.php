@@ -3,6 +3,7 @@
 namespace common\components\queue\stats;
 
 use common\components\oauth\Steam;
+use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
 use common\models\statistics\Chats;
@@ -41,7 +42,14 @@ class UpdateUsersJob extends BaseObject implements JobInterface
             $playTimeCount = 5;
             foreach ($request['users'] as $item) {
                 try {
-                    $user = User::findBySteamId($item['steam_id']);
+                    $user = User::findBySteamId($item['steam_id'], false, 'update user');
+                    if (empty($user)) {
+                        Yii::$app->telegramChats->sendMessage("UpdateUsersJob: user empty " . $item['steam_id']);
+                        return;
+                    }
+                    if (strtotime($user->updated_at) < time() - 24 * 60 * 60) {
+                        \Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $user->steam_id]));
+                    }
                     $user->username = HtmlPurifier::process($item['username']);
                     $user->ip = $item['ip'];
                     $user->ping = $item['ping'];

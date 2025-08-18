@@ -2,6 +2,7 @@
 
 namespace common\models\map;
 
+use common\components\queue\process\CustomMapGenerateJob;
 use common\models\servers\Servers;
 use common\models\User;
 use Yii;
@@ -231,7 +232,7 @@ class Map extends \yii\db\ActiveRecord
                     ->setHeader('X-API-Key', '03f6a4103d7d4820bed03f4322f72f26')
                     ->setHeader('Content-Type', 'application/json')
                     ->setRawPostData(Map::getSearchQuery($size))
-                    ->post('https://api.rustmaps.com/v4/maps/search?page=' . $i . '&staging=true&includeAllProtocols=false&customMaps=false');
+                    ->post('https://api.rustmaps.com/v4/maps/search?page=' . $i . '&staging=false&includeAllProtocols=false&customMaps=false');
 
                 $response = json_decode($response, 1);
 
@@ -248,6 +249,19 @@ class Map extends \yii\db\ActiveRecord
 
         shuffle($result);
         return $result;
+    }
+
+    public static function getCustomMapsList($size = 0) {
+        $result = [];
+        $cacheKey = 'MapsController_getCustomMapsList2_' . $size;
+        if (Yii::$app->cache->get($cacheKey)) {
+            //return null;
+        }
+        //for ($i = 0; $i < 20; $i++) {
+            \Yii::$app->queueProcess->push(new CustomMapGenerateJob(['size'  => $size]));
+        //}
+        Yii::$app->cache->set($cacheKey, 1, 60*60);
+        return null;
     }
 
     /**
@@ -285,7 +299,7 @@ class Map extends \yii\db\ActiveRecord
 
             $fileIconPathFileName = "{$item['size']}_{$item['seed']}.jpg";
             $filePathFileName = "{$item['size']}_{$item['seed']}_400x400.jpg";
-            Map::upload($imageIconUrl, $fileIconPathFileName, $filePathFileName);
+            Map::uploadOld($imageIconUrl, $fileIconPathFileName, $filePathFileName);
 
             $model = new Map();
             $model->mapId = $mapId;
@@ -304,18 +318,17 @@ class Map extends \yii\db\ActiveRecord
         }
     }
 
-    public static function upload($imageUrl, $filename, $previewFilename) {
+    public static function uploadOld($imageUrl, $filename, $previewFilename) {
         $filePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$filename}";
         $previewfilePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$previewFilename}";
         $image = (clone Yii::$app->curl)
             ->setOption(CURLOPT_PROXY, '154.196.30.165:62742') // Установка прокси
             ->setOption(CURLOPT_PROXYUSERPWD, 'XyQREbm5:AZ1zUkyc') // Если требуется аутентификация
             ->get($imageUrl);
-        Map::watermark($image, $filePath, $previewfilePath);
-        //        file_put_contents($filePath, $image);
+        Map::watermarkOld($image, $filePath, $previewfilePath);
     }
 
-    public static function watermark($image, $filePath, $previewfilePath) {
+    public static function watermarkOld($image, $filePath, $previewfilePath) {
         // Загружаем основное изображение
         $background = imagecreatefromstring($image);
 
@@ -360,8 +373,8 @@ class Map extends \yii\db\ActiveRecord
         imagejpeg($background, $filePath);
 
         // Сжимаем изображение до 200x200
-        $resize_width = 400;
-        $resize_height = 400;
+        $resize_width = 200;
+        $resize_height = 200;
         $resized_image = imagecreatetruecolor($resize_width, $resize_height);
 
         // Устанавливаем прозрачность для нового изображения
@@ -382,6 +395,66 @@ class Map extends \yii\db\ActiveRecord
         imagedestroy($background);
         imagedestroy($overlay);
         imagedestroy($resized_image);
+    }
+
+    public static function upload($imageUrl, $filename, $depecate = null) {
+        $filePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$filename}";
+        $image = (clone Yii::$app->curl)
+            ->setOption(CURLOPT_PROXY, '154.196.30.165:62742') // Установка прокси
+            ->setOption(CURLOPT_PROXYUSERPWD, 'XyQREbm5:AZ1zUkyc') // Если требуется аутентификация
+            ->get($imageUrl);
+        Map::watermark($image, $filePath);
+
+        return $filePath;
+    }
+
+    public static function watermark($image, $filePath) {
+        // Загружаем основное изображение
+        $background = imagecreatefromstring($image);
+
+        // Загружаем накладываемое изображение
+        $overlay = imagecreatefrompng(\Yii::getAlias('@frontend/web') . Yii::$app->settings->get('design_watemark')); // для прозрачного изображения используем PNG
+
+        // Проверка на ошибку при загрузке накладываемого изображения
+        if (empty($overlay)) {
+            die('Ошибка при загрузке накладываемого изображения');
+        }
+
+        // Включаем поддержку альфа-канала (для PNG)
+        imagealphablending($background, true); // Включаем смешивание (по умолчанию оно отключено)
+        imagesavealpha($background, true); // Сохраняем альфа-канал для прозрачности
+
+        // Включаем поддержку альфа-канала для накладываемого изображения
+        imagealphablending($overlay, false); // Отключаем смешивание для накладываемого изображения
+        imagesavealpha($overlay, false); // Сохраняем альфа-канал для накладываемого изображения
+
+        // Получаем размеры основного изображения
+        $bg_width = imagesx($background);
+        $bg_height = imagesy($background);
+
+        // Получаем размеры накладываемого изображения
+        $overlay_width = imagesx($overlay);
+        $overlay_height = imagesy($overlay);
+
+        // Позиция наложения (можно выбрать любое положение, здесь верхний левый угол)
+        $pos_x = ($bg_width - $overlay_width) / 2; // Центрируем по горизонтали
+        $pos_y = 50; // Центрируем по вертикали
+
+        // Накладываем одно изображение на другое с учетом прозрачности
+        imagecopymerge($background, $overlay, $pos_x, $pos_y, 0, 0, $overlay_width, $overlay_height, 15);
+
+        // Сохраняем результат в файл или выводим его в браузер
+        //header('Content-Type: image/jpeg');
+        if (!file_exists(dirname($filePath))) {
+            mkdir(dirname($filePath));
+            chmod(dirname($filePath), 0777);
+        }
+
+        imagejpeg($background, $filePath);
+
+        // Освобождаем память
+        imagedestroy($background);
+        imagedestroy($overlay);
     }
 
     public static function getSearchQuery($size) {

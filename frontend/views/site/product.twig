@@ -14,7 +14,7 @@
     {% if DISCOUNT > 1 %}
         <p class="category-card__discount">-{{ DISCOUNT }}%</p>
     {% endif %}
-    <img class="category-card__image" src="{{ IMAGE }}" alt="{{ t('database', NAME) }}" />
+    <img loading="lazy" class="category-card__image" src="{{ IMAGE }}" alt="{{ t('database', NAME) }}" />
     <p class="category-card__title">{{ t('database', NAME) }}</p>
     <button class="button-teritiary" {% if BLOCKED %}disabled{% endif %}>
                 <span class="button__text">

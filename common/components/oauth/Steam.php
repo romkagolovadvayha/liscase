@@ -5,6 +5,10 @@ namespace common\components\oauth;
 use common\models\user\User;
 use yii\authclient\OpenId;
 use Yii;
+use yii\base\BaseObject;
+use yii\helpers\HtmlPurifier;
+use yii\httpclient\Client;
+use yii\httpclient\CurlTransport;
 
 /**
  * Steam allows authentication via Steam OAuth.
@@ -50,20 +54,40 @@ class Steam extends OpenId
     /**
      * {@inheritdoc}
      */
+    protected function defaultRequestOptions()
+    {
+        return [
+            'userAgent' => Yii::$app->name . ' OpenID Client',
+            'timeout' => 30,
+            'followLocation' => true,
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     protected function initUserAttributes(): array
     {
         $url = $this->getClaimedId();
         $id = preg_replace("/[^0-9]/", '', $url);
         $result = ['id' => $id];
-        $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$this->key}&steamids={$id}";
-        $response = Yii::$app->curl->get($apiUrl);
-        $usersInfo = json_decode($response, 1)['response']['players'];
-//        if (!empty($usersInfo)) {
-            $result['username'] = $usersInfo[0]['personaname'];
-            $result['avatar_link'] = $usersInfo[0]['avatarfull'];
-//        }
 
         return array_merge($result, $this->fetchAttributes());
+    }
+
+    public function createRequest()
+    {
+        $curl = new CurlTransport();
+        $client = new Client();
+        $client->setTransport($curl);
+        return $client
+                    ->createRequest()
+                    ->addHeaders([
+                        'Origin' => 'https://steamcommunity.com/',
+                        'Referer' => 'https://steamcommunity.com/',
+                    ])
+                    ->addOptions($this->defaultRequestOptions())
+                    ->addOptions($this->getRequestOptions());
     }
 
     public static function getAvatar($steamId) {
@@ -72,7 +96,7 @@ class Steam extends OpenId
             return Yii::$app->cache->get($cacheKey);
         }
 
-        $key = Yii::$app->params['steamApiKey'];
+        $key = Yii::$app->settings->get('steam_apiKey');
         $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$steamId}";
         $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
         $avatar = $response['response']['players'][0]['avatarfull'];
@@ -104,7 +128,7 @@ class Steam extends OpenId
     public static function updateUser($id) {
         $user = User::findOne($id);
 
-        $key = Yii::$app->params['steamApiKey'];
+        $key = Yii::$app->settings->get('steam_apiKey');
         $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$user->steam_id}";
         $response = "";
         try {
@@ -125,12 +149,9 @@ class Steam extends OpenId
     public static function getInfoUser($steamId) {
         $response = "";
         try {
-            $key = Yii::$app->params['steamApiKey'];
+            $key = Yii::$app->settings->get('steam_apiKey');
             $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids={$steamId}";
-            $response = (clone Yii::$app->curl)
-                ->setOption(CURLOPT_PROXY, '154.196.30.165:62742') // Установка прокси
-                ->setOption(CURLOPT_PROXYUSERPWD, 'XyQREbm5:AZ1zUkyc') // Если требуется аутентификация
-                ->get($apiUrl);
+            $response = (clone Yii::$app->curl)->get($apiUrl);
             $data = json_decode($response, 1);
             $usersInfo = $data['response']['players'];
             return $usersInfo;
@@ -140,8 +161,27 @@ class Steam extends OpenId
         return null;
     }
 
+    public static function getInfoUsers($steamIds) {
+        $response = "";
+        try {
+            $key = Yii::$app->settings->get('steam_apiKey');
+            $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={$key}&steamids=" . implode(',', $steamIds);
+            $response = (clone Yii::$app->curl)->get($apiUrl);
+            $data = json_decode($response, 1);
+            if (empty($data) || empty($data['response']) || empty($data['response']['players'])) {
+                Yii::$app->telegramChats->sendMessage('getInfoUser: ' . $response);
+                return [];
+            }
+            $usersInfo = $data['response']['players'];
+            return $usersInfo;
+        } catch (\Exception $e) {
+            Yii::$app->telegramChats->sendMessage('getInfoUser: ' . $response);
+        }
+        return null;
+    }
+
     public static function getGameInfo($steamId) {
-        $key = Yii::$app->params['steamApiKey'];
+        $key = Yii::$app->settings->get('steam_apiKey');
         $apiUrl = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key={$key}&steamid={$steamId}&include_played_free_games=1";
         $response = json_decode(Yii::$app->curl->get($apiUrl), 1);
         if (empty($response['response'])) {

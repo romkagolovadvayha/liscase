@@ -2,7 +2,7 @@
     {% for item in ITEMS %}
         <div class="category" data-id="{{ item.id }}">
             {% if (SETTINGS.get('colors_categories-is-image')) %}
-                <img src="{{ item.image }}" alt="{{ t('database', item.name) }}" class="category__image" />
+                <img src="{{ item.image }}" alt="{{ t('database', item.name) }}" class="category__image" loading="lazy" />
             {% endif %}
             <p class="category__title">{{ t('database', item.name) }}</p>
         </div>

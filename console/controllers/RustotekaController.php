@@ -131,7 +131,7 @@ class RustotekaController extends Controller
             $banSystem = BanSystemApi::getInstance($project);
             $banList = $banSystem->banList();
             foreach ($banList as $item) {
-                $user = User::findBySteamId($item['steam_id']);
+                $user = User::findBySteamId($item['steam_id'], false, 'rustoteka');
                 $model = new Bans();
                 $model->username = HtmlPurifier::process($item['username']);
                 $model->steam_id = $item['steam_id'];
@@ -151,7 +151,7 @@ class RustotekaController extends Controller
                                           ->all();
 
                         foreach ($reports as $report) {
-                            $_user = User::findBySteamId($report->steam_id);
+                            $_user = User::findBySteamId($report->steam_id, false, 'rustoteka 2');
                             if (!empty($_user) && $_user->ban_notify && !empty($_user->telegram_chat_id)) {
                                 \Yii::$app->personalBotTelegram->sendMessage($_user->telegram_chat_id, "⛔️Игрок {$model->username}, на которого вы жаловались забанен по причине {$model->reason}!");
                             }

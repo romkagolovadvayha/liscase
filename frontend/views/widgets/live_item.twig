@@ -1,6 +1,6 @@
 <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
     {% if ITEM.weapon_image %}
-        <img src="{{ ITEM.weapon_image }}" class="block w-36 h-36 min-w-36 min-h-36" alt="{{ ITEM.weapon_name }}">
+        <img src="{{ ITEM.weapon_image }}" class="block w-36 h-36 min-w-36 min-h-36" loading="lazy" alt="{{ ITEM.weapon_name }}">
     {% endif %}
     <div class="block w-full">
         <p class="p3 flex items-center gap-x-4">

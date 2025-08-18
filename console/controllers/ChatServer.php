@@ -1,6 +1,8 @@
 <?php
 namespace console\controllers;
 
+use common\components\queue\support\BeforeMessageJob;
+use common\components\queue\support\OpenAiJob;
 use common\models\rcon\RconTasks;
 use common\models\support\SupportFile;
 use common\models\support\SupportMessage;
@@ -264,7 +266,7 @@ class ChatServer extends WebSocketServer
                        return;
                    }
                } catch (\Exception $e) {
-                   Yii::$app->telegramChats->sendMessage($e->getFile() . ":" . $e->getLine() . "; " . $e->getMessage());
+                   Yii::$app->telegramChats->sendMessage($e->getFile() . ":" . $e->getLine() . "; " . $e->getMessage() . "; " . $model->id . "; " . $model->user->steam_id . "; " . $command . "; " . $response);
                    $client->send(json_encode([
                                                  'type' => 'store.take',
                                                  'code' => 500,
@@ -603,15 +605,15 @@ class ChatServer extends WebSocketServer
                 $model->created_at = date('Y-m-d H:i:s');
                 $model->save();
 
-                $domain = Yii::$app->settings->get('site_domain');
-                $text = "💬 Новое сообщение.";
-                $text .= PHP_EOL. "Имя: {$user->username}";
-                $text .= PHP_EOL. "Сообщение: {$model->message}";
-                $text .= PHP_EOL. "<a href=\"https://{$domain}/support/ticket?id={$chat->getNumber()}\">Перейти к тикету</a>";
-                Yii::$app->telegramSupport->sendMessage($text);
+                Yii::$app->queueProcess->push(new BeforeMessageJob([
+                    'chatId' => $model->support_id,
+                    'userId' => $model->user_id,
+                    'message' => $model->message,
+                    'username' => $user->username,
+                    'chatNumber' => $chat->getNumber(),
+                ]));
 
                 SupportRead::createRecord($chat->user_id, $user->id, $model->id, $chat->id);
-
                 $this->commandTicketUpdate($client, json_encode(['user_id' => $chat->user_id]));
                 $hash = md5(time());
                 foreach ($this->clients as $chatClient) {
@@ -649,8 +651,8 @@ class ChatServer extends WebSocketServer
             }
 
             //$client->send( json_encode($result) );
-        } catch (\Exception $e) {
-            echo "commandChat:" . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
+        } catch (\Exception $ex) {
+            Yii::$app->telegramChats->sendMessage('commandChat: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
 

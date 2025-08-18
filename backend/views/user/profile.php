@@ -61,38 +61,6 @@ $payoutSum = \common\models\user\UserPayoutReferral::find()
                                                    ->sum('amount') ?? 0;
 $payoutTotal = $total * ($user->userProfile->referral_bonus/100) - $payoutSum;
 
-
-$minPrice = 20;
-$maxPrice = 50;
-$items = [];
-$data = Yii::$app->rustTm->prices()['items'];
-shuffle($data);
-foreach ($data as $item) {
-    if ($item['price'] > $item['avg_price'] + 5) {
-        continue;
-    }
-    if ($item['price'] > $maxPrice || $item['price'] < $minPrice) {
-        continue;
-    }
-    $items[] = [
-        "name" => $item['market_hash_name'],
-        "price" => $item['price'],
-        "image" => "https://cdn.rust.tm/item/" . urlencode($item['market_hash_name']) . "/100.png",
-        "image300" => "https://cdn.rust.tm/item/" . urlencode($item['market_hash_name']) . "/300.png"
-    ];
-    if (count($items) > 40) {
-        break;
-    }
-}
-$items = array_slice($items, 0, 60);
-$dataProviderSkins = new \yii\data\ArrayDataProvider([
-                                                    'allModels' => $items,
-                                                    'totalCount' => count($items),
-                                                    'pagination' => [
-                                                        'pageSize' => 60,
-                                                    ],
-                                                ]);
-
 $statusClass = "bg-success";
 if ($user->status === 5) {
     $statusClass = "bg-danger";
@@ -118,6 +86,145 @@ $teamsProvider2 = new \yii\data\ArrayDataProvider([
                                                     ],
 ]);
 
+$checkingExist = UserChecking::find()
+    ->andWhere(['user_id' => $user->id])
+    ->andWhere(['status' => UserChecking::STATUS_CHECKING])
+    ->exists();
+
+/** @var UserChecking[] $checkings */
+$checkings = UserChecking::find()
+    ->andWhere(['user_id' => $user->id])
+    ->andWhere(['status' => UserChecking::STATUS_DONE])
+    ->orderBy(['id' => SORT_DESC])
+    ->all();
+
+$checkingProvider = new \yii\data\ArrayDataProvider([
+                                                        'allModels' => $checkings,
+                                                        'totalCount' => count($checkings),
+                                                        'pagination' => [
+                                                            'pageSize' => 30,
+                                                        ],
+                                                    ]);
+$bans = [];
+$bansExist = false;
+$lastCheck = [];
+$lastCheckExist = false;
+try {
+    $rustCheck = Yii::$app->rustCheck->getInfo($user->steam_id);
+    if (!empty($rustCheck['bans'])) {
+        foreach ($rustCheck['bans'] as $ban) {
+            $bansExist = true;
+            $unbannedDate = $ban['unbanDate'];
+            $banDate = "Неизвестно";
+            if (!empty($ban['banDate'])) {
+                $date = new DateTime();
+                $date->setTimestamp($ban['banDate']);
+                $banDate = $date->format('d.m.Y H:i:s');
+            }
+            if (!empty($unbannedDate)) {
+                $date2 = new DateTime();
+                $date2->setTimestamp($unbannedDate);
+                $unbannedDate = $date2->format('d.m.Y H:i:s');
+            } else {
+                $unbannedDate = "Никогда";
+            }
+            if (strpos($ban['serverName'], 'Без названия') !== false) {
+                $ban['serverName'] = '<i style="color: #808080">Сервер удален</i>';
+            }
+            $bans[] = [
+                'serverName' => $ban['serverName'],
+                'reason' => $ban['reason'],
+                'unbanned_date' => $unbannedDate,
+                'date' => $banDate,
+            ];
+        }
+    }
+    if (!empty($rustCheck['last_check'])) {
+        foreach ($rustCheck['last_check'] as $_lastCheck) {
+            $lastCheckExist = true;
+            $moder = null;
+            if (!empty($_lastCheck['moderSteamID'])) {
+                $moder = User::findBySteamId($_lastCheck['moderSteamID'], false, 'profile');
+            }
+            $date = new DateTime();
+            $date->setTimestamp($_lastCheck['time']);
+            $lastCheck[] = [
+                'serverName' => $_lastCheck['serverName'],
+                'date' => $date->format('d.m.Y H:i:s'),
+                'moder' => $moder,
+            ];
+        }
+    }
+} catch (\Exception $e) {
+    Yii::$app->telegramReports->sendMessage("Profile:" . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage());
+}
+
+
+try {
+    $banList = Steam::getBansGGRust($user->steam_id);
+    foreach ($banList as $banItem) {
+        $bansExist = true;
+        $bans[] = [
+            'serverName' => $banItem['server'],
+            'reason' => $banItem['reason'],
+            'unbanned_date' => $banItem['expireDate'],
+            'date' => $banItem['date'],
+        ];
+    }
+} catch (\Exception $e) {
+    Yii::$app->telegramReports->sendMessage("Profile:" . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage());
+}
+try {
+    $banList = Steam::getBansRustUssr($user->steam_id);
+    foreach ($banList as $banItem) {
+        $bansExist = true;
+        $bans[] = [
+            'serverName' => $banItem['server'],
+            'reason' => $banItem['reason'],
+            'unbanned_date' => $banItem['expireDate'],
+            'date' =>  $banItem['date'],
+        ];
+    }
+} catch (\Exception $e) {
+    Yii::$app->telegramReports->sendMessage("Profile:" . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage());
+}
+try {
+    $banList = Steam::getBansMagicRust($user->steam_id);
+    foreach ($banList as $banItem) {
+        $bansExist = true;
+        $dateText = "Неизвестно";
+        if (!empty($banItem['time'])) {
+            $date = new DateTime();
+            $date->setTimestamp($banItem['time']);
+            $dateText = $date->format('d.m.Y H:i:s');
+        }
+        $bans[] = [
+            'serverName' => $banItem['server'],
+            'reason' => $banItem['reason'],
+            'unbanned_date' => $banItem['expireDate'],
+            'date' => $dateText,
+        ];
+    }
+} catch (\Exception $e) {
+    Yii::$app->telegramReports->sendMessage("Profile:" . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage());
+}
+
+
+
+$bansOtherProjectProvider = new \yii\data\ArrayDataProvider([
+                                                                    'allModels' => $bans,
+                                                                    'totalCount' => count($bans),
+                                                                    'pagination' => [
+                                                                        'pageSize' => 30,
+                                                                    ],
+                                                                ]);
+$checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
+                                                        'allModels' => $lastCheck,
+                                                        'totalCount' => count($lastCheck),
+                                                        'pagination' => [
+                                                            'pageSize' => 30,
+                                                        ],
+                                                    ]);
 ?>
 
 <style>
@@ -151,6 +258,11 @@ $teamsProvider2 = new \yii\data\ArrayDataProvider([
                 </button>
                 <?php else: ?>
                 <?= Html::a('Снять бан', '/user/unban?userId=' . $user->id, ['data-confirm' => 'Вы действительно уверены?', 'class' => 'list-group-item list-group-item-action list-group-item-success']) ?>
+                <?php endif; ?>
+                <?php if (!$checkingExist): ?>
+                    <?= Html::a('Вызвать на проверку', '/user/checking-start?userId=' . $user->id, ['data-confirm' => 'Вы действительно уверены?', 'class' => 'list-group-item list-group-item-action list-group-item-primary']) ?>
+                <?php else: ?>
+                    <?= Html::a('Завершить проверку', '/user/checking-stop?userId=' . $user->id, ['data-confirm' => 'Вы действительно уверены?', 'class' => 'list-group-item list-group-item-action list-group-item-success']) ?>
                 <?php endif; ?>
             <button type="button" class="list-group-item list-group-item-action list-group-item-warning" data-bs-toggle="modal" data-bs-modal-form="bonus_form" data-bs-target="#modalForm">
                 Пополнить баланс
@@ -193,8 +305,43 @@ $teamsProvider2 = new \yii\data\ArrayDataProvider([
                                                           'label'     => Yii::t('common', "Ник"),
                                                           'format'    => 'raw',
                                                           'value'          => function ($model) {
-                                                              $user = User::findBySteamId($model['steam_id']);
+                                                              $user = User::findBySteamId($model['steam_id'], false, 'profile2');
                                                               return "<a href=\"/user/profile?userId={$user->id}\">{$model['name']}</a>";
+                                                          },
+                                                      ],
+                                                  ],
+                                              ]);
+            ?>
+        </div>
+        <div class="mt-4">
+            <h3>Проверки</h3>
+            <?= \kartik\grid\GridView::widget([
+                                                  'dataProvider' => $checkingProvider,
+                                                  'layout'       => "{items} {pager}",
+                                                  'columns'      => [
+                                                      [
+                                                          'attribute' => 'name',
+                                                          'label'     => Yii::t('common', "Кто вызывал"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function (UserChecking $model) {
+                                                              $user = User::findOne($model->checking_by);
+                                                              return "<a href=\"/user/profile?userId={$user->id}\">{$user->username}</a>";
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'created_at',
+                                                          'label'     => Yii::t('common', "Начало проверки"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function (UserChecking $model) {
+                                                              return $model->created_at;
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'done_at',
+                                                          'label'     => Yii::t('common', "Завершение проверки"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function (UserChecking $model) {
+                                                              return $model->done_at;
                                                           },
                                                       ],
                                                   ],
@@ -252,6 +399,85 @@ $teamsProvider2 = new \yii\data\ArrayDataProvider([
                                               ]);
             ?>
         </div>
+        <div class="mt-4">
+            <h3>Проверки на других проектах</h3>
+            <?= \kartik\grid\GridView::widget([
+                                                  'dataProvider' => $checkingOtherProjectProvider,
+                                                  'layout'       => "{items} {pager}",
+                                                  'columns'      => [
+                                                      [
+                                                          'attribute' => 'serverName',
+                                                          'label'     => Yii::t('common', "Сервер"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                              return $model['serverName'];
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'moder',
+                                                          'label'     => Yii::t('common', "Модератор"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                                if (empty($model['moder'])) {
+                                                                    return "Не указан";
+                                                                }
+                                                              return "<a href=\"https://steamcommunity.com/profiles/{$model['moder']->steam_id}\">{$model['moder']->username}</a>";
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'date',
+                                                          'label'     => Yii::t('common', "Дата"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                              return $model['date'];
+                                                          },
+                                                      ],
+                                                  ],
+                                              ]);
+            ?>
+        </div>
+        <div class="mt-4">
+            <h3>Баны на других проектах</h3>
+            <?= \kartik\grid\GridView::widget([
+                                                  'dataProvider' => $bansOtherProjectProvider,
+                                                  'layout'       => "{items} {pager}",
+                                                  'columns'      => [
+                                                      [
+                                                          'attribute' => 'serverName',
+                                                          'label'     => Yii::t('common', "Сервер"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                              return $model['serverName'];
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'reason',
+                                                          'label'     => Yii::t('common', "Причина"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                              return $model['reason'];
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'date',
+                                                          'label'     => Yii::t('common', "Дата"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                              return $model['date'];
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'date',
+                                                          'label'     => Yii::t('common', "Разбан"),
+                                                          'format'    => 'raw',
+                                                          'value'          => function ($model) {
+                                                              return $model['unbanned_date'];
+                                                          },
+                                                      ],
+                                                  ],
+                                              ]);
+            ?>
+        </div>
     </div>
 </div>
 
@@ -273,15 +499,6 @@ $teamsProvider2 = new \yii\data\ArrayDataProvider([
             <div id="mute_form">
                 <?= $this->render('_form_mute_form', compact('muteForm')); ?>
             </div>
-            <?php foreach ($usersTree as $userTree): ?>
-                <div id="skin_form_<?=$userTree->user->id?>">
-                    <?= $this->render('_form_skin_form', [
-                        'childId' => $userTree->user->id,
-                        'dataProviderSkins' => $dataProviderSkins,
-                        'user' => $user,
-                    ]); ?>
-                </div>
-            <?php endforeach; ?>
         </div>
     </div>
 </div>

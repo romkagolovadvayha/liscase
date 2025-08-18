@@ -41,7 +41,7 @@ class SaveRaidJob extends BaseObject implements JobInterface
                         if (strlen($steamId) < 16) {
                             continue;
                         }
-                        $user = User::findBySteamId($steamId);
+                        $user = User::findBySteamId($steamId, false, 'raid');
                         $location = $item['entityLocation'];
                         $explosives = $item['explosiveUsed'];
                         $owners = $item['owners'];

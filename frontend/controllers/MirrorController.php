@@ -67,7 +67,7 @@ class MirrorController extends Controller
         $text .= PHP_EOL . "SteamId: {$steamId}";
 
         if (empty($user)) {
-            $user = User::findBySteamId($steamId);
+            $user = User::findBySteamId($steamId, false, 'mirror 2');
             $user->is_mirror_registration = 1;
             $user->save();
             $text .= PHP_EOL . "Игрок: {$user->username}";

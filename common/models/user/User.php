@@ -5,6 +5,7 @@ namespace common\models\user;
 use common\components\helpers\DateHelper;
 use common\components\helpers\Role;
 use common\components\oauth\Steam;
+use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\components\queue\telegram\SendMessageJob;
 use common\components\web\Cookie;
 use common\models\auth\AuthAssignment;
@@ -29,6 +30,7 @@ use yii\web\JsExpression;
 
 /**
  * @property int             $id
+ * @property int             $user_id
  * @property string          $email
  * @property string          $steam_id
  * @property int             $telegram_chat_id
@@ -121,6 +123,14 @@ class User extends ActiveRecord implements IdentityInterface
             self::STATUS_BLOCKED      => Yii::t('common', 'Заблокирован'),
             self::STATUS_TMP_BLOCKED  => Yii::t('common', 'Временно заблокирован'),
         ];
+    }
+
+    public function getUsername()
+    {
+        if ($this->steam_id == 777) {
+            return Yii::$app->settings->get('openAi_username');
+        }
+        return $this->username;
     }
 
     /**
@@ -281,9 +291,10 @@ class User extends ActiveRecord implements IdentityInterface
         return static::findOne($attributes);
     }
 
-    public static function findBySteamId($steamId, $updated = false)
+    public static function findBySteamId($steamId, $updated = false, $source = "unknown")
     {
         if (strlen($steamId) !== 17) {
+            Yii::$app->telegramChats->sendMessage("User findBySteamId !== 17: {$steamId} ");
             return null;
         }
         /** @var User $user */
@@ -294,22 +305,32 @@ class User extends ActiveRecord implements IdentityInterface
             if (empty($user)) {
                 $dbTransaction = Yii::$app->db->beginTransaction();
                 try {
-                    $infoUser       = Steam::getInfoUser($steamId);
-                    if (empty($infoUser)) {
-                        $dbTransaction->rollBack();
-                        return null;
-                    }
+//                    $infoUser       = Steam::getInfoUser($steamId);
+                    $username = $steamId;
+                    $avatar = 'https://' . Yii::$app->settings->get('site_domain') . Yii::$app->settings->get('design_avatar_default');
+//                    if (!empty($infoUser)) {
+//                        $username = HtmlPurifier::process($infoUser[0]['personaname']);
+//                        if (empty($username)) {
+//                            $username = $steamId;
+//                        }
+//                        $avatar = $infoUser[0]['avatarfull'];
+//                        //$dbTransaction->rollBack();
+//                        //return null;
+//                    }
                     $user           = new User();
                     $user->email    = "{$steamId}@steam.com";
                     $user->steam_id = $steamId;
                     $user->auto = 1;
-                    $user->username = HtmlPurifier::process($infoUser[0]['personaname']);
+                    $user->username = $username;
+                    $user->updated_at = null;
                     $user->setPassword(Yii::$app->security->generateRandomString());
                     $user->status = User::STATUS_ACTIVE;
                     $user->generateAuthKey();
                     $user->generateRefCode();
                     $user->generateSocketRoom();
                     if ($user->save()) {
+                        $user->user_id = $user->id;
+                        $user->update(false, ['user_id']);
                         $auth = new Auth(
                             [
                                 'user_id'   => $user->id,
@@ -319,12 +340,14 @@ class User extends ActiveRecord implements IdentityInterface
                         );
                         $auth->save();
                         $dbTransaction->commit();
+                        Yii::$app->telegramChats->sendMessage('Новый пользователь на сайте (' . $source . '): ' . $user->username);
+                        Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
                         UserTree::appendUser($user->id, 509);
-                        UserProfile::createModel($user, $infoUser[0]['personaname']);
-                        $user->userProfile->name = HtmlPurifier::process($infoUser[0]['personaname']);
+                        UserProfile::createModel($user, $username);
+                        $user->userProfile->name = $username;
                         try {
-                            $avatar                    = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
-                            $user->userProfile->avatar = $avatar;
+                            //$avatar                    = self::_loadImage($avatar, $steamId);
+                            $user->userProfile->avatar = null;
                         } catch (\Exception $ex) {
                         }
                         $user->userProfile->save();
@@ -339,9 +362,9 @@ class User extends ActiveRecord implements IdentityInterface
                 $user->updated_at = date('Y-m-d H:i:s');
                 $user->username = HtmlPurifier::process($infoUser[0]['personaname']);
                 $user->save();
-                $avatar = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
+                //$avatar = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
                 $user->userProfile->name = HtmlPurifier::process($infoUser[0]['personaname']);
-                $user->userProfile->avatar = $avatar;
+                $user->userProfile->avatar = null;
                 $user->userProfile->save();
             }
 
@@ -663,6 +686,9 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     public function getAvatar() {
+        if ($this->steam_id == 777) {
+            return 'https://' . Yii::$app->settings->get('site_domain') . Yii::$app->settings->get('openAi_avatar');
+        }
         if (empty($this->userProfile)) {
             return '';
         }
@@ -1081,6 +1107,7 @@ class User extends ActiveRecord implements IdentityInterface
 
     public static function userData() {
         $userData = [];
+        /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->cache(30)
                           ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
@@ -1104,6 +1131,9 @@ class User extends ActiveRecord implements IdentityInterface
                     if ($server->id == $userData['server']->id) {
                         $userData['SERVER_ACTIVE_ID'] = $userData['server']->id;
                         $userData['SERVER_ACTIVE_TAG'] = $userData['server']->tag;
+                        if (!$server->secret_map) {
+                            $userData['SERVER_MAP_TAG'] = $userData['server']->tag;
+                        }
                         break;
                     }
                 }
@@ -1112,6 +1142,9 @@ class User extends ActiveRecord implements IdentityInterface
         if (empty($userData['SERVER_ACTIVE_ID'])) {
             $userData['SERVER_ACTIVE_ID'] = $servers[0]->id;
             $userData['SERVER_ACTIVE_TAG'] = $servers[0]->tag;
+        }
+        if (empty($userData['SERVER_MAP_TAG'])) {
+            $userData['SERVER_MAP_TAG'] = $servers[0]->tag;
         }
 
         return $userData;

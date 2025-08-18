@@ -16,7 +16,7 @@ $dataProvider = new ActiveDataProvider([
 ]);
 ?>
 <section class="stats-aside__stat-block stat-block">
-    <h4 class="stat-block__title"><?=Yii::t('common', 'Похожие записи')?></h4>
+    <h3 class="stat-block__title"><?=Yii::t('common', 'Похожие записи')?></h3>
     <div class="tab-content">
         <?= ListView::widget([
                                  'id'           => 'blog-popular-list-view',

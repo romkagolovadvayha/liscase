@@ -61,7 +61,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
             }
             foreach ($request['teams'] as $item) {
                 try {
-                    User::findBySteamId($item['steam_id']);
+                    User::findBySteamId($item['steam_id'], false, 'stats');
                 } catch (\Exception $ex) {}
                 $model = new Teams();
                 $model->steam_id = $item['steam_id'];

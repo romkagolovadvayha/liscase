@@ -46,16 +46,6 @@ use common\models\user\UserBalance;
                                                       return $model['price'] . " RUB";
                                                   },
                                               ],
-                                              [
-                                                  'attribute' => 'replay',
-                                                  'options'   => ['width' => '150'],
-                                                  'label'     => '',
-                                                  'format'    => 'raw',
-                                                  'value'          => function ($model) use ($user, $childId) {
-                                                      $url = \yii\helpers\Url::to(['/skindrops/buy', 'name' => $model['name'], 'price' => (($model['price']+10) * 100), 'userId' => $user->id, 'childId' => $childId]);
-                                                      return '<a href="' . $url . '" class="btn btn-danger">Выбрать</button>';
-                                                  },
-                                              ],
                                           ],
                                       ]);
     ?>

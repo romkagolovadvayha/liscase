@@ -2,6 +2,7 @@
 namespace backend\controllers;
 
 use common\components\helpers\Role;
+use common\components\settings\Settings;
 use common\models\box\BoxImage;
 use Yii;
 use yii\base\BaseObject;
@@ -71,7 +72,12 @@ class SettingsController extends Controller
                     if (!empty($settings[$id]) && !empty($tmpName)) {
                         /** @var SiteSetting $setting */
                         $setting        = $settings[$id];
-                        $setting->value = $this->_loadImage($tmpName, $setting->category, $_FILES['settings']['name'][$id], $setting->code, $setting->value);
+                        if ($setting->type === 'image') {
+                            $setting->value = $this->_loadImage($tmpName, $setting->category, $_FILES['settings']['name'][$id], $setting->code, $setting->value);
+                        }
+                        if ($setting->type === 'video') {
+                            $setting->value = $this->_loadVideo($tmpName, $setting->category, $_FILES['settings']['name'][$id], $setting->code, $setting->value);
+                        }
                         $setting->save();
                     }
                 }
@@ -98,6 +104,35 @@ class SettingsController extends Controller
         $exp = $exp[count($exp) - 1];
         if (!in_array($exp, ['svg', 'png', 'jpg', 'ico', 'webp'])) {
             Yii::$app->session->setFlash('danger', 'Разрешенно загружать только изображения в формате SVG, PNG, JPG, ICO, WEBP!');
+            return null;
+        }
+        $fileName = md5(time() . $code);
+        $uploadDir = Yii::getAlias('@frontend/web');
+        $fileUrl = "/uploads/site/{$category}/{$fileName}.{$exp}";
+        $filePath = $uploadDir . $fileUrl;
+        if (!file_exists(dirname(dirname($filePath)))) {
+            mkdir(dirname(dirname($filePath)));
+            chmod(dirname(dirname($filePath)), 0777);
+        }
+        if (!file_exists(dirname($filePath))) {
+            mkdir(dirname($filePath));
+            chmod(dirname($filePath), 0777);
+        }
+        if (file_exists($oldFile)) {
+            unlink($oldFile);
+        }
+        file_put_contents($filePath, file_get_contents($tmpName));
+        return $fileUrl;
+    }
+
+    private function _loadVideo($tmpName, $category, $name, $code, $oldFile) {
+        if (empty($tmpName)) {
+            return null;
+        }
+        $exp = explode('.', $name);
+        $exp = $exp[count($exp) - 1];
+        if (!in_array($exp, ['webm'])) {
+            Yii::$app->session->setFlash('danger', 'Разрешенно загружать только видео в формате WEBM!');
             return null;
         }
         $fileName = md5(time() . $code);

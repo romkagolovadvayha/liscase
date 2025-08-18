@@ -6,7 +6,6 @@ $user = Yii::$app->user->identity;
 $dailyRewardList = Task::getDailyRewardList($user);
 $userTasks = Task::getTasksByUser($user);
 $received = true;
-\frontend\assets\UserBoxAsset::register($this);
 
 ?>
 

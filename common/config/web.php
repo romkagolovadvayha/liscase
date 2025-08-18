@@ -62,7 +62,23 @@ $config = [
             ],
         ],
         'view' => [
-            'class' => 'yii\web\View',
+            'class' => '\rmrevin\yii\minify\View',
+            'enableMinify' => !YII_DEBUG,
+//            'enableMinify' => true,
+            'concatCss' => true, // concatenate css
+            'minifyCss' => true, // minificate css
+            'concatJs' => true, // concatenate js
+            'minifyJs' => true, // minificate js
+            'minifyOutput' => true, // minificate result html page
+            'webPath' => '@web', // path alias to web base
+            'basePath' => '@webroot', // path alias to web base
+            'minifyPath' => '@webroot/minify', // path alias to save minify result
+            'jsPosition' => [ \yii\web\View::POS_END ], // positions of js files to be minified
+            'forceCharset' => 'UTF-8', // charset forcibly assign, otherwise will use all of the files found charset
+            'expandImports' => true, // whether to change @import on content
+            'compressOptions' => ['extra' => true], // options for compress
+            'excludeFiles' => ['yii.js', 'bootstrap.css'],
+            'excludeBundles' => [],
             'renderers' => [
                 'twig' => [
                     'class' => 'yii\twig\ViewRenderer',
@@ -210,6 +226,12 @@ $config = [
             'class'  => \common\components\midjourney\MidjourneyApi::class,
             'discordChannelId'      => '1150211599395737601',
             'discordUserToken'      => 'MTE1MDIxMDQ4MTI2NTU5MDI5Mg.GZhegP.iSny8xdLjtgnETPDiiYygmJr4sHVu_hjEA-5R0',
+        ],
+        'openAiSupport' => [
+            'class' => \common\components\openAi\OpenAiSupport::class,
+        ],
+        'drop' => [
+            'class' => \common\components\drop\Drop::class
         ],
         's3Api'   => [
             'class'  => \common\components\storage\S3Api::class,
