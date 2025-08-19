@@ -58,13 +58,13 @@ class UserPayoutSkins extends ActiveRecord
         return $this->hasOne(User::class, ['id' => 'user_id']);
     }
 
-    public static function check() {
-        UserPayoutSkins::checkRust();
-        sleep(5);
-        UserPayoutSkins::checkCs2();
+    public static function check($date = null) {
+        $items = Yii::$app->rustTm->history($date)['data'];
+        UserPayoutSkins::checkRust($items);
+        UserPayoutSkins::checkCs2($items);
     }
 
-    public static function checkRust() {
+    public static function checkRust($items) {
         $payouts = UserPayoutSkins::find()
                                   ->andWhere(['status' => UserPayoutSkins::STATUS_WAIT])
                                   ->orderBy(['created_at' => SORT_DESC])
@@ -73,7 +73,6 @@ class UserPayoutSkins extends ActiveRecord
                                   ->all();
 
         if (!empty($payouts)) {
-            $items = Yii::$app->rustTm->history()['data'];
             foreach ($items as $item) {
                 if (empty($payouts[$item['item_id']])) {
                     continue;
@@ -133,7 +132,7 @@ class UserPayoutSkins extends ActiveRecord
         }
     }
 
-    public static function checkCs2() {
+    public static function checkCs2($items) {
         $payouts = UserPayoutSkins::find()
                                   ->andWhere(['status' => UserPayoutSkins::STATUS_WAIT])
                                   ->orderBy(['created_at' => SORT_DESC])
@@ -142,7 +141,6 @@ class UserPayoutSkins extends ActiveRecord
                                   ->all();
 
         if (!empty($payouts)) {
-            $items = Yii::$app->csGoMarket->history()['data'];
             foreach ($items as $item) {
                 if (empty($payouts[$item['item_id']])) {
                     continue;

@@ -19,10 +19,10 @@ class SkinDropsController extends Controller
      *
      * @throws \Exception
      */
-    public function actionStatusCheck()
+    public function actionStatusCheck($date = null)
     {
         try {
-            UserPayoutSkins::check();
+            UserPayoutSkins::check($date);
         } catch (\Exception $ex) {
 
         }

@@ -18,10 +18,13 @@ class RustTm
     /**
      * {@inheritdoc}
      */
-    public function history(): array
+    public function history($date): array
     {
         $secretKey = Yii::$app->settings->get('rusttm_secretKey');
         $url = $this->baseUrl . "/history?key={$secretKey}";
+        if (!empty($date)) {
+            $url .= '&date=' . $date;
+        }
         $response = Yii::$app->curl->get($url);
         return json_decode($response, 1);
     }
