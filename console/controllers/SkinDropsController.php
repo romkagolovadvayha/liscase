@@ -23,7 +23,9 @@ class SkinDropsController extends Controller
     public function actionStatusCheck($date = null)
     {
         try {
-            UserPayoutSkins::check($date);
+            UserPayoutSkins::check($date, UserPayoutSkins::STATUS_WAIT);
+            sleep(20);
+            UserPayoutSkins::check($date,UserPayoutSkins::STATUS_NEW);
         } catch (\Throwable $e) { // перехватит TypeError, Error, Exception — всё
             // можно тихо проглотить, но лучше записать в лог:
             \Yii::warning('skin-drops/status-check ignored: '.$e->getMessage(), __METHOD__);

@@ -27,6 +27,7 @@ class UserPayoutSkins extends ActiveRecord
     const STATUS_WAIT = 0;
     const STATUS_SUCCESS = 1;
     const STATUS_REJECT = 2;
+    const STATUS_NEW = 3;
 
     /**
      * @return array
@@ -37,6 +38,7 @@ class UserPayoutSkins extends ActiveRecord
             self::STATUS_WAIT    => Yii::t('common', 'Отправляется'),
             self::STATUS_SUCCESS => Yii::t('common', 'Получен'),
             self::STATUS_REJECT  => Yii::t('common', 'Не получен'),
+            self::STATUS_NEW  => Yii::t('common', 'Создан трейд'),
         ];
     }
 
@@ -58,11 +60,10 @@ class UserPayoutSkins extends ActiveRecord
         return $this->hasOne(User::class, ['id' => 'user_id']);
     }
 
-    public static function check($date = null) {
+    public static function check($date = null, $status = null) {
         /** @var UserPayoutSkins $payout */
         $payout = UserPayoutSkins::find()
-                       ->andWhere(['status' => UserPayoutSkins::STATUS_WAIT])
-                       ->andWhere(['IN', 'type', ['rust', 'cs2']])
+                       ->andWhere(['status' => $status])
                        ->orderBy(['created_at' => SORT_ASC])
                        ->one();
 
@@ -71,14 +72,12 @@ class UserPayoutSkins extends ActiveRecord
         }
         echo $date . PHP_EOL;
         $items = Yii::$app->rustTm->history($date)['data'];
-        UserPayoutSkins::checkRust($items);
-        UserPayoutSkins::checkCs2($items);
+        UserPayoutSkins::checkRust($items, $status);
     }
 
-    public static function checkRust($items) {
+    public static function checkRust($items, $status) {
         $payouts = UserPayoutSkins::find()
-                                  ->andWhere(['status' => UserPayoutSkins::STATUS_WAIT])
-                                  ->andWhere(['type' => 'rust'])
+                                  ->andWhere(['status' => $status])
                                   ->orderBy(['created_at' => SORT_DESC])
                                   ->indexBy('skin_id')
                                   ->all();
@@ -100,6 +99,10 @@ class UserPayoutSkins extends ActiveRecord
                     $payout->save();
 
                     UserPayoutSkins::alert($payout->user, $payout->name, $payout->type, $payout->price, $payout->image300);
+                }
+                if ($item['stage'] == 1) {
+                    $payout->status = UserPayoutSkins::STATUS_NEW;
+                    $payout->save();
                 }
             }
         }
@@ -140,36 +143,6 @@ class UserPayoutSkins extends ActiveRecord
             }
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage("SkinsForm ({$e->getFile()}:{$e->getLine()}): {$e->getMessage()}");
-        }
-    }
-
-    public static function checkCs2($items) {
-        $payouts = UserPayoutSkins::find()
-                                  ->andWhere(['status' => UserPayoutSkins::STATUS_WAIT])
-                                  ->andWhere(['type' => 'cs2'])
-                                  ->orderBy(['created_at' => SORT_DESC])
-                                  ->indexBy('skin_id')
-                                  ->all();
-
-        if (!empty($payouts)) {
-            foreach ($items as $item) {
-                if (empty($payouts[$item['item_id']])) {
-                    continue;
-                }
-                /** @var UserPayoutSkins $payout */
-                $payout = $payouts[$item['item_id']];
-                if ($item['stage'] == 5) {
-                    $payout->status = UserPayoutSkins::STATUS_REJECT;
-                    $payout->save();
-                    $payout->user->getSkinsBalance()->recalculateBalance();
-                }
-                if ($item['stage'] == 2 || $item['stage'] == 1) {
-                    $payout->status = UserPayoutSkins::STATUS_SUCCESS;
-                    $payout->save();
-
-                    UserPayoutSkins::alert($payout->user, $payout->name, $payout->type, $payout->price, $payout->image300);
-                }
-            }
         }
     }
 
