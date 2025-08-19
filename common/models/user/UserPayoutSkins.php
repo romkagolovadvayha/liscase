@@ -59,6 +59,17 @@ class UserPayoutSkins extends ActiveRecord
     }
 
     public static function check($date = null) {
+        /** @var UserPayoutSkins $payout */
+        $payout = UserPayoutSkins::find()
+                       ->andWhere(['status' => UserPayoutSkins::STATUS_WAIT])
+                       ->andWhere(['IN', 'type', ['rust', 'cs2']])
+                       ->orderBy(['created_at' => SORT_ASC])
+                       ->one();
+
+        if (empty($date)) {
+            $date = (new \DateTime($payout->created_at))->format('d-m-Y');
+        }
+        echo $date . PHP_EOL;
         $items = Yii::$app->rustTm->history($date)['data'];
         UserPayoutSkins::checkRust($items);
         UserPayoutSkins::checkCs2($items);
