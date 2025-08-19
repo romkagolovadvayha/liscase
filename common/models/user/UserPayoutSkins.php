@@ -78,8 +78,8 @@ class UserPayoutSkins extends ActiveRecord
     public static function checkRust($items) {
         $payouts = UserPayoutSkins::find()
                                   ->andWhere(['status' => UserPayoutSkins::STATUS_WAIT])
+                                  ->andWhere(['type' => 'rust'])
                                   ->orderBy(['created_at' => SORT_DESC])
-                                  ->orderBy(['type' => 'rust'])
                                   ->indexBy('skin_id')
                                   ->all();
 
@@ -146,8 +146,8 @@ class UserPayoutSkins extends ActiveRecord
     public static function checkCs2($items) {
         $payouts = UserPayoutSkins::find()
                                   ->andWhere(['status' => UserPayoutSkins::STATUS_WAIT])
+                                  ->andWhere(['type' => 'cs2'])
                                   ->orderBy(['created_at' => SORT_DESC])
-                                  ->orderBy(['type' => 'cs2'])
                                   ->indexBy('skin_id')
                                   ->all();
 
