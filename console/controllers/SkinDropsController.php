@@ -9,6 +9,7 @@ use common\models\stats\Info;
 use common\models\user\UserPayoutSkins;
 use yii\base\BaseObject;
 use yii\console\Controller;
+use yii\console\ExitCode;
 use yii\web\NotFoundHttpException;
 
 class SkinDropsController extends Controller
@@ -23,9 +24,13 @@ class SkinDropsController extends Controller
     {
         try {
             UserPayoutSkins::check($date);
-        } catch (\Exception $ex) {
-
+        } catch (\Throwable $e) { // перехватит TypeError, Error, Exception — всё
+            // можно тихо проглотить, но лучше записать в лог:
+            \Yii::warning('skin-drops/status-check ignored: '.$e->getMessage(), __METHOD__);
+            return ExitCode::OK; // 0, чтобы крон не ругался
         }
+
+        return ExitCode::OK;
     }
 
     /**
