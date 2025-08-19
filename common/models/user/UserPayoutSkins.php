@@ -163,7 +163,7 @@ class UserPayoutSkins extends ActiveRecord
                     $payout->save();
                     $payout->user->getSkinsBalance()->recalculateBalance();
                 }
-                if ($item['stage'] == 2) {
+                if ($item['stage'] == 2 || $item['stage'] == 1) {
                     $payout->status = UserPayoutSkins::STATUS_SUCCESS;
                     $payout->save();
 
