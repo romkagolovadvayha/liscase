@@ -66,7 +66,9 @@ class UserPayoutSkins extends ActiveRecord
                        ->andWhere(['status' => $status])
                        ->orderBy(['created_at' => SORT_ASC])
                        ->one();
-
+        if (empty($payout)) {
+            return;
+        }
         if (empty($date)) {
             $date = (new \DateTime($payout->created_at))->format('d-m-Y');
         }
