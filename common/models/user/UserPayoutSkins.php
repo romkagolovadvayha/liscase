@@ -98,7 +98,7 @@ class UserPayoutSkins extends ActiveRecord
                     $payout->status = UserPayoutSkins::STATUS_SUCCESS;
                     $payout->save();
 
-                    UserPayoutSkins::alert($payout->user, $payout->name, $payout->type, $payout->price, $payout->image300);
+                    UserPayoutSkins::alert($payout->user, $payout->name, $payout->type, $payout->amount, $payout->image300);
                 }
                 if ($item['stage'] == 1) {
                     $payout->status = UserPayoutSkins::STATUS_NEW;
