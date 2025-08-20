@@ -52,6 +52,9 @@ class OpenAiJob extends BaseObject implements JobInterface
             $isReplay = false;
             foreach ($histories as $history) {
                 if ($history->user_id == $chat->user_id) {
+                    if (!empty($history->supportFiles)) {
+                        $history->message = "Пользователь отправил файл.";
+                    }
                     $chatHistory[] = ['user' => $history->message];
                     $isReplay = false;
                 } else {
