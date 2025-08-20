@@ -64,6 +64,15 @@ class SupportController extends WebController
         if ($user->blocked_support) {
             return $this->render('blocked');
         }
+
+        $unreadMessages = SupportRead::find()
+                                     ->select(['support_id', 'cnt' => new \yii\db\Expression('COUNT(*)')])
+                                     ->where(['user_id' => $user->id, 'status' => SupportRead::STATUS_UNREAD])
+                                     ->asArray()
+                                     ->groupBy('support_id')
+                                     ->indexBy('support_id')
+                                     ->all();
+
         $ticketsQuery = SupportSearch::find();
         $activeTicket = null;
         if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
@@ -72,7 +81,7 @@ class SupportController extends WebController
 
         $ticketsQuery->orderBy(['status' => SORT_ASC, 'updated_at' => SORT_DESC]);
         /** @var Support[] $tickets */
-        $tickets = $ticketsQuery->limit(100)->all();
+        $tickets = $ticketsQuery->limit(20)->all();
         if ($user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
             $activeTicket = $tickets[0];
         } else {
@@ -114,6 +123,7 @@ class SupportController extends WebController
             'user' => $user,
             'tickets' => $tickets,
             'fModels' => $fModels,
+            'unreadMessages' => $unreadMessages,
         ]);
     }
 
@@ -546,6 +556,14 @@ class SupportController extends WebController
         }
         $user = \Yii::$app->user->identity;
 
+        $unreadMessages = SupportRead::find()
+                          ->select(['support_id', 'cnt' => new \yii\db\Expression('COUNT(*)')])
+                          ->where(['user_id' => $user->id, 'status' => SupportRead::STATUS_UNREAD])
+                          ->asArray()
+                          ->groupBy('support_id')
+                          ->indexBy('support_id')
+                          ->all();
+
         if ($user->blocked_support) {
             return $this->redirect(['/support']);
         }
@@ -554,14 +572,16 @@ class SupportController extends WebController
         $this->view->params['page'] = 'support';
         $model = $this->findModel($id);
 
-        SupportRead::readedAll($model->id, $user->id);
+        if (!empty($unreadMessages[$model->id]) && $unreadMessages[$model->id]['cnt'] > 0) {
+            SupportRead::readedAll($model->id, $user->id);
+        }
 
         $ticketsQuery = SupportSearch::find();
         if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
             $ticketsQuery->andWhere(['user_id' => Yii::$app->user->id]);
         }
         $ticketsQuery->orderBy(['status' => SORT_ASC, 'updated_at' => SORT_DESC]);
-        $tickets = $ticketsQuery->limit(100)->all();
+        $tickets = $ticketsQuery->limit(20)->all();
 
         if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR]) && $model->user->id !== Yii::$app->user->id) {
             throw new ForbiddenHttpException(Yii::t('common', 'Ошибка доступа'));
@@ -571,6 +591,7 @@ class SupportController extends WebController
             'model' => $model,
             'user' => $user,
             'tickets' => $tickets,
+            'unreadMessages' => $unreadMessages,
         ]);
     }
 
@@ -578,6 +599,9 @@ class SupportController extends WebController
     {
         $user = \Yii::$app->user->identity;
         $model = $this->findModel($id);
+        if (empty($user)) {
+            return $this->redirect(['ticket', 'id' => $model->getNumber()]);
+        }
         if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR]) && $model->user->id !== Yii::$app->user->id) {
             throw new ForbiddenHttpException(Yii::t('common', 'Ошибка доступа'));
         }

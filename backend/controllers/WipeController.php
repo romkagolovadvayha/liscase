@@ -16,6 +16,7 @@ use common\models\user\User;
 use common\models\user\UserPromocode;
 use common\models\user\UserTask;
 use common\models\user\UserTop;
+use WebSocket\Client;
 use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
 use yii\web\Controller;
@@ -69,6 +70,16 @@ class WipeController extends Controller
 
         $cacheKeyGetBlocked = "DropBlocked_getBlocked_" . $id;
         Yii::$app->cache->delete($cacheKeyGetBlocked);
+
+        $client = new Client(Yii::$app->params['ws']);
+        $client->send(
+            json_encode(
+                [
+                    'action'    => 'launcherUpdate',
+                    'code'      => 200,
+                ]
+            )
+        );
 
         Yii::$app->session->addFlash('success', 'Предметы успешно заблокированы!');
         return $this->redirect('index');
