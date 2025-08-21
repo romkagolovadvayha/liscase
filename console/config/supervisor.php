@@ -144,7 +144,7 @@ return [
             'stopsignal'      => 'KILL',
             'numprocs'        => 1,
             'redirect_stderr' => true,
-            'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.max4x2.log',
+            'stdout_logfile'  => '@app/runtime/supervisor/node.discord.multi.bot.log',
         ],
 
         // ===== Node services =====
