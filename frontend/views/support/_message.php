@@ -4,6 +4,7 @@ use common\components\helpers\Role;
 
 /** @var yii\web\View $this */
 /** @var \common\models\support\SupportMessage $model */
+/** @var string $classMessage */
 
 $usernameClass = '';
 $user = Yii::$app->user->identity;
@@ -25,7 +26,7 @@ if (!empty($model->user_id)) {
 
 ?>
 <?php if (!empty($model->user_id)): ?>
-    <div class="support_messages_item">
+    <div class="support_messages_item<?= (!empty($classMessage) ? ' ' . $classMessage : '') ?>">
         <div class="support_messages_item_profile">
             <div class="support_messages_item_profile_avatar"><img src="<?=$avatar?>"></div>
         </div>

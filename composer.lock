@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d0ff3d1ead4ca30c744e74ab248d02a4",
+    "content-hash": "0930a0e351c2f1da534b0bfebbdf1f21",
     "packages": [
         {
             "name": "2amigos/qrcode-library",
@@ -5735,6 +5735,18 @@
                 "source": "https://github.com/nizsheanez/yii2-asset-converter/tree/v2.0.1"
             },
             "time": "2020-05-08T01:31:09+00:00"
+        },
+        {
+            "name": "npm-asset/animate.css",
+            "version": "4.1.1",
+            "dist": {
+                "type": "tar",
+                "url": "https://registry.npmjs.org/animate.css/-/animate.css-4.1.1.tgz"
+            },
+            "type": "npm-asset",
+            "license": [
+                "MIT"
+            ]
         },
         {
             "name": "npm-asset/bootstrap",

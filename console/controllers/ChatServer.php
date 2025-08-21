@@ -507,7 +507,7 @@ class ChatServer extends WebSocketServer
                     return;
                 }
                 if (!$client->user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
-                    Yii::$app->cache->set($cacheKey, Yii::t('common', "Нельзя отправлять сообщения слишком часто!", [], $client->user->current_language), 3);
+                    Yii::$app->cache->set($cacheKey, Yii::t('common', "Нельзя отправлять сообщения слишком часто!", [], $client->user->current_language), 2);
                 }
                 /** @var User $user */
                 $user = $client->user;

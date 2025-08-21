@@ -703,7 +703,8 @@ class SupportController extends WebController
             throw new ForbiddenHttpException(Yii::t('common', 'Ошибка доступа'));
         }
         return $this->renderAjax('_message', [
-            'model' => $message
+            'model' => $message,
+            'classMessage' => 'animate__animated animate__bounceIn'
         ]);
     }
 

@@ -1,7 +1,48 @@
 let chatInited = false;
 
+// === Настройки скролла ===
+const BOTTOM_OFFSET = 60; // отступ от низа в пикселях
+
+function scrollBottomOffset(offset = BOTTOM_OFFSET) {
+    const el = document.querySelector('.support_messages_wrap');
+    if (!el) return;
+    el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight + offset);
+}
+
+function forceScrollToBottom(offset = BOTTOM_OFFSET) {
+    const $wrap = $('.support_messages_wrap');
+    if ($wrap.length) {
+        // мгновенный скролл без smooth и без "якорения"
+        $wrap.css({ 'scroll-behavior': 'auto', 'overflow-anchor': 'none' });
+    }
+
+    const go = () => scrollBottomOffset(offset);
+
+    go();                                  // сразу
+    requestAnimationFrame(go);             // после 1-го layout
+    requestAnimationFrame(() => requestAnimationFrame(go)); // ещё один кадр
+
+    // когда загрузятся веб-шрифты
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(go);
+    }
+    // когда догрузятся картинки внутри чата
+    $('#chat img').each(function () {
+        if (!this.complete) {
+            this.addEventListener('load', go, { once: true });
+            this.addEventListener('error', go, { once: true });
+        }
+    });
+}
+
+function nearBottom(el, px = 40, offset = BOTTOM_OFFSET) {
+    if (!el) return true;
+    const rest = el.scrollHeight - el.clientHeight - el.scrollTop + offset;
+    return rest <= px;
+}
+
 function initChat() {
-    if (chatId === undefined || chatInited) return;
+    if (typeof chatId === 'undefined' || chatInited) return;
     chatInited = true;
 
     const $widget      = $('#widget_chat').addClass('active');
@@ -25,12 +66,7 @@ function initChat() {
         chat.send(JSON.stringify({ action: 'subscription', chat: chatId }));
     } catch(e){ /* noop */ }
 
-    // утилиты
-    const scrollToBottom = () => {
-        // минимизируем измерения: используем scrollHeight контейнера
-        $wrap[0].scrollTop = $wrap[0].scrollHeight;
-    };
-
+    // авто-резайз инпута + доскролл с учётом оффсета
     const resizeMsg = (() => {
         let rafId = null;
         const MAX_H = 210;
@@ -42,7 +78,7 @@ function initChat() {
                 if (h > MAX_H) h = MAX_H;
                 $msg.css({ height: h + 'px' });
                 $wrap.css({ paddingBottom: (h + 60) + 'px' });
-                scrollToBottom();
+                scrollBottomOffset();
                 rafId = null;
             });
         };
@@ -55,15 +91,17 @@ function initChat() {
         if (!text || !wsCanSend()) return;
         try {
             chat.send(JSON.stringify({ action: 'chat', message: text, chatId }));
-        } catch (e) { /* noop */ }
-        $msg.val('');
+            $msg.val('');
+        } catch (e) {
+            toastr.error("<i class='fas fa-exclamation-circle'></i><div class='toast-message_text'>Произошла ошибка, попробуйте еще раз.</div>", '', { progressBar: true, positionClass: 'toast-top-right', escapeHtml: false });
+            return;
+        }
         resizeMsg();
-        // вернуть фокус мягко, без микрозадержек
         requestAnimationFrame(() => $msg.trigger('focus'));
     };
 
-    // начальная прокрутка
-    scrollToBottom();
+    // начальная прокрутка — сразу и надёжно (вниз - 60px)
+    forceScrollToBottom();
 
     // события — предварительно чистим, чтобы не дублировать
     $(document).off('paste.support');
@@ -86,9 +124,9 @@ function initChat() {
     // кнопка «Отправить»
     $sendBtn.on('click.support', sendMessage);
 
-    // paste -> загрузка файла (используем files, если есть)
-    document.addEventListener('paste', function onPaste(event) {
-        const files = event.clipboardData && event.clipboardData.files;
+    // paste -> загрузка файла (без утечки слушателей)
+    $(document).on('paste.support', function (event) {
+        const files = event.originalEvent?.clipboardData?.files;
         if (files && files.length) {
             const file = files[0];
             const dt = new DataTransfer();
@@ -96,7 +134,7 @@ function initChat() {
             $fileInput[0].files = dt.files;
             sendFile(cp, { $progressBox, $fileBox });
         }
-    }, { capture: false });
+    });
 
     // выбор файла
     $fileInput.on('change.support', () => sendFile(cp, { $progressBox, $fileBox }));
@@ -111,11 +149,18 @@ function initChat() {
 
     // закрыть чат
     $('.support_messages_header_close').on('click.support', closeChat);
+
+    // авто-доскролл при добавлении новых сообщений — только если пользователь "почти внизу" (с учётом оффсета)
+    const mo = new MutationObserver(() => {
+        const el = $wrap[0];
+        if (!el) return;
+        if (nearBottom(el)) scrollBottomOffset();
+    });
+    if ($chat[0]) mo.observe($chat[0], { childList: true });
 }
 
 // ===== AJAX-хэлперы чата/тикетов =====
 function supportChat(response) {
-    const $wrap = $('.support_messages_wrap');
     const $chat = $('#chat');
 
     $.ajax({
@@ -125,8 +170,8 @@ function supportChat(response) {
     }).done((res) => {
         if (!res) return;
         $chat.append(res);
-        // один надёжный скролл вместо двух setTimeout
-        $wrap[0].scrollTop = $wrap[0].scrollHeight;
+        // жёсткий скролл — мгновенно к «вниз − 60px»
+        forceScrollToBottom();
         initTickets();
     });
 }
@@ -250,5 +295,4 @@ function initTickets() {
         el.innerHTML = left.locale(lang).fromNow();
     }
 }
-
 initTickets();

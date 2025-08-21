@@ -22,5 +22,6 @@ class SupportAsset extends AssetBundle
             'frontend\assets\AppAsset',
             MomentAsset::class,
             CircleProgressAsset::class,
+            AnimateCssAsset::class,
         ];
 }
