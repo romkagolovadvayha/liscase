@@ -69,9 +69,11 @@ class ChatServer extends WebSocketServer
                         $client->missedPongs++;               // считаем попытку
                         if ($client->missedPongs >= 3) {      // 3 подряд — закрываем
                             try { $client->close(); } catch (\Throwable $e) {}
+                            echo 'Закрыто больше 3 ' . PHP_EOL;
                         }
                     } catch (\Throwable $e) {
                         // если уже не шлётся — закрываем
+                        echo 'Закрыто ошибка ' . $e->getMessage() . PHP_EOL;
                         try { $client->close(); } catch (\Throwable $e2) {}
                     }
                 }
