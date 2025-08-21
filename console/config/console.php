@@ -217,8 +217,6 @@ if (YII_ENV_DEV) {
 }
 
 unset($config['components']['comment']);
-unset($config['components']['user']);
-unset($config['bootstrap']['user']);
 unset($config['modules']['comment']);
 
 return $config;
