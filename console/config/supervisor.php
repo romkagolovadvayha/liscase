@@ -305,7 +305,7 @@ return [
         // ===== WebSocket servers =====
         'prostoj.websocket' => [
             'directory'       => '@app',
-            'command'         => 'php yii "server-ws/start" 4888',
+            'command'         => 'php ./yii "server-ws/start" 4888',
             'rlimit_nofile'   => 65535, // вместо ulimit
             'autostart'       => true,
             'autorestart'     => true,
