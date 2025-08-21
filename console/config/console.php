@@ -46,7 +46,7 @@ $config['modules']['crontask'] = [
         ],
     ]
 ];
-$config['components']['crontask'] = [
+$config['components']['crontab'] = [
     'class' => \console\components\CrontabSafe::class,
 ];
 $config['controllerMap']['crontask'] = [
