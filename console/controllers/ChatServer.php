@@ -51,12 +51,12 @@ class ChatServer extends WebSocketServer
         });
 
         // Получаем loop после старта сокета
-        $this->on(self::EVENT_WEBSOCKET_OPEN, function () {
-            /** @var \Ratchet\Server\IoServer $io */
-            $io = $this->server;
-            $loop = $io->loop;
-
-            $interval = 15; // каждые 15 секунд пингуем
+//        $this->on(self::EVENT_WEBSOCKET_OPEN, function () {
+//            /** @var \Ratchet\Server\IoServer $io */
+//            $io = $this->server;
+//            $loop = $io->loop;
+//
+//            $interval = 15; // каждые 15 секунд пингуем
 //            $loop->addPeriodicTimer($interval, function () {
 //                foreach ($this->clients as $client) {
 //                    if (!isset($client->missedPongs)) {
@@ -76,7 +76,7 @@ class ChatServer extends WebSocketServer
 //                    }
 //                }
 //            });
-        });
+//        });
     }
 
     protected function getCommand(ConnectionInterface $from, $msg)
