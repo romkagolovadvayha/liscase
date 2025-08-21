@@ -588,30 +588,34 @@ class ChatServer extends WebSocketServer
             }
 
             //$client->send( json_encode($result) );
-        } catch (\Exception $ex) {
+        } catch (\Throwable $e) {
             Yii::$app->telegramChats->sendMessage('commandChat: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
 
     public function commandAuth(ConnectionInterface $client, $msg)
     {
-        $request = json_decode($msg, true);
-        $result = [];
+        try {
+            $request = json_decode($msg, true);
+            $result = [];
 
-        if (!empty($request['token']) && !empty($request['steam_id'])) {
-            $user = User::findByJwtToken($request['token']);
-            if (isset($request['launcher'])) {
-                $client->launcher = $request['launcher'];
-            }
-            if (!empty($user) && $user->steam_id == $request['steam_id']) {
-                $client->user = $user;
+            if (!empty($request['token']) && !empty($request['steam_id'])) {
+                $user = User::findByJwtToken($request['token']);
+                if (isset($request['launcher'])) {
+                    $client->launcher = $request['launcher'];
+                }
+                if (!empty($user) && $user->steam_id == $request['steam_id']) {
+                    $client->user = $user;
+                } else {
+                    $result['message'] = 'Invalid token';
+                    $client->send( json_encode($result) );
+                }
             } else {
                 $result['message'] = 'Invalid token';
                 $client->send( json_encode($result) );
             }
-        } else {
-            $result['message'] = 'Invalid token';
-            $client->send( json_encode($result) );
+        } catch (\Throwable $e) {
+            Yii::$app->telegramChats->sendMessage('commandAuth: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
 
