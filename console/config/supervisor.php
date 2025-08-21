@@ -184,17 +184,6 @@ return [
             'redirect_stderr' => true,
             'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.x10.log',
         ],
-        'prostoj.node.discord.send.max2' => [
-            'directory'       => '@project/node/discord/src',
-            'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "max2"',
-            'autostart'       => true,
-            'autorestart'     => true,
-            'startretries'    => 10,
-            'stopsignal'      => 'KILL',
-            'numprocs'        => 1,
-            'redirect_stderr' => true,
-            'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.max2.log',
-        ],
         'prostoj.node.discord.send.0.5x' => [
             'directory'       => '@project/node/discord/src',
             'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "classic14x2"',
