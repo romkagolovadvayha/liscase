@@ -57,25 +57,25 @@ class ChatServer extends WebSocketServer
             $loop = $io->loop;
 
             $interval = 15; // каждые 15 секунд пингуем
-            $loop->addPeriodicTimer($interval, function () {
-                foreach ($this->clients as $client) {
-                    if (!isset($client->missedPongs)) {
-                        $client->missedPongs = 0;
-                    }
-
-                    // шлём app-level ping
-                    try {
-                        $client->send(json_encode(['type' => 'ping', 'ts' => time()]));
-                        $client->missedPongs++;               // считаем попытку
-                        if ($client->missedPongs >= 3) {      // 3 подряд — закрываем
-                            try { $client->close(); } catch (\Throwable $e) {}
-                        }
-                    } catch (\Throwable $e) {
-                        // если уже не шлётся — закрываем
-                        try { $client->close(); } catch (\Throwable $e2) {}
-                    }
-                }
-            });
+//            $loop->addPeriodicTimer($interval, function () {
+//                foreach ($this->clients as $client) {
+//                    if (!isset($client->missedPongs)) {
+//                        $client->missedPongs = 0;
+//                    }
+//
+//                    // шлём app-level ping
+//                    try {
+//                        $client->send(json_encode(['type' => 'ping', 'ts' => time()]));
+//                        $client->missedPongs++;               // считаем попытку
+//                        if ($client->missedPongs >= 3) {      // 3 подряд — закрываем
+//                            try { $client->close(); } catch (\Throwable $e) {}
+//                        }
+//                    } catch (\Throwable $e) {
+//                        // если уже не шлётся — закрываем
+//                        try { $client->close(); } catch (\Throwable $e2) {}
+//                    }
+//                }
+//            });
         });
     }
 
