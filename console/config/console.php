@@ -36,7 +36,7 @@ $config['components']['log'] = [
     ],
 ];
 $config['modules']['crontask'] = [
-    'class'    => \gofmanaa\crontask\CrontaskModuleSafe::class,
+    'class'    => \console\components\CrontaskModuleSafe::class,
     'fileName' => 'cron.txt',
     'yiiPath'  => __DIR__ . '/../../yii',
     'tasks'    => [

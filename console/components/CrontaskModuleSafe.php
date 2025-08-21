@@ -5,7 +5,7 @@
  * Time: 5:17 PM
  */
 
-namespace gofmanaa\crontask;
+namespace console\components;
 
 
 use Yii;
@@ -39,7 +39,7 @@ class CrontaskModuleSafe extends \yii\base\Module implements BootstrapInterface
         }
         $this->setComponents([
                                  $this->nameComponent => [
-                                     'class'      => 'gofmanaa\crontask\components\Crontab',
+                                     'class'      => CrontabSafe::class,
                                      'filename'   => $this->fileName,
                                      'directory'  => $this->fileDir,
                                      'crontabPath'=> $this->crontabPath,
