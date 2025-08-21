@@ -306,7 +306,6 @@ return [
         'prostoj.websocket' => [
             'directory'       => '@project',
             'command'         => 'php yii server-ws/start 4888',
-            'rlimit_nofile'   => 65535, // вместо ulimit
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
