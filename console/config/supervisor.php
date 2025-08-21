@@ -7,7 +7,7 @@ return [
     'programs' => [
         // ===== Yii queue listeners =====
         'prostoj.queue-stats' => [
-            'directory'       => '@common',
+            'directory'       => '@console/../',
             'command'         => 'php yii queue-stats/listen --verbose=1 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
@@ -18,7 +18,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/queue-stats.queue.log',
         ],
         'prostoj.queue-telegram' => [
-            'directory'       => '@common',
+            'directory'       => '@console/../',
             'command'         => 'php yii queue-telegram/listen --verbose=1 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
@@ -29,7 +29,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/queue-telegram.queue.log',
         ],
         'prostoj.queue-report' => [
-            'directory'       => '@common',
+            'directory'       => '@console/../',
             'command'         => 'php yii queue-report/listen --verbose=1 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
@@ -40,7 +40,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/queue-report.queue.log',
         ],
         'prostoj.queue-kills' => [
-            'directory'       => '@common',
+            'directory'       => '@console/../',
             'command'         => 'php yii queue-kills/listen --verbose=1 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
@@ -51,7 +51,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/queue-kills.queue.log',
         ],
         'prostoj.queue-team' => [
-            'directory'       => '@common',
+            'directory'       => '@console/../',
             'command'         => 'php yii queue-team/listen --verbose=1 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
@@ -62,7 +62,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/queue-team.queue.log',
         ],
         'prostoj.queue-raid' => [
-            'directory'       => '@common',
+            'directory'       => '@console/../',
             'command'         => 'php yii queue-raid/listen --verbose=1 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
@@ -73,7 +73,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/queue-raid.queue.log',
         ],
         'prostoj.queue-params' => [
-            'directory'       => '@common',
+            'directory'       => '@console/../',
             'command'         => 'php yii queue-params/listen --verbose=1 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
@@ -84,7 +84,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/queue-params.queue.log',
         ],
         'prostoj.queue-top' => [
-            'directory'       => '@common',
+            'directory'       => '@console/../',
             'command'         => 'php yii queue-top/listen --verbose=1 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
@@ -95,7 +95,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/queue-top.queue.log',
         ],
         'prostoj.queue-online' => [
-            'directory'       => '@common',
+            'directory'       => '@console/../',
             'command'         => 'php yii queue-online/listen --verbose=1 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
@@ -106,7 +106,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/queue-online.queue.log',
         ],
         'prostoj.queue-process' => [
-            'directory'       => '@common',
+            'directory'       => '@console/../',
             'command'         => 'php yii queue-process/listen --verbose=1 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
@@ -117,7 +117,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/queue-process.queue.log',
         ],
         'prostoj.queue-support' => [
-            'directory'       => '@common',
+            'directory'       => '@console/../',
             'command'         => 'php yii queue-support/listen --verbose=1 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
@@ -130,7 +130,7 @@ return [
 
         // ===== Node: discord senders =====
         'prostoj.node.discord.send.max3' => [
-            'directory'       => '@common/node/discord/src',
+            'directory'       => '@console/../node/discord/src',
             'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "max3"',
             'autostart'       => true,
             'autorestart'     => true,
@@ -141,7 +141,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.max3.log',
         ],
         'prostoj.node.discord.send.classicx2' => [
-            'directory'       => '@common/node/discord/src',
+            'directory'       => '@console/../node/discord/src',
             'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "classicx2"',
             'autostart'       => true,
             'autorestart'     => true,
@@ -152,7 +152,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.classicx2.log',
         ],
         'prostoj.node.discord.send.nolimit' => [
-            'directory'       => '@common/node/discord/src',
+            'directory'       => '@console/../node/discord/src',
             'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "nolimit"',
             'autostart'       => true,
             'autorestart'     => true,
@@ -163,7 +163,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.nolimit.log',
         ],
         'prostoj.node.discord.send.solo' => [
-            'directory'       => '@common/node/discord/src',
+            'directory'       => '@console/../node/discord/src',
             'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "max8"',
             'autostart'       => true,
             'autorestart'     => true,
@@ -174,7 +174,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.solo.log',
         ],
         'prostoj.node.discord.send.x10' => [
-            'directory'       => '@common/node/discord/src',
+            'directory'       => '@console/../node/discord/src',
             'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "x10"',
             'autostart'       => true,
             'autorestart'     => true,
@@ -185,7 +185,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.x10.log',
         ],
         'prostoj.node.discord.send.max2' => [
-            'directory'       => '@common/node/discord/src',
+            'directory'       => '@console/../node/discord/src',
             'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "max2"',
             'autostart'       => true,
             'autorestart'     => true,
@@ -196,7 +196,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.max2.log',
         ],
         'prostoj.node.discord.send.0.5x' => [
-            'directory'       => '@common/node/discord/src',
+            'directory'       => '@console/../node/discord/src',
             'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "classic14x2"',
             'autostart'       => true,
             'autorestart'     => true,
@@ -207,7 +207,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.0.5x.log',
         ],
         'prostoj.node.discord.send.max4x2' => [
-            'directory'       => '@common/node/discord/src',
+            'directory'       => '@console/../node/discord/src',
             'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "max4x2"',
             'autostart'       => true,
             'autorestart'     => true,
@@ -220,7 +220,7 @@ return [
 
         // ===== Node services =====
         'prostoj.node.ftp' => [
-            'directory'       => '@common/node/ftp',
+            'directory'       => '@console/../node/ftp',
             'command'         => 'node src/server.js',
             'autostart'       => true,
             'autorestart'     => true,
@@ -231,7 +231,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/node.ftp.queue.log',
         ],
         'prostoj.node.rconservice' => [
-            'directory'       => '@common/node/webrcon',
+            'directory'       => '@console/../node/webrcon',
             'command'         => 'node src/rcon-service.js',
             'autostart'       => true,
             'autorestart'     => true,
@@ -244,7 +244,7 @@ return [
 
         // ===== Radio / Music =====
         'prostoj.node.radio1' => [
-            'directory'       => '@common/node/mode/sounds/1',
+            'directory'       => '@console/../node/mode/sounds/1',
             'command'         => 'node ../../app.js',
             'environment'     => ['PORT' => '3007', 'HOST' => '0.0.0.0'],
             'autostart'       => true,
@@ -256,7 +256,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/node.radio1.log',
         ],
         'prostoj.node.music' => [
-            'directory'       => '@common/node/music',
+            'directory'       => '@console/../node/music',
             'command'         => 'node main.js',
             'autostart'       => true,
             'autorestart'     => true,
@@ -267,7 +267,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/node.music.log',
         ],
         'prostoj.node.music2' => [
-            'directory'       => '@common/node/music',
+            'directory'       => '@console/../node/music',
             'command'         => 'node main2.js',
             'autostart'       => true,
             'autorestart'     => true,
@@ -278,7 +278,7 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/node.music2.log',
         ],
         'prostoj.node.radio2' => [
-            'directory'       => '@common/node/mode/sounds/2',
+            'directory'       => '@console/../node/mode/sounds/2',
             'command'         => 'node ../../app.js',
             'environment'     => ['PORT' => '3008', 'HOST' => '0.0.0.0'],
             'autostart'       => true,
@@ -291,7 +291,7 @@ return [
         ],
 
         'prostoj.node.discord.roles' => [
-            'directory'       => '@common/node/discord-roles/src',
+            'directory'       => '@console/../node/discord-roles/src',
             'command'         => 'node check.js',
             'autostart'       => true,
             'autorestart'     => true,
@@ -304,7 +304,7 @@ return [
 
         // ===== WebSocket servers =====
         'prostoj.websocket' => [
-            'directory'       => '@common',
+            'directory'       => '@console/../',
             'command'         => 'php ./yii "server-ws/start" 4888',
             'rlimit_nofile'   => 65535, // вместо ulimit
             'autostart'       => true,
