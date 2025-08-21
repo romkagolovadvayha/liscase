@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0930a0e351c2f1da534b0bfebbdf1f21",
+    "content-hash": "aa587444c27857f910f612d966d36db4",
     "packages": [
         {
             "name": "2amigos/qrcode-library",
@@ -1673,6 +1673,53 @@
                 "source": "https://github.com/maxmind/GeoIP2-php/tree/v2.13.0"
             },
             "time": "2022-08-05T20:32:58+00:00"
+        },
+        {
+            "name": "gofmanaa/yii2-crontask",
+            "version": "1.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/gofmanaa/yii2-crontask.git",
+                "reference": "23dcfd9e0be64217b84767d97e6ca8db4a4a30d3"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/gofmanaa/yii2-crontask/zipball/23dcfd9e0be64217b84767d97e6ca8db4a4a30d3",
+                "reference": "23dcfd9e0be64217b84767d97e6ca8db4a4a30d3",
+                "shasum": ""
+            },
+            "require": {
+                "yiisoft/yii2": "*"
+            },
+            "type": "yii2-extension",
+            "autoload": {
+                "psr-4": {
+                    "gofmanaa\\crontask\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Alexander Gofman",
+                    "email": "gofgmanaa@gmail.com"
+                }
+            ],
+            "description": "yii2 cron task manager",
+            "keywords": [
+                "cron",
+                "crontab",
+                "extension",
+                "task",
+                "yii2"
+            ],
+            "support": {
+                "issues": "https://github.com/gofmanaa/yii2-crontask/issues",
+                "source": "https://github.com/gofmanaa/yii2-crontask/tree/master"
+            },
+            "time": "2018-06-07T13:45:12+00:00"
         },
         {
             "name": "google/auth",

@@ -4,6 +4,7 @@ $config = require __DIR__ . '/../../common/config/web.php';
 $config['id'] = 'basic-console';
 $config['bootstrap'] = [
     'log',
+    'crontask',
 ];
 $config['basePath'] = dirname(__DIR__);
 $config['controllerNamespace'] = 'console\controllers';
@@ -33,6 +34,17 @@ $config['components']['log'] = [
             'exportInterval' => 1,
         ],
     ],
+];
+$config['modules']['crontask'] = [
+    'class'    => 'gofmanaa\crontask\Module',
+    'fileName' => 'cron.txt',
+    'yiiPath'  => __DIR__ . '/../../yii',
+    'tasks'    => [
+        'supportCheckClosed'       => [
+            'command' => 'support/check-closed',
+            'min'     => '*/5',
+        ],
+    ]
 ];
 $config['modules']['translateManager'] = [
     'class'                   => \DemonDogSL\translateManager\Module::class,
