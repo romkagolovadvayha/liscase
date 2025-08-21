@@ -69,7 +69,7 @@ function connectWs() {
     chat.onclose = function(e) {
         console.warn('WebSocket соединение закрыто. Причина:', e.reason || e.code);
         // Попробовать переподключиться через 2 секунд
-        setTimeout(() => reconnectWebSocket(), 2000);
+        setTimeout(() => reconnectWebSocket(), 5000);
     };
 
     chat.onopen = function(e) {
