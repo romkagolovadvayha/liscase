@@ -21,6 +21,12 @@ use Ratchet\WebSocket\Version\RFC6455\Frame;
 
 class ChatServer extends WebSocketServer
 {
+    /** @var int секунд без активности до закрытия */
+    private $idleCloseSeconds = 45; // NEW
+
+    private function log($m) { // NEW
+        echo date('Y-m-d H:i:s') . " [WS] {$m}" . PHP_EOL;
+    }
 
     public function init()
     {
@@ -34,7 +40,7 @@ class ChatServer extends WebSocketServer
             // heartbeat state
             $e->client->lastPong = time();
             $e->client->alive = true;
-            $e->client->missedPongs = 0;
+            $this->log("client connected, total=" . count($this->clients)); // NEW
         });
         $this->on(self::EVENT_CLIENT_DISCONNECTED, function(WSClientEvent $e) {
             foreach ($this->clients as $chatClient) {
@@ -48,33 +54,47 @@ class ChatServer extends WebSocketServer
                                                   'type' => 'chatBlur',
                                               ]));
             }
+            $this->log("client disconnected, total=" . count($this->clients)); // NEW
         });
 
-        // Получаем loop после старта сокета
+        // После старта сокета есть loop
         $this->on(self::EVENT_WEBSOCKET_OPEN, function () {
             /** @var \Ratchet\Server\IoServer $io */
             $io = $this->server;
             $loop = $io->loop;
 
-            $interval = 15; // каждые 15 секунд пингуем
+            // Одноразовый вывод через 60 сек после старта — сколько соединений // NEW
+            $loop->addTimer(60, function () {
+                $this->log("connections after 60s: " . count($this->clients));
+            });
+
+            $interval = 15; // каждые 15 сек пингуем
             $loop->addPeriodicTimer($interval, function () {
+                $now = time();
                 foreach ($this->clients as $client) {
-                    if (!isset($client->missedPongs)) {
-                        $client->missedPongs = 0;
+                    // Закрываем по реальному idle-таймауту (не по счётчику) // CHANGED
+                    $idle = $now - (isset($client->lastPong) ? $client->lastPong : 0);
+                    if ($idle >= $this->idleCloseSeconds) {
+                        $this->log("closing idle client ({$idle}s without pong)"); // NEW
+                        try { $client->close(1000, 'heartbeat timeout'); } catch (\Throwable $e) {}
+                        continue;
                     }
 
-                    // шлём app-level ping
+                    // Пробуем WS-ping фрейм (браузер авто-ответит pong) // NEW
                     try {
-                        $client->send(json_encode(['type' => 'ping', 'ts' => time()]));
-                        $client->missedPongs++;               // считаем попытку
-                        if ($client->missedPongs >= 3) {      // 3 подряд — закрываем
-                            try { $client->close(); } catch (\Throwable $e) {}
-                            echo 'Закрыто больше 3 ' . PHP_EOL;
-                        }
+                        $client->send(new Frame('', true, Frame::OP_PING));
                     } catch (\Throwable $e) {
-                        // если уже не шлётся — закрываем
-                        echo 'Закрыто ошибка ' . $e->getMessage() . PHP_EOL;
-                        try { $client->close(); } catch (\Throwable $e2) {}
+                        $this->log("ping frame send failed: " . $e->getMessage());
+                        try { $client->close(1011, 'send failed'); } catch (\Throwable $e2) {}
+                        continue;
+                    }
+
+                    // Оставляем и app-уровень ping (на случай не-браузерных клиентов) // NEW
+                    try {
+                        $client->send(json_encode(['type' => 'ping', 'ts' => $now]));
+                    } catch (\Throwable $e) {
+                        $this->log("app ping send failed: " . $e->getMessage());
+                        try { $client->close(1011, 'send failed'); } catch (\Throwable $e2) {}
                     }
                 }
             });
@@ -83,13 +103,21 @@ class ChatServer extends WebSocketServer
 
     protected function getCommand(ConnectionInterface $from, $msg)
     {
-        // любое сообщение «оживляет» клиента
-        $from->lastPong = time();
+        // Любое входящее — клиент «жив»
+        $from->lastPong = time(); // CHANGED (оставляем)
         $from->alive = true;
-        if (isset($from->missedPongs)) {
-            $from->missedPongs = 0; // любой входящий сбрасывает
+
+        $request = json_decode($msg, true) ?: [];
+
+        // Принимаем pong и как action, и как type // NEW
+        if (
+            (isset($request['action']) && $request['action'] === 'pong') ||
+            (isset($request['type']) && $request['type'] === 'pong')
+        ) {
+            // commandPong будет вызван через return 'pong'
+            return 'pong';
         }
-        $request = json_decode($msg, true);
+
         return !empty($request['action']) ? $request['action'] : parent::getCommand($from, $msg);
     }
 
@@ -624,16 +652,15 @@ class ChatServer extends WebSocketServer
             Yii::$app->telegramChats->sendMessage('commandAuth: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
-
     public function commandPong(ConnectionInterface $client, $msg)
     {
         try {
             $client->lastPong = time();
             $client->alive = true;
-            // пришёл ответ — соединение живое
-            $client->missedPongs = 0;
+            // лог для поиска причин // NEW
+            // $this->log("pong from client");
         } catch (\Exception $ex) {
-            Yii::$app->telegramChats->sendMessage('commandAuth: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
+            Yii::$app->telegramChats->sendMessage('commandPong: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
 }
