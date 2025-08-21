@@ -68,28 +68,61 @@ class Supervisortask extends Component
         return $this->dir . DIRECTORY_SEPARATOR . $basename;
     }
 
-    /** INI для [program:<name>] */
-    protected function buildProgram(string $name, array $o): string
+    // + добавь в класс:
+    protected function expandAliasesInString(string $s): string {
+        // заменим все вхождения вроде @app/..., @runtime/..., @app/..
+        return preg_replace_callback('/@[\w\-\.\/]+/u', function($m){
+            $r = \Yii::getAlias($m[0], false);
+            return $r !== false ? $r : $m[0];
+        }, $s);
+    }
+
+    protected function expandAliasesInOptions(array $o): array {
+        foreach (['directory','command','stdout_logfile','stderr_logfile'] as $k) {
+            if (isset($o[$k]) && is_string($o[$k])) {
+                $o[$k] = $this->expandAliasesInString($o[$k]);
+            }
+        }
+        // environment может быть строкой с алиасами
+        if (isset($o['environment']) && is_string($o['environment'])) {
+            $o['environment'] = $this->expandAliasesInString($o['environment']);
+        }
+        return $o;
+    }
+
+    // ⇩ заменяем твою buildProgram на эту
+    protected function buildProgram(string $name, array $opts): string
     {
+        $o = $this->expandAliasesInOptions($opts);
+
+        // гарантируем каталоги логов
+        foreach (['stdout_logfile','stderr_logfile'] as $k) {
+            if (!empty($o[$k]) && is_string($o[$k])) {
+                $dir = dirname($o[$k]);
+                if ($dir && !is_dir($dir)) {
+                    \yii\helpers\FileHelper::createDirectory($dir);
+                }
+            }
+        }
+
         $lines = [];
         $lines[] = "[program:{$name}]";
-        // обязательные
         $this->line($lines, 'command',       $o['command'] ?? null, true);
         $this->line($lines, 'directory',     $o['directory'] ?? null);
         $this->line($lines, 'user',          $o['user'] ?? null);
 
-        // булевы/числовые/строки — просто прокидываем если заданы
         $keys = [
             'autostart','autorestart','startsecs','startretries','exitcodes','stopsignal',
             'stopwaitsecs','stopasgroup','killasgroup','numprocs','process_name','priority',
             'stdout_logfile','stderr_logfile','stdout_logfile_maxbytes','stderr_logfile_maxbytes',
-            'stdout_logfile_backups','stderr_logfile_backups','redirect_stderr','serverurl'
+            'stdout_logfile_backups','stderr_logfile_backups','redirect_stderr','serverurl',
+            'rlimit_nofile',
         ];
         foreach ($keys as $k) {
             if (array_key_exists($k, $o)) $this->line($lines, $k, $o[$k]);
         }
 
-        // environment: принимаем как строку или массив
+        // environment: массив → строка, строку оставляем как есть (уже expandAliasesInOptions сделал)
         if (isset($o['environment'])) {
             $env = $o['environment'];
             if (is_array($env)) {
@@ -104,9 +137,10 @@ class Supervisortask extends Component
             $this->line($lines, 'environment', $env);
         }
 
-        $lines[] = ''; // финальный перевод строки
+        $lines[] = '';
         return implode("\n", $lines);
     }
+
 
     /** INI для [group:<name>] */
     protected function buildGroup(string $group, array $programNames): string
