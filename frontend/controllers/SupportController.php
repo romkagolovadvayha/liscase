@@ -574,6 +574,7 @@ class SupportController extends WebController
 
         if (!empty($unreadMessages[$model->id]) && $unreadMessages[$model->id]['cnt'] > 0) {
             SupportRead::readedAll($model->id, $user->id);
+            $unreadMessages[$model->id]['cnt']  = 0;
         }
 
         $ticketsQuery = SupportSearch::find();
