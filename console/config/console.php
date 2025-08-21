@@ -5,6 +5,10 @@ $config['id'] = 'basic-console';
 $config['bootstrap'] = [
     'log',
     'crontask',
+    function (\yii\console\Application $app) {
+        // не даём консоли создать веб-модуль комментариев
+        unset($app->modules['comment']);
+    },
 ];
 $config['basePath'] = dirname(__DIR__);
 $config['controllerNamespace'] = 'console\controllers';
