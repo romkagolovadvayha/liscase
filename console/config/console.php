@@ -46,6 +46,9 @@ $config['modules']['crontask'] = [
         ],
     ]
 ];
+$config['components']['crontask'] = [
+    'class' => \console\components\CrontabSafe::class,
+];
 $config['modules']['translateManager'] = [
     'class'                   => \DemonDogSL\translateManager\Module::class,
     'root'                    => [
