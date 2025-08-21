@@ -234,7 +234,7 @@ return [
         // ===== WebSocket servers =====
         'prostoj.websocket' => [
             'directory'       => '@project',
-            'command'         => 'php yii server-ws/start 4888',
+            'command'         => "bash -c 'ulimit -n 65535 && /usr/bin/php ./yii \"server-ws/start\" 4888'",
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
