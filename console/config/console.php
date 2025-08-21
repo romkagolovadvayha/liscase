@@ -35,6 +35,16 @@ $config['components']['log'] = [
         ],
     ],
 ];
+$config['components']['supervisor'] = [
+    'class' => \console\components\Supervisor::class,
+    'ctl'   => '/usr/bin/supervisorctl', // проверь путь
+    'sudo'  => true,                     // если нужен sudo
+    // 'config' => '/etc/supervisor/supervisord.conf',
+    // 'socket' => 'unix:///run/supervisor.sock',
+];
+$config['components']['supervisortask'] = [
+    'class' => \console\components\Supervisortask::class,
+];
 $config['modules']['crontask'] = [
     'class'    => \console\components\CrontaskModuleSafe::class,
     'fileName' => 'cron.txt',
@@ -105,6 +115,9 @@ $config['components']['crontab'] = [
 ];
 $config['controllerMap']['crontask'] = [
     'class' => \gofmanaa\crontask\console\CronController::class,
+];
+$config['controllerMap']['supervisortask'] = [
+    'class' =>\console\controllers\SupervisortaskController::class,
 ];
 $config['modules']['translateManager'] = [
     'class'                   => \DemonDogSL\translateManager\Module::class,
