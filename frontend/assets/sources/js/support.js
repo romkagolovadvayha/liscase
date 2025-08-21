@@ -265,20 +265,22 @@ function uploadFile(file, url, cp, newFilename, $progressBox, $fileBox) {
     xhr.send(file);
 }
 
-function successFile(filename, mimetype, cp, newFilename, $progressBox, $fileBox) {
+function successFile(filename, mimetype, cp, newFilename) {
     $.ajax({
-        url: '/support/upload-file-save',
-        method: 'POST',
-        data: { mimetype, newFilename, fileName: filename, id: chatId },
-        cache: false
-    }).done((res) => {
-        $progressBox.hide(); $fileBox.show();
-        if (cp) { cp.value = 0; cp.el.style.setProperty('--progress-value', 0); }
-        if (!res) return;
-        if (res.code !== 200) {
-            toastr.error("<i class='fas fa-exclamation-circle'></i><div class='toast-message_text'>" + res.message + "</div>", '', { progressBar: true, positionClass: 'toast-top-right', escapeHtml: false });
-        } else if (res.redirect) {
-            location.href = res.redirect;
+        url: '/support/upload-file-save?mimetype=' + mimetype + '&newFilename=' + newFilename + '&fileName=' + filename + '&id=' + chatId,
+        method: 'post',
+        success: function (res) {
+            if (res) {
+                $('.support_messages_form_progress').hide();
+                $('.support_messages_form_file').show();
+                cp.value = 0;
+                cp.el.style.setProperty('--progress-value', 0);
+                if (res.code !== 200) {
+                    toastr.error('<i class=\'fas fa-exclamation-circle\'></i><div class=\'toast-message_text\'>' + res.message + '</div>', '', {'progressBar': true, 'positionClass': 'toast-top-right', 'escapeHtml': false,});
+                } else if (res.redirect) {
+                    location.href = res.redirect;
+                }
+            }
         }
     });
 }
