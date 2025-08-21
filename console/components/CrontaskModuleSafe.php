@@ -8,16 +8,28 @@
 namespace gofmanaa\crontask;
 
 
-use console\components\CrontabSafe;
-use gofmanaa\crontask\components\Crontab as BaseCrontab;
 use Yii;
 use yii\base\BootstrapInterface;
 use yii\helpers\Inflector;
 
 
-class CrontaskModuleSafe extends \gofmanaa\crontask\Module
+class CrontaskModuleSafe extends \yii\base\Module implements BootstrapInterface
 {
 
+    public $defaultRoute = 'cron';
+    public $nameComponent = 'crontab';
+    public $fileName = '.crons';
+    public $phpPath = '/usr/bin/php';
+    public $yiiPath = null;
+    public $fileDir = null; //default /home/<username>
+    public $crontabPath = null;
+    public $tasks = [];
+    public $params = [];
+    public $cronGroup = null; //mast be unique for any app on server
+
+    /**
+     * Initializes the module.
+     */
     public function init()
     {
         if(is_null($this->cronGroup)){
@@ -27,7 +39,7 @@ class CrontaskModuleSafe extends \gofmanaa\crontask\Module
         }
         $this->setComponents([
                                  $this->nameComponent => [
-                                     'class'      => CrontabSafe::class,
+                                     'class'      => 'gofmanaa\crontask\components\Crontab',
                                      'filename'   => $this->fileName,
                                      'directory'  => $this->fileDir,
                                      'crontabPath'=> $this->crontabPath,
@@ -37,6 +49,21 @@ class CrontaskModuleSafe extends \gofmanaa\crontask\Module
 
         parent::init();
 
+
+    }
+
+    public function getUniqueId(){
+        return $this->id;
+    }
+
+    public function bootstrap($app){
+        if ($app instanceof \yii\console\Application) {
+            $app->controllerMap[$this->id] =
+                [
+                    'class'  => 'gofmanaa\crontask\console\CronController',
+                    'module' => $this,
+                ];
+        }
 
     }
 
