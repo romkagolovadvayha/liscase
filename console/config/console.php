@@ -44,6 +44,60 @@ $config['modules']['crontask'] = [
             'command' => 'support/check-closed',
             'min'     => '*/5',
         ],
+        'supportCheck'       => [
+            'command' => 'support/check',
+            'min'     => '*',
+        ],
+        'userUpdate'       => [
+            'command' => 'user/update',
+            'min'     => '*',
+        ],
+        'storageUpdateTops'       => [
+            'command' => 'storage/update-tops',
+            'min'     => '*/5',
+        ],
+        'storageUpdateMarket'       => [
+            'command' => 'storage/update-market',
+            'min'     => '*/20',
+        ],
+        'storageUpdate'       => [
+            'command' => 'storage/update',
+            'min'     => '*/2',
+        ],
+        'storageCalculateTops'       => [
+            'command' => 'storage/calculate-tops',
+            'min'     => '*/7',
+        ],
+        'skinDropsStatusCheck'       => [
+            'command' => 'skin-drops/status-check',
+            'min'     => '*',
+        ],
+        'skinDropsGoDraw'       => [
+            'command' => 'skin-drops/go-draw',
+            'hour'     => '*',
+            'min'     => '0',
+        ],
+        'serverReport'       => [
+            'command' => 'server/report',
+            'hour'     => '0',
+            'min'     => '1',
+        ],
+        'serverStatusCheck'       => [
+            'command' => 'server/check-status',
+            'min'     => '*',
+        ],
+        'serverWsOnline'       => [
+            'command' => 'server-ws/online',
+            'min'     => '*',
+        ],
+        'rustotekaBanImport'       => [
+            'command' => 'rustoteka/ban-import',
+            'min'     => '11',
+        ],
+        'depositSync'       => [
+            'command' => 'deposit/sync',
+            'min'     => '*/3',
+        ],
     ]
 ];
 $config['components']['crontab'] = [
