@@ -1,4 +1,10 @@
 <?php
+
+$params = yii\helpers\ArrayHelper::merge(
+    require Yii::getAlias('@common') . '/config/params.php',
+    require Yii::getAlias('@common') . '/config/params-local.php',
+);
+
 return [
     'dir'    => '/etc/supervisor/conf.d',
     'prefix' => 'prostoj',
@@ -129,75 +135,9 @@ return [
         ],
 
         // ===== Node: discord senders =====
-        'prostoj.node.discord.send.max3' => [
+        'prostoj.node.discord.multi.bot' => [
             'directory'       => '@project/node/discord/src',
-            'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "max3"',
-            'autostart'       => true,
-            'autorestart'     => true,
-            'startretries'    => 10,
-            'stopsignal'      => 'KILL',
-            'numprocs'        => 1,
-            'redirect_stderr' => true,
-            'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.max3.log',
-        ],
-        'prostoj.node.discord.send.classicx2' => [
-            'directory'       => '@project/node/discord/src',
-            'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "classicx2"',
-            'autostart'       => true,
-            'autorestart'     => true,
-            'startretries'    => 10,
-            'stopsignal'      => 'KILL',
-            'numprocs'        => 1,
-            'redirect_stderr' => true,
-            'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.classicx2.log',
-        ],
-        'prostoj.node.discord.send.nolimit' => [
-            'directory'       => '@project/node/discord/src',
-            'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "nolimit"',
-            'autostart'       => true,
-            'autorestart'     => true,
-            'startretries'    => 10,
-            'stopsignal'      => 'KILL',
-            'numprocs'        => 1,
-            'redirect_stderr' => true,
-            'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.nolimit.log',
-        ],
-        'prostoj.node.discord.send.solo' => [
-            'directory'       => '@project/node/discord/src',
-            'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "max8"',
-            'autostart'       => true,
-            'autorestart'     => true,
-            'startretries'    => 10,
-            'stopsignal'      => 'KILL',
-            'numprocs'        => 1,
-            'redirect_stderr' => true,
-            'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.solo.log',
-        ],
-        'prostoj.node.discord.send.x10' => [
-            'directory'       => '@project/node/discord/src',
-            'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "x10"',
-            'autostart'       => true,
-            'autorestart'     => true,
-            'startretries'    => 10,
-            'stopsignal'      => 'KILL',
-            'numprocs'        => 1,
-            'redirect_stderr' => true,
-            'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.x10.log',
-        ],
-        'prostoj.node.discord.send.0.5x' => [
-            'directory'       => '@project/node/discord/src',
-            'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "classic14x2"',
-            'autostart'       => true,
-            'autorestart'     => true,
-            'startretries'    => 10,
-            'stopsignal'      => 'KILL',
-            'numprocs'        => 1,
-            'redirect_stderr' => true,
-            'stdout_logfile'  => '@app/runtime/supervisor/node.discord.send.0.5x.log',
-        ],
-        'prostoj.node.discord.send.max4x2' => [
-            'directory'       => '@project/node/discord/src',
-            'command'         => 'node send.js "localhost" "prostoj" "iE9bI2kT0k" "prostoj" "max4x2"',
+            'command'         => 'node multi-bot.js "' . $params['db']['host'] . '" "' . $params['db']['user'] . '" "' . $params['db']['password'] . '" "' . $params['db']['name'] . '"',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
