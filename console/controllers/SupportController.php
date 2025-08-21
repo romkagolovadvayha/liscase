@@ -6,6 +6,7 @@ use common\components\helpers\Role;
 use common\components\queue\support\OpenAiJob;
 use common\models\support\Support;
 use common\models\support\SupportMessage;
+use common\models\support\SupportRead;
 use common\models\user\User;
 use common\models\user\UserTop;
 use Yii;
@@ -65,5 +66,26 @@ class SupportController extends Controller
 
     }
 
+    /**
+     * support/check-closed
+     * @throws \Exception
+     */
+    public function actionCheckClosed()
+    {
+        /** @var SupportRead[] $undeadTitkets */
+        $undeadTitketsIds = SupportRead::find()
+            ->alias('sr')
+            ->joinWith('support s')
+            ->select('DISTINCT(s.id)')
+            ->andWhere(['s.status' => Support::STATUS_CLOSED])
+            ->andWhere(['sr.status' => SupportRead::STATUS_UNREAD])
+            ->createCommand()
+            ->queryColumn();
+
+        foreach ($undeadTitketsIds as $id) {
+            SupportRead::readedAll($id);
+            echo $id . PHP_EOL;
+        }
+    }
 
 }

@@ -16,6 +16,7 @@ use yii\base\BaseObject;
  * @property bool $status
  *
  * @property SupportMessage $supportMessage
+ * @property Support $support
  * @property User $user
  */
 class SupportRead extends \yii\db\ActiveRecord
@@ -63,6 +64,17 @@ class SupportRead extends \yii\db\ActiveRecord
     public function getSupportMessage()
     {
         return $this->hasOne(SupportMessage::class, ['id' => 'support_message_id']);
+    }
+
+
+    /**
+     * Gets query for [[Support]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getSupport()
+    {
+        return $this->hasOne(Support::class, ['id' => 'support_id']);
     }
 
     /**
