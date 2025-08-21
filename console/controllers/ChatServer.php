@@ -588,7 +588,7 @@ class ChatServer extends WebSocketServer
             }
 
             //$client->send( json_encode($result) );
-        } catch (\Throwable $ex) {
+        } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('commandChat: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
@@ -614,7 +614,7 @@ class ChatServer extends WebSocketServer
                 $result['message'] = 'Invalid token';
                 $client->send( json_encode($result) );
             }
-        } catch (\Throwable $ex) {
+        } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('commandAuth: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
