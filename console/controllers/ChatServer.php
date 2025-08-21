@@ -40,7 +40,6 @@ class ChatServer extends WebSocketServer
             // heartbeat state
             $e->client->lastPong = time();
             $e->client->alive = true;
-            $this->log("client connected, total=" . count($this->clients)); // NEW
         });
         $this->on(self::EVENT_CLIENT_DISCONNECTED, function(WSClientEvent $e) {
             foreach ($this->clients as $chatClient) {
@@ -54,7 +53,6 @@ class ChatServer extends WebSocketServer
                                                   'type' => 'chatBlur',
                                               ]));
             }
-            $this->log("client disconnected, total=" . count($this->clients)); // NEW
         });
 
         // После старта сокета есть loop
