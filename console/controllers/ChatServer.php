@@ -621,9 +621,13 @@ class ChatServer extends WebSocketServer
 
     public function commandPong(ConnectionInterface $client, $msg)
     {
-        $client->lastPong = time();
-        $client->alive = true;
-        // пришёл ответ — соединение живое
-        $client->missedPongs = 0;
+        try {
+            $client->lastPong = time();
+            $client->alive = true;
+            // пришёл ответ — соединение живое
+            $client->missedPongs = 0;
+        } catch (\Exception $ex) {
+            Yii::$app->telegramChats->sendMessage('commandAuth: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
+        }
     }
 }
