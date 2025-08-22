@@ -33,10 +33,23 @@ $this->params['breadcrumbs'][] = $this->title;
             'server_id',
             'wipe',
             [
-                'class' => ActionColumn::className(),
-                'urlCreator' => function ($action, UserTop $model, $key, $index, $column) {
-                    return Url::toRoute([$action, 'id' => $model->id]);
-                 }
+                'class'    => 'yii\grid\ActionColumn',
+                'template' => '{update} {reset}',
+                'options'  => ['width' => '90'],
+                'buttons'  => [
+                    'update' => function ($url, $model) {
+                        return \common\components\grid\ManageButton::update($url);
+                    },
+                    'reset' => function ($url, $model) {
+                        $url = '/user-top/reset?id=' . $model->id;
+                        $confirm = Yii::t('common', 'Вы уверены, что хотите обнулить эту статистику?');
+                        return \yii\bootstrap5\Html::a(Yii::t('common', 'Обнулить'), $url, [
+                            'title'        => Yii::t('common', 'Обнулить'),
+                            'data-confirm' => $confirm,
+                            'class'        => 'btn btn-sm btn-default',
+                        ]);
+                    },
+                ],
             ],
         ],
     ]); ?>
