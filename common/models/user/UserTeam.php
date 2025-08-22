@@ -134,13 +134,12 @@ class UserTeam extends \yii\db\ActiveRecord
             $users[] = [
                 'link'      => $usr->getLink('stats'),
                 'username'  => $usr->username,
-                'online'    => $usr->getStatus(),
+                'is_online'    => $usr->getStatus(),
                 'date_visit' => $usr->last_visit_server_at,
                 'time_visit' => strtotime($usr->last_visit_server_at),
                 'avatar'    => $usr->getAvatar(),
                 'is_leader' => true,
             ];
-            echo $team->user_id . PHP_EOL;
         }
         foreach ($rows as $team) {
             if ($team->user_id == $authorId) {
@@ -153,7 +152,7 @@ class UserTeam extends \yii\db\ActiveRecord
             $users[] = [
                 'link'      => $usr->getLink('stats'),
                 'username'  => $usr->username,
-                'online'    => $usr->getStatus(),
+                'is_online'    => $usr->getStatus(),
                 'date_visit' => $usr->last_visit_server_at,
                 'time_visit' => strtotime($usr->last_visit_server_at),
                 'avatar'    => $usr->getAvatar(),
