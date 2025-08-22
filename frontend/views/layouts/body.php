@@ -66,7 +66,7 @@ if (!empty($this->params['_user'])) {
     if (!empty($buildings)) {
         $buildingsBlock = $this->render('@frontend/views/widgets/buildings.twig', ['ITEMS' => $buildings]);
     }
-    $team = Teams::getTeam($_server, $_user->steam_id);
+    $team = \common\models\user\UserTeam::getTeamList($_server->id, $_user->user_id, $_server->currentWipe());
     $teamBlock = $this->render('@frontend/views/widgets/teams.twig', ['ITEMS' => $team]);
     $kills = Kills::getKillsLive($_server, $_user);
     $killsBlock = $this->render('@frontend/views/widgets/kills.twig', ['ITEMS' => $kills]);
