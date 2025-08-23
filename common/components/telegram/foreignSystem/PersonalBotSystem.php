@@ -252,13 +252,13 @@ class PersonalBotSystem extends AbstractSystem
             return Yii::$app->cache->get($cacheKey);
         }
         $user = User::findByChatId($chatId);
-        if ($user->is_telegram_blocked) {
-            $user->is_telegram_blocked = false;
-            $user->save(false);
-        }
         if (empty($user)) {
             $return = '🔒 Авторизуйтесь, чтобы получить награду!' . PHP_EOL . "Для авторизации напишите /start";
             return $return;
+        }
+        if ($user->is_telegram_blocked) {
+            $user->is_telegram_blocked = false;
+            $user->save(false);
         }
         if ($user->status === User::STATUS_BLOCKED) {
             $return = '🔒 Ваш аккаунт заблокирован!';
