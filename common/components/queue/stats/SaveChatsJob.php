@@ -14,7 +14,7 @@ use yii\queue\JobInterface;
 
 class SaveChatsJob extends BaseObject implements JobInterface
 {
-    public $chats;
+    public $messages;
     public $serverTag;
 
     /**
@@ -26,7 +26,7 @@ class SaveChatsJob extends BaseObject implements JobInterface
     public function execute($queue)
     {
         try {
-            foreach ($this->chats as $item) {
+            foreach ($this->messages as $item) {
                 $model = new Chats();
                 $model->steam_id = $item['steam_id'];
                 $model->message = $item['message'];
