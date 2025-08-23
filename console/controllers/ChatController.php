@@ -33,7 +33,7 @@ class ChatController extends Controller
         $requestMessage = json_encode($list);
 
         $result = \Yii::$app->openAiChat->getReply($requestMessage);
-        \Yii::$app->telegramChats->sendMessage($result);
+        \Yii::$app->telegramChats->sendMessage(json_encode($result));
     }
 
 }
