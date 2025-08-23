@@ -82,41 +82,14 @@ class SaveStatsJob extends BaseObject implements JobInterface
 //                    Yii::$app->telegramChats->sendMessage("SaveStatsJob::updateTeam: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
 //                }
 //            }
-            /*try {
-                foreach ($request['chats'] as $item) {
-                    $model = new Chats();
-                    $model->steam_id = $item['steam_id'];
-                    $model->message = $item['message'];
-                    $model->created_at = $item['created_at'];
-                    $model->server_tag = $this->serverTag;
-                    $model->save();
-
-                    $wordBlackList = ['мама', 'мамку', 'мать', 'маму', 'отец', 'отчим', 'сестр', 'админ', 'зеркал', 'ебал', 'серв'];
-
-                    $user = User::findBySteamId($item['steam_id']);
-                    foreach ($wordBlackList as $word) {
-                        if (strpos(mb_strtolower($item['message']), $word) !== false) {
-                            $message = "💭 <b>Подозрение на оскорбление</b>" . PHP_EOL
-                                . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL
-                                . "Сообщение: {$item['message']}" . PHP_EOL
-                                . "Сервер: {$server->name}";
-
-                            Yii::$app->telegramChats->sendMessage($message, [
-                                [
-                                    'text' => 'Оскорбление родных',
-                                    'url' => "https://prostoj.store/site/mute?steamId={$user->steam_id}&serverTag={$server->tag}&reason=Оскорбления%20родных",
-                                ],
-                                [
-                                    'text' => 'Без причины',
-                                    'url' => "https://prostoj.store/site/mute?steamId={$user->steam_id}&serverTag={$server->tag}&reason=Причина%20не%20указана",
-                                ],
-                            ]);
-                        }
-                    }
-                }
+            try {
+                Yii::$app->queueTeam->push(new SaveChatsJob([
+                                                                'messages' => $request['chats'],
+                                                                'serverTag' => $this->serverTag,
+                                                            ]));
             } catch (\Exception $e) {
                 Yii::$app->telegramChats->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
-            }*/
+            }
             try {
                 foreach ($request['reports'] as $item) {
                     try {
