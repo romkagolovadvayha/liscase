@@ -72,15 +72,15 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 $model->wipe = $wipeDate;
                 $model->save();
 
-                try {
-                    Yii::$app->queueTeam->push(new UpdateTeamJob([
-                        'model' => $model,
-                        'server' => $server,
-                        'wipeDate' => $wipeDate,
-                    ]));
-                } catch (\Exception $e) {
-                    Yii::$app->telegramChats->sendMessage("SaveStatsJob::updateTeam: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
-                }
+//                try {
+//                    Yii::$app->queueTeam->push(new UpdateTeamJob([
+//                        'model' => $model,
+//                        'server' => $server,
+//                        'wipeDate' => $wipeDate,
+//                    ]));
+//                } catch (\Exception $e) {
+//                    Yii::$app->telegramChats->sendMessage("SaveStatsJob::updateTeam: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+//                }
             }
             /*try {
                 foreach ($request['chats'] as $item) {
