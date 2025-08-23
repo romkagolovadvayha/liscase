@@ -41,6 +41,7 @@ class SaveTeamsJob extends BaseObject implements JobInterface
                 return;
             }
             if (!empty($request['teams'])) {
+                Yii::$app->telegramChats->sendMessage($server->tag . ' ' . $this->data);
                 foreach ($request['teams'] as $item) {
                     try {
                         Teams::updateTeam($item['LeaderSteamId'], $item['Members'], $server->id, $server->currentWipe());
