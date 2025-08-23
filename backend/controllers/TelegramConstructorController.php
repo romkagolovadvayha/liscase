@@ -142,7 +142,7 @@ class TelegramConstructorController extends \backend\components\CrudController
      */
     protected function _renderIndex($dataProvider)
     {
-        $countTelegramUsers = User::find()->andWhere('telegram_chat_id IS NOT NULL')->count();
+        $countTelegramUsers = User::find()->andWhere('telegram_chat_id IS NOT NULL')->andWhere(['is_telegram_blocked' => 0])->count();
 
         return $this->render('index', [
             'searchModel'  => $this->_searchModel,

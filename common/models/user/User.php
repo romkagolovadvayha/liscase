@@ -71,6 +71,7 @@ use yii\web\JsExpression;
  * @property int             $ping
  * @property bool            $is_mirror_registration
  * @property bool            $is_mirror_returned
+ * @property bool            $is_telegram_blocked
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
