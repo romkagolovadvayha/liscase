@@ -33,10 +33,12 @@ $allCompleted = $usernameCompleted && $tradeLinkCompleted && $authCompleted;
 $result = [];
 /** @var \common\models\user\UserPayoutSkins[] $skindrops */
 $skindrops = \common\models\user\UserPayoutSkins::find()
+    ->alias('p')
     ->joinWith(['user'])
+    ->andWhere(['p.status' => \common\models\user\UserPayoutSkins::STATUS_SUCCESS])
     ->limit(10)
     ->cache(60)
-    ->orderBy(['id' => SORT_DESC])
+    ->orderBy(['p.id' => SORT_DESC])
     ->all();
 
 foreach ($skindrops as $item) {
