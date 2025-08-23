@@ -98,7 +98,7 @@ $config['modules']['crontask'] = [
         ],
         'chatCheck'       => [
             'command' => 'chat/check',
-            'min'     => '*/15',
+            'min'     => '*/5',
         ],
         'serverWsOnline'       => [
             'command' => 'server-ws/online',
