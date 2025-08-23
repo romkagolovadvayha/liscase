@@ -12,6 +12,7 @@ use yii\base\BaseObject;
  * @property int    $id
  * @property string $steam_id
  * @property string $message
+ * @property bool   $is_muted
  * @property string $created_at
  * @property string $server_tag
  */

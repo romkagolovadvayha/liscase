@@ -230,6 +230,9 @@ $config = [
         'openAiSupport' => [
             'class' => \common\components\openAi\OpenAiSupport::class,
         ],
+        'openAiChat' => [
+            'class' => \common\components\openAi\OpenAiChat::class,
+        ],
         'drop' => [
             'class' => \common\components\drop\Drop::class
         ],
