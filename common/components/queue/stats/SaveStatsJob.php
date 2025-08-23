@@ -59,18 +59,18 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     Yii::$app->telegramChats->sendMessage("SaveStatsJob::queueKills: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                 }
             }
-            foreach ($request['teams'] as $item) {
-                try {
-                    User::findBySteamId($item['steam_id'], false, 'stats');
-                } catch (\Exception $ex) {}
-                $model = new Teams();
-                $model->steam_id = $item['steam_id'];
-                $model->type = $item['type'];
-                $model->team_author = $item['team_author'];
-                $model->created_at = $item['created_at'];
-                $model->server_tag = $this->serverTag;
-                $model->wipe = $wipeDate;
-                $model->save();
+//            foreach ($request['teams'] as $item) {
+//                try {
+//                    User::findBySteamId($item['steam_id'], false, 'stats');
+//                } catch (\Exception $ex) {}
+//                $model = new Teams();
+//                $model->steam_id = $item['steam_id'];
+//                $model->type = $item['type'];
+//                $model->team_author = $item['team_author'];
+//                $model->created_at = $item['created_at'];
+//                $model->server_tag = $this->serverTag;
+//                $model->wipe = $wipeDate;
+//                $model->save();
 
 //                try {
 //                    Yii::$app->queueTeam->push(new UpdateTeamJob([
@@ -81,7 +81,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
 //                } catch (\Exception $e) {
 //                    Yii::$app->telegramChats->sendMessage("SaveStatsJob::updateTeam: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
 //                }
-            }
+//            }
             /*try {
                 foreach ($request['chats'] as $item) {
                     $model = new Chats();
