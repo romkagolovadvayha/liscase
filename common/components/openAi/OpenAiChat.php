@@ -54,16 +54,14 @@ class OpenAiChat extends \yii\base\Component
             [
                 'role' => 'system',
                 'content' =>
-                    "Ты модератор чата. Классифицируй нарушения и верни ТОЛЬКО JSON-массив объектов.\n".
-                    "Вход — это JSON с ключом messages\n".
-                    "Схема элемента: {\"steam_id\": string, \"type\": integer, \"message\": string}.\n".
-                    "Правила типов: 1 — оскорбление родителей; 2 — оскорбление администрации; 3 — просьба помощи админа.\n".
-                    "Никаких пояснений, без Markdown, без лишнего текста. Если нарушений нет — верни []."
+                    "Ты модератор чата. Вход — это JSON с ключом `messages`.\n".
+                    "Верни ТОЛЬКО JSON-объект вида {\"items\": [...]} без Markdown и пояснений.\n".
+                    "Элемент items: {\"steam_id\": string, \"type\": integer, \"message\": string}.\n".
+                    "Типы: 1 — оскорбление родителей; 2 — оскорбление администрации; 3 — просьба помощи админа.\n".
+                    "Если нарушений нет — {\"items\": []}."
             ],
-            [
-                'role' => 'user',
-                'content' => "Вот сообщения пользователей JSON:\n".$chatLog
-            ],
+            // Отдай чистый JSON, без текста перед ним
+            ['role' => 'user', 'content' => $chatLog],
         ];
 
         $response = $this->client->post('chat/completions', [
@@ -71,7 +69,6 @@ class OpenAiChat extends \yii\base\Component
                 'model' => Yii::$app->settings->get('openAi_model'),
                 'messages' => $messages,
                 'temperature' => 0.0,
-                // Строго структурированный JSON-ответ
                 'response_format' => [
                     'type' => 'json_schema',
                     'json_schema' => [
@@ -87,34 +84,32 @@ class OpenAiChat extends \yii\base\Component
                                     'items' => [
                                         'type' => 'object',
                                         'additionalProperties' => false,
-                                        'required' => ['type','message','steam_id'],
+                                        'required' => ['steam_id','type','message'],
                                         'properties' => [
                                             'steam_id' => ['type' => 'string'],
-                                            'type' => ['type' => 'integer', 'enum' => [1,2,3]],
-                                            'message' => ['type' => 'string'],
+                                            'type'     => ['type' => 'integer', 'enum' => [1,2,3]],
+                                            'message'  => ['type' => 'string'],
                                         ],
                                     ],
                                 ],
                             ],
                         ],
-                   ],
+                    ],
                 ],
             ],
             'timeout' => 20,
         ]);
 
         $data = json_decode($response->getBody(), true);
-        $content = $data['choices'][0]['message']['content'] ?? '[]';
+        $content = $data['choices'][0]['message']['content'] ?? '{"items":[]}';
 
-        // Надёжный парсинг и пост-валидация
         $decoded = json_decode($content, true);
-        if (!is_array($decoded)) {
+        if (!is_array($decoded) || !isset($decoded['items']) || !is_array($decoded['items'])) {
             return [];
         }
 
-        // Фильтр на всякий случай
         $clean = [];
-        foreach ($decoded as $row) {
+        foreach ($decoded['items'] as $row) {
             if (!is_array($row)) continue;
             $steam_id = isset($row['steam_id']) ? trim((string)$row['steam_id']) : '';
             $type     = isset($row['type']) ? (int)$row['type'] : 0;
@@ -125,5 +120,6 @@ class OpenAiChat extends \yii\base\Component
         }
         return $clean;
     }
+
 
 }
