@@ -30,7 +30,10 @@ class ChatController extends Controller
               'message' => $message->message,
             ];
         }
-        $requestMessage = json_encode($list);
+        $requestMessage = json_encode(
+            ['messages' => $list],
+            JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
+        );
 
         $result = \Yii::$app->openAiChat->getReply($requestMessage);
 
