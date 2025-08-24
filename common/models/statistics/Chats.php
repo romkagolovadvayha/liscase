@@ -8,6 +8,7 @@ use common\models\rcon\RconTasks;
 use common\models\user\User;
 use Yii;
 use yii\base\BaseObject;
+use yii\helpers\ArrayHelper;
 
 /**
  * @property int    $id
@@ -101,9 +102,26 @@ class Chats extends ActiveRecord
             ]
         ]);
 
-        //RconTasks::execute("mute {$data['steam_id']} \"{$reasonData['reason']}\" {$reasonData['term']}", [$user->getCurrentServer()->tag]);
-        //\Yii::$app->telegramChats->sendMessage("Мут игроку {$data['steam_id']} сообщение \"{$data['message']}\" за \"{$reasonData['reason']}\" на {$hour} часа");
-
         return true;
+    }
+
+    public static function actionMute($buttonValueObj) {
+        $type = ArrayHelper::getValue($buttonValueObj, 'type');
+        $steamId = ArrayHelper::getValue($buttonValueObj, 'steam_id');
+
+        $reasons = self::muteReason();
+        if (empty($reasons[$type])) {
+            return '⛔ Произошла ошибка';
+        }
+        $reasonData = $reasons[$type];
+
+        $user = User::findBySteamId($steamId, false, "Chats");
+        if (empty($user)) {
+            return '⛔ Произошла ошибка';
+        }
+
+        RconTasks::execute("mute {$steamId} \"{$reasonData['reason']}\" {$reasonData['term']}", [$user->getCurrentServer()->tag]);
+
+        return '✅ Игрок успешно замучен!';
     }
 }

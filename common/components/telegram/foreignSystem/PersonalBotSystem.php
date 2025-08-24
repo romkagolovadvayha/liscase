@@ -8,6 +8,7 @@ use common\models\box\Box;
 use common\models\box\Drop;
 use common\models\profit\Profit;
 use common\models\servers\Servers;
+use common\models\statistics\Chats;
 use common\models\user\UserBox;
 use common\models\user\UserConfirmCode;
 use common\models\user\UserDrop;
@@ -325,9 +326,8 @@ class PersonalBotSystem extends AbstractSystem
                 $buttonValueObj = json_decode($buttonValue, 1);
                 if (!empty($buttonValueObj)) {
                     $action = ArrayHelper::getValue($buttonValueObj, 'action');
-                    if (!empty($action)) {
-                        Yii::$app->telegramChats->sendMessage('test: ' . $action);
-                        return '✅ Игрок успешно замучен!';
+                    if (!empty($action) && $action == 'mute') {
+                      return Chats::actionMute($buttonValueObj);
                     }
                 }
             }
