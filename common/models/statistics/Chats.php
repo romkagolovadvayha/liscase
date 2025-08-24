@@ -4,6 +4,7 @@ namespace common\models\statistics;
 
 use common\components\base\ActiveRecord;
 use common\components\google\TranslateApi;
+use common\models\rcon\RconTasks;
 use common\models\user\User;
 use Yii;
 use yii\base\BaseObject;
@@ -46,11 +47,11 @@ class Chats extends ActiveRecord
         return [
           1 => [
               'reason' => 'Оскорбление родителей',
-              'term' => 24 * 60,
+              'term' => 24 * 60 * 60,
           ],
           2 => [
               'reason' => 'Оскорбление администрации',
-              'term' => 24 * 60,
+              'term' => 24 * 60 * 60,
           ],
         ];
     }
@@ -73,6 +74,12 @@ class Chats extends ActiveRecord
         }
         $reasonData = $reasons[$data['type']];
         $hour = $reasonData['term']/60;
+
+        $user = User::findBySteamId($data['steam_id'], false, "Chats");
+        if (empty($user)) {
+            return false;
+        }
+        RconTasks::execute("mute {$data['steam_id']} \"{$reasonData['reason']}\" {$reasonData['term']}", [$user->getCurrentServer()->tag]);
         \Yii::$app->telegramChats->sendMessage("Мут игроку {$data['steam_id']} сообщение \"{$data['message']}\" за \"{$reasonData['reason']}\" на {$hour} часа");
 
         return true;
