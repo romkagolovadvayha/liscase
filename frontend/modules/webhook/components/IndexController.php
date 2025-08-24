@@ -49,7 +49,9 @@ abstract class IndexController extends Controller
 
             $answerMessage = $system->executeCallBack($chat['id'], $buttonValue);
 
-            if (!empty($answerMessage['message'])) {
+            if (!empty($answerMessage['editMessageReplyMarkup'])) {
+                $bot->editMessageReplyMarkup($chat['id'], $message['message_id'], $answerMessage['buttons']);
+            } elseif (!empty($answerMessage['message'])) {
                 $bot->sendMessage($chat['id'], $answerMessage['message'], $answerMessage['buttons']);
             } elseif (!empty($answerMessage)) {
                 $textMessage .= "\n\n" . $answerMessage;

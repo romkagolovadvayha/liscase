@@ -143,7 +143,18 @@ class Chats extends ActiveRecord
                 Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '👕 Ваш скин успешно прошел модерацию и добавлен на сервера!');
             }
             RconTasks::execute("skinbox.addskin {$model->skin_id}");
-            return "✅ Скин успешно принят";
+            return [
+                'editMessageReplyMarkup' => true,
+                'buttons' =>        [
+                    [
+                        'text' => '🔴 Отклонить',
+                        'callback_data' => json_encode([
+                                                           'action'   => 'reject-skin',
+                                                           'skin_id'  => $skinId,
+                                                       ])
+                    ]
+                ],
+            ];
         }
         return '⛔ Произошла ошибка';
     }
@@ -164,7 +175,18 @@ class Chats extends ActiveRecord
                 Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '👕 Ваш скин не прошел модерацию!');
             }
             RconTasks::execute("skinbox.removeskin {$model->skin_id}");
-            return "✅ Скин успешно отклонен принят";
+            return [
+                'editMessageReplyMarkup' => true,
+                'buttons' =>        [
+                    [
+                        'text' => '🟢 Принять',
+                        'callback_data' => json_encode([
+                                                           'action'   => 'success-skin',
+                                                           'skin_id'  => $skinId,
+                                                       ])
+                    ],
+                ],
+            ];
         }
         return '⛔ Произошла ошибка';
     }

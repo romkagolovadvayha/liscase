@@ -144,6 +144,23 @@ class TelegramApiHelper extends \yii\base\Component
 
         return $this->_sendRequest('sendMessage', $params);
     }
+    /**
+     * @param int    $chatId
+     * @param string $messageText
+     * @param array  $inlineKeyboard
+     *
+     * @return mixed
+     */
+    public function editMessageReplyMarkup($chatId, $messageId, $inlineKeyboard = [])
+    {
+        $this->sendHttpRequest("editMessageReplyMarkup", [
+            'chat_id'    => $chatId,
+            'message_id' => $messageId,
+            'reply_markup' => json_encode([
+                                              'inline_keyboard' => [$inlineKeyboard]
+                                          ])
+        ]);
+    }
 
     /**
      * @param int   $chatId
