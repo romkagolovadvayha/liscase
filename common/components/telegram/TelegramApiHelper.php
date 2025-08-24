@@ -153,13 +153,18 @@ class TelegramApiHelper extends \yii\base\Component
      */
     public function editMessageReplyMarkup($chatId, $messageId, $inlineKeyboard = [])
     {
-        $this->sendHttpRequest("editMessageReplyMarkup", [
+        $params = [
             'chat_id'    => $chatId,
             'message_id' => $messageId,
-            'reply_markup' => json_encode([
-                                              'inline_keyboard' => [$inlineKeyboard]
-                                          ])
-        ]);
+            'parse_mode'   => 'Html',
+        ];
+
+        if (!empty($inlineKeyboard)) {
+            $params['reply_markup'] = json_encode([
+                                                      'inline_keyboard' => [$inlineKeyboard]
+                                                  ]);
+        }
+        $this->_sendRequest("editMessageReplyMarkup", $params);
     }
 
     /**
