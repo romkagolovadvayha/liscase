@@ -43,7 +43,7 @@ abstract class IndexController extends Controller
             $message     = ArrayHelper::getValue($callBack, 'message');
             $chat        = ArrayHelper::getValue($message, 'chat');
             $textMessage = ArrayHelper::getValue($message, 'text');
-            if (empty($buttonValue) || empty($chat) || empty($textMessage)) {
+            if (empty($buttonValue) || empty($chat)) {
                 return false;
             }
 
@@ -51,7 +51,7 @@ abstract class IndexController extends Controller
 
             if (!empty($answerMessage['message'])) {
                 $bot->sendMessage($chat['id'], $answerMessage['message'], $answerMessage['buttons']);
-            } elseif (!empty($answerMessage)) {
+            } elseif (!empty($answerMessage) && !empty($textMessage)) {
                 $textMessage .= "\n\n" . $answerMessage;
                 $bot->editMessageText($chat['id'], $message['message_id'], $textMessage);
             }
