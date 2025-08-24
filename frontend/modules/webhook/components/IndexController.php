@@ -37,6 +37,7 @@ abstract class IndexController extends Controller
 
         $callBack = ArrayHelper::getValue($inputParams, 'callback_query', []);
 
+        Yii::$app->telegramChats->sendMessage(json_encode($callBack));
         if (!empty($callBack)) {
             $buttonValue = ArrayHelper::getValue($callBack, 'data');
             $message     = ArrayHelper::getValue($callBack, 'message');

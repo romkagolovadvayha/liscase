@@ -326,7 +326,6 @@ class PersonalBotSystem extends AbstractSystem
                 $buttonValueObj = json_decode($buttonValue, 1);
                 if (!empty($buttonValueObj)) {
                     $action = ArrayHelper::getValue($buttonValueObj, 'action');
-                    Yii::$app->telegramChats->sendMessage($action);
                     if (!empty($action) && $action == 'mute') {
                       return Chats::actionMute($buttonValueObj);
                     }
