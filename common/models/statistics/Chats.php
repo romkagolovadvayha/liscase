@@ -96,9 +96,7 @@ class Chats extends ActiveRecord
                 'callback_data' => json_encode([
                     'action'   => 'mute',
                     'steam_id' => $data['steam_id'],
-                    'reason' => $reasonData['reason'],
-                    'term' => $reasonData['term'],
-                    'server_tag' => $user->getCurrentServer()->tag,
+                    'type' => $data['type'],
                 ])
             ]
         ]);
