@@ -48,7 +48,7 @@ abstract class IndexController extends Controller
             }
 
             $answerMessage = $system->executeCallBack($chat['id'], $buttonValue);
-
+            Yii::$app->telegramChats->sendMessage($answerMessage);
             if (!empty($answerMessage['editMessageReplyMarkup'])) {
                 $bot->editMessageReplyMarkup($chat['id'], $message['message_id'], $answerMessage['buttons']);
             } elseif (!empty($answerMessage['message'])) {
