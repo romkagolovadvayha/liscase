@@ -26,7 +26,7 @@ class ChatController extends Controller
 
         $list = [];
         foreach ($messages as $message) {
-            $list = [
+            $list[] = [
               'steam_id' => $message->steam_id,
               'message' => $message->message,
             ];
