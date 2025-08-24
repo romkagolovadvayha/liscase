@@ -1174,8 +1174,23 @@ class User extends ActiveRecord implements IdentityInterface
      * @param $userTops
      * @param Servers $server
      */
-    public function calculateTop($userStat, $userTops, $server) {
-        $rating = UserTop::getRaiting();
+    /**
+     * Пересчёт и запись рейтингов пользователя по текущему серверу/вайпу.
+     * Пишет в user_top атомно через UPSERT (INSERT ... ON DUPLICATE KEY UPDATE),
+     * чтобы не ловить дубликаты при параллельных запусках.
+     *
+     * @param array $userStat  ['kills' => 12, 'deaths' => 3, ...] — сырые метрики пользователя
+     * @param array $userTops  [user_id => [key => UserTop]] — уже загруженные записи (для локального кэша)
+     * @param \common\models\servers\Servers $server
+     */
+    public function calculateTop($userStat, $userTops, $server)
+    {
+        $db       = \Yii::$app->db;
+        $rating   = \common\models\user\UserTop::getRaiting();
+        $userId   = (int)$this->id;
+        $serverId = (int)$server->id;
+        $wipe     = (string)$server->currentWipe();
+
         foreach ($rating as $type => $items) {
             $value = 0;
             foreach ($items as $key => $cof) {
@@ -1184,18 +1199,24 @@ class User extends ActiveRecord implements IdentityInterface
                 }
                 $value += $userStat[$key] * $cof;
             }
-            if (!empty($userTops[$this->id]) && !empty($userTops[$this->id][$type])) {
-                $userTops[$this->id][$type]->value = round($value);
-                $userTops[$this->id][$type]->save();
-            } else {
-                $userTop = new UserTop();
-                $userTop->user_id = $this->id;
-                $userTop->key = $type;
-                $userTop->value = round($value);
-                $userTop->server_id = $server->id;
-                $userTop->wipe = $server->currentWipe();
-                $userTop->save();
+            $value = (string)round($value);
+
+            // Атомная запись: требует уникальный индекс на (user_id, server_id, key, wipe)
+            $db->createCommand()->upsert('user_top', [
+                'user_id'   => $userId,
+                'server_id' => $serverId,
+                'key'       => (string)$type,
+                'wipe'      => $wipe,
+                'value'     => $value,
+            ], [
+                                             'value'     => $value,
+                                         ])->execute();
+
+            // Обновим локальный кэш, если он есть (без повторного save)
+            if (!empty($userTops[$userId]) && !empty($userTops[$userId][$type])) {
+                $userTops[$userId][$type]->value = (int)$value;
             }
         }
     }
+
 }
