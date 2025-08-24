@@ -16,7 +16,7 @@ class ChatController extends Controller
     public function actionCheck()
     {
         $date = new \DateTime();
-        $date->modify('-30 minute');
+        $date->modify('-120 minute');
         /** @var Chats[] $messages */
         $messages = Chats::find()
             ->andWhere(['>', 'created_at', $date->format('Y-m-d H:i:s')])
