@@ -22,7 +22,7 @@ class ChatController extends Controller
 //            ->andWhere(['>', 'created_at', $date->format('Y-m-d H:i:s')])
             ->andWhere(['is_muted' => 0])
             ->orderBy(['id' => SORT_DESC])
-            ->limit(1000)
+            ->limit(500)
             ->all();
 
         $list = [];
