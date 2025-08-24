@@ -47,11 +47,11 @@ class Chats extends ActiveRecord
         return [
           1 => [
               'reason' => 'Оскорбление родителей',
-              'term' => 24 * 60 * 60,
+              'term' => 5 * 60 * 60,
           ],
           2 => [
               'reason' => 'Оскорбление администрации',
-              'term' => 24 * 60 * 60,
+              'term' => 12 * 60 * 60,
           ],
         ];
     }
