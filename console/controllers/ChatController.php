@@ -44,7 +44,7 @@ class ChatController extends Controller
 
         foreach ($result as $item) {
             if ($item['type'] == 4) {
-                \Yii::$app->telegramChats->sendMessage("Просит помощи админа {$item['steam_id']} сообщение \"{$item['message']}\"");
+                \Yii::$app->telegramSupport->sendMessage("Просит помощи админа {$item['steam_id']} сообщение \"{$item['message']}\"");
             }
             Chats::mute($item);
         }

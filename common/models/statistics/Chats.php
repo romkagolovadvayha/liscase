@@ -91,7 +91,7 @@ class Chats extends ActiveRecord
             . "Причина: {$reasonData['reason']}" . PHP_EOL
             . "Сервер: {$user->getCurrentServer()->name}";
 
-        Yii::$app->telegramChats->sendMessage($message, [
+        Yii::$app->telegramSupport->sendMessage($message, [
             [
                 'text' => '🔴 Замутить игрока',
                 'callback_data' => json_encode([
