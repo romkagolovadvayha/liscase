@@ -101,7 +101,7 @@ class TelegramChats
             ]);
         }
         $result = $this->sendHttpRequest("sendMessage", $params);
-        print_r($result);
+
         return $result;
     }
 }
