@@ -92,7 +92,7 @@ class Chats extends ActiveRecord
 
         Yii::$app->telegramChats->sendMessage($message, [
             [
-                'text' => 'Замутить игрока',
+                'text' => '🔴 Замутить игрока',
                 'callback_data' => json_encode([
                     'action'   => 'mute',
                     'steam_id' => $data['steam_id'],
