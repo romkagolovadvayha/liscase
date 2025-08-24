@@ -201,6 +201,27 @@ class TelegramApiHelper extends \yii\base\Component
 
     /**
      * @param int    $chatId
+     * @param int    $messageId
+     * @param string $messageText
+     *
+     * @return mixed
+     */
+    public function editMessageCaption($chatId, $messageId, $messageText)
+    {
+        if (empty($messageText)) {
+            return false;
+        }
+
+        return $this->_sendRequest('editMessageCaption', [
+            'chat_id'    => $chatId,
+            'message_id' => $messageId,
+            'caption'       => $messageText,
+            'parse_mode' => 'Html',
+        ]);
+    }
+
+    /**
+     * @param int    $chatId
      * @param string $messageId
      *
      * @return mixed
