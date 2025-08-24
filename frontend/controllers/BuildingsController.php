@@ -154,6 +154,26 @@ class BuildingsController extends WebController
 
         if ($this->request->isPost) {
             if ($model->load($this->request->post()) && $model->saveRecord()) {
+                Yii::$app->telegramSupport->sendMessage(
+                    "👕 Новая построка отправлена на модерацию!",
+                    [
+                        [
+                            'text' => '🟢 Принять',
+                            'callback_data' => json_encode([
+                                                               'action'   => 'success-building',
+                                                               'id'  => $model->id,
+                                                           ])
+                        ],
+                        [
+                            'text' => '🔴 Отклонить',
+                            'callback_data' => json_encode([
+                                                               'action'   => 'reject-building',
+                                                               'id'  => $model->id,
+                                                           ])
+                        ]
+                    ],
+                    $model->buildingImage[0]->getPublicUrl()
+                );
                 Yii::$app->session->addFlash('success', Yii::t('common', 'Постройка успешно отправлена на проверку!'));
                 return $this->redirect(['index']);
             }

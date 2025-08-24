@@ -4,6 +4,7 @@ namespace common\models\statistics;
 
 use common\components\base\ActiveRecord;
 use common\components\google\TranslateApi;
+use common\models\building\Building;
 use common\models\rcon\RconTasks;
 use common\models\serverskin\ServerSkin;
 use common\models\user\User;
@@ -134,7 +135,7 @@ class Chats extends ActiveRecord
         $model = ServerSkin::find()
                 ->andWhere(['skin_id' => $skinId])
                 ->one();
-        Yii::$app->telegramChats->sendMessage(json_encode($buttonValueObj));
+
         if ($model->status === ServerSkin::STATUS_ACTIVE) {
             return '⛔ Скин уже подтвержден!';
         }
@@ -184,6 +185,63 @@ class Chats extends ActiveRecord
                         'callback_data' => json_encode([
                                                            'action'   => 'success-skin',
                                                            'skin_id'  => $skinId,
+                                                       ])
+                    ],
+                ],
+            ];
+        }
+        return '⛔ Произошла ошибка';
+    }
+
+    public static function actionSuccessBuilding($buttonValueObj) {
+        $id = ArrayHelper::getValue($buttonValueObj, 'id');
+        /** @var Building $model */
+        $model = Building::findOne($id);
+
+        if ($model->status === Building::STATUS_ACTIVE) {
+            return '⛔ Постройка уже подтверждена!';
+        }
+        $model->status = Building::STATUS_ACTIVE;
+        if ($model->save()) {
+            if (!empty($model->user->telegram_chat_id)) {
+                Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '🏠 Ваша постройка успешно прошла модерацию!');
+            }
+            return [
+                'editMessageReplyMarkup' => true,
+                'buttons' =>        [
+                    [
+                        'text' => '🔴 Отклонить',
+                        'callback_data' => json_encode([
+                                                           'action'   => 'reject-building',
+                                                           'id'  => $id,
+                                                       ])
+                    ]
+                ],
+            ];
+        }
+        return '⛔ Произошла ошибка';
+    }
+
+    public static function actionRejectBuilding($buttonValueObj) {
+        $id = ArrayHelper::getValue($buttonValueObj, 'id');
+        /** @var Building $model */
+        $model = Building::findOne($id);
+        if ($model->status === Building::STATUS_REJECT) {
+            return '⛔ Скин уже отклонен!';
+        }
+        $model->status = Building::STATUS_REJECT;
+        if ($model->save()) {
+            if (!empty($model->user->telegram_chat_id)) {
+                Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '🏠 Ваша постройка не прошла модерацию!');
+            }
+            return [
+                'editMessageReplyMarkup' => true,
+                'buttons' =>        [
+                    [
+                        'text' => '🟢 Принять',
+                        'callback_data' => json_encode([
+                                                           'action'   => 'success-building',
+                                                           'id'  => $id,
                                                        ])
                     ],
                 ],
