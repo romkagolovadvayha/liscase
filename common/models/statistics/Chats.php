@@ -40,4 +40,41 @@ class Chats extends ActiveRecord
             'server_tag'    => Yii::t('common', 'Сервер'),
         ];
     }
+
+    public static function muteReason()
+    {
+        return [
+          1 => [
+              'reason' => 'Оскорбление родителей',
+              'term' => 24 * 60,
+          ],
+          2 => [
+              'reason' => 'Оскорбление администрации',
+              'term' => 24 * 60,
+          ],
+        ];
+    }
+
+    public static function mute($data)
+    {
+        if (empty($data['steam_id'])) {
+            return false;
+        }
+        if (empty($data['type'])) {
+            return false;
+        }
+        if (empty($data['message'])) {
+            return false;
+        }
+
+        $reasons = self::muteReason();
+        if (empty($reasons[$data['type']])) {
+            return false;
+        }
+        $reasonData = $reasons[$data['type']];
+        $hour = $reasonData['term']/60;
+        \Yii::$app->telegramChats->sendMessage("Мут игроку {$reasonData['steam_id']} за сообщение \"{$reasonData['message']}\" на {$hour} часа");
+
+        return true;
+    }
 }
