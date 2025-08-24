@@ -132,6 +132,7 @@ class ServerSkinController extends Controller
             if (!empty($model->user->telegram_chat_id)) {
                 Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '👕 Ваш скин не прошел модерацию!');
             }
+            RconTasks::execute("skinbox.removeskin {$model->skin_id}");
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
