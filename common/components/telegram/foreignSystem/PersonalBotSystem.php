@@ -320,6 +320,20 @@ class PersonalBotSystem extends AbstractSystem
      */
     public function executeCallBack($chatId, $buttonValue)
     {
+        try {
+            if (!empty($buttonValue)) {
+                $buttonValueObj = json_decode($buttonValue, 1);
+                if (!empty($buttonValueObj)) {
+                    $action = ArrayHelper::getValue($buttonValueObj, 'action');
+                    if (!empty($action)) {
+                        Yii::$app->telegramChats->sendMessage('test: ' . $action);
+                        return '✅ Игрок успешно замучен!';
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+
+        }
         /*if (!empty($buttonValue) && strpos($buttonValue, 'messageId') !== false) {
             $data = json_decode($buttonValue, 1);
             $response = $this->getMessage($data['messageId'], $data['current_language']);
