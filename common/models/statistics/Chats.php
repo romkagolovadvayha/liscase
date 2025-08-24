@@ -134,6 +134,7 @@ class Chats extends ActiveRecord
         $model = ServerSkin::find()
                 ->andWhere(['skin_id' => $skinId])
                 ->one();
+        Yii::$app->telegramChats->sendMessage(json_encode($buttonValueObj));
         if ($model->status === ServerSkin::STATUS_ACTIVE) {
             return '⛔ Скин уже подтвержден!';
         }
