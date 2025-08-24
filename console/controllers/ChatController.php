@@ -21,6 +21,7 @@ class ChatController extends Controller
         $messages = Chats::find()
             ->andWhere(['>', 'created_at', $date->format('Y-m-d H:i:s')])
             ->andWhere(['is_muted' => 0])
+            ->orderBy(['id' => SORT_DESC])
             ->all();
 
         $list = [];
