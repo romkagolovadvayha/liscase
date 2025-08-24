@@ -24,6 +24,11 @@ class TelegramSupport
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 20);
 
+        if (!empty($params)) {
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+        }
+
         $answer = curl_exec($ch);
         if ($answer === false) {
             Yii::error('empty telegram query answer ' . curl_error($ch));
