@@ -51,7 +51,7 @@ abstract class IndexController extends Controller
 
             if (!empty($answerMessage['message'])) {
                 $bot->sendMessage($chat['id'], $answerMessage['message'], $answerMessage['buttons']);
-            } elseif (!empty($answerMessage) && !empty($textMessage)) {
+            } elseif (!empty($answerMessage)) {
                 $textMessage .= "\n\n" . $answerMessage;
                 $bot->editMessageText($chat['id'], $message['message_id'], $textMessage);
             }
