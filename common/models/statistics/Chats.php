@@ -73,7 +73,7 @@ class Chats extends ActiveRecord
         }
         $reasonData = $reasons[$data['type']];
         $hour = $reasonData['term']/60;
-        \Yii::$app->telegramChats->sendMessage("Мут игроку {$reasonData['steam_id']} за сообщение \"{$reasonData['message']}\" на {$hour} часа");
+        \Yii::$app->telegramChats->sendMessage("Мут игроку {$reasonData['steam_id']} сообщение \"{$reasonData['message']}\" за \"{$reasonData['reason']}\" на {$hour} часа");
 
         return true;
     }
