@@ -16,13 +16,12 @@ class ChatController extends Controller
     public function actionCheck()
     {
         $date = new \DateTime();
-        $date->modify('-120 minute');
+        $date->modify('-10 minute');
         /** @var Chats[] $messages */
         $messages = Chats::find()
-//            ->andWhere(['>', 'created_at', $date->format('Y-m-d H:i:s')])
+            ->andWhere(['>', 'created_at', $date->format('Y-m-d H:i:s')])
             ->andWhere(['is_muted' => 0])
             ->orderBy(['id' => SORT_DESC])
-            ->limit(500)
             ->all();
 
         $list = [];
