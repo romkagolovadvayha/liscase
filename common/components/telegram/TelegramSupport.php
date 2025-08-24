@@ -84,22 +84,41 @@ class TelegramSupport
      * @return array
      * @throws \Exception
      */
-    public function sendMessage($messageText, $inlineKeyboard = []): array
+    public function sendMessage($messageText, $inlineKeyboard = [], $photoUrl = null): array
     {
         $chatId = Yii::$app->settings->get('tgbotSupportAlert_chatId');
-        $params = [
-            'chat_id'      => $chatId,
-            'text'         => $messageText,
-            'parse_mode'   => 'Html',
-            'link_preview_options'   => [
-                'is_disabled' => true
-            ],
-        ];
-        if (!empty($inlineKeyboard)) {
-            $params['reply_markup'] = json_encode([
-                'inline_keyboard' => [$inlineKeyboard]
-            ]);
+
+        if ($photoUrl) {
+            // Отправляем фото
+            $params = [
+                'chat_id' => $chatId,
+                'photo'   => $photoUrl,
+                'caption' => $messageText,
+                'parse_mode' => 'Html',
+            ];
+            if (!empty($inlineKeyboard)) {
+                $params['reply_markup'] = json_encode([
+                                                          'inline_keyboard' => [$inlineKeyboard]
+                                                      ]);
+            }
+            return $this->sendHttpRequest("sendPhoto", $params);
+
+        } else {
+            // Обычное сообщение
+            $params = [
+                'chat_id' => $chatId,
+                'text' => $messageText,
+                'parse_mode' => 'Html',
+                'link_preview_options' => [
+                    'is_disabled' => true
+                ],
+            ];
+            if (!empty($inlineKeyboard)) {
+                $params['reply_markup'] = json_encode([
+                                                          'inline_keyboard' => [$inlineKeyboard]
+                                                      ]);
+            }
+            return $this->sendHttpRequest("sendMessage", $params);
         }
-        return $this->sendHttpRequest("sendMessage", $params);
     }
 }

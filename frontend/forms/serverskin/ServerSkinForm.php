@@ -81,8 +81,22 @@ class ServerSkinForm extends ServerSkin
         $this->image = $imagePath;
         $this->creator_user_id = $creatorUser->id;
         $this->save();
-
-        Yii::$app->telegramChats->sendMessage("👕 Новый скин отправлен на модерацию!");
+        Yii::$app->telegramSupport->sendMessage("👕 Новый скин отправлен на модерацию!", [
+            [
+                'text' => '✅ Принять',
+                'callback_data' => json_encode([
+                                                   'action'   => 'success-skin',
+                                                   'skin_id' => $skinId,
+                                               ])
+            ],
+            [
+                'text' => '🔴 Отклонить',
+                'callback_data' => json_encode([
+                                                   'action'   => 'reject-skin',
+                                                   'skin_id' => $skinId,
+                                               ])
+            ]
+        ], $this->getImagePubUrl());
         Yii::$app->personalBotTelegram->sendMessage(Yii::$app->user->identity->telegram_chat_id, "👕 Скин отправлен на модерацию!");
         return true;
     }
