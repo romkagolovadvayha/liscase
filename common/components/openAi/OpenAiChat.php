@@ -78,19 +78,26 @@ class OpenAiChat extends \yii\base\Component
                         'name' => 'Violations',
                         'strict' => true,
                         'schema' => [
-                            'type' => 'array',
-                            'items' => [
-                                'type' => 'object',
-                                'required' => ['steam_id','type','message'],
-                                'properties' => [
-                                    'steam_id' => ['type' => 'string'],
-                                    'type' => ['type' => 'integer', 'enum' => [1,2,3]],
-                                    'message' => ['type' => 'string']
+                            'type' => 'object',
+                            'additionalProperties' => false,
+                            'required' => ['items'],
+                            'properties' => [
+                                'items' => [
+                                    'type' => 'array',
+                                    'items' => [
+                                        'type' => 'object',
+                                        'additionalProperties' => false,
+                                        'required' => ['type','message','steam_id'],
+                                        'properties' => [
+                                            'steam_id' => ['type' => 'string'],
+                                            'type' => ['type' => 'integer', 'enum' => [1,2,3]],
+                                            'message' => ['type' => 'string'],
+                                        ],
+                                    ],
                                 ],
-                                'additionalProperties' => false
-                            ]
-                        ]
-                    ]
+                            ],
+                        ],
+                   ],
                 ],
             ],
             'timeout' => 20,
