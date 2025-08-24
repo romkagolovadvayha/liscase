@@ -5,6 +5,7 @@ namespace common\models\statistics;
 use common\components\base\ActiveRecord;
 use common\components\google\TranslateApi;
 use common\models\rcon\RconTasks;
+use common\models\serverskin\ServerSkin;
 use common\models\user\User;
 use Yii;
 use yii\base\BaseObject;
@@ -106,6 +107,56 @@ class Chats extends ActiveRecord
     }
 
     public static function actionMute($buttonValueObj) {
+        $type = ArrayHelper::getValue($buttonValueObj, 'type');
+        $steamId = ArrayHelper::getValue($buttonValueObj, 'steam_id');
+
+        $reasons = self::muteReason();
+        if (empty($reasons[$type])) {
+            return '⛔ Произошла ошибка';
+        }
+        $reasonData = $reasons[$type];
+
+        $user = User::findBySteamId($steamId, false, "Chats");
+        if (empty($user)) {
+            return '⛔ Произошла ошибка';
+        }
+        $hour = $reasonData['term']/60/60;
+
+        RconTasks::execute("ra.mute {$steamId} \"{$reasonData['reason']}\" {$hour}h", [$user->getCurrentServer()->tag]);
+
+        return '✅ Игрок успешно замучен!';
+    }
+
+    public static function actionSuccessSkin($buttonValueObj) {
+        $skinId = ArrayHelper::getValue($buttonValueObj, 'skin_id');
+
+        /** @var ServerSkin $model */
+        $model = ServerSkin::find()
+                ->andWhere(['skin_id' => $skinId])
+                ->one();
+        if ($model->status === ServerSkin::STATUS_ACTIVE) {
+            return '⛔ Скин уже подтвержден!';
+        }
+        $model->status = ServerSkin::STATUS_ACTIVE;
+        if ($model->save()) {
+            if (!empty($model->user->telegram_chat_id)) {
+                Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '👕 Ваш скин успешно прошел модерацию и добавлен на сервера!');
+            }
+            RconTasks::execute("skinbox.addskin {$model->skin_id}");
+            return  [
+                [
+                    'text' => '🔴 Отклонить',
+                    'callback_data' => json_encode([
+                                                       'action'   => 'reject-skin',
+                                                       'skin_id'  => $skinId,
+                                                   ])
+                ]
+            ];
+        }
+        return '⛔ Произошла ошибка';
+    }
+
+    public static function actionRejectSkin($buttonValueObj) {
         $type = ArrayHelper::getValue($buttonValueObj, 'type');
         $steamId = ArrayHelper::getValue($buttonValueObj, 'steam_id');
 
