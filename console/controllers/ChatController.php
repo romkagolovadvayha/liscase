@@ -21,7 +21,7 @@ class ChatController extends Controller
         $messages = Chats::find()
             ->andWhere(['>', 'created_at', $date->format('Y-m-d H:i:s')])
             ->andWhere(['is_muted' => 0])
-            ->limit(500)
+            ->limit(1000)
             ->all();
 
         $list = [];
@@ -35,7 +35,7 @@ class ChatController extends Controller
             ['messages' => $list],
             JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
         );
-
+print_r($requestMessage);
         $result = \Yii::$app->openAiChat->getReply($requestMessage);
 
 
