@@ -73,7 +73,7 @@ class Chats extends ActiveRecord
             return false;
         }
         $reasonData = $reasons[$data['type']];
-        $hour = $reasonData['term']/60;
+        $hour = $reasonData['term']/60/60;
 
         $user = User::findBySteamId($data['steam_id'], false, "Chats");
         if (empty($user)) {
