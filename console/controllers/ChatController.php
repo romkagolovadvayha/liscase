@@ -19,9 +19,10 @@ class ChatController extends Controller
         $date->modify('-120 minute');
         /** @var Chats[] $messages */
         $messages = Chats::find()
-            ->andWhere(['>', 'created_at', $date->format('Y-m-d H:i:s')])
+//            ->andWhere(['>', 'created_at', $date->format('Y-m-d H:i:s')])
             ->andWhere(['is_muted' => 0])
             ->orderBy(['id' => SORT_DESC])
+            ->limit(1000)
             ->all();
 
         $list = [];
@@ -38,8 +39,6 @@ class ChatController extends Controller
 
         $result = \Yii::$app->openAiChat->getReply($requestMessage);
 
-
-        \Yii::$app->telegramChats->sendMessage(json_encode($result));
         if (empty($result)) {
             return;
         }
