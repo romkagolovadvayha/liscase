@@ -44,7 +44,7 @@ print_r($requestMessage);
             return;
         }
 
-        foreach ($result['items'] as $item) {
+        foreach ($result as $item) {
             Chats::mute($item);
         }
     }
