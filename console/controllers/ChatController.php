@@ -35,7 +35,7 @@ class ChatController extends Controller
             ['messages' => $list],
             JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
         );
-print_r($requestMessage);
+
         $result = \Yii::$app->openAiChat->getReply($requestMessage);
 
 
@@ -45,6 +45,9 @@ print_r($requestMessage);
         }
 
         foreach ($result as $item) {
+            if ($item['type'] == 3) {
+                \Yii::$app->telegramChats->sendMessage("Просит помощи админа {$item['steam_id']} сообщение \"{$item['message']}\"");
+            }
             Chats::mute($item);
         }
     }
