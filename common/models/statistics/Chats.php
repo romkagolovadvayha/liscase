@@ -83,6 +83,26 @@ class Chats extends ActiveRecord
         if (empty($user)) {
             return false;
         }
+
+        $message = "💭 <b>Подозрение на оскорбление</b>" . PHP_EOL
+            . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL
+            . "Сообщение: {$data['message']}" . PHP_EOL
+            . "Причина: {$reasonData['reason']}" . PHP_EOL
+            . "Сервер: {$user->getCurrentServer()->name}";
+
+        Yii::$app->telegramChats->sendMessage($message, [
+            [
+                'text' => 'Замутить игрока',
+                'callback_data' => json_encode([
+                    'action'   => 'mute',
+                    'steam_id' => $data['steam_id'],
+                    'reason' => $reasonData['reason'],
+                    'term' => $reasonData['term'],
+                    'server_tag' => $user->getCurrentServer()->tag,
+                ])
+            ]
+        ]);
+
         //RconTasks::execute("mute {$data['steam_id']} \"{$reasonData['reason']}\" {$reasonData['term']}", [$user->getCurrentServer()->tag]);
         \Yii::$app->telegramChats->sendMessage("Мут игроку {$data['steam_id']} сообщение \"{$data['message']}\" за \"{$reasonData['reason']}\" на {$hour} часа");
 
