@@ -3,6 +3,7 @@
 namespace common\components\queue\stats;
 
 use common\components\oauth\Steam;
+use common\models\rcon\RconTasks;
 use common\models\serverskin\ServerSkin;
 use Yii;
 use yii\base\BaseObject;
@@ -30,7 +31,7 @@ class SkinsApprovedJob extends BaseObject implements JobInterface
             Yii::$app->telegramChats->sendMessage(count($approvedIds));
             /** @var ServerSkin[] $skins */
             $skins = ServerSkin::find()
-                               ->andWhere(['status' => ServerSkin::STATUS_ACTIVE])
+                               ->andWhere(['status' => ServerSkin::STATUS_REJECT])
                                ->all();
 
             Yii::$app->telegramChats->sendMessage(count($skins));
@@ -41,12 +42,16 @@ class SkinsApprovedJob extends BaseObject implements JobInterface
                 }
                 $count++;
 
-                if ($count < 10) {
-                    $message = "🟢 <b>Скин автоматически удален</b>" . PHP_EOL . "Skin ID: {$skin->skin_id}" . PHP_EOL
-                        . "Причина: Принят в игру";
+                $skin->status = ServerSkin::STATUS_REJECT;
+                $skin->save(false);
 
-                    Yii::$app->telegramSupport->sendMessage($message, [], $skin->getImagePubUrl());
-                }
+                RconTasks::execute("skinbox.removeskin {$skin->skin_id}");
+                $message = "🟢 <b>Скин автоматически удален</b>" . PHP_EOL . "Skin ID: {$skin->skin_id}" . PHP_EOL
+                    . "Причина: Принят в игру";
+
+                Yii::$app->telegramSupport->sendMessage($message, [], $skin->getImagePubUrl());
+
+                sleep(3);
             }
 
             Yii::$app->telegramSupport->sendMessage("Всего отклонено скинов: {$count}");
