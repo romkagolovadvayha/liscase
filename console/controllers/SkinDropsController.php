@@ -135,6 +135,11 @@ class SkinDropsController extends Controller
 
         foreach ($skins as $skin) {
             $info = ServerSkin::getInfoSkin($skin->skin_id);
+            if (empty($info['tags']) && empty($info['result'])) {
+                print_r($info);
+                sleep(5);
+                continue;
+            }
             if (empty($info['tags']) && $info['result'] == 9) {
                 print_r($info);
                 $skin->status = ServerSkin::STATUS_REJECT;
