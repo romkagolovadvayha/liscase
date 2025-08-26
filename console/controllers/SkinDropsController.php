@@ -137,19 +137,19 @@ class SkinDropsController extends Controller
             $info = ServerSkin::getInfoSkin($skin->skin_id);
             if (empty($info)) {
                 echo "sleep 20 sec" . PHP_EOL;
-                sleep(20);
+                sleep(60 * 5);
                 continue;
             }
             if (empty($info['tags']) && empty($info['result'])) {
                 print_r($info);
-                sleep(5);
+                sleep(10);
                 continue;
             }
             if (empty($info['tags']) && $info['result'] == 9) {
                 $skin->status = ServerSkin::STATUS_REJECT;
                 $skin->save(false);
                 RconTasks::execute("skinbox.removeskin {$skin->skin_id}");
-                sleep(5);
+                sleep(10);
                 continue;
             }
             $tag = $info['tags'][0]['tag'];
@@ -168,7 +168,7 @@ class SkinDropsController extends Controller
 
             $skin->server_skin_category_id = $category->id;
             $skin->save(false);
-            sleep(5);
+            sleep(10);
         }
 
     }
