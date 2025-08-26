@@ -49,7 +49,7 @@ class ServerSkinCategory extends \yii\db\ActiveRecord
 
         if (empty($model)) {
             $google = new TranslateApi();
-            $name = mb_convert_case($google->translateText('box', 'ru'), MB_CASE_TITLE, "UTF-8");
+            $name = mb_convert_case($google->translateText($key, 'ru'), MB_CASE_TITLE, "UTF-8");
 
             $model = new ServerSkinCategory();
             $model->name = $name;
