@@ -130,10 +130,15 @@ class SkinDropsController extends Controller
         /** @var ServerSkin[] $skins */
         $skins = ServerSkin::find()
             ->andWhere(['status' => ServerSkin::STATUS_ACTIVE])
+            ->andWhere('server_skin_category_id IS NULL')
             ->all();
 
         foreach ($skins as $skin) {
             $info = ServerSkin::getInfoSkin($skin->skin_id);
+            if (empty($info['tags'])) {
+                print_r($info);
+                break;
+            }
             $tag = $info['tags'][0]['tag'];
             if ($tag == 'Version3') {
                 $tag = $info['tags'][1]['tag'];
