@@ -20,8 +20,10 @@ class SkinsApprovedJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
+        Yii::$app->telegramChats->sendMessage(1);
         try {
             $request = json_decode($this->data, 1);
+            Yii::$app->telegramChats->sendMessage(2);
             Yii::$app->telegramChats->sendMessage($request['approved_ids']);
             $approvedIds = explode(',', $request['approved_ids']);
 
