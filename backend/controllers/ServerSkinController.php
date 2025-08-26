@@ -127,9 +127,14 @@ class ServerSkinController extends Controller
     {
         $model = $this->findModel($id);
 
+        $push = true;
+        if ($model->status == ServerSkin::STATUS_ACTIVE) {
+            $push = false;
+        }
+
         $model->status = ServerSkin::STATUS_REJECT;
         if ($model->save()) {
-            if (!empty($model->user->telegram_chat_id)) {
+            if (!empty($model->user->telegram_chat_id) && $push) {
                 Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '👕 Ваш скин не прошел модерацию!');
             }
             RconTasks::execute("skinbox.removeskin {$model->skin_id}");
