@@ -114,9 +114,6 @@ $config['modules']['crontask'] = [
         ],
     ]
 ];
-$config['components']['crontab'] = [
-    'class' => \console\components\CrontabSafe::class,
-];
 $config['controllerMap']['crontask'] = [
     'class' => \gofmanaa\crontask\console\CronController::class,
 ];
