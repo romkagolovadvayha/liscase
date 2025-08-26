@@ -28,7 +28,7 @@ class SkinsController extends WebController
     }
 
     public function actionApproved() {
-        Yii::$app->queueStats->push(new SkinsApprovedJob([
+        Yii::$app->queueTeam->push(new SkinsApprovedJob([
             'data' => Yii::$app->request->getRawBody(),
         ]));
     }
