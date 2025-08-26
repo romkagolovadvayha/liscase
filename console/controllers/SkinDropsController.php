@@ -2,9 +2,12 @@
 
 namespace console\controllers;
 
+use common\components\google\TranslateApi;
 use common\models\profit\Profit;
 use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
+use common\models\serverskin\ServerSkin;
+use common\models\serverskin\ServerSkinCategory;
 use common\models\skindrops\SkindropsLink;
 use common\models\stats\Info;
 use common\models\user\UserPayoutSkins;
@@ -116,5 +119,27 @@ class SkinDropsController extends Controller
     public function actionGetApproved()
     {
         RconTasks::execute("skins.approved.send");
+    }
+
+    /**
+     * skin-drops/get-category
+     * @throws \Exception
+     */
+    public function actionGetCategory()
+    {
+        /** @var ServerSkin[] $skins */
+        $skins = ServerSkin::find()
+            ->andWhere(['status' => ServerSkin::STATUS_ACTIVE])
+            ->all();
+
+        foreach ($skins as $skin) {
+            $info = ServerSkin::getInfoSkin($skin->id);
+            $category = ServerSkinCategory::getCategory($info['tags'][1]['tag']);
+
+            $skin->server_skin_category_id = $category->id;
+            $skin->save(false);
+            sleep(3);
+        }
+
     }
 }

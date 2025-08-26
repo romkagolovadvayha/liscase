@@ -15,6 +15,7 @@ use Yii;
  * @property string|null $name
  * @property int         $status
  * @property string      $image
+ * @property string      $server_skin_category_id
  * @property int         $likes
  * @property int         $creator_user_id
  * @property string|null $created_at
@@ -22,6 +23,7 @@ use Yii;
  * @property ServerSkinLike[] $serverSkinLikes
  * @property User $user
  * @property User $creatorUser
+ * @property ServerSkinCategory $serverSkinCategory
  */
 class ServerSkin extends \yii\db\ActiveRecord
 {
@@ -103,6 +105,16 @@ class ServerSkin extends \yii\db\ActiveRecord
     public function getUser()
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
+    }
+
+    /**
+     * Gets query for [[ServerSkinCategory]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getServerSkinCategory()
+    {
+        return $this->hasOne(ServerSkinCategory::class, ['id' => 'server_skin_category_id']);
     }
 
     /**

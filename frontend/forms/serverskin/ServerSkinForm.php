@@ -85,6 +85,7 @@ class ServerSkinForm extends ServerSkin
         $this->name = $title;
         $this->skin_id = $skinId;
         $this->image = $imagePath;
+        $this->category = $info['tags'][1]['tag'];
         $this->creator_user_id = $creatorUser->id;
         $this->save();
         Yii::$app->telegramSupport->sendMessage(
