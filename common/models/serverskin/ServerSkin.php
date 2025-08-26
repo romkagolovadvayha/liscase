@@ -146,6 +146,7 @@ class ServerSkin extends \yii\db\ActiveRecord
                                    ->post('https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/');
 
         $data = json_decode($response, true);
+        print_r($data);
         return $data['response']['publishedfiledetails'][0] ?? null;
     }
 }
