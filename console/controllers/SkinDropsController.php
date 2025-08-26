@@ -137,6 +137,10 @@ class SkinDropsController extends Controller
             $info = ServerSkin::getInfoSkin($skin->skin_id);
             if (empty($info['tags']) && $info['result'] == 9) {
                 print_r($info);
+                $skin->status = ServerSkin::STATUS_REJECT;
+                $skin->save(false);
+                RconTasks::execute("skinbox.removeskin {$skin->skin_id}");
+                sleep(3);
                 continue;
             }
             $tag = $info['tags'][0]['tag'];
