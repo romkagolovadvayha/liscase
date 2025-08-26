@@ -137,6 +137,7 @@ class SkinDropsController extends Controller
             $info = ServerSkin::getInfoSkin($skin->skin_id);
             if (empty($info['tags']) && empty($info['result'])) {
                 print_r($info);
+                print_r($skin->skin_id);
                 continue;
             }
             if (empty($info['tags']) && $info['result'] == 9) {
