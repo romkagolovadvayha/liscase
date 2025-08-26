@@ -67,6 +67,15 @@ class SupportController extends Controller
     }
 
     /**
+     * support/empty
+     * @throws \Exception
+     */
+    public function actionEmpty()
+    {
+
+    }
+
+    /**
      * support/check-closed
      * @throws \Exception
      */

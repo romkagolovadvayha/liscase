@@ -47,7 +47,7 @@ $config['components']['supervisortask'] = [
 ];
 $config['modules']['crontask'] = [
     'class'    => 'gofmanaa\crontask\Module',
-    'fileName' => 'cron2.txt',
+    'fileName' => 'cron.txt',
     'yiiPath'  => __DIR__ . '/../../yii',
     'tasks'    => [
         'supportCheckClosed'       => [
@@ -110,6 +110,14 @@ $config['modules']['crontask'] = [
         ],
         'depositSync'       => [
             'command' => 'deposit/sync',
+            'min'     => '*/3',
+        ],
+        'getCsGoFiles'       => [
+            'command' => 'support/empty && cd /var/www/www-root/data/var/www/prostoj.store/frontend/web/uploads/prices && wget https://market.csgo.com/api/v2/prices/class_instance/RUB.json -O csmarket.json && cd /var/www/www-root/data/var/www/prostoj.store && ./yii storage/update-price-cs-go',
+            'min'     => '*/7',
+        ],
+        'getRustFiles'       => [
+            'command' => 'support/empty && cd /var/www/www-root/data/var/www/prostoj.store/frontend/web/uploads/prices && wget https://rust.tm/api/v2/prices/class_instance/RUB.json -O rusttm.json',
             'min'     => '*/3',
         ],
     ]
