@@ -137,6 +137,7 @@ class SkinDropsController extends Controller
             $info = ServerSkin::getInfoSkin($skin->skin_id);
             if (empty($info)) {
                 sleep(60 * 20);
+                echo "sleep 20 min" . PHP_EOL;
                 continue;
             }
             if (empty($info['tags']) && empty($info['result'])) {
