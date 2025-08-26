@@ -138,8 +138,8 @@ class SkinDropsController extends Controller
             print_r($info);
             if (empty($info)) {
                 print_r(1);
-                sleep(60 * 20);
                 echo "sleep 20 min" . PHP_EOL;
+                sleep(60 * 20);
                 continue;
             }
             if (empty($info['tags']) && empty($info['result'])) {
