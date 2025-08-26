@@ -46,7 +46,7 @@ $config['components']['supervisortask'] = [
     'class' => \console\components\Supervisortask::class,
 ];
 $config['modules']['crontask'] = [
-    'class'    => \console\components\CrontaskModuleSafe::class,
+    'class'    => 'gofmanaa\crontask\Module',
     'fileName' => 'cron.txt',
     'yiiPath'  => __DIR__ . '/../../yii',
     'tasks'    => [
@@ -113,9 +113,6 @@ $config['modules']['crontask'] = [
             'min'     => '*/3',
         ],
     ]
-];
-$config['controllerMap']['crontask'] = [
-    'class' => \gofmanaa\crontask\console\CronController::class,
 ];
 $config['controllerMap']['supervisortask'] = [
     'class' =>\console\controllers\SupervisortaskController::class,
