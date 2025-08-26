@@ -74,6 +74,7 @@ class ServerSkin extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'user_id' => 'User ID',
+            'skin_id' => 'Skin ID',
             'name' => Yii::t('common', 'Название'),
             'status' => Yii::t('common', 'Статус'),
             'created_at' => Yii::t('common', 'Дата создания'),

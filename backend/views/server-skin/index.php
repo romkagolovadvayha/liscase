@@ -11,7 +11,7 @@ use backend\models\serverskin\ServerSkinSearch;
 /** @var ServerSkinSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-$this->title =  Yii::t('common', 'Постройки');
+$this->title =  Yii::t('common', 'Свои скины');
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="ServerSkin-index">
@@ -32,6 +32,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 },
             ],
             'name',
+            'skin_id',
             [
                 'attribute'       => 'status',
                 'options'   => ['width' => '140'],
