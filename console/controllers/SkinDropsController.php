@@ -3,6 +3,7 @@
 namespace console\controllers;
 
 use common\models\profit\Profit;
+use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
 use common\models\skindrops\SkindropsLink;
 use common\models\stats\Info;
@@ -108,4 +109,12 @@ class SkinDropsController extends Controller
 
     }
 
+    /**
+     * skin-drops/get-approved
+     * @throws \Exception
+     */
+    public function actionGetApproved()
+    {
+        RconTasks::execute("skins.approved.send");
+    }
 }

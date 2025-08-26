@@ -120,6 +120,10 @@ $config['modules']['crontask'] = [
             'command' => 'support/empty && cd /var/www/www-root/data/var/www/prostoj.store/frontend/web/uploads/prices && wget https://rust.tm/api/v2/prices/class_instance/RUB.json -O rusttm.json',
             'min'     => '*/3',
         ],
+        'getApproved'       => [
+            'command' => 'skin-drops/get-approved',
+            'hour'     => '6',
+        ],
     ]
 ];
 $config['controllerMap']['supervisortask'] = [

@@ -25,6 +25,8 @@ class SkinsApprovedJob extends BaseObject implements JobInterface
             $request = json_decode($this->data, 1);
             $approvedIds = $request['approved_ids'];
 
+            Yii::$app->settings->set('custom-skins_approved_list', implode(',', $request['approved_ids']));
+
             /** @var ServerSkin[] $skins */
             $skins = ServerSkin::find()
                                ->andWhere(['status' => ServerSkin::STATUS_ACTIVE])
