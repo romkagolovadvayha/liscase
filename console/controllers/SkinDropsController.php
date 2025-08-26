@@ -134,7 +134,19 @@ class SkinDropsController extends Controller
 
         foreach ($skins as $skin) {
             $info = ServerSkin::getInfoSkin($skin->skin_id);
-            $category = ServerSkinCategory::getCategory($info['tags'][1]['tag']);
+            $tag = $info['tags'][0]['tag'];
+            if ($tag == 'Version3') {
+                $tag = $info['tags'][1]['tag'];
+                if ($tag == 'Skin') {
+                    $tag = $info['tags'][2]['tag'];
+                }
+            } elseif ($tag == 'Skin') {
+                $tag = $info['tags'][1]['tag'];
+                if ($tag == 'Version3') {
+                    $tag = $info['tags'][2]['tag'];
+                }
+            }
+            $category = ServerSkinCategory::getCategory($tag);
 
             $skin->server_skin_category_id = $category->id;
             $skin->save(false);
