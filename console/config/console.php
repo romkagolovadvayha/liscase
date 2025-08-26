@@ -47,7 +47,7 @@ $config['components']['supervisortask'] = [
 ];
 $config['modules']['crontask'] = [
     'class'    => 'gofmanaa\crontask\Module',
-    'fileName' => 'cron.txt',
+    'fileName' => 'cron2.txt',
     'yiiPath'  => __DIR__ . '/../../yii',
     'tasks'    => [
         'supportCheckClosed'       => [
