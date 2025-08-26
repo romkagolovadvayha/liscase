@@ -1,6 +1,6 @@
 <?php
 
-namespace frontend\controllers;
+namespace api\controllers;
 
 use common\components\queue\stats\SaveRaidJob;
 use common\components\queue\stats\SaveSignsJob;
