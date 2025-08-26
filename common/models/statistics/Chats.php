@@ -123,7 +123,7 @@ class Chats extends ActiveRecord
         }
         $hour = $reasonData['term']/60/60;
 
-        RconTasks::execute("ra.mute {$steamId} \"{$reasonData['reason']}\" {$hour}h", [$user->getCurrentServer()->tag]);
+        RconTasks::execute("ra.mute {$steamId} \"{$reasonData['reason']}\" {$hour}h --broadcast", [$user->getCurrentServer()->tag]);
 
         return '✅ Игрок успешно замучен!';
     }
