@@ -133,7 +133,7 @@ class SkinDropsController extends Controller
             ->all();
 
         foreach ($skins as $skin) {
-            $info = ServerSkin::getInfoSkin($skin->id);
+            $info = ServerSkin::getInfoSkin($skin->skin_id);
             $category = ServerSkinCategory::getCategory($info['tags'][1]['tag']);
 
             $skin->server_skin_category_id = $category->id;
