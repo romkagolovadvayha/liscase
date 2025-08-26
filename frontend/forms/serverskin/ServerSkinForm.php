@@ -58,6 +58,12 @@ class ServerSkinForm extends ServerSkin
             return false;
         }
 
+        $approvedSkins = explode(',', Yii::$app->settings->get('custom-skins_approved_list'));
+        if (in_array($skinId, $approvedSkins)) {
+            $this->addError('steam_link', Yii::t('common', 'Добавление запрещено: работа одобрена разработчиками и доступна в магазине'));
+            return false;
+        }
+
         $exists = ServerSkin::find()
             ->andWhere(['skin_id' => $skinId])
             ->andWhere(['IN', 'status', [ServerSkin::STATUS_ACTIVE, ServerSkin::STATUS_WAIT]])
