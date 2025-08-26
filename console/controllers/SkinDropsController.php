@@ -135,17 +135,21 @@ class SkinDropsController extends Controller
 
         foreach ($skins as $skin) {
             $info = ServerSkin::getInfoSkin($skin->skin_id);
+            print_r($info);
             if (empty($info)) {
+                print_r(1);
                 sleep(60 * 20);
                 echo "sleep 20 min" . PHP_EOL;
                 continue;
             }
             if (empty($info['tags']) && empty($info['result'])) {
+                print_r(2);
                 print_r($info);
                 print_r($skin->skin_id);
                 continue;
             }
             if (empty($info['tags']) && $info['result'] == 9) {
+                print_r(3);
                 print_r($info);
                 $skin->status = ServerSkin::STATUS_REJECT;
                 $skin->save(false);
@@ -153,6 +157,7 @@ class SkinDropsController extends Controller
                 sleep(3);
                 continue;
             }
+            print_r(4);
             $tag = $info['tags'][0]['tag'];
             if ($tag == 'Version3') {
                 $tag = $info['tags'][1]['tag'];
