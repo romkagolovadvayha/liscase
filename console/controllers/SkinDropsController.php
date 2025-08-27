@@ -186,7 +186,7 @@ class SkinDropsController extends Controller
                            ->andWhere(['status' => ServerSkin::STATUS_ACTIVE])
                            ->all();
 
-        echo "count: " . $skins;
+        echo "count: " . count($skins);
         echo PHP_EOL;
 
         foreach ($skins as $skin) {
