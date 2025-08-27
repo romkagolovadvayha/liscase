@@ -90,6 +90,20 @@ class ServerSkin extends \yii\db\ActiveRecord
         return $this->image;
     }
 
+    public function getImage64PubUrl($cdn = true) {
+        if ($cdn) {
+            return Yii::$app->settings->get('site_cdnUrl') . "/uploads" . $this->image_64;
+        }
+        return $this->image_64;
+    }
+
+    public function getImage150PubUrl($cdn = true) {
+        if ($cdn) {
+            return Yii::$app->settings->get('site_cdnUrl') . "/uploads" .  $this->image_150;
+        }
+        return $this->image_150;
+    }
+
     /**
      * Gets query for [[ServerSkinLikes]].
      *
