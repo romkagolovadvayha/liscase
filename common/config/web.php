@@ -10,7 +10,10 @@ $config = [
     'id' => 'basic',
     'basePath' => dirname(__DIR__),
     'bootstrap' => [
-        'log'
+        'log',
+        'translateManager' => [
+            'class' => 'DemonDogSL\translateManager\Component'
+        ]
     ],
     'language' => 'ru-RU',
     'sourceLanguage' => 'ru-RU',
@@ -19,6 +22,22 @@ $config = [
     'modules'        => [
         'gridview' =>  [
             'class' => '\kartik\grid\Module'
+        ],
+        'translateManager' => [
+            'class'                   => 'DemonDogSL\translateManager\Module',
+            'root'                    => [
+                '@backend',
+                '@api',
+                '@frontend',
+                '@common',
+                '@console',
+            ],
+            'scanRootParentDirectory' => true,
+            'ignoredCategories'       => ['yii', 'kvdrp'],
+            'ignoredItems'            => ['assets', 'vendor'],
+            'layout'                  => '@backend/views/layouts/main',
+            'roles'                   => ['ADMIN'],
+            'allowedIPs'              => ['*']
         ],
         'comment' => [
             'class' => 'yii2mod\comments\Module',
@@ -45,12 +64,12 @@ $config = [
         'view' => [
             'class' => '\rmrevin\yii\minify\View',
             'enableMinify' => !YII_DEBUG,
-//            'enableMinify' => true,
+            //            'enableMinify' => true,
             'concatCss' => true, // concatenate css
-            'minifyCss' => !YII_DEBUG, // minificate css
+            'minifyCss' => true, // minificate css
             'concatJs' => true, // concatenate js
-            'minifyJs' => !YII_DEBUG, // minificate js
-            'minifyOutput' => !YII_DEBUG, // minificate result html page
+            'minifyJs' => true, // minificate js
+            'minifyOutput' => true, // minificate result html page
             'webPath' => '@web', // path alias to web base
             'basePath' => '@webroot', // path alias to web base
             'minifyPath' => '@webroot/minify', // path alias to save minify result
@@ -76,6 +95,9 @@ $config = [
                 ],
                 // ...
             ],
+        ],
+        'translateManager' => [
+            'class' => 'DemonDogSL\translateManager\Component'
         ],
         'redis'         => [
             'class'    => 'yii\redis\Connection',
