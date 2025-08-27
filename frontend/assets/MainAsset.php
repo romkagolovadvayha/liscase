@@ -13,6 +13,9 @@ use yii\web\AssetBundle;
 class MainAsset extends AssetBundle
 {
     public $sourcePath = '@frontend/assets/sources';
+    public $publishOptions = [
+        'forceCopy' => YII_DEBUG,
+    ];
 
     public function init()
     {

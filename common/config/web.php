@@ -10,10 +10,7 @@ $config = [
     'id' => 'basic',
     'basePath' => dirname(__DIR__),
     'bootstrap' => [
-        'log',
-        'translateManager' => [
-            'class' => 'DemonDogSL\translateManager\Component'
-        ]
+        'log'
     ],
     'language' => 'ru-RU',
     'sourceLanguage' => 'ru-RU',
@@ -22,22 +19,6 @@ $config = [
     'modules'        => [
         'gridview' =>  [
             'class' => '\kartik\grid\Module'
-        ],
-        'translateManager' => [
-            'class'                   => 'DemonDogSL\translateManager\Module',
-            'root'                    => [
-                '@backend',
-                '@api',
-                '@frontend',
-                '@common',
-                '@console',
-            ],
-            'scanRootParentDirectory' => true,
-            'ignoredCategories'       => ['yii', 'kvdrp'],
-            'ignoredItems'            => ['assets', 'vendor'],
-            'layout'                  => '@backend/views/layouts/main',
-            'roles'                   => ['ADMIN'],
-            'allowedIPs'              => ['*']
         ],
         'comment' => [
             'class' => 'yii2mod\comments\Module',
@@ -66,10 +47,10 @@ $config = [
             'enableMinify' => !YII_DEBUG,
 //            'enableMinify' => true,
             'concatCss' => true, // concatenate css
-            'minifyCss' => true, // minificate css
+            'minifyCss' => !YII_DEBUG, // minificate css
             'concatJs' => true, // concatenate js
-            'minifyJs' => true, // minificate js
-            'minifyOutput' => true, // minificate result html page
+            'minifyJs' => !YII_DEBUG, // minificate js
+            'minifyOutput' => !YII_DEBUG, // minificate result html page
             'webPath' => '@web', // path alias to web base
             'basePath' => '@webroot', // path alias to web base
             'minifyPath' => '@webroot/minify', // path alias to save minify result
@@ -95,9 +76,6 @@ $config = [
                 ],
                 // ...
             ],
-        ],
-        'translateManager' => [
-            'class' => 'DemonDogSL\translateManager\Component'
         ],
         'redis'         => [
             'class'    => 'yii\redis\Connection',
@@ -249,11 +227,6 @@ $config = [
     ],
     'params' => $params,
 ];
-
-$config = yii\helpers\ArrayHelper::merge(
-    $config,
-    require('queue.php'),
-);
 
 //if (YII_ENV_DEV) {
 //    // configuration adjustments for 'dev' environment

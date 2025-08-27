@@ -7,6 +7,7 @@ use common\controllers\WebController;
 use common\models\building\Building;
 use common\models\building\BuildingLike;
 use common\models\serverskin\ServerSkin;
+use common\models\serverskin\ServerSkinCategory;
 use common\models\serverskin\ServerSkinLike;
 use frontend\forms\buildings\BuildingForm;
 use frontend\forms\serverskin\ServerSkinForm;
@@ -14,6 +15,7 @@ use frontend\models\building\BuildingSearch;
 use frontend\models\serverskin\ServerSkinSearch;
 use yii\base\BaseObject;
 use yii\filters\AccessControl;
+use yii\helpers\ArrayHelper;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -66,10 +68,19 @@ class CustomSkinsController extends WebController
         }
         $searchModel = new ServerSkinSearch();
         $dataProvider = $searchModel->search($this->request->queryParams);
+
+        $categories = ArrayHelper::map(
+            ServerSkinCategory::find()->orderBy(['name' => SORT_ASC])->asArray()->all(),
+            'id',
+            'name'
+        );
+
         $this->view->params['page'] = 'custom-skins';
 
         return $this->render('index', [
+            'searchModel'   => $searchModel,
             'dataProvider' => $dataProvider,
+            'categories' => $categories,
         ]);
     }
 

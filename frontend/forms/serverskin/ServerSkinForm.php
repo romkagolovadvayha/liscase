@@ -129,8 +129,17 @@ class ServerSkinForm extends ServerSkin
 
         $newPath150 = "/uploads/server-skin-x150/" . $filename;
         $fullNewPath150 = \Yii::getAlias('@frontend/web') . $newPath150;
+        $newPath64 = "/server-skin-64/" . $filename;
+        $fullNewPath64 = \Yii::getAlias('@frontend/web/uploads') . $newPath64;
+        $newPath150 = "/server-skin-150/" . $filename;
+        $fullNewPath150 = \Yii::getAlias('@frontend/web/uploads') . $newPath150;
         if (file_exists($filePath)) {
             DropImage::resizeImage($filePath, $fullNewPath150, 200);
+            DropImage::resizeImage($filePath, $fullNewPath64, 64);
+            DropImage::resizeImage($filePath, $fullNewPath150, 150);
+            $this->image_64 = $newPath64;
+            $this->image_150 = $newPath150;
+            $this->save(false);
         }
         return $newPath150;
     }
