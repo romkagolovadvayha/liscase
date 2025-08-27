@@ -28,8 +28,5 @@ $isActive = in_array($model->id, $userLikes);
             <img src="<?=$model->user->getAvatar()?>" title="<?=$model->user->username?>"/>
             <span class="custom-skins_content_list_item_footer_profile_name"><?=$model->user->username?></span>
         </a>
-        <div class="custom-skins_content_list_item_footer_date">
-            <?=$model->passed()?>
-        </div>
     </div>
 </div>
