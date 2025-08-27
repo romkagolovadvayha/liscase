@@ -144,7 +144,7 @@ class DropImage extends ActiveRecord
             'flatten' => false, // сохраняет прозрачность
         ]);
 
-        if ($newSize == 150 || $newSize == 64) {
+        if ($newSize == 150 || $newSize == 64 || $newSize == 200) {
             \Tinify\setKey("dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8"); // ← сюда свой ключ
             try {
                 $source = \Tinify\fromFile($destinationPath);
