@@ -15,6 +15,8 @@ use Yii;
  * @property string|null $name
  * @property int         $status
  * @property string      $image
+ * @property string      $image_64
+ * @property string      $image_150
  * @property string      $server_skin_category_id
  * @property int         $likes
  * @property int         $creator_user_id

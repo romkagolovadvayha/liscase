@@ -49,7 +49,7 @@ class ServerSkinSearch extends ServerSkin
                 'defaultOrder' => ['id' => SORT_DESC],
             ],
             'pagination' => [
-                'pageSize' => 20,
+                'pageSize' => 40,
             ],
         ]);
 

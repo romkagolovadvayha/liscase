@@ -3,6 +3,7 @@
 namespace console\controllers;
 
 use common\components\google\TranslateApi;
+use common\models\box\DropImage;
 use common\models\profit\Profit;
 use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
@@ -169,6 +170,36 @@ class SkinDropsController extends Controller
             $skin->server_skin_category_id = $category->id;
             $skin->save(false);
             sleep(10);
+        }
+
+    }
+
+
+
+    /**
+     * skin-drops/generate-image-64
+     */
+    public function actionGenerateImage64()
+    {
+        /** @var ServerSkin[] $skins */
+        $skins = ServerSkin::find()
+                           ->andWhere(['status' => ServerSkin::STATUS_ACTIVE])
+                           ->all();
+
+        foreach ($skins as $skin) {
+            $ex = explode('/', $skin->image);
+            $filename = $ex[count($ex) - 1];
+            $path = \Yii::getAlias('@frontend/web/uploads') . $skin->image;
+            $newPath64 = "/server-skin-64/" . $filename;
+            $fullNewPath64 = \Yii::getAlias('@frontend/web/uploads') . $newPath64;
+            $newPath150 = "/server-skin-150/" . $filename;
+            $fullNewPath150 = \Yii::getAlias('@frontend/web/uploads') . $newPath150;
+            if (file_exists($path)) {
+                DropImage::resizeImage($path, $fullNewPath64, 64);
+                DropImage::resizeImage($path, $fullNewPath150, 150);
+                $skin->image_64 = $newPath64;
+                $skin->image_150 = $newPath150;
+            }
         }
 
     }
