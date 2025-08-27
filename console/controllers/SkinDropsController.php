@@ -192,7 +192,7 @@ class SkinDropsController extends Controller
         foreach ($skins as $skin) {
             $ex = explode('/', $skin->image);
             $filename = $ex[count($ex) - 1];
-            $path = \Yii::getAlias('@frontend/web/uploads') . $skin->image;
+            $path = \Yii::getAlias('@frontend/web') . $skin->image;
             $newPath64 = "/server-skin-64/" . $filename;
             $fullNewPath64 = \Yii::getAlias('@frontend/web/uploads') . $newPath64;
             $newPath150 = "/server-skin-150/" . $filename;
@@ -204,6 +204,7 @@ class SkinDropsController extends Controller
                 $skin->image_64 = $newPath64;
                 $skin->image_150 = $newPath150;
                 $skin->save(false);
+                exit;
             }
         }
 
