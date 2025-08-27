@@ -18,8 +18,8 @@ $this->title = Yii::t('common', 'Скины из мастерской');
 <div class="server_info_page">
     <div class="custom-skins">
         <div class="custom-skins_buttons">
-            <?= Html::a(Yii::t('common', 'Добавить скин'), ['create'], [
-                'class' => 'button button-secondary show-modal-link',
+            <?= Html::a('<span class="button__text">' . Yii::t('common', 'Добавить скин') . '</span>', ['create'], [
+                'class' => 'button button-primary button-size__s h-36 show-modal-link',
                 'data-title' => Yii::t('common', 'Добавить скин'),
                 'data-size' => 'modal-lg',
                 'data-toggl' => 'modal',

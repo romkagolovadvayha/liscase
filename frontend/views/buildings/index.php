@@ -31,7 +31,7 @@ $this->title = Yii::t('common', 'Постройки игроков');
     <div class="buildings">
         <?php if (!$userBuildingsWait): ?>
             <div class="buildings_buttons">
-                <?= Html::a(Yii::t('common', 'Добавить свою постройку'), ['create'], ['class' => 'button button-secondary']) ?>
+                <?= Html::a('<span class="button__text">' . Yii::t('common', 'Добавить свою постройку') . '</span>', ['create'], ['class' => 'button button-primary button-size__s h-36']) ?>
             </div>
         <?php endif; ?>
 
