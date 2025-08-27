@@ -250,6 +250,11 @@ $config = [
     'params' => $params,
 ];
 
+$config = yii\helpers\ArrayHelper::merge(
+    $config,
+    require('queue.php'),
+);
+
 //if (YII_ENV_DEV) {
 //    // configuration adjustments for 'dev' environment
 //    $config['bootstrap'][] = 'debug';
