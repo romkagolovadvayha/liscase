@@ -5,38 +5,12 @@ $config['id'] = 'basic-console';
 $config['bootstrap'] = [
     'log',
     'crontask',
-    'translateManager' => [
-        'class' => 'DemonDogSL\translateManager\Component'
-    ]
-];
-$config['modules']['translateManager'] = [
-    'class'                   => 'DemonDogSL\translateManager\Module',
-    'root'                    => [
-        //                '@backend',
-        //                '@api',
-        '@frontend',
-        '@common',
-        //                '@console',
-    ],
-    'scanRootParentDirectory' => true,
-    'ignoredCategories'       => ['yii', 'kvdrp'],
-    'ignoredItems'            => ['assets', 'vendor'],
-    'layout'                  => '@backend/views/layouts/main',
-    'roles'                   => ['ADMIN'],
-    'allowedIPs'              => ['*']
 ];
 $config['basePath'] = dirname(__DIR__);
 $config['controllerNamespace'] = 'console\controllers';
 $config['components']['user'] = [
     'class'         => 'common\components\console\User',
     'identityClass' => 'common\models\user\User',
-];
-$config['components']['translateManager'] = [
-    'class' => 'DemonDogSL\translateManager\Component',
-    'enableCaching' => true,
-    'allowScan' => false,
-    'cache' => 'cache',
-    'tmpDir' => '@runtime/translate',
 ];
 $config['components']['request'] = ['class' => 'console\components\Request'];
 $config['components']['log'] = [
@@ -161,10 +135,10 @@ $config['modules']['translateManager'] = [
         '@frontend',
         '@common',
     ],
-//    'scanRootParentDirectory' => true,
-//    'ignoredCategories'       => ['yii', 'kvdrp'],
-//    'ignoredItems'            => ['assets', 'vendor'],
-//    'layout'                  => false,
+    //    'scanRootParentDirectory' => true,
+    //    'ignoredCategories'       => ['yii', 'kvdrp'],
+    //    'ignoredItems'            => ['assets', 'vendor'],
+    //    'layout'                  => false,
     'patterns'                  => ['*.php', '*.js', '*.twig'],
     'allowedIPs'              => ['*'],
     'tables' => [
@@ -208,11 +182,11 @@ $config['modules']['translateManager'] = [
             'table' => '{{%blog_category}}',
             'columns' => ['name', 'description', 'keywords'],
         ],
-//        [
-//            'connection' => 'db',
-//            'table' => '{{%comment}}',
-//            'columns' => ['content'],
-//        ],
+        //        [
+        //            'connection' => 'db',
+        //            'table' => '{{%comment}}',
+        //            'columns' => ['content'],
+        //        ],
         [
             'connection' => 'db',
             'table' => '{{%task}}',
@@ -254,11 +228,5 @@ if (YII_ENV_DEV) {
 
 unset($config['components']['comment']);
 unset($config['modules']['comment']);
-
-
-$config = yii\helpers\ArrayHelper::merge(
-    $config,
-    require('queue.php'),
-);
 
 return $config;
