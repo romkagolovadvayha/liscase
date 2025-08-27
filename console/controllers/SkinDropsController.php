@@ -186,6 +186,9 @@ class SkinDropsController extends Controller
                            ->andWhere(['status' => ServerSkin::STATUS_ACTIVE])
                            ->all();
 
+        echo "count: " . $skins;
+        echo PHP_EOL;
+
         foreach ($skins as $skin) {
             $ex = explode('/', $skin->image);
             $filename = $ex[count($ex) - 1];
@@ -195,10 +198,12 @@ class SkinDropsController extends Controller
             $newPath150 = "/server-skin-150/" . $filename;
             $fullNewPath150 = \Yii::getAlias('@frontend/web/uploads') . $newPath150;
             if (file_exists($path)) {
+                echo 1;
                 DropImage::resizeImage($path, $fullNewPath64, 64);
                 DropImage::resizeImage($path, $fullNewPath150, 150);
                 $skin->image_64 = $newPath64;
                 $skin->image_150 = $newPath150;
+                $skin->save(false);
             }
         }
 
