@@ -245,6 +245,11 @@ $config = [
 //    ];
 //}
 
+$config = yii\helpers\ArrayHelper::merge(
+    $config,
+    require('queue.php'),
+);
+
 return yii\helpers\ArrayHelper::merge(
     $config,
     require __DIR__ . '/../../common/config/web-local.php',
