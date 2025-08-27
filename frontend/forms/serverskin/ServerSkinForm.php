@@ -7,6 +7,7 @@ use common\models\box\DropImage;
 use common\models\building\BuildingResident;
 use common\models\servers\Servers;
 use common\models\serverskin\ServerSkin;
+use common\models\serverskin\ServerSkinCategory;
 use common\models\user\User;
 use Imagine\Image\Box;
 use common\models\building\Building;
@@ -85,7 +86,20 @@ class ServerSkinForm extends ServerSkin
         $this->name = $title;
         $this->skin_id = $skinId;
         $this->image = $imagePath;
-        $this->category = $info['tags'][1]['tag'];
+        $tag = $info['tags'][0]['tag'];
+        if ($tag == 'Version3') {
+            $tag = $info['tags'][1]['tag'];
+            if ($tag == 'Skin') {
+                $tag = $info['tags'][2]['tag'];
+            }
+        } elseif ($tag == 'Skin') {
+            $tag = $info['tags'][1]['tag'];
+            if ($tag == 'Version3') {
+                $tag = $info['tags'][2]['tag'];
+            }
+        }
+        $category = ServerSkinCategory::getCategory($tag);
+        $this->server_skin_category_id = $category->id;
         $this->creator_user_id = $creatorUser->id;
         $this->save();
         Yii::$app->telegramSupport->sendMessage(
@@ -127,20 +141,19 @@ class ServerSkinForm extends ServerSkin
         }
         file_put_contents($filePath, $image);
 
-        $newPath150 = "/uploads/server-skin-x150/" . $filename;
-        $fullNewPath150 = \Yii::getAlias('@frontend/web') . $newPath150;
+        $newPath200 = "/uploads/server-skin-x150/" . $filename;
+        $fullNewPath200 = \Yii::getAlias('@frontend/web') . $newPath200;
         $newPath64 = "/server-skin-64/" . $filename;
         $fullNewPath64 = \Yii::getAlias('@frontend/web/uploads') . $newPath64;
         $newPath150 = "/server-skin-150/" . $filename;
         $fullNewPath150 = \Yii::getAlias('@frontend/web/uploads') . $newPath150;
         if (file_exists($filePath)) {
-            DropImage::resizeImage($filePath, $fullNewPath150, 200);
+            DropImage::resizeImage($filePath, $fullNewPath200, 200);
             DropImage::resizeImage($filePath, $fullNewPath64, 64);
             DropImage::resizeImage($filePath, $fullNewPath150, 150);
             $this->image_64 = $newPath64;
             $this->image_150 = $newPath150;
-            $this->save(false);
         }
-        return $newPath150;
+        return $newPath200;
     }
 }
