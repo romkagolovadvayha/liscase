@@ -18,7 +18,7 @@ class BuildingSearch extends Building
     {
         return [
             [['id', 'user_id', 'status'], 'integer'],
-            [['name', 'description', 'location', 'server_tag', 'created_at'], 'safe'],
+            [['name', 'description', 'location', 'server_tag', 'created_at', 'server_tag'], 'safe'],
         ];
     }
 
@@ -41,7 +41,9 @@ class BuildingSearch extends Building
     public function search($params)
     {
         $query = Building::find()
-            ->andWhere(['status' => Building::STATUS_ACTIVE]);
+                         ->alias('b')
+                         ->joinWith(['buildingLikes', 'buildingImage', 'server', 'user', 'user.server', 'user.userProfile'])
+                         ->andWhere(['b.status' => Building::STATUS_ACTIVE]);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
@@ -49,7 +51,7 @@ class BuildingSearch extends Building
                 'defaultOrder' => ['id' => SORT_DESC],
             ],
             'pagination' => [
-                'pageSize' => 20,
+                'pageSize' => 40,
             ],
         ]);
 
@@ -63,16 +65,23 @@ class BuildingSearch extends Building
 
         // grid filtering conditions
         $query->andFilterWhere([
-            'id' => $this->id,
-            'user_id' => $this->user_id,
-            'status' => $this->status,
-            'created_at' => $this->created_at,
+            'b.id' => $this->id,
+            'b.user_id' => $this->user_id,
+            'b.status' => $this->status,
+            'b.created_at' => $this->created_at,
         ]);
 
-        $query->andFilterWhere(['like', 'name', $this->name])
-            ->andFilterWhere(['like', 'description', $this->description])
-            ->andFilterWhere(['like', 'location', $this->location])
-            ->andFilterWhere(['like', 'server_tag', $this->server_tag]);
+        // <--- если выбран(ы) категории, фильтруем по IN
+        if (!empty($this->server_tag)) {
+            $query->andWhere(['in', 'b.server_tag', $this->server_tag]);
+            // альтернативно: $query->andFilterWhere(['server_skin_category_id' => $this->server_skin_category_id]);
+        }
+
+
+        $query->andFilterWhere(['like', 'b.name', $this->name])
+            ->andFilterWhere(['like', 'b.description', $this->description])
+            ->andFilterWhere(['like', 'b.location', $this->location])
+            ->andFilterWhere(['like', 'b.server_tag', $this->server_tag]);
 
         return $dataProvider;
     }

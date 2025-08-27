@@ -1,6 +1,23 @@
 .buildings {
+  &_filter {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    .form-group {
+      margin: 0;
+      .select2-selection.select2-selection--multiple .select2-selection__choice {
+        color: var(--text-main);
+      }
+      &:first-of-type {
+        flex: 1 0;
+      }
+      &:last-of-type {
+        min-width: 200px;
+      }
+    }
+  }
   &_buttons {
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     //.btn {
     //  @extend .text-text-main;
     //  position: relative;
@@ -22,6 +39,7 @@
   &_content {
     //padding: 10px;
     //background: $rust_bg;
+    margin-top: 12px;
     &_moderation {
       @extend
       .bg-background-secondary,
@@ -44,7 +62,7 @@
       &_items {
         display: grid;
         gap: 12px;
-        grid-template-columns: repeat(auto-fit, minmax(203px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       }
       &_item {
         background-color: var(--background-secondary);
