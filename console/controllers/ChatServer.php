@@ -143,13 +143,6 @@ class ChatServer extends WebSocketServer
           if (!empty($client->user) && !empty($request['id'])) {
 
               $model = UserDrop::findOne($request['id']);
-              $client->send(json_encode([
-                                            'type' => 'store.take',
-                                            'code' => 500,
-                                            'message' => Yii::t('common', "Произошла ошибка, попробуйте позже!", [], $client->user->current_language),
-                                            'id' => $model->id,
-                                        ]));
-              return;
               if ($client->user->id != $model->user->id) {
                   $client->send(json_encode([
                                                 'type' => 'store.take',
