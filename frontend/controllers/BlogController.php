@@ -85,10 +85,24 @@ class BlogController extends WebController
      */
     public function actionIndex()
     {
-        $dataProvider = $this->_getDataProvider(new BlogSearch());
+        $searchModel  = new \backend\models\blog\BlogSearch();
+        $dataProvider = $this->_getDataProvider($searchModel);
+
+        // на всякий случай фиксируем pageSize
+        $dataProvider->pagination->pageSize = 10;
+
+        if (!empty($searchModel->name)) {
+            // лёгкий totalCount без join'ов (ускоряет pager)
+            $dataProvider->setTotalCount(
+                \common\models\blog\Blog::find()->alias('b')->where(
+                        ['b.status' => \common\models\blog\Blog::STATUS_ACTIVE]
+                    )->andFilterWhere(['like', 'b.name', $searchModel->name])->count()
+            );
+        }
 
         return $this->render('index', [
-            'dataProvider' => $dataProvider
+            'searchModel'  => $searchModel,
+            'dataProvider' => $dataProvider,
         ]);
     }
 
@@ -100,7 +114,7 @@ class BlogController extends WebController
     protected function _getDataProvider(BlogSearch $searchModel)
     {
         return $searchModel->search(Yii::$app->request->queryParams, function ($query) {
-            $query->andWhere(['status' => BlogSearch::STATUS_ACTIVE]);
+            $query->andWhere(['b.status' => BlogSearch::STATUS_ACTIVE]);
         });
     }
 }

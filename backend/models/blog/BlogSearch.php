@@ -54,7 +54,7 @@ class BlogSearch extends Blog
      */
     public function search($params, callable $filter = null)
     {
-        $query = BlogSearch::find();
+        $query = BlogSearch::find()->alias('b')->joinWith(['blogCategory bc', 'blogImages i', 'blogRatings r', 'comments c', 'blogCategory.parentCategory pc']);
 
         if (is_callable($filter)) {
             call_user_func($filter, $query);
@@ -77,19 +77,19 @@ class BlogSearch extends Blog
         }
 
         $query->andFilterWhere([
-            'id' => $this->id,
-            'blog_category_id' => $this->blog_category_id,
-            'status' => $this->status,
-            'created_at' => $this->created_at,
+            'b.id' => $this->id,
+            'b.blog_category_id' => $this->blog_category_id,
+            'b.status' => $this->status,
+            'b.created_at' => $this->created_at,
         ]);
 
         if (!empty($this->category_ids)) {
-            $query->andFilterWhere(['IN', 'blog_category_id', $this->category_ids]);
+            $query->andFilterWhere(['IN', 'b.blog_category_id', $this->category_ids]);
         }
 
-        $query->andFilterWhere(['like', 'name', $this->name])
-            ->andFilterWhere(['like', 'description', $this->description])
-            ->andFilterWhere(['like', 'link_name', $this->link_name]);
+        $query->andFilterWhere(['like', 'b.name', $this->name])
+            ->andFilterWhere(['like', 'b.description', $this->description])
+            ->andFilterWhere(['like', 'b.link_name', $this->link_name]);
 
         return $dataProvider;
     }

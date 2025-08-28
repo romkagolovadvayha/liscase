@@ -35,14 +35,9 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
                 <?php
                 $itemTitle = Html::encode(Yii::t('database', $blog->name));
                 $itemLink  = Yii::$app->params['homePage'] . $blog->getUrl();
-                // Описание: либо экранировать, либо безопасно завернуть в CDATA.
-                // Если там HTML — лучше CDATA + безопасная очистка.
                 $rawDesc = trim(Yii::t('database', $blog->description));
-                // Простейший вариант — экранировать, чтобы не было &nbsp; и т.п.:
                 $itemDesc = Html::encode($rawDesc);
-                // Дата в формате RFC-2822 (RSS 2.0):
                 $pubDate  = gmdate('r', strtotime($blog->created_at));
-                // Автор:
                 $author   = !empty($blog->user->userProfile->full_name)
                     ? Html::encode(trim(Yii::t('database', $blog->user->userProfile->full_name)))
                     : 'Unknown';
@@ -50,9 +45,6 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
                 <item>
                     <title><?= $itemTitle ?></title>
                     <description><?= $itemDesc ?></description>
-                    <!-- Если нужен HTML в описании, используйте:
-                <description><![CDATA[ <?= $rawDesc ?> ]]></description>
-                и убедитесь, что в тексте нет "]]>" -->
                     <link><?= Html::encode($itemLink) ?></link>
                     <guid isPermaLink="true"><?= Html::encode($itemLink) ?></guid>
 

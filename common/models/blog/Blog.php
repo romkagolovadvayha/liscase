@@ -27,6 +27,7 @@ use yii2mod\comments\models\CommentModel;
  * @property BlogImage[] $blogImages
  * @property BlogRating[] $blogRatings
  * @property User $user
+ * @property CommentModel[] $comments
  */
 class Blog extends \yii\db\ActiveRecord
 {
@@ -208,9 +209,11 @@ class Blog extends \yii\db\ActiveRecord
     }
 
     /**
-     * @return bool|int|string|null
+     * Gets query for [[Comments]].
+     *
+     * @return \yii\db\ActiveQuery
      */
-    public function getCountComments() {
-        return CommentModel::find()->andWhere(['entityId' => $this->id])->count();
+    public function getComments() {
+        return $this->hasMany(CommentModel::class, ['entityId' => 'id']);
     }
 }

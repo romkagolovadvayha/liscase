@@ -22,7 +22,7 @@ use yii\widgets\ListView;
             <p class="p3">
                 <a href="<?=$model->getUrl()?>#comments" class="block_body_article_list_item_data_item_icon_wrapper" title="<?=Yii::t('common', 'Количество комментариев')?>">
                     <i class="fas fa-comments"></i>
-                    <span><?=$model->getCountComments()?></span>
+                    <span><?= count($model->comments) ?></span>
                 </a>
             </p>
         </div>

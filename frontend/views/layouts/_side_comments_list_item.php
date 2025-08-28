@@ -6,7 +6,6 @@ use common\models\comment\Comment;
 /** @var yii\web\View $this */
 /** @var Comment $model */
 
-$blog = \common\models\blog\Blog::findOne($model->entityId);
 
 ?>
 
@@ -16,7 +15,7 @@ $blog = \common\models\blog\Blog::findOne($model->entityId);
             <?=Yii::t('common', 'Пользователь')?>
             <a class="p3" href="/users/<?=$model->createdByUser->username?>"><?=$model->createdByUser->username?></a>
             <?=Yii::t('common', 'оставил коментарий к записи')?>
-            <a class="p3" href="<?=$blog->getUrl()?>"><?=Yii::t('database', $blog->name)?></a>
+            <a class="p3" href="<?=$model->blog->getUrl()?>"><?=Yii::t('database', $model->blog->name)?></a>
         </p>
         <div class="stat-block__list__footer">
             <p class="p3 text-text-teritiary" title="<?=Yii::t('common', 'Дата комментария')?>">
