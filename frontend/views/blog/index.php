@@ -7,6 +7,7 @@ use yii\helpers\Html;
 /** @var yii\web\View $this */
 /** @var \yii\data\ActiveDataProvider $dataProvider */
 /** @var \backend\models\blog\BlogSearch $searchModel */
+/** @var \common\models\blog\BlogCategory[] $categories */
 
 $this->title = Yii::t('common', 'Баги и новости Rust');
 $this->params['h1'] = Yii::t('common', 'Блог');
@@ -45,6 +46,7 @@ $this->params['breadcrumbs'][] = ['label' => Yii::t('common', "Блог")];
 
         <?php ActiveForm::end(); ?>
     </div>
+    <?= $this->render('_categories', ['categories' => $categories]) ?>
 
     <!-- Список в виде мозаики -->
 <?= ListView::widget([
@@ -71,10 +73,6 @@ $this->params['breadcrumbs'][] = ['label' => Yii::t('common', "Блог")];
 <?php
 // Мозаика (если ещё не добавлял)
 $this->registerCss(<<<CSS
-.masonry{column-count:3;column-gap:16px}
-.masonry-item{break-inside:avoid;margin:0 0 16px;display:inline-block;width:100%}
-@media (max-width:1200px){.masonry{column-count:2}}
-@media (max-width:640px){.masonry{column-count:1;column-gap:12px}.masonry-item{margin-bottom:12px}}
 
 #blog-list-view .pagination{display:none}
 #lazy-trigger{height:1px;margin-top:1px;visibility:hidden}
@@ -160,3 +158,32 @@ $this->registerJs(<<<JS
   });
 })();
 JS);
+?>
+
+<script>
+    document.addEventListener('click', function(e){
+        var item = e.target.closest('.blog-cats__item');
+        // клик по "родителю" на таче — открываем/закрываем вместо мгновенного перехода
+        if (e.target.closest('.blog-cats__link')){
+            // если есть подкатегории — блокируем переход первым тапом
+            var hasDrop = !!(item && item.querySelector('.blog-subcats'));
+            if (hasDrop){
+                if (!item.classList.contains('is-open')){
+                    e.preventDefault();
+                    item.classList.add('is-open');
+                    item.querySelector('.blog-cats__link').setAttribute('aria-expanded','true');
+                    return;
+                }
+                // второй тап — пусть ведёт по ссылке
+            }
+        }
+        // клик вне — закрыть все
+        document.querySelectorAll('.blog-cats__item.is-open').forEach(function(it){
+            if (!it.contains(e.target)){
+                it.classList.remove('is-open');
+                var link = it.querySelector('.blog-cats__link');
+                if (link) link.setAttribute('aria-expanded','false');
+            }
+        });
+    });
+</script>

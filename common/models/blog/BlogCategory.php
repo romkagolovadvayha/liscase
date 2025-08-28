@@ -190,4 +190,16 @@ class BlogCategory extends \yii\db\ActiveRecord
 
         return $result;
     }
+
+    public function getParent()
+    {
+        return $this->hasOne(self::class, ['id' => 'blog_category_id']);
+    }
+
+    public function getChildren()
+    {
+        return $this->hasMany(self::class, ['blog_category_id' => 'id'])
+                    ->andWhere(['status' => self::STATUS_ACTIVE])
+                    ->orderBy(['created_at' => SORT_DESC]);
+    }
 }
