@@ -569,6 +569,9 @@
 
   &__item{
     position: relative; /* для абсолютного дропа */
+    @media (max-width: 560px) {
+      position: inherit;
+    }
   }
 
   &__link{
@@ -590,14 +593,26 @@
   }
 
   /* ДРОПДАУН: абсолютный */
-  .blog-subcats{
+  .blog-subcats {
     padding: 6px 0;
-    position: absolute; left: 0; top: 100%;
-    opacity: 0; visibility: hidden; pointer-events: none;
+    position: absolute;
+    left: 0;
+    top: 100%;
+    opacity: 0;
+    display: none;
+    visibility: hidden;
+    pointer-events: none;
     z-index: 5;
     /* скрыто по умолчанию */
     transform: translateY(6px); transition: all .14s ease;
-    min-width: 220px; max-width: min(420px, 90vw);
+    min-width: 220px;
+    max-width: min(420px, 90vw);
+    @media (max-width: 560px) {
+      width: 100%;
+      left: 0;
+      right: 0;
+      min-width: 100%;
+    }
     &_content {
       padding: 8px; margin: 0; list-style: none; z-index: 50;
       background-color: var(--background-secondary);
@@ -618,6 +633,7 @@
   &__item:focus-within > .blog-subcats,
   &__item.is-open > .blog-subcats{ /* для тача через JS */
     opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0);
+    display: block;
   }
   &__item:hover > .blog-cats__link .blog-cats__caret,
   &__item:focus-within > .blog-cats__link .blog-cats__caret,

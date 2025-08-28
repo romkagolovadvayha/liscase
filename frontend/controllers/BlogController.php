@@ -35,8 +35,10 @@ class BlogController extends WebController
     {
         /** @var Blog $blog */
         $blog = Blog::find()
-            ->andWhere(['link_name' => $blogLinkName])
-            ->andWhere(['status' => Blog::STATUS_ACTIVE])
+            ->alias('b')
+            ->joinWith(['blogCategory', 'blogCategory.parentCategory', 'blogImages', 'blogRatings'])
+            ->andWhere(['b.link_name' => $blogLinkName])
+            ->andWhere(['b.status' => Blog::STATUS_ACTIVE])
             ->one();
 
         if (empty($blog) || !$blog->checkUrl($categoryLinkName, $blogLinkName, $categoryLinkNameChild)) {

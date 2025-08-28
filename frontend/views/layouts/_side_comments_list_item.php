@@ -9,7 +9,11 @@ use common\models\comment\Comment;
 
 ?>
 
-<li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+<li class="flex items-flex-start bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+    <div class="stat-block__list__avatar  stat-block__list__avatar_offline">
+        <img src="<?=$model->createdByUser->getAvatar()?>"
+             class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="<?=$model->createdByUser->username?>">
+    </div>
     <div class="block w-full">
         <p class="p3 gap-x-4 mb-12">
             <?=Yii::t('common', 'Пользователь')?>

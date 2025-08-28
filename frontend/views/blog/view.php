@@ -20,7 +20,11 @@ $this->params['meta_description'] = Yii::t('database', $blog->description);
 $this->params['page'] = 'blog';
 
 $date = new DateTime($blog->created_at);
-$rating = $blog->getBlogRatings()->sum('weight') ?? 0;
+$ratings = $blog->blogRatings;
+$rating = 0;
+foreach ($ratings as $_rating) {
+    $rating += $_rating->weight;
+}
 
 $this->params['_blog_category'] = $blog->blogCategory;
 $this->params['_blog_model'] = $blog;
@@ -85,7 +89,8 @@ $blog->save();
         </div>
         </div>
     </article>
-    <div id="comments">
+        <?=$this->render('../layouts/_side_similar_posts', ['model' => $this->params['_blog_model']]);?>
+    <div id="comments" class="mt-12">
         <?php echo \yii2mod\comments\widgets\Comment::widget([
                                                                  'model' => $blog,
                                                                  'commentView' => '@frontend/views/blog/comments/index',

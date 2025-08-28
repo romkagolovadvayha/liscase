@@ -44,9 +44,9 @@ if (!empty($this->params['_blog_category_block'])) {
 if (!empty($this->params['_blog_comments_block'])) {
     $blogCommentsBlock = $this->render('../layouts/_side_comments_list');
 }
-if (!empty($this->params['_blog_similar_block'])) {
-    $blogSimilarBlock = $this->render('../layouts/_side_similar_posts', ['model' => $this->params['_blog_model']]);
-}
+//if (!empty($this->params['_blog_similar_block'])) {
+//    $blogSimilarBlock = $this->render('../layouts/_side_similar_posts', ['model' => $this->params['_blog_model']]);
+//}
 $user = Yii::$app->user->identity;
 $serverInfoBlock = null;
 if (!empty($user) && !empty($user->server) && $user->last_visit_server_at > date('Y-m-d H:i:s', time() - 5 * 60)) {
@@ -75,6 +75,12 @@ if (!empty($this->params['_profile'])) {
     /** @var User $_user */
     $profileBlock = $this->render('@frontend/views/widgets/profile.twig', ['userData' => $userData, 'PAGE' => $page, 'SETTINGS' => $SETTINGS]);
 }
+$topBlock = null;
+$liveBlock = null;
+if (empty($this->params['_blog_similar_block'])) {
+    $topBlock = $this->render('@frontend/views/widgets/_top', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]);
+    $liveBlock = $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]);
+}
 ?>
 
 <?php $this->beginBody() ?>
@@ -102,14 +108,14 @@ if (!empty($this->params['_profile'])) {
 //    'SKINDROPS_BLOCK' => $this->render('@frontend/views/widgets/_skindrops'),
     'SERVERS_BLOCK' => $this->render('@frontend/views/widgets/_servers', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'SETTINGS' => $SETTINGS, 'PAGE' => $page]),
 //    'PROMOCODE_FORM' => $this->render('@frontend/views/layouts/_promocode_line'),
-    'TOP_BLOCK' => $this->render('@frontend/views/widgets/_top', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]),
-    'LIVE_BLOCK' => $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]),
+    'TOP_BLOCK' => $topBlock,
+    'LIVE_BLOCK' => $liveBlock,
     'BUILDINGS_BLOCK' => $buildingsBlock,
     'KILLS_BLOCK' => $killsBlock,
     'TEAMS_BLOCK' => $teamBlock,
     'BLOG_CATEGORY_LIST_BLOCK' => $blogListCategoryBlock,
     'BLOG_COMMENTS_LIST_BLOCK' => $blogCommentsBlock,
-    'BLOG_SIMILAR_LIST_BLOCK' => $blogSimilarBlock,
+//    'BLOG_SIMILAR_LIST_BLOCK' => $blogSimilarBlock,
     'HEADER' => Yii::$app->view->render('header.twig', [
         'HOME_URL' => Yii::$app->homeUrl,
         'LOGO_IMAGE' => Yii::$app->settings->get('design_logo'),
