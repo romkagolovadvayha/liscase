@@ -1876,12 +1876,18 @@ class SkinDropsController extends Controller
                          ->column();
 
         $deleted = [];
-        foreach ($array as $skinId) {
+        foreach ($skinIds as $skinId) {
             if (!in_array($skinId, $ids)) {
-                RconTasks::execute("skinbox.removeskin {$skinId}");
-                $deleted[] = $skinId;
-                echo "delete skinId: {$skinId}" . PHP_EOL;
-                sleep(5);
+                $skin =  ServerSkin::find()
+                                   ->where(['status' => ServerSkin::STATUS_ACTIVE])
+                                   ->andWhere(['skin_id' => $skinId])
+                                   ->exists();
+                if (!$skin) {
+                    RconTasks::execute("skinbox.removeskin {$skinId}");
+                    $deleted[] = $skinId;
+                    echo "delete skinId: {$skinId}" . PHP_EOL;
+                    sleep(5);
+                }
             }
         }
 
