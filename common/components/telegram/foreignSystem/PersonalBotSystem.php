@@ -371,14 +371,15 @@ class PersonalBotSystem extends AbstractSystem
         $code     = $this->_getMessageText($message);
         $user = $this->getUserByAuthCode($code, $chatId);
 
-        if ($user->is_telegram_blocked) {
-            $user->is_telegram_blocked = false;
-            $user->save(false);
-        }
-
         $answerMessage = 'Ошибка авторизации, код неверен! 🤔';
 
         if (!empty($user) && !empty($chatId)) {
+
+            if ($user->is_telegram_blocked) {
+                $user->is_telegram_blocked = false;
+                $user->save(false);
+            }
+
             if (!empty($user->telegram_chat_id)) {
                 return 'Вы уже авторизованы!';
             }
