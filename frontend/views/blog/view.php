@@ -96,12 +96,6 @@ $imgUrls = array_map(fn($i) => $i->getPublicUrl(), $blog->blogImages ?? []);
 if (!empty($imgUrls) || !empty($ogImg)) {
     $articleLd['image'] = $imgUrls ?: [$ogImg];
 }
-$this->registerJs(
-    '(()=>{const s=document.createElement("script");s.type="application/ld+json";s.textContent='.
-    json_encode($articleLd, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES).
-    ';document.head.appendChild(s)})();',
-    \yii\web\View::POS_HEAD
-);
 
 // 6) JSON-LD: BreadcrumbList (по твоим хлебным крошкам)
 $crumbs = [
@@ -120,35 +114,13 @@ $breadcrumbLd = [
         return ['@type'=>'ListItem','position'=>$i+1,'name'=>$c['name'],'item'=>$c['url']];
     }, $crumbs, array_keys($crumbs))
 ];
-$this->registerJs(
-    '(()=>{const s=document.createElement("script");s.type="application/ld+json";s.textContent='.
-    json_encode($breadcrumbLd, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES).
-    ';document.head.appendChild(s)})();',
-    \yii\web\View::POS_HEAD
-);
-
-// 7) (опционально) JSON-LD: VideoObject — если у поста есть видео
-$video = $blog->video_url ?? null;           // адаптируй поля
-$thumb = $blog->video_thumb_url ?? ($imgUrls[0] ?? $ogImg);
-if ($video) {
-    $videoLd = [
-        '@context'=>'https://schema.org',
-        '@type'=>'VideoObject',
-        'name'=>$ogTitle,
-        'description'=>$ogDesc,
-        'thumbnailUrl'=>[$thumb],
-        'uploadDate'=>$published,
-        'contentUrl'=>$video,
-        'embedUrl'=>$canonical
-    ];
-    $this->registerJs(
-        '(()=>{const s=document.createElement("script");s.type="application/ld+json";s.textContent='.
-        json_encode($videoLd, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES).
-        ';document.head.appendChild(s)})();',
-        \yii\web\View::POS_HEAD
-    );
-}
 ?>
+<script type="application/ld+json">
+<?= json_encode($articleLd, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) ?>
+</script>
+<script type="application/ld+json">
+<?= json_encode($breadcrumbLd, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) ?>
+</script>
 
 <?= Alert::widget() ?>
     <article id="<?=$blog->id?>" class="blog_item">
