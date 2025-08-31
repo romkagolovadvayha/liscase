@@ -102,6 +102,18 @@ class UserTopController extends Controller
         ]);
     }
 
+
+    public function actionReset($id)
+    {
+        $model = $this->findModel($id);
+
+        if ($model->reset()) {
+            return $this->redirect(['/user/profile', 'userId' => $model->user_id]);
+        } else {
+            echo 'Not found';
+        }
+    }
+
     /**
      * Deletes an existing UserTop model.
      * If deletion is successful, the browser will be redirected to the 'index' page.

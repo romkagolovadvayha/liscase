@@ -12,7 +12,10 @@
     padding-bottom: 90px;
     position: absolute;
     top: 0;
+    width: 100%;
     bottom: 0;
+    scroll-behavior: auto;      /* никакой smooth при входе */
+    overflow-anchor: none;      /* чтобы браузер не держал якорь и не возвращал вверх */
     @media (max-width: 768px) {
       padding-left: 0;
       padding-right: 0;
@@ -402,7 +405,9 @@
   height: 700px;
   overflow-y: auto;
   @media (max-width: 768px) {
-    display: none;
+    width: 60px;
+    height: calc(100vh - 185px);
+    height: calc(100dvh - 185px);
   }
   &::-webkit-scrollbar {
     width: 5px;
@@ -509,6 +514,9 @@
     }
     &_body {
       flex: 1 0;
+      @media (max-width: 768px) {
+        display: none;
+      }
       &_name {
         @extend .text-text-main;
         white-space: nowrap;

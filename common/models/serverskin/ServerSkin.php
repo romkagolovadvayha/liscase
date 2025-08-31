@@ -15,6 +15,9 @@ use Yii;
  * @property string|null $name
  * @property int         $status
  * @property string      $image
+ * @property string      $image_64
+ * @property string      $image_150
+ * @property string      $server_skin_category_id
  * @property int         $likes
  * @property int         $creator_user_id
  * @property string|null $created_at
@@ -22,6 +25,7 @@ use Yii;
  * @property ServerSkinLike[] $serverSkinLikes
  * @property User $user
  * @property User $creatorUser
+ * @property ServerSkinCategory $serverSkinCategory
  */
 class ServerSkin extends \yii\db\ActiveRecord
 {
@@ -72,8 +76,10 @@ class ServerSkin extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'user_id' => 'User ID',
+            'skin_id' => 'Skin ID',
             'name' => Yii::t('common', 'Название'),
             'status' => Yii::t('common', 'Статус'),
+            'server_skin_category_id' => Yii::t('common', 'Категория'),
             'created_at' => Yii::t('common', 'Дата создания'),
         ];
     }
@@ -83,6 +89,20 @@ class ServerSkin extends \yii\db\ActiveRecord
             return Yii::$app->settings->get('site_cdnUrl') . $this->image;
         }
         return $this->image;
+    }
+
+    public function getImage64PubUrl($cdn = true) {
+        if ($cdn) {
+            return Yii::$app->settings->get('site_cdnUrl') . "/uploads" . $this->image_64;
+        }
+        return $this->image_64;
+    }
+
+    public function getImage150PubUrl($cdn = true) {
+        if ($cdn) {
+            return Yii::$app->settings->get('site_cdnUrl') . "/uploads" .  $this->image_150;
+        }
+        return $this->image_150;
     }
 
     /**
@@ -103,6 +123,16 @@ class ServerSkin extends \yii\db\ActiveRecord
     public function getUser()
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
+    }
+
+    /**
+     * Gets query for [[ServerSkinCategory]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getServerSkinCategory()
+    {
+        return $this->hasOne(ServerSkinCategory::class, ['id' => 'server_skin_category_id']);
     }
 
     /**

@@ -23,6 +23,32 @@ class Settings
         }
         return $items[$key];
     }
+    /**
+     * @param $key
+     *
+     * @return array|string
+     */
+    public function set($key, $value): string
+    {
+        $cacheKey = 'Settings_getSettings';
+        /** @var SiteSetting[] $settings */
+        $settings = SiteSetting::find()
+            ->all();
+
+        foreach ($settings as $item) {
+            $_key = $item->category . "_" . $item->code;
+            if ($_key != $key) {
+                continue;
+            }
+
+            $item->value = $value;
+            $item->save(false);
+
+            Yii::$app->cache->delete($cacheKey);
+            return true;
+        }
+        return false;
+    }
 
     /**
      * @param bool $update

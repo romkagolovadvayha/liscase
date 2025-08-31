@@ -16,7 +16,7 @@ $config = [
     'basePath' => dirname(__DIR__),
     'language' => 'ru-RU',
     'bootstrap' => [
-        'log',
+//        'log',
 //        'languagepicker'
     ],
     'controllerNamespace' => 'frontend\controllers',
@@ -85,6 +85,7 @@ $config = [
         'assetManager' => [
             'class' => 'yii\web\AssetManager',
             'forceCopy' => YII_DEBUG,
+            'appendTimestamp' => true,
         ],
         'user' => [
             'identityClass'   => 'common\models\user\User',
@@ -159,13 +160,6 @@ if (YII_ENV_DEV) {
     $config['bootstrap'][] = 'debug';
     $config['modules']['debug'] = [
         'class' => 'yii\debug\Module',
-        // uncomment the following to add your IP if you are not connecting from localhost.
-        //'allowedIPs' => ['127.0.0.1', '::1'],
-    ];
-
-    $config['bootstrap'][] = 'gii';
-    $config['modules']['gii'] = [
-        'class' => 'yii\gii\Module',
         // uncomment the following to add your IP if you are not connecting from localhost.
         //'allowedIPs' => ['127.0.0.1', '::1'],
     ];

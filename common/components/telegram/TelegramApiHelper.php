@@ -144,6 +144,28 @@ class TelegramApiHelper extends \yii\base\Component
 
         return $this->_sendRequest('sendMessage', $params);
     }
+    /**
+     * @param int    $chatId
+     * @param string $messageText
+     * @param array  $inlineKeyboard
+     *
+     * @return mixed
+     */
+    public function editMessageReplyMarkup($chatId, $messageId, $inlineKeyboard = [])
+    {
+        $params = [
+            'chat_id'    => $chatId,
+            'message_id' => $messageId,
+            'parse_mode'   => 'Html',
+        ];
+
+        if (!empty($inlineKeyboard)) {
+            $params['reply_markup'] = json_encode([
+                                                      'inline_keyboard' => [$inlineKeyboard]
+                                                  ]);
+        }
+        $this->_sendRequest("editMessageReplyMarkup", $params);
+    }
 
     /**
      * @param int   $chatId
@@ -178,6 +200,27 @@ class TelegramApiHelper extends \yii\base\Component
             'chat_id'    => $chatId,
             'message_id' => $messageId,
             'text'       => $messageText,
+            'parse_mode' => 'Html',
+        ]);
+    }
+
+    /**
+     * @param int    $chatId
+     * @param int    $messageId
+     * @param string $messageText
+     *
+     * @return mixed
+     */
+    public function editMessageCaption($chatId, $messageId, $messageText)
+    {
+        if (empty($messageText)) {
+            return false;
+        }
+
+        return $this->_sendRequest('editMessageCaption', [
+            'chat_id'    => $chatId,
+            'message_id' => $messageId,
+            'caption'       => $messageText,
             'parse_mode' => 'Html',
         ]);
     }

@@ -31,30 +31,26 @@ if (!Yii::$app->user->isGuest && strpos(mb_strtolower($user->username), strtolow
 $allCompleted = $usernameCompleted && $tradeLinkCompleted && $authCompleted;
 
 $result = [];
-/** @var \common\models\skindrops\Skindrops[] $skindrops */
-$skindrops = \common\models\skindrops\Skindrops::find()
-                                               ->limit(10)
-                                               ->cache(30)
-                                               ->orderBy(['id' => SORT_DESC])
-                                               ->all();
+/** @var \common\models\user\UserPayoutSkins[] $skindrops */
+$skindrops = \common\models\user\UserPayoutSkins::find()
+    ->alias('p')
+    ->joinWith(['user'])
+    ->andWhere(['p.status' => \common\models\user\UserPayoutSkins::STATUS_SUCCESS])
+    ->limit(10)
+    ->cache(60)
+    ->orderBy(['p.id' => SORT_DESC])
+    ->all();
+
 foreach ($skindrops as $item) {
-    /** @var \common\models\user\Auth $userAuth */
-    $userAuth = \common\models\user\Auth::find()
-                                        ->andWhere(['source_id' => $item->steam_id])
-                                        ->one();
-    $userAvatar = null;
-    $userName = null;
-    if (!empty($userAuth)) {
-        $userAvatar = $userAuth->user->userProfile->avatar;
-        $userName = $userAuth->user->username;
-    }
+    $userAvatar = $item->user->getAvatar();
+    $userName = $item->user->username;
     $result[] = [
         'id' => $item->id,
         'image' => $item->image,
         'name' => $item->name,
         'bgImage' => "/images/skindrops/skindrops.png",
         'bgName' => "SkinDrops",
-        'count' => $item->price . " RUB",
+        'count' => $item->amount . " RUB",
         'userAvatar' => $userAvatar,
         'userName' => $userName,
         'type' => 1,

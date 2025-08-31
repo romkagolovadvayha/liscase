@@ -10,6 +10,11 @@ function connectWs() {
             console.error('Ошибка разбора JSON:', err, e.data);
             return;
         }
+        if (response.type === 'ping') {
+            // ответ app-level pong (ВАЖНО: используем ваш протокол команд)
+            chat.send(JSON.stringify({ action: 'Pong', ts: response.ts }));
+            return;
+        }
         if (response.type && response.type === 'chat') {
             supportChat(response);
         }
@@ -21,6 +26,9 @@ function connectWs() {
         }
         if (response.type && response.type === 'ticketsUpdate') {
             supportTicketsUpdate(response);
+        }
+        if (response.type && response.type === 'launcherUpdate') {
+            launcherUpdate(response);
         }
         if (response.type && response.type === 'support_notifications') {
             supportNotification(response);
@@ -60,13 +68,15 @@ function connectWs() {
 
     chat.onclose = function(e) {
         console.warn('WebSocket соединение закрыто. Причина:', e.reason || e.code);
-        // Попробовать переподключиться через 5 секунд
+        // Попробовать переподключиться через 2 секунд
         setTimeout(() => reconnectWebSocket(), 5000);
     };
 
     chat.onopen = function(e) {
         if (token !== undefined) {
-            chat.send( JSON.stringify({'action' : 'auth', 'token' : token, 'steam_id' : steam_id}) );
+            var item = {'action' : 'auth', 'token' : token, 'steam_id' : steam_id};
+            item.launcher = $('.store_launcher').length > 0;
+            chat.send(JSON.stringify(item));
             if ($('#supportMessage').length) {
                 initChat();
             }
@@ -132,6 +142,7 @@ function openChat(href) {
         initChat();
     });
 }
+
 function closeChat() {
     $('#widget_chat').removeClass('active');
 }

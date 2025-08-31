@@ -3,6 +3,7 @@
 namespace common\models\comment;
 
 
+use common\models\blog\Blog;
 use common\models\user\User;
 
 /**
@@ -23,6 +24,7 @@ use common\models\user\User;
  * @property int $updatedAt
  *
  * @property User $createdByUser
+ * @property Blog $blog
  */
 class Comment extends \yii\db\ActiveRecord
 {
@@ -43,6 +45,16 @@ class Comment extends \yii\db\ActiveRecord
     public function getCreatedByUser()
     {
         return $this->hasOne(User::class, ['id' => 'createdBy']);
+    }
+
+    /**
+     * Gets query for [[Blog]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getBlog()
+    {
+        return $this->hasOne(Blog::class, ['id' => 'entityId']);
     }
 
 }

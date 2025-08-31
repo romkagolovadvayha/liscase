@@ -20,7 +20,11 @@ $this->params['meta_description'] = Yii::t('database', $blog->description);
 $this->params['page'] = 'blog';
 
 $date = new DateTime($blog->created_at);
-$rating = $blog->getBlogRatings()->sum('weight') ?? 0;
+$ratings = $blog->blogRatings;
+$rating = 0;
+foreach ($ratings as $_rating) {
+    $rating += $_rating->weight;
+}
 
 $this->params['_blog_category'] = $blog->blogCategory;
 $this->params['_blog_model'] = $blog;
@@ -35,7 +39,12 @@ $blog->save();
 
 <?= Alert::widget() ?>
     <article id="<?=$blog->id?>" class="blog_item">
+        <div class="blog_item_container_wrap">
         <div class="blog_item_snippet">
+            <h1 class="blog_item_title"><?=Yii::t('database', $blog->name)?></h1>
+            <div class="blog_item_categories">
+                <a href="<?=$blog->blogCategory->parentCategory->getUrl()?>"><?=Yii::t('database', $blog->blogCategory->parentCategory->name)?></a>, <a href="<?=$blog->blogCategory->getUrl()?>"><?=Yii::t('database', $blog->blogCategory->name)?></a>
+            </div>
             <div class="blog_item_container">
                 <div class="blog_item_snippet_meta">
                             <span class="blog_item_snippet_meta_author">
@@ -47,26 +56,24 @@ $blog->save();
                             </span>
                 </div>
             </div>
-            <h1 class="blog_item_title"><?=Yii::t('database', $blog->name)?></h1>
-            <div class="blog_item_categories">
-                <a href="<?=$blog->blogCategory->parentCategory->getUrl()?>"><?=Yii::t('database', $blog->blogCategory->parentCategory->name)?></a>, <a href="<?=$blog->blogCategory->getUrl()?>"><?=Yii::t('database', $blog->blogCategory->name)?></a>
-            </div>
             <div class="blog_item_body">
-                <?php if (!empty($blog->blogImages)): ?>
-                <div class="blog_item_body_text_images mb-24">
-                    <?php foreach ($blog->blogImages as $image): ?>
-                        <?=$this->render('_file', [
-                            'url' => $image->getPublicUrl(),
-                            'name' => $image->link
-                        ]); ?>
-                    <?php endforeach; ?>
-                </div>
+                <?php if (strtotime($blog->created_at) < strtotime('2025-08-28 12:00')): ?>
+                    <?php if (!empty($blog->blogImages)): ?>
+                    <div class="blog_item_body_text_images mb-24">
+                        <?php foreach ($blog->blogImages as $image): ?>
+                            <?=$this->render('_file', [
+                                'url' => $image->getPublicUrl(),
+                                'name' => $image->link
+                            ]); ?>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
                 <?php endif; ?>
-                <div class="blog_item_body_text p1 mb-24"><?=Yii::t('database', $blog->content)?></div>
+                <div class="mb-24 tinymce-content"><?=Yii::t('database', $blog->content)?></div>
                 <?php if ($blog->created_at < '2025-03-30 00:00:00'): ?>
-                <p class="p2">
-                    <?=Yii::t('common', 'Поставщик новостей')?>: <a href="https://discord.gg/rust-ru" rel="nofollow" class="p2" target="_blank">RustRu</a>
-                </p>
+                    <p class="p2">
+                        <?=Yii::t('common', 'Поставщик новостей')?>: <a href="https://discord.gg/rust-ru" rel="nofollow" class="p2" target="_blank">RustRu</a>
+                    </p>
                 <?php endif; ?>
             </div>
             <div class="blog_item_data">
@@ -80,8 +87,10 @@ $blog->save();
                 </div>
             </div>
         </div>
+        </div>
     </article>
-    <div id="comments">
+        <?=$this->render('../layouts/_side_similar_posts', ['model' => $this->params['_blog_model']]);?>
+    <div id="comments" class="mt-12">
         <?php echo \yii2mod\comments\widgets\Comment::widget([
                                                                  'model' => $blog,
                                                                  'commentView' => '@frontend/views/blog/comments/index',

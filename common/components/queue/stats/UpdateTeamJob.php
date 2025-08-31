@@ -32,6 +32,7 @@ class UpdateTeamJob extends BaseObject implements JobInterface
     public function execute($queue)
     {
         try {
+            Yii::$app->telegramChats->sendMessage($this->server->tag . ' ' . $this->model->steam_id);
             Team::updateTeam($this->model, $this->server, $this->wipeDate);
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage("UpdateTeamJob::updateTeam: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());

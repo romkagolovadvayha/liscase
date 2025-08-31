@@ -27,6 +27,7 @@ use yii2mod\comments\models\CommentModel;
  * @property BlogImage[] $blogImages
  * @property BlogRating[] $blogRatings
  * @property User $user
+ * @property CommentModel[] $comments
  */
 class Blog extends \yii\db\ActiveRecord
 {
@@ -166,51 +167,64 @@ class Blog extends \yii\db\ActiveRecord
      *
      * @return array
      */
-    public static function getSimilarPosts($text, $dontIds = []) {
-        $text = ArrayValIterator::getMinificationArray($text);
-        $count = count($text);
-        /** @var Blog[] $list */
-        $query = Blog::find()->cache(60)->andWhere(['status' => Blog::STATUS_ACTIVE]);
-        if (!empty($dontIds)) {
-            $query->andWhere(['NOT IN', 'id', $dontIds]);
+    public static function getSimilarPostsFulltext(self $current, int $limit = 5): array
+    {
+        $tokens = self::tokenize($current->name);
+        if (empty($tokens)) return [];
+
+        // Запрос для IN BOOLEAN MODE с префиксами
+        $queryStr = implode(' ', array_map(fn($w) => $w.'*', array_slice($tokens, 0, 8)));
+
+        $q = self::find()
+                 ->alias('b')
+                 ->select([
+                              'b.id','b.name','b.blog_category_id','b.created_at','b.views',
+                              new \yii\db\Expression('MATCH (b.name, b.description, b.content) AGAINST (:q IN BOOLEAN MODE) AS score'),
+                          ])
+                 ->where(['b.status' => self::STATUS_ACTIVE])
+                 ->andWhere(['<>','b.id',$current->id])
+                 ->andWhere(new \yii\db\Expression('MATCH (b.name, b.description, b.content) AGAINST (:q IN BOOLEAN MODE)'))
+                 ->params([':q' => $queryStr]);
+
+        if ($current->blog_category_id) {
+            $q->andWhere(['b.blog_category_id' => $current->blog_category_id]);
         }
-        $list = $query->all();
-        $similars = [];
-        foreach($list as $model) {
-            $verifiable = ArrayValIterator::getMinificationArray($model->name);
-            $similar_counter = 0;
-            foreach ($text as $text_row) {
-                foreach ($verifiable as $verifiable_row){
-                    if($text_row == $verifiable_row) {
-                        $similar_counter++;
-                        break;
-                    }
-                }
-            }
-            if ($similar_counter === 0) {
-                continue;
-            }
-            $similars[] = ['id' => $model->id, 'proc' => $similar_counter * 100 / $count];
-        }
-        if (!empty($similars)) {
-            usort($similars, function ($a, $b) {
-                return -($a["proc"] - $b["proc"]);
-            });
-        }
-        $results = [];
-        foreach ($similars as $item) {
-            $results[] = Blog::findOne($item['id']);
-            if (count($results) >= 5) {
-                break;
-            }
-        }
-        return $results;
+
+        return $q->orderBy(['score' => SORT_DESC, 'created_at' => SORT_DESC])
+                 ->limit($limit)
+                 ->all();
+    }
+
+    /** Токенизация: чистим, нормализуем, выкидываем стоп-слова и коротыши */
+    private static function tokenize(string $text): array
+    {
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = strip_tags($text);
+        $text = mb_strtolower($text, 'UTF-8');
+        $text = str_replace('ё','е',$text);
+        // буквы/цифры/дефис/пробел, всё остальное — в пробел
+        $text = preg_replace('/[^\p{L}\p{N}\s\-]+/u', ' ', $text);
+        $text = preg_replace('/\s+/u', ' ', $text);
+        $words = array_unique(array_filter(array_map('trim', explode(' ', $text)), function($w){
+            return mb_strlen($w, 'UTF-8') >= 3;
+        }));
+
+        // стоп-слова (ru + общие)
+        $stop = [
+            'без','близ','в','во','вместо','вне','для','до','за','и','из','изо','под','к','ко','кроме','между','на','над','о','об','обо','от','ото','перед','передо','пред','предо','по','подо','при','про','ради','с','со','сквозь','среди','у','через','но','или',
+            // частые мусорные
+            'это','как','так','чтоб','чтобы','быть','есть','будет','тут','там','тема','про','по','надо'
+        ];
+
+        return array_values(array_diff($words, $stop));
     }
 
     /**
-     * @return bool|int|string|null
+     * Gets query for [[Comments]].
+     *
+     * @return \yii\db\ActiveQuery
      */
-    public function getCountComments() {
-        return CommentModel::find()->andWhere(['entityId' => $this->id])->count();
+    public function getComments() {
+        return $this->hasMany(CommentModel::class, ['entityId' => 'id']);
     }
 }

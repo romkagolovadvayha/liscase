@@ -6,17 +6,20 @@ use common\models\comment\Comment;
 /** @var yii\web\View $this */
 /** @var Comment $model */
 
-$blog = \common\models\blog\Blog::findOne($model->entityId);
 
 ?>
 
-<li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+<li class="flex items-flex-start bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
+    <div class="stat-block__list__avatar  stat-block__list__avatar_offline">
+        <img src="<?=$model->createdByUser->getAvatar()?>"
+             class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="<?=$model->createdByUser->username?>">
+    </div>
     <div class="block w-full">
         <p class="p3 gap-x-4 mb-12">
             <?=Yii::t('common', 'Пользователь')?>
             <a class="p3" href="/users/<?=$model->createdByUser->username?>"><?=$model->createdByUser->username?></a>
             <?=Yii::t('common', 'оставил коментарий к записи')?>
-            <a class="p3" href="<?=$blog->getUrl()?>"><?=Yii::t('database', $blog->name)?></a>
+            <a class="p3" href="<?=$model->blog->getUrl()?>"><?=Yii::t('database', $model->blog->name)?></a>
         </p>
         <div class="stat-block__list__footer">
             <p class="p3 text-text-teritiary" title="<?=Yii::t('common', 'Дата комментария')?>">

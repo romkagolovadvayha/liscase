@@ -21,6 +21,8 @@ use Yii;
  */
 class UserTeam extends \yii\db\ActiveRecord
 {
+    public $leader_id = null;
+
     /**
      * {@inheritdoc}
      */
@@ -86,5 +88,78 @@ class UserTeam extends \yii\db\ActiveRecord
     public function getUser()
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
+    }
+
+    /**
+     * @param $serverId
+     * @param $userId
+     * @param $wipe
+     *
+     * @return array|UserTeam[]
+     */
+    public static function getTeamList($serverId, $userId, $wipe): array
+    {
+        $ut = UserTeam::tableName();
+        $tt = Team::tableName();
+
+        /** @var UserTeam[] $rows */
+        $rows = UserTeam::find()->alias('u')
+                        ->innerJoin("$ut u2", 'u.team_id = u2.team_id AND u.server_id = u2.server_id AND u.wipe = u2.wipe')
+                        ->andWhere([
+                                       'u2.user_id'   => $userId,
+                                       'u2.server_id' => $serverId,
+                                       'u2.wipe'      => $wipe,
+                                   ])
+                        ->andWhere(['u.server_id' => $serverId, 'u.wipe' => $wipe])
+                        ->innerJoin(["t" => $tt], 't.id = u.team_id')
+                        ->addSelect(['u.*', 't.team_author_id AS leader_id'])
+                        ->with(['user'])
+                        ->orderBy(['u.user_id' => SORT_ASC])
+                        ->all();
+
+        if (!$rows) {
+            return [];
+        }
+        $authorId = $rows[0]->leader_id;
+
+        $users = [];
+        foreach ($rows as $team) {
+            if ($team->user_id != $authorId) {
+                continue;
+            }
+            $usr = $team->user;
+            if (!$usr) {
+                continue;
+            }
+            $users[] = [
+                'link'      => $usr->getLink('stats'),
+                'username'  => $usr->username,
+                'is_online'    => $usr->getStatus(),
+                'date_visit' => $usr->last_visit_server_at,
+                'time_visit' => strtotime($usr->last_visit_server_at),
+                'avatar'    => $usr->getAvatar(),
+                'is_leader' => true,
+            ];
+        }
+        foreach ($rows as $team) {
+            if ($team->user_id == $authorId) {
+                continue;
+            }
+            $usr = $team->user;
+            if (!$usr) {
+                continue;
+            }
+            $users[] = [
+                'link'      => $usr->getLink('stats'),
+                'username'  => $usr->username,
+                'is_online'    => $usr->getStatus(),
+                'date_visit' => $usr->last_visit_server_at,
+                'time_visit' => strtotime($usr->last_visit_server_at),
+                'avatar'    => $usr->getAvatar(),
+                'is_leader' => false,
+            ];
+        }
+
+        return $users;
     }
 }

@@ -371,7 +371,7 @@ class Task extends \common\components\base\ActiveRecord
                         ->alias('ut')
                         ->joinWith('task t')
                         ->select(['t.type'])
-                        ->andWhere(['IN', 't.drop_id', [843, 642, 859]])
+                        ->andWhere(['IN', 't.drop_id', [843, 642, 859, 420]])
                         ->andWhere(['ut.user_id' => $userId])
                         ->asArray()
                         ->groupBy('type')

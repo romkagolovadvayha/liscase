@@ -175,7 +175,7 @@ class UserBalance extends \common\components\base\ActiveRecord
         }
         if ($this->type === self::TYPE_SKINS) {
             $payouts = UserPayoutSkins::find()
-                                ->andWhere(['IN', 'status', [UserPayoutSkins::STATUS_WAIT, UserPayoutSkins::STATUS_SUCCESS]])
+                                ->andWhere(['IN', 'status', [UserPayoutSkins::STATUS_NEW, UserPayoutSkins::STATUS_WAIT, UserPayoutSkins::STATUS_SUCCESS]])
                                 ->andWhere(['user_id' => $this->user->id])
                                 ->sum('amount');
             $personalBalance = $this->user->getPersonalBalance();

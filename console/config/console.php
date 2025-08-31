@@ -4,6 +4,7 @@ $config = require __DIR__ . '/../../common/config/web.php';
 $config['id'] = 'basic-console';
 $config['bootstrap'] = [
     'log',
+    'crontask',
 ];
 $config['basePath'] = dirname(__DIR__);
 $config['controllerNamespace'] = 'console\controllers';
@@ -34,16 +35,110 @@ $config['components']['log'] = [
         ],
     ],
 ];
+$config['components']['supervisor'] = [
+    'class' => \console\components\Supervisor::class,
+    'ctl'   => '/usr/bin/supervisorctl', // проверь путь
+    'sudo'  => true,                     // если нужен sudo
+    // 'config' => '/etc/supervisor/supervisord.conf',
+    // 'socket' => 'unix:///run/supervisor.sock',
+];
+$config['components']['supervisortask'] = [
+    'class' => \console\components\Supervisortask::class,
+];
+$config['modules']['crontask'] = [
+    'class'    => 'gofmanaa\crontask\Module',
+    'fileName' => 'cron.txt',
+    'yiiPath'  => __DIR__ . '/../../yii',
+    'tasks'    => [
+        'supportCheckClosed'       => [
+            'command' => 'support/check-closed',
+            'min'     => '*/5',
+        ],
+        'supportCheck'       => [
+            'command' => 'support/check',
+            'min'     => '*',
+        ],
+        'userUpdate'       => [
+            'command' => 'user/update',
+            'min'     => '*',
+        ],
+        'storageUpdateTops'       => [
+            'command' => 'storage/update-tops',
+            'min'     => '*/5',
+        ],
+        'storageUpdateMarket'       => [
+            'command' => 'storage/update-market',
+            'min'     => '*/20',
+        ],
+        'storageUpdate'       => [
+            'command' => 'storage/update',
+            'min'     => '*/2',
+        ],
+        'storageCalculateTops'       => [
+            'command' => 'storage/calculate-tops',
+            'min'     => '*/7',
+        ],
+        'skinDropsStatusCheck'       => [
+            'command' => 'skin-drops/status-check',
+            'min'     => '*',
+        ],
+        'skinDropsGoDraw'       => [
+            'command' => 'skin-drops/go-draw',
+            'hour'     => '*',
+            'min'     => '0',
+        ],
+        'serverReport'       => [
+            'command' => 'server/report',
+            'hour'     => '0',
+            'min'     => '1',
+        ],
+        'serverStatusCheck'       => [
+            'command' => 'server/check-status',
+            'min'     => '*',
+        ],
+        'chatCheck'       => [
+            'command' => 'chat/check',
+            'min'     => '*/10',
+        ],
+        'serverWsOnline'       => [
+            'command' => 'server-ws/online',
+            'min'     => '*',
+        ],
+        'rustotekaBanImport'       => [
+            'command' => 'rustoteka/ban-import',
+            'min'     => '11',
+        ],
+        'depositSync'       => [
+            'command' => 'deposit/sync',
+            'min'     => '*/3',
+        ],
+        'getCsGoFiles'       => [
+            'command' => 'support/empty && cd /var/www/www-root/data/var/www/prostoj.store/frontend/web/uploads/prices && wget https://market.csgo.com/api/v2/prices/class_instance/RUB.json -O csmarket.json && cd /var/www/www-root/data/var/www/prostoj.store && ./yii storage/update-price-cs-go',
+            'min'     => '*/7',
+        ],
+        'getRustFiles'       => [
+            'command' => 'support/empty && cd /var/www/www-root/data/var/www/prostoj.store/frontend/web/uploads/prices && wget https://rust.tm/api/v2/prices/class_instance/RUB.json -O rusttm.json',
+            'min'     => '*/3',
+        ],
+        'getApproved'       => [
+            'command' => 'skin-drops/get-approved',
+            'hour'     => '6',
+        ],
+    ]
+];
+$config['controllerMap']['supervisortask'] = [
+    'class' =>\console\controllers\SupervisortaskController::class,
+];
 $config['modules']['translateManager'] = [
     'class'                   => \DemonDogSL\translateManager\Module::class,
     'root'                    => [
         '@frontend',
         '@common',
     ],
-//    'scanRootParentDirectory' => true,
-//    'ignoredCategories'       => ['yii', 'kvdrp'],
-//    'ignoredItems'            => ['assets', 'vendor'],
-//    'layout'                  => false,
+    //    'scanRootParentDirectory' => true,
+    //    'ignoredCategories'       => ['yii', 'kvdrp'],
+    //    'ignoredItems'            => ['assets', 'vendor'],
+    //    'layout'                  => false,
     'patterns'                  => ['*.php', '*.js', '*.twig'],
     'allowedIPs'              => ['*'],
     'tables' => [
@@ -87,11 +182,11 @@ $config['modules']['translateManager'] = [
             'table' => '{{%blog_category}}',
             'columns' => ['name', 'description', 'keywords'],
         ],
-//        [
-//            'connection' => 'db',
-//            'table' => '{{%comment}}',
-//            'columns' => ['content'],
-//        ],
+        //        [
+        //            'connection' => 'db',
+        //            'table' => '{{%comment}}',
+        //            'columns' => ['content'],
+        //        ],
         [
             'connection' => 'db',
             'table' => '{{%task}}',
@@ -120,7 +215,7 @@ $config['modules']['translateManager'] = [
 
 $config = yii\helpers\ArrayHelper::merge(
     $config,
-    require(__DIR__ . '/../../common/config/queue.php'),
+    require('queue.php'),
 );
 
 if (YII_ENV_DEV) {
@@ -130,5 +225,8 @@ if (YII_ENV_DEV) {
         'class' => 'yii\gii\Module',
     ];
 }
+
+unset($config['components']['comment']);
+unset($config['modules']['comment']);
 
 return $config;

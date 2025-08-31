@@ -5,16 +5,22 @@
     <ul class="stat-block__list">
         {% for ITEM in ITEMS %}
             <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
-                <img src="{{ ITEM.AVATAR }}" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="{{ ITEM.USERNAME }}">
+                <div class="stat-block__list__avatar  {% if not ITEM.is_online %}stat-block__list__avatar_offline{% endif %}">
+                    <img src="{{ ITEM.avatar }}" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="{{ ITEM.username }}">
+                </div>
                 <div class="flex flex-column w-full gap-y-4">
                     <p class="flex justify-space-between items-center flex-wrap">
-                        <a href="{{ ITEM.LINK }}" class="p2 link font-medium">{{ ITEM.USERNAME }}</a>
-                        {% if ITEM.IS_AUTHOR %}
+                        <a href="{{ ITEM.link }}" class="p2 link font-medium">{{ ITEM.username }}</a>
+                        {% if ITEM.is_leader %}
                             <span class="p3 text-text-secondary">{{ t('common', 'лидер') }}</span>
                         {% endif %}
                     </p>
                     <p class="p3">
-                        <span class="text-text-secondary mr-1">{{ t('common', 'Вступил') }} <span class="text-text-secondary server_timer" data-time="{{ ITEM.TIME }}">{{ ITEM.DATE }}</span></span>
+                        {% if not ITEM.is_online %}
+                            <span class="text-text-secondary mr-1">{{ t('common', 'Был онлайн') }} <span class="text-text-secondary server_timer" data-time="{{ ITEM.time_visit }}">{{ ITEM.date_visit }}</span></span>
+                        {% else %}
+                            <span class="text-text-secondary mr-1 stat-block__list__status_online">{{ t('common', 'Онлайн') }}</span>
+                        {% endif %}
                     </p>
                 </div>
             </li>

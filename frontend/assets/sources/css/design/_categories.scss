@@ -115,6 +115,7 @@
       @extend .grid, .justify-flex-start, .gap-x-12, .gap-y-12, .w-full;
       grid-template-columns: var(--category-cards-grid);
       @media (max-width: 560px) {
+        margin-top: 12px;
         grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       }
       & .category-card {

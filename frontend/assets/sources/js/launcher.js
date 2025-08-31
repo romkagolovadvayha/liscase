@@ -1,3 +1,9 @@
+function initLauncher() {
+    chat.send(JSON.stringify({'action': 'subscription', 'launcher': true}));
+}
+function launcherUpdate() {
+    location.reload();
+}
 $('.store_launcher_cards_item').on('click', function () {
     clickItem($(this).attr('data-id'));
 });

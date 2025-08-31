@@ -23,6 +23,32 @@
 
       &__list {
         @extend .grid, .gap-y-8;
+        &__status_online {
+          color: var(--online);
+        }
+        &__avatar {
+          @extend .relative;
+          @include range(36, 36, "px");
+          &:after {
+            content: "";
+            @extend .absolute,
+            .block,
+            .border-4,
+            .border-solid,
+            .border-background-secondary,
+            .bg-online,
+            .rounded-full;
+            @include range(20, 20, "px");
+            bottom: -6px;
+            right: -6px;
+          }
+          &_offline {
+            &:after {
+              content: "";
+              @extend .none;
+            }
+          }
+        }
         &__name {
           white-space: nowrap;
           overflow: hidden;

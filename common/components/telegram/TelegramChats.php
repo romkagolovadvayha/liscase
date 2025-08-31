@@ -100,6 +100,8 @@ class TelegramChats
                 'inline_keyboard' => [$inlineKeyboard]
             ]);
         }
-        return $this->sendHttpRequest("sendMessage", $params);
+        $result = $this->sendHttpRequest("sendMessage", $params);
+
+        return $result;
     }
 }

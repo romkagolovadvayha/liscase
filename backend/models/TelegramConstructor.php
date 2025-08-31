@@ -198,6 +198,7 @@ class TelegramConstructor extends \yii\db\ActiveRecord
                                     ->alias('u')
                                     ->andWhere(['u.status' => User::STATUS_ACTIVE])
                                     ->andWhere('telegram_chat_id is NOT NULL')
+                                    ->andWhere(['is_telegram_blocked' => 0])
                                     ->andWhere(['IN', 'u.id', [509]])
 //                                    ->andWhere(['IN', 'u.id', [2373, 509]])
                                     ->createCommand()
@@ -209,6 +210,7 @@ class TelegramConstructor extends \yii\db\ActiveRecord
                        ->alias('u')
                        ->andWhere(['u.status' => User::STATUS_ACTIVE])
                        ->andWhere('telegram_chat_id is NOT NULL')
+                       ->andWhere(['is_telegram_blocked' => 0])
                        ->createCommand()
                        ->queryColumn();
         }
@@ -217,6 +219,7 @@ class TelegramConstructor extends \yii\db\ActiveRecord
                        ->select('DISTINCT(id)')
                        ->andWhere(['IN', 'steam_id', [76561198161653962]])
                        ->andWhere('telegram_chat_id is NOT NULL')
+                       ->andWhere(['is_telegram_blocked' => 0])
                        ->createCommand()
                        ->queryColumn();
         }

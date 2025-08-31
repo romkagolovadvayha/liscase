@@ -7,7 +7,7 @@ use yii\data\ActiveDataProvider;
 use common\models\comment\Comment;
 
 $dataProvider = new ActiveDataProvider([
-                                           'query' => Comment::find()->cache(30)->limit(5)->andWhere(['status' => Blog::STATUS_ACTIVE])->orderBy(['createdAt' => SORT_DESC]),
+                                           'query' => Comment::find()->alias('c')->cache(30)->limit(5)->joinWith('blog')->andWhere(['c.status' => Blog::STATUS_ACTIVE])->orderBy(['c.createdAt' => SORT_DESC]),
                                            'pagination' => false,
                                            'sort'  => [
                                                'defaultOrder' => ['createdAt' => SORT_DESC],

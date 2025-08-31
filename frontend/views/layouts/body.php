@@ -44,9 +44,9 @@ if (!empty($this->params['_blog_category_block'])) {
 if (!empty($this->params['_blog_comments_block'])) {
     $blogCommentsBlock = $this->render('../layouts/_side_comments_list');
 }
-if (!empty($this->params['_blog_similar_block'])) {
-    $blogSimilarBlock = $this->render('../layouts/_side_similar_posts', ['model' => $this->params['_blog_model']]);
-}
+//if (!empty($this->params['_blog_similar_block'])) {
+//    $blogSimilarBlock = $this->render('../layouts/_side_similar_posts', ['model' => $this->params['_blog_model']]);
+//}
 $user = Yii::$app->user->identity;
 $serverInfoBlock = null;
 $clanProfileBlock = null;
@@ -97,7 +97,7 @@ if (!empty($this->params['_user'])) {
     if (!empty($buildings)) {
         $buildingsBlock = $this->render('@frontend/views/widgets/buildings.twig', ['ITEMS' => $buildings]);
     }
-    $team = Teams::getTeam($_server, $_user->steam_id);
+    $team = \common\models\user\UserTeam::getTeamList($_server->id, $_user->user_id, $_server->currentWipe());
     $teamBlock = $this->render('@frontend/views/widgets/teams.twig', ['ITEMS' => $team]);
     $kills = Kills::getKillsLive($_server, $_user);
     $killsBlock = $this->render('@frontend/views/widgets/kills.twig', ['ITEMS' => $kills]);
@@ -105,6 +105,12 @@ if (!empty($this->params['_user'])) {
 if (!empty($this->params['_profile'])) {
     /** @var User $_user */
     $profileBlock = $this->render('@frontend/views/widgets/profile.twig', ['userData' => $userData, 'PAGE' => $page, 'SETTINGS' => $SETTINGS]);
+}
+$topBlock = null;
+$liveBlock = null;
+if (empty($this->params['_blog_similar_block'])) {
+    $topBlock = $this->render('@frontend/views/widgets/_top', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]);
+    $liveBlock = $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]);
 }
 ?>
 
@@ -135,14 +141,14 @@ if (!empty($this->params['_profile'])) {
 //    'SKINDROPS_BLOCK' => $this->render('@frontend/views/widgets/_skindrops'),
     'SERVERS_BLOCK' => $this->render('@frontend/views/widgets/_servers', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'SETTINGS' => $SETTINGS, 'PAGE' => $page]),
 //    'PROMOCODE_FORM' => $this->render('@frontend/views/layouts/_promocode_line'),
-    'TOP_BLOCK' => $this->render('@frontend/views/widgets/_top', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]),
-    'LIVE_BLOCK' => $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]),
+    'TOP_BLOCK' => $topBlock,
+    'LIVE_BLOCK' => $liveBlock,
     'BUILDINGS_BLOCK' => $buildingsBlock,
     'KILLS_BLOCK' => $killsBlock,
     'TEAMS_BLOCK' => $teamBlock,
     'BLOG_CATEGORY_LIST_BLOCK' => $blogListCategoryBlock,
     'BLOG_COMMENTS_LIST_BLOCK' => $blogCommentsBlock,
-    'BLOG_SIMILAR_LIST_BLOCK' => $blogSimilarBlock,
+//    'BLOG_SIMILAR_LIST_BLOCK' => $blogSimilarBlock,
     'HEADER' => Yii::$app->view->render('header.twig', [
         'HOME_URL' => Yii::$app->homeUrl,
         'LOGO_IMAGE' => Yii::$app->settings->get('design_logo'),

@@ -7,7 +7,7 @@ use yii\widgets\ListView;
 /** @var \yii\data\ActiveDataProvider $dataProvider */
 
 ?>
-<div class="main_header_data mb-12">
+<div class="main_header_data mb-24">
     <div class="main_header_data_filter">
         <div class="main_header_sorter">
             <?= ListView::widget([

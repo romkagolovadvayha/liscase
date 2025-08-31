@@ -9,6 +9,7 @@ use yii\helpers\ArrayHelper;
 
 /** @var yii\web\View $this */
 /** @var common\models\support\Support $model */
+/** @var array $unreadMessages */
 /** @var common\models\support\SupportMessage $uiModel */
 /** @var \common\models\user\User $user */
 /** @var \frontend\models\support\SupportSearch[] $tickets */
@@ -65,6 +66,7 @@ use yii\helpers\ArrayHelper;
                    'model' => $model,
                    'tickets' => $tickets,
                    'user' => $user,
+                   'unreadMessages' => $unreadMessages,
                ]); ?>
            </div>
         </div>

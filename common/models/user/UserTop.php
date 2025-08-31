@@ -464,4 +464,28 @@ ORDER BY server_id, `key`, value DESC;
         }
         return $amount;
     }
+
+    public function reset() {
+        $rating = UserTop::getRaiting();
+        $keys = array_keys($rating[$this->key]);
+
+        /** @var Statistics[] $stats */
+      $stats = Statistics::find()
+          ->andWhere(['steam_id' => $this->user->steam_id])
+          ->andWhere(['IN', 'key', $keys])
+          ->andWhere(['wipe' => $this->wipe])
+          ->all();
+
+      if (!empty($stats)) {
+          foreach ($stats as $stat) {
+              $stat->value = 0;
+              $stat->save(false);
+          }
+          $this->value = 0;
+          $this->save(false);
+          return true;
+      }
+
+      return false;
+    }
 }

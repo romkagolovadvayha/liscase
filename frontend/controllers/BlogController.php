@@ -35,8 +35,10 @@ class BlogController extends WebController
     {
         /** @var Blog $blog */
         $blog = Blog::find()
-            ->andWhere(['link_name' => $blogLinkName])
-            ->andWhere(['status' => Blog::STATUS_ACTIVE])
+            ->alias('b')
+            ->joinWith(['blogCategory', 'blogCategory.parentCategory', 'blogImages', 'blogRatings'])
+            ->andWhere(['b.link_name' => $blogLinkName])
+            ->andWhere(['b.status' => Blog::STATUS_ACTIVE])
             ->one();
 
         if (empty($blog) || !$blog->checkUrl($categoryLinkName, $blogLinkName, $categoryLinkNameChild)) {
@@ -72,9 +74,31 @@ class BlogController extends WebController
             $searchModel->category_ids = array_keys($blogCategory->getChildsCategories($blogCategory->id));
         }
         $dataProvider = $this->_getDataProvider($searchModel);
+
+        if (!empty($searchModel->name)) {
+            // лёгкий totalCount без join'ов (ускоряет pager)
+            $dataProvider->setTotalCount(
+                \common\models\blog\Blog::find()->alias('b')->where(
+                    ['b.status' => \common\models\blog\Blog::STATUS_ACTIVE]
+                )->andFilterWhere(['like', 'b.name', $searchModel->name])->count()
+            );
+        }
+
+        $categories = \common\models\blog\BlogCategory::find()
+                                                      ->alias('bc')
+                                                      ->where(['bc.status' => \common\models\blog\BlogCategory::STATUS_ACTIVE, 'bc.blog_category_id' => null])
+                                                      ->with(['children'])                   // EAGER — без N+1
+                                                      ->orderBy(['created_at' => SORT_DESC])
+                                                      ->cache(60)
+                                                      ->all();
+
+        // на всякий случай фиксируем pageSize
+        $dataProvider->pagination->pageSize = 10;
         return $this->render('category', [
             'blogCategory' => $blogCategory,
-            'dataProvider' => $dataProvider
+            'dataProvider' => $dataProvider,
+            'searchModel'  => $searchModel,
+            'categories'  => $categories,
         ]);
     }
 
@@ -85,10 +109,32 @@ class BlogController extends WebController
      */
     public function actionIndex()
     {
-        $dataProvider = $this->_getDataProvider(new BlogSearch());
+        $searchModel  = new \backend\models\blog\BlogSearch();
+        $dataProvider = $this->_getDataProvider($searchModel);
+
+        // на всякий случай фиксируем pageSize
+        $dataProvider->pagination->pageSize = 10;
+
+        if (!empty($searchModel->name)) {
+            // лёгкий totalCount без join'ов (ускоряет pager)
+            $dataProvider->setTotalCount(
+                \common\models\blog\Blog::find()->alias('b')->where(
+                        ['b.status' => \common\models\blog\Blog::STATUS_ACTIVE]
+                    )->andFilterWhere(['like', 'b.name', $searchModel->name])->count()
+            );
+        }
+        $categories = \common\models\blog\BlogCategory::find()
+                                                      ->alias('bc')
+                                                      ->where(['bc.status' => \common\models\blog\BlogCategory::STATUS_ACTIVE, 'bc.blog_category_id' => null])
+                                                      ->with(['children'])                   // EAGER — без N+1
+                                                      ->orderBy(['created_at' => SORT_DESC])
+                                                      ->cache(60)
+                                                      ->all();
 
         return $this->render('index', [
-            'dataProvider' => $dataProvider
+            'searchModel'  => $searchModel,
+            'dataProvider' => $dataProvider,
+            'categories' => $categories,
         ]);
     }
 
@@ -100,7 +146,7 @@ class BlogController extends WebController
     protected function _getDataProvider(BlogSearch $searchModel)
     {
         return $searchModel->search(Yii::$app->request->queryParams, function ($query) {
-            $query->andWhere(['status' => BlogSearch::STATUS_ACTIVE]);
+            $query->andWhere(['b.status' => BlogSearch::STATUS_ACTIVE]);
         });
     }
 }

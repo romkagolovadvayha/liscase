@@ -42,17 +42,22 @@ abstract class IndexController extends Controller
             $message     = ArrayHelper::getValue($callBack, 'message');
             $chat        = ArrayHelper::getValue($message, 'chat');
             $textMessage = ArrayHelper::getValue($message, 'text');
-            if (empty($buttonValue) || empty($chat) || empty($textMessage)) {
+            $caption = ArrayHelper::getValue($message, 'caption');
+            if (empty($buttonValue) || empty($chat)) {
                 return false;
             }
 
             $answerMessage = $system->executeCallBack($chat['id'], $buttonValue);
-
-            if (!empty($answerMessage['message'])) {
+            if (!empty($answerMessage['editMessageReplyMarkup'])) {
+                $bot->editMessageReplyMarkup($chat['id'], $message['message_id'], $answerMessage['buttons']);
+            } elseif (!empty($answerMessage['message'])) {
                 $bot->sendMessage($chat['id'], $answerMessage['message'], $answerMessage['buttons']);
-            } elseif (!empty($answerMessage)) {
+            } elseif (!empty($textMessage)) {
                 $textMessage .= "\n\n" . $answerMessage;
                 $bot->editMessageText($chat['id'], $message['message_id'], $textMessage);
+            } elseif (!empty($caption)) {
+                $caption .= "\n\n" . $answerMessage;
+                $bot->editMessageCaption($chat['id'], $message['message_id'], $caption);
             }
         } else {
             $message = ArrayHelper::getValue($inputParams, 'message');

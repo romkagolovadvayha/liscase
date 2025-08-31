@@ -8,6 +8,7 @@ use common\models\box\Box;
 use common\models\box\Drop;
 use common\models\profit\Profit;
 use common\models\servers\Servers;
+use common\models\statistics\Chats;
 use common\models\user\UserBox;
 use common\models\user\UserConfirmCode;
 use common\models\user\UserDrop;
@@ -256,6 +257,10 @@ class PersonalBotSystem extends AbstractSystem
             $return = '🔒 Авторизуйтесь, чтобы получить награду!' . PHP_EOL . "Для авторизации напишите /start";
             return $return;
         }
+        if ($user->is_telegram_blocked) {
+            $user->is_telegram_blocked = false;
+            $user->save(false);
+        }
         if ($user->status === User::STATUS_BLOCKED) {
             $return = '🔒 Ваш аккаунт заблокирован!';
             Yii::$app->cache->set($cacheKey, $return, 60);
@@ -316,6 +321,31 @@ class PersonalBotSystem extends AbstractSystem
      */
     public function executeCallBack($chatId, $buttonValue)
     {
+        try {
+            if (!empty($buttonValue)) {
+                $buttonValueObj = json_decode($buttonValue, 1);
+                if (!empty($buttonValueObj)) {
+                    $action = ArrayHelper::getValue($buttonValueObj, 'action');
+                    if (!empty($action) && $action == 'mute') {
+                      return Chats::actionMute($buttonValueObj);
+                    }
+                    if (!empty($action) && $action == 'success-skin') {
+                      return Chats::actionSuccessSkin($buttonValueObj);
+                    }
+                    if (!empty($action) && $action == 'reject-skin') {
+                      return Chats::actionRejectSkin($buttonValueObj);
+                    }
+                    if (!empty($action) && $action == 'success-building') {
+                      return Chats::actionSuccessBuilding($buttonValueObj);
+                    }
+                    if (!empty($action) && $action == 'reject-building') {
+                      return Chats::actionRejectbuilding($buttonValueObj);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+
+        }
         /*if (!empty($buttonValue) && strpos($buttonValue, 'messageId') !== false) {
             $data = json_decode($buttonValue, 1);
             $response = $this->getMessage($data['messageId'], $data['current_language']);
@@ -344,6 +374,12 @@ class PersonalBotSystem extends AbstractSystem
         $answerMessage = 'Ошибка авторизации, код неверен! 🤔';
 
         if (!empty($user) && !empty($chatId)) {
+
+            if ($user->is_telegram_blocked) {
+                $user->is_telegram_blocked = false;
+                $user->save(false);
+            }
+
             if (!empty($user->telegram_chat_id)) {
                 return 'Вы уже авторизованы!';
             }

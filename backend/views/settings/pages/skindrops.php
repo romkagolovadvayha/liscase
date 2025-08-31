@@ -18,6 +18,10 @@ $tabs = [
         'category' => 'rusttm',
         'title' => 'Rust.Tm',
     ],
+    [
+        'category' => 'custom-skins',
+        'title' => 'Кастомные скины',
+    ],
 ];
 ?>
 

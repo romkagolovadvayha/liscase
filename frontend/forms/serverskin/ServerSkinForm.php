@@ -7,6 +7,7 @@ use common\models\box\DropImage;
 use common\models\building\BuildingResident;
 use common\models\servers\Servers;
 use common\models\serverskin\ServerSkin;
+use common\models\serverskin\ServerSkinCategory;
 use common\models\user\User;
 use Imagine\Image\Box;
 use common\models\building\Building;
@@ -58,6 +59,12 @@ class ServerSkinForm extends ServerSkin
             return false;
         }
 
+        $approvedSkins = explode(',', Yii::$app->settings->get('custom-skins_approved_list'));
+        if (in_array($skinId, $approvedSkins)) {
+            $this->addError('steam_link', Yii::t('common', 'Добавление запрещено: работа одобрена разработчиками и доступна в магазине'));
+            return false;
+        }
+
         $exists = ServerSkin::find()
             ->andWhere(['skin_id' => $skinId])
             ->andWhere(['IN', 'status', [ServerSkin::STATUS_ACTIVE, ServerSkin::STATUS_WAIT]])
@@ -79,10 +86,42 @@ class ServerSkinForm extends ServerSkin
         $this->name = $title;
         $this->skin_id = $skinId;
         $this->image = $imagePath;
+        $tag = $info['tags'][0]['tag'];
+        if ($tag == 'Version3') {
+            $tag = $info['tags'][1]['tag'];
+            if ($tag == 'Skin') {
+                $tag = $info['tags'][2]['tag'];
+            }
+        } elseif ($tag == 'Skin') {
+            $tag = $info['tags'][1]['tag'];
+            if ($tag == 'Version3') {
+                $tag = $info['tags'][2]['tag'];
+            }
+        }
+        $category = ServerSkinCategory::getCategory($tag);
+        $this->server_skin_category_id = $category->id;
         $this->creator_user_id = $creatorUser->id;
         $this->save();
-
-        Yii::$app->telegramChats->sendMessage("👕 Новый скин отправлен на модерацию!");
+        Yii::$app->telegramSupport->sendMessage(
+            "👕 Новый скин отправлен на модерацию!",
+            [
+                [
+                    'text' => '🟢 Принять',
+                    'callback_data' => json_encode([
+                                                       'action'   => 'success-skin',
+                                                       'skin_id'  => $skinId,
+                                                   ])
+                ],
+                [
+                    'text' => '🔴 Отклонить',
+                    'callback_data' => json_encode([
+                                                       'action'   => 'reject-skin',
+                                                       'skin_id'  => $skinId,
+                                                   ])
+                ]
+            ],
+            $this->getImagePubUrl() // вот сюда картинка
+        );
         Yii::$app->personalBotTelegram->sendMessage(Yii::$app->user->identity->telegram_chat_id, "👕 Скин отправлен на модерацию!");
         return true;
     }
@@ -102,11 +141,19 @@ class ServerSkinForm extends ServerSkin
         }
         file_put_contents($filePath, $image);
 
-        $newPath150 = "/uploads/server-skin-x150/" . $filename;
-        $fullNewPath150 = \Yii::getAlias('@frontend/web') . $newPath150;
+        $newPath200 = "/uploads/server-skin-x150/" . $filename;
+        $fullNewPath200 = \Yii::getAlias('@frontend/web') . $newPath200;
+        $newPath64 = "/server-skin-64/" . $filename;
+        $fullNewPath64 = \Yii::getAlias('@frontend/web/uploads') . $newPath64;
+        $newPath150 = "/server-skin-150/" . $filename;
+        $fullNewPath150 = \Yii::getAlias('@frontend/web/uploads') . $newPath150;
         if (file_exists($filePath)) {
-            DropImage::resizeImage($filePath, $fullNewPath150, 200);
+            DropImage::resizeImage($filePath, $fullNewPath200, 200);
+            DropImage::resizeImage($filePath, $fullNewPath64, 64);
+            DropImage::resizeImage($filePath, $fullNewPath150, 150);
+            $this->image_64 = $newPath64;
+            $this->image_150 = $newPath150;
         }
-        return $newPath150;
+        return $newPath200;
     }
 }

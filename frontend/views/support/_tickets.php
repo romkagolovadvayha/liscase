@@ -9,6 +9,7 @@ use yii\helpers\ArrayHelper;
 /** @var common\models\support\Support $model */
 /** @var \frontend\models\support\SupportSearch[] $tickets */
 /** @var \common\models\user\User $user */
+/** @var array $unreadMessages */
 
 if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
     $openTicket = false;
@@ -30,7 +31,7 @@ if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
 ?>
 <ul class="tickets">
     <?php foreach ($tickets as $ticket): ?>
-        <?php $unread = $ticket->unread($user->id); ?>
+        <?php $unread = !(empty($unreadMessages[$ticket->id])) ? $unreadMessages[$ticket->id]['cnt'] : 0; ?>
         <li>
             <a href="<?=$ticket->getUrl()?>" class="tickets_item<?=($ticket->status === Support::STATUS_CLOSED) ? ' closed' : ''?><?=($ticket->id === $model->id) ? ' active' : ''?>">
                 <div class="tickets_item_avatar">

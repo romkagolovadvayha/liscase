@@ -6,10 +6,13 @@ use common\components\helpers\Role;
 use common\controllers\WebController;
 use common\models\building\Building;
 use common\models\building\BuildingLike;
+use common\models\servers\Servers;
+use common\models\serverskin\ServerSkinCategory;
 use frontend\forms\buildings\BuildingForm;
 use frontend\models\building\BuildingSearch;
 use yii\base\BaseObject;
 use yii\filters\AccessControl;
+use yii\helpers\ArrayHelper;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -64,10 +67,18 @@ class BuildingsController extends WebController
         $dataProvider = $searchModel->search($this->request->queryParams);
         $this->view->params['page'] = 'buildings';
 
+        $servers = ArrayHelper::map(
+            Servers::find()->orderBy(['name' => SORT_ASC])->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])->asArray()->all(),
+            'tag',
+            'name'
+        );
+
         $this->view->params['meta_description'] = Yii::t('common', "Смотрите лучшие постройки игроков в Rust! На этой странице вы можете выкладывать свои творения, оценивать работы других игроков и находить вдохновение для новых проектов. Покажите свои строительные навыки, получите признание сообщества и узнайте, как создаются уникальные базы, форты и сооружения в Rust!");
 
         return $this->render('index', [
+            'searchModel'   => $searchModel,
             'dataProvider' => $dataProvider,
+            'servers' => $servers,
         ]);
     }
 
@@ -154,6 +165,26 @@ class BuildingsController extends WebController
 
         if ($this->request->isPost) {
             if ($model->load($this->request->post()) && $model->saveRecord()) {
+                Yii::$app->telegramSupport->sendMessage(
+                    "👕 Новая построка отправлена на модерацию!",
+                    [
+                        [
+                            'text' => '🟢 Принять',
+                            'callback_data' => json_encode([
+                                                               'action'   => 'success-building',
+                                                               'id'  => $model->id,
+                                                           ])
+                        ],
+                        [
+                            'text' => '🔴 Отклонить',
+                            'callback_data' => json_encode([
+                                                               'action'   => 'reject-building',
+                                                               'id'  => $model->id,
+                                                           ])
+                        ]
+                    ],
+                    $model->buildingImage[0]->getPublicUrl()
+                );
                 Yii::$app->session->addFlash('success', Yii::t('common', 'Постройка успешно отправлена на проверку!'));
                 return $this->redirect(['index']);
             }

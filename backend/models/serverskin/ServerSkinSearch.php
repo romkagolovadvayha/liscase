@@ -17,7 +17,7 @@ class ServerSkinSearch extends ServerSkin
     public function rules()
     {
         return [
-            [['id', 'user_id', 'status'], 'integer'],
+            [['id', 'user_id', 'status', 'skin_id'], 'integer'],
             [['name', 'created_at'], 'safe'],
         ];
     }
@@ -65,6 +65,7 @@ class ServerSkinSearch extends ServerSkin
             'id' => $this->id,
             'user_id' => $this->user_id,
             'status' => $this->status,
+            'skin_id' => $this->skin_id,
             'created_at' => $this->created_at,
         ]);
 
