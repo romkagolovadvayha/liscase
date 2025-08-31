@@ -88,7 +88,7 @@ class CustomSkinsController extends WebController
                                          'content' => $desc,
                                      ], 'description');
 
-        $this->view->registerMetaTag(['property' => 'og:title',       'content' => $this->title],      'og:title');
+        $this->view->registerMetaTag(['property' => 'og:title',       'content' => Yii::t('common', 'Скины из мастерской для SkinBox')],      'og:title');
         $this->view->registerMetaTag(['property' => 'og:description', 'content' => $desc],             'og:description');
 
         // Канонический адрес раздела
