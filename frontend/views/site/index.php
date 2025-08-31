@@ -126,6 +126,7 @@ $this->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
     'VK' => Yii::$app->settings->get('social_vk'),
     'DISCORD' => Yii::$app->settings->get('social_discord'),
     'TELEGRAM_BOT' => Yii::$app->settings->get('social_telegram'),
+    'EMAIL' => Yii::$app->settings->get('site_email'),
     'URL' => Yii::$app->params['homePage']
 ]);?>
 
