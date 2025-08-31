@@ -12,7 +12,6 @@ class WipeCalendarController extends Controller
 {
     public function actionIndex($year = null, $month = null, $months = 1)
     {
-        $this->view->params['page'] = 'wipe-calendar';
         $tz  = new DateTimeZone(Yii::$app->timeZone ?: 'UTC');
         $now = new DateTimeImmutable('now', $tz);
 
@@ -22,8 +21,8 @@ class WipeCalendarController extends Controller
 
         // === SEO ===
         $title = Yii::t('common', 'Календарь вайпов Rust — официальный и серверные вайпы');
-        $desc  = Yii::t('common', 'Календарь вайпов Rust: глобальный вайп в первый четверг месяца и регулярные вайпы карт (7-дневные и 14-дневные). Навигация по месяцам без перезагрузки, точные даты и время.');
-        $keys  = Yii::t('common', 'календарь вайпов rust, rust вайп, глобальный вайп, вайп карты, 7-дневные, 14-дневные, расписание вайпов rust');
+        $desc  = Yii::t('common', 'Глобальный вайп — в первый четверг месяца. 7-дневные — каждую пятницу, 14-дневные — по пятницам раз в две недели, начиная с пятницы после глобала, но в неделю глобала пятничных вайпов нет. Переключение месяцев без перезагрузки.');
+        $keys  = Yii::t('common', 'календарь вайпов rust, rust вайп, глобальный вайп, 7-дневные, 14-дневные, расписание вайпов rust, первый четверг месяца');
 
         $this->view->title = $title;
         $this->view->registerMetaTag(['name' => 'description', 'content' => $desc]);
@@ -34,7 +33,7 @@ class WipeCalendarController extends Controller
 
         // Время событий
         $globalTime = '21:00:00'; // глобал (четверг)
-        $mapTime    = '16:00:00'; // вайп карты (пятница)
+        $mapTime    = '16:00:00'; // карта (пятница)
 
         // Диапазон месяцев
         $firstMonthStart = new DateTimeImmutable(sprintf('%04d-%02d-01 00:00:00', $year, $month), $tz);
@@ -52,33 +51,33 @@ class WipeCalendarController extends Controller
                                 ->orderBy(['sort' => SORT_ASC])
                                 ->all();
 
-        // активные, которые участвуют в пятничных вайпах (исключаем тип 30)
+        // Серверы, участвующие в пятничных вайпах (исключаем тип 30)
         $non30Active = array_values(array_filter($activeServers, function ($s) {
             return (int)$s->wipe_type !== 30;
         }));
         $countNon30 = count($non30Active);
 
-        // === 1) Глобальные (первый четверг каждого месяца) + блок-недели
+        // === 1) Глобальные (первый четверг каждого месяца) + блок-недели ===
         $globalByDateTime = []; // 'Y-m-d H:i:s' => true
         $blockedIsoWeeks  = []; // 'YYYY-WW' => true
         foreach ($monthStarts as $mStart) {
             $firstThu = $this->firstWeekdayOfMonth($mStart, 4); // 1=Пн..4=Чт..7=Вс
             $gDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
-            $globalByDateTime[$gDT->format('Y-m-d H:i:s')] = true;
+            $gKey = $gDT->format('Y-m-d H:i:s');
+            $globalByDateTime[$gKey] = true;
+            // Блокируем всю ISO-неделю глобала: в эту неделю никаких пятничных вайпов
             $blockedIsoWeeks[$gDT->format('o-\WW')] = true;
         }
 
-        // === 2) Слоты по точному времени
-        // структура слота:
+        // === 2) Слоты по точному времени ===
         // 'global' => bool,
         // 'servers' => [id => ['id','name','monitoring_name','link','wt']],
-        // 'weekly7_count' => int,
-        // 'biweekly14_count' => int,
-        // 'names7' => string[], 'names14' => string[],
-        // 'title' => string|null, 'link' => string|null, 'names' => string[]
+        // 'weekly7_count', 'biweekly14_count',
+        // 'names7'[], 'names14'[],
+        // 'title', 'link', 'names'[]
         $byDateTime = [];
 
-        // Глобалы сразу «все сервера»
+        // Глобалы сразу «все сервера» и ссылка на /servers
         foreach ($globalByDateTime as $dtStr => $_) {
             $byDateTime[$dtStr] = [
                 'global'           => true,
@@ -93,17 +92,26 @@ class WipeCalendarController extends Controller
             ];
         }
 
-        // === 3) Пятничные вайпы карт по типу (учитывая блок-недели)
+        // === 3) 7-дневные: каждая пятница, КРОМЕ недели глобала ===
         foreach ($non30Active as $s) {
-            $wt = (int)$s->wipe_type;
-            if ($wt === 7) {
-                $this->addFridaysWeekly($byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $mapTime, $s, $tz);
-            } elseif ($wt === 14) {
-                $this->addFridaysBiWeekly($byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $mapTime, $s, $tz);
+            if ((int)$s->wipe_type === 7) {
+                $this->addFridaysWeeklyBlockedByGlobal(
+                    $byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $mapTime, $s, $tz
+                );
             }
         }
 
-        // === 4) Схлопывание/агрегация
+        // === 4) 14-дневные: по пятницам, начиная с пятницы после глобала,
+        // но неделя глобала заблокирована → первый слот = через неделю после глобала, далее +14 ===
+        foreach ($non30Active as $s) {
+            if ((int)$s->wipe_type === 14) {
+                $this->addFridaysBiWeeklyAfterGlobalBlocked(
+                    $byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $globalTime, $mapTime, $s, $tz
+                );
+            }
+        }
+
+        // === 5) Агрегация ===
         foreach ($byDateTime as $dtStr => &$bucket) {
             if (!empty($bucket['global'])) {
                 continue;
@@ -112,45 +120,37 @@ class WipeCalendarController extends Controller
             $count7  = isset($bucket['weekly7_count']) ? (int)$bucket['weekly7_count'] : 0;
             $count14 = isset($bucket['biweekly14_count']) ? (int)$bucket['biweekly14_count'] : 0;
 
-            // (A) Если в слоте есть и 7-дневные, и 14-дневные,
-            // и их суммарно столько же, сколько всех non-30 активных → «Вайп на всех серверах»
+            // A) В моменте есть 7- и 14-дневные и вместе покрывают всех non-30 → «Вайп на всех серверах»
             if ($hasServers && $countNon30 > 0 && ($count7 + $count14) === $countNon30 && $count7 > 0 && $count14 > 0) {
-                $bucket['title'] = Yii::t('common', 'Вайп на всех серверах');
-                $bucket['link']  = '/servers';
-                // подготовим списки имён для бейджей
-                $names7  = array_values(array_unique($bucket['names7']));
-                $names14 = array_values(array_unique($bucket['names14']));
-                $bucket['names']  = []; // не используем
-                $bucket['names7'] = $names7;
-                $bucket['names14'] = $names14;
-                $bucket['servers'] = []; // одна запись
-                continue;
-            }
-
-            // (B) Только 7-дневные (их >= 2) → «Вайп карты на недельных серверах»
-            if ($hasServers && $count7 >= 2 && $count14 === 0) {
-                $bucket['title'] = Yii::t('common', 'Вайп карты на недельных серверах');
-                $bucket['link']  = '/servers';
-                $bucket['names'] = array_values(array_unique($bucket['names7']));
+                $bucket['title']   = Yii::t('common', 'Вайп на всех серверах');
+                $bucket['link']    = '/servers';
+                $bucket['names7']  = array_values(array_unique($bucket['names7']));
+                $bucket['names14'] = array_values(array_unique($bucket['names14']));
+                $bucket['names']   = [];
                 $bucket['servers'] = [];
                 continue;
             }
 
-            // (остальные случаи — как прежде: покасерверно или «на всех серверах» если совпало)
+            // B) Только 7-дневные (>=2) → «Вайп карты на недельных серверах»
+            if ($hasServers && $count7 >= 2 && $count14 === 0) {
+                $bucket['title']   = Yii::t('common', 'Вайп карты на недельных серверах');
+                $bucket['link']    = '/servers';
+                $bucket['names']   = array_values(array_unique($bucket['names7']));
+                $bucket['servers'] = [];
+                continue;
+            }
+
+            // C) Совпало у всех non-30 (только один тип) → «Вайп на всех серверах»
             if ($hasServers && ($count7 + $count14) === $countNon30 && $countNon30 > 0) {
-                $bucket['title'] = Yii::t('common', 'Вайп на всех серверах');
-                $bucket['link']  = '/servers';
-                $bucket['names'] = [Yii::t('common', 'все сервера')];
+                $bucket['title']   = Yii::t('common', 'Вайп на всех серверах');
+                $bucket['link']    = '/servers';
+                $bucket['names']   = [Yii::t('common', 'все сервера')];
                 $bucket['servers'] = [];
             }
         }
         unset($bucket);
 
-        // === 5) Готовим events для вью
-        // event:
-        // - name, link, time
-        // - is_official, is_global
-        // - badges: массив бейджей {class, text}
+        // === 6) Events для вью ===
         $events = [];
         foreach ($byDateTime as $dtStr => $bucket) {
             $dt      = new DateTimeImmutable($dtStr, $tz);
@@ -176,20 +176,18 @@ class WipeCalendarController extends Controller
 
             // Схлопнутые
             if (isset($bucket['title']) && empty($bucket['servers'])) {
-                // кейс (A): на всех серверах, с разными типами
                 if (!empty($bucket['names7']) || !empty($bucket['names14'])) {
                     if (!empty($bucket['names7'])) {
-                        $badges[] = ['class' => 'badge-weekly7',   'text' => Yii::t('common', '{list}', ['list' => implode(', ', $bucket['names7'])])];
+                        $badges[] = ['class' => 'badge-weekly7',    'text' => Yii::t('common', '{list}',  ['list' => implode(', ', $bucket['names7'])])];
                     }
                     if (!empty($bucket['names14'])) {
-                        $badges[] = ['class' => 'badge-biweekly14','text' => Yii::t('common', '{list}', ['list' => implode(', ', $bucket['names14'])])];
+                        $badges[] = ['class' => 'badge-biweekly14', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', $bucket['names14'])])];
                     }
                 } elseif (!empty($bucket['names'])) {
-                    // кейс (B) и «все сервера»
-                    $badges[] = ['class' => ($bucket['names'][0] === Yii::t('common', 'все сервера') ? 'badge-status' : 'badge-weekly7'),
-                                 'text'  => $bucket['names'][0] === Yii::t('common', 'все сервера')
-                                     ? Yii::t('common', 'все сервера')
-                                     : implode(', ', $bucket['names'])];
+                    $text = ($bucket['names'][0] === Yii::t('common', 'все сервера'))
+                        ? Yii::t('common', 'все сервера')
+                        : implode(', ', $bucket['names']);
+                    $badges[] = ['class' => ($text === Yii::t('common', 'все сервера') ? 'badge-status' : 'badge-weekly7'), 'text' => $text];
                 }
 
                 $events[$dayKey][] = [
@@ -224,7 +222,7 @@ class WipeCalendarController extends Controller
             }
         }
 
-        // === 6) Сетки месяцев
+        // === 7) Сетки месяцев ===
         $monthsData = [];
         foreach ($monthStarts as $mStart) {
             $monthsData[] = $this->buildMonthGrid($mStart, $events, $tz);
@@ -238,11 +236,11 @@ class WipeCalendarController extends Controller
         ]);
     }
 
-    /** Еженедельные (тип 7) */
-    private function addFridaysWeekly(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, array $blockedIsoWeeks, $mapTime, Servers $s, DateTimeZone $tz)
+    /** 7-дневные: каждая пятница, но пропускаем ISO-недели глобала */
+    private function addFridaysWeeklyBlockedByGlobal(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, array $blockedIsoWeeks, $mapTime, Servers $s, DateTimeZone $tz)
     {
         foreach ($monthStarts as $mStart) {
-            $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
+            $firstFri = $this->firstWeekdayOfMonth($mStart, 5); // Пт
             $dt = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $mapTime, $tz);
 
             while ($dt < $afterLastMonth) {
@@ -266,7 +264,7 @@ class WipeCalendarController extends Controller
                         'id'              => (int)$s->id,
                         'name'            => $s->name,
                         'monitoring_name' => $s->monitoring_name,
-                        'link'            => $s->getLink('maps'),
+                        'link'            => $s->getLink('stats'), // /servers/{tag}
                         'wt'              => 7,
                     ];
                     $byDateTime[$key]['weekly7_count']++;
@@ -277,16 +275,32 @@ class WipeCalendarController extends Controller
         }
     }
 
-    /** Раз в 2 недели (тип 14) */
-    private function addFridaysBiWeekly(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, array $blockedIsoWeeks, $mapTime, Servers $s, DateTimeZone $tz)
-    {
+    /**
+     * 14-дневные: пятница после глобала, НО неделя глобала блокируется.
+     * Значит первый слот = anchor + 7 дней, далее шаг +14. Также пропускаем любые пятницы,
+     * попадающие в ISO-недели глобала (на случай нескольких месяцев в диапазоне).
+     */
+    private function addFridaysBiWeeklyAfterGlobalBlocked(
+        array &$byDateTime,
+        array $monthStarts,
+        DateTimeImmutable $afterLastMonth,
+        array $blockedIsoWeeks,
+        $globalTime,
+        $mapTime,
+        Servers $s,
+        DateTimeZone $tz
+    ) {
         foreach ($monthStarts as $mStart) {
-            $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
-            $startDT  = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $mapTime, $tz);
-            if (isset($blockedIsoWeeks[$startDT->format('o-\WW')])) {
-                $startDT = $startDT->modify('+7 days');
-            }
-            $dt = $startDT;
+            // глобал четверга этого месяца
+            $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
+            $globalDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
+
+            // пятница после глобала
+            $anchorFri = $globalDT->modify('+1 day'); // пятница той же недели (заблокирована)
+            // первый реальный слот = через неделю после этой пятницы
+            $firstAllowed = $anchorFri->modify('+7 days');
+            $dt = new DateTimeImmutable($firstAllowed->format('Y-m-d') . ' ' . $mapTime, $tz);
+
             while ($dt < $afterLastMonth) {
                 $iso = $dt->format('o-\WW');
                 if (!isset($blockedIsoWeeks[$iso])) {
@@ -308,7 +322,7 @@ class WipeCalendarController extends Controller
                         'id'              => (int)$s->id,
                         'name'            => $s->name,
                         'monitoring_name' => $s->monitoring_name,
-                        'link'            => $s->getLink('maps'),
+                        'link'            => $s->getLink('stats'), // /servers/{tag}
                         'wt'              => 14,
                     ];
                     $byDateTime[$key]['biweekly14_count']++;
@@ -319,7 +333,7 @@ class WipeCalendarController extends Controller
         }
     }
 
-    /** Первый N-й день недели месяца: $weekday 1=Пн .. 7=Вс */
+    /** Первый N-й день недели месяца: $weekday 1=Пн..7=Вс */
     private function firstWeekdayOfMonth(DateTimeImmutable $monthStart, $weekday)
     {
         $firstN = (int)$monthStart->format('N');
@@ -365,7 +379,7 @@ class WipeCalendarController extends Controller
             $prevDays  = (int)$prevMonth->format('t');
             for ($i = $lead - 1; $i >= 0; $i--) {
                 $d = $prevDays - $i;
-                $dateKey = sprintf('%04d-%02d-%02d', $prevYear, $prevNum, $d);
+                $dateKey = sprintf('%04d-%02d-%02д', $prevYear, $prevNum, $d);
                 $cells[] = [
                     'empty'        => false,
                     'day'          => $d,

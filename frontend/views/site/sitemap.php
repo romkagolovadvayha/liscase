@@ -61,6 +61,16 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL ?>
         <priority>0.9</priority>
     </url>
     <?php endif; ?>
+    <?php if (Yii::$app->settings->get('section_skins')): ?>
+    <url>
+        <loc><?=Yii::$app->params['homePage']?>/custom-skins</loc>
+        <priority>0.9</priority>
+    </url>
+    <?php endif; ?>
+    <url>
+        <loc><?=Yii::$app->params['homePage']?>/wipe-calendar</loc>
+        <priority>0.9</priority>
+    </url>
     <?php foreach ($servers as $server): ?>
         <url>
             <loc><?=Yii::$app->params['homePage']?><?=$server->getLink('stats')?></loc>
