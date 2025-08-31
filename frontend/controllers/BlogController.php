@@ -149,7 +149,7 @@ class BlogController extends WebController
         $this->view->registerMetaTag([
                                          'property' => 'og:description',
                                          'content' => Yii::t('common',
-                                                             'Читайте блог Prostoj Rust: исправление ошибок, советы по выживанию, расписание ивентов, обзоры обновлений и новые Twitch Drops.'
+                                                             'Читайте блог: исправление ошибок, советы по выживанию, расписание ивентов, обзоры обновлений и новые Twitch Drops.'
                                          )
                                      ], 'og:description');
 
