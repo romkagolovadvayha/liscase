@@ -35,6 +35,119 @@ $this->params['_blog_similar_block'] = true;
 $blog->views++;
 $blog->save();
 
+
+/** @var \common\models\blog\Blog $blog */
+$canonical = Yii::$app->params['homePage'] . $blog->getUrl();
+$locale    = Yii::$app->language;
+$siteName  = 'Prostoj';
+$ogTitle   = Yii::t('database', $blog->name);
+$ogDesc    = Yii::t('database', $blog->description ?: mb_substr(strip_tags($blog->content), 0, 180));
+$ogImg     = !empty($blog->blogImages[0]) ? $blog->blogImages[0]->getPublicUrl() : null;
+$published = (new DateTime($blog->created_at))->format('Y-m-d\TH:i:sP');
+$updated   = (new DateTime($blog->created_at))->format('Y-m-d\TH:i:sP');
+$author    = $blog->user->username ?? 'Prostoj';
+$logoUrl   = Yii::$app->params['homePage'] . Yii::$app->settings->get('design_logo');
+
+// 1) canonical + hreflang (оставляем как у тебя, добавим canonical)
+$this->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
+
+// 2) robots-подсказки (увеличивают шансы на богатые сниппеты и крупные превью)
+$this->registerMetaTag(['name' => 'robots', 'content' => 'index,follow,max-image-preview:large']);
+
+// 3) Open Graph
+$this->registerMetaTag(['property' => 'og:type', 'content' => 'article']);
+$this->registerMetaTag(['property' => 'og:locale', 'content' => $locale]);
+$this->registerMetaTag(['property' => 'og:site_name', 'content' => $siteName]);
+$this->registerMetaTag(['property' => 'og:title', 'content' => $ogTitle]);
+$this->registerMetaTag(['property' => 'og:description', 'content' => $ogDesc]);
+$this->registerMetaTag(['property' => 'og:url', 'content' => $canonical]);
+if (!empty($ogImg)) {
+    $this->registerMetaTag(['property' => 'og:image', 'content' => $ogImg]);
+}
+
+// 4) Twitter Card
+$this->registerMetaTag(['name' => 'twitter:card', 'content' => 'summary_large_image']);
+$this->registerMetaTag(['name' => 'twitter:title', 'content' => $ogTitle]);
+$this->registerMetaTag(['name' => 'twitter:description', 'content' => $ogDesc]);
+if (!empty($ogImg)) {
+    $this->registerMetaTag(['name' => 'twitter:image', 'content' => $ogImg]);
+}
+
+// 5) JSON-LD: Article (+Publisher/Logo)
+$articleLd = [
+    '@context' => 'https://schema.org',
+    '@type' => 'Article',
+    'mainEntityOfPage' => [
+        '@type' => 'WebPage',
+        '@id' => $canonical
+    ],
+    'headline' => $ogTitle,
+    'description' => $ogDesc,
+    'datePublished' => $published,
+    'dateModified' => $updated,
+    'author' => ['@type' => 'Person', 'name' => $author],
+    'publisher' => [
+        '@type' => 'Organization',
+        'name' => $siteName,
+        'logo' => ['@type' => 'ImageObject', 'url' => $logoUrl]
+    ]
+];
+$imgUrls = array_map(fn($i) => $i->getPublicUrl(), $blog->blogImages ?? []);
+if (!empty($imgUrls) || !empty($ogImg)) {
+    $articleLd['image'] = $imgUrls ?: [$ogImg];
+}
+$this->registerJs(
+    '(()=>{const s=document.createElement("script");s.type="application/ld+json";s.textContent='.
+    json_encode($articleLd, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES).
+    ';document.head.appendChild(s)})();',
+    \yii\web\View::POS_HEAD
+);
+
+// 6) JSON-LD: BreadcrumbList (по твоим хлебным крошкам)
+$crumbs = [
+    ['name'=>Yii::t('common','Блог'), 'url'=>Yii::$app->params['homePage'].'/posts'],
+];
+if (!empty($blog->blogCategory->parentCategory)) {
+    $crumbs[] = ['name'=>Yii::t('database',$blog->blogCategory->parentCategory->name), 'url'=>Yii::$app->params['homePage'].$blog->blogCategory->parentCategory->getUrl()];
+}
+$crumbs[] = ['name'=>Yii::t('database',$blog->blogCategory->name), 'url'=>Yii::$app->params['homePage'].$blog->blogCategory->getUrl()];
+$crumbs[] = ['name'=>Yii::t('database',$blog->name), 'url'=>$canonical];
+
+$breadcrumbLd = [
+    '@context'=>'https://schema.org',
+    '@type'=>'BreadcrumbList',
+    'itemListElement'=>array_map(function($c,$i){
+        return ['@type'=>'ListItem','position'=>$i+1,'name'=>$c['name'],'item'=>$c['url']];
+    }, $crumbs, array_keys($crumbs))
+];
+$this->registerJs(
+    '(()=>{const s=document.createElement("script");s.type="application/ld+json";s.textContent='.
+    json_encode($breadcrumbLd, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES).
+    ';document.head.appendChild(s)})();',
+    \yii\web\View::POS_HEAD
+);
+
+// 7) (опционально) JSON-LD: VideoObject — если у поста есть видео
+$video = $blog->video_url ?? null;           // адаптируй поля
+$thumb = $blog->video_thumb_url ?? ($imgUrls[0] ?? $ogImg);
+if ($video) {
+    $videoLd = [
+        '@context'=>'https://schema.org',
+        '@type'=>'VideoObject',
+        'name'=>$ogTitle,
+        'description'=>$ogDesc,
+        'thumbnailUrl'=>[$thumb],
+        'uploadDate'=>$published,
+        'contentUrl'=>$video,
+        'embedUrl'=>$canonical
+    ];
+    $this->registerJs(
+        '(()=>{const s=document.createElement("script");s.type="application/ld+json";s.textContent='.
+        json_encode($videoLd, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES).
+        ';document.head.appendChild(s)})();',
+        \yii\web\View::POS_HEAD
+    );
+}
 ?>
 
 <?= Alert::widget() ?>
@@ -50,7 +163,7 @@ $blog->save();
                             <span class="blog_item_snippet_meta_author">
                                 <span class="blog_item_snippet_meta_author_user">
                                     <span class="blog_item_snippet_meta_author_user_published">
-                                        <time datetime="<?=$date->format('c')?><" title="<?=$date->format('d.m.Y, H:i')?>"><?=$date->format('d.m.Y, H:i')?></time>
+                                        <time datetime="<?=$date->format('c')?>" title="<?=$date->format('d.m.Y, H:i')?>"><?=$date->format('d.m.Y, H:i')?></time>
                                     </span>
                                 </span>
                             </span>

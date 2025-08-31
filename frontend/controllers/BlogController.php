@@ -10,6 +10,7 @@ use yii\base\BaseObject;
 use yii\web\NotFoundHttpException;
 use Yii;
 use yii\web\Response;
+use DateTime;
 
 class BlogController extends WebController
 {
@@ -44,6 +45,7 @@ class BlogController extends WebController
         if (empty($blog) || !$blog->checkUrl($categoryLinkName, $blogLinkName, $categoryLinkNameChild)) {
             throw new NotFoundHttpException(Yii::t('common', 'Запись не существует!'));
         }
+
         return $this->render('view', [
             'blog' => $blog
         ]);
