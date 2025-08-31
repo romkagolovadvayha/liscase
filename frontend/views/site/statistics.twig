@@ -2,7 +2,7 @@
     {% if USER_GUEST %}
     <!-- БЕЗ АВТОРИЗАЦИИ -->
     <section class="user user_not-authorized">
-        <h2 class="user__title">{{ t('common', 'Добро пожаловать!') }}</h2>
+        <h1 class="user__title main_title">{{ t('common', 'Лучшие сервера для комфортной игры!') }}</h1>
         <p class="user__description">{{ t('common', 'Войдите в систему, чтобы начать играть') }}</p>
         <div class="user__stats stats">
             <div class="stats__item">
@@ -113,7 +113,7 @@
                 {% endif %}
             </div>
             {% if SETTINGS.get('design_statsBlockImageVideo') %}
-                <video class="user__image" playsinline preload="auto" loop autoplay muted>
+                <video class="user__image" playsinline loop autoplay muted data-lazy="true" preload="none" poster="{{ SETTINGS.get('design_statsBlockImage') }}">
                     <source type="video/webm" src="{{ SETTINGS.get('design_statsBlockImageVideo') }}">
                 </video>
             {% else %}
@@ -154,7 +154,7 @@
         </p>
 
         {% if SETTINGS.get('design_bonusBlockImageVideo') %}
-            <video class="daily-reward__image" playsinline preload="auto" loop autoplay muted>
+            <video class="daily-reward__image" playsinline loop autoplay muted data-lazy="true" preload="none" poster="{{ SETTINGS.get('design_bonusBlockImage') }}">
                 <source type="video/webm" src="{{ SETTINGS.get('design_bonusBlockImageVideo') }}">
             </video>
         {% else %}

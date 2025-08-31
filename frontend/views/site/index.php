@@ -79,6 +79,8 @@ if (!Yii::$app->user->isGuest) {
 }
 $images = Drop::productsImages();
 $SETTINGS = Yii::$app->settings;
+$canonical = Yii::$app->params['homePage'];
+$this->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
 ?>
 
 <?php //if (!empty($getNextOpenFreeBoxDate)) {
@@ -119,5 +121,11 @@ $SETTINGS = Yii::$app->settings;
         'SETTINGS' => $SETTINGS,
     ]),
     'SETTINGS' => $SETTINGS,
+    'LOGO' => Yii::$app->settings->get('design_logo'),
+    'PROJECT_NAME' => Yii::$app->settings->get('site_project_name'),
+    'VK' => Yii::$app->settings->get('social_vk'),
+    'DISCORD' => Yii::$app->settings->get('social_discord'),
+    'TELEGRAM_BOT' => Yii::$app->settings->get('social_telegram'),
+    'URL' => Yii::$app->params['homePage']
 ]);?>
 

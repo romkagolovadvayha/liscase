@@ -6,3 +6,17 @@
     {{ PRODUCTS|raw }}
     <button class="button-secondary" id="more_products">{{ t('common', 'Показать еще') }}</button>
 </section>
+<script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "{{ PROJECT_NAME }}",
+        "url": "{{ URL }}",
+        "logo": "{{ LOGO }}",
+        "sameAs": [
+            "{{ VK }}",
+            "{{ DISCORD }}",
+            "{{ TELEGRAM_BOT }}"
+        ]
+    }
+</script>
