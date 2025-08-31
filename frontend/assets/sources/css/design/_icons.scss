@@ -185,6 +185,14 @@
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/rate.svg") no-repeat center;
     }
+    &_calendar {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/calendar.svg") no-repeat center;
+    }
+    &_calendar_list {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/calendar-list.svg") no-repeat center;
+    }
     &_rules {
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/rules.svg") no-repeat center;

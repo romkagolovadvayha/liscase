@@ -200,4 +200,16 @@ class ServerController extends Controller
             }
         }
     }
+
+    /**
+     * server/wipe-date
+     */
+    public function actionWipeDate() {
+        /** @var Servers[] $servers */
+        $servers = Servers::find()->all();
+
+        foreach ($servers as $server) {
+            print_r($server->computeWipes(new \DateTime('2025-08-29 12:11')));
+        }
+    }
 }
