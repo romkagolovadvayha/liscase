@@ -114,31 +114,57 @@ class BlogController extends WebController
         $searchModel  = new \backend\models\blog\BlogSearch();
         $dataProvider = $this->_getDataProvider($searchModel);
 
-        // на всякий случай фиксируем pageSize
         $dataProvider->pagination->pageSize = 10;
 
         if (!empty($searchModel->name)) {
-            // лёгкий totalCount без join'ов (ускоряет pager)
             $dataProvider->setTotalCount(
-                \common\models\blog\Blog::find()->alias('b')->where(
-                        ['b.status' => \common\models\blog\Blog::STATUS_ACTIVE]
-                    )->andFilterWhere(['like', 'b.name', $searchModel->name])->count()
+                \common\models\blog\Blog::find()->alias('b')
+                                        ->where(['b.status' => \common\models\blog\Blog::STATUS_ACTIVE])
+                                        ->andFilterWhere(['like', 'b.name', $searchModel->name])
+                                        ->count()
             );
         }
+
         $categories = \common\models\blog\BlogCategory::find()
                                                       ->alias('bc')
                                                       ->where(['bc.status' => \common\models\blog\BlogCategory::STATUS_ACTIVE, 'bc.blog_category_id' => null])
-                                                      ->with(['children'])                   // EAGER — без N+1
+                                                      ->with(['children'])
                                                       ->orderBy(['created_at' => SORT_DESC])
                                                       ->cache(60)
                                                       ->all();
 
+        // 🔽 Добавляем мета-description
+        $this->view->registerMetaTag([
+                                         'name' => 'description',
+                                         'content' => Yii::t('common',
+                                                             'Новости и блог проекта Prostoj Rust: баги, ошибки, патчи, Twitch Drops, новые скины и обновления. Читайте полезные статьи и гайды для игроков Rust.'
+                                         )
+                                     ], 'description');
+
+        $this->view->registerMetaTag([
+                                         'property' => 'og:title',
+                                         'content' => Yii::t('common', 'Баги и новости Rust')
+                                     ], 'og:title');
+
+        $this->view->registerMetaTag([
+                                         'property' => 'og:description',
+                                         'content' => Yii::t('common',
+                                                             'Читайте блог Prostoj Rust: исправление ошибок, советы по выживанию, расписание ивентов, обзоры обновлений и новые Twitch Drops.'
+                                         )
+                                     ], 'og:description');
+
+        $this->view->registerLinkTag([
+                                         'rel' => 'canonical',
+                                         'href' => Yii::$app->params['homePage'] . '/posts',
+                                     ]);
+
         return $this->render('index', [
             'searchModel'  => $searchModel,
             'dataProvider' => $dataProvider,
-            'categories' => $categories,
+            'categories'   => $categories,
         ]);
     }
+
 
     /**
      * @param BlogSearch $searchModel
