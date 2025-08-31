@@ -12,7 +12,7 @@ class m250831_182233_rate_user extends Migration
      */
     public function safeUp()
     {
-        $this->execute("ALTER TABLE `user` ADD COLUMN `floating_price_percent` INT(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Максимальный процент колебания цены';");
+        $this->execute("ALTER TABLE `user` ADD COLUMN `floating_price_percent` INT(3) UNSIGNED DEFAULT NULL COMMENT 'Максимальный процент колебания цены';");
     }
 
     /**
