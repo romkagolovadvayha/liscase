@@ -45,6 +45,33 @@ class MapsController extends Controller
         $this->view->title = Yii::t('common', 'Выбор карты на сервере') . " " . Yii::t('database', $server->name);
         $this->view->params['page'] = 'maps';
 
+        // уникальный description
+        $desc = Yii::t('common',
+                       'Голосование за карту на сервере {server}. Играть могут пользователи, проведшие на сервере 1+ часа. Диапазон размеров карты: {min}–{max}. Следующий вайп: {date} МСК.',
+                       [
+                           'server' => Yii::t('database', $server->name),
+                           'min'    => (int)$server->min_map_size,
+                           'max'    => (int)$server->max_map_size,
+                           'date'   => Yii::$app->formatter->asDatetime($server->next_wipe, 'php:d.m.Y H:i'),
+                       ]
+        );
+
+        // meta description
+        $this->view->registerMetaTag([
+                                         'name'    => 'description',
+                                         'content' => $desc,
+                                     ], 'description');
+
+        // canonical (на текущий URL страницы голосования)
+        $this->view->registerLinkTag([
+                                         'rel'  => 'canonical',
+                                         'href' => $server->getLink('maps'),
+                                     ]);
+
+        // (опционально) og:title/og:description для шаринга
+        $this->view->registerMetaTag(['property' => 'og:title', 'content' => $this->view->title], 'og:title');
+        $this->view->registerMetaTag(['property' => 'og:description', 'content' => $desc], 'og:description');
+
         $searchModel = new MapsSearch();
         $dataProvider = $searchModel->search($this->request->queryParams, $server->min_map_size, $server->max_map_size, $server->id);
         return $this->render('maps.twig', [

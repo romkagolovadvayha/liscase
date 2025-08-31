@@ -31,6 +31,72 @@
         </div>
     </div>
 </div>
+
+<section class="seo-block mt-32">
+    <h2 class="h3 text-left">
+        {{ t('common', 'Как проходит голосование карты на сервере') }} {{ t('database', SERVER.name) }}
+    </h2>
+
+    <p class="mt-12 p1 text-text-secondary">
+        {{ t('common', 'Игроки, проведшие на сервере 1+ часа, могут выбрать карту следующего вайпа. Итог фиксируется автоматически перед вайпом.') }}
+    </p>
+
+    <ul class="mt-12 servers_page_description_list">
+        <li class="servers_page_description_list_item">
+            {{ t('common', 'Диапазон размеров карты') }}: {{ SERVER.min_map_size }}–{{ SERVER.max_map_size }}
+        </li>
+        <li class="servers_page_description_list_item">
+            {{ t('common', 'Следующий вайп') }}: {{ SERVER.next_wipe|date('d.m.Y H:i') }} {{ t('common', 'МСК') }}
+        </li>
+        <li class="servers_page_description_list_item">
+            {{ t('common', 'Учитываются только уникальные голоса авторизованных игроков') }}
+        </li>
+    </ul>
+
+    <div class="mt-16 flex flex-wrap gap-8">
+        <a class="button button-secondary mr-6" href="/wipe-calendar">
+            {{ t('common', 'Календарь вайпов') }}
+        </a>
+        <a class="button button-secondary mr-6" href="/servers/{{ SERVER.tag }}/rules">
+            {{ t('common', 'Правила сервера') }}
+        </a>
+        <a class="button button-secondary" href="/servers/{{ SERVER.tag }}">
+            {{ t('common', 'Статистика сервера') }}
+        </a>
+    </div>
+
+    <div class="seo-faq mt-24">
+        <h3 class="h4">{{ t('common', 'Частые вопросы о голосовании карты') }}</h3>
+
+        <details class="faq-item mt-12">
+            <summary class="p1">
+                <strong>{{ t('common', 'Почему я не вижу кнопку голосования?') }}</strong>
+            </summary>
+            <div class="p2 mt-8">
+                {{ t('common', 'Голосование доступно только игрокам с временем игры 1+ часа. Авторизуйтесь через Steam и наиграйте минимум час на сервере.') }}
+            </div>
+        </details>
+
+        <details class="faq-item mt-12">
+            <summary class="p1">
+                <strong>{{ t('common', 'Можно ли изменить выбор?') }}</strong>
+            </summary>
+            <div class="p2 mt-8">
+                {{ t('common', 'До окончания голосования изменить вариант нельзя. Выбирайте внимательно.') }}
+            </div>
+        </details>
+
+        <details class="faq-item mt-12">
+            <summary class="p1">
+                <strong>{{ t('common', 'Когда подводятся итоги?') }}</strong>
+            </summary>
+            <div class="p2 mt-8">
+                {{ t('common', 'Итоги фиксируются перед вайпом:') }} {{ SERVER.next_wipe|date('d.m.Y H:i') }} {{ t('common', 'МСК') }}.
+            </div>
+        </details>
+    </div>
+</section>
+
 {{
     magnific_popup_widget({
         'target': '.maps_content_list_item_images',
