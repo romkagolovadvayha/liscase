@@ -109,6 +109,8 @@ class BuildingsController extends WebController
                        ]
         );
 
+        $title = Yii::t('database', $model->name) . " - " . Yii::t('common', 'постройка игрока') . " " . $model->user->username;
+        $this->view->title = $title;
         $this->view->registerMetaTag([
                                          'name'    => 'description',
                                          'content' => $desc,
@@ -116,7 +118,7 @@ class BuildingsController extends WebController
 
         $this->view->registerMetaTag([
                                          'property' => 'og:title',
-                                         'content'  => $this->title,
+                                         'content'  => $title,
                                      ], 'og:title');
 
         $this->view->registerMetaTag([

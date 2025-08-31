@@ -10,7 +10,6 @@ use common\models\building\BuildingLike;
 /** @var yii\web\View $this */
 /** @var Building $model */
 
-$this->title = Yii::t('database', $model->name) . " - " . Yii::t('common', 'постройка игрока') . " " . $model->user->username;
 BuildingsAsset::register($this);
 
 $isActive = BuildingLike::find()
