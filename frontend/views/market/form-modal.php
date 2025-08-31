@@ -129,9 +129,9 @@ $user = Yii::$app->user->identity;
         <p class="p3 text-center gap-x-12" data-bs-toggle="tooltip"
            data-bs-placement="top"
            data-bs-html="true"
-           data-bs-title="<?=Yii::t('common', 'Учитываются покупки этого товара за последние 3 дня, каждая следующая покупка увеличивает стоимость на +{PARAM_PERCENT_DROP}% за этот товар.<br/><br/>Покупки товара другими игроками, не влияют на вашу стоимость.', ['PARAM_PERCENT_DROP' => $user->getFloatingPricePercent()])?>">
+           data-bs-title="<?=Yii::t('common', 'Учитываются покупки этого товара за последние 3 дня, каждая следующая покупка увеличивает стоимость на +{PARAM_PERCENT_DROP}% за этот товар.<br/><br/>Покупки товара другими игроками, не влияют на вашу стоимость.', ['PARAM_PERCENT_DROP' => $user->getFloatingPricePercent($drop)])?>">
 <!--            <span>-->
-                    <?=Yii::t('common', 'На этот товар действует плавающая цена: <span class="text-link-color-default">+{PARAM_PERCENT_DROP}%</span> за покупку.', ['PARAM_PERCENT_DROP' => $user->getFloatingPricePercent()])?>
+                    <?=Yii::t('common', 'На этот товар действует плавающая цена: <span class="text-link-color-default">+{PARAM_PERCENT_DROP}%</span> за покупку.', ['PARAM_PERCENT_DROP' => $user->getFloatingPricePercent($drop)])?>
 <!--            </span>-->
 <!--            <span>Чтобы получить, введите <span class="text-link-color-default command_to_bot cursor-pointer" data-bs-toggle="tooltip" data-bs-title="Скопировать команду">/store</span> в чат</span>-->
         </p>
