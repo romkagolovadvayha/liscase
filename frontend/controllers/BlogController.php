@@ -137,7 +137,7 @@ class BlogController extends WebController
         $this->view->registerMetaTag([
                                          'name' => 'description',
                                          'content' => Yii::t('common',
-                                                             'Новости и блог проекта Prostoj Rust: баги, ошибки, патчи, Twitch Drops, новые скины и обновления. Читайте полезные статьи и гайды для игроков Rust.'
+                                                             'Новости и блог проекта: баги, ошибки, патчи, Twitch Drops, новые скины и обновления. Читайте полезные статьи и гайды для игроков Rust.'
                                          )
                                      ], 'description');
 
