@@ -82,29 +82,55 @@ class ServersController extends WebController
             ];
         }
 
+        // Хлебные крошки — ок
         $breadcrumbLd = [
             '@context' => 'https://schema.org',
             '@type'    => 'BreadcrumbList',
             'itemListElement' => [
-                ['@type'=>'ListItem','position'=>1,'name'=>Yii::t('common','Главная'),'item'=>Yii::$app->params['homePage'].'/'],
-                ['@type'=>'ListItem','position'=>2,'name'=>Yii::t('common','Сервера Rust'),'item'=>Yii::$app->params['homePage'].'/servers'],
+                ['@type' => 'ListItem', 'position' => 1, 'name' => Yii::t('common','Главная'),       'item' => Yii::$app->params['homePage'].'/'],
+                ['@type' => 'ListItem', 'position' => 2, 'name' => Yii::t('common','Сервера Rust'),  'item' => Yii::$app->params['homePage'].'/servers'],
             ],
         ];
 
+        // $serversLd должен быть массивом вида:
+        // [['name'=>'ПРОСТОЙ #1 [MAX3]', 'url'=>'https://prostoj.store/servers/max3'], ...]
+
+        // Исправленный ItemList для rich result
         $itemListLd = [
             '@context' => 'https://schema.org',
             '@type'    => 'ItemList',
+            'name'     => 'Список серверов Rust Prostoj',
             'itemListElement' => array_map(function($srv, $idx){
                 return [
-                    '@type'   => 'ListItem',
-                    'position'=> $idx + 1,
-                    'url'     => $srv['url'],
-                    'item'    => $srv
+                    '@type'    => 'ListItem',
+                    'position' => $idx + 1,
+                    // ВАЖНО: сюда — ТОЛЬКО URL (или Thing с name+url), НЕ объект GameServer
+                    'item'     => (string)$srv['url'],
+                    'name'     => (string)$srv['name'],
                 ];
             }, $serversLd, array_keys($serversLd)),
         ];
 
-        $this->view->params['ld_json'] = [$breadcrumbLd, $itemListLd];
+        // Если хочешь оставить подробности серверов — вынеси во второй скрипт (не для rich result):
+        $gameServersGraph = [
+            '@context' => 'https://schema.org',
+            '@graph'   => array_map(function($srv){
+                return [
+                    '@type'                     => 'GameServer',
+                    'name'                      => (string)$srv['name'],
+                    'game'                      => ['@type'=>'VideoGame','name'=>'Rust'],
+                    'serverStatus'              => 'https://schema.org/Online',
+                    'playersOnline'             => $srv['playersOnline'] ?? null,
+                    'maximumAttendeeCapacity'   => $srv['maximumAttendeeCapacity'] ?? null,
+                    'url'                       => (string)$srv['url'],
+                    'address'                   => $srv['address'] ?? null,
+                ];
+            }, $serversLd),
+        ];
+
+        // Отдавай оба (двумя <script>), если нужно:
+        $this->view->params['ld_json'] = [$breadcrumbLd, $itemListLd, $gameServersGraph];
+
 
         return $this->render('servers-list.twig', [
             'SERVERS' => $servers,
