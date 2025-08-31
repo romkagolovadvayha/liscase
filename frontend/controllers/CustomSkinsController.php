@@ -77,6 +77,26 @@ class CustomSkinsController extends WebController
 
         $this->view->params['page'] = 'custom-skins';
 
+        // Базовый (универсальный) description
+        $desc = Yii::t('common',
+                       'Скины из мастерской Rust от игроков: {count} вариантов для SkinBox. Фильтры по категориям, лайки и модерация. Добавьте свой скин и голосуйте.',
+                       ['count' => (int)$dataProvider->getTotalCount()]
+        );
+        // Регистрируем мета-теги
+        $this->view->registerMetaTag([
+                                         'name'    => 'description',
+                                         'content' => $desc,
+                                     ], 'description');
+
+        $this->view->registerMetaTag(['property' => 'og:title',       'content' => $this->title],      'og:title');
+        $this->view->registerMetaTag(['property' => 'og:description', 'content' => $desc],             'og:description');
+
+        // Канонический адрес раздела
+        $this->view->registerLinkTag([
+                                         'rel'  => 'canonical',
+                                         'href' => Yii::$app->params['homePage'] . '/custom-skins',
+                                     ]);
+
         return $this->render('index', [
             'searchModel'   => $searchModel,
             'dataProvider' => $dataProvider,
