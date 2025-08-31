@@ -1228,7 +1228,7 @@ class User extends ActiveRecord implements IdentityInterface
      * @return int
      */
     public function getFloatingPricePercent($drop) {
-        if ($this->floating_price_percent > 0) {
+        if ($this->floating_price_percent == 0) {
             return $this->floating_price_percent;
         }
         return $drop->floating_price_percent;

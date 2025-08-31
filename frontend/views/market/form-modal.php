@@ -125,7 +125,7 @@ $user = Yii::$app->user->identity;
             </span>
 <!--            <span>Чтобы получить, введите <span class="text-link-color-default command_to_bot cursor-pointer" data-bs-toggle="tooltip" data-bs-title="Скопировать команду">/store</span> в чат</span>-->
         </p>
-        <?php if ($user->getFloatingPricePercent() > 0): ?>
+        <?php if ($user->getFloatingPricePercent($drop) > 0): ?>
         <p class="p3 text-center gap-x-12" data-bs-toggle="tooltip"
            data-bs-placement="top"
            data-bs-html="true"
