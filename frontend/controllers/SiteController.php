@@ -187,10 +187,38 @@ class SiteController extends WebController
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
                           ->orderBy(['sort' => SORT_ASC])
                           ->all();
-        return $this->renderPartial('sitemap', [
+        return $this->renderPartial('sitemap');
+    }
+
+    public function actionSitemapMain()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        Yii::$app->response->headers->add('Content-Type', 'text/xml');
+        return $this->renderPartial('sitemap-main');
+    }
+
+    public function actionSitemapServers()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        Yii::$app->response->headers->add('Content-Type', 'text/xml');
+        $servers = Servers::find()
+                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+        return $this->renderPartial('sitemap-servers', [
+            'servers' => $servers,
+        ]);
+    }
+
+    public function actionSitemapPosts()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        Yii::$app->response->headers->add('Content-Type', 'text/xml');
+        $categories = BlogCategory::find()->andWhere(['status' => BlogCategory::STATUS_ACTIVE])->orderBy(['created_at' => SORT_ASC])->all();
+        $articles = Blog::find()->andWhere(['status' => Blog::STATUS_ACTIVE])->orderBy(['created_at' => SORT_ASC])->all();
+        return $this->renderPartial('sitemap-posts', [
             'articles' => $articles,
             'categories' => $categories,
-            'servers' => $servers,
         ]);
     }
 
