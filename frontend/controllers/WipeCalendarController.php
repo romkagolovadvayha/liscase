@@ -12,6 +12,7 @@ class WipeCalendarController extends Controller
 {
     public function actionIndex($year = null, $month = null, $months = 1)
     {
+        $this->view->params['page'] = 'wipe-calendar';
         $tz  = new DateTimeZone(Yii::$app->timeZone ?: 'UTC');
         $now = new DateTimeImmutable('now', $tz);
 
