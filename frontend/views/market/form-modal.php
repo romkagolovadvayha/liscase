@@ -10,6 +10,7 @@ use yii\widgets\Pjax;
 use common\models\box\Drop;
 use common\models\box\DropDrop;
 
+$user = Yii::$app->user->identity;
 ?>
 <?php Pjax::begin(
     [
@@ -124,13 +125,13 @@ use common\models\box\DropDrop;
             </span>
 <!--            <span>Чтобы получить, введите <span class="text-link-color-default command_to_bot cursor-pointer" data-bs-toggle="tooltip" data-bs-title="Скопировать команду">/store</span> в чат</span>-->
         </p>
-        <?php if ($drop->floating_price_percent > 0): ?>
+        <?php if ($user->getFloatingPricePercent() > 0): ?>
         <p class="p3 text-center gap-x-12" data-bs-toggle="tooltip"
            data-bs-placement="top"
            data-bs-html="true"
-           data-bs-title="<?=Yii::t('common', 'Учитываются покупки этого товара за последние 3 дня, каждая следующая покупка увеличивает стоимость на +{PARAM_PERCENT_DROP}% за этот товар.<br/><br/>Покупки товара другими игроками, не влияют на вашу стоимость.', ['PARAM_PERCENT_DROP' => $drop->floating_price_percent])?>">
+           data-bs-title="<?=Yii::t('common', 'Учитываются покупки этого товара за последние 3 дня, каждая следующая покупка увеличивает стоимость на +{PARAM_PERCENT_DROP}% за этот товар.<br/><br/>Покупки товара другими игроками, не влияют на вашу стоимость.', ['PARAM_PERCENT_DROP' => $user->getFloatingPricePercent()])?>">
 <!--            <span>-->
-                    <?=Yii::t('common', 'На этот товар действует плавающая цена: <span class="text-link-color-default">+{PARAM_PERCENT_DROP}%</span> за покупку.', ['PARAM_PERCENT_DROP' => $drop->floating_price_percent])?>
+                    <?=Yii::t('common', 'На этот товар действует плавающая цена: <span class="text-link-color-default">+{PARAM_PERCENT_DROP}%</span> за покупку.', ['PARAM_PERCENT_DROP' => $user->getFloatingPricePercent()])?>
 <!--            </span>-->
 <!--            <span>Чтобы получить, введите <span class="text-link-color-default command_to_bot cursor-pointer" data-bs-toggle="tooltip" data-bs-title="Скопировать команду">/store</span> в чат</span>-->
         </p>

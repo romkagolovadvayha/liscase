@@ -364,12 +364,16 @@ class Drop extends ActiveRecord
 
     public function getRealPrice($floating = true)
     {
+        $floatingPricePercent = 0;
+        if (!Yii::$app->user->isGuest) {
+            $floatingPricePercent = Yii::$app->user->identity->getFloatingPricePercent($this);
+        }
         $price = $this->price - ($this->price * $this->discount / 100);
-        if ($floating && !Yii::$app->user->isGuest && $this->floating_price_percent > 0) {
+        if ($floating && !Yii::$app->user->isGuest && $floatingPricePercent > 0) {
             $counts = Yii::$app->drop->getCountBuy(Yii::$app->user->id);
             if (!empty($counts[$this->id])) {
                 for ($i = 0; $i < $counts[$this->id]; $i++) {
-                    $price += $price * ($this->floating_price_percent / 100);
+                    $price += $price * ($floatingPricePercent / 100);
                 }
             }
         }
