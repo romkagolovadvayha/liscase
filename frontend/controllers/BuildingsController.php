@@ -93,9 +93,51 @@ class BuildingsController extends WebController
         if (!Yii::$app->settings->get('section_buildings')) {
             throw new NotFoundHttpException('The requested page does not exist.');
         }
+
+        $model = $this->findModel($id);
         $this->view->params['page'] = 'buildings';
+
+        // Составляем description
+        $desc = Yii::t('common',
+                       'Постройка «{name}» игрока {user} на сервере {server}{loc}{likes}. Скриншоты, жильцы и детали вайпа.',
+                       [
+                           'name'   => $model->name,
+                           'user'   => $model->user->username,
+                           'server' => $model->server->name,
+                           'loc'    => $model->location ? ', квадрат ' . $model->location : '',
+                           'likes'  => $model->likes > 0 ? ', понравилась ' . $model->likes . ' игрокам' : '',
+                       ]
+        );
+
+        $this->view->registerMetaTag([
+                                         'name'    => 'description',
+                                         'content' => $desc,
+                                     ], 'description');
+
+        $this->view->registerMetaTag([
+                                         'property' => 'og:title',
+                                         'content'  => $this->title,
+                                     ], 'og:title');
+
+        $this->view->registerMetaTag([
+                                         'property' => 'og:description',
+                                         'content'  => $desc,
+                                     ], 'og:description');
+
+        if (!empty($model->buildingImage)) {
+            $this->view->registerMetaTag([
+                                             'property' => 'og:image',
+                                             'content'  => $model->buildingImage[0]->getPublicUrl(),
+                                         ], 'og:image');
+        }
+
+        $this->view->registerLinkTag([
+                                         'rel'  => 'canonical',
+                                         'href' => Yii::$app->params['homePage'] . $model->getUrl(),
+                                     ]);
+
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $model,
         ]);
     }
 
