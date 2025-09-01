@@ -13,6 +13,7 @@ use yii\helpers\ArrayHelper;
  * This is the model class for table "map".
  *
  * @property int $id
+ * @property string|null $name
  * @property string|null $mapId
  * @property string|null $link
  * @property int $seed
@@ -24,6 +25,7 @@ use yii\helpers\ArrayHelper;
  * @property int $votes
  * @property int $server_id
  * @property bool $is_archive
+ * @property bool $is_staging
  *
  * @property-read int $totalVotes
  * @property-read int $userVotes
