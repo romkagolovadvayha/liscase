@@ -141,8 +141,11 @@ $user = Yii::$app->user->identity;
 <footer class="px-24 pb-24">
     <?php if (Yii::$app->user->isGuest): ?>
         <button class="button-danger w-full">
-            <a href="/auth/oauth?authclient=steam" class="button__text" title="Авторизация через Steam">
-                <i class="fab fa-steam"></i> <span><?=Yii::t('common', 'Войти через Steam')?></span>
+            <a href="/auth/oauth?authclient=steam" class="button button-primary button-size__s h-36" title="<?=Yii::t('common', 'Авторизация через Steam')?>">
+                <span class="button__text">
+                    <?=Yii::t('common', 'Войти через Steam')?>
+                    <span class="icons icons_24px icons_24px_steam bg-white"></span>
+                </span>
             </a>
         </button>
     <?php else: ?>
