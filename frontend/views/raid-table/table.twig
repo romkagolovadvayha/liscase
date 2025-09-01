@@ -1,3 +1,4 @@
+{# views/raid/table.twig — слева выбор цели, справа методы + ингредиенты картинками #}
 <h1 class="main_title"><span>{{ t('common', 'Калькулятор рейдов в Rust') }}</span></h1>
 <p>{{ t('common', 'Планируешь налёт? Узнай точное количество взрывчатки для разрушения:') }}</p>
 <ul class="pl-6">
@@ -5,31 +6,342 @@
     <li><b>{{ t('common', 'Дверей') }}</b> {{ t('common', '(обычных, бронированных, гаражных)') }}</li>
     <li><b>{{ t('common', 'Техники') }}</b> {{ t('common', '(Бредли, вертолёт, буксир)') }}</li>
 </ul>
-<p class="mt-12 mb-24"><i>{{ t('common', 'Выбирай цель, сравнивай варианты и экономь ресурсы.') }}</i></p>
-{% for ITEM in ITEMS %}
-<div class="mb-40">
-    <h2>{{ ITEM.name }}</h2>
-    {% for OBJECT in ITEM.items %}
-        <!-- Взрывные устройства -->
-        <section class="page-stats__block-without-hover mt-12">
-            <header class="flex items-center justify-space-between mb-24 transition-all">
-                <h3 class="flex items-center gap-x-12">
-                    <img src="{{ OBJECT.image }}" alt="{{ OBJECT.name }}" class="w-64"/> {{ OBJECT.name }}
-                </h3>
-            </header>
+<p class="mt-12 mb-24"><i>{{ t('common', 'Выбери цель слева. Справа покажем способы и что нужно для крафта (картинки + количество).') }}</i></p>
+<div class="layout">
+    {# ===== ЛЕВАЯ КОЛОНКА: цели маленькими превью ===== #}
+    <aside class="targets">
+        <div class="targets__header p2">{{ t('common', 'Цели') }}</div>
+        <div id="targets-list" class="targets__list"></div>
+    </aside>
 
-            <div class="page-stats__categories">
-                {% for WEAPON in OBJECT.weapons %}
-                    <div class="page-stats__category category">
-                        <div class="category__count-and-img">
-                            <span>{{ WEAPON.count }}</span>
-                            <img src="{{ WEAPON.image }}" alt="{{ WEAPON.name }}" class="w-64 h-64 object-contain" />
-                        </div>
-                        <p class="category__title">{{ WEAPON.name }}</p>
-                    </div>
-                {% endfor %}
-            </div>
-        </section>
-    {% endfor %}
+    {# ===== ПРАВАЯ КОЛОНКА: методы для выбранной цели ===== #}
+    <main class="methods">
+        <div class="methods__head">
+            <h2 id="methods-title" class="p2">{{ t('common', 'Способы разрушения') }}</h2>
+            <div class="methods__hint p3">{{ t('common', 'Сортировка по себестоимости: сера → порох (возр.)') }}</div>
+        </div>
+        <div id="methods-list" class="methods__list"></div>
+        <p id="no-priced" class="p3" style="display:none;">
+            {{ t('common', 'Для этой цели нет методов с ценой по сере/пороху.') }}
+        </p>
+    </main>
 </div>
+
+{# ===== ДАННЫЕ ОТ КОНТРОЛЛЕРА =====
+  Ожидаются:
+  - ITEMS   (как раньше)
+  - RECIPES (твои рецепты 1:1)
+  - PROD_IMAGES (map: key -> url) = Statistics::productsImages()
+  - PROD_NAMES  (map: key -> name) = Statistics::productsNames()
+#}
+<script>
+    const ITEMS       = {{ ITEMS|json_encode|raw }};
+    const RECIPES     = {{ RECIPES|json_encode|raw }};
+    const PROD_IMAGES = {{ PROD_IMAGES|json_encode|raw }};
+    const PROD_NAMES  = {{ PROD_NAMES|json_encode|raw }};
+</script>
+
+{# ===== ЛОГИКА UI ===== #}
+<script>
+    (function(){
+        function add(o,k,v){ o[k]=(o[k]||0)+v; }
+        function fmt(n){ return (+n).toLocaleString('ru-RU'); }
+
+        // НЕ раскладываем порох на серу/уголь
+        function expandMixed(itemKey, qty){
+            const out = {};
+            function need(k, n){
+                const r = RECIPES[k];
+                if (!r) { add(out,k,n); return; }
+                const mult = n / (r.yields||1);
+                for (const ing in r.ingredients){
+                    const needQty = r.ingredients[ing] * mult;
+                    add(out, ing, needQty);
+                    if (RECIPES[ing] && ing !== 'gunpowder') need(ing, needQty);
+                }
+            }
+            need(itemKey, qty);
+            return out;
+        }
+
+        // Стоимость на 1 шт → {gp, sulfur}
+        function perUnitCost(itemKey){
+            const m = expandMixed(itemKey, 1);
+            return { gp: +m.gunpowder||0, sulfur: +m.sulfur||0 };
+        }
+
+        // Прямые ингредиенты рецепта на totalQty (без рекурсии)
+        function directIngredients(itemKey, totalQty){
+            const r = RECIPES[itemKey];
+            if (!r) return {};
+            const mult = totalQty / (r.yields||1);
+            const out = {};
+            for (const ing in r.ingredients){
+                add(out, ing, r.ingredients[ing] * mult);
+            }
+            return out;
+        }
+
+        // Достаём имя и картинку из переданных мапов Statistics
+        function imgFor(key){ return PROD_IMAGES[key] || ''; }
+        function nameFor(key){ return PROD_NAMES[key]  || key; }
+
+        // Сборка целей
+        const TARGETS = (function(){
+            const flat = {};
+            ITEMS.forEach(group => {
+                group.items.forEach(obj => {
+                    flat[obj.key] = {
+                        key: obj.key, name: obj.name, img: obj.image,
+                        weapons: obj.weapons.map(w => ({ key:w.key, name:w.name, img:w.image, count:+w.count }))
+                    };
+                });
+            });
+            return flat;
+        })();
+
+        // список целей: по алфавиту; по умолчанию — МВК стена
+        const targetKeys = Object.keys(TARGETS).sort((a,b)=>TARGETS[a].name.localeCompare(TARGETS[b].name, 'ru'));
+        const defaultKey = TARGETS['armored-wall'] ? 'armored-wall' : (targetKeys[0]||null);
+
+        const listEl   = document.getElementById('targets-list');
+        const mTitleEl = document.getElementById('methods-title');
+        const mListEl  = document.getElementById('methods-list');
+        const noPriced = document.getElementById('no-priced');
+
+        // рендер списка целей
+        listEl.innerHTML = targetKeys.map(k => {
+            const t = TARGETS[k];
+            return `
+      <button class="tcard" data-key="${t.key}" title="${t.name}">
+        <img src="${t.img}" alt="${t.name}">
+        <span class="p2">${t.name}</span>
+      </button>`;
+        }).join('');
+
+        listEl.addEventListener('click', (e)=>{
+            const btn = e.target.closest('.tcard'); if (!btn) return;
+            selectTarget(btn.dataset.key);
+        });
+
+        function markActive(key){
+            listEl.querySelectorAll('.tcard').forEach(btn=>{
+                btn.classList.toggle('active', btn.dataset.key===key);
+            });
+        }
+
+        // рендер методов
+        function renderMethods(key){
+            const T = TARGETS[key]; if (!T) return;
+            mTitleEl.textContent = T.name;
+
+            const methods = T.weapons.map(w=>{
+                const per = perUnitCost(w.key);
+                const priced = (per.sulfur>0 || per.gp>0);
+                return {
+                    key:w.key, name:w.name, img:w.img, count:w.count, priced,
+                    sulfur: per.sulfur * w.count,
+                    gp:     per.gp     * w.count,
+                    direct: directIngredients(w.key, w.count) // прямые ингры на весь объём
+                };
+            });
+
+            // сортировка: по сере → по пороху (методы без цены — вниз)
+            methods.sort((a,b)=>{
+                if (a.priced && !b.priced) return -1;
+                if (!a.priced && b.priced) return 1;
+                if (a.priced && b.priced){
+                    if (a.sulfur !== b.sulfur) return a.sulfur - b.sulfur;
+                    if (a.gp     !== b.gp)     return a.gp     - b.gp;
+                }
+                return a.name.localeCompare(b.name, 'ru');
+            });
+
+            noPriced.style.display = methods.some(m=>m.priced) ? 'none' : 'block';
+            mListEl.innerHTML = methods.map(m => methodRowHTML(m)).join('');
+        }
+
+        function methodRowHTML(m){
+            // левая часть: иконка способа × кол-во
+            const left = `
+      <div class="mrow__left">
+        <img src="${m.img}" alt="${m.name}">
+        <div class="mrow__title p2" title="${m.name}">${m.name}</div>
+        <div class="mrow__x p2">× ${fmt(m.count)}</div>
+      </div>`;
+
+            // ингредиенты: все позиции из прямого рецепта (картинка + число)
+            const ingChips = ingredientsChips(m.direct);
+
+            return `
+      <div class="mrow">
+        <div class="mrow__top">
+          ${left}
+          <!-- Бэйджи серы/пороха убраны по твоему ТЗ -->
+            </div>
+            <div class="mrow__craft">
+            ${ingChips}
+            </div>
+            </div>`;
+            }
+
+        function ingredientsChips(map){
+            // порядок отображения
+            const order = ['explosives','gunpowder','sulfur','low_grade_fuel','metal_fragments','metal_pipes','cloth','tech_trash','rope','propane_tank','small-stash','charcoal'];
+            const keys = Object.keys(map);
+            keys.sort((a,b)=>{
+                const ia = order.indexOf(a), ib = order.indexOf(b);
+                if (ia !== -1 || ib !== -1) return (ia===-1?999:ia) - (ib===-1?999:ib);
+                return a.localeCompare(b, 'ru');
+            });
+
+            return keys.map(k=>{
+                const v = Math.ceil(map[k] || 0);
+                if (!v) return '';
+                const img = imgFor(k);
+                const nm  = nameFor(k);
+                const imgTag = img ? `<img src="${img}" alt="${nm}">` : `<span class="chip__fallback" title="${nm}">?</span>`;
+                return `
+        <span class="chip" title="${nm}">
+          ${imgTag}<b>${fmt(v)}</b>
+        </span>`;
+            }).join('');
+        }
+
+        function selectTarget(key){
+            markActive(key);
+            renderMethods(key);
+        }
+
+        // init
+        const firstKey = defaultKey;
+        if (firstKey) selectTarget(firstKey);
+    })();
+</script>
+
+{# ===== СТИЛИ НА ТВОИХ ТОКЕНАХ ===== #}
+<style>
+    /* общие */
+    .p2{ font-size: 14px; line-height: 1.35; color: var(--text-main); }
+    .p3{ font-size: 12px; line-height: 1.3;  color: var(--text-secondary); }
+
+    .layout{
+        display:grid; grid-template-columns: 280px 1fr; gap:16px;
+        border-radius: var(--block-radius);
+        color: var(--text-main);
+        background-color: var(--background-secondary);
+        padding: 8px;
+    }
+    @media (max-width: 980px){
+        .layout{ grid-template-columns: 1fr; }
+    }
+
+    /* левая колонка (блок) */
+    .targets{
+        border-radius: var(--block-radius);
+        color: var(--text-main);
+        background-color: var(--background-secondary);
+        border: 1px solid var(--background-teritiary);
+    }
+    .targets__header{
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--background-teritiary);
+        background: var(--background-teritiary);
+        border-radius: var(--block-radius) var(--block-radius) 0 0;
+    }
+    .targets__list{
+        padding: 8px; max-height: 72vh; overflow: auto;
+    }
+    /* скролл */
+    .targets__list::-webkit-scrollbar{ width:5px; height:5px; background-color: transparent; }
+    .targets__list::-webkit-scrollbar-thumb{ background-color: var(--status-background-opacity); border-radius: 8px; }
+
+    .tcard{
+        display:flex; align-items:center; gap:8px; width:100%;
+        border:1px solid var(--background-teritiary);
+        background-color: var(--background-teritiary);
+        color: var(--text-main);
+        border-radius: var(--card-radius);
+        padding:8px;
+        cursor:pointer; margin-bottom:8px; transition:.15s border-color,.15s background,.15s transform;
+        text-align:left;
+    }
+    .tcard:hover{ transform: translateY(-1px); }
+    .tcard.active{ outline: 2px solid rgba(79,70,229,.6); }
+    .tcard img{ width:32px; height:32px; object-fit:contain; flex:0 0 32px; }
+    .tcard span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* правая колонка (блок) */
+    .methods{
+        border-radius: var(--block-radius);
+        color: var(--text-main);
+        background-color: var(--background-secondary);
+        border: 1px solid var(--background-teritiary);
+        padding: 12px;
+    }
+    .methods__head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .methods__list{ display:flex; flex-direction:column; gap:10px; max-height: 80vh; overflow: auto; padding-right: 4px; }
+    /* скролл */
+    .methods__list::-webkit-scrollbar{ width:5px; height:5px; background-color: transparent; }
+    .methods__list::-webkit-scrollbar-thumb{ background-color: var(--status-background-opacity); border-radius: 8px; }
+
+    /* элементы */
+    .mrow{
+        border:1px solid var(--background-teritiary);
+        background-color: var(--background-teritiary);
+        color: var(--text-main);
+        border-radius: var(--card-radius);
+        padding: 10px;
+    }
+    .mrow__top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .mrow__left{ display:flex; align-items:center; gap:10px; min-width:0; }
+    .mrow__left img{ width:32px; height:32px; object-fit:contain; }
+    .mrow__title{ font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 52vw; }
+    .mrow__x{ font-weight:700; }
+
+    /* ингредиенты */
+    .mrow__craft{
+        display:flex; flex-wrap: wrap; gap:6px; margin-top:8px;
+    }
+    .chip{
+        display:inline-flex; align-items:center; gap:6px;
+        padding:4px 8px; border-radius: 8px;
+        font-size:12px; line-height:1; font-weight: 700;
+        border:1px solid var(--background-teritiary);
+        background-color: var(--background-teritiary);
+        color: var(--text-main);
+    }
+    .chip img{ width:16px; height:16px; object-fit:contain; }
+    .chip__fallback{
+        display:inline-flex; align-items:center; justify-content:center;
+        width:16px; height:16px; border-radius:4px; background:#ccc; color:#333; font-weight:800;
+    }
+</style>
+
+{% for ITEM in ITEMS %}
+    <div class="mt-40">
+        <h2>{{ ITEM.name }}</h2>
+        {% for OBJECT in ITEM.items %}
+            <!-- Взрывные устройства -->
+            <section class="page-stats__block-without-hover mt-12">
+                <header class="flex items-center justify-space-between mb-24 transition-all">
+                    <h3 class="flex items-center gap-x-12">
+                        <img src="{{ OBJECT.image }}" alt="{{ OBJECT.name }}" class="w-64"/> {{ OBJECT.name }}
+                    </h3>
+                </header>
+
+                <div class="page-stats__categories">
+                    {% for WEAPON in OBJECT.weapons %}
+                        <div class="page-stats__category category">
+                            <div class="category__count-and-img">
+                                <span>{{ WEAPON.count }}</span>
+                                <img src="{{ WEAPON.image }}" alt="{{ WEAPON.name }}" class="w-64 h-64 object-contain" />
+                            </div>
+                            <p class="category__title">{{ WEAPON.name }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endfor %}
+    </div>
 {% endfor %}

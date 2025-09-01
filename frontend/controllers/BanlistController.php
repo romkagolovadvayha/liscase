@@ -95,6 +95,10 @@ class BanlistController extends WebController
                                      ]);
 
 
+        $canonical = Yii::$app->params['homePage'] . '/banlist';
+        $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
+
+
         return $this->render('banlist.twig', [
             'SERVERS' => $servers,
             'PROJECT_STATS' => $projectStats,

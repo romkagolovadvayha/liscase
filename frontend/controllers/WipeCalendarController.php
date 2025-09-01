@@ -102,6 +102,9 @@ class WipeCalendarController extends Controller
             }
         }
 
+        $canonical = Yii::$app->params['homePage'] . '/wipe-calendar';
+        $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
+
         // === 4) 14-дневные: по пятницам, начиная с пятницы после глобала,
         // но неделя глобала заблокирована → первый слот = через неделю после глобала, далее +14 ===
         foreach ($non30Active as $s) {

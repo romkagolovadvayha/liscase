@@ -72,6 +72,10 @@ class MapsController extends Controller
         $this->view->registerMetaTag(['property' => 'og:title', 'content' => $this->view->title], 'og:title');
         $this->view->registerMetaTag(['property' => 'og:description', 'content' => $desc], 'og:description');
 
+
+        $canonical = Yii::$app->params['homePage'] . '/maps';
+        $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
+
         $searchModel = new MapsSearch();
         $dataProvider = $searchModel->search($this->request->queryParams, $server->min_map_size, $server->max_map_size, $server->id);
         return $this->render('maps.twig', [

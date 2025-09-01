@@ -75,6 +75,9 @@ class BuildingsController extends WebController
 
         $this->view->params['meta_description'] = Yii::t('common', "Смотрите лучшие постройки игроков в Rust! На этой странице вы можете выкладывать свои творения, оценивать работы других игроков и находить вдохновение для новых проектов. Покажите свои строительные навыки, получите признание сообщества и узнайте, как создаются уникальные базы, форты и сооружения в Rust!");
 
+        $canonical = Yii::$app->params['homePage'] . '/buildings';
+        $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
+
         return $this->render('index', [
             'searchModel'   => $searchModel,
             'dataProvider' => $dataProvider,
