@@ -140,14 +140,12 @@ $user = Yii::$app->user->identity;
 </div>
 <footer class="px-24 pb-24">
     <?php if (Yii::$app->user->isGuest): ?>
-        <button class="button-danger w-full">
-            <a href="/auth/oauth?authclient=steam" class="button button-primary w-full" title="<?=Yii::t('common', 'Авторизация через Steam')?>">
+        <a href="/auth/oauth?authclient=steam" class="button button-primary w-full" title="<?=Yii::t('common', 'Авторизация через Steam')?>">
                 <span class="button__text">
                     <?=Yii::t('common', 'Войти через Steam')?>
                     <span class="icons icons_24px icons_24px_steam bg-white"></span>
                 </span>
-            </a>
-        </button>
+        </a>
     <?php else: ?>
         <?= Alert::widget() ?>
         <input type="hidden" class="modal_form_product_buy" name="buy" value="1"/>
