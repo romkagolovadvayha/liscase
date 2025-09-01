@@ -1,13 +1,19 @@
 <div class="maps_content_list_item" data-id="{{ model.id }}">
     <div class="maps_content_list_item_images">
-        <a href="{{ model.getImage() }}" target="_blank" class="maps_content_list_item_images_image" title="{{ model.size }}_{{ model.seed }}">
-            <img src="{{ model.getPreviewImage() }}" alt="{{ model.size }}_{{ model.seed }}">
+        <a href="{{ model.getImage() }}" target="_blank" class="maps_content_list_item_images_image" title="{{ model.name }}">
+            <img src="{{ model.getPreviewImage() }}" alt="{{ model.name }}">
             <div class="maps_content_list_item_images_image_hover"><i class="fas fa-search-plus"></i></div>
         </a>
     </div>
     <div class="maps_content_list_item_footer">
         <div class="maps_content_list_item_footer_name">
-            <a href="https://rustmaps.com/map/{{ model.size }}_{{ model.seed }}/staging" target="_blank">{{ model.size }}_{{ model.seed }}</a>
+            <a href="{{ model.link }}" target="_blank">
+                {% if model.name %}
+                    {{ model.name }}
+                {% else %}
+                    {{ model.size }}_{{ model.seed }}
+                {% endif %}
+            </a>
         </div>
         {{ model.renderLike(this)|raw }}
     </div>

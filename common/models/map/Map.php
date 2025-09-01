@@ -228,11 +228,12 @@ class Map extends \yii\db\ActiveRecord
         }
         if (empty($result)) {
             for ($i = 0; $i < 20; $i++) {
+                $staging = Yii::$app->settings->get('maps_staging') ? 'true' : 'false';
                 $response = (clone \Yii::$app->curl)
-                    ->setHeader('X-API-Key', '03f6a4103d7d4820bed03f4322f72f26')
+                    ->setHeader('X-API-Key', Yii::$app->settings->get('maps_apiKey'))
                     ->setHeader('Content-Type', 'application/json')
                     ->setRawPostData(Map::getSearchQuery($size))
-                    ->post('https://api.rustmaps.com/v4/maps/search?page=' . $i . '&staging=true&includeAllProtocols=false&customMaps=false');
+                    ->post('https://api.rustmaps.com/v4/maps/search?page=' . $i . '&staging=' . $staging . '&includeAllProtocols=false&customMaps=false');
 
                 $response = json_decode($response, 1);
 
@@ -303,6 +304,8 @@ class Map extends \yii\db\ActiveRecord
 
             $model = new Map();
             $model->mapId = $mapId;
+            $model->name = $item['size'] . "_" . $item['seed'];
+            $model->is_staging = Yii::$app->settings->get('maps_staging');
             $model->link = $item['url'];
             $model->image_link = $filePathFileName;
             $model->image_link_icons = $fileIconPathFileName;
