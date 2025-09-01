@@ -83,7 +83,7 @@ class RaidTableController extends WebController
                 'yields'      => 1,
                 'ingredients' => ['metal_pipes' => 2, 'explosives' => 10, 'gunpowder' => 150],
             ],
-            'rocket_incendiary' => [
+            'rocket_fire' => [
                 'yields'      => 1,
                 'ingredients' => ['metal_pipes' => 2, 'low_grade_fuel' => 75, 'gunpowder' => 150],
             ],
@@ -186,7 +186,7 @@ class RaidTableController extends WebController
             // Стены
             ['key'=>'wood-wall','group'=>'Стены','softside'=>true,'weapons'=>[
                 ['handmade-shell',93],['flame-thrower',206],['grenade.molotov',4],['grenade.beancan',13],['satchelsthrown',3],
-                ['ammo_explosive',49],['rocket_basic',2],['rocket_incendiary',1],['c4thrown',1],['40mm_grenade_he',9],
+                ['ammo_explosive',49],['rocket_basic',2],['rocket_fire',1],['c4thrown',1],['40mm_grenade_he',9],
             ], 'notes'=>'Огонь эффективен; C4/ракеты — оверкилл.'],
             ['key'=>'stone-wall','group'=>'Стены','softside'=>true,'weapons'=>[
                 ['handmade-shell',556],['grenade.beancan',46],['satchelsthrown',10],['ammo_explosive',185],['rocket_basic',4],
@@ -206,7 +206,7 @@ class RaidTableController extends WebController
             ]],
             ['key'=>'double-wooden-door','group'=>'Двери','weapons'=>[
                 ['ammo_explosive',20],['c4thrown',1],['grenade.beancan',6],['handmade-shell',45],['rocket_basic',1],
-                ['torpedo',8],['grenade.molotov',2],['propane_bomb',1],['rocket_incendiary',1],
+                ['torpedo',8],['grenade.molotov',2],['propane_bomb',1],['rocket_fire',1],
             ]],
             ['key'=>'double-sheet-metal-door','group'=>'Двери','weapons'=>[
                 ['grenade.beancan',18],['satchelsthrown',4],['ammo_explosive',63],['c4thrown',1],['rocket_basic',2],
@@ -228,33 +228,33 @@ class RaidTableController extends WebController
             // Внешние стены/ворота
             ['key'=>'high-external-wood-wall','group'=>'Стены','weapons'=>[
                 ['handmade-shell',186],['grenade.beancan',26],['satchelsthrown',6],['rocket_basic',3],['grenade.molotov',7],
-                ['rocket_incendiary',1],['ammo_explosive',98],['propane_bomb',4],['40mm_grenade_he',16],['c4thrown',1],
+                ['rocket_fire',1],['ammo_explosive',98],['propane_bomb',4],['40mm_grenade_he',16],['c4thrown',1],
             ]],
             ['key'=>'high-external-stone-wall','group'=>'Стены','weapons'=>[
                 ['handmade-shell',556],['grenade.beancan',46],['satchelsthrown',10],['rocket_basic',4],['grenade.molotov',7],
-                ['rocket_incendiary',1],['ammo_explosive',185],['propane_bomb',7],['40mm_grenade_he',29],['c4thrown',2],
+                ['rocket_fire',1],['ammo_explosive',185],['propane_bomb',7],['40mm_grenade_he',29],['c4thrown',2],
             ]],
             ['key'=>'high-external-wood-gate','group'=>'Стены','weapons'=>[
                 ['handmade-shell',186],['grenade.beancan',26],['satchelsthrown',6],['rocket_basic',3],['grenade.molotov',7],
-                ['rocket_incendiary',1],['ammo_explosive',98],['propane_bomb',4],['40mm_grenade_he',16],['c4thrown',1],
+                ['rocket_fire',1],['ammo_explosive',98],['propane_bomb',4],['40mm_grenade_he',16],['c4thrown',1],
             ]],
             ['key'=>'high-external-stone-gate','group'=>'Стены','weapons'=>[
                 ['handmade-shell',556],['grenade.beancan',46],['satchelsthrown',10],['rocket_basic',4],['grenade.molotov',7],
-                ['rocket_incendiary',1],['ammo_explosive',185],['propane_bomb',7],['40mm_grenade_he',29],['c4thrown',2],
+                ['rocket_fire',1],['ammo_explosive',185],['propane_bomb',7],['40mm_grenade_he',29],['c4thrown',2],
             ]],
 
             // Баррикады / окна / витрины / бойницы
             ['key'=>'barricade.wood','group'=>'Прочее','weapons'=>[
                 ['handmade-shell',14],['grenade.beancan',4],['satchelsthrown',1],['rocket_basic',1],['grenade.molotov',1],
-                ['rocket_incendiary',1],['ammo_explosive',22],['propane_bomb',1],['40mm_grenade_he',4],['c4thrown',1],
+                ['rocket_fire',1],['ammo_explosive',22],['propane_bomb',1],['40mm_grenade_he',4],['c4thrown',1],
             ]],
             ['key'=>'barricade.woodwire','group'=>'Прочее','weapons'=>[
                 ['handmade-shell',23],['grenade.beancan',6],['satchelsthrown',1],['rocket_basic',1],['grenade.molotov',2],
-                ['rocket_incendiary',1],['ammo_explosive',35],['propane_bomb',2],['40mm_grenade_he',5],['c4thrown',1],
+                ['rocket_fire',1],['ammo_explosive',35],['propane_bomb',2],['40mm_grenade_he',5],['c4thrown',1],
             ]],
             ['key'=>'window.grates.wood','group'=>'Двери','weapons'=>[
                 ['handmade-shell',93],['grenade.beancan',13],['satchelsthrown',3],['rocket_basic',2],['grenade.molotov',4],
-                ['rocket_incendiary',1],['ammo_explosive',49],['propane_bomb',2],['40mm_grenade_he',8],['c4thrown',1],
+                ['rocket_fire',1],['ammo_explosive',49],['propane_bomb',2],['40mm_grenade_he',8],['c4thrown',1],
             ]],
             ['key'=>'window.grates.metal','group'=>'Двери','weapons'=>[
                 ['grenade.beancan',56],['satchelsthrown',12],['rocket_basic',4],['ammo_explosive',200],['propane_bomb',7],
@@ -270,37 +270,37 @@ class RaidTableController extends WebController
             ]],
             ['key'=>'embrasure.metal.vertical','group'=>'Двери','weapons'=>[
                 ['handmade-shell',278],['grenade.beancan',59],['satchelsthrown',13],['rocket_basic',4],['grenade.molotov',14],
-                ['rocket_incendiary',2],['ammo_explosive',173],['propane_bomb',7],['40mm_grenade_he',28],['c4thrown',2],
+                ['rocket_fire',2],['ammo_explosive',173],['propane_bomb',7],['40mm_grenade_he',28],['c4thrown',2],
             ]],
             ['key'=>'embrasure.metal.horizontal','group'=>'Двери','weapons'=>[
                 ['handmade-shell',278],['grenade.beancan',59],['satchelsthrown',13],['rocket_basic',4],['grenade.molotov',14],
-                ['rocket_incendiary',2],['ammo_explosive',173],['propane_bomb',7],['40mm_grenade_he',28],['c4thrown',2],
+                ['rocket_fire',2],['ammo_explosive',173],['propane_bomb',7],['40mm_grenade_he',28],['c4thrown',2],
             ]],
 
             // Верстаки / НПЗ / вендинг
             ['key'=>'workbench1','group'=>'Прочее','weapons'=>[
                 ['handmade-shell',28],['grenade.beancan',8],['satchelsthrown',1],['rocket_basic',2],['grenade.molotov',2],
-                ['rocket_incendiary',2],['ammo_explosive',56],['propane_bomb',3],['40mm_grenade_he',8],['c4thrown',1],['grenade.f1',7],
+                ['rocket_fire',2],['ammo_explosive',56],['propane_bomb',3],['40mm_grenade_he',8],['c4thrown',1],['grenade.f1',7],
             ]],
             ['key'=>'workbench2','group'=>'Прочее','weapons'=>[
                 ['handmade-shell',278],['grenade.beancan',59],['satchelsthrown',7],['rocket_basic',4],['grenade.molotov',14],
-                ['rocket_incendiary',2],['ammo_explosive',173],['propane_bomb',7],['40mm_grenade_he',28],['c4thrown',1],
+                ['rocket_fire',2],['ammo_explosive',173],['propane_bomb',7],['40mm_grenade_he',28],['c4thrown',1],
             ]],
             ['key'=>'workbench3','group'=>'Прочее','weapons'=>[
                 ['handmade-shell',417],['grenade.beancan',89],['satchelsthrown',10],['rocket_basic',6],['grenade.molotov',21],
-                ['rocket_incendiary',2],['ammo_explosive',259],['propane_bomb',10],['40mm_grenade_he',42],['c4thrown',2],
+                ['rocket_fire',2],['ammo_explosive',259],['propane_bomb',10],['40mm_grenade_he',42],['c4thrown',2],
             ]],
             ['key'=>'workbench.cook','group'=>'Прочее','weapons'=>[
                 ['handmade-shell',28],['grenade.beancan',8],['satchelsthrown',1],['rocket_basic',2],['grenade.molotov',2],
-                ['rocket_incendiary',1],['ammo_explosive',56],['propane_bomb',3],['40mm_grenade_he',8],['c4thrown',1],
+                ['rocket_fire',1],['ammo_explosive',56],['propane_bomb',3],['40mm_grenade_he',8],['c4thrown',1],
             ]],
             ['key'=>'workbench.engineer','group'=>'Прочее','weapons'=>[
                 ['handmade-shell',28],['grenade.beancan',8],['satchelsthrown',1],['rocket_basic',2],['grenade.molotov',2],
-                ['rocket_incendiary',1],['ammo_explosive',56],['propane_bomb',3],['40mm_grenade_he',8],['c4thrown',1],
+                ['rocket_fire',1],['ammo_explosive',56],['propane_bomb',3],['40mm_grenade_he',8],['c4thrown',1],
             ]],
             ['key'=>'refinery.small','group'=>'Прочее','weapons'=>[
                 ['handmade-shell',84],['grenade.beancan',24],['satchelsthrown',6],['rocket_basic',5],['grenade.molotov',5],
-                ['rocket_incendiary',1],['ammo_explosive',167],['propane_bomb',8],['40mm_grenade_he',24],['c4thrown',3],
+                ['rocket_fire',1],['ammo_explosive',167],['propane_bomb',8],['40mm_grenade_he',24],['c4thrown',3],
             ]],
             ['key'=>'vendingmachine','group'=>'Прочее','weapons'=>[
                 ['grenade.beancan',139],['satchelsthrown',15],['rocket_basic',10],['ammo_explosive',449],['propane_bomb',17],
@@ -310,7 +310,7 @@ class RaidTableController extends WebController
             // Турели / ПВО
             ['key'=>'auto-turret','group'=>'Прочее','weapons'=>[
                 ['handmade-shell',56],['grenade.beancan',16],['satchelsthrown',2],['rocket_basic',4],['grenade.molotov',7],
-                ['rocket_incendiary',1],['ammo_explosive',112],['propane_bomb',6],['40mm_grenade_he',16],['c4thrown',1],
+                ['rocket_fire',1],['ammo_explosive',112],['propane_bomb',6],['40mm_grenade_he',16],['c4thrown',1],
                 ['rocket_hv',3],['grenade.f1',10],
             ]],
             ['key'=>'sam.site','group'=>'Прочее','weapons'=>[
