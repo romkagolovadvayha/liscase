@@ -41,7 +41,7 @@ class BanlistController extends WebController
                           ->all();
 
         $projectStats = \common\models\statistics\Statistics::projectStats();
-        $this->view->title = Yii::t('common', 'Бан лист');
+        $this->view->title = Yii::t('common', 'Бан лист серверов');
         $this->view->params['page'] = 'bans';
 
         $searchModel = new BansSearch();
