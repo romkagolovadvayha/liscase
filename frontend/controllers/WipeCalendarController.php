@@ -7,11 +7,15 @@ use yii\web\Controller;
 use DateTimeImmutable;
 use DateTimeZone;
 use common\models\servers\Servers;
+use yii\web\NotFoundHttpException;
 
 class WipeCalendarController extends Controller
 {
     public function actionIndex($year = null, $month = null, $months = 1)
     {
+        if (!Yii::$app->settings->get('section_calendar')) {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
         $this->view->params['page'] = 'wipe-calendar';
         $tz  = new DateTimeZone(Yii::$app->timeZone ?: 'UTC');
         $now = new DateTimeImmutable('now', $tz);
