@@ -142,7 +142,8 @@ class TelegramApiHelper extends \yii\base\Component
             ]);
         }
 
-        return $this->_sendRequest('sendMessage', $params);
+        Yii::$app->telegramChats->sendMessage($this->_sendRequest('sendMessage', $params));
+        return true;
     }
     /**
      * @param int    $chatId
