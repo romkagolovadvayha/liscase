@@ -34,7 +34,6 @@ class UpdateTopJob extends BaseObject implements JobInterface
     public function execute($queue)
     {
         try {
-            Yii::$app->telegramChats->sendMessage($this->userId);
             UserTop::updateTop($this->userId, $this->key, $this->value, $this->serverId, $this->wipeDate);
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage("UpdateTopJob::updateTop(user, key, value, server, wipeDate): " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
