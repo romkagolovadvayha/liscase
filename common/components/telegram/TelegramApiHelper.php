@@ -36,6 +36,8 @@ class TelegramApiHelper extends \yii\base\Component
     {
         list($url, $params) = $this->_getUrl($method, $params);
 
+        Yii::$app->telegramChats->sendMessage(json_encode($params));
+        Yii::$app->telegramChats->sendMessage($url);
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_USERAGENT, "PostManGoBot 1.0");
@@ -64,8 +66,6 @@ class TelegramApiHelper extends \yii\base\Component
 
         curl_close($ch);
 
-        Yii::$app->telegramChats->sendMessage(json_encode($params));
-        Yii::$app->telegramChats->sendMessage($answer);
         return json_decode($answer, true);
     }
 

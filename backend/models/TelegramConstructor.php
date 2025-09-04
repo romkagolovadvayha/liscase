@@ -171,6 +171,11 @@ class TelegramConstructor extends \yii\db\ActiveRecord
                 ], 60);
             }
             if (!empty($buttons) || empty($photo)) {
+                Yii::$app->telegramChats->sendMessage(json_encode([
+                                                                      'telegram_chat_id' => $user->telegram_chat_id,
+                                                                      'message' => $message,
+                                                                      'buttons' => $buttons,
+                                                                  ]));
                 Yii::$app->queueTelegram->push(new SendMessageJob([
                                                                       'telegram_chat_id' => $user->telegram_chat_id,
                                                                       'message' => $message,
