@@ -459,9 +459,6 @@ class BlogController extends Controller
     /**
      * blog/generate-comment
      */
-    /**
-     * blog/generate-comment
-     */
     public function actionGenerateComment()
     {
         if (!Yii::$app->settings->get('openAi_comment_enabled')) {
@@ -534,7 +531,7 @@ class BlogController extends Controller
 
         // Создаём комментарий
         $comment = new Comment();
-        $comment->entity   = hash('crc32', Blog::class); // ВАЖНО: сущность статьи, а не Comment
+        $comment->entity   = hash('crc32', $blog); // ВАЖНО: сущность статьи, а не Comment
         $comment->entityId = (int)$blog->id;             // ВАЖНО: ID статьи, а не $comment->id
         $comment->content  = trim($newComment['content']);
         $comment->parentId = !empty($newComment['parentId']) ? (int)$newComment['parentId'] : null;
@@ -543,7 +540,7 @@ class BlogController extends Controller
         $comment->level = $comment->parentId ? 2 : 1;
 
         // Если у тебя url считается в beforeSave — можно не трогать
-        $comment->url = $comment->getUrl();
+        $comment->url = $blog->getUrl();
 
         $comment->status    = 1;
         $comment->createdBy = (int)$user->id;
