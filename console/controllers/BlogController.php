@@ -466,7 +466,7 @@ class BlogController extends Controller
             return;
         }
 
-        $monthAgo = date('Y-m-d H:i:s', strtotime('-1 month'));
+        $monthAgo = date('Y-m-d H:i:s', strtotime('-5 day'));
 
         /** @var Blog $blog */
         $blog = Blog::find()
