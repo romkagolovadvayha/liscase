@@ -531,7 +531,7 @@ class BlogController extends Controller
 
         // Создаём комментарий
         $comment = new Comment();
-        $comment->entity   = hash('crc32', $blog); // ВАЖНО: сущность статьи, а не Comment
+        $comment->entity   = hash('crc32', Blog::class); // ВАЖНО: сущность статьи, а не Comment
         $comment->entityId = (int)$blog->id;             // ВАЖНО: ID статьи, а не $comment->id
         $comment->content  = trim($newComment['content']);
         $comment->parentId = !empty($newComment['parentId']) ? (int)$newComment['parentId'] : null;
