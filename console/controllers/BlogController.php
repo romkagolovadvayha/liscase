@@ -465,10 +465,12 @@ class BlogController extends Controller
             return;
         }
 
+        $monthAgo = date('Y-m-d H:i:s', strtotime('-1 month'));
+
         /** @var Blog $blog */
         $blog = Blog::find()
                     ->andWhere(['status' => Blog::STATUS_ACTIVE])
-                    ->andWhere(['>', 'created_at', time() - 30 * 24 * 60 * 60])
+                    ->andWhere(['>', 'created_at', $monthAgo])
                     ->orderBy(new \yii\db\Expression('RAND()'))
                     ->one();
 
@@ -479,6 +481,7 @@ class BlogController extends Controller
         /** @var Comment[] $comments */
         $comments = Comment::find()
                            ->andWhere(['entity' => hash('crc32', Blog::class), 'entityId' => $blog->id])
+                           ->andWhere(['status' => 1])
                            ->orderBy(['id' => SORT_ASC])
                            ->all();
 
