@@ -3,6 +3,7 @@
 namespace console\controllers;
 
 use common\components\google\TranslateApi;
+use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\models\blog\Blog;
 use common\models\blog\BlogCategory;
 use common\models\blog\BlogImage;
@@ -555,6 +556,8 @@ class BlogController extends Controller
         $comment->updatedAt = $ts;
 
         $comment->save(false);
+
+        Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $user->steam_id]));
     }
 
 }
