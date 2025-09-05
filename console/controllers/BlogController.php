@@ -8,6 +8,7 @@ use common\models\blog\BlogCategory;
 use common\models\blog\BlogImage;
 use common\models\box\Category;
 use common\models\comment\Comment;
+use common\models\statistics\Chats;
 use common\models\user\User;
 use yii\base\BaseObject;
 use yii\console\Controller;
@@ -454,4 +455,106 @@ class BlogController extends Controller
 
         return isset($mime_map[$mime]) ? $mime_map[$mime] : false;
     }
+
+    /**
+     * blog/generate-comment
+     */
+    /**
+     * blog/generate-comment
+     */
+    public function actionGenerateComment()
+    {
+        if (!Yii::$app->settings->get('openAi_comment_enabled')) {
+            return;
+        }
+
+        /** @var Blog $blog */
+        $blog = Blog::find()
+                    ->andWhere(['status' => Blog::STATUS_ACTIVE])
+                    ->andWhere(['>', 'created_at', time() - 30 * 24 * 60 * 60])
+                    ->orderBy(new \yii\db\Expression('RAND()'))
+                    ->one();
+
+        if (empty($blog)) {
+            return;
+        }
+
+        /** @var Comment[] $comments */
+        $comments = Comment::find()
+                           ->andWhere(['entity' => hash('crc32', Blog::class), 'entityId' => $blog->id])
+                           ->orderBy(['id' => SORT_ASC])
+                           ->all();
+
+        // История для контекста (лаконичная)
+        $commentsHistory = [];
+        foreach ($comments as $c) {
+            $commentsHistory[] = [
+                'id'      => (int)$c->id,
+                'content' => (string)$c->content,
+            ];
+        }
+
+        // Случайно решаем: ответить на любой коммент (если есть) или новый
+        $isReplyOnComment = !empty($commentsHistory) ? (bool)rand(0, 1) : false;
+
+        // Выбираем случайный комментарий-родителя, если нужно отвечать
+        $replyToCommentId = null;
+        if ($isReplyOnComment) {
+            $randIdx = array_rand($commentsHistory);
+            $replyToCommentId = (int)$commentsHistory[$randIdx]['id'];
+        }
+
+        // Случайный автор (за последний год)
+        /** @var User|null $user */
+        $user = User::find()
+                    ->andWhere(['>=', 'last_visit_server_at', date('Y-m-d H:i:s', time() - 365 * 24 * 60 * 60)])
+                    ->orderBy(new \yii\db\Expression('RAND()'))
+                    ->one();
+
+        if (!$user) {
+            // Фолбэк на системного пользователя (замени ID на своего "бота")
+            $user = User::findOne(['id' => 1]);
+            if (!$user) {
+                return;
+            }
+        }
+
+        // Получаем ответ от ИИ (строго {content, parentId})
+        $newComment = Yii::$app->openAiComment->getReply(
+            $blog->name,
+            $blog->content,
+            $isReplyOnComment,
+            $commentsHistory,
+            $replyToCommentId
+        );
+
+        if (empty($newComment) || empty($newComment['content'])) {
+            return;
+        }
+
+        // Создаём комментарий
+        $comment = new Comment();
+        $comment->entity   = hash('crc32', Blog::class); // ВАЖНО: сущность статьи, а не Comment
+        $comment->entityId = (int)$blog->id;             // ВАЖНО: ID статьи, а не $comment->id
+        $comment->content  = trim($newComment['content']);
+        $comment->parentId = !empty($newComment['parentId']) ? (int)$newComment['parentId'] : null;
+
+        // Уровень — если есть родитель, пусть будет 2, иначе 1
+        $comment->level = $comment->parentId ? 2 : 1;
+
+        // Если у тебя url считается в beforeSave — можно не трогать
+        $comment->url = $comment->getUrl();
+
+        $comment->status    = 1;
+        $comment->createdBy = (int)$user->id;
+        $comment->updatedBy = (int)$user->id;
+
+        // Если у модели нет TimestampBehavior — задай вручную
+        $ts = time();
+        $comment->createdAt = $ts;
+        $comment->updatedAt = $ts;
+
+        $comment->save(false);
+    }
+
 }

@@ -211,6 +211,9 @@ $config = [
         'openAiChat' => [
             'class' => \common\components\openAi\OpenAiChat::class,
         ],
+        'openAiComment' => [
+            'class' => \common\components\openAi\OpenAiComment::class,
+        ],
         'drop' => [
             'class' => \common\components\drop\Drop::class
         ],
