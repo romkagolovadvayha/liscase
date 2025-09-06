@@ -9,6 +9,7 @@ use yii\filters\VerbFilter;
 use common\components\helpers\Role;
 use common\models\template\Template;
 use common\models\template\TemplateFile;
+use yii\helpers\FileHelper;
 
 class TemplateController extends Controller
 {
@@ -296,16 +297,31 @@ class TemplateController extends Controller
             return ['success' => false, 'message' => 'SCSS output alias not resolved: ' . self::SCSS_OUTPUT];
         }
 
-        // 1) Попытка через scssphp
+        $outDir = dirname($out);
+        // 1) Создать каталог если нужно
+        if (!is_dir($outDir)) {
+            try {
+                FileHelper::createDirectory($outDir, 0775, true);
+            } catch (\Throwable $e) {
+                return ['success' => false, 'message' => 'Cannot create output dir: ' . $outDir . ' — ' . $e->getMessage()];
+            }
+        }
+        // 2) Проверка прав
+        if (!is_writable($outDir)) {
+            return ['success' => false, 'message' => 'Output dir is not writable: ' . $outDir];
+        }
+
+        // ===== компилируем SCSS =====
+        $css = null;
+        // a) scssphp (composer: scssphp/scssphp)
         if (class_exists('\ScssPhp\ScssPhp\Compiler')) {
             try {
                 $scssCode = @file_get_contents($in);
                 if ($scssCode === false) {
-                    return ['success' => false, 'message' => 'Cannot read SCSS entry'];
+                    return ['success' => false, 'message' => 'Cannot read SCSS entry: ' . $in];
                 }
                 $compiler = new \ScssPhp\ScssPhp\Compiler();
 
-                // Совместимость разных версий scssphp
                 if (class_exists('\ScssPhp\ScssPhp\OutputStyle') && method_exists($compiler, 'setOutputStyle')) {
                     $compiler->setOutputStyle(\ScssPhp\ScssPhp\OutputStyle::COMPRESSED);
                 } elseif (class_exists('\ScssPhp\ScssPhp\Formatter\Compressed') && method_exists($compiler, 'setFormatter')) {
@@ -315,33 +331,53 @@ class TemplateController extends Controller
                 if (method_exists($compiler, 'compileString')) {
                     $css = $compiler->compileString($scssCode, $in)->getCss();
                 } else {
-                    // старые версии
                     $css = $compiler->compile($scssCode, $in);
                 }
-
-                if (@file_put_contents($out, $css) === false) {
-                    return ['success' => false, 'message' => 'Cannot write CSS output'];
-                }
-                return ['success' => true, 'message' => 'SCSS compiled (scssphp)', 'compiler' => 'scssphp'];
             } catch (\Throwable $e) {
-                // пойдём на CLI
+                // если упало — пойдём на sass CLI
+                $css = null;
             }
         }
 
-        // 2) Попытка через sass CLI (dart-sass)
-        $cmd = 'sass --no-source-map --style=compressed ' . escapeshellarg($in) . ' ' . escapeshellarg($out) . ' 2>&1';
-        $output = [];
-        $code = null;
-        @exec($cmd, $output, $code);
-        if ($code === 0) {
-            return ['success' => true, 'message' => 'SCSS compiled (sass CLI)', 'compiler' => 'sass'];
+        // b) sass CLI (dart-sass): если нет scssphp или scssphp упал
+        if ($css === null) {
+            $cmd = 'sass --no-source-map --style=compressed ' . escapeshellarg($in) . ' ' . escapeshellarg($out) . ' 2>&1';
+            $output = [];
+            $code = null;
+            @exec($cmd, $output, $code);
+            if ($code === 0) {
+                return ['success' => true, 'message' => 'SCSS compiled (sass CLI)', 'compiler' => 'sass'];
+            }
+            return [
+                'success'  => false,
+                'message'  => 'SCSS compile failed. Install scssphp/scssphp (Composer) or sass (CLI). CLI output: ' . implode("\n", (array)$output),
+                'compiler' => null,
+            ];
         }
 
-        return [
-            'success'  => false,
-            'message'  => 'SCSS compile failed. Install scssphp/scssphp (Composer) or sass (CLI). Output: ' . implode("\n", (array)$output),
-            'compiler' => null,
-        ];
+        // ===== пишем атомарно =====
+        $tmp = @tempnam($outDir, 'scss-');
+        if ($tmp === false) {
+            return ['success' => false, 'message' => 'Cannot create temp file in: ' . $outDir];
+        }
+        $ok = @file_put_contents($tmp, $css);
+        if ($ok === false) {
+            @unlink($tmp);
+            return ['success' => false, 'message' => 'Cannot write CSS temp file: ' . $tmp];
+        }
+        @chmod($tmp, 0664);
+
+        // Переименуем поверх (атомарно в пределах одного FS)
+        if (!@rename($tmp, $out)) {
+            // fallback: прямая запись
+            @unlink($tmp);
+            $ok2 = @file_put_contents($out, $css);
+            if ($ok2 === false) {
+                return ['success' => false, 'message' => 'Cannot write CSS output: ' . $out];
+            }
+        }
+
+        return ['success' => true, 'message' => 'SCSS compiled (scssphp)', 'compiler' => 'scssphp'];
     }
 
     /** Возвращает выбранный Template, создавая default при отсутствии любых записей */
