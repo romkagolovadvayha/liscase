@@ -241,6 +241,9 @@ class TemplateController extends Controller
             $resp['compile'] = $compile;
         }
 
+        // Очистить кэш ассетов
+        $resp['assetsCleared'] = $this->clearAssetsCache();
+
         return $resp;
     }
 
@@ -280,6 +283,8 @@ class TemplateController extends Controller
         $svc = Yii::$app->get('dbTemplates');
         $svc->removeOne((int)$template->id, $rootKey, $path, strtolower(pathinfo($path, PATHINFO_EXTENSION)));
         $svc->bumpVersion((int)$template->id);
+
+        $this->clearAssetsCache();
 
         return ['success' => false, 'message' => 'Override not found'];
     }
@@ -588,5 +593,36 @@ class TemplateController extends Controller
         }
 
         return $nodes;
+    }
+
+    /** Очистить кэш ассетов (frontend/backed + runtime), безопасно пересоздав каталоги */
+    private function clearAssetsCache(): array
+    {
+        $dirs = [
+            '@frontend/web/assets',
+            '@backend/web/assets',
+        ];
+
+        $report = [];
+        foreach ($dirs as $alias) {
+            $path = Yii::getAlias($alias, false);
+            if ($path === false || !is_dir($path)) {
+                $report[] = ['dir' => (string)$alias, 'skipped' => true];
+                continue;
+            }
+            try {
+                // Полностью удаляем каталог и создаём заново — это быстрее и чище
+                FileHelper::removeDirectory($path);
+                FileHelper::createDirectory($path, 0775, true);
+                $report[] = ['dir' => $path, 'cleared' => true];
+            } catch (\Throwable $e) {
+                $report[] = ['dir' => $path, 'cleared' => false, 'error' => $e->getMessage()];
+            }
+        }
+        // Сбросим внутренний кеш AssetManager (на случай долгоживущих процессов)
+        if (isset(Yii::$app->assetManager)) {
+            Yii::$app->assetManager->forceCopy = true; // на один запрос точно перепубликует
+        }
+        return $report;
     }
 }
