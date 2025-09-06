@@ -624,7 +624,7 @@ class TemplateController extends Controller
             Yii::$app->assetManager->forceCopy = true; // на один запрос точно перепубликует
         }
 
-        Yii::$app->settings->set('site_version', Yii::$app->settings->get('site_version') + 0.001);
+        Yii::$app->settings->set('site_version', Yii::$app->settings->get('site_version') + 0.00001);
 
         return $report;
     }
