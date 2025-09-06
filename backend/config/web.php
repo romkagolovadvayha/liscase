@@ -7,7 +7,7 @@ $config = [
     'id' => 'basic',
     'name' => 'LisCase',
     'basePath' => dirname(__DIR__),
-    'bootstrap' => ['log'],
+    'bootstrap' => ['log','dbTemplateBootstrap',],
     'controllerNamespace' => 'backend\controllers',
     'defaultRoute'        => 'user/index',
     'aliases' => [
@@ -15,6 +15,12 @@ $config = [
         '@npm'   => '@vendor/npm-asset',
     ],
     'components' => [
+        'dbTemplates' => [
+            'class' => \common\components\template\DbTemplateService::class,
+        ],
+        'dbTemplateBootstrap' => [
+            'class' => \common\components\template\DbTemplateBootstrap::class,
+        ],
         'urlManager'    => [
             'enablePrettyUrl' => true,
             'showScriptName'  => false,
