@@ -29,7 +29,7 @@ class MainAsset extends AssetBundle
             'js/main.js?v=' . \Yii::$app->settings->get('site_version'),
         ];
         $this->css = [
-            'css/design/styles-local.min.css?v=' . \Yii::$app->settings->get('site_version'),
+            'css/design/styles.min.css?v=' . \Yii::$app->settings->get('site_version'),
         ];
     }
 
