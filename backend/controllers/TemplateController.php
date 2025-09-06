@@ -29,7 +29,7 @@ class TemplateController extends Controller
 
     /** Точки входа SCSS (что компилируем при сохранении любого SCSS) */
     private const SCSS_ENTRY  = '@frontend/assets/sources/css/design/styles.scss';
-    private const SCSS_OUTPUT = '@frontend/assets/sources/css/design/styles-local.min.css';
+    private const SCSS_OUTPUT = '@frontend/web/css/styles-local.min.css';
 
     public function behaviors()
     {
