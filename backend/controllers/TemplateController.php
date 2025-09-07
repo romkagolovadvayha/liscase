@@ -624,14 +624,16 @@ class TemplateController extends Controller
             Yii::$app->assetManager->forceCopy = true; // на один запрос точно перепубликует
         }
 
-        $cur = (string)(Yii::$app->settings->get('site_version') ?: '0');
-        if (function_exists('bcadd')) {
-            $new = bcadd($cur, '0.00001', 5);           // 5 знаков после запятой
-        } else {
-            // fallback, если bcmath не установлен
-            $new = number_format(((float)$cur + 0.00001), 5, '.', '');
-        }
-        Yii::$app->settings->set('site_version', $new);
+        try {
+            $cur = (string)(Yii::$app->settings->get('site_version') ?: '0');
+            if (function_exists('bcadd')) {
+                $new = bcadd($cur, '0.00001', 5);           // 5 знаков после запятой
+            } else {
+                // fallback, если bcmath не установлен
+                $new = number_format(((float)$cur + 0.00001), 5, '.', '');
+            }
+            Yii::$app->settings->set('site_version', $new);
+        } catch (\Exception $e) {}
 
         return $report;
     }

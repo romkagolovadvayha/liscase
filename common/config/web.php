@@ -28,7 +28,20 @@ $config = [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
     ],
+    'container' => [
+        'definitions' => [
+            \common\components\telegram\TelegramNewsService::class => [
+                'class' => common\components\telegram\TelegramNewsService::class,
+            ],
+        ],
+        'singletons' => [
+            \common\components\telegram\TelegramNewsCallbackInterface::class => \common\components\telegram\DummyTelegramNewsCallback::class,
+        ],
+    ],
     'components' => [
+        'telegram' => [
+            'class' => \common\components\telegram\TelegramBot::class,
+        ],
         'i18n'          => [
             'translations' => [
                 '*' => [

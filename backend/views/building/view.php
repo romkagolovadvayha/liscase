@@ -82,6 +82,7 @@ $this->params['breadcrumbs'][] = $this->title;
     <?php foreach ($model->buildingResident as $resident): ?>
             <a  title="<?=Yii::t('common', 'Открыть профиль игрока')?> <?=$resident->user->username?>"
                 target="_blank"
+                rel="nofollow"
                 href="<?=$resident->user->getLink('stats')?>"
                 class="buildings_profile_users_item">
                 <span class="buildings_profile_users_item_name"><?=$resident->user->username?></span>
