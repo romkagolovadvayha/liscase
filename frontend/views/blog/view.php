@@ -184,7 +184,7 @@ $breadcrumbLd = [
                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center"
                             type="button" id="shareDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                         <!-- share icon -->
-                        <svg width="18" height="18" viewBox="0 0 24 24" class="me-1" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" class="me-1 blog_item_data_item_icon">
                             <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.27 3.27 0 000-1.39l7-4.11A3 3 0 0018 7.91 3.09 3.09 0 1021.09 5 3.09 3.09 0 0018 7.91c-.45 0-.88-.1-1.26-.28l-7 4.12a3.09 3.09 0 100 4.5l7-4.12c.38.18.81.28 1.26.28A3.09 3.09 0 1021.09 16 3.09 3.09 0 0018 16.08z"/>
                         </svg>
                         <?= Yii::t('common','Поделиться') ?>
