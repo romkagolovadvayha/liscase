@@ -16,7 +16,7 @@
                     'label': '',
                     'url': SETTINGS.get('social_telegram'),
                     'iconClass': 'icons icons_hover icons_32px icons_32px_telegram',
-                    'options': {'class': ''},
+                    'options': {'class': '', 'rel': 'nofollow'},
                     'visibility': SETTINGS.get('social_telegram'),
                     'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "Telegram"}
                 },
@@ -24,7 +24,7 @@
                     'label': '',
                     'url': SETTINGS.get('social_vk'),
                     'iconClass': 'icons icons_hover icons_32px icons_32px_vk',
-                    'options': {'class': ''},
+                    'options': {'class': '', 'rel': 'nofollow'},
                     'visibility': SETTINGS.get('social_vk'),
                     'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "VK"}
                 },
@@ -32,7 +32,7 @@
                     'label': '',
                     'url': SETTINGS.get('social_discord'),
                     'iconClass': 'icons icons_hover icons_32px icons_32px_discord',
-                    'options': {'class': ''},
+                    'options': {'class': '', 'rel': 'nofollow'},
                     'visibility': SETTINGS.get('social_discord'),
                     'linkOptions': {'target': '_blank', 'data-bs-toggle': "tooltip", 'data-bs-placement': "bottom", 'data-bs-title': "Discord"}
                 },
@@ -55,9 +55,9 @@
             }
         %}
         <ul>
-            <li><a href="/site/agreement" class="text-text-teritiary">{{ t('common', 'Пользовательское соглашение') }}</a></li>
-            <li><a href="/site/privacy" class="text-text-teritiary">{{ t('common', 'Политика конфиденциальности') }}</a></li>
-            <li><a href="/site/personalinformation" class="text-text-teritiary">{{ t('common', 'Обработка персональных данных') }}</a></li>
+            <li><a href="/site/agreement" rel="nofollow" class="text-text-teritiary">{{ t('common', 'Пользовательское соглашение') }}</a></li>
+            <li><a href="/site/privacy" rel="nofollow" class="text-text-teritiary">{{ t('common', 'Политика конфиденциальности') }}</a></li>
+            <li><a href="/site/personalinformation" rel="nofollow" class="text-text-teritiary">{{ t('common', 'Обработка персональных данных') }}</a></li>
         </ul>
     </nav>
 

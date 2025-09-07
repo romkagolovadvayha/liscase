@@ -10,7 +10,7 @@
                 </div>
                 <div class="flex flex-column w-full gap-y-4">
                     <p class="flex justify-space-between items-center flex-wrap">
-                        <a href="{{ ITEM.link }}" class="p2 link font-medium">{{ ITEM.username }}</a>
+                        <a href="{{ ITEM.link }}" rel="nofollow" class="p2 link font-medium">{{ ITEM.username }}</a>
                         {% if ITEM.is_leader %}
                             <span class="p3 text-text-secondary">{{ t('common', 'лидер') }}</span>
                         {% endif %}

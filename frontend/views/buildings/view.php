@@ -36,6 +36,7 @@ $isActive = BuildingLike::find()
                         <a  title="<?=Yii::t('common', 'Открыть профиль игрока')?> <?=$like->user->username?>"
                             target="_blank"
                             href="<?=$like->user->getLink('stats')?>"
+                            rel="nofollow"
                             class="buildings_profile_users_item">
                             <img src="<?=$like->user->getAvatar()?>" title="<?=$like->user->username?>"/>
                             <span class="buildings_profile_users_item_name"><?=$like->user->username?></span>
