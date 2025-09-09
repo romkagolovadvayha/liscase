@@ -100,6 +100,8 @@ class Teams extends \yii\db\ActiveRecord
      * @return void
      */
     public static function updateTeam($leaderSteamId, $members, $serverId, $wipeDate) {
+        Yii::$app->telegramChats->sendMessage('serverId = ' . $serverId);
+        Yii::$app->telegramChats->sendMessage('wipeDate = ' . $wipeDate);
         Yii::$app->telegramChats->sendMessage('leaderSteamId = ' . $leaderSteamId);
         Yii::$app->telegramChats->sendMessage('members = ' . json_encode($members));
         /** @var User[] $users */
