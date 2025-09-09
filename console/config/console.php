@@ -129,13 +129,7 @@ $config['modules']['crontask'] = [
 $config['controllerMap']['supervisortask'] = [
     'class' =>\console\controllers\SupervisortaskController::class,
 ];
-$config['controllerMap']['migrate'] = [
-    'class'               => 'console\components\migration\MigrateController',
-    'templateFile'        => '@console/components/migration/templates/templateView.php',
-    'migrationNamespaces' => [
-        'lajax\translatemanager\migrations\namespaced',
-    ],
-];
+
 $config['modules']['translateManager'] = [
     'class'                   => \DemonDogSL\translateManager\Module::class,
     'root'                    => [
