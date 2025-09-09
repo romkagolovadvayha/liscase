@@ -116,6 +116,9 @@ class Teams extends \yii\db\ActiveRecord
             Teams::removeUserLeaderAllTeams($users[$steamId]->id, $serverId, $wipeDate);
             Teams::leaveFromTeam($users[$steamId]->id, $serverId, $wipeDate);
         }
+        if (empty($members)) {
+            Yii::$app->telegramChats->sendMessage('empty $members');
+        }
         foreach ($members as $steamId) {
             $model = new Teams();
             $model->leader_user_id = $users[$leaderSteamId]->id;
@@ -123,7 +126,9 @@ class Teams extends \yii\db\ActiveRecord
             $model->server_id = $serverId;
             $model->wipe = $wipeDate;
             $model->created_at = date('Y-m-d H:i:s');
-            $model->save();
+            if (!$model->save()) {
+                Yii::$app->telegramChats->sendMessage('updateTeam: ' . json_encode($model->getErrors()));
+            }
         }
     }
 
