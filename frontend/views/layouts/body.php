@@ -66,7 +66,12 @@ if (!empty($this->params['_user'])) {
     if (!empty($buildings)) {
         $buildingsBlock = $this->render('@frontend/views/widgets/buildings.twig', ['ITEMS' => $buildings]);
     }
-    $team = \common\models\user\UserTeam::getTeamList($_server->id, $_user->user_id, $_server->currentWipe());
+    try {
+        $team = \common\models\teams\Teams::getTeamList($_server->id, $_user->user_id, $_server->currentWipe());
+    } catch (\Exception $e) {
+        Yii::$app->telegramChats->sendMessage("getTeamList: " . $e->getFile() . ":" . $e->getLine() . ": " . $e->getMessage());
+        $team = [];
+    }
     $teamBlock = $this->render('@frontend/views/widgets/teams.twig', ['ITEMS' => $team]);
     $kills = Kills::getKillsLive($_server, $_user);
     $killsBlock = $this->render('@frontend/views/widgets/kills.twig', ['ITEMS' => $kills]);
