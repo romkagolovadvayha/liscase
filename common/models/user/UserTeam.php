@@ -4,7 +4,6 @@ namespace common\models\user;
 
 use common\models\servers\Servers;
 use common\models\team\Team;
-use common\models\teams\Teams;
 use Yii;
 
 /**
@@ -103,33 +102,25 @@ class UserTeam extends \yii\db\ActiveRecord
         $ut = UserTeam::tableName();
         $tt = Team::tableName();
 
-        /** @var Teams[] $rows */
-        // все участники команды пользователя на сервере/вайпе
-        $rows = Teams::find()->alias('t')
-                     ->innerJoin(Teams::tableName() . ' t2',
-                                 't.leader_user_id = t2.leader_user_id AND t.server_id = t2.server_id AND t.wipe = t2.wipe'
-                     )
-                     ->where([
-                                 't2.user_id'   => $userId,
-                                 't2.server_id' => $serverId,
-                                 't2.wipe'      => $wipe,
-                             ])
-                     ->select([
-                                  't.id',
-                                  't.leader_user_id',
-                                  't.user_id',
-                                  't.server_id',
-                                  't.wipe',
-                                  't.created_at',
-                              ])
-                     ->orderBy(['t.user_id' => SORT_ASC])
-                     ->asArray()
-                     ->all();
+        /** @var UserTeam[] $rows */
+        $rows = UserTeam::find()->alias('u')
+                        ->innerJoin("$ut u2", 'u.team_id = u2.team_id AND u.server_id = u2.server_id AND u.wipe = u2.wipe')
+                        ->andWhere([
+                                       'u2.user_id'   => $userId,
+                                       'u2.server_id' => $serverId,
+                                       'u2.wipe'      => $wipe,
+                                   ])
+                        ->andWhere(['u.server_id' => $serverId, 'u.wipe' => $wipe])
+                        ->innerJoin(["t" => $tt], 't.id = u.team_id')
+                        ->addSelect(['u.*', 't.team_author_id AS leader_id'])
+                        ->with(['user'])
+                        ->orderBy(['u.user_id' => SORT_ASC])
+                        ->all();
 
         if (!$rows) {
             return [];
         }
-        $authorId = $rows[0]->leader_user_id;
+        $authorId = $rows[0]->leader_id;
 
         $users = [];
         foreach ($rows as $team) {
