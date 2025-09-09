@@ -306,7 +306,7 @@ class WipeCalendarController extends Controller
             // пятница после глобала
             $anchorFri = $globalDT->modify('+1 day'); // пятница той же недели (заблокирована)
             // первый реальный слот = через неделю после этой пятницы
-            $firstAllowed = $anchorFri->modify('+7 days');
+            $firstAllowed = $anchorFri->modify('+14 days');
             $dt = new DateTimeImmutable($firstAllowed->format('Y-m-d') . ' ' . $mapTime, $tz);
 
             while ($dt < $afterLastMonth) {
