@@ -181,7 +181,6 @@ class Teams extends \yii\db\ActiveRecord
                                   't.created_at',
                               ])
                      ->orderBy(['t.user_id' => SORT_ASC])
-                     ->asArray()
                      ->all();
 
         if (!$rows) {
