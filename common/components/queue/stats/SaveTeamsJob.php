@@ -24,6 +24,7 @@ class SaveTeamsJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
+        Yii::$app->telegramChats->sendMessage($this->data);
         try {
             $request = json_decode($this->data, 1);
 
