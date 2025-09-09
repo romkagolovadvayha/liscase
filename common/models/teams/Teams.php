@@ -100,10 +100,6 @@ class Teams extends \yii\db\ActiveRecord
      * @return void
      */
     public static function updateTeam($leaderSteamId, $members, $serverId, $wipeDate) {
-        Yii::$app->telegramChats->sendMessage('serverId = ' . $serverId);
-        Yii::$app->telegramChats->sendMessage('wipeDate = ' . $wipeDate);
-        Yii::$app->telegramChats->sendMessage('leaderSteamId = ' . $leaderSteamId);
-        Yii::$app->telegramChats->sendMessage('members = ' . json_encode($members));
         /** @var User[] $users */
         $users = User::find()
             ->andWhere(['IN', 'steam_id', $members])
@@ -119,9 +115,6 @@ class Teams extends \yii\db\ActiveRecord
             }
             Teams::removeUserLeaderAllTeams($users[$steamId]->id, $serverId, $wipeDate);
             Teams::leaveFromTeam($users[$steamId]->id, $serverId, $wipeDate);
-        }
-        if (empty($members)) {
-            Yii::$app->telegramChats->sendMessage('empty $members');
         }
         foreach ($members as $steamId) {
             $model = new Teams();
