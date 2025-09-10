@@ -63,7 +63,7 @@ $this->title = Yii::t('common', 'Вайп');
         <h3>Генерация новых карт</h3>
         <?php foreach ($servers as $server): ?>
         <?php if ($server->secret_map) continue; ?>
-        <?php $disabled = Yii::$app->cache->get("WIPE_actionGenerateMap_{$server->id}") ? ' btn-default disabled' : ' btn-success' ?>
+        <?php $disabled = Yii::$app->cache->get("WIPE_actionGenerateMap2_{$server->id}") ? ' btn-default disabled' : ' btn-success' ?>
         <?= Html::a($server->name,
                     '/wipe/generate-map?id=' . $server->id,
                     ['class' => 'btn' . $disabled, 'disabled' => true]); ?>

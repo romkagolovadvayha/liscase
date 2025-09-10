@@ -93,6 +93,10 @@ class SupportController extends WebController
             }
         }
 
+
+        $canonical = Yii::$app->params['homePage'] . '/support';
+        $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
+
         if (!empty($activeTicket)) {
             return $this->redirect(['ticket', 'id' => $activeTicket->getNumber()]);
         }

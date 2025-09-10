@@ -59,7 +59,7 @@ class TelegramApiHelper extends \yii\base\Component
 
         $answer = curl_exec($ch);
         if ($answer === false) {
-            Yii::error('empty telegram query answer ' . curl_error($ch));
+            Yii::$app->telegramChats->sendMessage('empty telegram query answer ' . curl_error($ch));
         }
 
         curl_close($ch);

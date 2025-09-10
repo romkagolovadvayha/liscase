@@ -178,7 +178,7 @@ class Blog extends \yii\db\ActiveRecord
         $q = self::find()
                  ->alias('b')
                  ->select([
-                              'b.id','b.name','b.blog_category_id','b.created_at','b.views',
+                              'b.id','b.name','b.blog_category_id','b.created_at','b.views', 'b.link_name',
                               new \yii\db\Expression('MATCH (b.name, b.description, b.content) AGAINST (:q IN BOOLEAN MODE) AS score'),
                           ])
                  ->where(['b.status' => self::STATUS_ACTIVE])

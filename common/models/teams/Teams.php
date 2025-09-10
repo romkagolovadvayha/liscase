@@ -4,6 +4,7 @@ namespace common\models\teams;
 
 use common\models\servers\Servers;
 use common\models\user\User;
+use common\models\user\UserTeam;
 use Yii;
 use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
@@ -123,7 +124,9 @@ class Teams extends \yii\db\ActiveRecord
             $model->server_id = $serverId;
             $model->wipe = $wipeDate;
             $model->created_at = date('Y-m-d H:i:s');
-            $model->save();
+            if (!$model->save()) {
+                Yii::$app->telegramChats->sendMessage('updateTeam: ' . json_encode($model->getErrors()));
+            }
         }
     }
 
@@ -147,5 +150,82 @@ class Teams extends \yii\db\ActiveRecord
         foreach ($teams as $item) {
             $item->delete();
         }
+    }
+
+    /**
+     * @param $serverId
+     * @param $userId
+     * @param $wipe
+     *
+     * @return array|UserTeam[]
+     */
+    public static function getTeamList($serverId, $userId, $wipe): array
+    {
+        /** @var Teams[] $rows */
+        // все участники команды пользователя на сервере/вайпе
+        $rows = Teams::find()->alias('t')
+                     ->innerJoin(Teams::tableName() . ' t2',
+                                 't.leader_user_id = t2.leader_user_id AND t.server_id = t2.server_id AND t.wipe = t2.wipe'
+                     )
+                     ->where([
+                                 't2.user_id'   => $userId,
+                                 't2.server_id' => $serverId,
+                                 't2.wipe'      => $wipe,
+                             ])
+                     ->select([
+                                  't.id',
+                                  't.leader_user_id',
+                                  't.user_id',
+                                  't.server_id',
+                                  't.wipe',
+                                  't.created_at',
+                              ])
+                     ->orderBy(['t.user_id' => SORT_ASC])
+                     ->all();
+
+        if (!$rows) {
+            return [];
+        }
+        $authorId = $rows[0]->leader_user_id;
+
+        $users = [];
+        foreach ($rows as $team) {
+            if ($team->user_id != $authorId) {
+                continue;
+            }
+            $usr = $team->user;
+            if (!$usr) {
+                continue;
+            }
+            $users[] = [
+                'link'      => $usr->getLink('stats'),
+                'username'  => $usr->username,
+                'is_online'    => $usr->getStatus(),
+                'date_visit' => $usr->last_visit_server_at,
+                'time_visit' => strtotime($usr->last_visit_server_at),
+                'avatar'    => $usr->getAvatar(),
+                'is_leader' => true,
+            ];
+        }
+        foreach ($rows as $team) {
+            if ($team->user_id == $authorId) {
+                continue;
+            }
+            $usr = $team->user;
+            if (!$usr) {
+                continue;
+            }
+            $users[] = [
+                'link'      => $usr->getLink('stats'),
+                'username'  => $usr->username,
+                'is_online'    => $usr->getStatus(),
+                'date_visit' => $usr->last_visit_server_at,
+                'time_visit' => strtotime($usr->last_visit_server_at),
+                'avatar'    => $usr->getAvatar(),
+                'is_leader' => false,
+            ];
+        }
+
+        return $users;
     }
 }

@@ -32,6 +32,10 @@ class SkindropsController extends WebController
         if (!Yii::$app->settings->get('section_skindrops')) {
             throw new NotFoundHttpException('The requested page does not exist.');
         }
+
+        $canonical = Yii::$app->params['homePage'] . '/skindrops';
+        $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
+
         $model = null;
         $user = null;
         if (!Yii::$app->user->isGuest) {

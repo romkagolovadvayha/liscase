@@ -211,6 +211,9 @@ $config = [
         'openAiChat' => [
             'class' => \common\components\openAi\OpenAiChat::class,
         ],
+        'openAiComment' => [
+            'class' => \common\components\openAi\OpenAiComment::class,
+        ],
         'drop' => [
             'class' => \common\components\drop\Drop::class
         ],
@@ -244,6 +247,11 @@ $config = [
 //        //'allowedIPs' => ['127.0.0.1', '::1'],
 //    ];
 //}
+
+$config = yii\helpers\ArrayHelper::merge(
+    $config,
+    require('queue.php'),
+);
 
 return yii\helpers\ArrayHelper::merge(
     $config,

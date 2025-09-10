@@ -88,6 +88,16 @@ class SettingsController extends Controller
             Yii::$app->settings->getSettings(true);
             Yii::$app->session->setFlash('success', 'Настройки успешно сохранены!');
             Yii::$app->cache->delete('Settings_getSettings');
+
+            $cur = (string)(Yii::$app->settings->get('site_version') ?: '0');
+            if (function_exists('bcadd')) {
+                $new = bcadd($cur, '0.00001', 5);           // 5 знаков после запятой
+            } else {
+                // fallback, если bcmath не установлен
+                $new = number_format(((float)$cur + 0.00001), 5, '.', '');
+            }
+            Yii::$app->settings->set('site_version', $new);
+
         }
 
         return $this->render('pages/form', [

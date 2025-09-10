@@ -175,4 +175,8 @@ class BuildingForm extends Building
             }
         }
     }
+
+    public function getUrl() {
+        return '/buildings/view?id=' . $this->id;
+    }
 }

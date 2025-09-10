@@ -56,7 +56,7 @@ print_r($response);
   "mapParameters": {
     "size": ' . $size . ',
     "seed": 111,
-    "staging": false
+    "staging": true
   },
   "customMapSettings": {
 	  "generateRingRoad": "Wanted",
@@ -1323,7 +1323,7 @@ print_r($response);
   "mapParameters": {
     "size": ' . $size . ',
     "seed": 111,
-    "staging": false
+    "staging": true
   }, "customMapSettings": {
 	  "generateRingRoad": "Wanted",
 	  "generateAboveGroundTrainTracks": "Wanted",

@@ -20,7 +20,7 @@ use yii2mod\editable\Editable;
                 <?php endif; ?>
             </div>
             <div class="">
-                <span><a href="/stats/player?steamId=<?=$model->author->steam_id?>&server=max3"><?=$model->getAuthorName();?></a></span>
+                <span><?=$model->getAuthorName();?></span>
                 <?php echo Html::a($model->getPostedDate(), $model->getAnchorUrl(), ['class' => 'comment-date']); ?>
             </div>
             <div class="comment-body">

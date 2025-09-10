@@ -2,7 +2,7 @@
     {% if USER_GUEST %}
     <!-- БЕЗ АВТОРИЗАЦИИ -->
     <section class="user user_not-authorized">
-        <h2 class="user__title">{{ t('common', 'Добро пожаловать!') }}</h2>
+        <h1 class="user__title main_title">{{ t('common', 'Лучшие сервера для комфортной игры!') }}</h1>
         <p class="user__description">{{ t('common', 'Войдите в систему, чтобы начать играть') }}</p>
         <div class="user__stats stats">
             <div class="stats__item">
@@ -19,14 +19,14 @@
             </div>
         </div>
         {% if SETTINGS.get('design_statsBlockImageVideo') %}
-        <video class="user__image" playsinline preload="auto" loop autoplay muted>
+        <video class="user__image" playsinline loop autoplay muted data-lazy="true" preload="none" poster="{{ SETTINGS.get('design_statsBlockImage') }}">
             <source type="video/webm" src="{{ SETTINGS.get('design_statsBlockImageVideo') }}">
         </video>
         {% else %}
             <img src="{{ SETTINGS.get('design_image_not_auth') }}" alt="farmer" class="user__image" loading="lazy"/>
         {% endif %}
         <div class="user__stats_footer">
-            <a href="/auth/oauth?authclient=steam" class="button button-primary h-48" style="padding-top: 15px;">
+            <a href="/auth/oauth?authclient=steam" rel="nofollow" class="button button-primary h-48" style="padding-top: 15px;">
               <span class="button__text">
                 {{ t('common', 'Войти через Steam') }}
                 <span class="icons icons_24px icons_24px_steam bg-white"></span>
@@ -113,7 +113,7 @@
                 {% endif %}
             </div>
             {% if SETTINGS.get('design_statsBlockImageVideo') %}
-                <video class="user__image" playsinline preload="auto" loop autoplay muted>
+                <video class="user__image" playsinline loop autoplay muted data-lazy="true" preload="none" poster="{{ SETTINGS.get('design_statsBlockImage') }}">
                     <source type="video/webm" src="{{ SETTINGS.get('design_statsBlockImageVideo') }}">
                 </video>
             {% else %}
@@ -140,7 +140,7 @@
         <h2 class="daily-reward__title">{{ t('common', 'Ежедневная награда') }}</h2>
         <p class="daily-reward__description">
               <span>
-                {{ t('common', "Переходи в наш <a href=\"{BOT_PARAM_LINK}\" class=\"p0\" target=\"_blank\">Telegram-бот</a> для получения ежедневного бонуса.", {BOT_PARAM_LINK: BOT_LINK})|raw }}
+                {{ t('common', "Переходи в наш <a href=\"{BOT_PARAM_LINK}\" class=\"p0\" rel=\"nofollow\" target=\"_blank\">Telegram-бот</a> для получения ежедневного бонуса.", {BOT_PARAM_LINK: BOT_LINK})|raw }}
               </span>
             <span
             >{{ t('common', 'Напиши') }} <span
@@ -154,13 +154,13 @@
         </p>
 
         {% if SETTINGS.get('design_bonusBlockImageVideo') %}
-            <video class="daily-reward__image" playsinline preload="auto" loop autoplay muted>
+            <video class="daily-reward__image" playsinline loop autoplay muted data-lazy="true" preload="none" poster="{{ SETTINGS.get('design_bonusBlockImage') }}">
                 <source type="video/webm" src="{{ SETTINGS.get('design_bonusBlockImageVideo') }}">
             </video>
         {% else %}
             <img src="{{ SETTINGS.get('design_bonusBlockImage') }}" alt="symbol" loading="lazy" class="daily-reward__image"/>
         {% endif %}
-        <a href="{{ BOT_LINK }}" target="_blank" class="button button-secondary" style="padding-top: 15px;">
+        <a href="{{ BOT_LINK }}" rel="nofollow" target="_blank" class="button button-secondary" style="padding-top: 15px;">
             <span class="button__text">{{ t('common', 'Получить бонус') }}</span>
         </a>
     </section>

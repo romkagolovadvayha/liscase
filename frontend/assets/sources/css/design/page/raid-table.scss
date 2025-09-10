@@ -1,0 +1,96 @@
+/* общие */
+.raid-page {
+  .p2{ font-size: 14px; line-height: 1.35; color: var(--text-main); }
+  .p3{ font-size: 12px; line-height: 1.3;  color: var(--text-secondary); }
+  .layout{
+    display:grid; grid-template-columns: 280px 1fr; gap:16px;
+    border-radius: var(--block-radius);
+    color: var(--text-main);
+    background-color: var(--background-secondary);
+    padding: 8px;
+  }
+  @media (max-width: 980px){
+    .layout{ grid-template-columns: 1fr; }
+  }
+
+  /* левая колонка (блок) */
+  .targets{
+    border-radius: var(--block-radius);
+    color: var(--text-main);
+    background-color: var(--background-secondary);
+    border: 1px solid var(--background-teritiary);
+  }
+  .targets__header{
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--background-teritiary);
+    background: var(--background-teritiary);
+    border-radius: var(--block-radius) var(--block-radius) 0 0;
+  }
+  .targets__list{
+    padding: 8px; max-height: 72vh; overflow: auto;
+  }
+  /* скролл */
+  .targets__list::-webkit-scrollbar{ width:5px; height:5px; background-color: transparent; }
+  .targets__list::-webkit-scrollbar-thumb{ background-color: var(--status-background-opacity); border-radius: 8px; }
+
+  .tcard{
+    display:flex; align-items:center; gap:8px; width:100%;
+    border:1px solid var(--background-teritiary);
+    background-color: var(--background-teritiary);
+    color: var(--text-main);
+    border-radius: var(--card-radius);
+    padding:8px;
+    cursor:pointer; margin-bottom:8px; transition:.15s border-color,.15s background,.15s transform;
+    text-align:left;
+  }
+  .tcard:hover{ transform: translateY(-1px); opacity: 0.7; }
+  .tcard.active{ background-color: var(--background-main); }
+  .tcard img{ width:32px; height:32px; object-fit:contain; flex:0 0 32px; }
+  .tcard span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* правая колонка (блок) */
+  .methods{
+    border-radius: var(--block-radius);
+    color: var(--text-main);
+    background-color: var(--background-secondary);
+    border: 1px solid var(--background-teritiary);
+    padding: 12px;
+  }
+  .methods__head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .methods__list{ display:flex; flex-direction:column; gap:10px; max-height: 80vh; overflow: auto; padding-right: 4px; }
+  /* скролл */
+  .methods__list::-webkit-scrollbar{ width:5px; height:5px; background-color: transparent; }
+  .methods__list::-webkit-scrollbar-thumb{ background-color: var(--status-background-opacity); border-radius: 8px; }
+
+  /* элементы */
+  .mrow{
+    border:1px solid var(--background-teritiary);
+    background-color: var(--background-teritiary);
+    color: var(--text-main);
+    border-radius: var(--card-radius);
+    padding: 10px;
+  }
+  .mrow__top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .mrow__left{ display:flex; align-items:center; gap:10px; min-width:0; }
+  .mrow__left img{ width:32px; height:32px; object-fit:contain; }
+  .mrow__title{ font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width: 52vw; }
+  .mrow__x{ font-weight:700; }
+
+  /* ингредиенты */
+  .mrow__craft{
+    display:flex; flex-wrap: wrap; gap:6px; margin-top:8px;
+  }
+  .chip{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 8px; border-radius: 8px;
+    font-size:12px; line-height:1; font-weight: 700;
+    border:1px solid var(--background-teritiary);
+    background-color: var(--background-teritiary);
+    color: var(--text-main);
+  }
+  .chip img{ width:16px; height:16px; object-fit:contain; }
+  .chip__fallback{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:16px; height:16px; border-radius:4px; background:#ccc; color:#333; font-weight:800;
+  }
+}

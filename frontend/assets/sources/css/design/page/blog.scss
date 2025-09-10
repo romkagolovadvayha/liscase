@@ -304,6 +304,11 @@
 .breadcrumbs_wrap {
   color: var(--text-main);
   border-radius: var(--block-radius);
+  .breadcrumb-item {
+      white-space: normal;   /* разрешаем перенос по пробелам */
+      word-wrap: break-word; /* старый синтаксис */
+      overflow-wrap: break-word; /* современный синтаксис */
+  }
   .breadcrumb-item + .breadcrumb-item::before {
     color: rgba(255, 255, 255, 0.74);
     padding: 0;

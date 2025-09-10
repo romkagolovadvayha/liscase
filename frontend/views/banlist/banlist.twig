@@ -45,4 +45,69 @@
         })
         }}
     </section>
+    <section class="seo-block mt-32">
+        <h2 class="h3 text-left">
+            {{ t('common', 'Бан-лист серверов — как читать и что делать') }}
+        </h2>
+
+        <p class="mt-12 p1 text-text-secondary">
+            {{ t('common', 'В таблице показаны ник/Steam, сервер, дата выдачи и причина. Если бан снят, в колонках отображаются соответствующие даты.') }}
+        </p>
+
+        <ul class="mt-12 servers_page_description_list">
+            <li class="servers_page_description_list_item">
+                {{ t('common', '«Все сервера» в колонке сервера означает глобальную блокировку на проекте') }}
+            </li>
+            <li class="servers_page_description_list_item">
+                {{ t('common', 'Причина указывается модератором — от токсичного поведения до использования читов') }}
+            </li>
+            <li class="servers_page_description_list_item">
+                {{ t('common', 'Записи синхронизируются с игровых серверов автоматически') }}
+            </li>
+        </ul>
+
+        <div class="mt-16 flex flex-wrap gap-8">
+            <a class="button button-secondary mr-6" href="/servers">
+                {{ t('common', 'Наши сервера') }}
+            </a>
+            <a class="button button-secondary mr-6" href="/servers/max3/rules">
+                {{ t('common', 'Правила серверов') }}
+            </a>
+            <a class="button button-secondary mr-6" href="/support">
+                {{ t('common', 'Поддержка и апелляции') }}
+            </a>
+        </div>
+
+        <div class="seo-faq mt-24">
+            <h3 class="h4">{{ t('common', 'Частые вопросы о бан-листе') }}</h3>
+
+            <details class="faq-item mt-12">
+                <summary class="p1"><strong>{{ t('common', 'Почему меня забанили?') }}</strong></summary>
+                <div class="p2 mt-8">
+                    {{ t('common', 'Откройте свою строку в таблице и посмотрите колонку «Причина». Подробности может уточнить модерация через поддержку.') }}
+                </div>
+            </details>
+
+            <details class="faq-item mt-12">
+                <summary class="p1"><strong>{{ t('common', 'Как подать апелляцию?') }}</strong></summary>
+                <div class="p2 mt-8">
+                    {{ t('common', 'Перейдите в раздел «Поддержка и апелляции» и создайте обращение, указав ваш Steam ID и сервер. Ответ даст модерация.') }}
+                </div>
+            </details>
+
+            <details class="faq-item mt-12">
+                <summary class="p1"><strong>{{ t('common', 'Бан действует на все сервера?') }}</strong></summary>
+                <div class="p2 mt-8">
+                    {{ t('common', 'Зависит от типа нарушения. Если в колонке сервера указано «Все сервера», блокировка глобальная; иначе — локальная для конкретного сервера.') }}
+                </div>
+            </details>
+
+            <details class="faq-item mt-12">
+                <summary class="p1"><strong>{{ t('common', 'Когда бан снимается автоматически?') }}</strong></summary>
+                <div class="p2 mt-8">
+                    {{ t('common', 'Если указан срок, запись изменится на «Снят» после его истечения. Перманентные блокировки не снимаются без апелляции.') }}
+                </div>
+            </details>
+        </div>
+    </section>
 </section>

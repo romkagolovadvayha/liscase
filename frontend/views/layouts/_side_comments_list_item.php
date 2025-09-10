@@ -17,7 +17,7 @@ use common\models\comment\Comment;
     <div class="block w-full">
         <p class="p3 gap-x-4 mb-12">
             <?=Yii::t('common', 'Пользователь')?>
-            <a class="p3" href="/users/<?=$model->createdByUser->username?>"><?=$model->createdByUser->username?></a>
+            <b><?=$model->createdByUser->username?></b>
             <?=Yii::t('common', 'оставил коментарий к записи')?>
             <a class="p3" href="<?=$model->blog->getUrl()?>"><?=Yii::t('database', $model->blog->name)?></a>
         </p>

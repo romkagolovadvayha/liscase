@@ -75,6 +75,7 @@ $reports = Reports::find()
            data-bs-placement="bottom"
            data-bs-title="<?=Yii::t('common', 'Причина: ')?> <?=$item->reason?>"
            target="_blank"
+           rel="nofollow"
            class="support_messages_item_message_reports_item">
             <div class="support_messages_item_message_reports_item_avatar">
                 <img src="<?=$item->user->getAvatar()?>" width="50px">

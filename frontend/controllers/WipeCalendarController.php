@@ -7,11 +7,16 @@ use yii\web\Controller;
 use DateTimeImmutable;
 use DateTimeZone;
 use common\models\servers\Servers;
+use yii\web\NotFoundHttpException;
 
 class WipeCalendarController extends Controller
 {
     public function actionIndex($year = null, $month = null, $months = 1)
     {
+        if (!Yii::$app->settings->get('section_calendar')) {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+        $this->view->params['page'] = 'wipe-calendar';
         $tz  = new DateTimeZone(Yii::$app->timeZone ?: 'UTC');
         $now = new DateTimeImmutable('now', $tz);
 
@@ -100,6 +105,9 @@ class WipeCalendarController extends Controller
                 );
             }
         }
+
+        $canonical = Yii::$app->params['homePage'] . '/wipe-calendar';
+        $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
 
         // === 4) 14-дневные: по пятницам, начиная с пятницы после глобала,
         // но неделя глобала заблокирована → первый слот = через неделю после глобала, далее +14 ===
@@ -298,7 +306,7 @@ class WipeCalendarController extends Controller
             // пятница после глобала
             $anchorFri = $globalDT->modify('+1 day'); // пятница той же недели (заблокирована)
             // первый реальный слот = через неделю после этой пятницы
-            $firstAllowed = $anchorFri->modify('+7 days');
+            $firstAllowed = $anchorFri->modify('+14 days');
             $dt = new DateTimeImmutable($firstAllowed->format('Y-m-d') . ' ' . $mapTime, $tz);
 
             while ($dt < $afterLastMonth) {

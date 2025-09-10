@@ -18,6 +18,7 @@ $config = [
     'bootstrap' => [
 //        'log',
 //        'languagepicker'
+          'dbTemplateBootstrap',
     ],
     'controllerNamespace' => 'frontend\controllers',
     'aliases' => [
@@ -30,6 +31,12 @@ $config = [
         ],
     ],
     'components' => [
+        'dbTemplates' => [
+            'class' => \common\components\template\DbTemplateService::class,
+        ],
+        'dbTemplateBootstrap' => [
+            'class' => \common\components\template\DbTemplateBootstrap::class,
+        ],
         'urlManager'    => [
             'enablePrettyUrl' => true,
             'showScriptName'  => false,
@@ -56,8 +63,12 @@ $config = [
                 '/maps/vote' => '/maps/vote',
                 '/maps/<serverTag:[a-z0-9_-]+>/' => '/maps',
                 'sitemap.xml' => 'site/sitemap',
+                'sitemap-main.xml' => 'site/sitemap-main',
+                'sitemap-servers.xml' => 'site/sitemap-servers',
+                'sitemap-posts.xml' => 'site/sitemap-posts',
                 'robots.txt' => 'site/robots',
                 'rss' => 'site/rss',
+                'db-asset/<root>/<path:.+>' => 'db-asset/serve',
             ],
         ],
         'request' => [

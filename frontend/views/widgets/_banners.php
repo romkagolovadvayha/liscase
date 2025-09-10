@@ -18,7 +18,7 @@ JS
         <div class="widget_banner">
             <div class="widget_banner_title"><?=Yii::t('common', 'Бонус WarGM')?></div>
             <div class="widget_banner_desctiption"><?=Yii::t('common', 'Голосуйте за наш сервер и получайте бонусы!')?></div>
-            <a href="https://wargm.ru/server/70688/votes" class="widget_banner_link"><?=Yii::t('common', 'Голосовать')?></a>
+            <a rel="nofollow" href="https://wargm.ru/server/70688/votes" class="widget_banner_link"><?=Yii::t('common', 'Голосовать')?></a>
         </div>
     </div>
     <div>

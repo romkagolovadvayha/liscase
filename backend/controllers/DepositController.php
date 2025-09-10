@@ -101,7 +101,12 @@ class DepositController extends Controller
     {
         $model = $this->findModel($id);
 
+        $oldStatus = $model->status;
+
         if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
+            if ($model->status == Deposit::STATUS_SUCCESS && $model->status != $oldStatus) {
+                Deposit::bonus($model->user, $model->amount, $model->payment_type);
+            }
             $model->user->getPersonalBalance()->recalculateBalance();
             return $this->redirect(['view', 'id' => $model->id]);
         }

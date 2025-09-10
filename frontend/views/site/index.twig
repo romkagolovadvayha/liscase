@@ -6,3 +6,69 @@
     {{ PRODUCTS|raw }}
     <button class="button-secondary" id="more_products">{{ t('common', 'Показать еще') }}</button>
 </section>
+<section class="seo-block mt-40">
+    <div class="container">
+        <h2>{{ t('common', 'Rust сервера Prostoj — честная игра, стабильный пинг, понятные вайпы') }}</h2>
+        <p class="mt-12">
+            <strong>Prostoj</strong> — {{ t('common', 'сеть серверов Rust в Москве с пингом 30–70 мс для СНГ. Доступны режимы Classic X2, MAX3, NOLIMIT, Hardcore. Строгое расписание вайпов, активная модерация и античит обеспечивают комфортную игру без читеров.') }}
+        </p>
+        <p>
+            {{ t('common', 'Следите за расписанием в') }} <a href="/wipe-calendar">{{ t('common', 'календаре вайпов') }}</a>,
+            {{ t('common', 'проверяйте себя в') }} <a href="/banlist">{{ t('common', 'бан-листе') }}</a>,
+            {{ t('common', 'считайте ресурсы в') }} <a href="/raid-table">{{ t('common', 'калькуляторе рейда') }}</a>
+            {{ t('common', 'и загляните в') }} <a href="/posts">{{ t('common', 'гайды и новости Rust') }}</a>.
+            {{ t('common', 'Каждый час на серверах — раздача скинов через') }} <a href="/skindrops">SkinDrops</a>.
+        </p>
+
+        <h3 class="mt-24">{{ t('common', 'FAQ') }}</h3>
+        <div class="faq-block mt-12">
+            <details class="faq-item">
+                <summary><strong>{{ t('common', 'Когда вайпы на серверах Prostoj?') }}</strong></summary>
+                <div class="mt-8">
+                    {{ t('common', 'Недельные сервера вайпаются раз в неделю, 14-дневные — раз в две недели. Глобальный вайп — в первый четверг месяца. Актуальные даты — в календаре вайпов.') }}
+                </div>
+            </details>
+
+            <details class="faq-item mt-12">
+                <summary><strong>{{ t('common', 'Как быстро подключиться к серверу?') }}</strong></summary>
+                <div class="mt-8">
+                    {{ t('common', 'Нажмите «Подключиться к серверу» на карточке — откроется Steam с прямым подключением. Либо используйте команду connect IP:PORT в консоли Rust.') }}
+                </div>
+            </details>
+
+            <details class="faq-item mt-12">
+                <summary><strong>{{ t('common', 'Есть ли донат и как он влияет на баланс?') }}</strong></summary>
+                <div class="mt-8">
+                    {{ t('common', 'Донат отключён или ограничен на соответствующих серверах, чтобы сохранить честный баланс. За нарушения действуют санкции по правилам.') }}
+                </div>
+            </details>
+
+            <details class="faq-item mt-12">
+                <summary><strong>{{ t('common', 'Как получать бесплатные скины?') }}</strong></summary>
+                <div class="mt-8">
+                    {{ t('common', 'Через систему SkinDrops — выдача каждый час, а также за задания и ивенты.') }}
+                </div>
+            </details>
+        </div>
+    </div>
+</section>
+<script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "{{ PROJECT_NAME }}",
+        "url": "{{ URL }}",
+        "logo": "{{ LOGO }}",
+        "sameAs": [
+            "{{ VK }}",
+            "{{ DISCORD }}",
+            "{{ TELEGRAM_BOT }}"
+        ],
+          "contactPoint": [{
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "email": "{{ EMAIL }}",
+            "availableLanguage": ["ru","en"]
+          }]
+    }
+</script>

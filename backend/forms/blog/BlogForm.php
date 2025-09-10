@@ -2,6 +2,7 @@
 
 namespace backend\forms\blog;
 
+use common\components\queue\process\TranslateJob;
 use common\models\blog\Blog;
 use common\models\blog\BlogCategory;
 use common\models\blog\BlogImage;
@@ -36,6 +37,7 @@ class BlogForm extends Blog
         if (empty($this->id)) {
             $this->id = Yii::$app->db->getLastInsertID();
         }
+        \Yii::$app->queueProcess->push(new TranslateJob());
 
         return true;
     }

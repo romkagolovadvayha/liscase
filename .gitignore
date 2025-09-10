@@ -45,3 +45,6 @@ madeline.php
 /common/config/web-local.php
 
 frontend/web/uploads/
+
+# сгенерированный CSS
+/frontend/assets/sources/css/design/styles-local.min.css

@@ -41,7 +41,7 @@
                 </ul>
                 <p class="mt-24 text-center p1 text-text-teritiary">{{ t('common', 'Вы можете выбрать любой из доступных серверов в зависимости от предпочитаемого режима игры') }}.</p>
             </div>
-{#            <img class="servers_page_image" src="{{ SETTINGS.get('design_servers_image') }}">#}
+            {#            <img class="servers_page_image" src="{{ SETTINGS.get('design_servers_image') }}">#}
         </div>
         <div class="servers_page_items">
             {% for SERVER in SERVERS %}
@@ -79,13 +79,14 @@
                                 {% endif %}
                                 <a class="button button-secondary show-modal-link"
                                    href="{{ SERVER.getLink('wipe-info') }}"
+                                   rel="nofollow"
                                    data-size="modal-sm"
                                    data-toggl="modal"
                                    data-target="modal-dialog"
                                    data-title="{{ t('common', 'Когда вайп') }}">{{ t('common', 'Когда вайп') }}</a>
                                 {% if SERVER.map_id and SERVER.mapEntity and not SERVER.secret_map %}
                                     <a class="button button-secondary servers_page_item_actions_r_image" href="{{ SERVER.mapEntity.getImage() }}" title="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}" target="_blank" >
-                                        {{ t('common', 'Текущая карта') }}<img src="{{ SERVER.mapEntity.getPreviewImage() }}" alt="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}">
+                                        {{ t('common', 'Текущая карта') }}<img src="{{ SERVER.mapEntity.getPreviewImage() }}" loading="lazy" alt="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}">
                                     </a>
                                 {% endif %}
                                 <a class="button button-secondary" href="{{ SERVER.getLink('rules') }}">{{ t('common', 'Правила сервера') }}</a>
@@ -96,8 +97,72 @@
                 </article>
             {% endfor %}
         </div>
+        {# === SEO БЛОК: вводный текст + преимущества + перелинковка === #}
+        <section class="seo-block mt-32">
+            <h2 class="h3 text-left">{{ t('common','Rust сервера Prostoj — как выбрать подходящий') }}</h2>
+            <p class="mt-16 p1 text-text-secondary">
+                {{ t('common','На проекте Prostoj доступны классические и ускоренные режимы с разной сложностью, онлайном и расписанием вайпов. Выбирайте сервер по пингу, размеру карты и лимиту команды — подключение в один клик из браузера. Все сервера хостятся на мощном железе и проходят регулярные перезагрузки для стабильного FPS и низкого пинга.') }}
+            </p>
+
+            <ul class="mt-16 servers_page_description_list">
+                <li class="servers_page_description_list_item">{{ t('common','Чёткий график вайпов: недельные и 14-дневные') }}</li>
+                <li class="servers_page_description_list_item">{{ t('common','Античит + активная модерация') }}</li>
+                <li class="servers_page_description_list_item">{{ t('common','Карты под разные стили игры: соло, дуо, отряды') }}</li>
+                <li class="servers_page_description_list_item">{{ t('common','Подарки и ивенты для игроков') }}</li>
+            </ul>
+
+            {# Внутренняя перелинковка — усиливает индексацию ключевых страниц #}
+            <div class="mt-20 flex flex-wrap gap-8 justify-left">
+                <a class="button button-secondary mr-6" href="/wipe-calendar">{{ t('common','Календарь вайпов Rust') }}</a>
+                <a class="button button-secondary mr-6" href="/raid-table">{{ t('common','Калькулятор рейда') }}</a>
+                <a class="button button-secondary mr-6" href="/posts">{{ t('common','Гайды и новости Rust') }}</a>
+                <a class="button button-secondary" href="/custom-skins">{{ t('common','Кастомные скины сообщества') }}</a>
+            </div>
+        </section>
+
+        {# === SEO FAQ (UX + rich snippet) === #}
+        <section class="seo-faq mt-32">
+            <h2 class="h3 text-left">{{ t('common','Частые вопросы о серверах Prostoj') }}</h2>
+
+            <div class="mt-16 max-w-3xl mx-auto">
+                <details class="faq-item">
+                    <summary class="p1"><strong>{{ t('common','Когда следующий вайп на сервере?') }}</strong></summary>
+                    <div class="p2 mt-8">
+                        {{ t('common','Недельные сервера вайпаются каждую неделю, 14-дневные — раз в 2 недели. После глобального вайпа в первый четверг месяца дополнительных вайпов в эту неделю нет. Актуальные даты смотрите в ') }}
+                        <a href="/wipe-calendar">{{ t('common','календаре вайпов') }}</a>.
+                    </div>
+                </details>
+
+                <details class="faq-item mt-12">
+                    <summary class="p1"><strong>{{ t('common','Как быстро подключиться к серверу?') }}</strong></summary>
+                    <div class="p2 mt-8">
+                        {{ t('common','Нажмите «Подключиться к серверу» в карточке — откроется Steam с прямым подключением. Либо скопируйте команду вида ') }}
+                        <code>connect IP:PORT</code> {{ t('common',' и вставьте в консоль Rust.') }}
+                    </div>
+                </details>
+
+                <details class="faq-item mt-12">
+                    <summary class="p1"><strong>{{ t('common','Какой сервер выбрать новичку?') }}</strong></summary>
+                    <div class="p2 mt-8">
+                        {{ t('common','Рекомендуем начать с карт малого/среднего размера и серверов с лимитом команды. Так легче освоиться и найти союзников.') }}
+                    </div>
+                </details>
+
+                <details class="faq-item mt-12">
+                    <summary class="p1"><strong>{{ t('common','Разрешены ли моды и донат?') }}</strong></summary>
+                    <div class="p2 mt-8">
+                        {{ t('common','Игровой баланс не ломаем: на серверах действуют общие правила, донат отключён там, где это указано на карточке. За нарушения — санкции по правилам.') }}
+                    </div>
+                </details>
+            </div>
+        </section>
     </div>
 </div>
+{% if this.params.ld_json is defined %}
+    <script type="application/ld+json">
+{{ this.params.ld_json|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES'))|raw }}
+</script>
+{% endif %}
 {{
 magnific_popup_widget({
     'target': '.servers_page',
@@ -110,3 +175,46 @@ magnific_popup_widget({
     'effect': 'with-zoom'
 })
 }}
+
+{% set faq_list = [
+    {
+        "@type": "Question",
+        "name": "Когда следующий вайп на сервере?",
+        "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Недельные сервера вайпаются каждую неделю, 14-дневные — раз в 2 недели. После глобального вайпа в первый четверг месяца дополнительных вайпов в эту неделю нет. Актуальные даты — в /wipe-calendar."
+    }
+    },
+    {
+        "@type": "Question",
+        "name": "Как быстро подключиться к серверу?",
+        "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Нажмите «Подключиться к серверу» в карточке сервера — запустится Steam с прямым подключением. Либо используйте команду connect IP:PORT в консоли Rust."
+    }
+    },
+    {
+        "@type": "Question",
+        "name": "Какой сервер выбрать новичку?",
+        "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Для старта подойдут карты малого/среднего размера и сервера с лимитом команды — так проще освоиться и найти напарников."
+    }
+    },
+    {
+        "@type": "Question",
+        "name": "Разрешены ли моды и донат?",
+        "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Баланс не ломаем: действуют общие правила, донат отключён там, где это указано. За нарушения применяются санкции по правилам сервера."
+    }
+    }
+] %}
+
+<script type="application/ld+json">
+{{ {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": faq_list
+    } | json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES')) | raw }}
+</script>

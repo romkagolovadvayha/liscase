@@ -41,7 +41,7 @@ class BanlistController extends WebController
                           ->all();
 
         $projectStats = \common\models\statistics\Statistics::projectStats();
-        $this->view->title = Yii::t('common', 'Бан лист');
+        $this->view->title = Yii::t('common', 'Бан лист серверов');
         $this->view->params['page'] = 'bans';
 
         $searchModel = new BansSearch();
@@ -71,6 +71,32 @@ class BanlistController extends WebController
             }
             return date('d.m.Y H:i:s', strtotime($model->unbanned_at));
         };
+
+        $projectName = Yii::$app->settings->get('site_project_name');
+        // Уникальный description с числом записей
+        $desc = Yii::t('common',
+                       'Общий бан-лист серверов {projectName}: {count} банов. Проверяйте причину бана, сервер и сроки. Список обновляется автоматически.',
+                       ['count' => (int)$dataProvider->getTotalCount(), 'projectName' => $projectName]
+        );
+
+        $this->view->registerMetaTag([
+                                         'name'    => 'description',
+                                         'content' => $desc,
+                                     ], 'description');
+
+        // Заголовки для шаринга
+        $this->view->registerMetaTag(['property' => 'og:title', 'content' => $this->view->title], 'og:title');
+        $this->view->registerMetaTag(['property' => 'og:description', 'content' => $desc], 'og:description');
+
+        // Канонический URL (если страница доступна по /banlist)
+        $this->view->registerLinkTag([
+                                         'rel'  => 'canonical',
+                                         'href' => Yii::$app->params['homePage'] . '/banlist',
+                                     ]);
+
+
+        $canonical = Yii::$app->params['homePage'] . '/banlist';
+        $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
 
 
         return $this->render('banlist.twig', [

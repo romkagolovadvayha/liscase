@@ -193,14 +193,14 @@ class Kills extends ActiveRecord
             if (empty($model['dead_name'])) {
                 $model['deadLink'] = "<span class=\"stat-block__list__name\">".Yii::t('common', 'Не известный')."</span>";
             } else {
-                $model['deadLink'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" class=\"stat-block__list__name p3 link font-medium\" href=\"{$model['dead_link']}\">
+                $model['deadLink'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" rel=\"nofollow\" class=\"stat-block__list__name p3 link font-medium\" href=\"{$model['dead_link']}\">
                     {$model['dead_name']}
                 </a>";
             }
             if (empty($model['name'])) {
                 $model['link'] = "<span class=\"stats_player_kills_item_name\">".Yii::t('common', 'Не известный')."</span>";
             } else {
-                $model['link'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" class=\"stat-block__list__name p3 link font-medium\" href=\"{$model['link']}\">
+                $model['link'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" rel=\"nofollow\" class=\"stat-block__list__name p3 link font-medium\" href=\"{$model['link']}\">
                     {$model['name']}
                 </a>";
             }
@@ -236,14 +236,14 @@ class Kills extends ActiveRecord
                 if (empty($model['dead_name'])) {
                     $model['deadLink'] = "<span class=\"stat-block__list__name\">".Yii::t('common', 'Не известный')."</span>";
                 } else {
-                    $model['deadLink'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" class=\"stat-block__list__name p3 link font-medium\" href=\"{$model['dead_link']}\">
+                    $model['deadLink'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" rel=\"nofollow\" class=\"stat-block__list__name p3 link font-medium\" href=\"{$model['dead_link']}\">
                     {$model['dead_name']}
                 </a>";
                 }
                 if (empty($model['name'])) {
                     $model['link'] = "<span class=\"stats_player_kills_item_name\">".Yii::t('common', 'Не известный')."</span>";
                 } else {
-                    $model['link'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" class=\"stat-block__list__name p3 link font-medium\" href=\"{$model['link']}\">
+                    $model['link'] = "<a title=\"" . Yii::t('common', 'Открыть статистику игрока') . "\" rel=\"nofollow\" class=\"stat-block__list__name p3 link font-medium\" href=\"{$model['link']}\">
                     {$model['name']}
                 </a>";
                 }

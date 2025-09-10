@@ -9,7 +9,7 @@ use yii\widgets\Pjax;
 /** @var frontend\models\serverskin\ServerSkinSearch $searchModel */
 /** @var array $categories */
 
-$this->title = Yii::t('common', 'Скины из мастерской');
+$this->title = Yii::t('common', 'Скины из мастерской для SkinBox');
 \frontend\assets\CustomSkinAsset::register($this);
 ?>
 

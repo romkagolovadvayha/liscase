@@ -42,6 +42,96 @@ class ServersController extends WebController
         $this->view->params['page'] = 'servers';
         $this->view->params['meta_description'] = Yii::t('common', "Список всех наших серверов Rust с подробным описанием, датами вайпов и IP-адресами. Узнайте, когда следующий вайп, подключитесь к любимому серверу и начните играть уже сегодня!");
 
+        $view = Yii::$app->view;
+        $canonical = Yii::$app->params['homePage'] . '/servers';
+        $view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
+        $view->registerMetaTag(['name' => 'robots', 'content' => 'index,follow,max-image-preview:large']);
+
+        // Open Graph
+        $view->registerMetaTag(['property'=>'og:type','content'=>'website']);
+        $view->registerMetaTag(['property'=>'og:title','content'=>$this->view->title]);
+        $view->registerMetaTag(['property'=>'og:description','content'=>$this->view->params['meta_description']]);
+        $view->registerMetaTag(['property'=>'og:url','content'=>$canonical]);
+        $view->registerMetaTag(['property'=>'og:site_name','content'=>'Prostoj']);
+
+        // Twitter
+        $view->registerMetaTag(['name'=>'twitter:card','content'=>'summary_large_image']);
+        $view->registerMetaTag(['name'=>'twitter:title','content'=>$this->view->title]);
+        $view->registerMetaTag(['name'=>'twitter:description','content'=>$this->view->params['meta_description']]);
+
+        $nowIso = date(DATE_ATOM);
+        $game = [
+            '@type' => 'VideoGame',
+            'name'  => 'Rust'
+        ];
+
+        $serversLd = [];
+        foreach ($servers as $s) {
+            $status = $s->status == \common\models\servers\Servers::STATUS_ACTIVE ? 'Online' :
+                ($s->status == \common\models\servers\Servers::STATUS_WAIT ? 'Maintenance' : 'Offline');
+
+            $serversLd[] = [
+                '@type' => 'GameServer',
+                'name'  => Yii::t('database', $s->monitoring_description) . ' [' . Yii::t('database', $s->monitoring_name) . ']',
+                'game'  => $game,
+                'serverStatus' => 'https://schema.org/' . $status,
+                'playersOnline' => (int)($s->players + $s->joined),
+                'maximumAttendeeCapacity' => (int)$s->max,
+                'url'   => Yii::$app->params['homePage'] . $s->getLink('stats'),
+                'address' => $s->ip . ':' . $s->port
+            ];
+        }
+
+        // Хлебные крошки — ок
+        $breadcrumbLd = [
+            '@context' => 'https://schema.org',
+            '@type'    => 'BreadcrumbList',
+            'itemListElement' => [
+                ['@type' => 'ListItem', 'position' => 1, 'name' => Yii::t('common','Главная'),       'item' => Yii::$app->params['homePage'].'/'],
+                ['@type' => 'ListItem', 'position' => 2, 'name' => Yii::t('common','Сервера Rust'),  'item' => Yii::$app->params['homePage'].'/servers'],
+            ],
+        ];
+
+        // $serversLd должен быть массивом вида:
+        // [['name'=>'ПРОСТОЙ #1 [MAX3]', 'url'=>'https://prostoj.store/servers/max3'], ...]
+
+        // Исправленный ItemList для rich result
+        $itemListLd = [
+            '@context' => 'https://schema.org',
+            '@type'    => 'ItemList',
+            'name'     => 'Список серверов Rust Prostoj',
+            'itemListElement' => array_map(function($srv, $idx){
+                return [
+                    '@type'    => 'ListItem',
+                    'position' => $idx + 1,
+                    // ВАЖНО: сюда — ТОЛЬКО URL (или Thing с name+url), НЕ объект GameServer
+                    'item'     => (string)$srv['url'],
+                    'name'     => (string)$srv['name'],
+                ];
+            }, $serversLd, array_keys($serversLd)),
+        ];
+
+        // Если хочешь оставить подробности серверов — вынеси во второй скрипт (не для rich result):
+        $gameServersGraph = [
+            '@context' => 'https://schema.org',
+            '@graph'   => array_map(function($srv){
+                return [
+                    '@type'                     => 'GameServer',
+                    'name'                      => (string)$srv['name'],
+                    'game'                      => ['@type'=>'VideoGame','name'=>'Rust'],
+                    'serverStatus'              => 'https://schema.org/Online',
+                    'playersOnline'             => $srv['playersOnline'] ?? null,
+                    'maximumAttendeeCapacity'   => $srv['maximumAttendeeCapacity'] ?? null,
+                    'url'                       => (string)$srv['url'],
+                    'address'                   => $srv['address'] ?? null,
+                ];
+            }, $serversLd),
+        ];
+
+        // Отдавай оба (двумя <script>), если нужно:
+        $this->view->params['ld_json'] = [$breadcrumbLd, $itemListLd, $gameServersGraph];
+
+
         return $this->render('servers-list.twig', [
             'SERVERS' => $servers,
             'PROJECT_STATS' => $projectStats,

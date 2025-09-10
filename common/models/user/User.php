@@ -9,6 +9,7 @@ use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\components\queue\telegram\SendMessageJob;
 use common\components\web\Cookie;
 use common\models\auth\AuthAssignment;
+use common\models\box\Drop;
 use common\models\clan\UserRole;
 use common\models\invoice\Invoice;
 use common\models\invoice\Deposit;
@@ -73,6 +74,7 @@ use yii\web\JsExpression;
  * @property bool            $is_mirror_registration
  * @property bool            $is_mirror_returned
  * @property bool            $is_telegram_blocked
+ * @property int             $floating_price_percent
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
@@ -213,6 +215,7 @@ class User extends ActiveRecord implements IdentityInterface
             [['promocode'], 'string', 'max' => 120, 'min' => 5],
             [['auth_key', 'socket_room'], 'string', 'max' => 32],
             [['current_language', 'created_at'], 'safe'],
+            ['floating_price_percent', 'integer', 'min' => 0, 'max' => 100],
         ];
     }
 
@@ -1258,6 +1261,18 @@ class User extends ActiveRecord implements IdentityInterface
                 $userTops[$userId][$type]->value = (int)$value;
             }
         }
+    }
+
+    /**
+     * @param Drop $drop
+     *
+     * @return int
+     */
+    public function getFloatingPricePercent($drop) {
+        if ($this->floating_price_percent === 0) {
+            return $this->floating_price_percent;
+        }
+        return $drop->floating_price_percent;
     }
 
 }

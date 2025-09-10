@@ -129,6 +129,7 @@ $config['modules']['crontask'] = [
 $config['controllerMap']['supervisortask'] = [
     'class' =>\console\controllers\SupervisortaskController::class,
 ];
+
 $config['modules']['translateManager'] = [
     'class'                   => \DemonDogSL\translateManager\Module::class,
     'root'                    => [
@@ -176,6 +177,7 @@ $config['modules']['translateManager'] = [
             'connection' => 'db',
             'table' => '{{%blog}}',
             'columns' => ['name', 'description', 'keywords', 'content'],
+            'where' => 'created_at > "2025-05-01 00:00:01"',
         ],
         [
             'connection' => 'db',
@@ -204,9 +206,27 @@ $config['modules']['translateManager'] = [
             'where' => 'is_translate = 1',
         ],
     ],
+    'ignoredItems' => [
+        'vendor',
+        'runtime',
+        'web/assets',
+        'assets',
+        'node_modules',
+        'bower_components',
+        'storage',
+        'uploads',
+        'tests',
+        '.git',
+        '.idea',
+        'dist',
+        'build',
+        'cache',
+        'tmp',
+    ],
     'scanners' => [
+        \common\components\scanners\ScannerDbTemplates::class,
         \common\components\scanners\ScannerTwigTemplate::class,
-        common\components\scanners\ScannerDatabase::class,
+        \common\components\scanners\ScannerDatabase::class,
         '\DemonDogSL\translateManager\services\scanners\ScannerPhpFunction',
         '\DemonDogSL\translateManager\services\scanners\ScannerPhpArray',
         '\DemonDogSL\translateManager\services\scanners\ScannerJavaScriptFunction',
@@ -215,7 +235,7 @@ $config['modules']['translateManager'] = [
 
 $config = yii\helpers\ArrayHelper::merge(
     $config,
-    require('queue.php'),
+    require(__DIR__ . '/../../common/config/queue.php'),
 );
 
 if (YII_ENV_DEV) {
