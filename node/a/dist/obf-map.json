@@ -1,0 +1,14 @@
+{
+  "classes": {},
+  "ids": {},
+  "keyframes": {},
+  "reserved": {
+    "classes": [],
+    "ids": [],
+    "keyframes": [],
+    "classPatterns": [
+      "^-?\\w+-module__.*$"
+    ],
+    "idPatterns": []
+  }
+}

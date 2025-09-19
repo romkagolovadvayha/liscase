@@ -23,6 +23,17 @@ return [
             'redirect_stderr' => true,
             'stdout_logfile'  => '@app/runtime/supervisor/queue-stats.queue.log',
         ],
+        'prostoj.queue-clans-stats' => [
+            'directory'       => '@project',
+            'command'         => 'php yii queue-clans-stats/listen --verbose=1 --color=0',
+            'autostart'       => true,
+            'autorestart'     => true,
+            'startretries'    => 10,
+            'stopsignal'      => 'KILL',
+            'numprocs'        => 1,
+            'redirect_stderr' => true,
+            'stdout_logfile'  => '@app/runtime/supervisor/queue-clans-stats.queue.log',
+        ],
         'prostoj.queue-telegram' => [
             'directory'       => '@project',
             'command'         => 'php yii queue-telegram/listen --verbose=1 --color=0',

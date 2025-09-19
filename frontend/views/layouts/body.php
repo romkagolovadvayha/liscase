@@ -52,14 +52,14 @@ $serverInfoBlock = null;
 $clanProfileBlock = null;
 if (!empty($user) && !empty($this->params['clan_profile_block'])) {
     $_server = $user->getCurrentServer();
-    $userClans = \common\models\clan\Clan::getUserClansList($_server);
+//    $userClans = \common\models\clan\Clan::getUserClansList($_server);
     $clan = null;
-    if (!empty($userClans[$user->id])) {
-        $clans = \common\models\clan\Clan::getClans($_server);
-        if (!empty($clans[$userClans[$user->id]])) {
-            $clan = $clans[$userClans[$user->id]];
-        }
-    }
+//    if (!empty($userClans[$user->id])) {
+//        $clans = \common\models\clan\Clan::getClans($_server);
+//        if (!empty($clans[$userClans[$user->id]])) {
+//            $clan = $clans[$userClans[$user->id]];
+//        }
+//    }
     $clanProfileBlock = $this->render('@frontend/views/widgets/clan_profile.twig', [
         'SERVER' => $user->server,
         'USER' => $user,
@@ -113,10 +113,10 @@ if (!empty($this->params['_profile'])) {
 }
 $topBlock = null;
 $liveBlock = null;
-if (empty($this->params['_blog_similar_block'])) {
-    $topBlock = $this->render('@frontend/views/widgets/_top', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]);
-    $liveBlock = $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]);
-}
+//if (empty($this->params['_blog_similar_block'])) {
+//    $topBlock = $this->render('@frontend/views/widgets/_top', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]);
+//    $liveBlock = $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]);
+//}
 ?>
 
 <?php $this->beginBody() ?>

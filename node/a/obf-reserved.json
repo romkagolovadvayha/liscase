@@ -1,0 +1,29 @@
+{
+  "classes": [
+    "bonuses_table",
+    "boxBody",
+    "headerContainer",
+    "PlayerBalance-module__btn",
+    "PlayerBalance-module__modal",
+    "PlayerBalanceModal-module__header",
+    "HeaderNav-module__link",
+    "SupportLink-module__link",
+    "ProfileNav-module__wrapper",
+    "ProfileNav-module__navItem",
+    "PlayerMenu-module__profileLink",
+    "Servers-module__server",
+    "Servers-module__active",
+    "Servers-module__servers",
+    "MonitoringServer-module__info",
+    "Search-module__wrapper",
+    "Categories-module__categories",
+    "Shop-module__wrapper",
+    "Widgets-module__wrapper",
+    "Widgets-module__widgetWrapper",
+    "DesktopCopyright-module__wrapper"
+  ],
+  "ids": [],
+  "keyframes": [],
+  "classPatterns": ["^-?\\w+-module__.*$"],
+  "idPatterns": []
+}

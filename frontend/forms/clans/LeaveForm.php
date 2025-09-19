@@ -46,7 +46,11 @@ class LeaveForm extends Clan
         $newLeader = null;
         foreach ($userClans as $userClan) {
             if ($userClan->user_id == $user->id) {
-                $userClan->delete();
+                $userClan->leave_at = date('Y-m-d H:i:s');
+                $userClan->status = 0;
+                $userClan->save();
+                $userClan->clan->user_count -= 1;
+                $userClan->clan->save();
                 continue;
             }
             if (empty($newLeader)) {

@@ -7,6 +7,7 @@ use common\models\statistics\Statistics;
 use common\models\user\User;
 use common\models\user\UserTop;
 use Yii;
+use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
 
 /**
@@ -19,6 +20,7 @@ use yii\helpers\ArrayHelper;
  * @property string|null $logo_image
  * @property string|null $background_image
  * @property int|null    $user_id
+ * @property int|null    $user_count
  * @property string|null $social_youtube
  * @property string|null $social_discord
  * @property string|null $social_vk
@@ -33,6 +35,7 @@ use yii\helpers\ArrayHelper;
  * @property User $user
  * @property UserClan[] $userClans
  * @property UserRole[] $userRoles
+ * @property ClanStats[] $clanStats
  */
 class Clan extends \yii\db\ActiveRecord
 {
@@ -51,7 +54,7 @@ class Clan extends \yii\db\ActiveRecord
     {
         return [
             [['description'], 'string'],
-            [['user_id'], 'integer'],
+            [['user_id', 'user_count'], 'integer'],
             [['created_at'], 'safe'],
             [['title', 'logo_image', 'background_image', 'social_youtube', 'social_discord', 'social_vk', 'social_twitch'], 'string', 'max' => 255],
             [['description_short'], 'string', 'max' => 110],
@@ -70,6 +73,7 @@ class Clan extends \yii\db\ActiveRecord
             'description_short' => 'Description Short',
             'description' => 'Description',
             'logo_image' => 'Logo Image',
+            'user_count' => 'Количество участников',
             'background_image' => 'Background Image',
             'user_id' => 'User ID',
             'social_youtube' => Yii::t('common', 'Ссылка на Youtube'),
@@ -98,6 +102,16 @@ class Clan extends \yii\db\ActiveRecord
     public function getClanPages()
     {
         return $this->hasMany(ClanPage::class, ['clan_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[ClanStats]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getClanStats()
+    {
+        return $this->hasMany(ClanStats::class, ['clan_id' => 'id']);
     }
 
     /**
@@ -172,70 +186,28 @@ class Clan extends \yii\db\ActiveRecord
 
     /**
      * @param Servers $server
-     * @param false   $update
-     *
-     * @return array
      */
-    public static function getClans(Servers $server, $update = false) {
-        $cacheKey = 'Clan_getClans_' . $server->tag;
-        $cacheUserClansKey = 'Clan_getUserClans_' . $server->tag;
-        if (Yii::$app->cache->get($cacheKey) && !$update) {
-            //return Yii::$app->cache->get($cacheKey);
+    public static function recalculate($server, $clanId) {
+        /** @var ClanStats $clanStats */
+        $clanStats = ClanStats::find()
+                        ->andWhere(['clan_id' => $clanId])
+                        ->andWhere(['server_id' => $server->id])
+                        ->andWhere(['wipe' => $server->currentWipe()])
+                        ->one();
+
+        if (empty($clanStats)) {
+            $clanStats = new ClanStats();
+            $clanStats->clan_id = $clanId;
+            $clanStats->server_id = $server->id;
+            $clanStats->wipe = $server->currentWipe();
+            $clanStats->created_at = date('Y-m-d H:i:s');
         }
 
-        $usersStat = Statistics::getAllUsersStats($server, $server->currentWipe());
+        $clanStats->scrap = UserClanStats::getSum($server->id, $server->currentWipe(), $clanId, 'scrap');
+        $clanStats->sulfur_ore = UserClanStats::getSum($server->id, $server->currentWipe(), $clanId, 'sulfur.ore');
 
-        $result = [];
-        $userClansResult = [];
-
-        /** @var Clan[] $items */
-        $items = Clan::find()
-                     ->all();
-
-        foreach ($items as $i => $item) {
-            $_server = $item->user->getCurrentServer();
-            $_item = [
-                'title' => $item->title,
-                'description_short' => $item->description_short,
-                'logo' => $item->getLogo(),
-                'user' => $item->user->getData(),
-                'background' => $item->getBackground(),
-                'link' => $item->getLink('profile', $_server->tag),
-                'link_hash' => $item->link_hash,
-                'users' => []
-            ];
-
-            foreach ($item->userClans as $userClan) {
-                $_user = $userClan->user;
-                $_data = $_user->getData();
-                if (!empty($usersStat[$_user->steam_id])) {
-                    foreach ($usersStat[$_user->steam_id] as $key => $value) {
-                        if (!isset($_item[$key])) {
-                            $_item[$key] = 0;
-                        }
-                        $_item[$key] += $value;
-                    }
-                    $_data = ArrayHelper::merge($_data, $usersStat[$_user->steam_id]);
-                }
-                $_item['users'][] = $_data;
-                $userClansResult[$userClan->user_id] = $item->id;
-            }
-
-            $_item['users_count'] = count($_item['users']);
-            $_item['rating'] = self::calculateRating($_item);
-
-            $result[$item->id] = $_item;
-        }
-        uasort($result, function ($a, $b) {
-            if ($a['rating'] == $b['rating']) {
-                return 0;
-            }
-            return ($a['rating'] > $b['rating']) ? -1 : 1;
-        });
-
-        Yii::$app->cache->set($cacheKey, $result, 30*60);
-        Yii::$app->cache->set($cacheUserClansKey, $userClansResult, 30*60);
-        return $result;
+        $clanStats->updated_at = date('Y-m-d H:i:s');
+        $clanStats->save(false);
     }
 
     public static function calculateRating($item) {
@@ -281,16 +253,14 @@ class Clan extends \yii\db\ActiveRecord
         return $result;
     }
 
-    public static function getUserClansList($server, $update = false) {
-        $cacheKey = 'Clan_getUserClans_' . $server->tag;
-        if (Yii::$app->cache->get($cacheKey) && !$update) {
-            return Yii::$app->cache->get($cacheKey);
-        }
-
-        self::getClans($server, true);
-
-        return Yii::$app->cache->get($cacheKey);
-    }
+//    public static function getUserClansList($server, $update = false) {
+//        $cacheKey = 'Clan_getUserClans_' . $server->tag;
+//        if (Yii::$app->cache->get($cacheKey) && !$update) {
+//            return Yii::$app->cache->get($cacheKey);
+//        }
+//
+//        return Yii::$app->cache->get($cacheKey);
+//    }
 
     public function getLink($key, $serverTag = null) {
         if ($key === 'profile') {

@@ -1,0 +1,25 @@
+{
+  "name": "js",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "obf": "node obfuscate.js",
+    "css:obf": "node css-obfuscate.js src.css dist/style.obf.css --mangle --map --reserve obf-reserved.json",
+    "css:min": "node css-obfuscate.js src.css dist/style.min.css --map"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "glob": "^11.0.3",
+    "javascript-obfuscator": "^4.1.1"
+  },
+  "dependencies": {
+    "cssnano": "^7.1.1",
+    "fs-extra": "^11.3.2",
+    "postcss": "^8.5.6",
+    "postcss-selector-parser": "^7.1.0",
+    "postcss-value-parser": "^4.2.0"
+  }
+}

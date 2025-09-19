@@ -3,6 +3,7 @@
 namespace frontend\forms\clans;
 
 use common\models\clan\Clan;
+use common\models\clan\ClanStats;
 use common\models\clan\UserClan;
 use common\models\serverskin\ServerSkin;
 use Imagine\Image\Point;
@@ -19,10 +20,11 @@ class ClanForm extends Clan
      */
     public function saveRecord()
     {
-        $user = Yii::$app->user;
+        $user = Yii::$app->user->identity;
 
         $userClans = UserClan::find()
             ->andWhere(['user_id' => $user->identity->id])
+            ->andWhere(['status' => 1])
             ->exists();
 
         if ($userClans) {
@@ -42,6 +44,7 @@ class ClanForm extends Clan
             return false;
         }
 
+        $this->user_count = 1;
         $this->user_id = $user->id;
         $this->link_hash = md5(uniqid(mt_rand(), true));
         $this->created_at = date('Y-m-d H:i:s');
@@ -49,7 +52,9 @@ class ClanForm extends Clan
         if ($this->save()) {
             $userClan = new UserClan();
             $userClan->user_id = $user->id;
+            $userClan->steam_id = $user->steam_id;
             $userClan->clan_id = $this->id;
+            $userClan->status = 1;
             $userClan->created_at = date('Y-m-d H:i:s');
             $userClan->save();
         }

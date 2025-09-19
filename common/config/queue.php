@@ -13,6 +13,7 @@ return [
         'queueTelegram',
         'queueProcess',
         'queueSupport',
+        'queueClansStats',
 //        'queueOpenAi',
 //        'queueMidjourney',
     ],
@@ -81,6 +82,12 @@ return [
             'class'   => 'yii\queue\redis\Queue',
             'redis'   => 'redis',
             'channel' => 'queue-support',
+            'ttr' => 1200,
+        ],
+        'queueClansStats'                => [
+            'class'   => 'yii\queue\redis\Queue',
+            'redis'   => 'redis',
+            'channel' => 'queue-clans-stats',
             'ttr' => 1200,
         ],
 //        'queueOpenAi'                => [

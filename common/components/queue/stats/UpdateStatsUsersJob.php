@@ -21,7 +21,8 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
 {
     public $users;
     public $serverTag;
-    public $serverId;
+    /** @var Servers */
+    public $server;
     public $wipeDate;
 
     /**
@@ -67,6 +68,12 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
                         }
                     }
                     $dbTransaction->commit();
+                    Yii::$app->queueClansStats->push(new SaveStatsClansJob([
+                                                                               'params' => $params,
+                                                                               'wipe' => $wipeDate,
+                                                                               'server' => $this->server,
+                                                                               'steamId' => $steamId,
+                                                                           ]));
                 } catch (\Exception $e) {
                     Yii::$app->telegramChats->sendMessage("UpdateStatsUsersJob::updateTop(user, key, value, server, wipeDate): " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                     $dbTransaction->rollBack();

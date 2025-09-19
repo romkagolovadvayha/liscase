@@ -145,48 +145,55 @@ class DropImage extends ActiveRecord
         ]);
 
         if ($newSize == 150 || $newSize == 64 || $newSize == 200) {
-            \Tinify\setKey("dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8"); // ← сюда свой ключ
+            DropImage::TinyPNG($destinationPath);
+        }
+
+        return true;
+    }
+
+    public static function TinyPNG($destinationPath) {
+
+        \Tinify\setKey("dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8"); // ← сюда свой ключ
+        try {
+            $source = \Tinify\fromFile($destinationPath);
+            $source->toFile($destinationPath); // перезаписывает исходный файл
+        } catch(\Tinify\Exception $e) {
+            \Tinify\setKey("SQMyJN0ZNs1zQfzrwBjMcsRHCnpffCbl"); // ← сюда свой ключ
             try {
                 $source = \Tinify\fromFile($destinationPath);
                 $source->toFile($destinationPath); // перезаписывает исходный файл
             } catch(\Tinify\Exception $e) {
-                \Tinify\setKey("SQMyJN0ZNs1zQfzrwBjMcsRHCnpffCbl"); // ← сюда свой ключ
+                \Tinify\setKey("8DTWnyW4m99062qs1X7p6dGgFcjM3Gb7"); // ← сюда свой ключ
                 try {
                     $source = \Tinify\fromFile($destinationPath);
                     $source->toFile($destinationPath); // перезаписывает исходный файл
                 } catch(\Tinify\Exception $e) {
-                    \Tinify\setKey("8DTWnyW4m99062qs1X7p6dGgFcjM3Gb7"); // ← сюда свой ключ
+                    \Tinify\setKey("yq4GXtx6DlyJhqWmgH0f5JPYYw68JNZY"); // ← сюда свой ключ
                     try {
                         $source = \Tinify\fromFile($destinationPath);
                         $source->toFile($destinationPath); // перезаписывает исходный файл
                     } catch(\Tinify\Exception $e) {
-                        \Tinify\setKey("yq4GXtx6DlyJhqWmgH0f5JPYYw68JNZY"); // ← сюда свой ключ
+                        \Tinify\setKey("vtKS1W5X6sFdtyxgkvMfB58NzCPYT31X"); // ← сюда свой ключ
                         try {
                             $source = \Tinify\fromFile($destinationPath);
                             $source->toFile($destinationPath); // перезаписывает исходный файл
                         } catch(\Tinify\Exception $e) {
-                            \Tinify\setKey("vtKS1W5X6sFdtyxgkvMfB58NzCPYT31X"); // ← сюда свой ключ
+                            \Tinify\setKey("WmKCQdqXYJFhYtC2H8LgJwsk83Lm8L3h"); // ← сюда свой ключ
                             try {
                                 $source = \Tinify\fromFile($destinationPath);
                                 $source->toFile($destinationPath); // перезаписывает исходный файл
                             } catch(\Tinify\Exception $e) {
-                                \Tinify\setKey("WmKCQdqXYJFhYtC2H8LgJwsk83Lm8L3h"); // ← сюда свой ключ
+                                \Tinify\setKey("Lzh9MLcXk3NVNw9cNDZLGl6jWGkdHySw"); // ← сюда свой ключ
                                 try {
                                     $source = \Tinify\fromFile($destinationPath);
                                     $source->toFile($destinationPath); // перезаписывает исходный файл
                                 } catch(\Tinify\Exception $e) {
-                                    \Tinify\setKey("Lzh9MLcXk3NVNw9cNDZLGl6jWGkdHySw"); // ← сюда свой ключ
+                                    \Tinify\setKey("DFtVM70njvNkKXNBTkbQBB2nRHXjh59s"); // ← сюда свой ключ
                                     try {
                                         $source = \Tinify\fromFile($destinationPath);
                                         $source->toFile($destinationPath); // перезаписывает исходный файл
                                     } catch(\Tinify\Exception $e) {
-                                        \Tinify\setKey("DFtVM70njvNkKXNBTkbQBB2nRHXjh59s"); // ← сюда свой ключ
-                                        try {
-                                            $source = \Tinify\fromFile($destinationPath);
-                                            $source->toFile($destinationPath); // перезаписывает исходный файл
-                                        } catch(\Tinify\Exception $e) {
-                                            Yii::error("TinyPNG compression error: " . $e->getMessage());
-                                        }
+                                        Yii::error("TinyPNG compression error: " . $e->getMessage());
                                     }
                                 }
                             }
@@ -195,7 +202,5 @@ class DropImage extends ActiveRecord
                 }
             }
         }
-
-        return true;
     }
 }

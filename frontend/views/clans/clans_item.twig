@@ -1,6 +1,12 @@
 <div class="clans_raiting_list_item_wrap {{ CLASS }}">
     <div class="clans_raiting_list_item_position">{{ POSITION }}</div>
-    <img src="{{ IMAGE }}" class="clans_raiting_list_item_image" />
+    {% if VIDEO %}
+        <video class="clans_raiting_list_item_image" playsinline loop autoplay muted data-lazy="true" preload="none" poster="{{ IMAGE }}">
+            <source type="video/webm" src="{{ VIDEO }}">
+        </video>
+    {% else %}
+        <img src="{{ IMAGE }}" class="clans_raiting_list_item_image" loading="lazy"/>
+    {% endif %}
     <div class="clans_raiting_list_item">
         <div class="clans_raiting_list_item_header_wrap">
             <a class="clans_raiting_list_item_header" href="{{ ITEM.link }}">

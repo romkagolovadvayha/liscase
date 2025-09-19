@@ -53,6 +53,7 @@ Yii::$container = new yii\di\Container;
  * @property \yii\queue\redis\Queue                        $queueMidjourney
  * @property \yii\queue\redis\Queue                        $queueProcess
  * @property \yii\queue\redis\Queue                        $queueSupport
+ * @property \yii\queue\redis\Queue                        $queueClansStats
  * @property \common\components\openAi\OpenAiSupport       $openAiSupport
  * @property \common\components\openAi\OpenAiChat          $openAiChat
  * @property \common\components\openAi\OpenAiComment       $openAiComment

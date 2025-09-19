@@ -95,8 +95,9 @@ $config = [
 //        ],
         'assetManager' => [
             'class' => 'yii\web\AssetManager',
-            'forceCopy' => YII_DEBUG,
+            'forceCopy' => false,
             'appendTimestamp' => true,
+            'linkAssets' => false, // Windows: никаких symlink
         ],
         'user' => [
             'identityClass'   => 'common\models\user\User',

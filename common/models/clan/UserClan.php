@@ -10,8 +10,11 @@ use Yii;
  *
  * @property int $id
  * @property int|null $user_id
+ * @property string|null $steam_id
  * @property int|null $clan_id
  * @property int|null $clan_invite_id
+ * @property bool|null $status
+ * @property string|null $leave_at
  * @property string|null $created_at
  *
  * @property Clan $clan

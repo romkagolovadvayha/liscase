@@ -83,7 +83,8 @@ class ClansController extends WebController
         $this->view->params['page'] = 'clans';
         $this->view->params['clan_profile_block'] = true;
 
-        $items = Clan::getClans($server);
+        $items = [];
+//        $items = Clan::getClans($server);
 
         $dataProvider = new \yii\data\ArrayDataProvider([
             'allModels' => $items,
@@ -132,16 +133,13 @@ class ClansController extends WebController
             return "<div class=\"item_param\"><span>{$str}</span></div>";
         };
         $clan = null;
-        if (!Yii::$app->user->isGuest) {
-            $user = Yii::$app->user->identity;
-            $userClans = \common\models\clan\Clan::getUserClansList($server);
-            if (!empty($userClans[$user->id])) {
-                $clans = \common\models\clan\Clan::getClans($server);
-                if (!empty($clans[$userClans[$user->id]])) {
-                    $clan = $clans[$userClans[$user->id]];
-                }
-            }
-        }
+//        if (!Yii::$app->user->isGuest) {
+//            $user = Yii::$app->user->identity;
+//            $userClans = \common\models\clan\Clan::getUserClansList($server);
+//            if (!empty($userClans[$user->id])) {
+//                $clan = $userClans[$user->id]->clan;
+//            }
+//        }
 
         $values = array_values($items);
         $goldClan = null;
