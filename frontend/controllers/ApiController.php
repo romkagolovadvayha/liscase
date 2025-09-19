@@ -217,6 +217,7 @@ class ApiController extends WebController
             'name' => $drop->name,
             'lvl_inspection' => 0,
             'full_only' => $drop->full_only,
+            'is_blocked_building' => $drop->is_blocked_building,
             'subDrop' => [],
         ];
         if ($drop->full_only) {
@@ -324,6 +325,7 @@ class ApiController extends WebController
                 'block_date' => null,
                 'kd' => false,
                 'full_only' => $drop->full_only,
+                'is_blocked_building' => $drop->is_blocked_building,
                 'subDrop' => [],
             ];
             if (!empty($drop->blocked_hour)) {
