@@ -171,7 +171,7 @@ class ChatServer extends WebSocketServer
                   return;
               }
               if (Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR) || $model->user_id == $client->user->id) {
-                  $isBlockedBuilding = $model->drop[0]->is_blocked_building ? 1 : 0;
+                  $isBlockedBuilding = $model->drop[0]->is_blocked_building ? 'true' : 'false';
                   $command = "store.take {$model->user->steam_id} {$model->id} {$isBlockedBuilding}";
                   $response = (Yii::$app->curl)
                       ->setHeaders(['Content-Type' => 'application/json'])
