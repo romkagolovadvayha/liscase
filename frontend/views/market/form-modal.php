@@ -120,7 +120,7 @@ $user = Yii::$app->user->identity;
                 <?php if (!Yii::$app->settings->get('site_basketSite')): ?>
                     <?=Yii::t('common', 'Чтобы получить, введите /store в чат')?>
                 <?php else: ?>
-                    <?=Yii::t('common', 'Чтобы получить, перейдите на эту страницу')?> <a href="/store" target="_blank" target="_blank"><?=Yii::$app->settings->get('site_domain')?>/store</a>
+                    <?=Yii::t('common', 'Чтобы получить, перейдите на эту страницу')?> <a href="/store" target="_blank" data-pjax="0" target="_blank"><?=Yii::$app->settings->get('site_domain')?>/store</a>
                 <?php endif; ?>
             </span>
 <!--            <span>Чтобы получить, введите <span class="text-link-color-default command_to_bot cursor-pointer" data-bs-toggle="tooltip" data-bs-title="Скопировать команду">/store</span> в чат</span>-->
@@ -140,7 +140,7 @@ $user = Yii::$app->user->identity;
 </div>
 <footer class="px-24 pb-24">
     <?php if (Yii::$app->user->isGuest): ?>
-        <a href="/auth/oauth?authclient=steam" class="button button-primary w-full" target="_blank" style="display: flex;width: 100%;justify-content: center;" title="<?=Yii::t('common', 'Авторизация через Steam')?>">
+        <a href="/auth/oauth?authclient=steam" class="button button-primary w-full" data-pjax="0" style="display: flex;width: 100%;justify-content: center;" title="<?=Yii::t('common', 'Авторизация через Steam')?>">
                 <span class="button__text">
                     <?=Yii::t('common', 'Войти через Steam')?>
                     <span class="icons icons_24px icons_24px_steam bg-white"></span>
