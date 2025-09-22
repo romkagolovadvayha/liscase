@@ -171,7 +171,7 @@ class ChatServer extends WebSocketServer
                   return;
               }
 
-              $cacheKey = 'commandGetDrop_kd_' . $model->user_id;
+              $cacheKey = 'commandGetDrop_kd_' . $model->user->id;
               $count = Yii::$app->cache->get($cacheKey) ?? 0;
               if ($count > 5) {
                   $client->send(json_encode([
