@@ -87,7 +87,7 @@ class BlogController extends WebController
         }
         $canonical = Yii::$app->params['homePage'] . $blogCategory->getUrl();
         $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
-        $view->registerMetaTag(['name' => 'robots', 'content' => 'index,follow,max-image-preview:large']);
+        $this->view->registerMetaTag(['name' => 'robots', 'content' => 'index,follow,max-image-preview:large']);
 
         $categories = \common\models\blog\BlogCategory::find()
                                                       ->alias('bc')
