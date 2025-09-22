@@ -85,6 +85,8 @@ class BlogController extends WebController
                 )->andFilterWhere(['like', 'b.name', $searchModel->name])->count()
             );
         }
+        $canonical = Yii::$app->params['homePage'] . $blogCategory->getUrl();
+        $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
 
         $categories = \common\models\blog\BlogCategory::find()
                                                       ->alias('bc')
