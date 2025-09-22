@@ -170,6 +170,20 @@ class ChatServer extends WebSocketServer
                                             ]));
                   return;
               }
+
+              $cacheKey = 'commandGetDrop_kd_' . $model->user_id;
+              $count = Yii::$app->cache->get($cacheKey) ?? 0;
+              if ($count > 5) {
+                  $client->send(json_encode([
+                                                'type' => 'store.take',
+                                                'code' => 500,
+                                                'message' => Yii::t('common', "Нельзя выполнять действия слишком часто! Подождите 30 секунд.", [], $client->user->current_language),
+                                                'id' => $model->id,
+                                            ]));
+                  return;
+              }
+              Yii::$app->cache->set($cacheKey, $count + 1, 30);
+
               if (Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR) || $model->user_id == $client->user->id) {
                   $isBlockedBuilding = $model->drop[0]->is_blocked_building ? 'true' : 'false';
                   $command = "store.take {$model->user->steam_id} {$model->id} {$isBlockedBuilding}";
