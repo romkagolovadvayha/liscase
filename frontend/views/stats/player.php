@@ -20,6 +20,8 @@ use common\models\statistics\Teams;
 $this->title = $user->username . " " . Yii::t('common', 'статистика на сервере') . " " . Yii::t('database', $server->name);
 $this->params['page'] = 'stats';
 
+$this->registerMetaTag(['property' => 'robots', 'content' => 'noindex, follow'], 'robots');
+
 $IS_GUEST = Yii::$app->user->isGuest;
 $wipe = $server->currentWipe();
 $player = Statistics::getPlayerStats($server, $user->steam_id, $wipe);

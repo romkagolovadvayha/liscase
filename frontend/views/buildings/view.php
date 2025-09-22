@@ -16,6 +16,8 @@ $isActive = BuildingLike::find()
                     ->andWhere(['building_id' => $model->id])
                     ->andWhere(['user_id' => Yii::$app->user->id])
                     ->exists();
+
+$this->registerMetaTag(['property' => 'robots', 'content' => 'noindex, follow'], 'robots');
 ?>
 <h1 class="main_title"><span><?=Yii::t('database', $model->name)?></span></h1>
     <div class="server_info_page">
