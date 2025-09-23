@@ -67,6 +67,18 @@ $config = [
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => '5c4cf22fbe90065a4a8e4591cf2cea84',
+            'csrfCookie' => [
+                'httpOnly' => true,
+                'secure'   => true,
+                'sameSite' => yii\web\Cookie::SAME_SITE_LAX,
+            ],
+        ],
+        'session' => [
+            'cookieParams' => [
+                'httpOnly' => true,
+                'secure'   => true,
+                'sameSite' => yii\web\Cookie::SAME_SITE_LAX,
+            ],
         ],
 //        'languagepicker'       => [
 //            'class'      => 'common\components\web\LanguagePicker',
