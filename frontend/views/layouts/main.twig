@@ -5,13 +5,13 @@
 {#    <link rel="preconnect" href="https://fonts.googleapis.com">#}
 {#    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>#}
 {#    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">#}
-    <link href="/uploads/site/colors/colors.css?v=1.4" rel="stylesheet"/>
+    <link href="/uploads/site/colors/colors.css?v={{ v }}" rel="preload" as="style" onload="this.onload=null;this.rel=&#039;stylesheet&#039;"/>
     <link rel="alternate" hreflang="ru" href="{{ link }}" />
     <link rel="alternate" hreflang="en" href="{{ linkEn }}" />
     <link rel="alternate" hreflang="x-default" href="{{ linkEn }}" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="{{ SETTINGS.get('colors_font_link') }}" rel="stylesheet">
+    <link href="{{ SETTINGS.get('colors_font_link') }}" rel="preload" as="style" onload="this.onload=null;this.rel=&#039;stylesheet&#039;">
     {{ head|raw }}
 {#    <link href="/css/styles.min.css" rel="stylesheet"/>#}
 </head>

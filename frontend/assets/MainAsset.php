@@ -17,6 +17,10 @@ class MainAsset extends AssetBundle
         'forceCopy' => YII_DEBUG,
     ];
 
+    public $jsOptions = [
+        'defer' => 'defer',
+    ];
+
     public function init()
     {
         parent::init();
@@ -29,7 +33,7 @@ class MainAsset extends AssetBundle
             'js/main.js?v=' . \Yii::$app->settings->get('site_version'),
         ];
         $this->css = [
-            'css/design/styles-local.min.css?v=' . \Yii::$app->settings->get('site_version'),
+            ['css/design/styles-local.min.css?v=' . \Yii::$app->settings->get('site_version'), 'rel' => 'preload', 'as' => 'style', 'onload' => "this.onload=null;this.rel='stylesheet'"],
         ];
     }
 

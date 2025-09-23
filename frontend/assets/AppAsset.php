@@ -23,6 +23,10 @@ class AppAsset extends AssetBundle
     public $basePath = '@webroot';
     public $baseUrl = '@web';
 
+    public $jsOptions = [
+        'defer' => 'defer',
+    ];
+
     public $css = [];
 
     public $js = [];

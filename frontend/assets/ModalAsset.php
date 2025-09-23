@@ -19,6 +19,10 @@ class ModalAsset extends AssetBundle
         ];
     }
 
+    public $jsOptions = [
+        'defer' => 'defer',
+    ];
+
     public $depends
         = [
             BootstrapPluginAsset::class,

@@ -104,6 +104,7 @@ $linkEn = $_SERVER['REQUEST_SCHEME'] . '://' . 'en.' . Yii::$app->settings->get(
     'head' => '<![CDATA[YII-BLOCK-HEAD]]>',
     'lang' => $lang,
     'body' => $body,
+    'v' => \Yii::$app->settings->get('site_version'),
     'link' => $link,
     'linkEn' => $linkEn,
 ]);?>

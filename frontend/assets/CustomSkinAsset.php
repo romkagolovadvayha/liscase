@@ -8,6 +8,10 @@ class CustomSkinAsset extends AssetBundle
 {
     public $sourcePath = '@frontend/assets/sources';
 
+    public $jsOptions = [
+        'defer' => 'defer',
+    ];
+
     public function init()
     {
         parent::init();
