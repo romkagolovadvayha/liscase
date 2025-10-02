@@ -11,6 +11,10 @@ class UserBoxAsset extends AssetBundle
 {
     public $sourcePath = '@frontend/assets/sources';
 
+    public $jsOptions = [
+        'defer' => 'defer',
+    ];
+
     public $js
         = [
             'js/user-box.js',

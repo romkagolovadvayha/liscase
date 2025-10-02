@@ -56,6 +56,7 @@ Yii::$container = new yii\di\Container;
  * @property \yii\queue\redis\Queue                        $queueClansStats
  * @property \common\components\openAi\OpenAiSupport       $openAiSupport
  * @property \common\components\openAi\OpenAiChat          $openAiChat
+ * @property \common\components\openAi\OpenAiQuiz          $openAiQuiz
  * @property \common\components\openAi\OpenAiComment       $openAiComment
  * @property \common\components\telegram\TelegramApiHelper $personalBotTelegram
  * @property \common\components\telegram\TelegramApiHelper $rustotekaBotTelegram

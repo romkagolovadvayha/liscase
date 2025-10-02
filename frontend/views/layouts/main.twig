@@ -5,18 +5,117 @@
 {#    <link rel="preconnect" href="https://fonts.googleapis.com">#}
 {#    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>#}
 {#    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">#}
-    <link href="/uploads/site/colors/colors.css?v=1.4" rel="stylesheet"/>
+    <link href="/uploads/site/colors/colors.css?v={{ v }}" rel="preload" as="style" onload="this.onload=null;this.rel=&#039;stylesheet&#039;"/>
     <link rel="alternate" hreflang="ru" href="{{ link }}" />
     <link rel="alternate" hreflang="en" href="{{ linkEn }}" />
     <link rel="alternate" hreflang="x-default" href="{{ linkEn }}" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="{{ SETTINGS.get('colors_font_link') }}" rel="stylesheet">
+    <link href="{{ SETTINGS.get('colors_font_link') }}" rel="preload" as="style" onload="this.onload=null;this.rel=&#039;stylesheet&#039;">
     {{ head|raw }}
 {#    <link href="/css/styles.min.css" rel="stylesheet"/>#}
 </head>
 <body class="d-flex flex-column h-100">
     {{ body|raw }}
     {{ SETTINGS.get('metrics_code')|raw }}
+
+    <?php
+/* views/partials/consent.php (или прямо в layout) */
+use yii\helpers\Url;
+$policyUrl = Url::to(['/site/privacy']); // поменяй на свою страницу
+?>
+    <div id="cookie-consent" class="cc-wrap" hidden aria-live="polite" role="dialog" aria-label="Согласие на cookies">
+        <div class="cc-box">
+            <div class="cc-text">
+                Мы используем cookies для работы сайта и аналитики. Подробнее — <a href="<?= $policyUrl ?>" target="_blank" rel="noopener">Политика</a>.
+            </div>
+            <div class="cc-actions">
+                <button class="cc-btn cc-secondary" id="cc-settings">Настройки</button>
+                <button class="cc-btn cc-danger"   id="cc-reject">Отклонить</button>
+                <button class="cc-btn cc-primary"  id="cc-accept">Принять все</button>
+            </div>
+        </div>
+
+        <div class="cc-modal" id="cc-modal" hidden role="dialog" aria-label="Настройки cookies">
+            <div class="cc-modal-card">
+                <div class="cc-modal-hd">
+                    <strong>Настройки cookies</strong>
+                    <button class="cc-close" id="cc-close" aria-label="Закрыть">×</button>
+                </div>
+                <div class="cc-modal-bd">
+                    <label class="cc-row">
+                        <span>Необходимые</span>
+                        <input type="checkbox" checked disabled>
+                    </label>
+                    <label class="cc-row">
+                        <span>Аналитика (Яндекс.Метрика)</span>
+                        <input type="checkbox" id="cc-analytics">
+                    </label>
+                    <label class="cc-row">
+                        <span>Маркетинг</span>
+                        <input type="checkbox" id="cc-marketing">
+                    </label>
+                </div>
+                <div class="cc-modal-ft">
+                    <button class="cc-btn cc-secondary" id="cc-save">Сохранить выбор</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Cookie consent (simple) -->
+    <style>
+        #cc-mini{position:fixed;left:0;right:0;bottom:0;z-index:2147483647;background:#0f172a;color:#e5e7eb;padding:12px}
+        #cc-mini .cc-box{max-width:1200px;margin:0 auto;display:flex;gap:12px;align-items:center;justify-content:center}
+        @media (max-width:640px){
+            #cc-mini .cc-box{ flex-direction:column;align-items:flex-start }
+        }
+    </style>
+
+    <div id="cc-mini" hidden aria-live="polite" role="dialog" aria-label="{{ t('common', 'Согласие на cookies') }}">
+        <div class="cc-box">
+            <div>{{ t('common', 'Мы используем cookies для работы сайта и аналитики.') }}</div>
+            <button id="cc-accept" class="button button-primary button-size__s h-36" style="padding-top: 6px; padding-bottom: 6px"><span class="button__text">{{ t('common', 'Принять') }}</span></button>
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            const KEY='consent:v1';
+            const MAX_AGE=31536000; // 1 год
+            const $bar=document.getElementById('cc-mini');
+            const $btn=document.getElementById('cc-accept');
+
+            function setConsent(accepted){
+                const c={necessary:true,analytics:!!accepted,date:Date.now()};
+                try{ localStorage.setItem(KEY, JSON.stringify(c)); }catch(e){}
+                const base='; Max-Age='+MAX_AGE+'; Path=/; SameSite=Lax'+(location.protocol==='https:'?'; Secure':'');
+                document.cookie='consent_analytics='+(c.analytics?1:0)+base;
+                if(accepted && typeof window.onConsentGranted==='function'){
+                    try{ window.onConsentGranted(); }catch(e){}
+                }
+            }
+
+            function already(){
+                try{ return JSON.parse(localStorage.getItem(KEY)); }catch(e){ return null; }
+            }
+
+            const saved=already();
+            if(!saved){
+                $bar.hidden=false;
+                let t=setTimeout(function(){ setConsent(true); $bar.remove(); }, 10000); // автопринятие через 10 сек
+                $btn.addEventListener('click', function(){
+                    clearTimeout(t);
+                    setConsent(true);
+                    $bar.remove();
+                });
+            }else if(saved.analytics){
+                // при повторном визите можно сразу применять интеграции
+                if(typeof window.onConsentGranted==='function'){ window.onConsentGranted(); }
+            }
+
+            // (необязательно) сделай глобальный метод, чтобы открыть баннер снова:
+            window.CookieConsentMini={ open:()=>{ $bar.hidden=false; } };
+        })();
+    </script>
 </body>
 </html>

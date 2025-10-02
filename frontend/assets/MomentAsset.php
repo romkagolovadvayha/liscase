@@ -21,6 +21,10 @@ class MomentAsset extends AssetBundle
         'min/moment-with-locales.js',
     ];
 
+    public $jsOptions = [
+        'defer' => 'defer',
+    ];
+
     public $depends = [
         AppAsset::class
     ];

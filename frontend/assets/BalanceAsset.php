@@ -17,6 +17,10 @@ class BalanceAsset extends AssetBundle
         ];
     }
 
+    public $jsOptions = [
+        'defer' => 'defer',
+    ];
+
     public $depends
         = [
             'frontend\assets\AppAsset',

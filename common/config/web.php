@@ -211,6 +211,9 @@ $config = [
         'openAiChat' => [
             'class' => \common\components\openAi\OpenAiChat::class,
         ],
+        'openAiQuiz' => [
+            'class' => \common\components\openAi\OpenAiQuiz::class,
+        ],
         'openAiComment' => [
             'class' => \common\components\openAi\OpenAiComment::class,
         ],

@@ -75,7 +75,7 @@ class BanlistController extends WebController
         $projectName = Yii::$app->settings->get('site_project_name');
         // Уникальный description с числом записей
         $desc = Yii::t('common',
-                       'Общий бан-лист серверов {projectName}: {count} банов. Проверяйте причину бана, сервер и сроки. Список обновляется автоматически.',
+                       'Общий бан-лист серверов {projectName}. Проверяйте причину бана, сервер и сроки. Список обновляется автоматически.',
                        ['count' => (int)$dataProvider->getTotalCount(), 'projectName' => $projectName]
         );
 

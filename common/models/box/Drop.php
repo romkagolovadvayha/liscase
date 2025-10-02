@@ -38,6 +38,7 @@ use yii\web\JsExpression;
  * @property int         $sort
  * @property int         $floating_price_percent  Максимальный процент колебания цены
  * @property int         $full_only 1 - можно выводить только целиком, 0 - можно частично
+ * @property int         $is_blocked_building
  *
  * @property DropImage[] $dropImages
  * @property DropDrop[] $subDrops
@@ -137,6 +138,7 @@ class Drop extends ActiveRecord
             'drop_type'          => Yii::t('common', 'Тип предмета'),
             'floating_price_percent' => Yii::t('common', 'Плавающая цена (%)'),
             'full_only' => Yii::t('common', 'Выводить только целиком'),
+            'is_blocked_building' => Yii::t('common', 'Запретить выводить в зоне чужого шкафа'),
         ];
     }
 
@@ -213,7 +215,7 @@ class Drop extends ActiveRecord
             [['description'], 'string'],
             [['created_at','price'], 'safe'],
             ['floating_price_percent', 'integer', 'min' => 0, 'max' => 100],
-            [['full_only'], 'integer'],
+            [['full_only', 'is_blocked_building'], 'integer'],
         ];
     }
 

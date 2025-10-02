@@ -57,6 +57,12 @@ JS
     <div class="col-md-2"><?= $form->field($model, 'floating_price_percent')->textInput(); ?></div>
     <div class="col-md-4"><?= $form->field($model, 'eng_name')->textInput(); ?></div>
 </div>
+<div>
+    <?= $form->field($model, 'is_blocked_building')->dropDownList([
+                                                                      1 => 'Да',
+                                                                      0 => 'Нет',
+                                                                  ], []); ?>
+</div>
 
 <?= $form->field($model, 'drop_type')->dropDownList(Drop::getDropTypesList(), []) ?>
 <?php if ($model->drop_type == Drop::TYPE_COMMAND): ?>
