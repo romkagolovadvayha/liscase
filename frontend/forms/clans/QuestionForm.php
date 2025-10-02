@@ -28,12 +28,25 @@ class QuestionForm extends ClanQuestion
         }
         $user = Yii::$app->user->identity;
 
-        $userClans = ClanQuestion::find()
+        // Проверяем, не состоит ли уже пользователь в каком-либо клане
+        $existingMembership = \common\models\clan\UserClan::find()
             ->andWhere(['user_id' => $user->id])
-            ->andWhere(['clan_id' => $this->clan_id])
+            ->andWhere(['status' => 1])
             ->exists();
 
-        if ($userClans) {
+        if ($existingMembership) {
+            $this->addError('global', Yii::t('common', 'Вы уже состоите в клане'));
+            return false;
+        }
+
+        // Проверяем, не отправлял ли уже заявку в этот клан
+        $existingApplication = ClanQuestion::find()
+            ->andWhere(['user_id' => $user->id])
+            ->andWhere(['clan_id' => $this->clan_id])
+            ->andWhere(['status' => ClanQuestion::STATUS_WAIT])
+            ->exists();
+
+        if ($existingApplication) {
             $this->addError('global', Yii::t('common', 'Вы уже отправляли заявку в этот клан'));
             return false;
         }

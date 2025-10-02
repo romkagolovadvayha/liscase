@@ -57,6 +57,14 @@ class ClanForm extends Clan
             $userClan->status = 1;
             $userClan->created_at = date('Y-m-d H:i:s');
             $userClan->save();
+
+            // Назначаем роль ROLE_MEMBER создателю клана
+            $userRole = new \common\models\clan\UserRole();
+            $userRole->user_id = $user->id;
+            $userRole->clan_id = $this->id;
+            $userRole->role = \common\models\clan\UserRole::codes()[\common\models\clan\UserRole::ROLE_MEMBER];
+            $userRole->created_at = date('Y-m-d H:i:s');
+            $userRole->save();
         }
 
         return true;

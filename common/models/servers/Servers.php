@@ -294,7 +294,7 @@ class Servers extends \common\components\base\ActiveRecord
             return "/servers/{$this->tag}";
         }
         if ($key === 'clans') {
-            return "/clans/{$this->tag}";
+            return "/clans/stats/{$this->tag}";
         }
         if ($key === 'user-stats') {
             return "/servers/{$this->tag}/{$steamId}";

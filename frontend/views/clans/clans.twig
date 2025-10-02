@@ -2,7 +2,10 @@
 {{ use('yii/widgets/ListView') }}
 {{ use('yii/widgets/Pjax') }}
 {{ use('frontend/widgets/Alert') }}
+{{ use('frontend/assets/ClanApplicationsAsset') }}
 {{ alert_widget() }}
+
+{{ register_asset_bundle('frontend\\assets\\ClanApplicationsAsset') }}
 <nav class="servers_navbar mb-24">
     <ul class="servers_navbar_nav">
         {% for ITEM in SERVERS %}
@@ -52,6 +55,72 @@
             {{ t('common', 'Создать клан') }}
         </button>
     {% endif %}
+</div>
+
+<!-- Форма поиска -->
+<div class="clans-search-form bg-background-secondary p-20 rounded-12 mb-24">
+    <form method="get" class="clans-search-form-content">
+        <div class="search-form-row">
+            <div class="search-form-group">
+                <label for="search" class="search-form-label">{{ t('common', 'Поиск') }}:</label>
+                <input type="text" 
+                       id="search" 
+                       name="ClanSearch[search]" 
+                       value="{{ SEARCH_MODEL.search|default('') }}" 
+                       placeholder="{{ t('common', 'Название клана или описание...') }}"
+                       class="search-form-input">
+            </div>
+            
+            <div class="search-form-group">
+                <label for="min_rating" class="search-form-label">{{ t('common', 'Рейтинг от') }}:</label>
+                <input type="number" 
+                       id="min_rating" 
+                       name="ClanSearch[min_rating]" 
+                       value="{{ SEARCH_MODEL.min_rating|default('') }}" 
+                       placeholder="0"
+                       class="search-form-input">
+            </div>
+            
+            <div class="search-form-group">
+                <label for="max_rating" class="search-form-label">{{ t('common', 'Рейтинг до') }}:</label>
+                <input type="number" 
+                       id="max_rating" 
+                       name="ClanSearch[max_rating]" 
+                       value="{{ SEARCH_MODEL.max_rating|default('') }}" 
+                       placeholder="1000"
+                       class="search-form-input">
+            </div>
+            
+            <div class="search-form-group">
+                <label for="min_members" class="search-form-label">{{ t('common', 'Участников от') }}:</label>
+                <input type="number" 
+                       id="min_members" 
+                       name="ClanSearch[min_members]" 
+                       value="{{ SEARCH_MODEL.min_members|default('') }}" 
+                       placeholder="1"
+                       class="search-form-input">
+            </div>
+            
+            <div class="search-form-group">
+                <label for="max_members" class="search-form-label">{{ t('common', 'Участников до') }}:</label>
+                <input type="number" 
+                       id="max_members" 
+                       name="ClanSearch[max_members]" 
+                       value="{{ SEARCH_MODEL.max_members|default('') }}" 
+                       placeholder="50"
+                       class="search-form-input">
+            </div>
+            
+            <div class="search-form-actions">
+                <button type="submit" class="button button-primary">
+                    <i class="fas fa-search"></i> {{ t('common', 'Поиск') }}
+                </button>
+                <a href="{{ SERVER.getLink('clans') }}" class="button button-secondary">
+                    <i class="fas fa-times"></i> {{ t('common', 'Сбросить') }}
+                </a>
+            </div>
+        </div>
+    </form>
 </div>
 <div>
     {{ grid_view_widget({

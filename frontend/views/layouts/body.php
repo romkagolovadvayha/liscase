@@ -76,7 +76,8 @@ if (!empty($user) && !empty($this->params['clan_menu_block'])) {
         'USER' => $user,
         'SETTINGS' => $SETTINGS,
         'userData' => $userData,
-        'CLAN' => $this->params['clan_menu_block'],
+        'CLAN' => $this->params['clan'],
+        'ROLES' => $this->params['roles'],
         'PAGE' => $page
     ]);
 }

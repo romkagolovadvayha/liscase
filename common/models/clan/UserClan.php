@@ -20,6 +20,7 @@ use Yii;
  * @property Clan $clan
  * @property ClanInvite $clanInvite
  * @property User $user
+ * @property UserRole[] $userRoles
  */
 class UserClan extends \yii\db\ActiveRecord
 {
@@ -87,5 +88,16 @@ class UserClan extends \yii\db\ActiveRecord
     public function getUser()
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
+    }
+
+    /**
+     * Gets query for [[UserRoles]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUserRoles()
+    {
+        return $this->hasMany(UserRole::class, ['user_id' => 'user_id'])
+            ->andWhere(['clan_id' => $this->clan_id]);
     }
 }

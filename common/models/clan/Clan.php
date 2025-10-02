@@ -27,6 +27,9 @@ use yii\helpers\ArrayHelper;
  * @property string|null $social_twitch
  * @property string|null $link_hash
  * @property string|null $created_at
+ * @property boolean|null $is_open
+ * @property string|null $clan_tag
+ * @property string|null $clan_color
  *
  * @property ClanInvite[] $clanInvites
  * @property ClanPage[] $clanPages
@@ -55,9 +58,13 @@ class Clan extends \yii\db\ActiveRecord
         return [
             [['description'], 'string'],
             [['user_id', 'user_count'], 'integer'],
+            [['is_open'], 'boolean'],
             [['created_at'], 'safe'],
             [['title', 'logo_image', 'background_image', 'social_youtube', 'social_discord', 'social_vk', 'social_twitch'], 'string', 'max' => 255],
             [['description_short'], 'string', 'max' => 110],
+            [['clan_tag'], 'string', 'max' => 8],
+            [['clan_color'], 'string', 'max' => 7],
+            [['clan_color'], 'match', 'pattern' => '/^#[0-9A-Fa-f]{6}$/', 'message' => 'Цвет должен быть в формате HEX (#RRGGBB)'],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
         ];
     }
@@ -81,6 +88,9 @@ class Clan extends \yii\db\ActiveRecord
             'social_vk' => Yii::t('common', 'Ссылка на VK'),
             'social_twitch' => Yii::t('common', 'Ссылка на Twitch'),
             'created_at' => Yii::t('common', 'Дата создания'),
+            'is_open' => Yii::t('common', 'Открыт набор в клан'),
+            'clan_tag' => Yii::t('common', 'Тег клана'),
+            'clan_color' => Yii::t('common', 'Цвет клана'),
         ];
     }
 
@@ -264,8 +274,79 @@ class Clan extends \yii\db\ActiveRecord
 
     public function getLink($key, $serverTag = null) {
         if ($key === 'profile') {
-            return "/clans/{$serverTag}/{$this->link_hash}";
+            return "/clans/profile/{$this->link_hash}";
+        }
+        if ($key === 'applications') {
+            return "/clans/applications?hash={$this->link_hash}";
         }
         return null;
+    }
+
+    /**
+     * Получение кланов для сервера с кэшированием
+     * @param Servers $server
+     * @return array
+     */
+    public static function getClans($server) {
+        $cacheKey = 'clans_list_' . $server->id . '_' . $server->currentWipe();
+        
+        // Пытаемся получить данные из кэша
+        $cachedData = Yii::$app->cache->get($cacheKey);
+        if ($cachedData !== false) {
+            //return $cachedData;
+        }
+
+        // Получаем кланы из базы данных
+        $clans = self::find()
+            ->with(['user', 'clanStats'])
+            ->orderBy(['user_count' => SORT_DESC, 'created_at' => SORT_DESC])
+            ->all();
+
+        $result = [];
+        foreach ($clans as $clan) {
+            // Получаем статистику клана для сервера
+            $clanStats = null;
+            foreach ($clan->clanStats as $stat) {
+                if ($stat->server_id == $server->id && $stat->wipe == $server->currentWipe()) {
+                    $clanStats = $stat;
+                    break;
+                }
+            }
+
+            // Формируем данные клана
+            $clanData = [
+                'id' => $clan->id,
+                'title' => $clan->title,
+                'description_short' => $clan->description_short,
+                'logo' => $clan->getLogo(),
+                'background' => $clan->getBackground(),
+                'link' => $clan->getLink('profile'),
+                'link_hash' => $clan->link_hash,
+                'users_count' => $clan->user_count ?? 0,
+                'created_at' => $clan->created_at,
+                'kills' => 0,
+                'rating' => 0,
+                'scrap' => 0,
+                'sulfur.ore' => 0,
+                'rocket_basic' => 0,
+                'c4thrown' => 0,
+                'users' => [],
+            ];
+
+            // Добавляем статистику если есть
+            if ($clanStats) {
+                $clanData['scrap'] = $clanStats->scrap ?? 0;
+                $clanData['sulfur.ore'] = $clanStats->sulfur_ore ?? 0;
+                $clanData['kills'] = $clanStats->kill_score ?? 0;
+                $clanData['rating'] = self::calculateRating($clanData);
+            }
+
+            $result[$clan->id] = $clanData;
+        }
+
+        // Кэшируем результат на 5 минут
+        Yii::$app->cache->set($cacheKey, $result, 300);
+
+        return $result;
     }
 }

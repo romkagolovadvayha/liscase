@@ -52,15 +52,21 @@
             <p class="p1 text-text-main">{{ t('database', CLAN.description_short) }}</p>
         </div>
     </div>
-    <div>
+    <div class="flex gap-x-12">
         {% if ROLES.ROLE_MEMBER %}
             <button data-href="/clans/leave?hash={{ CLAN.link_hash }}" data-size="modal-md" data-toggl="modal" data-target="modal-dialog" data-title="{{ t('common', 'Выйти из клана') }}" class="button-primary show-modal-link">
                 <span class="button__text">{{ t('common', 'Покинуть клан') }}</span>
             </button>
         {% else %}
-            <button data-href="/clans/question?hash={{ CLAN.link_hash }}" data-size="modal-md" data-toggl="modal" data-target="modal-dialog" data-title="{{ t('common', 'Вступить в клан') }}" class="button-primary show-modal-link">
-                <span class="button__text">{{ t('common', 'Вступить в клан') }}</span>
-            </button>
+            {% if HAS_PENDING_APPLICATION %}
+                <button class="button button-secondary" disabled>
+                    <i class="fas fa-clock"></i> {{ t('common', 'Заявка отправлена') }}
+                </button>
+            {% else %}
+                <button data-href="/clans/question?hash={{ CLAN.link_hash }}" data-size="modal-md" data-toggl="modal" data-target="modal-dialog" data-title="{{ t('common', 'Вступить в клан') }}" class="button-primary show-modal-link">
+                    <span class="button__text">{{ t('common', 'Вступить в клан') }}</span>
+                </button>
+            {% endif %}
         {% endif %}
     </div>
 </section>
@@ -82,6 +88,47 @@
         {% include 'profile_main_stat_item.twig' with {'CLAN_STATS': CLAN_STATS, 'NAMES': NAMES,'IMAGES': IMAGES, 'CODE': 'rocket_basic'} %}
     </div>
 </section>
+
+<!-- Страницы клана -->
+{% if PAGES|length > 0 %}
+<section class="clan-pages-section mt-24">
+    <div class="page-stats__block">
+        <div class="page-stats__block-header">
+            <h3 class="h3">{{ t('common', 'Страницы клана') }}</h3>
+        </div>
+        <div class="page-stats__block-content">
+            <div class="clan-pages-grid">
+                {% for page in PAGES %}
+                    <div class="clan-page-card">
+                        <div class="clan-page-card-header">
+                            <h4 class="h4 clan-page-title">{{ page.title }}</h4>
+                            <div class="clan-page-meta">
+                                <span class="clan-page-date">
+                                    <i class="fas fa-calendar"></i>
+                                    {{ page.created_at|date('d.m.Y') }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="clan-page-card-content">
+                            <div class="clan-page-preview">
+                                {{ page.text|striptags|slice(0, 150) }}{% if page.text|striptags|length > 150 %}...{% endif %}
+                            </div>
+                        </div>
+                        <div class="clan-page-card-actions">
+                            <a href="/clans/profile/{{ CLAN.link_hash }}/page/{{ page.link_name }}" 
+                               class="button button-secondary button-sm">
+                                <span class="button__text">
+                                    <i class="fas fa-eye"></i> {{ t('common', 'Читать') }}
+                                </span>
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
 {#<div class="page-stats__two-blocks mt-12">#}
 {#    <section class="bg-background-secondary flex justify-center items-center w-50p" style="border-radius: var(--block-radius);">#}
 {#        <div class="user__stats stats">#}

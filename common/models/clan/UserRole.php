@@ -26,6 +26,10 @@ class UserRole extends \yii\db\ActiveRecord
     const ROLE_EDIT_MEMBERS = 'ROLE_EDIT_MEMBERS';
     const ROLE_EDIT_PAGES = 'ROLE_EDIT_PAGES';
     const ROLE_INVITE = 'ROLE_INVITE';
+    const ROLE_AUTH_CUPBOARDS = 'ROLE_AUTH_CUPBOARDS';
+    const ROLE_AUTH_AA = 'ROLE_AUTH_AA';
+    const ROLE_AUTH_DOORS = 'ROLE_AUTH_DOORS';
+    const ROLE_AUTH_TURRETS = 'ROLE_AUTH_TURRETS';
 
     /**
      * {@inheritdoc}
@@ -39,7 +43,42 @@ class UserRole extends \yii\db\ActiveRecord
             self::ROLE_EDIT_MEMBERS => 4,
             self::ROLE_EDIT_PAGES => 5,
             self::ROLE_INVITE => 6,
+            self::ROLE_AUTH_CUPBOARDS => 7,
+            self::ROLE_AUTH_AA => 8,
+            self::ROLE_AUTH_DOORS => 9,
+            self::ROLE_AUTH_TURRETS => 10,
         ];
+    }
+
+    /**
+     * Получить названия ролей на русском языке
+     * @return array
+     */
+    public static function getRoleNames()
+    {
+        return [
+            self::ROLE_MEMBER => 'Участник клана',
+            self::ROLE_EDIT_INFO => 'Изменение информации о клане',
+            self::ROLE_QUESTION => 'Управление заявками на вступление',
+            self::ROLE_EDIT_MEMBERS => 'Управление участниками клана',
+            self::ROLE_EDIT_PAGES => 'Управление страницами клана',
+            self::ROLE_INVITE => 'Создание приглашений в клан',
+            self::ROLE_AUTH_CUPBOARDS => 'Авторизация в шкафах',
+            self::ROLE_AUTH_AA => 'Авторизация в ПВО',
+            self::ROLE_AUTH_DOORS => 'Авторизация в дверях',
+            self::ROLE_AUTH_TURRETS => 'Авторизация в турелях',
+        ];
+    }
+
+    /**
+     * Получить название роли на русском языке
+     * @param string $roleKey
+     * @return string
+     */
+    public static function getRoleName($roleKey)
+    {
+        $names = self::getRoleNames();
+        return isset($names[$roleKey]) ? $names[$roleKey] : $roleKey;
     }
 
     /**

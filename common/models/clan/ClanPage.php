@@ -14,6 +14,7 @@ use Yii;
  * @property string|null $title
  * @property string|null $text
  * @property int|null $sort
+ * @property string|null $link_name
  * @property string|null $created_at
  *
  * @property Clan $clan
@@ -38,7 +39,7 @@ class ClanPage extends \yii\db\ActiveRecord
             [['user_id', 'clan_id', 'sort'], 'integer'],
             [['text'], 'string'],
             [['created_at'], 'safe'],
-            [['title'], 'string', 'max' => 255],
+            [['title', 'link_name'], 'string', 'max' => 255],
             [['clan_id'], 'exist', 'skipOnError' => true, 'targetClass' => Clan::class, 'targetAttribute' => ['clan_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
         ];
@@ -56,6 +57,7 @@ class ClanPage extends \yii\db\ActiveRecord
             'title' => 'Title',
             'text' => 'Text',
             'sort' => 'Sort',
+            'link_name' => 'Link Name',
             'created_at' => 'Created At',
         ];
     }
