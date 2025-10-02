@@ -18,7 +18,7 @@ $items = [
     ['key' => 'rocket_hv', 'score' => 0.1],
     ['key' => 'rocket_fire', 'score' => 0.1],
     ['key' => 'ammo_explosive', 'score' => 0.01],
-    ['key' => 'grenade.f1.deployed', 'score' => 0.05],
+    ['key' => 'grenade.f1.deployed', 'score' => 0.02],
     ['key' => 'grenade.molotov.deployed', 'score' => 0.05],
     ['key' => 'grenade.beancan.deployed', 'score' => 0.05],
     ['key' => 'grenade.flashbang.deployed', 'score' => 0],
