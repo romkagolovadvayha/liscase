@@ -161,7 +161,7 @@ class Statistics extends ActiveRecord
                                             + Statistics::getParam($params, 'rocket_hv') * 0.1
                                             + Statistics::getParam($params, 'rocket_fire') * 0.1
                                             + Statistics::getParam($params, 'ammo_explosive') * 0.01
-                                            + Statistics::getParam($params, 'grenade.f1.deployed') * 0.05
+                                            + Statistics::getParam($params, 'grenade.f1.deployed') * 0.02
                                             + Statistics::getParam($params, 'grenade.molotov.deployed') * 0.05
                                             + Statistics::getParam($params, 'grenade.beancan.deployed') * 0.05);
                     //wood * 0.2 + stones * 0.3 + metal_ore * 0.5 + sulfur_ore

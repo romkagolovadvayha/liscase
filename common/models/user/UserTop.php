@@ -183,7 +183,7 @@ class UserTop extends \yii\db\ActiveRecord
             'rocket_hv' => 0.1,
             'rocket_fire' => 0.1,
             'ammo_explosive' => 0.01,
-            'grenade.f1.deployed' => 0.05,
+            'grenade.f1.deployed' => 0.02,
             'grenade.molotov.deployed' => 0.05,
             'grenade.beancan.deployed' => 0.05,
           ],
