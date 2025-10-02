@@ -3,7 +3,7 @@
 use yii\db\Migration;
 
 /**
- * Handles updating the length of clan_tag column in table `{{%clan}}`.
+ * Class m251001_122649_update_clan_tag_length
  */
 class m251001_122649_update_clan_tag_length extends Migration
 {
@@ -12,7 +12,7 @@ class m251001_122649_update_clan_tag_length extends Migration
      */
     public function safeUp()
     {
-        $this->alterColumn('clan', 'clan_tag', $this->string(8)->null()->comment('Тег клана (до 8 символов)'));
+
     }
 
     /**
@@ -20,6 +20,23 @@ class m251001_122649_update_clan_tag_length extends Migration
      */
     public function safeDown()
     {
-        $this->alterColumn('clan', 'clan_tag', $this->string(5)->null()->comment('Тег клана (до 5 символов)'));
+        echo "m251001_122649_update_clan_tag_length cannot be reverted.\n";
+
+        return false;
     }
+
+    /*
+    // Use up()/down() to run migration code without a transaction.
+    public function up()
+    {
+
+    }
+
+    public function down()
+    {
+        echo "m251001_122649_update_clan_tag_length cannot be reverted.\n";
+
+        return false;
+    }
+    */
 }
