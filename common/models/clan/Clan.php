@@ -161,7 +161,7 @@ class Clan extends \yii\db\ActiveRecord
      */
     public function getUserClans()
     {
-        return $this->hasMany(UserClan::class, ['clan_id' => 'id']);
+        return $this->hasMany(UserClan::class, ['clan_id' => 'id'])->andWhere(['status' => 1]);
     }
 
     /**
@@ -293,12 +293,12 @@ class Clan extends \yii\db\ActiveRecord
         // Пытаемся получить данные из кэша
         $cachedData = Yii::$app->cache->get($cacheKey);
         if ($cachedData !== false) {
-            //return $cachedData;
+            return $cachedData;
         }
 
         // Получаем кланы из базы данных
         $clans = self::find()
-            ->with(['user', 'clanStats'])
+            ->with(['user', 'clanStats', 'userClans', 'userClans.user', 'userClans.user.userProfile'])
             ->orderBy(['user_count' => SORT_DESC, 'created_at' => SORT_DESC])
             ->all();
 
@@ -311,6 +311,10 @@ class Clan extends \yii\db\ActiveRecord
                     $clanStats = $stat;
                     break;
                 }
+            }
+            $users = [];
+            foreach ($clan->userClans as $userClan) {
+                $users[] = $userClan->user;
             }
 
             // Формируем данные клана
@@ -330,7 +334,7 @@ class Clan extends \yii\db\ActiveRecord
                 'sulfur.ore' => 0,
                 'rocket_basic' => 0,
                 'c4thrown' => 0,
-                'users' => [],
+                'users' => $users,
             ];
 
             // Добавляем статистику если есть

@@ -56,7 +56,7 @@ class ClanSearch extends Clan
         $this->load($params);
 
         // Создаем ключ кэша на основе параметров поиска
-        $cacheKey = 'clan_search_' . $server->id . '_' . md5(serialize($this->getAttributes()) . serialize($params));
+        $cacheKey = 'clan_search2_' . $server->id . '_' . md5(serialize($this->getAttributes()) . serialize($params));
         
         // Пытаемся получить данные из кэша
         $cachedData = Yii::$app->cache->get($cacheKey);

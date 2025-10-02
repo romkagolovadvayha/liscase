@@ -38,10 +38,10 @@
         <ul class="clans_raiting_list_item_list">
             {% for USER in ITEM.users %}
                 <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
-                    <img src="{{ USER.avatar }}" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="пьяный ниндзя">
+                    <img src="{{ USER.userProfile.avatar }}" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="{{ USER.username }}">
                     <div class="flex flex-column w-full gap-y-4">
                         <p class="flex justify-space-between items-center flex-wrap">
-                            <a href="{{ USER.link }}" class="p2 link font-medium">{{ USER.username }}</a>
+                            <a href="{{ USER.getLink('stats') }}" class="p2 link font-medium">{{ USER.username }}</a>
 {#                            <span class="p3 text-text-secondary">Электрик</span>#}
                         </p>
                         <div class="flex gap-x-15">
