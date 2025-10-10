@@ -18,6 +18,9 @@ use yii\helpers\ArrayHelper;
  * @property int    $gender
  * @property string $birthday
  * @property string $trade_link
+ * @property string $youtube_link
+ * @property string $tiktok_link
+ * @property string $twitch_link
  * @property bool   $skindrops
  * @property string $skindrops_error
  * @property int    $referral_bonus
@@ -64,7 +67,7 @@ class UserProfile extends \common\components\base\ActiveRecord
                 ],
                 'integer',
             ],
-            [['name', 'surname', 'trade_link', 'full_name', 'avatar'], 'string', 'max' => 255],
+            [['name', 'surname', 'trade_link', 'youtube_link', 'tiktok_link', 'twitch_link', 'full_name', 'avatar'], 'string', 'max' => 255],
             [['birthday'], 'safe'],
             [['user_id'], 'unique'],
         ];
@@ -75,6 +78,9 @@ class UserProfile extends \common\components\base\ActiveRecord
         return [
             'name' => 'Имя',
             'trade_link' => 'Ссылка на страницу обмена Steam',
+            'youtube_link' => 'Ссылка на YouTube канал',
+            'tiktok_link' => 'Ссылка на TikTok',
+            'twitch_link' => 'Ссылка на Twitch канал',
         ];
     }
 

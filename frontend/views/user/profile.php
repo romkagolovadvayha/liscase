@@ -64,6 +64,45 @@ $this->title = Yii::t('common', "Профиль") . " - {$user->userProfile->nam
                     'template' => "{input}{error}"
                 ])->label(false)->textInput(['placeholder' => Yii::t('common', 'https://steamcommunity.com/id/me/tradeoffers/privacy#trade_offer_access_url')]); ?>
             </div>
+            
+            <!-- Поля для социальных сетей -->
+            <div class="mt-24">
+                <label class="p1 text-text-teritiary mb-7" for="profileform-youtube_link">
+                    <?=Yii::t('common', "Ссылка на YouTube канал")?>
+                </label>
+                <div style="max-width: 700px; margin-bottom: 16px;">
+                    <?=$form->field($model, 'youtube_link', [
+                        'inputOptions' => [
+                            'class' => 'search search_pay'
+                        ],
+                        'template' => "{input}{error}"
+                    ])->label(false)->textInput(['placeholder' => 'https://youtube.com/@yourchannel']); ?>
+                </div>
+                
+                <label class="p1 text-text-teritiary mb-7" for="profileform-tiktok_link">
+                    <?=Yii::t('common', "Ссылка на TikTok")?>
+                </label>
+                <div style="max-width: 700px; margin-bottom: 16px;">
+                    <?=$form->field($model, 'tiktok_link', [
+                        'inputOptions' => [
+                            'class' => 'search search_pay'
+                        ],
+                        'template' => "{input}{error}"
+                    ])->label(false)->textInput(['placeholder' => 'https://tiktok.com/@username']); ?>
+                </div>
+                
+                <label class="p1 text-text-teritiary mb-7" for="profileform-twitch_link">
+                    <?=Yii::t('common', "Ссылка на Twitch канал")?>
+                </label>
+                <div style="max-width: 700px; margin-bottom: 16px;">
+                    <?=$form->field($model, 'twitch_link', [
+                        'inputOptions' => [
+                            'class' => 'search search_pay'
+                        ],
+                        'template' => "{input}{error}"
+                    ])->label(false)->textInput(['placeholder' => 'https://twitch.tv/username']); ?>
+                </div>
+            </div>
             <button type="submit" class="button-secondary"><?=Yii::t('common', 'Сохранить')?></button>
             <?php ActiveForm::end(); ?>
             <?php Pjax::end(); ?>

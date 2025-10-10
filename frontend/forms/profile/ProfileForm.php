@@ -12,13 +12,19 @@ class ProfileForm extends UserProfile
     public $ban_notify;
     public $raid_notify;
     public $telegram_disabled;
+    public $youtube_link;
+    public $tiktok_link;
+    public $twitch_link;
 
     public function rules(): array
     {
         return [
-            [['trade_link'], 'trim'],
+            [['trade_link', 'youtube_link', 'tiktok_link', 'twitch_link'], 'trim'],
             [['raid_notify', 'ban_notify', 'telegram_disabled'], 'integer'],
-            [['trade_link'], 'string', 'max' => 255],
+            [['trade_link', 'youtube_link', 'tiktok_link', 'twitch_link'], 'string', 'max' => 255],
+            [['youtube_link'], 'match', 'pattern' => '/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)(\/.*)?$/', 'message' => 'Неверная ссылка на YouTube', 'when' => function($model) { return !empty($model->youtube_link); }],
+            [['tiktok_link'], 'match', 'pattern' => '/^(https?:\/\/)?(www\.)?tiktok\.com(\/.*)?$/', 'message' => 'Неверная ссылка на TikTok', 'when' => function($model) { return !empty($model->tiktok_link); }],
+            [['twitch_link'], 'match', 'pattern' => '/^(https?:\/\/)?(www\.)?twitch\.tv(\/.*)?$/', 'message' => 'Неверная ссылка на Twitch', 'when' => function($model) { return !empty($model->twitch_link); }],
         ];
     }
 
@@ -26,6 +32,9 @@ class ProfileForm extends UserProfile
     {
         $this->ban_notify = $this->user->ban_notify;
         $this->raid_notify = $this->user->raid_notify;
+        $this->youtube_link = $this->youtube_link;
+        $this->tiktok_link = $this->tiktok_link;
+        $this->twitch_link = $this->twitch_link;
         parent::afterFind();
     }
 
