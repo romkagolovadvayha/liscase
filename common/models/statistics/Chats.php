@@ -63,58 +63,205 @@ class Chats extends ActiveRecord
         ];
     }
 
-    /** Определяет тип нарушения в одном сообщении */
+    /** Вернёт 1, 2 или null (type=3 нужен контекст истории сообщений) */
     public static function getMuteType(string $message): ?int
     {
         $msg = self::normalize($message);
 
-        // --- type 1: оскорбление родителей ---
+        // 1) родители + obscene
         if (preg_match(self::reParents(), $msg) && preg_match(self::reObscene(), $msg)) {
             return 1;
         }
 
-        // --- type 2: оскорбление администрации ---
+        // 2) админ рядом с obscene (±25 символов)
         if (preg_match(self::reAdminInsult(), $msg)) {
             return 2;
         }
 
-        // type 3 (спам) определяется только по повторениям подряд,
-        // тут мы не можем выявить без истории, поэтому пропускаем.
         return null;
     }
 
-    /* ========== вспомогательные приватные методы ========== */
+    /* ================= helpers ================= */
 
-    private static function normalize(string $text): string
+    private static function normalize(string $s): string
     {
-        $text = mb_strtolower($text, 'utf-8');
-        $map = [
-            'a'=>'а','b'=>'ь','c'=>'с','e'=>'е','h'=>'н','k'=>'к','m'=>'м','o'=>'о',
-            'p'=>'р','r'=>'г','t'=>'т','x'=>'х','y'=>'у','6'=>'б','0'=>'о','3'=>'з',
-            '4'=>'ч','@'=>'а','$'=>'с','€'=>'е'
+        $s = mb_strtolower($s, 'utf-8');
+
+        // убрать zero-width, комбинирующие знаки
+        $s = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\p{Mn}]/u', '', $s);
+
+        // унификация ё→е
+        $s = str_replace('ё', 'е', $s);
+
+        // лёгкая «латиница -> кириллица/близкие» (оставляем часть на регексп-уровне)
+        $quick = [
+            '0'=>'о','3'=>'з','4'=>'ч','6'=>'б','@'=>'а','$'=>'с','€'=>'е','!'=>'и','1'=>'l',
         ];
-        $text = strtr($text, $map);
-        $text = str_replace('ё', 'е', $text);
-        $text = preg_replace('~[^а-яa-z0-9\s]~u', ' ', $text);
-        $text = preg_replace('~(.)\1{2,}~u', '$1$1', $text);
-        return trim(preg_replace('~\s+~u', ' ', $text));
+        $s = strtr($s, $quick);
+
+        // схлопнуть повторы символов (больше 3 → 2)
+        $s = preg_replace('~(.)\1{2,}~u', '$1$1', $s);
+
+        // пробелы нормализуем
+        $s = preg_replace('~\s+~u', ' ', $s);
+
+        return trim($s);
     }
 
+    /** Разрешённый «шум» между буквами (до 3 любых разделителей) */
+    private static function sep(): string
+    {
+        return '(?:[\s\p{P}\p{S}_\-]{0,3})';
+    }
+
+    /** Мэп похожих символов для одной буквы → класс символов */
+    private static function glyph(string $ch): string
+    {
+        // NB: порядок важен, шире классы для популярных подмен
+        static $map = [
+            'а' => '[аa@4]',
+            'б' => '[б6b]',
+            'в' => '[вvb8]',
+            'г' => '[гrɡ]',
+            'д' => '[дg]',
+            'е' => '[еe€3]',
+            'ж' => '[ж*x]',
+            'з' => '[з3]',
+            'и' => '[иiu!1l]',
+            'й' => '[ийiu!1l]',
+            'к' => '[кk]',
+            'л' => '[лl1|]',
+            'м' => '[ммm]',
+            'н' => '[нh]',
+            'о' => '[оo0]',
+            'п' => '[пn]',
+            'р' => '[рp]',
+            'с' => '[сsc$]',
+            'т' => '[тt+]',
+            'у' => '[уy]',
+            'ф' => '[фfph]',
+            'х' => '[хx%]',
+            'ц' => '[цu]',
+            'ч' => '[ч4]',
+            'ш' => '[шwщ]',
+            'щ' => '[щwш]',
+            'ьы' => '(?:[ьы]+)', // мягкий блок
+            'ь' => '[ьb\']',
+            'ы' => '[ыbi]',
+            'я' => '[я9r]',
+            // латиница для иностранных слов
+            'a' => '[aа@4]',
+            'b' => '[bв8]',
+            'c' => '[cс$]',
+            'd' => '[dcl]',
+            'e' => '[eе€3]',
+            'f' => '[fфph]',
+            'g' => '[gд9]',
+            'h' => '[hн#]',
+            'i' => '[iи!1l]',
+            'j' => '[jј]',
+            'k' => '[kк]',
+            'l' => '[l1|]',
+            'm' => '[mм]',
+            'n' => '[nп]',
+            'o' => '[oо0]',
+            'p' => '[pр]',
+            'q' => '[qкo]',
+            'r' => '[rг]',
+            's' => '[sс$5]',
+            't' => '[tт+7]',
+            'u' => '[uиц]',
+            'v' => '[v∨]',
+            'w' => '[wшщ]',
+            'x' => '[xх%]',
+            'y' => '[yу]',
+            'z' => '[zѕ2]',
+        ];
+
+        // если есть составные/двухсимвольные случаи
+        if ($ch === 'й') return $map['й'];
+        if ($ch === 'ы') return $map['ы'];
+        if ($ch === 'ь') return $map['ь'];
+
+        return $map[$ch] ?? preg_quote($ch, '~');
+    }
+
+    /** Построить паттерн для слова с шумами и похожими символами */
+    private static function buildWordRegex(string $word, bool $allowTail = true): string
+    {
+        $chars = preg_split('//u', $word, -1, PREG_SPLIT_NO_EMPTY);
+        $pieces = [];
+        foreach ($chars as $i => $ch) {
+            $pieces[] = self::glyph($ch);
+            if ($i < count($chars) - 1) {
+                $pieces[] = self::sep();
+            }
+        }
+        $tail = $allowTail ? '(?:[а-яa-z]{0,3})?' : '';
+        return '(?:' . implode('', $pieces) . $tail . ')';
+    }
+
+    /** Большой список «родителей» (ru/ua/pl/en + сленг) */
     private static function reParents(): string
     {
-        return '~(?:мат[ьи]|мам(?:а|ка|ке|ку|ке|ки)?|бат[ья]|отец|пап(?:а|ка|ке|ку)?|родител(?:ь|и|ей|ям|ями)|родак(?:и|ов|ам)?)~u';
+        $words = [
+            // RU
+            'мать','маман','мамаша','мамка','мамочка','мамуля','мамуля','маманя','маменька','мама',
+            'батя','батяня','батяра','папа','папаша','папаня','папочка','папуля',
+            'отец','батяня','родитель','родители','родак','родаков','предки',
+            // UA
+            'мати','мамця','татко','тато','отець','батько','батьки',
+            // PL
+            'matka','mama','mamusia','tata','tatus','ojciec','rodzic','rodzice',
+            // EN (для смешанных фраз)
+            'mom','mommy','mother','dad','daddy','father','parents','folks',
+        ];
+        $alts = array_map(fn($w) => self::buildWordRegex($w, true), $words);
+        return '~(?:' . implode('|', $alts) . ')~u';
     }
 
+    /** Расширённые корни брани/сексуальной лексики (ru/en + сленг) */
     private static function reObscene(): string
     {
-        return '~(?:еб|ху[йеёи]|пизд|шлюх|сук|долбоё?б|уеб|мудак|дроч|трах|сос|fuck|bitch|motherfuck)~u';
+        $roots = [
+            // RU корни
+            'еб','ёб','выеб','наеб','подъеб','проеб','доеб','заеб','уеб','уёб',
+            'хуй','хер','хуесос','хуепл','хуеб','охуел','похер',
+            'пизд','бляд','бля','шлюх','сука','сук','мраз','говн','дерьм','сатан',
+            'уёб','уеб','долбоёб','долбоеб','уебан','уебок','ебанат','ебан',
+            'мудaк','мудак','мудил','гандон','презик','залуп','член','пенис','минет','оральн','анал','задниц','секс',
+            'соси','сосал','сосать','отсос','насосал','отсасыв',
+            'трах','траха','траx','перд','срать','насрать',
+            // EN
+            'fuck','fucker','fucking','motherfuck','bitch','slut','asshole','dick','cock','suck','sucked','sucking',
+            // транслит и часто встречающиеся
+            'pidor','pidr','pedik','pedor','gandon','blyad','suka','xuy','hui','huy','ebal','eban',
+        ];
+
+        // строим паттерны с шумами внутри каждого корня
+        $alts = array_map(fn($w) => self::buildWordRegex($w, true), $roots);
+        return '~(?:' . implode('|', $alts) . ')~u';
     }
 
+    /** Слова про администрацию/модерацию (ru/en + сленг) */
+    private static function reAdminWord(): string
+    {
+        $words = [
+            'админ','админы','админа','админка','администрац','админский','админов',
+            'модер','модерка','модеры','модератор','модерация','куратор','хелпер','хелперы','стажер','стажёр','персонал',
+            // EN
+            'admin','admins','adm1n','mod','moder','moderator','staff','helper','helpers','support',
+        ];
+        $alts = array_map(fn($w) => self::buildWordRegex($w, true), $words);
+        return '~(?:' . implode('|', $alts) . ')~u';
+    }
+
+    /** Админ + брань в окне ±25 символов */
     private static function reAdminInsult(): string
     {
-        $adm = '(?:админ(?:ы|ам|ов|е)?|модер(?:атор|ы|а|у)?|модератор(?:ы|ам|ов)?)';
-        $obs = self::reObscene();
-        return '~(?:' . $adm . '.{0,20}' . trim($obs,'~u') . '|' . trim($obs,'~u') . '.{0,20}' . $adm . ')~u';
+        $adm = trim(self::reAdminWord(), '~u');
+        $obs = trim(self::reObscene(), '~u');
+        return '~(?:' . $adm . '.{0,25}' . $obs . '|' . $obs . '.{0,25}' . $adm . ')~u';
     }
 
     public static function mute($type, $message, $steamId)
