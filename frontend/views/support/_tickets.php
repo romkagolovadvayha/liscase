@@ -33,7 +33,7 @@ if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
     <?php foreach ($tickets as $ticket): ?>
         <?php $unread = !(empty($unreadMessages[$ticket->id])) ? $unreadMessages[$ticket->id]['cnt'] : 0; ?>
         <li>
-            <a href="<?=$ticket->getUrl()?>" class="tickets_item<?=($ticket->status === Support::STATUS_CLOSED) ? ' closed' : ''?><?=($ticket->id === $model->id) ? ' active' : ''?>">
+            <a href="<?=$ticket->getUrl()?>" class="tickets_item<?=($ticket->status === Support::STATUS_CLOSED) ? ' closed' : ''?><?=($ticket->id === $model->id) ? ' active' : ''?>" data-pjax="1">
                 <div class="tickets_item_avatar">
                     <img src="<?=$ticket->user->getAvatar()?>" width="32px"/>
                 </div>

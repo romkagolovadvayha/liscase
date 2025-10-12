@@ -100,9 +100,17 @@ use yii\helpers\ArrayHelper;
                             <input type="file" id="supportMessageFile" class="support_messages_form_file_input" accept=".png,.jpg,.gif,.jpeg,.txt,.mp4,.avi,.mov,.webm,.ogg" />
                             <i class="fa-solid fa-paperclip"></i>
                         </label>
+                        <button class="sticker-button" type="button" title="<?=Yii::t('common', 'Стикеры')?>">
+                            <i class="fa-solid fa-smile"></i>
+                        </button>
                         <textarea id="supportMessage" rows="1" placeholder="<?=Yii::t('common', 'Напишите сообщение...')?>" type="text" class="support_messages_form_input"></textarea>
                         <div class="support_messages_form_send" id="supportMessageSend">
                             <i class="fa-solid fa-paper-plane"></i>
+                        </div>
+                        
+                        <!-- Панель стикеров -->
+                        <div class="stickers-panel" style="display: none;">
+                            <div class="stickers-grid"></div>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -112,4 +120,27 @@ use yii\helpers\ArrayHelper;
 </div>
 <script>
     var chatId = <?=$model->getNumber()?>
+    
+    // Инициализация стикеров после загрузки DOM и скриптов
+    function initStickers() {
+        console.log('initStickers called, SupportStickers available:', typeof SupportStickers !== 'undefined');
+        console.log('Sticker button exists:', document.querySelector('.sticker-button') !== null);
+        console.log('Stickers panel exists:', document.querySelector('.stickers-panel') !== null);
+        
+        if (typeof SupportStickers !== 'undefined') {
+            window.supportStickersInstance = new SupportStickers();
+            console.log('SupportStickers initialized successfully');
+        } else {
+            // Повторяем попытку через небольшую задержку
+            console.log('SupportStickers not available, retrying...');
+            setTimeout(initStickers, 100);
+        }
+    }
+    
+    // Запускаем инициализацию после загрузки DOM
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initStickers);
+    } else {
+        initStickers();
+    }
 </script>

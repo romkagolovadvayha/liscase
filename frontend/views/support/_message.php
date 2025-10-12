@@ -1,6 +1,8 @@
 <?php
 
 use common\components\helpers\Role;
+use frontend\components\helpers\MessageHelper;
+use yii\helpers\Html;
 
 /** @var yii\web\View $this */
 /** @var \common\models\support\SupportMessage $model */
@@ -36,7 +38,7 @@ if (!empty($model->user_id)) {
             <?php endif; ?>
             <?php if (!empty($model->message)): ?>
                 <div class="support_messages_item_message_content">
-                    <div class="support_messages_item_message_text" style="white-space: pre-line;"><?=$model->message?></div>
+                    <div class="support_messages_item_message_text" style="white-space: pre-line;"><?=MessageHelper::processMessage(Html::decode($model->message))?></div>
                 </div>
             <?php endif; ?>
             <?php if (!empty($model->supportFiles)): ?>
@@ -70,7 +72,7 @@ if (!empty($model->user_id)) {
                     ]); ?>
                 <?php else: ?>
                     <div class="support_messages_item_message_text">
-                        <?=$model->message?>
+                        <?=MessageHelper::processMessage(Html::decode($model->message))?>
                     </div>
                 <?php endif; ?>
             </div>

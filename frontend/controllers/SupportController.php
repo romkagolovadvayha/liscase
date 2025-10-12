@@ -754,4 +754,81 @@ class SupportController extends WebController
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+    /**
+     * Получение списка стикеров
+     */
+    public function actionGetStickers()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        // Кэшируем список стикеров на 1 час
+        $cacheKey = 'support_stickers';
+        $stickers = Yii::$app->cache->get($cacheKey);
+        
+        if ($stickers === false) {
+            $stickersDir = Yii::getAlias('@frontend/web/stickers');
+            $stickers = [];
+
+            if (is_dir($stickersDir)) {
+                $supportedFormats = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+                $files = glob($stickersDir . '/*');
+                foreach ($files as $file) {
+                    $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                    if (in_array($extension, $supportedFormats)) {
+                        $name = pathinfo($file, PATHINFO_FILENAME);
+                        $url = '/stickers/' . basename($file);
+                        $stickers[] = [
+                            'name' => $name,
+                            'code' => '<img src="' . $url . '" class="support_sticker" alt="стикер ' . $name . '" title="стикер ' . $name . '">',
+                            'url' => $url
+                        ];
+                    }
+                }
+            }
+            
+            // Кэшируем на 1 час
+            Yii::$app->cache->set($cacheKey, $stickers, 600);
+        }
+
+        return [
+            'success' => true,
+            'stickers' => $stickers
+        ];
+    }
+
+    /**
+     * Обработка стикеров в сообщении
+     */
+    private function processStickers($message)
+    {
+        // Заменяем [sticker:name] на HTML тег
+        $stickerRegex = '/\[sticker:([a-zA-Z0-9_.-]+)\]/';
+        $message = preg_replace_callback($stickerRegex, function($matches) {
+            $stickerName = $matches[1];
+            
+            // Поддерживаем разные форматы файлов
+            $supportedFormats = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+            $stickerPath = null;
+            $extension = null;
+            
+            foreach ($supportedFormats as $format) {
+                $testPath = Yii::getAlias('@frontend/web/stickers/' . $stickerName . '.' . $format);
+                if (file_exists($testPath)) {
+                    $stickerPath = $testPath;
+                    $extension = $format;
+                    break;
+                }
+            }
+            
+            if ($stickerPath) {
+                return '<img src="/stickers/' . htmlspecialchars($stickerName) . '.' . $extension . '" class="message-sticker" alt="стикер ' . htmlspecialchars($stickerName) . '" title="стикер ' . htmlspecialchars($stickerName) . '">';
+            } else {
+                // Если стикер не найден, показываем текст
+                return '<span class="sticker-not-found">[стикер: ' . htmlspecialchars($stickerName) . ']</span>';
+            }
+        }, $message);
+        
+        return $message;
+    }
 }
