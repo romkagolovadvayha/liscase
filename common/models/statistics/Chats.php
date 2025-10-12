@@ -175,7 +175,7 @@ class Chats extends ActiveRecord
         $info = Chats::muteReason()[$type];
 
         $reasons = self::muteReason();
-        if (empty($reasons[$data['type']])) {
+        if (empty($reasons[$type])) {
             return false;
         }
 
