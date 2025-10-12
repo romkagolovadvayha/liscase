@@ -63,34 +63,88 @@ class Chats extends ActiveRecord
         ];
     }
 
-    public static function mute($data)
+    /** Определяет тип нарушения в одном сообщении */
+    public static function getMuteType(string $message): ?int
     {
-        if (empty($data['steam_id'])) {
+        $msg = self::normalize($message);
+
+        // --- type 1: оскорбление родителей ---
+        if (preg_match(self::reParents(), $msg) && preg_match(self::reObscene(), $msg)) {
+            return 1;
+        }
+
+        // --- type 2: оскорбление администрации ---
+        if (preg_match(self::reAdminInsult(), $msg)) {
+            return 2;
+        }
+
+        // type 3 (спам) определяется только по повторениям подряд,
+        // тут мы не можем выявить без истории, поэтому пропускаем.
+        return null;
+    }
+
+    /* ========== вспомогательные приватные методы ========== */
+
+    private static function normalize(string $text): string
+    {
+        $text = mb_strtolower($text, 'utf-8');
+        $map = [
+            'a'=>'а','b'=>'ь','c'=>'с','e'=>'е','h'=>'н','k'=>'к','m'=>'м','o'=>'о',
+            'p'=>'р','r'=>'г','t'=>'т','x'=>'х','y'=>'у','6'=>'б','0'=>'о','3'=>'з',
+            '4'=>'ч','@'=>'а','$'=>'с','€'=>'е'
+        ];
+        $text = strtr($text, $map);
+        $text = str_replace('ё', 'е', $text);
+        $text = preg_replace('~[^а-яa-z0-9\s]~u', ' ', $text);
+        $text = preg_replace('~(.)\1{2,}~u', '$1$1', $text);
+        return trim(preg_replace('~\s+~u', ' ', $text));
+    }
+
+    private static function reParents(): string
+    {
+        return '~(?:мат[ьи]|мам(?:а|ка|ке|ку|ке|ки)?|бат[ья]|отец|пап(?:а|ка|ке|ку)?|родител(?:ь|и|ей|ям|ями)|родак(?:и|ов|ам)?)~u';
+    }
+
+    private static function reObscene(): string
+    {
+        return '~(?:еб|ху[йеёи]|пизд|шлюх|сук|долбоё?б|уеб|мудак|дроч|трах|сос|fuck|bitch|motherfuck)~u';
+    }
+
+    private static function reAdminInsult(): string
+    {
+        $adm = '(?:админ(?:ы|ам|ов|е)?|модер(?:атор|ы|а|у)?|модератор(?:ы|ам|ов)?)';
+        $obs = self::reObscene();
+        return '~(?:' . $adm . '.{0,20}' . trim($obs,'~u') . '|' . trim($obs,'~u') . '.{0,20}' . $adm . ')~u';
+    }
+
+    public static function mute($type, $message, $steamId)
+    {
+        if (empty($type)) {
             return false;
         }
-        if (empty($data['type'])) {
+        if (empty($steamId)) {
             return false;
         }
-        if (empty($data['message'])) {
+        if (empty($message)) {
             return false;
         }
+
+        $info = Chats::muteReason()[$type];
 
         $reasons = self::muteReason();
         if (empty($reasons[$data['type']])) {
             return false;
         }
-        $reasonData = $reasons[$data['type']];
-        $hour = $reasonData['term']/60/60;
 
-        $user = User::findBySteamId($data['steam_id'], false, "Chats");
+        $user = User::findBySteamId($steamId, false, "Chats");
         if (empty($user)) {
             return false;
         }
 
         $message = "💭 <b>Подозрение на оскорбление</b>" . PHP_EOL
-            . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL
-            . "Сообщение: {$data['message']}" . PHP_EOL
-            . "Причина: {$reasonData['reason']}" . PHP_EOL
+            . "Отправил: {$user->username} ({$steamId})" . PHP_EOL
+            . "Сообщение: {$message}" . PHP_EOL
+            . "Причина: {$info['reason']}" . PHP_EOL
             . "Сервер: {$user->getCurrentServer()->name}";
 
         Yii::$app->telegramSupport->sendMessage($message, [
@@ -98,8 +152,8 @@ class Chats extends ActiveRecord
                 'text' => '🔴 Замутить игрока',
                 'callback_data' => json_encode([
                     'action'   => 'mute',
-                    'steam_id' => $data['steam_id'],
-                    'type' => $data['type'],
+                    'steam_id' => $steamId,
+                    'type' => $type,
                 ])
             ]
         ]);
