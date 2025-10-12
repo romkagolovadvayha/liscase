@@ -42,6 +42,21 @@
     margin: 2px;
 }
 
+.support_messages_form_file {
+    position: relative;
+    z-index: 1;
+}
+
+.sticker-button {
+    position: relative;
+    z-index: 2;
+}
+
+.support_messages_form textarea {
+    position: relative;
+    z-index: 2;
+}
+
 /* Улучшенное отображение стикеров в тексте сообщений */
 .support_messages_item_message_text .message-sticker {
     margin: 0 2px;
