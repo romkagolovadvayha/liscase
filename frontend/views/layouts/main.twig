@@ -190,16 +190,6 @@ $policyUrl = Url::to(['/site/privacy']); // поменяй на свою стр�
             showInstallButton();
         });
         
-        // Для iOS Safari - показываем инструкции по установке
-        window.addEventListener('load', function() {
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
-            
-            if (isIOS && !isInStandaloneMode) {
-                setTimeout(showIOSInstallInstructions, 2000);
-            }
-        });
-        
         // Добавляем отладку для других событий PWA
         window.addEventListener('appinstalled', function(e) {
             console.log('[PWA] App was installed successfully', e);
@@ -216,13 +206,20 @@ $policyUrl = Url::to(['/site/privacy']); // поменяй на свою стр�
         function showInstallButton() {
             console.log('[PWA] showInstallButton called');
             
+            // Проверяем, является ли устройство мобильным
+            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                console.log('[PWA] Mobile device detected, skipping install button');
+                return;
+            }
+            
             // Проверяем, не добавлена ли уже кнопка
             if (document.querySelector('.pwa-install-button')) {
                 console.log('[PWA] Install button already exists');
                 return;
             }
             
-            // Создаем кнопку установки приложения
+            // Создаем кнопку установки приложения только для десктопа
             const installButton = document.createElement('button');
             installButton.textContent = 'Установить приложение';
             installButton.className = 'pwa-install-button';
@@ -302,54 +299,6 @@ $policyUrl = Url::to(['/site/privacy']); // поменяй на свою стр�
         if (!localStorage.getItem('pwa-notifications-asked')) {
             setTimeout(registerForPushNotifications, 3000);
             localStorage.setItem('pwa-notifications-asked', 'true');
-        }
-        
-        // Функция для показа инструкций по установке на iOS
-        function showIOSInstallInstructions() {
-            console.log('[PWA] Showing iOS install instructions');
-            
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            if (!isIOS) return;
-            
-            const instructionDiv = document.createElement('div');
-            instructionDiv.className = 'ios-install-instructions';
-            instructionDiv.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                background: rgba(0,0,0,0.9);
-                color: white;
-                padding: 20px;
-                z-index: 10000;
-                text-align: center;
-                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            `;
-            
-            instructionDiv.innerHTML = `
-                <h3 style="margin-top: 0; color: #3498db;">📱 Установить приложение</h3>
-                <p>Для установки приложения на iPhone:</p>
-                <div style="margin: 15px 0; font-size: 18px;">⬇️ Нажмите кнопку "Поделиться"</div>
-                <div style="margin: 15px 0; font-size: 18px;">➕ Выберите "На экран Домой"</div>
-                <button onclick="this.parentElement.remove()" style="
-                    background: #3498db;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 20px;
-                    margin-top: 10px;
-                    cursor: pointer;
-                ">Понятно</button>
-            `;
-            
-            document.body.appendChild(instructionDiv);
-            
-            // Автоматически скрываем через 10 секунд
-            setTimeout(() => {
-                if (instructionDiv.parentNode) {
-                    instructionDiv.remove();
-                }
-            }, 10000);
         }
         
         // Для тестирования - показываем кнопку установки через 3 секунды

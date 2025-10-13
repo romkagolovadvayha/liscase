@@ -168,6 +168,14 @@
                         log('Service Worker зарегистрирован: ' + registration.scope);
                         document.getElementById('sw-state').textContent = '✅ Зарегистрирован';
                         document.getElementById('sw-status').className = 'status success';
+                        
+                        // Показываем кнопку установки только на десктопе
+                        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                        if (!isMobile) {
+                            log('Десктопное устройство - можно показывать кнопку установки');
+                        } else {
+                            log('Мобильное устройство - кнопка установки скрыта');
+                        }
                     })
                     .catch(error => {
                         log('Ошибка регистрации SW: ' + error);

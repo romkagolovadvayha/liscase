@@ -88,8 +88,16 @@
         
         <div class="card" id="android-card" style="display: none;">
             <h3>🤖 Android</h3>
-            <p>Нажмите кнопку ниже для установки:</p>
-            <button class="install-button" id="android-install">Установить приложение</button>
+            <div class="android-instructions">
+                <h4>Инструкции по установке:</h4>
+                <ol>
+                    <li>Нажмите на меню браузера (три точки) ⋮</li>
+                    <li>Выберите "Добавить на главный экран" или "Установить приложение"</li>
+                    <li>Подтвердите установку</li>
+                </ol>
+                <p><em>В Chrome: меню → "Установить приложение"</em></p>
+            </div>
+            <button class="install-button" id="android-install">Установить приложение (только для тестирования)</button>
         </div>
         
         <div class="card" id="ios-card" style="display: none;">
@@ -175,15 +183,20 @@
         function showInstallInstructions() {
             const device = detectDevice();
             
+            // На мобильных устройствах показываем только инструкции, без кнопки
             if (device.isAndroid) {
                 document.getElementById('android-card').style.display = 'block';
                 document.getElementById('ios-card').style.display = 'none';
+                // Скрываем кнопку на Android, показываем только инструкции
+                document.getElementById('android-install').style.display = 'none';
             } else if (device.isIOS) {
                 document.getElementById('android-card').style.display = 'none';
                 document.getElementById('ios-card').style.display = 'block';
             } else {
+                // На десктопе показываем кнопку
                 document.getElementById('android-card').style.display = 'block';
                 document.getElementById('ios-card').style.display = 'block';
+                document.getElementById('android-install').style.display = 'block';
             }
         }
         
