@@ -93,12 +93,11 @@
     background-color: var(--background-teritiary);
 }
 
-.sticker-item img {
+.sticker-item img, .sticker-item video {
     width: 96px;
     height: 96px;
     object-fit: contain;
 }
-
 
 .stickers-panel::-webkit-scrollbar {
     width: 5px;
@@ -163,7 +162,7 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-img.support_sticker {
+.support_sticker {
     width: 150px;
 }
 /* Улучшенные стили для панели стикеров */

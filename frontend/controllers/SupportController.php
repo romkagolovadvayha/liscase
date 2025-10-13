@@ -763,7 +763,7 @@ class SupportController extends WebController
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
         // Кэшируем список стикеров на 1 час
-        $cacheKey = 'support_stickers';
+        $cacheKey = 'support_stickers_list';
         $stickers = Yii::$app->cache->get($cacheKey);
         
         if ($stickers === false) {
@@ -771,16 +771,24 @@ class SupportController extends WebController
             $stickers = [];
 
             if (is_dir($stickersDir)) {
-                $supportedFormats = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+                $supportedFormats = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'webm'];
                 $files = glob($stickersDir . '/*');
                 foreach ($files as $file) {
                     $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
                     if (in_array($extension, $supportedFormats)) {
                         $name = pathinfo($file, PATHINFO_FILENAME);
                         $url = '/stickers/' . basename($file);
+                        
+                        // Для .webm файлов используем video тег
+                        if ($extension === 'webm') {
+                            $code = '<video class="support_sticker" playsinline="" loop="" autoplay="" muted="" data-lazy="true" preload="none"><source src="' . $url . '" type="video/webm">Ваш браузер не поддерживает видео.</video>';
+                        } else {
+                            $code = '<img src="' . $url . '" class="support_sticker" alt="стикер ' . $name . '" title="стикер ' . $name . '">';
+                        }
+                        
                         $stickers[] = [
                             'name' => $name,
-                            'code' => '<img src="' . $url . '" class="support_sticker" alt="стикер ' . $name . '" title="стикер ' . $name . '">',
+                            'code' => $code,
                             'url' => $url
                         ];
                     }
@@ -808,7 +816,7 @@ class SupportController extends WebController
             $stickerName = $matches[1];
             
             // Поддерживаем разные форматы файлов
-            $supportedFormats = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+            $supportedFormats = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'webm'];
             $stickerPath = null;
             $extension = null;
             
@@ -822,7 +830,14 @@ class SupportController extends WebController
             }
             
             if ($stickerPath) {
-                return '<img src="/stickers/' . htmlspecialchars($stickerName) . '.' . $extension . '" class="message-sticker" alt="стикер ' . htmlspecialchars($stickerName) . '" title="стикер ' . htmlspecialchars($stickerName) . '">';
+                $url = '/stickers/' . htmlspecialchars($stickerName) . '.' . $extension;
+                
+                // Для .webm файлов используем video тег
+                if ($extension === 'webm') {
+                    return '<video class="message-sticker" playsinline="" loop="" autoplay="" muted="" data-lazy="true" preload="none"><source src="' . $url . '" type="video/webm">Ваш браузер не поддерживает видео.</video>';
+                } else {
+                    return '<img src="' . $url . '" class="message-sticker" alt="стикер ' . htmlspecialchars($stickerName) . '" title="стикер ' . htmlspecialchars($stickerName) . '">';
+                }
             } else {
                 // Если стикер не найден, показываем текст
                 return '<span class="sticker-not-found">[стикер: ' . htmlspecialchars($stickerName) . ']</span>';

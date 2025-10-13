@@ -145,9 +145,19 @@ class SupportStickers {
             item.className = 'sticker-item';
             item.title = sticker.name;
             
-            item.innerHTML = `
-                <img src="${sticker.url}" alt="${sticker.name}" loading="lazy">
-            `;
+            // Проверяем, является ли стикер видео (.webm)
+            if (sticker.url.toLowerCase().endsWith('.webm')) {
+                item.innerHTML = `
+                    <video autoplay muted loop>
+                        <source src="${sticker.url}" type="video/webm">
+                        Ваш браузер не поддерживает видео.
+                    </video>
+                `;
+            } else {
+                item.innerHTML = `
+                    <img src="${sticker.url}" alt="${sticker.name}" loading="lazy">
+                `;
+            }
             
             item.addEventListener('click', () => {
                 this.sendSticker(sticker.code);

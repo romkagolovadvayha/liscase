@@ -582,7 +582,16 @@ class ChatServer extends WebSocketServer
                     $chat->updated_at = date('Y-m-d H:i:s');
                     $chat->save(false);
                 }
-                $message = htmlspecialchars(\yii\helpers\HtmlPurifier::process(trim($message)));
+                // Проверяем, является ли сообщение стикером
+                $isSticker = preg_match('/^<(img|video)[^>]*class="[^"]*support_sticker[^"]*"[^>]*>.*<\/(img|video)>$/', trim($message));
+                
+                if ($isSticker) {
+                    // Для стикеров не применяем htmlspecialchars и HtmlPurifier
+                    $message = trim($message);
+                } else {
+                    // Для обычных сообщений применяем стандартную обработку
+                    $message = htmlspecialchars(\yii\helpers\HtmlPurifier::process(trim($message)));
+                }
                 $model = new SupportMessage();
                 $model->user_id = $user->id;
                 $model->message = trim($message);
