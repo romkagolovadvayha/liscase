@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест установки PWA на мобильном</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 10px 0;
+            backdrop-filter: blur(10px);
+        }
+        .install-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+        }
+        .install-button:hover {
+            background: #2980b9;
+        }
+        .ios-instructions {
+            background: rgba(52, 152, 219, 0.2);
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .android-instructions {
+            background: rgba(76, 175, 80, 0.2);
+            border: 2px solid #4caf50;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .status.ready {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4caf50;
+        }
+        .status.waiting {
+            background: rgba(255, 193, 7, 0.3);
+            border: 1px solid #ffc107;
+        }
+        .status.error {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center; margin-bottom: 30px;">📱 Установка PWA</h1>
+        
+        <div class="card">
+            <h3>📊 Статус</h3>
+            <div class="status" id="status">Проверяется...</div>
+            <p><strong>Браузер:</strong> <span id="browser"></span></p>
+            <p><strong>Устройство:</strong> <span id="device"></span></p>
+            <p><strong>Протокол:</strong> <span id="protocol"></span></p>
+        </div>
+        
+        <div class="card" id="android-card" style="display: none;">
+            <h3>🤖 Android</h3>
+            <p>Нажмите кнопку ниже для установки:</p>
+            <button class="install-button" id="android-install">Установить приложение</button>
+        </div>
+        
+        <div class="card" id="ios-card" style="display: none;">
+            <h3>🍎 iOS</h3>
+            <div class="ios-instructions">
+                <h4>Инструкции по установке:</h4>
+                <ol>
+                    <li>Нажмите кнопку "Поделиться" ⬇️</li>
+                    <li>Выберите "На экран Домой" ➕</li>
+                    <li>Нажмите "Добавить"</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>✅ Критерии PWA</h3>
+            <p>✅ Манифест приложения</p>
+            <p id="sw-status">⏳ Service Worker</p>
+            <p id="icons-status">⏳ Иконки</p>
+            <p id="https-status">⏳ HTTPS/Localhost</p>
+        </div>
+        
+        <div class="card">
+            <h3>🔧 Отладка</h3>
+            <button class="install-button" onclick="checkPWARequirements()">Проверить требования</button>
+            <button class="install-button" onclick="forceShowInstall()">Принудительно показать установку</button>
+        </div>
+    </div>
+
+    <script>
+        let deferredPrompt;
+        
+        // Определяем устройство и браузер
+        function detectDevice() {
+            const userAgent = navigator.userAgent;
+            const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+            const isAndroid = /Android/.test(userAgent);
+            const isChrome = /Chrome/.test(userAgent);
+            const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+            
+            document.getElementById('browser').textContent = 
+                isChrome ? 'Chrome' : isSafari ? 'Safari' : 'Другой';
+            document.getElementById('device').textContent = 
+                isIOS ? 'iOS' : isAndroid ? 'Android' : 'Другое';
+            document.getElementById('protocol').textContent = location.protocol;
+            
+            return { isIOS, isAndroid, isChrome, isSafari };
+        }
+        
+        // Проверяем критерии PWA
+        function checkPWARequirements() {
+            const isHTTPS = location.protocol === 'https:' || location.hostname === 'localhost';
+            const swSupported = 'serviceWorker' in navigator;
+            
+            // Проверяем иконки
+            fetch('/icons/icon-192x192.png')
+                .then(response => {
+                    document.getElementById('icons-status').textContent = 
+                        response.ok ? '✅ Иконки' : '❌ Иконки';
+                })
+                .catch(() => {
+                    document.getElementById('icons-status').textContent = '❌ Иконки';
+                });
+            
+            document.getElementById('sw-status').textContent = 
+                swSupported ? '✅ Service Worker' : '❌ Service Worker';
+            document.getElementById('https-status').textContent = 
+                isHTTPS ? '✅ HTTPS/Localhost' : '❌ HTTPS/Localhost';
+            
+            const allReady = isHTTPS && swSupported;
+            const status = document.getElementById('status');
+            
+            if (allReady) {
+                status.className = 'status ready';
+                status.textContent = '✅ Готово к установке';
+            } else {
+                status.className = 'status error';
+                status.textContent = '❌ Не все требования выполнены';
+            }
+        }
+        
+        // Показываем соответствующие инструкции
+        function showInstallInstructions() {
+            const device = detectDevice();
+            
+            if (device.isAndroid) {
+                document.getElementById('android-card').style.display = 'block';
+                document.getElementById('ios-card').style.display = 'none';
+            } else if (device.isIOS) {
+                document.getElementById('android-card').style.display = 'none';
+                document.getElementById('ios-card').style.display = 'block';
+            } else {
+                document.getElementById('android-card').style.display = 'block';
+                document.getElementById('ios-card').style.display = 'block';
+            }
+        }
+        
+        // Принудительно показываем инструкции
+        function forceShowInstall() {
+            showInstallInstructions();
+            document.getElementById('status').className = 'status waiting';
+            document.getElementById('status').textContent = '⏳ Показываем инструкции';
+        }
+        
+        // Обработчики событий PWA
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('beforeinstallprompt triggered');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            document.getElementById('status').className = 'status ready';
+            document.getElementById('status').textContent = '✅ Готово к установке';
+            showInstallInstructions();
+        });
+        
+        window.addEventListener('appinstalled', (e) => {
+            console.log('App installed');
+            document.getElementById('status').className = 'status ready';
+            document.getElementById('status').textContent = '🎉 Приложение установлено!';
+        });
+        
+        // Обработчик кнопки установки для Android
+        document.getElementById('android-install').addEventListener('click', () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    } else {
+                        console.log('User dismissed the install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            } else {
+                alert('Установка недоступна. Проверьте критерии PWA.');
+            }
+        });
+        
+        // Инициализация
+        window.addEventListener('load', () => {
+            detectDevice();
+            checkPWARequirements();
+            showInstallInstructions();
+            
+            // Показываем статус
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+            if (isStandalone) {
+                document.getElementById('status').className = 'status ready';
+                document.getElementById('status').textContent = '🎉 Приложение уже установлено';
+            }
+        });
+    </script>
+</body>
+</html>

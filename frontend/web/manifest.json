@@ -6,7 +6,7 @@
   "display": "standalone",
   "background_color": "#1a1a1a",
   "theme_color": "#2c3e50",
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "scope": "/",
   "lang": "ru",
   "dir": "ltr",
@@ -69,7 +69,7 @@
       "url": "/",
       "icons": [
         {
-          "src": "/images/design/icons/32px/buildings.svg",
+          "src": "/icons/icon-96x96.png",
           "sizes": "96x96"
         }
       ]
@@ -81,7 +81,7 @@
       "url": "/support",
       "icons": [
         {
-          "src": "/images/design/icons/32px/support.svg",
+          "src": "/icons/icon-96x96.png",
           "sizes": "96x96"
         }
       ]
@@ -93,7 +93,7 @@
       "url": "/servers",
       "icons": [
         {
-          "src": "/images/design/icons/32px/statistics.svg",
+          "src": "/icons/icon-96x96.png",
           "sizes": "96x96"
         }
       ]
@@ -105,7 +105,7 @@
       "url": "/store",
       "icons": [
         {
-          "src": "/images/design/icons/32px/items.svg",
+          "src": "/icons/icon-96x96.png",
           "sizes": "96x96"
         }
       ]
@@ -117,7 +117,7 @@
       "url": "/user/profile",
       "icons": [
         {
-          "src": "/images/design/icons/16px/user.svg",
+          "src": "/icons/icon-96x96.png",
           "sizes": "96x96"
         }
       ]
