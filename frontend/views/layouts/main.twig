@@ -12,6 +12,29 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="{{ SETTINGS.get('colors_font_link') }}" rel="preload" as="style" onload="this.onload=null;this.rel=&#039;stylesheet&#039;">
+    
+    {# PWA Meta Tags #}
+    <meta name="application-name" content="LiSCase">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="LiSCase">
+    <meta name="description" content="Игровая платформа с поддержкой, статистикой, магазином и чатом">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-config" content="/icons/browserconfig.xml">
+    <meta name="msapplication-TileColor" content="#2c3e50">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="theme-color" content="#2c3e50">
+    
+    {# PWA Icons #}
+    <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
+    <link rel="mask-icon" href="/icons/icon.svg" color="#2c3e50">
+    <link rel="shortcut icon" href="/icons/favicon.ico">
+    
+    {# PWA Manifest #}
+    <link rel="manifest" href="/manifest.json">
+    
     {{ head|raw }}
 {#    <link href="/css/styles.min.css" rel="stylesheet"/>#}
 </head>
@@ -116,6 +139,167 @@ $policyUrl = Url::to(['/site/privacy']); // поменяй на свою стр�
             // (необязательно) сделай глобальный метод, чтобы открыть баннер снова:
             window.CookieConsentMini={ open:()=>{ $bar.hidden=false; } };
         })();
+    </script>
+    
+    {# PWA Service Worker Registration #}
+    <script>
+        console.log('[PWA] Initializing PWA...');
+        
+        // Регистрация Service Worker для PWA
+        if ('serviceWorker' in navigator) {
+            console.log('[PWA] Service Worker supported');
+            
+            window.addEventListener('load', function() {
+                console.log('[PWA] Page loaded, registering SW...');
+                
+                navigator.serviceWorker.register('/sw-debug.js')
+                    .then(function(registration) {
+                        console.log('[PWA] Service Worker registered successfully:', registration.scope);
+                        
+                        // Проверяем обновления
+                        registration.addEventListener('updatefound', function() {
+                            console.log('[PWA] Update found');
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', function() {
+                                console.log('[PWA] New worker state:', newWorker.state);
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Доступно обновление
+                                    if (confirm('Доступна новая версия приложения. Обновить?')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(function(error) {
+                        console.error('[PWA] Service Worker registration failed:', error);
+                    });
+            });
+        } else {
+            console.log('[PWA] Service Worker not supported');
+        }
+        
+        // Обработка установки PWA
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', function(e) {
+            console.log('[PWA] Install prompt triggered', e);
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Показываем кнопку установки (можно добавить в UI)
+            showInstallButton();
+        });
+        
+        // Добавляем отладку для других событий PWA
+        window.addEventListener('appinstalled', function(e) {
+            console.log('[PWA] App was installed successfully', e);
+        });
+        
+        // Проверяем, установлено ли уже приложение
+        if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+            console.log('[PWA] App is running in standalone mode');
+        }
+        
+        // Проверяем, поддерживается ли beforeinstallprompt
+        console.log('[PWA] beforeinstallprompt supported:', 'onbeforeinstallprompt' in window);
+        
+        function showInstallButton() {
+            console.log('[PWA] showInstallButton called');
+            
+            // Проверяем, не добавлена ли уже кнопка
+            if (document.querySelector('.pwa-install-button')) {
+                console.log('[PWA] Install button already exists');
+                return;
+            }
+            
+            // Создаем кнопку установки приложения
+            const installButton = document.createElement('button');
+            installButton.textContent = 'Установить приложение';
+            installButton.className = 'pwa-install-button';
+            installButton.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: #2c3e50;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 25px;
+                cursor: pointer;
+                font-size: 14px;
+                z-index: 1000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                display: none;
+            `;
+            
+            installButton.addEventListener('click', function() {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(function(choiceResult) {
+                        if (choiceResult.outcome === 'accepted') {
+                            console.log('[PWA] User accepted the install prompt');
+                        } else {
+                            console.log('[PWA] User dismissed the install prompt');
+                        }
+                        deferredPrompt = null;
+                        installButton.remove();
+                    });
+                }
+            });
+            
+            document.body.appendChild(installButton);
+            installButton.style.display = 'block';
+            
+            // Скрываем кнопку через 10 секунд
+            setTimeout(() => {
+                if (installButton.parentNode) {
+                    installButton.remove();
+                }
+            }, 10000);
+        }
+        
+        // Обработка успешной установки
+        window.addEventListener('appinstalled', function(e) {
+            console.log('[PWA] App was installed successfully');
+            // Можно показать уведомление об успешной установке
+        });
+        
+        // Обработка офлайн/онлайн статуса
+        window.addEventListener('online', function() {
+            console.log('[PWA] App is online');
+            // Можно показать уведомление о восстановлении соединения
+        });
+        
+        window.addEventListener('offline', function() {
+            console.log('[PWA] App is offline');
+            // Можно показать уведомление об отсутствии соединения
+        });
+        
+        // Регистрация для push уведомлений (опционально)
+        function registerForPushNotifications() {
+            if ('Notification' in window && 'serviceWorker' in navigator) {
+                Notification.requestPermission().then(function(permission) {
+                    if (permission === 'granted') {
+                        console.log('[PWA] Push notifications granted');
+                        // Здесь можно подписать пользователя на push уведомления
+                    }
+                });
+            }
+        }
+        
+        // Автоматически запрашиваем разрешения для уведомлений при первом посещении
+        if (!localStorage.getItem('pwa-notifications-asked')) {
+            setTimeout(registerForPushNotifications, 3000);
+            localStorage.setItem('pwa-notifications-asked', 'true');
+        }
+        
+        // Для тестирования - показываем кнопку установки через 3 секунды
+        setTimeout(function() {
+            if (!deferredPrompt && !window.matchMedia('(display-mode: standalone)').matches) {
+                console.log('[PWA] Forcing install button for testing');
+                showInstallButton();
+            }
+        }, 3000);
     </script>
 </body>
 </html>

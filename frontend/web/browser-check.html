@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Проверка браузера для PWA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .check {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #ddd;
+        }
+        .check.ok { border-left-color: #27ae60; }
+        .check.error { border-left-color: #e74c3c; }
+        .check.warning { border-left-color: #f39c12; }
+        .check h3 { margin-top: 0; }
+        .solution {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .code {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Проверка браузера для PWA</h1>
+    
+    <div class="check" id="browser-check">
+        <h3>🌐 Браузер</h3>
+        <p id="browser-info">Проверяется...</p>
+    </div>
+    
+    <div class="check" id="protocol-check">
+        <h3>🔒 Протокол</h3>
+        <p id="protocol-info">Проверяется...</p>
+    </div>
+    
+    <div class="check" id="sw-check">
+        <h3>⚙️ Service Worker</h3>
+        <p id="sw-info">Проверяется...</p>
+    </div>
+    
+    <div class="check" id="api-check">
+        <h3>🔧 API поддержка</h3>
+        <p id="api-info">Проверяется...</p>
+    </div>
+    
+    <div class="check" id="recommendations">
+        <h3>💡 Рекомендации</h3>
+        <div id="recommendations-content"></div>
+    </div>
+
+    <script>
+        function checkBrowser() {
+            const userAgent = navigator.userAgent;
+            let browserName = 'Неизвестный';
+            let browserVersion = '';
+            let isSupported = false;
+            
+            // Определяем браузер и версию
+            if (userAgent.includes('Chrome/')) {
+                browserName = 'Chrome';
+                const match = userAgent.match(/Chrome\/(\d+)/);
+                browserVersion = match ? match[1] : '';
+                isSupported = parseInt(browserVersion) >= 45;
+            } else if (userAgent.includes('Firefox/')) {
+                browserName = 'Firefox';
+                const match = userAgent.match(/Firefox\/(\d+)/);
+                browserVersion = match ? match[1] : '';
+                isSupported = parseInt(browserVersion) >= 44;
+            } else if (userAgent.includes('Safari/') && !userAgent.includes('Chrome')) {
+                browserName = 'Safari';
+                const match = userAgent.match(/Version\/(\d+)/);
+                browserVersion = match ? match[1] : '';
+                isSupported = parseInt(browserVersion) >= 11;
+            } else if (userAgent.includes('Edge/')) {
+                browserName = 'Edge';
+                const match = userAgent.match(/Edge\/(\d+)/);
+                browserVersion = match ? match[1] : '';
+                isSupported = parseInt(browserVersion) >= 17;
+            }
+            
+            const browserElement = document.getElementById('browser-check');
+            const browserInfo = document.getElementById('browser-info');
+            
+            browserInfo.innerHTML = `<strong>${browserName}</strong> ${browserVersion ? `версия ${browserVersion}` : ''}`;
+            
+            if (isSupported) {
+                browserElement.className = 'check ok';
+                browserInfo.innerHTML += ' ✅ Поддерживается';
+            } else {
+                browserElement.className = 'check error';
+                browserInfo.innerHTML += ' ❌ Не поддерживается или устаревшая версия';
+            }
+            
+            return { browserName, browserVersion, isSupported };
+        }
+        
+        function checkProtocol() {
+            const protocol = location.protocol;
+            const hostname = location.hostname;
+            const isHTTPS = protocol === 'https:';
+            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+            const isSupported = isHTTPS || isLocalhost;
+            
+            const protocolElement = document.getElementById('protocol-check');
+            const protocolInfo = document.getElementById('protocol-info');
+            
+            protocolInfo.innerHTML = `<strong>${protocol}</strong> на ${hostname}`;
+            
+            if (isSupported) {
+                protocolElement.className = 'check ok';
+                protocolInfo.innerHTML += ' ✅ Поддерживается';
+            } else {
+                protocolElement.className = 'check error';
+                protocolInfo.innerHTML += ' ❌ Service Worker требует HTTPS или localhost';
+            }
+            
+            return { protocol, hostname, isSupported };
+        }
+        
+        function checkServiceWorker() {
+            const swSupported = 'serviceWorker' in navigator;
+            const swElement = document.getElementById('sw-check');
+            const swInfo = document.getElementById('sw-info');
+            
+            if (swSupported) {
+                swElement.className = 'check ok';
+                swInfo.innerHTML = '✅ Service Worker поддерживается';
+            } else {
+                swElement.className = 'check error';
+                swInfo.innerHTML = '❌ Service Worker не поддерживается';
+            }
+            
+            return swSupported;
+        }
+        
+        function checkAPIs() {
+            const apis = {
+                'Notification': 'Notification' in window,
+                'Cache': 'caches' in window,
+                'Fetch': 'fetch' in window,
+                'PushManager': 'PushManager' in window
+            };
+            
+            const apiElement = document.getElementById('api-check');
+            const apiInfo = document.getElementById('api-info');
+            
+            let allSupported = true;
+            let html = '';
+            
+            for (const [api, supported] of Object.entries(apis)) {
+                html += `${api}: ${supported ? '✅' : '❌'} `;
+                if (!supported) allSupported = false;
+            }
+            
+            apiInfo.innerHTML = html;
+            
+            if (allSupported) {
+                apiElement.className = 'check ok';
+            } else {
+                apiElement.className = 'check warning';
+            }
+            
+            return apis;
+        }
+        
+        function showRecommendations(browser, protocol, sw, apis) {
+            const recommendationsElement = document.getElementById('recommendations');
+            const content = document.getElementById('recommendations-content');
+            
+            let recommendations = [];
+            
+            if (!browser.isSupported) {
+                recommendations.push(`
+                    <div class="solution">
+                        <h4>🔄 Обновите браузер</h4>
+                        <p>Ваш браузер ${browser.browserName} ${browser.browserVersion} не поддерживает PWA или устарел.</p>
+                        <p><strong>Рекомендуемые браузеры:</strong></p>
+                        <ul>
+                            <li>Chrome 45+</li>
+                            <li>Firefox 44+</li>
+                            <li>Safari 11+</li>
+                            <li>Edge 17+</li>
+                        </ul>
+                    </div>
+                `);
+            }
+            
+            if (!protocol.isSupported) {
+                recommendations.push(`
+                    <div class="solution">
+                        <h4>🔒 Настройте HTTPS или localhost</h4>
+                        <p>Service Worker работает только на HTTPS или localhost.</p>
+                        <p><strong>Решения:</strong></p>
+                        <ul>
+                            <li>Используйте <code>localhost</code> вместо IP адреса</li>
+                            <li>Настройте HTTPS на сервере</li>
+                            <li>Используйте ngrok для HTTPS туннеля</li>
+                        </ul>
+                        <div class="code">
+                            # Пример с ngrok<br>
+                            ngrok http 80
+                        </div>
+                    </div>
+                `);
+            }
+            
+            if (!sw) {
+                recommendations.push(`
+                    <div class="solution">
+                        <h4>⚙️ Service Worker не поддерживается</h4>
+                        <p>Обновите браузер до версии, поддерживающей Service Worker.</p>
+                    </div>
+                `);
+            }
+            
+            if (sw && protocol.isSupported && browser.isSupported) {
+                recommendations.push(`
+                    <div class="solution">
+                        <h4>🎉 Все готово для PWA!</h4>
+                        <p>Ваш браузер и окружение поддерживают Progressive Web App.</p>
+                        <p>Можете переходить к <a href="/test-pwa.html">тестированию PWA</a>.</p>
+                    </div>
+                `);
+                recommendationsElement.className = 'check ok';
+            } else {
+                recommendationsElement.className = 'check warning';
+            }
+            
+            content.innerHTML = recommendations.join('');
+        }
+        
+        // Запуск проверок
+        window.addEventListener('load', () => {
+            const browser = checkBrowser();
+            const protocol = checkProtocol();
+            const sw = checkServiceWorker();
+            const apis = checkAPIs();
+            
+            showRecommendations(browser, protocol, sw, apis);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+/**
+ * PWA стили для LiSCase
+ */
+
+/* Кнопка установки PWA */
+.pwa-install-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    animation: slideInUp 0.5s ease;
+}
+
+.pwa-install-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+}
+
+.pwa-install-button:active {
+    transform: translateY(0);
+}
+
+/* Анимация появления */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Стили для офлайн индикатора */
+.offline-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: #e74c3c;
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-size: 14px;
+    z-index: 1001;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+}
+
+.offline-indicator.show {
+    transform: translateY(0);
+}
+
+/* Стили для PWA splash screen */
+.pwa-splash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+}
+
+.pwa-splash.hide {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.pwa-splash-icon {
+    width: 120px;
+    height: 120px;
+    margin-bottom: 30px;
+    animation: pulse 2s infinite;
+}
+
+.pwa-splash-title {
+    color: white;
+    font-size: 2rem;
+    font-weight: 300;
+    margin-bottom: 10px;
+}
+
+.pwa-splash-subtitle {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+}
+
+/* Стили для уведомлений */
+.pwa-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    max-width: 300px;
+    animation: slideInRight 0.3s ease;
+}
+
+.pwa-notification.success {
+    border-left: 4px solid #27ae60;
+}
+
+.pwa-notification.error {
+    border-left: 4px solid #e74c3c;
+}
+
+.pwa-notification.info {
+    border-left: 4px solid #3498db;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Стили для PWA навигации */
+.pwa-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-top: 1px solid #ecf0f1;
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0;
+    z-index: 100;
+}
+
+.pwa-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: #7f8c8d;
+    font-size: 12px;
+    transition: color 0.3s ease;
+}
+
+.pwa-nav-item.active {
+    color: #2c3e50;
+}
+
+.pwa-nav-item i {
+    font-size: 20px;
+    margin-bottom: 4px;
+}
+
+/* Стили для PWA статус бара */
+.pwa-status-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: #2c3e50;
+    z-index: 1002;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    color: white;
+    font-size: 12px;
+}
+
+.pwa-status-time {
+    font-weight: 500;
+}
+
+.pwa-status-battery {
+    display: flex;
+    align-items: center;
+}
+
+.pwa-status-signal {
+    display: flex;
+    align-items: center;
+    margin-right: 8px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .pwa-install-button {
+        bottom: 80px; /* Учитываем нижнюю навигацию */
+        right: 15px;
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+    
+    .pwa-notification {
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+}
+
+/* Стили для standalone режима */
+@media (display-mode: standalone) {
+    body {
+        padding-top: 20px; /* Компенсация для статус бара */
+    }
+    
+    .pwa-status-bar {
+        display: flex;
+    }
+    
+    .pwa-nav {
+        display: flex;
+    }
+}
+
+/* Стили для обычного браузера */
+@media not (display-mode: standalone) {
+    .pwa-status-bar {
+        display: none;
+    }
+    
+    .pwa-nav {
+        display: none;
+    }
+}
+
+/* Анимации загрузки */
+.pwa-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Улучшенные стили для PWA элементов */
+.pwa-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin: 10px;
+    transition: transform 0.2s ease;
+}
+
+.pwa-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.pwa-button {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.pwa-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+}
+
+.pwa-button:active {
+    transform: translateY(0);
+}
