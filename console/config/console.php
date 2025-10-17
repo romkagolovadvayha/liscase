@@ -205,7 +205,6 @@ $config['modules']['translateManager'] = [
             'connection' => 'db',
             'table' => '{{%servers_tags}}',
             'columns' => ['name', 'title', 'short_description', 'description'],
-            'where' => 'is_translate = 1',
         ],
     ],
     'ignoredItems' => [
