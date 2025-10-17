@@ -166,12 +166,14 @@ $checkingOtherProjectProvider = new \yii\data\ArrayDataProvider([
             <button type="button" class="list-group-item list-group-item-action list-group-item-warning" data-bs-toggle="modal" data-bs-modal-form="bonus_form" data-bs-target="#modalForm">
                 Пополнить баланс
             </button>
+            <?php if (!empty($user->server)): ?>
             <a type="button" class="list-group-item list-group-item-action list-group-item-primary" href="/statistics?StatisticsSearch%5Bsteam_id%5D=<?=$user->steam_id?>&StatisticsSearch%5Bkey%5D=&StatisticsSearch%5Bvalue%5D=&StatisticsSearch%5Bserver_tag%5D=<?=$user->server->tag?>&StatisticsSearch%5Bwipe%5D=<?=$user->server->currentWipe()?>">
                 Статистика игрока
             </a>
             <a type="button" class="list-group-item list-group-item-action list-group-item-primary" href="/user-top?UserTopSearch%5Buser_id%5D=<?=$user->id?>&UserTopSearch%5Bkey%5D=&UserTopSearch%5Bvalue%5D=&UserTopSearch%5Bserver_id%5D=<?=$user->server->id?>&UserTopSearch%5Bwipe%5D=<?=$user->server->currentWipe()?>">
                 Топ игрока
             </a>
+            <?php endif; ?>
         </div>
     </div>
     <div class="col-md-10">
