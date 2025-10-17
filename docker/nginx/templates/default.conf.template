@@ -1,0 +1,224 @@
+# Frontend Server (Russian)
+server {
+    listen 80;
+    server_name ${FRONTEND_DOMAIN} www.${FRONTEND_DOMAIN};
+    
+    # Для SSL challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+    
+    # Редирект на HTTPS (если SSL настроен)
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${FRONTEND_DOMAIN} www.${FRONTEND_DOMAIN};
+    
+    root /var/www/html/frontend/web;
+    index index.php index.html;
+    
+    charset utf-8;
+    client_max_body_size 128M;
+    
+    # SSL сертификаты
+    ssl_certificate /etc/letsencrypt/live/${FRONTEND_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${FRONTEND_DOMAIN}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384';
+    ssl_prefer_server_ciphers on;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    
+    # Gzip
+    gzip on;
+    gzip_comp_level 5;
+    gzip_disable "msie6";
+    gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript application/javascript image/svg+xml;
+    
+    # Статические файлы с кэшированием
+    location ~* ^.+\.(jpg|jpeg|gif|png|svg|js|css|mp3|ogg|mpeg|avi|zip|gz|bz2|rar|swf|webp|webm|woff|woff2|ttf)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable" always;
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+        try_files $uri $uri/ =404;
+    }
+    
+    # SVG с CORS
+    location ~* \.svg$ {
+        if ($request_method = OPTIONS) {
+            add_header Access-Control-Allow-Origin "*" always;
+            add_header Access-Control-Allow-Methods "GET, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept" always;
+            return 204;
+        }
+        expires 30d;
+        add_header Access-Control-Allow-Origin "*" always;
+        try_files $uri =404;
+    }
+    
+    # PHP обработка
+    location / {
+        add_header Cache-Control "private, max-age=300";
+        try_files $uri $uri/ /index.php?$args;
+    }
+    
+    location ~ \.php$ {
+        fastcgi_pass ${PHP_FPM_HOST}:${PHP_FPM_PORT};
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_split_path_info ^(.+\.php)(/.+)$;
+        fastcgi_param PATH_INFO $fastcgi_path_info;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+    }
+    
+    location ~ /\.(ht|svn|git) {
+        deny all;
+    }
+}
+
+# English Frontend
+server {
+    listen 80;
+    server_name ${FRONTEND_EN_DOMAIN};
+    
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+    
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${FRONTEND_EN_DOMAIN};
+    
+    root /var/www/html/frontend/web;
+    index index.php index.html;
+    
+    charset utf-8;
+    client_max_body_size 128M;
+    
+    ssl_certificate /etc/letsencrypt/live/${FRONTEND_EN_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${FRONTEND_EN_DOMAIN}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    
+    gzip on;
+    gzip_comp_level 5;
+    gzip_types text/plain text/css application/json application/javascript;
+    
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+    
+    location ~ \.php$ {
+        fastcgi_pass ${PHP_FPM_HOST}:${PHP_FPM_PORT};
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+
+# Backend Server
+server {
+    listen 80;
+    server_name ${BACKEND_DOMAIN} www.${BACKEND_DOMAIN};
+    
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+    
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${BACKEND_DOMAIN} www.${BACKEND_DOMAIN};
+    
+    root /var/www/html/backend/web;
+    index index.php index.html;
+    
+    charset utf-8;
+    client_max_body_size 128M;
+    
+    ssl_certificate /etc/letsencrypt/live/${BACKEND_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${BACKEND_DOMAIN}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    
+    gzip on;
+    gzip_comp_level 5;
+    gzip_types text/plain text/css application/json application/javascript;
+    
+    location ~* ^.+\.(jpg|jpeg|gif|png|svg|js|css|mp3|ogg|mpeg|avi|zip|gz|bz2|rar|swf|webp|woff|woff2)$ {
+        expires 24h;
+    }
+    
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+    
+    location ~ \.php$ {
+        fastcgi_pass ${PHP_FPM_HOST}:${PHP_FPM_PORT};
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+    }
+}
+
+# API Server
+server {
+    listen 80;
+    server_name ${API_DOMAIN} www.${API_DOMAIN};
+    
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+    
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${API_DOMAIN} www.${API_DOMAIN};
+    
+    root /var/www/html/api/web;
+    index index.php index.html;
+    
+    charset utf-8;
+    client_max_body_size 128M;
+    
+    ssl_certificate /etc/letsencrypt/live/${API_DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${API_DOMAIN}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    
+    gzip on;
+    gzip_comp_level 5;
+    gzip_types text/plain text/css application/json application/javascript;
+    
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+    
+    location ~ \.php$ {
+        fastcgi_pass ${PHP_FPM_HOST}:${PHP_FPM_PORT};
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+
