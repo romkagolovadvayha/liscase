@@ -1,5 +1,7 @@
 <h1 class="mb-24 h2">{{ t('database', TAG.title) | raw }}</h1>
-{{ t('database', TAG.description) | raw }}
+<div class="tinymce-content">
+    {{ t('database', TAG.description) | raw }}
+</div>
 <div class="servers_page_items mt-20">
     {% for SERVER in TAG.servers %}
         <article class="servers_page_item_wrap server_status{{ SERVER.status }}" data-server-id="{{ SERVER.id }}">
