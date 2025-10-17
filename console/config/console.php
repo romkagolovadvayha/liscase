@@ -201,6 +201,12 @@ $config['modules']['translateManager'] = [
             'columns' => ['value'],
             'where' => 'is_translate = 1',
         ],
+        [
+            'connection' => 'db',
+            'table' => '{{%servers_tags}}',
+            'columns' => ['name', 'title', 'short_description', 'description'],
+            'where' => 'is_translate = 1',
+        ],
     ],
     'ignoredItems' => [
         'vendor',

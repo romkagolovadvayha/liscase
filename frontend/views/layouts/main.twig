@@ -187,7 +187,7 @@ $policyUrl = Url::to(['/site/privacy']); // поменяй на свою стр�
             deferredPrompt = e;
             
             // Показываем кнопку установки
-            showInstallButton();
+            //showInstallButton();
         });
         
         // Добавляем отладку для других событий PWA
@@ -301,13 +301,6 @@ $policyUrl = Url::to(['/site/privacy']); // поменяй на свою стр�
             localStorage.setItem('pwa-notifications-asked', 'true');
         }
         
-        // Для тестирования - показываем кнопку установки через 3 секунды
-        setTimeout(function() {
-            if (!deferredPrompt && !window.matchMedia('(display-mode: standalone)').matches) {
-                console.log('[PWA] Forcing install button for testing');
-                showInstallButton();
-            }
-        }, 3000);
     </script>
 </body>
 </html>

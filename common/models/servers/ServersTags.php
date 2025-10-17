@@ -1,0 +1,149 @@
+<?php
+
+namespace common\models\servers;
+
+use Yii;
+
+/**
+ * This is the model class for table "servers_tags".
+ *
+ * @property int $id
+ * @property string $name Название тега
+ * @property string|null $title Заголовок (title)
+ * @property string $link_name Название для ссылки
+ * @property string|null $short_description Краткое описание
+ * @property string|null $description Полное описание
+ * @property string|null $color Цвет тега (HEX)
+ * @property int|null $sort Сортировка
+ * @property int|null $status Статус (0-неактивен, 1-активен)
+ * @property string $created_at
+ * @property string $updated_at
+ *
+ * @property ServersTagsRelation[] $serversTagsRelations
+ * @property Servers[] $servers
+ */
+class ServersTags extends \common\components\base\ActiveRecord
+{
+    const STATUS_INACTIVE = 0;
+    const STATUS_ACTIVE = 1;
+
+    /**
+     * {@inheritdoc}
+     */
+    public static function tableName()
+    {
+        return 'servers_tags';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function rules()
+    {
+        return [
+            [['name', 'link_name'], 'required'],
+            [['description'], 'string'],
+            [['sort', 'status'], 'integer'],
+            [['created_at', 'updated_at'], 'safe'],
+            [['name', 'title', 'link_name'], 'string', 'max' => 255],
+            [['short_description'], 'string', 'max' => 500],
+            [['color'], 'string', 'max' => 7],
+            [['color'], 'match', 'pattern' => '/^#[0-9A-Fa-f]{6}$/'],
+            [['link_name'], 'unique'],
+            [['status'], 'default', 'value' => self::STATUS_ACTIVE],
+            [['sort'], 'default', 'value' => 0],
+            [['color'], 'default', 'value' => '#3498db'],
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => Yii::t('common', 'ID'),
+            'name' => Yii::t('common', 'Название тега'),
+            'title' => Yii::t('common', 'Заголовок (title)'),
+            'link_name' => Yii::t('common', 'Название для ссылки'),
+            'short_description' => Yii::t('common', 'Краткое описание'),
+            'description' => Yii::t('common', 'Полное описание'),
+            'color' => Yii::t('common', 'Цвет тега'),
+            'sort' => Yii::t('common', 'Сортировка'),
+            'status' => Yii::t('common', 'Статус'),
+            'created_at' => Yii::t('common', 'Создан'),
+            'updated_at' => Yii::t('common', 'Обновлен'),
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public static function getStatusList()
+    {
+        return [
+            self::STATUS_INACTIVE => Yii::t('common', 'Неактивен'),
+            self::STATUS_ACTIVE => Yii::t('common', 'Активен'),
+        ];
+    }
+
+    /**
+     * Gets query for [[ServersTagsRelations]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getServersTagsRelations()
+    {
+        return $this->hasMany(ServersTagsRelation::class, ['tag_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[Servers]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getServers()
+    {
+        return $this->hasMany(Servers::class, ['id' => 'server_id'])
+            ->viaTable('servers_tags_relation', ['tag_id' => 'id']);
+    }
+
+    /**
+     * @return string
+     */
+    public function getStatusName()
+    {
+        $list = self::getStatusList();
+        return $list[$this->status] ?? '';
+    }
+
+    /**
+     * Получить список тегов для dropdown
+     * @return array
+     */
+    public static function getTagsList()
+    {
+        return self::find()
+            ->select(['name', 'id'])
+            ->where(['status' => self::STATUS_ACTIVE])
+            ->orderBy(['sort' => SORT_ASC, 'name' => SORT_ASC])
+            ->indexBy('id')
+            ->column();
+    }
+
+
+    public function getLink($key = null)
+    {
+        return "/servers/tag-{$this->link_name}";
+    }
+
+    /**
+     * Сохранение записи (для совместимости с CrudController)
+     * @return bool
+     */
+    public function saveRecord()
+    {
+        return $this->save();
+    }
+}
+

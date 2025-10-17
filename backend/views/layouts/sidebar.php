@@ -66,9 +66,29 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                    [
                        'label' => 'Сервера',
                        'icon' => 'fas fa-gamepad',
-                       'url' => ['/servers'],
+                       'url' => [''],
                        'visibility' => $admin,
                        'active' => _checkActive('/servers'),
+                       'items' => [
+                           [
+                               'label' => 'Список серверов',
+                               'icon' => 'fas fa-list',
+                               'url' => ['/servers/index'],
+                               'active' => _checkActive('/servers/index') || _checkActive('/servers/create') || _checkActive('/servers/update'),
+                           ],
+                           [
+                               'label' => 'Теги серверов',
+                               'icon' => 'fas fa-tags',
+                               'url' => ['/servers-tags/index'],
+                               'active' => _checkActive('/servers-tags'),
+                           ],
+                           [
+                               'label' => 'Сортировка',
+                               'icon' => 'fas fa-sort',
+                               'url' => ['/servers/sort'],
+                               'active' => _checkActive('/servers/sort'),
+                           ],
+                       ],
                    ],
                    [
                          'label' => 'Репорты',

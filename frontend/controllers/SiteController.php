@@ -4,6 +4,7 @@ namespace frontend\controllers;
 
 use common\controllers\WebController;
 use common\models\servers\Servers;
+use common\models\servers\ServersTags;
 use common\models\user\UserBox;
 use common\models\user\UserDrop;
 use frontend\forms\promocode\PromocodeForm;
@@ -181,12 +182,6 @@ class SiteController extends WebController
     {
         Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
         Yii::$app->response->headers->add('Content-Type', 'text/xml');
-        $categories = BlogCategory::find()->andWhere(['status' => BlogCategory::STATUS_ACTIVE])->orderBy(['created_at' => SORT_ASC])->all();
-        $articles = Blog::find()->andWhere(['status' => Blog::STATUS_ACTIVE])->orderBy(['created_at' => SORT_ASC])->all();
-        $servers = Servers::find()
-                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
-                          ->orderBy(['sort' => SORT_ASC])
-                          ->all();
         return $this->renderPartial('sitemap');
     }
 
@@ -205,8 +200,13 @@ class SiteController extends WebController
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
                           ->orderBy(['sort' => SORT_ASC])
                           ->all();
+        $serversTags = ServersTags::find()
+                          ->andWhere(['status' => ServersTags::STATUS_ACTIVE])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
         return $this->renderPartial('sitemap-servers', [
             'servers' => $servers,
+            'tags' => $serversTags,
         ]);
     }
 

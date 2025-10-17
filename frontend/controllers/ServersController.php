@@ -4,6 +4,7 @@ namespace frontend\controllers;
 
 use common\controllers\WebController;
 use common\models\servers\Servers;
+use common\models\servers\ServersTags;
 use common\models\stats\Teams;
 use common\models\stats\Wipe;
 use yii\web\NotFoundHttpException;
@@ -201,6 +202,32 @@ class ServersController extends WebController
             'SERVER' => $server,
             'SERVERS' => $servers,
             'COMMANDS' => $commands,
+        ]);
+    }
+
+    /**
+     * @param $tagLink
+     *
+     * @return string
+     * @throws NotFoundHttpException
+     */
+    public function actionTag($tagLink)
+    {
+        /** @var ServersTags $serversTag */
+        $serversTag = ServersTags::find()
+                          ->cache(30)
+                          ->andWhere(['IN', 'status', [ServersTags::STATUS_ACTIVE]])
+                          ->andWhere(['link_name' => $tagLink])
+                          ->one();
+
+        if (empty($serversTag)) {
+            throw new NotFoundHttpException(Yii::t('common', 'Страница не найдена!'));
+        }
+        $this->view->title = Yii::t('database', $serversTag->title);
+        $this->view->params['meta_description'] = Yii::t('database', $serversTag->short_description);
+
+        return $this->render('tag.twig', [
+            'TAG' => $serversTag,
         ]);
     }
 

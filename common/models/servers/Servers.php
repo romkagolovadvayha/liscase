@@ -60,6 +60,8 @@ use yii\helpers\ArrayHelper;
  * @property string $secret_key
  *
  * @property Map $mapEntity
+ * @property ServersTagsRelation[] $serversTagsRelations
+ * @property ServersTags[] $serversTags
  */
 class Servers extends \common\components\base\ActiveRecord
 {
@@ -430,6 +432,41 @@ class Servers extends \common\components\base\ActiveRecord
     public function getMapEntity()
     {
         return $this->hasOne(Map::class, ['id' => 'map_id']);
+    }
+
+    /**
+     * Gets query for [[ServersTagsRelations]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getServersTagsRelations()
+    {
+        return $this->hasMany(ServersTagsRelation::class, ['server_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[ServersTags]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getServersTags()
+    {
+        return $this->hasMany(ServersTags::class, ['id' => 'tag_id'])
+            ->viaTable('servers_tags_relation', ['server_id' => 'id'])
+            ->andWhere(['status' => ServersTags::STATUS_ACTIVE])
+            ->orderBy(['sort' => SORT_ASC]);
+    }
+
+    /**
+     * Получить ID тегов сервера
+     * @return array
+     */
+    public function getTagIds()
+    {
+        return ServersTagsRelation::find()
+            ->select('tag_id')
+            ->where(['server_id' => $this->id])
+            ->column();
     }
 
     public function calculateTop()

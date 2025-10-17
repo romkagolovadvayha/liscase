@@ -48,6 +48,7 @@ $config = [
                 'posts/<categoryLinkName:[a-z0-9_-]+>/' => 'blog/category',
                 'posts/<categoryLinkName:[a-z0-9_-]+>/<categoryLinkNameChild:[a-z0-9_-]+>/' => 'blog/category',
                 '/servers/wipe-block' => '/servers/wipe-block',
+                '/servers/tag-<tagLink:[a-z0-9_-]+>' => '/servers/tag',
                 '/servers/<serverTag:[a-z0-9_-]+>/' => '/stats/stats',
                 '/servers/<serverTag:[a-z0-9_-]+>/<steamId:[0-9]+>/' => '/stats/player-new',
                 '/servers/<serverTag:[a-z0-9_-]+>/<steamId:[0-9]+>/report' => '/stats/report',

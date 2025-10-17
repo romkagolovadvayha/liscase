@@ -4,10 +4,12 @@ namespace backend\controllers;
 
 use common\components\helpers\Role;
 use common\models\servers\Servers;
+use common\models\servers\ServersTagsRelation;
 use backend\models\ServersSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use Yii;
 
 /**
  * ServersController implements the CRUD actions for Servers model.
@@ -63,6 +65,10 @@ class ServersController extends Controller
 
         if ($this->request->isPost) {
             if ($model->load($this->request->post()) && $model->save()) {
+                // Сохраняем теги
+                $this->saveTags($model, Yii::$app->request->post('server_tags', []));
+                
+                Yii::$app->session->setFlash('success', 'Сервер успешно создан');
                 return $this->redirect(['index']);
             }
         } else {
@@ -86,12 +92,37 @@ class ServersController extends Controller
         $model = $this->findModel($id);
 
         if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
+            // Сохраняем теги
+            $this->saveTags($model, Yii::$app->request->post('server_tags', []));
+            
+            Yii::$app->session->setFlash('success', 'Сервер успешно обновлен');
             return $this->redirect(['index']);
         }
 
         return $this->render('update', [
             'model' => $model,
         ]);
+    }
+
+    /**
+     * Сохранение тегов сервера
+     * @param Servers $model
+     * @param array $tagIds
+     */
+    protected function saveTags($model, $tagIds = [])
+    {
+        // Удаляем старые связи
+        ServersTagsRelation::deleteAll(['server_id' => $model->id]);
+        
+        // Добавляем новые связи
+        if (!empty($tagIds) && is_array($tagIds)) {
+            foreach ($tagIds as $tagId) {
+                $relation = new ServersTagsRelation();
+                $relation->server_id = $model->id;
+                $relation->tag_id = $tagId;
+                $relation->save();
+            }
+        }
     }
 
     /**

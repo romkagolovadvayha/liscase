@@ -1,11 +1,16 @@
 <?php
 
+use common\models\servers\ServersTags;
+use kartik\select2\Select2;
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 
 /** @var yii\web\View $this */
 /** @var common\models\servers\Servers $model */
 /** @var yii\widgets\ActiveForm $form */
+/** @var array $selectedTags */
+
+$selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
 ?>
 
 <div class="servers-form">
@@ -103,6 +108,25 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'description')->textarea(['rows' => 6]) ?>
     <?= $form->field($model, 'rules')->textarea(['rows' => 6]) ?>
+    
+    <div class="form-group">
+        <label><?= Yii::t('common', 'Теги сервера') ?></label>
+        <?= Select2::widget([
+            'name' => 'server_tags',
+            'value' => $selectedTags,
+            'data' => ServersTags::getTagsList(),
+            'options' => [
+                'placeholder' => Yii::t('common', 'Выберите теги...'),
+                'multiple' => true,
+            ],
+            'pluginOptions' => [
+                'allowClear' => true,
+                'tags' => false,
+            ],
+        ]); ?>
+        <p class="help-block"><?= Yii::t('common', 'Можно выбрать несколько тегов') ?></p>
+    </div>
+
     <div class="form-group">
         <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
     </div>

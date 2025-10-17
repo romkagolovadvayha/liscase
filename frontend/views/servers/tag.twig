@@ -1,0 +1,58 @@
+<h1 class="mb-24 h2">{{ t('database', TAG.title) | raw }}</h1>
+{{ t('database', TAG.description) | raw }}
+<div class="servers_page_items mt-20">
+    {% for SERVER in TAG.servers %}
+        <article class="servers_page_item_wrap server_status{{ SERVER.status }}" data-server-id="{{ SERVER.id }}">
+            <div class="servers_page_item">
+                <header class="servers_page_item_header">
+                    <h5 class="servers_page_item_header_title">{{ t('database', SERVER.monitoring_description) }} [{{ t('database', SERVER.monitoring_name) }}]</h5>
+                    {% if SERVER.serversTags %}
+                        <div class="server_info_serversTags">
+                            {% for TAG in SERVER.serversTags %}
+                                <a href="{{ TAG.getLink() }}">
+                                    <span class="servers_page_item_header_status" style="background-color: {{ TAG.color }}">{{ t('database', TAG.name) }}</span>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if SERVER.team_limit > 0 %}
+                        <span class="servers_page_item_header_status"><i class="fas fa-users"></i> {{ t('common', 'Лимит') }} {{ SERVER.team_limit }} {{ t('common', 'человека') }}</span>
+                    {% endif %}
+                    {% if SERVER.status == 1 %}
+                        <span class="servers_page_item_header_status"><span class="text-online"><i class="fas fa-user"></i> {{ SERVER.players + SERVER.joined }}</span>/{{ SERVER.max }}</span>
+                    {% elseif SERVER.status == 0 %}
+                        <span class="servers_page_item_header_status text-online">{{ t('common', 'Идет перезагрузка') }}</span>
+                    {% endif %}
+                </header>
+                <div class="servers_page_item_actions">
+                    <div class="servers_page_item_ip btn-clipboard"
+                         data-clipboard-text="connect {{ SERVER.ip }}:{{ SERVER.port }}"
+                         data-message="{{ t('common', 'IP адрес скопирован в буфер обмена!') }}"
+                         data-bs-toggle="tooltip"
+                         data-bs-title="{{ t('common', 'Скопировать IP') }}">
+                        <span class="servers_page_item_ip_content">connect {{ SERVER.ip }}:{{ SERVER.port }}</span>
+                    </div>
+                    <div class="servers_page_item_actions_r">
+                        {% if SERVER.status == 1 %}
+                            <a class="button button-primary" href="steam://rungameid/252490//+connect {{ SERVER.ip }}:{{ SERVER.port }}"><span class="button__text">{{ t('common', 'Подключиться к серверу') }}</span></a>
+                        {% endif %}
+                        <a class="button button-secondary show-modal-link"
+                           href="{{ SERVER.getLink('wipe-info') }}"
+                           rel="nofollow"
+                           data-size="modal-sm"
+                           data-toggl="modal"
+                           data-target="modal-dialog"
+                           data-title="{{ t('common', 'Когда вайп') }}">{{ t('common', 'Когда вайп') }}</a>
+                        {% if SERVER.map_id and SERVER.mapEntity and not SERVER.secret_map %}
+                            <a class="button button-secondary servers_page_item_actions_r_image" href="{{ SERVER.mapEntity.getImage() }}" title="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}" target="_blank" >
+                                {{ t('common', 'Текущая карта') }}<img src="{{ SERVER.mapEntity.getPreviewImage() }}" loading="lazy" alt="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}">
+                            </a>
+                        {% endif %}
+                        <a class="button button-secondary" href="{{ SERVER.getLink('rules') }}">{{ t('common', 'Правила сервера') }}</a>
+                        <a class="button button-secondary" href="{{ SERVER.getLink('stats') }}">{{ t('common', 'Статистика') }}</a>
+                    </div>
+                </div>
+            </div>
+        </article>
+    {% endfor %}
+</div>

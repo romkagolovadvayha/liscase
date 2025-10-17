@@ -49,12 +49,14 @@
                     <div class="servers_page_item">
                         <header class="servers_page_item_header">
                             <h5 class="servers_page_item_header_title">{{ t('database', SERVER.monitoring_description) }} [{{ t('database', SERVER.monitoring_name) }}]</h5>
-                            <span class="servers_page_item_header_status">{{ SERVER.wipeTypeText() }}</span>
-                            {% if not SERVER.is_store %}
-                                <span class="servers_page_item_header_status"><i class="fas fa-check"></i> {{ t('common', 'Донат выключен') }}</span>
-                            {% endif %}
-                            {% if SERVER.skindrops %}
-                                <span class="servers_page_item_header_status"><i class="fas fa-gift"></i> {{ t('common', 'Раздача скинов') }}</span>
+                            {% if SERVER.serversTags %}
+                                <div class="server_info_serversTags">
+                                    {% for TAG in SERVER.serversTags %}
+                                        <a href="{{ TAG.getLink() }}">
+                                            <span class="servers_page_item_header_status" style="background-color: {{ TAG.color }}">{{ t('database', TAG.name) }}</span>
+                                        </a>
+                                    {% endfor %}
+                                </div>
                             {% endif %}
                             {% if SERVER.team_limit > 0 %}
                                 <span class="servers_page_item_header_status"><i class="fas fa-users"></i> {{ t('common', 'Лимит') }} {{ SERVER.team_limit }} {{ t('common', 'человека') }}</span>
