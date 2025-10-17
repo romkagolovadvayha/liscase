@@ -1,0 +1,18 @@
+# Kubernetes & Docker
+k8s.env
+.env.k8s
+kubernetes/secrets-production.yaml
+kubernetes/*-local.yaml
+helm/**/charts/
+helm/**/Chart.lock
+
+# Docker
+.docker/
+
+# Logs
+*.log
+
+# Временные файлы
+*.tmp
+*.temp
+

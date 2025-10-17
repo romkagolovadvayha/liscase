@@ -1,0 +1,67 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Документация
+*.md
+LICENSE
+
+# Runtime
+*/runtime/*
+!*/runtime/.gitkeep
+*/tests/*
+*/vagrant/*
+
+# Logs
+*.log
+
+# Node modules
+node_modules/
+
+# Vendor (будет установлен в образе)
+# vendor/
+
+# Временные файлы
+*.tmp
+*.temp
+*.cache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Kubernetes
+kubernetes/
+helm/
+.github/
+
+# Docker
+docker/
+docker-compose*.yml
+Dockerfile
+.dockerignore
+
+# MySQL data
+mysql/
+
+# Deployment scripts
+deploy*.sh
+deploy*.ps1
+ONE_CLICK_DEPLOY.*
+
+# Documentation
+*README.md
+NOTIFICATION_*.md
+SUPPORT_*.md
+SERVERS_TAGS_README.md
+KUBERNETES_DEPLOY_README.md
+PWA_*.md
+
