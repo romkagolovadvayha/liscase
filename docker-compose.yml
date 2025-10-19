@@ -1,64 +1,127 @@
-version: '3.8'
-
 services:
   php:
     image: yiisoftware/yii2-php:7.4-apache
     container_name: liscase-dev
+    depends_on:
+      redis:
+        condition: service_started
+      mysql:
+        condition: service_healthy
     volumes:
       - ~/.composer-docker/cache:/root/.composer/cache:delegated
       - ./:/app:delegated
     ports:
-      - '8000:80'
+      - '3025:80'
     environment:
       - APACHE_DOCUMENT_ROOT=/app/frontend/web
       - APP_ENV=development
-    command: >
-      bash -c "
-      echo '🚀 Starting LiSCase development server...' &&
-      
-      echo '📦 Installing Composer dependencies...' &&
-      if [ ! -d '/app/vendor' ]; then
-        cd /app &&
-        COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --prefer-dist || echo 'Composer already installed';
-      else
-        echo '✅ Vendor directory exists, skipping composer install';
-      fi &&
-      
-      echo '🔧 Initializing Yii application...' &&
-      if [ ! -f '/app/frontend/config/main-local.php' ]; then
-        cd /app &&
-        echo '0' | php init --env=Development --overwrite=All;
-      else
-        echo '✅ App already initialized, skipping';
-      fi &&
-      
-      echo '📁 Creating runtime directories...' &&
-      mkdir -p /app/frontend/runtime/cache /app/frontend/runtime/logs &&
-      mkdir -p /app/backend/runtime/cache /app/backend/runtime/logs &&
-      mkdir -p /app/api/runtime/cache /app/api/runtime/logs &&
-      mkdir -p /app/console/runtime/cache /app/console/runtime/logs &&
-      mkdir -p /app/frontend/web/uploads /app/backend/web/uploads &&
-      
-      echo '🔐 Setting permissions...' &&
-      chmod -R 777 /app/frontend/runtime /app/backend/runtime /app/api/runtime /app/console/runtime &&
-      chmod -R 777 /app/frontend/web/uploads /app/backend/web/uploads || true &&
-      
-      echo '⚙️  Configuring Apache...' &&
-      sed -i 's|DocumentRoot /app/web|DocumentRoot /app/frontend/web|g' /etc/apache2/sites-available/000-default.conf &&
-      sed -i 's|<Directory /app/web>|<Directory /app/frontend/web>|g' /etc/apache2/sites-available/000-default.conf &&
-      echo '<Directory /app/frontend/web>
-          Options Indexes FollowSymLinks
-          AllowOverride All
-          Require all granted
-      </Directory>
-      <Directory /app>
-          Options Indexes FollowSymLinks
-          AllowOverride All
-          Require all granted
-      </Directory>' >> /etc/apache2/sites-available/000-default.conf &&
-      
-      a2enmod rewrite &&
-      
-      echo '✅ Setup complete! Starting Apache...' &&
-      apache2-foreground
-      "
+      - REDIS_HOST=redis
+      - DB_HOST=mysql
+      - DB_NAME=liscase
+      - DB_USER=root
+      - DB_PASSWORD=root
+    command:
+      - bash
+      - -c
+      - |
+        echo '🚀 Starting LiSCase development server...'
+        
+        echo '📦 Installing Composer dependencies...'
+        if [ ! -d '/app/vendor' ]; then
+          cd /app
+          COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --prefer-dist || echo 'Composer already installed'
+        else
+          echo '✅ Vendor directory exists, skipping composer install'
+        fi
+        
+        echo '🔧 Initializing Yii application...'
+        if [ ! -f '/app/frontend/config/main-local.php' ]; then
+          cd /app
+          echo '0' | php init --env=Development --overwrite=All
+        else
+          echo '✅ App already initialized, skipping'
+        fi
+        
+        echo '📁 Creating runtime directories...'
+        mkdir -p /app/frontend/runtime/cache /app/frontend/runtime/logs
+        mkdir -p /app/backend/runtime/cache /app/backend/runtime/logs
+        mkdir -p /app/api/runtime/cache /app/api/runtime/logs
+        mkdir -p /app/console/runtime/cache /app/console/runtime/logs
+        mkdir -p /app/frontend/web/uploads /app/backend/web/uploads
+        
+        echo '🔐 Setting permissions...'
+        chmod 777 /app/frontend/runtime /app/backend/runtime /app/api/runtime /app/console/runtime 2>/dev/null || true
+        chmod 777 /app/frontend/web/assets /app/frontend/web/uploads 2>/dev/null || true
+        
+        echo '✅ Permissions configured'
+        
+        echo '⏳ Waiting for MySQL to be fully ready...'
+        sleep 5
+        echo '✅ MySQL is ready!'
+        
+        echo '🗄️ Database already initialized from init.sql dump'
+        echo 'ℹ️  To run migrations manually: docker-compose exec php php yii migrate'
+        
+        echo '⚙️ Configuring Apache...'
+        cat > /etc/apache2/sites-available/000-default.conf <<'EOF'
+        <VirtualHost *:80>
+            ServerAdmin webmaster@localhost
+            DocumentRoot /app/frontend/web
+            
+            <Directory /app/frontend/web>
+                Options Indexes FollowSymLinks
+                AllowOverride All
+                Require all granted
+            </Directory>
+            
+            ErrorLog ${APACHE_LOG_DIR}/error.log
+            CustomLog ${APACHE_LOG_DIR}/access.log combined
+        </VirtualHost>
+        EOF
+        
+        a2enmod rewrite
+        
+        echo '✅ Setup complete! Starting Apache...'
+        apache2-foreground
+  
+  redis:
+    image: redis:7-alpine
+    container_name: liscase-redis
+    ports:
+      - '6379:6379'
+  
+  mysql:
+    image: mysql:8.0
+    container_name: liscase-mysql
+    ports:
+      - '3307:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: liscase
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+  
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: liscase-phpmyadmin
+    depends_on:
+      - mysql
+    ports:
+      - '8080:80'
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+      UPLOAD_LIMIT: 100M
+
+volumes:
+  mysql-data:

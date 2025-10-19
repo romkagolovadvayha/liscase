@@ -120,3 +120,5 @@ echo "  helm uninstall $RELEASE -n $NAMESPACE  # Удалить"
 echo ""
 echo "🎉 Готово! Приложение развернуто в Kubernetes!"
 
+
+

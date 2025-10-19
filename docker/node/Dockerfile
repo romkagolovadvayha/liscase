@@ -24,3 +24,5 @@ EXPOSE 3000 3001 3002 3003 3004
 # Запуск через PM2 или supervisor
 CMD ["node", "index.js"]
 
+
+

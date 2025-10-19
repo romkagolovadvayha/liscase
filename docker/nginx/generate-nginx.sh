@@ -29,3 +29,5 @@ echo "  PHP-FPM: ${PHP_FPM_HOST}:${PHP_FPM_PORT}"
 
 echo "✅ Nginx конфигурация будет сгенерирована автоматически"
 
+
+

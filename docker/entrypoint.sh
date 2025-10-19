@@ -120,3 +120,5 @@ echo "Starting services..."
 # Запуск переданной команды
 exec "$@"
 
+
+

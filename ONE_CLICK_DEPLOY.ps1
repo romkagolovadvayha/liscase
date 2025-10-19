@@ -145,3 +145,5 @@ Write-Host "  helm status $RELEASE -n $NAMESPACE"
 Write-Host ""
 Write-Host "🎉 Готово!" -ForegroundColor Green
 
+
+

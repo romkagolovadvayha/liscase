@@ -41,3 +41,5 @@ echo ""
 echo "💡 Для применения изменений перезапустите pod'ы:"
 echo "  kubectl rollout restart deployment/liscase-app -n $NAMESPACE"
 
+
+

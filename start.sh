@@ -155,3 +155,5 @@ echo "  docker-compose -f docker-compose.prod.yml down             # Остан�
 echo ""
 echo "🎉 Готово! Приложение запущено и работает!"
 
+
+

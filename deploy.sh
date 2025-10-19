@@ -166,3 +166,5 @@ echo "  kubectl exec -it <pod-name> -n ${NAMESPACE} -- bash  # Access pod"
 echo "  kubectl get all -n ${NAMESPACE}  # View all resources"
 echo "  helm uninstall ${HELM_RELEASE} -n ${NAMESPACE}  # Uninstall"
 
+
+
