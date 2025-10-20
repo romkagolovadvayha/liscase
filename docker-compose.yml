@@ -48,10 +48,15 @@ services:
         mkdir -p /app/api/runtime/cache /app/api/runtime/logs
         mkdir -p /app/console/runtime/cache /app/console/runtime/logs
         mkdir -p /app/frontend/web/uploads /app/backend/web/uploads
+        mkdir -p /app/frontend/web/minify /app/backend/web/minify /app/api/web/minify
+        mkdir -p /app/frontend/web/assets /app/backend/web/assets /app/api/web/assets
         
         echo '🔐 Setting permissions...'
-        chmod 777 /app/frontend/runtime /app/backend/runtime /app/api/runtime /app/console/runtime 2>/dev/null || true
-        chmod 777 /app/frontend/web/assets /app/frontend/web/uploads 2>/dev/null || true
+        chmod -R 777 /app/frontend/runtime /app/backend/runtime /app/api/runtime /app/console/runtime 2>/dev/null || true
+        chmod -R 777 /app/frontend/web/assets /app/frontend/web/uploads /app/frontend/web/minify 2>/dev/null || true
+        chmod -R 777 /app/backend/web/assets /app/backend/web/uploads /app/backend/web/minify 2>/dev/null || true
+        chmod -R 777 /app/api/web/assets /app/api/web/minify 2>/dev/null || true
+        chown -R www-data:www-data /app/frontend/web /app/backend/web /app/api/web 2>/dev/null || true
         
         echo '✅ Permissions configured'
         
