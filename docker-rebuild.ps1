@@ -13,3 +13,4 @@ docker-compose up -d
 Write-Host "📋 Following logs (Ctrl+C to exit)..." -ForegroundColor Cyan
 docker-compose logs -f
 
+

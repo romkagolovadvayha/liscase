@@ -64,3 +64,6 @@ self.addEventListener('fetch', event => {
 });
 
 console.log('[SW-DEBUG] Service Worker инициализирован');
+
+
+

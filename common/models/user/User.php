@@ -1143,10 +1143,12 @@ class User extends ActiveRecord implements IdentityInterface
             }
         }
         if (empty($userData['SERVER_ACTIVE_ID'])) {
-            $userData['SERVER_ACTIVE_ID'] = $servers[0]->id;
-            $userData['SERVER_ACTIVE_TAG'] = $servers[0]->tag;
+            if (!empty($servers)) {
+                $userData['SERVER_ACTIVE_ID'] = $servers[0]->id;
+                $userData['SERVER_ACTIVE_TAG'] = $servers[0]->tag;
+            }
         }
-        if (empty($userData['SERVER_MAP_TAG'])) {
+        if (empty($userData['SERVER_MAP_TAG']) && !empty($servers)) {
             $userData['SERVER_MAP_TAG'] = $servers[0]->tag;
         }
 

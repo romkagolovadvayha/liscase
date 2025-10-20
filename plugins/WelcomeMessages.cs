@@ -67,19 +67,32 @@ namespace Oxide.Plugins
 
         void Init()
         {
-            LoadDefaultConfig();
+            // Configuration is loaded by LoadConfig(); avoid overwriting it here.
         }
 
         void OnUserConnected(IPlayer player)
         {
-			string message = messageEn;
-			if (lang.GetLanguage(player.Id.ToString()) == "ru") {
-				message = messageRu;
-			}
-            timer.Once((float)(config.waitIntervalInSeconds), () =>
+            var language = lang.GetLanguage(player.Id.ToString()) ?? "en";
+            var selectedMessage = language == "ru" ? messageRu : messageEn;
+
+            // Fallback if message not yet loaded from API
+            if (string.IsNullOrEmpty(selectedMessage))
             {
-                player.Reply(covalence.FormatText(string.Format(message, player.Name.Sanitize())));
-            });        
+                selectedMessage = language == "ru" ? "Добро пожаловать, {0}!" : "Welcome, {0}!";
+            }
+
+            var safeDelay = config != null && config.waitIntervalInSeconds > 0 ? config.waitIntervalInSeconds : 25f;
+            var safePlayerName = player?.Name?.Sanitize() ?? "player";
+
+            timer.Once(safeDelay, () =>
+            {
+                try
+                {
+                    var formatted = string.Format(selectedMessage, safePlayerName);
+                    player?.Reply(covalence.FormatText(formatted));
+                }
+                catch { /* prevent timer crash on formatting issues */ }
+            });
         }
     }
 }

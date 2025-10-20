@@ -43,3 +43,4 @@ echo "  kubectl rollout restart deployment/liscase-app -n $NAMESPACE"
 
 
 
+

@@ -14,3 +14,4 @@ docker-compose up -d
 echo "📋 Following logs (Ctrl+C to exit)..."
 docker-compose logs -f
 
+

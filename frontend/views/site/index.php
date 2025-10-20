@@ -61,8 +61,12 @@ $servers = Servers::find()
                   ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
                   ->orderBy(['sort' => SORT_ASC])
                   ->all();
-$userData['SERVER_ACTIVE_ID'] = $servers[0]->id;
-$userData['SERVER_ACTIVE_TAG'] = $servers[0]->tag;
+$userData['SERVER_ACTIVE_ID'] = null;
+$userData['SERVER_ACTIVE_TAG'] = null;
+if (!empty($servers)) {
+    $userData['SERVER_ACTIVE_ID'] = $servers[0]->id;
+    $userData['SERVER_ACTIVE_TAG'] = $servers[0]->tag;
+}
 $userData['USER_STATS_LINK'] = null;
 if (!Yii::$app->user->isGuest) {
     $user = Yii::$app->user->identity;
