@@ -294,7 +294,7 @@ class User extends ActiveRecord implements IdentityInterface
         return static::findOne($attributes);
     }
 
-    public static function findBySteamId($steamId, $updated = false, $source = "unknown")
+    public static function findBySteamId($steamId, $updated = false, $source = "unknown", $parrentUserId = 509)
     {
         if (strlen($steamId) !== 17) {
             Yii::$app->telegramChats->sendMessage("User findBySteamId !== 17: {$steamId} ");
@@ -345,7 +345,7 @@ class User extends ActiveRecord implements IdentityInterface
                         $dbTransaction->commit();
                         Yii::$app->telegramChats->sendMessage('Новый пользователь на сайте (' . $source . '): ' . $user->username);
                         Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
-                        UserTree::appendUser($user->id, 509);
+                        UserTree::appendUser($user->id, $parrentUserId);
                         UserProfile::createModel($user, $username);
                         $user->userProfile->name = $username;
                         try {

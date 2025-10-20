@@ -20,6 +20,7 @@ services:
       - DB_NAME=liscase
       - DB_USER=root
       - DB_PASSWORD=root
+      - ADMIN_STEAM_ID=${ADMIN_STEAM_ID:-}
     command:
       - bash
       - -c
@@ -71,6 +72,18 @@ services:
         echo '🎨 Compiling SCSS styles...'
         cd /app
         php yii scss/compile 1 || echo '⚠️  SCSS compilation failed (continuing...)'
+        
+        echo '🔧 Updating settings (colors & cache)...'
+        cd /app
+        php yii settings/update || echo '⚠️  Settings update failed (continuing...)'
+        
+        echo '👤 Creating admin user from ADMIN_STEAM_ID...'
+        cd /app
+        if [ -n "$ADMIN_STEAM_ID" ]; then
+          php yii admin/create "$ADMIN_STEAM_ID" || echo '⚠️  Admin creation failed (continuing...)'
+        else
+          echo 'ℹ️  ADMIN_STEAM_ID not set, skipping admin creation'
+        fi
         
         echo '⚙️ Configuring Apache Virtual Hosts...'
         

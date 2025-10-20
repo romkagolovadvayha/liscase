@@ -1,8 +1,40 @@
 # Docker Development URLs
 
+## ⚡ Быстрый старт
+
+### 1. Настройте hosts файл (один раз)
+
+**Windows** (от имени администратора):
+```powershell
+.\SETUP_HOSTS.bat
+```
+или
+```powershell
+.\setup-hosts.ps1
+```
+
+**Linux/Mac**:
+```bash
+sudo ./setup-hosts.sh
+```
+
+### 2. Запустите Docker
+
+```bash
+docker-compose up -d
+```
+
+### 3. Откройте в браузере
+
+- **Frontend**: http://localhost:3025/
+- **Backend**: http://backend.localhost:3025/
+- **API**: http://api.localhost:3025/
+
+---
+
 ## 📍 Доступные URL адреса
 
-После запуска `docker-compose up -d` доступны следующие сервисы:
+После запуска `docker-compose up -d` и настройки hosts доступны следующие сервисы:
 
 ### Frontend (Основной сайт)
 - **URL**: http://localhost:3025/
@@ -179,20 +211,6 @@ docker-compose exec php rm -rf /app/api/runtime/cache/*
 | Redis | 6379 | 6379 |
 | phpMyAdmin | 80 | 8080 |
 
-## 🌐 Альтернатива: Subdomain конфигурация
-
-Если вам нужны поддомены вместо алиасов, используйте `/etc/hosts`:
-
-```
-# Windows: C:\Windows\System32\drivers\etc\hosts
-# Linux/Mac: /etc/hosts
-
-127.0.0.1 local.prostoj.store
-127.0.0.1 backend.local.prostoj.store
-127.0.0.1 api.local.prostoj.store
-```
-
-Затем обновите Apache конфигурацию на виртуальные хосты (не реализовано по умолчанию).
 
 ## 📚 Связанная документация
 
