@@ -1,3 +1,6 @@
+# .dockerignore - исключает файлы из Docker build context
+# Это ускорит сборку образов и уменьшит их размер
+
 # Git
 .git
 .gitignore
@@ -10,61 +13,107 @@
 *.swo
 *~
 
-# Документация
-*.md
-LICENSE
-
-# Runtime
-*/runtime/*
-!*/runtime/.gitkeep
-*/tests/*
-*/vagrant/*
-
-# Logs
-*.log
-
-# Node modules
-node_modules/
-
-# Vendor (будет установлен в образе)
-# vendor/
-
-# Временные файлы
-*.tmp
-*.temp
-*.cache
-
 # OS
 .DS_Store
 Thumbs.db
 
-# Kubernetes
-kubernetes/
-helm/
-.github/
+# Logs
+*.log
+*.logs
+runtime/
+*/runtime/
+frontend/runtime/
+backend/runtime/
+api/runtime/
+console/runtime/
 
-# Docker
-docker/
+# Cache
+*/cache/
+cache/
+
+# Uploads (exclude from build, use volumes)
+*/uploads/
+uploads/
+frontend/web/uploads/
+backend/web/uploads/
+
+# Assets (generated)
+*/assets/
+frontend/web/assets/
+backend/web/assets/
+api/web/assets/
+frontend/web/minify/
+backend/web/minify/
+api/web/minify/
+
+# Vendor (будет установлен через composer в образе)
+vendor/
+node_modules/
+
+# Tests
+*/tests/
+tests/
+codeception.yml
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Vagrant
+.vagrant/
+Vagrantfile
+*/vagrant/
+
+# Docker files (не нужны внутри образа)
 docker-compose*.yml
 Dockerfile
 .dockerignore
 
-# MySQL data
-mysql/
-
-# Deployment scripts
-deploy*.sh
-deploy*.ps1
-ONE_CLICK_DEPLOY.*
-
 # Documentation
-*README.md
-NOTIFICATION_*.md
-SUPPORT_*.md
-SERVERS_TAGS_README.md
-KUBERNETES_DEPLOY_README.md
-PWA_*.md
+*.md
+!README.md
 
+# Scripts (не нужны в production образе)
+*.sh
+*.bat
+*.ps1
+clear.sh
+init
+init.bat
 
+# MySQL data (огромный размер!)
+mysql/
+docker/mysql/init.sql
 
+# Environment files
+.env
+.env.*
+*.local.php
+*-local.php
+environments/
 
+# Deployment configs (не нужны в образе)
+kubernetes/
+k8s/
+helm/
+deploy*.sh
+deploy*.yml
+.github/
+
+# Large binary files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.mmdb
+
+# Composer cache
+.composer/
+~/.composer/
+
+# NPM/Node
+package-lock.json
+yarn.lock
+node/

@@ -11,7 +11,7 @@ services:
       - ~/.composer-docker/cache:/root/.composer/cache:delegated
       - ./:/app:delegated
     ports:
-      - '3025:80'
+      - '${APP_PORT:-3025}:80'
     environment:
       - APACHE_DOCUMENT_ROOT=/app/frontend/web
       - APP_ENV=development
