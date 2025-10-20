@@ -5,6 +5,9 @@
 
 set -e  # Остановка при ошибке
 
+# Trap для обработки ошибок
+trap 'print_error "Deploy failed at line $LINENO. Exit code: $?"' ERR
+
 # Цвета для вывода
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -138,6 +141,28 @@ print_success "Ingress applied!"
 print_info "Waiting for all pods to be ready..."
 kubectl wait --for=condition=ready pod -l app=liscase-app -n ${NAMESPACE} --timeout=300s
 print_success "All pods are ready!"
+
+# Выполнение post-deploy команд
+print_info "Running post-deploy commands..."
+
+# Компиляция SCSS
+print_info "Compiling SCSS styles..."
+POD_NAME=$(kubectl get pod -l app=liscase-app -n ${NAMESPACE} -o jsonpath='{.items[0].metadata.name}')
+kubectl exec -n ${NAMESPACE} ${POD_NAME} -- php yii scss/compile 1 || print_warning "SCSS compilation failed (continuing...)"
+
+# Обновление настроек
+print_info "Updating settings..."
+kubectl exec -n ${NAMESPACE} ${POD_NAME} -- php yii settings/update || print_warning "Settings update failed (continuing...)"
+
+# Создание администратора (если задан ADMIN_STEAM_ID)
+if [ -n "$ADMIN_STEAM_ID" ]; then
+    print_info "Creating admin user..."
+    kubectl exec -n ${NAMESPACE} ${POD_NAME} -- php yii admin/create "$ADMIN_STEAM_ID" || print_warning "Admin creation failed (continuing...)"
+else
+    print_warning "ADMIN_STEAM_ID not set, skipping admin creation"
+fi
+
+print_success "Post-deploy commands completed!"
 
 # Вывод статуса
 print_info "Deployment status:"

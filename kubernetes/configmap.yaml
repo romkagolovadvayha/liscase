@@ -18,6 +18,11 @@ data:
   YII_ENV: "prod"
   RUN_MIGRATIONS: "true"
   
+  # Admin Configuration (optional)
+  # Set your Steam ID here to auto-create admin user on deploy
+  # Get it from: https://steamid.io/
+  ADMIN_STEAM_ID: ""  # Example: "76561198012345678"
+  
   # Domains Configuration
   FRONTEND_DOMAIN: "prostoj.store"
   BACKEND_DOMAIN: "e.prostoj.store"

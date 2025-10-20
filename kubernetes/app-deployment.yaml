@@ -27,6 +27,30 @@ spec:
             name: liscase-config
         - secretRef:
             name: liscase-secrets
+      - name: compile-scss
+        image: your-registry/liscase-app:latest
+        command: ['php', 'yii', 'scss/compile', '1']
+        envFrom:
+        - configMapRef:
+            name: liscase-config
+        - secretRef:
+            name: liscase-secrets
+      - name: update-settings
+        image: your-registry/liscase-app:latest
+        command: ['php', 'yii', 'settings/update']
+        envFrom:
+        - configMapRef:
+            name: liscase-config
+        - secretRef:
+            name: liscase-secrets
+      - name: create-admin
+        image: your-registry/liscase-app:latest
+        command: ['sh', '-c', 'if [ -n "$ADMIN_STEAM_ID" ]; then php yii admin/create "$ADMIN_STEAM_ID"; else echo "ADMIN_STEAM_ID not set, skipping"; fi']
+        envFrom:
+        - configMapRef:
+            name: liscase-config
+        - secretRef:
+            name: liscase-secrets
       containers:
       - name: app
         image: your-registry/liscase-app:latest
