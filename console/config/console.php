@@ -1,6 +1,6 @@
 <?php
 
-$config = require __DIR__ . '/../../common/config/web.php';
+$config = require dirname(dirname(__DIR__)) . '/common/config/web.php';
 $config['id'] = 'basic-console';
 $config['bootstrap'] = [
     'log',
@@ -236,7 +236,7 @@ $config['modules']['translateManager'] = [
 
 $config = yii\helpers\ArrayHelper::merge(
     $config,
-    require(__DIR__ . '/../../common/config/queue.php'),
+    require dirname(dirname(__DIR__)) . '/common/config/queue.php'
 );
 
 if (YII_ENV_DEV) {

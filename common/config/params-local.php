@@ -9,7 +9,9 @@ return [
     'cookieDomain'        => '.prostoj.store',
     'dmpApiUrl'           => '',
     'idLocal'             => [],
-    'homePage'            => $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'],
+    'homePage'            => (isset($_SERVER['REQUEST_SCHEME']) && isset($_SERVER['HTTP_HOST'])) 
+                              ? $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'] 
+                              : 'http://localhost',
     'digiuFromEmail'      => 'no-reply@prostoj.store',
     'sendTelegram' => true,
     'bsVersion' => '5',

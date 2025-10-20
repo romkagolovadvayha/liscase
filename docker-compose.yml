@@ -52,11 +52,12 @@ services:
         mkdir -p /app/frontend/web/assets /app/backend/web/assets /app/api/web/assets
         
         echo '🔐 Setting permissions...'
-        chmod -R 777 /app/frontend/runtime /app/backend/runtime /app/api/runtime /app/console/runtime 2>/dev/null || true
-        chmod -R 777 /app/frontend/web/assets /app/frontend/web/uploads /app/frontend/web/minify 2>/dev/null || true
-        chmod -R 777 /app/backend/web/assets /app/backend/web/uploads /app/backend/web/minify 2>/dev/null || true
-        chmod -R 777 /app/api/web/assets /app/api/web/minify 2>/dev/null || true
-        chown -R www-data:www-data /app/frontend/web /app/backend/web /app/api/web 2>/dev/null || true
+        chmod 777 /app/frontend/runtime /app/backend/runtime /app/api/runtime /app/console/runtime 2>/dev/null || true
+        chmod 777 /app/frontend/web/assets /app/frontend/web/uploads /app/frontend/web/minify 2>/dev/null || true
+        chmod 777 /app/backend/web/assets /app/backend/web/uploads /app/backend/web/minify 2>/dev/null || true
+        chmod 777 /app/api/web/assets /app/api/web/minify 2>/dev/null || true
+        chown www-data:www-data /app/frontend/web/minify /app/frontend/web/assets /app/frontend/web/uploads 2>/dev/null || true
+        chown www-data:www-data /app/backend/web/minify /app/backend/web/assets /app/backend/web/uploads 2>/dev/null || true
         
         echo '✅ Permissions configured'
         
@@ -67,10 +68,18 @@ services:
         echo '🗄️ Database already initialized from init.sql dump'
         echo 'ℹ️  To run migrations manually: docker-compose exec php php yii migrate'
         
-        echo '⚙️ Configuring Apache...'
-        cat > /etc/apache2/sites-available/000-default.conf <<'EOF'
+        echo '🎨 Compiling SCSS styles...'
+        cd /app
+        php yii scss/compile 1 || echo '⚠️  SCSS compilation failed (continuing...)'
+        
+        echo '⚙️ Configuring Apache Virtual Hosts...'
+        
+        # Frontend VirtualHost
+        cat > /etc/apache2/sites-available/000-frontend.conf <<'EOF'
         <VirtualHost *:80>
             ServerAdmin webmaster@localhost
+            ServerName localhost
+            ServerAlias *.localhost
             DocumentRoot /app/frontend/web
             
             <Directory /app/frontend/web>
@@ -79,11 +88,50 @@ services:
                 Require all granted
             </Directory>
             
-            ErrorLog ${APACHE_LOG_DIR}/error.log
-            CustomLog ${APACHE_LOG_DIR}/access.log combined
+            ErrorLog ${APACHE_LOG_DIR}/frontend-error.log
+            CustomLog ${APACHE_LOG_DIR}/frontend-access.log combined
         </VirtualHost>
         EOF
         
+        # Backend VirtualHost
+        cat > /etc/apache2/sites-available/001-backend.conf <<'EOF'
+        <VirtualHost *:80>
+            ServerAdmin webmaster@localhost
+            ServerName backend.localhost
+            DocumentRoot /app/backend/web
+            
+            <Directory /app/backend/web>
+                Options Indexes FollowSymLinks
+                AllowOverride All
+                Require all granted
+            </Directory>
+            
+            ErrorLog ${APACHE_LOG_DIR}/backend-error.log
+            CustomLog ${APACHE_LOG_DIR}/backend-access.log combined
+        </VirtualHost>
+        EOF
+        
+        # API VirtualHost
+        cat > /etc/apache2/sites-available/002-api.conf <<'EOF'
+        <VirtualHost *:80>
+            ServerAdmin webmaster@localhost
+            ServerName api.localhost
+            DocumentRoot /app/api/web
+            
+            <Directory /app/api/web>
+                Options Indexes FollowSymLinks
+                AllowOverride All
+                Require all granted
+            </Directory>
+            
+            ErrorLog ${APACHE_LOG_DIR}/api-error.log
+            CustomLog ${APACHE_LOG_DIR}/api-access.log combined
+        </VirtualHost>
+        EOF
+        
+        # Отключаем дефолтный сайт и включаем наши
+        a2dissite 000-default 2>/dev/null || true
+        a2ensite 000-frontend 001-backend 002-api
         a2enmod rewrite
         
         echo '✅ Setup complete! Starting Apache...'
