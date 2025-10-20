@@ -79,7 +79,7 @@ $config = [
         ],
         'redis'         => [
             'class'    => 'yii\redis\Connection',
-            'hostname' => 'localhost',
+            'hostname' => getenv('REDIS_HOST') ?: 'localhost',
             'port'     => 6379,
             'retries'  => 1,
         ],
