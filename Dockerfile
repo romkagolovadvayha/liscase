@@ -1,6 +1,5 @@
 # Multi-stage Dockerfile for LiSCase
-# Production-ready with Nginx + PHP-FPM + Supervisor
-# Mirrors docker-compose.yml configuration
+# Single-container deployment with MySQL + Nginx + PHP-FPM
 
 FROM php:7.4-fpm AS base
 
@@ -17,9 +16,18 @@ RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
     gettext-base \
-    default-mysql-client \
-    mariadb-server \
+    wget \
+    gnupg \
+    lsb-release \
     netcat \
+    && rm -rf /var/lib/apt/lists/*
+
+# Установка MySQL 8.0 из официального репозитория
+RUN wget https://dev.mysql.com/get/mysql-apt-config_0.8.24-1_all.deb \
+    && DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.24-1_all.deb \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server mysql-client \
+    && rm -f mysql-apt-config_0.8.24-1_all.deb \
     && rm -rf /var/lib/apt/lists/*
 
 # Установка PHP расширений
@@ -77,7 +85,7 @@ COPY docker/entrypoint-simple.sh /usr/local/bin/entrypoint.sh
 # Права на выполнение
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Создание директорий для логов и MariaDB
+# Создание директорий для логов и MySQL
 RUN mkdir -p /var/log/supervisor /var/log/nginx /var/lib/mysql /run/mysqld \
     && chown -R mysql:mysql /var/lib/mysql /run/mysqld
 
