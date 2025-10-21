@@ -63,11 +63,6 @@ FROM base AS production
 COPY docker/nginx/default-static.conf /etc/nginx/conf.d/default.conf
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 
-# Копирование шаблонов (на случай если понадобятся)
-COPY docker/nginx/default.template.conf /etc/nginx/conf.d/default.template.conf
-COPY docker/nginx/websocket.template.conf /etc/nginx/conf.d/websocket.template.conf
-COPY docker/nginx/generate-config.sh /usr/local/bin/generate-nginx-config.sh
-
 # Тестируем Nginx конфигурацию
 RUN nginx -t
 
