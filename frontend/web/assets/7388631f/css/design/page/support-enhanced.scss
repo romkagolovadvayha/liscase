@@ -1,0 +1,567 @@
+/* Улучшенные стили для системы поддержки */
+
+/* Индикатор статуса соединения */
+.connection-status {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: all 0.3s ease;
+
+    &.connected {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    &.disconnected {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+    transition: all 0.3s ease;
+
+    &.connected {
+        background-color: #28a745;
+        box-shadow: 0 0 4px rgba(40, 167, 69, 0.5);
+    }
+
+    &.disconnected {
+        background-color: #dc3545;
+        box-shadow: 0 0 4px rgba(220, 53, 69, 0.5);
+    }
+}
+
+/* Кнопки для повторной отправки */
+.resend-messages {
+    padding: 12px;
+    margin-bottom: 8px;
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    text-align: center;
+
+    .btn {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: #212529;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background-color: #e0a800;
+            border-color: #d39e00;
+            transform: translateY(-1px);
+        }
+    }
+}
+
+/* Селектор стикеров */
+.sticker-picker, .emoji-picker {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 320px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    z-index: 1000;
+    animation: slideUp 0.3s ease-out;
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+
+.sticker-picker-header, .emoji-picker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+    font-weight: 600;
+    background-color: #f8f9fa;
+    border-radius: 12px 12px 0 0;
+}
+
+.close-sticker-picker, .close-emoji-picker {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #999;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+
+    &:hover {
+        background-color: #e9ecef;
+        color: #666;
+    }
+}
+
+.sticker-grid, .emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    padding: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.sticker-item, .emoji-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+
+    &:hover {
+        background-color: #f0f0f0;
+        border-color: #007bff;
+        transform: scale(1.05);
+    }
+
+    &:active {
+        transform: scale(0.95);
+    }
+}
+
+.sticker-item img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.emoji-item {
+    font-size: 24px;
+    user-select: none;
+}
+
+/* Ссылки в сообщениях */
+.message-link {
+    color: #007bff;
+    text-decoration: underline;
+    word-break: break-all;
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: #0056b3;
+        text-decoration: none;
+    }
+
+    &:visited {
+        color: #6f42c1;
+    }
+}
+
+.support_message_text a {
+    color: #007bff;
+    text-decoration: underline;
+    word-break: break-all;
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: #0056b3;
+        text-decoration: none;
+    }
+
+    &:visited {
+        color: #6f42c1;
+    }
+}
+
+/* Стикеры в сообщениях */
+.message-sticker {
+    width: 32px;
+    height: 32px;
+    vertical-align: middle;
+    margin: 0 2px;
+    border-radius: 4px;
+    transition: transform 0.2s ease;
+
+    &:hover {
+        transform: scale(1.1);
+    }
+}
+
+/* Прогресс загрузки */
+.upload-progress {
+    margin-top: 8px;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.upload-progress-bar {
+    width: 100%;
+    height: 6px;
+    background-color: #e9ecef;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.upload-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 3px;
+}
+
+.upload-progress-text {
+    font-size: 12px;
+    color: #6c757d;
+    text-align: center;
+    margin: 0;
+}
+
+/* Улучшенные кнопки */
+.support_messages_form {
+    .sticker-btn, .emoji-btn {
+        background: none;
+        border: none;
+        padding: 8px;
+        cursor: pointer;
+        color: #666;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        margin-right: 4px;
+
+        &:hover {
+            background-color: #f0f0f0;
+            color: #333;
+            transform: translateY(-1px);
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+
+        i {
+            font-size: 16px;
+        }
+    }
+}
+
+/* Улучшенная форма сообщений */
+.support_messages_form {
+    position: relative;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    border-radius: 0 0 8px 8px;
+
+    .support_messages_form_input {
+        border: 2px solid #e9ecef;
+        border-radius: 20px;
+        padding: 12px 16px;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        resize: none;
+        min-height: 40px;
+        max-height: 120px;
+
+        &:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        &::placeholder {
+            color: #adb5bd;
+        }
+    }
+
+    .support_messages_form_send {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: white;
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        i {
+            font-size: 16px;
+        }
+    }
+
+    .support_messages_form_file {
+        background: none;
+        border: none;
+        padding: 8px;
+        cursor: pointer;
+        color: #666;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        margin-right: 4px;
+
+        &:hover {
+            background-color: #f0f0f0;
+            color: #333;
+            transform: translateY(-1px);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        i {
+            font-size: 16px;
+        }
+    }
+}
+
+/* Улучшенные сообщения */
+.support_message {
+    margin-bottom: 16px;
+    animation: messageSlideIn 0.3s ease-out;
+
+    @keyframes messageSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    &.own {
+        .support_message_content {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            margin-left: auto;
+            max-width: 70%;
+            border-radius: 18px 18px 4px 18px;
+        }
+    }
+
+    &.other {
+        .support_message_content {
+            background-color: #f8f9fa;
+            color: #333;
+            margin-right: auto;
+            max-width: 70%;
+            border-radius: 18px 18px 18px 4px;
+        }
+    }
+
+    .support_message_content {
+        padding: 12px 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border: 1px solid #e9ecef;
+    }
+
+    .support_message_text {
+        line-height: 1.4;
+        word-wrap: break-word;
+        margin-bottom: 4px;
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 4px 0;
+        }
+    }
+
+    .support_message_time {
+        font-size: 11px;
+        opacity: 0.7;
+        text-align: right;
+    }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .sticker-picker, .emoji-picker {
+        width: 280px;
+        right: 10px;
+        bottom: 70px;
+    }
+
+    .sticker-grid, .emoji-grid {
+        grid-template-columns: repeat(4, 1fr);
+        padding: 12px;
+    }
+
+    .support_message {
+        &.own, &.other {
+            .support_message_content {
+                max-width: 85%;
+            }
+        }
+    }
+}
+
+/* Темная тема */
+@media (prefers-color-scheme: dark) {
+    .sticker-picker, .emoji-picker {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+
+        .sticker-picker-header, .emoji-picker-header {
+            background-color: #4a5568;
+            border-bottom-color: #4a5568;
+        }
+
+        .close-sticker-picker, .close-emoji-picker {
+            color: #a0aec0;
+
+            &:hover {
+                background-color: #4a5568;
+                color: #e2e8f0;
+            }
+        }
+
+        .sticker-item, .emoji-item {
+            &:hover {
+                background-color: #4a5568;
+            }
+        }
+    }
+
+    .support_message.other .support_message_content {
+        background-color: #4a5568;
+        color: #e2e8f0;
+        border-color: #4a5568;
+    }
+
+    .support_messages_form {
+        background-color: #2d3748;
+        border-top-color: #4a5568;
+
+        .support_messages_form_input {
+            background-color: #4a5568;
+            border-color: #4a5568;
+            color: #e2e8f0;
+
+            &:focus {
+                border-color: #3182ce;
+                box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+            }
+
+            &::placeholder {
+                color: #a0aec0;
+            }
+        }
+    }
+}
+
+/* Анимации загрузки */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.loading {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Улучшенные уведомления */
+.toast-message_text {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* Индикатор печати */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    color: #666;
+    font-style: italic;
+    font-size: 12px;
+
+    .typing-dots {
+        display: flex;
+        margin-left: 8px;
+
+        span {
+            width: 4px;
+            height: 4px;
+            background-color: #666;
+            border-radius: 50%;
+            margin-right: 2px;
+            animation: typing 1.4s infinite;
+
+            &:nth-child(2) {
+                animation-delay: 0.2s;
+            }
+
+            &:nth-child(3) {
+                animation-delay: 0.4s;
+            }
+        }
+    }
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.5;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+
+
+
+
+

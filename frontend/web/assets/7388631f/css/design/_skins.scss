@@ -1,0 +1,109 @@
+.skins_items {
+  @extend .grid, .justify-flex-start, .gap-x-12, .gap-y-12, .w-full, .transition-all;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  height: fit-content;
+  &__blocks {
+    flex: 1 0;
+    &_wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    & .category {
+      border-radius: var(--block-radius);
+      background-color: var(--background-secondary);
+    }
+  }
+  &_hide {
+    opacity: 0;
+    height: 0;
+    display: none;
+  }
+  &__footer {
+    margin-top: 12px;
+    display: flex;
+    width: 100%;
+    .button {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
+      display: flex;
+    }
+  }
+}
+.skins_item {
+  @extend .bg-background-teritiary, .p-12, .relative, .overflow-hidden;
+  border-radius: var(--card-radius);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  justify-content: center;
+  border-width: 1px;
+  border-style: solid;
+  border-color: transparent;
+  &.available {
+    background-color: var(--background-main);
+    border-color: var(--border-color-default);
+    //background-color: var(--background-main);
+  }
+  &.disabled {
+    border-color: var(--border-color-default);
+    background-color: transparent;
+    & .category__count-and-img img {
+      filter: grayscale(100%);
+    }
+  }
+  & img {
+    @extend .transition-transform;
+    margin-bottom: 5px;
+  }
+  &:before {
+    @extend .block, .absolute, .transition-opacity;
+    content: "";
+    background: var(--light-background);
+    bottom: 0;
+    right: -80px;
+    background-repeat: no-repeat;
+    background-size: 250px 170px;
+    @include range(250, 170, "px");
+    opacity: 0;
+  }
+  &:hover {
+    &:before {
+      opacity: 1;
+    }
+    & img {
+      transform: scale(1.1) rotate(10deg);
+    }
+  }
+  &__count-and-img {
+    padding-top: 50px;
+    @extend .text-text-main,
+    .flex,
+    .items-flex-end,
+    .relative,
+    .z-1;
+    flex: 1 0;
+  }
+  &__price {
+    position: relative;
+    z-index: 1;
+  }
+  &__img {
+    position: absolute;
+    right: 0;
+    top: 0;
+    display: block;
+    z-index: 0;
+  }
+  &__title {
+    @extend .p2, .text-text-secondary, .short, .relative, .z-1;
+    z-index: 1;
+    position: relative;
+  }
+  &__quality {
+    @extend .p3, .text-system-colors-success-color;
+    z-index: 1;
+    position: relative;
+  }
+}

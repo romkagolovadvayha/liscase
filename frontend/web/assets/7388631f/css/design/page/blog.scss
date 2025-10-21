@@ -1,0 +1,667 @@
+.blog_item {
+  background-color: var(--background-secondary);
+  box-sizing: border-box;
+  margin-bottom: 12px;
+  color: var(--text-main);
+  border-radius: var(--block-radius);
+  overflow: hidden;
+  &_snippet {
+    &_meta {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      margin: 0 0 8px;
+      &_author {
+        margin: 0 5px 0 0;
+        display: flex;
+        &_userpic {
+          border-radius: 3px;
+          display: inline-block;
+          flex-shrink: 0;
+          margin: 0 8px 0 0;
+          max-width: 100%;
+          overflow: hidden;
+          vertical-align: middle;
+          &_image {
+            height: 100%;
+            width: 100%;
+            img {
+              border-radius: 3px;
+              display: block;
+              overflow: hidden;
+              width: 24px;
+              height: 24px;
+            }
+          }
+        }
+        &_user {
+          gap: 4px;
+          &_username {
+            font-size: .8125rem;
+            font-weight: 700;
+            line-height: .9375rem;
+            text-decoration: none;
+            color: var(--gen-blog-item-color);
+          }
+          &_published {
+            -moz-osx-font-smoothing: grayscale;
+            -webkit-font-smoothing: antialiased;
+            color: var(--text-secondary);
+            display: inline-block;
+            font-size: .8125rem;
+            font-weight: 500;
+            line-height: .9375rem;
+            margin: 0;
+            vertical-align: middle;
+          }
+        }
+      }
+    }
+  }
+  &_container {
+    align-items: center;
+    display: flex;
+    flex-wrap: nowrap;
+    &_wrap {
+      padding: 16px 20px;
+    }
+  }
+  &_title {
+    @extend h4, .flex, .items-center, .gap-x-12, .mb-24;
+    color: var(--text-main);
+  }
+  &_categories {
+    font-size: 12px;
+  }
+  &_body {
+    box-sizing: border-box;
+    padding-top: 16px;
+
+    &_cover {
+      max-width: 100%;
+      object-fit: cover;
+      position: relative;
+      width: 100%;
+      > img {
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        width: 100%;
+        object-position: 50% 50%;
+      }
+    }
+    &_text {
+      font-size: 1rem;
+      line-height: 1.56;
+      overflow-wrap: break-word;
+      margin-bottom: 10px;
+      h2 {
+        font-weight: 700;
+        font-size: 1.25rem;
+      }
+      h3 {
+        font-weight: 700;
+        font-size: 1rem;
+      }
+      * + h2 {
+        margin-top: 2rem;
+      }
+      * + h3 {
+        margin-top: 1.5rem;
+      }
+      * + p {
+        margin-top: 0.75rem;
+      }
+    }
+    &_readmore {
+
+    }
+  }
+  &_data {
+    align-items: center;
+    display: flex;
+    margin-top: 32px;
+    gap: 32px;
+    justify-content: space-between;
+    &_info {
+      align-items: center;
+      display: flex;
+      gap: 32px;
+    }
+    &_item {
+      align-items: center;
+      display: flex;
+      &:first-of-type {
+        margin-left: 0;
+      }
+      .blog_item_data_item_icon_wrapper {
+        font-size: 12px;
+        align-items: center;
+        display: flex;
+        outline: none;
+        border: none;
+        background: none;
+        padding: 0;
+        margin: 0;
+        > span {
+          display: block;
+          margin-left: 5px;
+          font-weight: 700;
+        }
+      }
+      &_counter {
+        margin: 0 2px;
+        font-weight: 700;
+        &.plus {
+          color: #7aa600;
+        }
+        &.minus {
+          color: #d04e4e;
+        }
+      }
+      &_icon {
+        fill: currentColor;
+        overflow: hidden;
+        stroke: inherit;
+        width: 20px;
+        height: 20px;
+      }
+    }
+  }
+}
+
+.blog_item_title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Контейнер сетки */
+.masonry {
+  column-count: 3;
+  display: grid;
+  flex-wrap: wrap;
+  gap: 16px;
+  /* column-count: 3; */
+  /* grid-template-columns: repeat(4, 1fr); */
+  justify-content: center;
+  grid-template-columns: repeat(4, minmax(320px, 360px));
+  grid-gap: 16px 16px;
+  @media (max-width:1200px) {
+    column-count: 2;
+  }
+  @media (max-width:640px) {
+    column-count: 1;
+  }
+}
+
+/* Элемент сетки */
+.masonry-item {
+  break-inside: avoid;   /* на всякий случай */
+  max-width: 100%;
+}
+
+/* Более ровные превью */
+.ratio-thumb{
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+.ratio-thumb::before{
+  content: "";
+  display: block;
+  padding-top: 56.25%; /* 16:9 базовое */
+}
+.ratio-thumb > a,
+.ratio-thumb > img,
+.ratio-thumb > a > img{
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 1200px){ .masonry{ column-count: 2; } }
+@media (max-width: 640px){
+  .masonry{ column-count: 1; column-gap: 12px; }
+  .masonry-item{ margin-bottom: 12px; }
+}
+.blog_item_body_text_images_item {
+  border-radius: var(--card-radius);
+  background-color: var(--background-teritiary);
+  padding: 10px;
+  display: inline-block;
+  &_preview {
+    > img {
+      display: block;
+      height: 250px;
+      max-width: 100%;
+      border-radius: var(--button-secondary-radius);
+    }
+    &_wrap {
+    }
+  }
+  &_video {
+    height: 250px;
+    max-width: 100%;
+    display: block;
+    border-radius: var(--button-secondary-radius);
+    + .blog_item_body_text_images_item_button {
+      margin-top: 20px;
+      display: block;
+    }
+  }
+}
+
+.blog-filter {
+  .blog-filter-form {
+    width: 100%;
+  }
+}
+
+.main_header {
+  &_data {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: space-between;
+    color: var(--text-main);
+    &_filter {
+      display: flex;
+      .sorter {
+        display: flex;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+        > li {
+          list-style: none;
+          &:first-of-type {
+            > a {
+              padding-left: 0;
+            }
+          }
+          > a {
+            padding: 20px 10px;
+            font-size: .875rem;
+            line-height: 1rem;
+            position: relative;
+            .fas-asc {
+              display: none;
+            }
+            .fas-desc {
+              display: none;
+            }
+            &.desc {
+              .fas-desc {
+                display: inline-block;
+              }
+            }
+            &.asc {
+              .fas-asc {
+                display: inline-block;
+              }
+            }
+            &:after {
+              display: none;
+            }
+          }
+        }
+      }
+    }
+    &_list {
+      display: flex;
+    }
+  }
+}
+.breadcrumbs_wrap {
+  color: var(--text-main);
+  border-radius: var(--block-radius);
+  .breadcrumb-item {
+      white-space: normal;   /* разрешаем перенос по пробелам */
+      word-wrap: break-word; /* старый синтаксис */
+      overflow-wrap: break-word; /* современный синтаксис */
+  }
+  .breadcrumb-item + .breadcrumb-item::before {
+    color: rgba(255, 255, 255, 0.74);
+    padding: 0;
+    padding-right: 10px;
+    padding-left: 10px;
+    float: none;
+  }
+  nav {
+    ol {
+      margin: 0;
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      list-style: none;
+      li {
+        @extend .p2;
+        white-space: nowrap;
+        list-style: none;
+        display: flex;
+        align-items: center;
+        padding: 0 !important;
+        &:last-of-type {
+          color: var(--text-main);
+          padding-left: 0;
+        }
+        a {
+          @extend .p2;
+          display: block;
+          white-space: nowrap;
+          margin-left: 0;
+        }
+      }
+    }
+  }
+}
+.comment-wrapper {
+  padding: 16px 20px;
+  color: var(--text-main);
+  border-radius: var(--block-radius);
+  background-color: var(--background-secondary);
+  .comments {
+    margin: 0 0 10px 0;
+    .title-block {
+      padding: 16px 0 12px;
+      h3 {
+        margin: 0;
+        font-size: .8125rem;
+        letter-spacing: .0625rem;
+        line-height: 1.25rem;
+        text-transform: uppercase;
+        font-weight: 400;
+        color: var(--text-main);
+      }
+      .title-separator {
+        display: none;
+      }
+    }
+    .comment {
+      .comment-content {
+        border: none;
+        padding: 12px 16px;
+        background-color: var(--background-teritiary);
+        box-shadow: none;
+        border-radius: var(--card-radius);
+      }
+      .reply-comment-btn {
+        color: var(--gen-blog-item-color);
+      }
+      .pull-right {
+        color: var(--gen-blog-item-color);
+      }
+      .comment-date {
+        color: var(--text-secondary);
+      }
+    }
+    .comment-box {
+      .comment-box-partial {
+        .comment-submit {
+          @extend .button, .button-secondary;
+        }
+      }
+    }
+    .comment-author-avatar {
+      > img {
+        border-radius: var(--card-radius);
+        width: 76px;
+        height: 76px;
+        max-width: 76px;
+        display: block;
+      }
+    }
+  }
+}
+
+// Оберни вывод HTML из TinyMCE в <div class="tinymce-content">...</div>
+.tinymce-content {
+  // базовые переменные (можно переопределить в теме)
+  --tc-fg: var(--text-primary, #eaeaea);
+  --tc-muted: var(--text-secondary, #b8b8b8);
+  --tc-accent: var(--primary, #3498db);
+  --tc-bg-soft: color-mix(in srgb, #000 80%, transparent);
+  --tc-border: color-mix(in srgb, var(--tc-fg) 14%, transparent);
+  --tc-space: clamp(.75rem, 1.2vw, 1rem);        // базовый вертикальный шаг
+  --tc-space-lg: calc(var(--tc-space) * 1.6);     // для заголовков/крупных блоков
+  --tc-radius: 12px;
+
+  color: var(--tc-fg);
+  line-height: 1.7;
+  font-size: 1rem;
+  text-wrap: pretty;
+  hyphens: auto;
+  word-wrap: break-word;
+
+  // убираем залипание внешних отступов
+  > *:first-child { margin-top: 0 !important; }
+  > *:last-child  { margin-bottom: 0 !important; }
+
+  // заголовки
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--tc-fg);
+    line-height: 1.25;
+    font-weight: 700;
+    margin: var(--tc-space-lg) 0 .5em;
+  }
+  h1 { font-size: clamp(1.9rem, 3vw, 2.3rem); }
+  h2 { font-size: clamp(1.6rem, 2.4vw, 1.9rem); border-bottom: 1px solid var(--tc-border); padding-bottom: .35em; }
+  h3 { font-size: clamp(1.3rem, 1.8vw, 1.4rem); }
+  h4 { font-size: 1.15rem; }
+  h5 { font-size: 1.05rem; color: var(--tc-muted); }
+  h6 { font-size: .95rem;  color: var(--tc-muted); letter-spacing: .02em; }
+
+  // абзацы и базовые блоки
+  p, ul, ol, blockquote, pre, table, figure, img, video, iframe, hr {
+    margin: var(--tc-space) 0;
+  }
+  p { margin-top: .6em; margin-bottom: .6em; }
+  strong { font-weight: 700; }
+  em { font-style: italic; }
+  small { color: var(--tc-muted); font-size: .9em; }
+
+  // ссылки
+  a {
+    color: var(--tc-accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: opacity .15s ease;
+    &:hover { opacity: .9; }
+    &:active { opacity: .8; }
+  }
+
+  // списки
+  ul, ol { padding-left: 1.25em; }
+  ul { list-style: disc; }
+  ol { list-style: decimal; }
+  li { margin: .25em 0; }
+  li > ul, li > ol { margin-top: .25em; }
+
+  // hr
+  hr {
+    border: 0;
+    border-top: 1px solid var(--tc-border);
+    margin: var(--tc-space-lg) 0;
+  }
+
+  // изображения и медиа
+  img, video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--tc-radius);
+    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  }
+  iframe {
+    width: 100%;
+    max-width: 100%;
+    border: 0;
+    border-radius: var(--tc-radius);
+    // для YouTube/Vimeo часто помогает соотношение сторон
+    aspect-ratio: 16 / 9;
+  }
+  figure { margin: var(--tc-space) 0; }
+  figcaption {
+    color: var(--tc-muted);
+    font-size: .9em;
+    margin-top: .4em;
+    text-align: center;
+  }
+
+  // цитаты
+  blockquote {
+    margin: var(--tc-space) 0;
+    padding: .85em 1em;
+    border-left: 3px solid var(--tc-accent);
+    background: var(--tc-bg-soft);
+    border-radius: var(--tc-radius);
+  }
+
+  // код
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    background: var(--tc-bg-soft);
+    border: 1px solid var(--tc-border);
+    padding: .15em .4em;
+    border-radius: 6px;
+    font-size: .95em;
+  }
+  pre {
+    margin: var(--tc-space) 0;
+    background: var(--tc-bg-soft);
+    border: 1px solid var(--tc-border);
+    border-radius: var(--tc-radius);
+    padding: .9em 1em;
+    overflow: auto;
+    code { background: transparent; border: 0; padding: 0; font-size: .95em; }
+  }
+  kbd {
+    background: #111;
+    border: 1px solid var(--tc-border);
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    padding: .15em .4em;
+    font-size: .9em;
+  }
+
+  // таблицы (зебра + скролл на мобилках)
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--tc-border);
+    border-radius: var(--tc-radius);
+    overflow: hidden;
+    display: block;      // горизонтальный скролл на узких экранах
+    overflow-x: auto;
+  }
+  thead { background: var(--tc-bg-soft); }
+  th, td {
+    padding: .6em .8em;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--tc-border);
+  }
+  tbody tr:nth-child(odd) { background: color-mix(in srgb, #fff 2%, transparent); }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  // инлайн-«эмодзи» (как в твоём примере)
+  .emoji, :where(span.emoji) { font-size: 1.1em; line-height: 1; vertical-align: -2px; }
+
+  // адаптив
+  @media (max-width: 640px) {
+    line-height: 1.6;
+    --tc-space: .8rem;
+    --tc-space-lg: 1.2rem;
+  }
+}
+.blog-cats{
+  position: relative;
+  margin: 10px 0 16px;
+
+  &__list{
+    display: flex; flex-wrap: wrap; gap: 8px 12px;
+    list-style: none; margin: 0; padding: 0;
+  }
+
+  &__item{
+    position: relative; /* для абсолютного дропа */
+    @media (max-width: 560px) {
+      position: inherit;
+    }
+  }
+
+  &__link{
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 10px;
+    background-color: var(--background-secondary);
+    color: var(--text-primary, #eaeaea); text-decoration: none;
+    border: 1px solid rgba(255,255,255,.08);
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+    &:hover, &:focus-visible{ background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); }
+  }
+
+  &__caret{
+    width: 10px; height: 10px; margin-left: 2px;
+    border-right: 2px solid var(--text-secondary, #b7b7b7);
+    border-bottom: 2px solid var(--text-secondary, #b7b7b7);
+    transform: rotate(45deg); transition: transform .15s ease, opacity .15s ease;
+    opacity: .85;
+  }
+
+  /* ДРОПДАУН: абсолютный */
+  .blog-subcats {
+    padding: 6px 0;
+    position: absolute;
+    left: 0;
+    top: 100%;
+    opacity: 0;
+    display: none;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 5;
+    /* скрыто по умолчанию */
+    transform: translateY(6px); transition: all .14s ease;
+    min-width: 220px;
+    max-width: min(420px, 90vw);
+    @media (max-width: 560px) {
+      width: 100%;
+      left: 0;
+      right: 0;
+      min-width: 100%;
+    }
+    &_content {
+      padding: 8px; margin: 0; list-style: none; z-index: 50;
+      background-color: var(--background-secondary);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,.35);
+    }
+  }
+
+  .blog-subcats__link{
+    display: block; padding: 8px 10px; border-radius: 8px;
+    color: var(--text-primary, #eaeaea); text-decoration: none;
+    transition: background .12s ease, color .12s ease;
+    &:hover, &:focus-visible{ background: rgba(255,255,255,.06); color: #fff; }
+  }
+
+  /* ПОКАЗ по наведению/фокусу */
+  &__item:hover > .blog-subcats,
+  &__item:focus-within > .blog-subcats,
+  &__item.is-open > .blog-subcats{ /* для тача через JS */
+    opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0);
+    display: block;
+  }
+  &__item:hover > .blog-cats__link .blog-cats__caret,
+  &__item:focus-within > .blog-cats__link .blog-cats__caret,
+  &__item.is-open > .blog-cats__link .blog-cats__caret{ transform: rotate(-135deg); }
+
+  /* Если близко к правому краю — можно добавить модификатор для выравнивания вправо */
+  &__item--align-right > .blog-subcats{ left: auto; right: 0; }
+}
+
+/* Мобильный фолбек — колоночный список вместо выпадающих (по желанию) */
+@media (max-width: 640px){
+  .blog-cats__list{ gap: 6px 8px; }
+}

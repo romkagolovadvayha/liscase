@@ -1,0 +1,265 @@
+.icons {
+  @extend .inline-block;
+  color: var(--icon-main);
+
+  &_hover {
+    @extend .transition-bg-color;
+    cursor: pointer;
+
+    &:hover {
+      @extend .bg-icon-hover;
+    }
+  }
+
+  &_indicator {
+    @include range(18, 18, "px");
+    background-image: var(--indicator-online);
+    background-position: center;
+    background-repeat: no-repeat;
+    animation: 0.5s infinite alternate opacity-indicator;
+
+    @keyframes opacity-indicator {
+      from {
+        opacity: 0.5;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+  }
+
+  &_flag {
+    @include range(24, 18, "px");
+
+    &_ru {
+      background: url("/images/design/icons/flags/flag_ru.svg") no-repeat center;
+    }
+
+    &_en {
+      background: url("/images/design/icons/flags/flag_en.svg") no-repeat center;
+    }
+  }
+
+  &_switch {
+    @include range(36, 20, "px");
+    &_on {
+      background: url("/images/design/icons/switch/on.svg") no-repeat center;
+    }
+    &_off {
+      background: url("/images/design/icons/switch/off.svg") no-repeat center;
+    }
+  }
+
+  &_16px {
+    @include range(16, 16, "px");
+
+    &_arrow_down {
+      @extend .bg-icon-in-button;
+      mask: url("/images/design/icons/16px/arrow_down.svg") no-repeat center;
+    }
+    &_arrow_left {
+      @extend .bg-icon-in-button;
+      mask: url("/images/design/icons/16px/arrow_left.svg") no-repeat center;
+    }
+    &_arrow_right {
+      @extend .bg-icon-in-button;
+      mask: url("/images/design/icons/16px/arrow_right.svg") no-repeat center;
+    }
+    &_arrow_up {
+      @extend .bg-icon-in-button;
+      mask: url("/images/design/icons/16px/arrow_up.svg") no-repeat center;
+    }
+    &_bell {
+      @extend .bg-icon-in-button;
+      mask: url("/images/design/icons/16px/bell.svg") no-repeat center;
+    }
+    &_exit {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/16px/exit.svg") no-repeat center;
+    }
+    &_link {
+      @extend .bg-icon-mini;
+      mask: url("/images/design/icons/16px/link.svg") no-repeat center;
+    }
+    &_trophy {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/16px/trophy.svg") no-repeat center;
+    }
+    &_user {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/16px/user.svg") no-repeat center;
+    }
+    &_coin {
+      background: var(--icon-money) no-repeat center;
+    }
+    &_coin_skins {
+      background: var(--iconskins) no-repeat center;
+    }
+  }
+
+  &_24px {
+    @include range(24, 24, "px");
+
+    &_animal {
+      @extend .bg-primary-colors-main;
+      mask: url("/images/design/icons/24px/animal.svg") no-repeat center;
+    }
+    &_block {
+      @extend .bg-primary-colors-main;
+      mask: url("/images/design/icons/24px/block.svg") no-repeat center;
+    }
+    &_checkbox {
+      @extend .bg-primary-colors-main;
+      mask: url("/images/design/icons/24px/checkbox.svg") no-repeat center;
+    }
+    &_checkbox_outline {
+      @extend .bg-border-color-default;
+      mask: url("/images/design/icons/24px/checkbox_outline.svg") no-repeat center;
+    }
+    &_clear {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/24px/clear.svg") no-repeat center;
+    }
+    &_gun {
+      @extend .bg-primary-colors-main;
+      mask: url("/images/design/icons/24px/gun.svg") no-repeat center;
+    }
+    &_home {
+      @extend .bg-primary-colors-main;
+      mask: url("/images/design/icons/24px/home.svg") no-repeat center;
+    }
+    &_info {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/24px/info.svg") no-repeat center;
+    }
+    &_report {
+      @extend .bg-primary-colors-secondary;
+      mask: url("/images/design/icons/24px/report.svg") no-repeat center;
+    }
+    &_robot {
+      @extend .bg-primary-colors-main;
+      mask: url("/images/design/icons/24px/robot.svg") no-repeat center;
+    }
+    &_search {
+      @extend .bg-icon-in-button;
+      mask: url("/images/design/icons/24px/search.svg") no-repeat center;
+    }
+    &_steam {
+      @extend .bg-primary-colors-main;
+      mask: url("/images/design/icons/24px/steam.svg") no-repeat center;
+    }
+    &_success {
+      @extend .bg-system-colors-success-color;
+      mask: url("/images/design/icons/24px/success.svg") no-repeat center;
+    }
+  }
+
+  &_32px {
+    @include range(32, 32, "px");
+
+    &_ban {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/ban.svg") no-repeat center;
+    }
+    &_buildings {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/buildings.svg") no-repeat center;
+    }
+    &_faq {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/faq.svg") no-repeat center;
+    }
+    &_training {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/training.svg") no-repeat center;
+    }
+    &_gift {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/gift.svg") no-repeat center;
+    }
+    &_promo {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/promo.svg") no-repeat center;
+    }
+    &_rate {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/rate.svg") no-repeat center;
+    }
+    &_calendar {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/calendar.svg") no-repeat center;
+    }
+    &_calendar_list {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/calendar-list.svg") no-repeat center;
+    }
+    &_rules {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/rules.svg") no-repeat center;
+    }
+    &_shop {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/shop.svg") no-repeat center;
+    }
+    &_items {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/items.svg") no-repeat center;
+    }
+    &_promocode {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/promocode.svg") no-repeat center;
+    }
+    &_profile {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/profile.svg") no-repeat center;
+    }
+    &_basket {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/basket.svg") no-repeat center;
+    }
+    &_bonuses {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/bonuses.svg") no-repeat center;
+    }
+    &_servers {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/servers.svg") no-repeat center;
+    }
+    &_news {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/blog.svg") no-repeat center;
+    }
+    &_skin {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/skin.svg") no-repeat center;
+    }
+    &_location {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/locations.svg") no-repeat center;
+    }
+    &_statistics {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/statistics.svg") no-repeat center;
+    }
+    &_support {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/support.svg") no-repeat center;
+    }
+    &_vk {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/vk.svg") no-repeat center;
+    }
+    &_telegram {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/telegram.svg") no-repeat center;
+    }
+    &_discord {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/discord.svg") no-repeat center;
+    }
+    &_clear {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/clear.svg") no-repeat center;
+    }
+  }
+}

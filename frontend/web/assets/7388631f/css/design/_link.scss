@@ -1,0 +1,20 @@
+a,
+.link {
+  @extend .p2, .no-underline, .text-link-color-default;
+  cursor: pointer;
+  transition:
+    color 0.25s ease-in-out,
+    transform 0.25s ease-in-out;
+
+  &:hover {
+    @extend .text-link-color-hover;
+  }
+
+  &:active {
+    @extend .transform-click;
+  }
+
+  &__disabled {
+    @extend .user-select-none, .pe-none, .text-link-color-disabled;
+  }
+}

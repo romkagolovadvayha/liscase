@@ -1,0 +1,7 @@
+$names: "inline-block", "block", "inline-flex", "flex", "grid", "none";
+
+@each $name in $names {
+  .#{$name} {
+    display: #{$name};
+  }
+}

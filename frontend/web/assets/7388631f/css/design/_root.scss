@@ -1,0 +1,73 @@
+:root {
+  --primary-colors-main: #{$primary-colors-main};
+  --primary-colors-secondary: #{$primary-colors-secondary};
+  --primary-colors-secondary-opacity: #{$primary-colors-secondary-opacity};
+  --primary-colors-white: #{$primary-colors-white};
+  --primary-colors-main-opacity: #{primary-colors-main-opacity};
+
+  --background-main: #{$background-main};
+  --background-secondary: #{$background-secondary};
+  --background-teritiary: #{$background-teritiary};
+
+  --text-main: #{$text-main};
+  --text-secondary: #{$text-secondary};
+  --text-teritiary: #{$text-teritiary};
+  --text-disabled: #{$text-disabled};
+
+  --icon-main: #{$icon-main};
+  --icon-hover: #{$icon-hover};
+  --icon-mini: #{$icon-mini};
+  --icon-in-button: #{$icon-in-button};
+
+  --status-text-color: #{$status-text-color};
+  --status-background-opacity: #{$status-background-opacity};
+  --status-radius: #{$status-radius};
+
+  --tooltip-background: #{$tooltip-background};
+  --tooltip-text-color: #{$tooltip-text-color};
+
+  --badge-text-color: #{$badge-text-color};
+  --badge-background: #{$badge-background};
+
+  --border-color-default: #{$border-color-default};
+  --border-color-hover: #{$border-color-hover};
+  --border-color-active: #{$border-color-active};
+
+  --link-color-default: #{$link-color-default};
+  --link-color-hover: #{$link-color-hover};
+  --link-color-disabled: #{$link-color-disabled};
+
+  --button-radius: #{$button-radius};
+  --button-disabled: #{$button-disabled};
+
+  --button-main-new-price-color-default: #{$button-main-new-price-color-default};
+  --button-main-old-price-color-default: #{$button-main-old-price-color-default};
+  --button-main-radius: #{$button-main-radius};
+
+  --button-secondary-text-color-default: #{$button-secondary-text-color-default};
+  --button-secondary-border-color-default: #{$button-secondary-border-color-default};
+  --button-secondary-radius: #{$button-secondary-radius};
+
+  --button-teritiary-new-price-color-default: #{$button-teritiary-new-price-color-default};
+  --button-teritiary-old-price-color-hover: #{$button-teritiary-old-price-color-hover};
+  --button-teritiary-background: #{$button-teritiary-background};
+  --button-teritiary-radius: #{$button-teritiary-radius};
+
+  --system-colors-success-color: #{$system-colors-success-color};
+
+  --shadow-card: #{$shadow-card};
+
+  --progress-step-color: #{$progress-step-color};
+
+  --system-colors-gold: #{$system-colors-gold};
+  --system-colors-silver: #{$system-colors-silver};
+  --system-colors-bronze: #{$system-colors-bronze};
+
+  --base-linear-gradiend: linear-gradient(
+    90deg,
+    var(--primary-colors-main) 50%,
+    var(--primary-colors-secondary) 100%
+  );
+
+  --online: #{$online};
+}

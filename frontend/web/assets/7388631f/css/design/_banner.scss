@@ -1,0 +1,13 @@
+.banner {
+  @extend .mb-12, .transition-width;
+  border-radius: var(--block-radius);
+  width: 100%;
+  height: 510px;
+  overflow: hidden;
+
+  &__image {
+    @extend .object-cover, .transition-width;
+    width: 100%;
+    height: 510px;
+  }
+}

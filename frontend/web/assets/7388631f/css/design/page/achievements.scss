@@ -1,0 +1,262 @@
+
+.achievements {
+  display: flex;
+  gap: 64px;
+  flex-direction: column;
+  @media (max-width: 1000px) {
+    grid-template-columns: repeat(1, 1fr);
+  }
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(1, 1fr);
+  }
+  &_wrap {
+    > .achievements_daily_reward_banner {
+      display: none;
+      @media (max-width: 768px) {
+        display: block;
+      }
+    }
+    > .achievements_header {
+      display: block;
+      @media (max-width: 768px) {
+        display: none;
+      }
+    }
+    &.active {
+      display: block;
+    }
+  }
+  &_header {
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 26.4px;
+    letter-spacing: 0.01em;
+    text-align: left;
+    color: var(--text-main);
+  }
+  &_body {
+    @media (max-width: 768px) {
+      display: none;
+      &.active {
+        display: block;
+      }
+    }
+    > .achievements_header {
+      display: none;
+      @media (max-width: 768px) {
+        display: block;
+        margin-top: 20px;
+      }
+    }
+  }
+  &_daily_reward {
+    min-width: 450px;
+    @media (max-width: 1340px) {
+      min-width: auto;
+    }
+    @media (max-width: 768px) {
+      display: none;
+      &.active {
+        display: block;
+      }
+    }
+    > .achievements_daily_reward_banner {
+      @media (max-width: 768px) {
+        display: none;
+      }
+    }
+    &_title {
+      font-size: 20px;
+      font-weight: 400;
+      line-height: 26.4px;
+      letter-spacing: 0.01em;
+      text-align: left;
+      color: var(--text-main);
+    }
+    &_btn {
+      margin-top: 15px;
+      color: var(--text-main);
+      background-color: var(--text-secondary);
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      text-transform: uppercase;
+      font-weight: 700;
+      text-align: center;
+      border: none;
+      border-radius: var(--block-radius);
+      height: 50px;
+      &:hover {
+        color: var(--background-teritiary);
+        background: var(--background-secondary);
+      }
+      &.disabled {
+        color: var(--text-main);
+        background-color: #424242;
+      }
+    }
+    &_list {
+      grid-auto-flow: dense;
+      display: grid;
+      grid-gap: 5px;
+      grid-template-columns: repeat(7, 1fr);
+      align-items: normal;
+      justify-items: normal;
+      margin-top: 20px;
+      @media (max-width: 1340px) {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      &_item {
+        background-color: #868686;
+        border-radius: var(--block-radius);
+        padding: 5px;
+        display: flex;
+        //align-items: center;
+        border: 2px solid transparent;
+        justify-content: center;
+        position: relative;
+        &_wrap {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          background-repeat: no-repeat;
+          background-position: center;
+        }
+        &.completed {
+          background: var(--background-secondary);
+          .achievements_daily_reward_list_item_title {
+            color: var(--text-main);
+          }
+          .achievements_daily_reward_list_item_money {
+            color: var(--text-main);
+          }
+          .achievements_daily_reward_list_item_wrap {
+            background-repeat: no-repeat;
+            background-position: center;
+          }
+          .achievements_daily_reward_list_item_image {
+            img {
+              width: 100%;
+              display: block;
+              -webkit-filter: none;
+              -moz-filter: none;
+              -ms-filter: none;
+              -o-filter: none;
+              filter: none;
+            }
+          }
+        }
+        &.available {
+          background: var(--background-teritiary);
+          .achievements_daily_reward_list_item_title {
+            color: var(--text-secondary);
+          }
+          .achievements_daily_reward_list_item_money {
+            color: var(--text-secondary);
+          }
+          .achievements_daily_reward_list_item_image {
+            img {
+              width: 100%;
+              display: block;
+              -webkit-filter: none;
+              -moz-filter: none;
+              -ms-filter: none;
+              -o-filter: none;
+              filter: none;
+            }
+          }
+        }
+        &_title {
+          width: 100%;
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 14.52px;
+          letter-spacing: 0.01em;
+          text-align: center;
+          color: var(--text-secondary);
+          position: relative;
+          z-index: 2;
+        }
+        &_image {
+          //position: absolute;
+          width: 40px;
+          height: 40px;
+          margin-top: 5px;
+          //top: 50%;
+          //left: 50%;
+          //margin-left: -15px;
+          //margin-top: -15px;
+          z-index: 1;
+          img {
+            width: 100%;
+            display: block;
+            -webkit-filter: grayscale(100%);
+            -moz-filter: grayscale(100%);
+            -ms-filter: grayscale(100%);
+            -o-filter: grayscale(100%);
+            filter: grayscale(100%);
+            filter: gray; /* IE 6-9 */
+          }
+        }
+        &_money {
+          width: 100%;
+          margin-top: 5px;
+          font-size: 12px;
+          font-weight: 700;
+          line-height: 14.52px;
+          letter-spacing: 0.01em;
+          text-align: center;
+          color: var(--text-secondary);
+          z-index: 2;
+        }
+      }
+    }
+    &_p_title {
+      margin-top: 30px;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 27px;
+      text-align: left;
+      color: var(--text-main);
+      @media (max-width: 768px) {
+        text-align: center;
+      }
+    }
+    &_p_text {
+      margin-top: 5px;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 16.8px;
+      text-align: left;
+      color: var(--text-main);
+      @media (max-width: 768px) {
+        text-align: center;
+      }
+    }
+  }
+  &_buttons {
+    display: none;
+    border-radius: var(--button-secondary-radius);
+    @media (max-width: 768px) {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    &_btn {
+      @extend .button-secondary;
+      &_daily {
+        &.active {
+          @extend .bg-background-secondary, .transition-all, .transform-click;
+        }
+      }
+      &_achievement {
+        &.active {
+          @extend .bg-background-secondary, .transition-all, .transform-click;
+        }
+      }
+    }
+  }
+}

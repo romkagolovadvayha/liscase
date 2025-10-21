@@ -1,0 +1,29 @@
+.transition {
+  &-all {
+    transition: all 0.25s ease-in-out;
+  }
+  &-width {
+    transition: width 0.25s ease-in-out;
+  }
+  &-opacity {
+    transition: opacity 0.25s ease-in-out;
+  }
+  &-color {
+    transition: color 0.25s ease-in-out;
+  }
+  &-transform {
+    transition: transform 0.25s ease-in-out;
+  }
+  &-bg-color {
+    transition: backgroud-color 0.25s ease-in-out;
+  }
+  &-border-color {
+    transition: border-color 0.25s ease-in-out;
+  }
+  &-box-shadow {
+    transition: box-shadow 0.25s ease-in-out;
+  }
+  &-grid-template-columns {
+    transition: grid-template-columns 0.25s ease-in-out;
+  }
+}

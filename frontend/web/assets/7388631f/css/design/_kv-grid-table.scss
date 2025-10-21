@@ -1,0 +1,114 @@
+.page-stats__block-without-hover {
+  table.kv-grid-table {
+    position: relative;
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    border-color: var(--background-teritiary);
+    background-color: var(--background-teritiary);
+  }
+}
+table.kv-grid-table {
+  position: relative;
+  border-radius: var(--status-radius);
+  overflow: hidden;
+  border-color: var(--background-secondary);
+  background-color: var(--background-secondary);
+  //&:before {
+  //  @extend .block, .absolute;
+  //  content: "";
+  //  background: var(--light-background);
+  //  top: 0;
+  //  left: -300px;
+  //  background-repeat: no-repeat;
+  //  background-size: 100% 100%;
+  //  min-width: 100%;
+  //  max-width: 100%;
+  //  width: 100%;
+  //  min-height: 240px;
+  //  height: 500px;
+  //  opacity: 0.5;
+  //  border-top-left-radius: 8px;
+  //  transform: scaleY(-1);
+  //  transition: filter 0.25s ease-in-out;
+  //}
+  //&:after {
+  //  @extend .block, .absolute;
+  //  content: "";
+  //  background: var(--light-background);
+  //  bottom: 0;
+  //  right: -300px;
+  //  background-repeat: no-repeat;
+  //  background-size: 100% 100%;
+  //  min-width: 100%;
+  //  max-width: 100%;
+  //  width: 100%;
+  //  min-height: 240px;
+  //  height: 500px;
+  //  opacity: 0.5;
+  //  border-top-left-radius: 8px;
+  //  transition: filter 0.25s ease-in-out;
+  //}
+  colgroup {
+    @media (max-width: 480px) {
+      display: none;
+    }
+  }
+  thead {
+    background: transparent;
+    tr {
+      &.filters {
+        background-color: var(--background-secondary);
+        @media (max-width: 480px) {
+          display: none;
+        }
+        td {
+          @extend .text-text-main;
+          background: transparent;
+          position: relative;
+          z-index: 2;
+          padding: 12px;
+          img {
+            display: inline-block;
+          }
+          .form-control {
+            height: 32px;
+            padding-left: 10px;
+            padding-right: 10px;
+          }
+        }
+      }
+      th {
+        @extend .text-text-main;
+        background: transparent;
+        position: relative;
+        z-index: 2;
+        padding: 12px;
+        font-size: 16px;
+        font-weight: 500;
+        background: rgba(0, 0, 0, 0.2);
+        a {
+          font-size: 16px;
+          font-weight: 500;
+          @extend .text-text-main;
+        }
+      }
+    }
+  }
+  tbody {
+    background: transparent;
+    tr {
+      td {
+        @extend .text-text-main;
+        background: transparent;
+        position: relative;
+        z-index: 2;
+        padding: 12px;
+      }
+      &:nth-of-type(2n) {
+        td {
+          background: rgba(0, 0, 0, 0.2);
+        }
+      }
+    }
+  }
+}

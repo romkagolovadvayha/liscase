@@ -1,0 +1,73 @@
+//styleName: H1 Bold — 48×54;
+h1 {
+  @extend .m-0;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 54px;
+}
+
+//styleName: H2 Bold — 32×40;
+h2 {
+  @extend .m-0;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 40px;
+}
+
+//styleName: H3 Bold — 24×32;
+h3 {
+  @extend .m-0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+}
+
+//styleName: H4 Bold — 20×24;
+.h4, h4 {
+  @extend .m-0;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 24px;
+}
+
+//styleName: H5 Bold — 16×24;
+h5 {
+  @extend .m-0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+}
+
+.lead {
+  @extend h4;
+  font-weight: 400;
+}
+
+//styleName: p0 Regular — 18×28
+p,
+.p0 {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 28px;
+}
+
+//styleName: p1 Regular — 16×24;
+.p1 {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+//styleName: p2 Regular — 14×20;
+.p2 {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+//styleName: p3 Regular — 12×16;
+.p3 {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+}

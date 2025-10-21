@@ -1,0 +1,7 @@
+$names: "auto", "hidden", "visible", "scroll";
+
+@each $name in $names {
+  .overflow-#{$name} {
+    overflow: #{$name};
+  }
+}

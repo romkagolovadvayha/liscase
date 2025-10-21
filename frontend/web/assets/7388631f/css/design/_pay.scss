@@ -1,0 +1,140 @@
+.pay {
+  &__list {
+    @extend .grid, .justify-flex-start, .gap-x-8, .gap-y-8, .w-full;
+    grid-template-columns: repeat(auto-fit, minmax(129px, 1fr));
+  }
+
+  &__button {
+    @extend .bg-background-main,
+      .px-8,
+      .py-6,
+      .border-solid,
+      .border-1,
+      .border-transparent,
+      .relative,
+      .flex,
+      .justify-center,
+      .items-center,
+      .gap-x-8;
+    border-radius: var(--card-radius);
+    transition:
+      border-color 0.25s ease-in-out,
+      transform 0.25s ease-in-out;
+    min-width: 129px;
+
+    &:before {
+      @extend .absolute, .transition-all, .border-solid, .border-1, .border-transparent;
+      border-radius: var(--card-radius);
+      content: "";
+      opacity: 0;
+      inset: -1px;
+      background-image: var(--base-linear-gradiend);
+      mask:
+        linear-gradient(#fff 0 0) padding-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      background-size: 101% 100%;
+      background-position: center;
+    }
+
+    &:hover {
+      @extend .border-border-color-hover;
+    }
+
+    &:active,
+    &_active {
+      @extend .transform-click;
+
+      &:before {
+        opacity: 100;
+      }
+    }
+  }
+
+  &__conditions {
+    @extend .flex, .items-flex-start, .gap-x-12, .user-select-none, .cursor-pointer, .flex-wrap;
+
+    & [type="checkbox"] {
+      & + span {
+        & > .icons_24px_checkbox {
+          display: none;
+        }
+        & > .icons_24px_checkbox_outline {
+          display: block;
+        }
+      }
+
+      &:checked + span {
+        & > .icons_24px_checkbox {
+          display: block;
+        }
+        & > .icons_24px_checkbox_outline {
+          display: none;
+        }
+      }
+    }
+  }
+}
+.payment-form {
+  .mb-3 {
+    margin-bottom: 0 !important;
+  }
+}
+.pay-card {
+  &__list {
+    @extend .grid, .justify-flex-start, .gap-x-8, .gap-y-8, .w-full;
+    grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+  }
+
+  &__button {
+    @extend .bg-background-teritiary,
+      .px-5,
+      .py-10,
+      .border-solid,
+      .border-1,
+      .border-transparent,
+      .relative,
+      .flex,
+      .flex-column,
+      .justify-center,
+      .items-center;
+    height: 46px;
+    border-radius: var(--card-radius);
+    transition:
+      border-color 0.25s ease-in-out,
+      transform 0.25s ease-in-out;
+    min-width: 95px;
+    padding-top: 5px;
+    padding-bottom: 3px;
+    &:before {
+      @extend .absolute, .transition-all, .border-solid, .border-1, .border-transparent;
+      content: "";
+      border-radius: var(--card-radius);
+      opacity: 0;
+      inset: -1px;
+      background-image: var(--base-linear-gradiend);
+      mask:
+        linear-gradient(#fff 0 0) padding-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      background-size: 101% 100%;
+      background-position: center;
+    }
+
+    &:hover {
+      @extend .border-border-color-hover;
+    }
+
+    &-radio {
+      &:checked {
+        & + .pay-card__button {
+          @extend .transform-click;
+
+          &:before {
+            opacity: 100;
+          }
+        }
+      }
+    }
+  }
+}

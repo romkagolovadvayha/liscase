@@ -59,9 +59,13 @@ RUN chmod -R 777 /var/www/html/frontend/runtime /var/www/html/backend/runtime /v
 FROM base AS production
 
 # Копирование конфигурации Nginx
+# Используем статический конфиг (без envsubst) для Production
+COPY docker/nginx/default-static.conf /etc/nginx/conf.d/default.conf
+COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
+
+# Копирование шаблонов (на случай если понадобятся)
 COPY docker/nginx/default.template.conf /etc/nginx/conf.d/default.template.conf
 COPY docker/nginx/websocket.template.conf /etc/nginx/conf.d/websocket.template.conf
-COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx/generate-config.sh /usr/local/bin/generate-nginx-config.sh
 
 # Копирование конфигурации Supervisor
