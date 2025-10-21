@@ -68,11 +68,14 @@ COPY docker/nginx/default.template.conf /etc/nginx/conf.d/default.template.conf
 COPY docker/nginx/websocket.template.conf /etc/nginx/conf.d/websocket.template.conf
 COPY docker/nginx/generate-config.sh /usr/local/bin/generate-nginx-config.sh
 
+# Тестируем Nginx конфигурацию
+RUN nginx -t
+
 # Копирование конфигурации Supervisor
 COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Копирование entrypoint скрипта
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+# Копирование entrypoint скрипта (упрощенная версия для Production)
+COPY docker/entrypoint-simple.sh /usr/local/bin/entrypoint.sh
 
 # Права на выполнение
 RUN chmod +x /usr/local/bin/generate-nginx-config.sh && \
