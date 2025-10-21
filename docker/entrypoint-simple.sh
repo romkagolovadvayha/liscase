@@ -7,27 +7,27 @@ set -e
 echo "🚀 Starting LiSCase container..."
 echo "Environment: ${APP_ENV:-production}"
 
-# Инициализация MySQL (если не инициализирован)
+# Инициализация MariaDB (если не инициализирован)
 if [ ! -d "/var/lib/mysql/liscase" ]; then
-    echo "🗄️ Initializing MySQL database..."
+    echo "🗄️ Initializing MariaDB database..."
     
     # Создание директорий
-    mkdir -p /var/run/mysqld
-    chown -R mysql:mysql /var/run/mysqld
+    mkdir -p /run/mysqld
+    chown -R mysql:mysql /run/mysqld
     chown -R mysql:mysql /var/lib/mysql
     
-    # Инициализация MySQL
-    mysqld --initialize-insecure --user=mysql --datadir=/var/lib/mysql
+    # Инициализация MariaDB
+    mysql_install_db --user=mysql --datadir=/var/lib/mysql --skip-test-db
     
-    # Временный запуск MySQL
-    mysqld --user=mysql --datadir=/var/lib/mysql --skip-networking &
+    # Временный запуск MariaDB
+    mariadbd --user=mysql --datadir=/var/lib/mysql --skip-networking &
     MYSQL_PID=$!
     
-    # Ожидание запуска MySQL
-    echo "⏳ Waiting for MySQL to start..."
+    # Ожидание запуска MariaDB
+    echo "⏳ Waiting for MariaDB to start..."
     for i in {1..30}; do
         if mysqladmin ping -h localhost --silent 2>/dev/null; then
-            echo "✅ MySQL started!"
+            echo "✅ MariaDB started!"
             break
         fi
         sleep 1
@@ -37,7 +37,8 @@ if [ ! -d "/var/lib/mysql/liscase" ]; then
     echo "📝 Creating database..."
     mysql -u root <<EOF
 CREATE DATABASE IF NOT EXISTS liscase CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';
+SET PASSWORD FOR 'root'@'localhost' = PASSWORD('root');
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF
     
@@ -48,13 +49,13 @@ EOF
         echo "✅ Database imported"
     fi
     
-    # Остановка временного MySQL
-    kill $MYSQL_PID
+    # Остановка временного MariaDB
+    mysqladmin -u root -proot shutdown 2>/dev/null || kill $MYSQL_PID
     wait $MYSQL_PID 2>/dev/null || true
     
-    echo "✅ MySQL initialized"
+    echo "✅ MariaDB initialized"
 else
-    echo "✅ MySQL already initialized, skipping"
+    echo "✅ MariaDB already initialized, skipping"
 fi
 
 # Инициализация Yii приложения (если не выполнена)

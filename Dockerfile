@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
     supervisor \
     gettext-base \
     default-mysql-client \
-    mysql-server \
+    mariadb-server \
     netcat \
     && rm -rf /var/lib/apt/lists/*
 
@@ -77,9 +77,9 @@ COPY docker/entrypoint-simple.sh /usr/local/bin/entrypoint.sh
 # Права на выполнение
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Создание директорий для логов и MySQL
-RUN mkdir -p /var/log/supervisor /var/log/nginx /var/lib/mysql /var/run/mysqld \
-    && chown -R mysql:mysql /var/lib/mysql /var/run/mysqld
+# Создание директорий для логов и MariaDB
+RUN mkdir -p /var/log/supervisor /var/log/nginx /var/lib/mysql /run/mysqld \
+    && chown -R mysql:mysql /var/lib/mysql /run/mysqld
 
 # Volume для сохранения данных MySQL
 VOLUME ["/var/lib/mysql"]
