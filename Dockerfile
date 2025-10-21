@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     supervisor \
     gettext-base \
     default-mysql-client \
+    netcat \
     && rm -rf /var/lib/apt/lists/*
 
 # Установка PHP расширений
