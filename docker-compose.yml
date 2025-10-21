@@ -64,13 +64,15 @@ services:
         
         echo '⏳ Waiting for MySQL to be fully ready...'
         sleep 10
-        # Дополнительная проверка готовности MySQL
-        for i in {1..30}; do
-          if php -r "try { new PDO('mysql:host=mysql;port=3306', 'root', 'root'); exit(0); } catch (Exception \$e) { exit(1); }" 2>/dev/null; then
+        MAX_TRIES=30
+        COUNTER=0
+        while [ $COUNTER -lt $MAX_TRIES ]; do
+          if php -r "new PDO('mysql:host=mysql;port=3306', 'root', 'root');" 2>/dev/null; then
             echo '✅ MySQL is ready!'
             break
           fi
-          echo "   Waiting for MySQL ($i/30)..."
+          COUNTER=$((COUNTER + 1))
+          echo "   Waiting for MySQL ($COUNTER/$MAX_TRIES)..."
           sleep 2
         done
         

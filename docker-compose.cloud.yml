@@ -1,0 +1,54 @@
+# Docker Compose для облачного деплоя
+# Минимальная конфигурация без сложных инициализаций
+# Используется как override: docker-compose -f docker-compose.yml -f docker-compose.cloud.yml up -d
+
+services:
+  php:
+    # Переопределяем порт на 80 для облака
+    ports:
+      - '80:80'
+    
+    # Переопределяем environment для продакшена
+    environment:
+      - APACHE_DOCUMENT_ROOT=/app/frontend/web
+      - APP_ENV=production
+      - REDIS_HOST=redis
+      - DB_HOST=mysql
+      - DB_NAME=${DB_NAME:-liscase}
+      - DB_USER=${DB_USER:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-root}
+      - ADMIN_STEAM_ID=${ADMIN_STEAM_ID:-}
+    
+    # Упрощенный command без долгих операций
+    command:
+      - bash
+      - -c
+      - |
+        echo '🚀 Starting LiSCase (Cloud Production)...'
+        
+        # Только необходимые директории
+        mkdir -p /app/frontend/web/assets /app/frontend/web/minify /app/frontend/web/uploads
+        mkdir -p /app/backend/web/assets /app/backend/web/minify /app/backend/web/uploads  
+        mkdir -p /app/api/web/assets /app/api/web/minify
+        
+        chmod -R 777 /app/frontend/web/assets /app/frontend/web/minify /app/frontend/web/uploads 2>/dev/null || true
+        chmod -R 777 /app/backend/web/assets /app/backend/web/minify /app/backend/web/uploads 2>/dev/null || true
+        
+        echo '✅ Setup complete! Starting Apache...'
+        apache2-foreground
+
+  mysql:
+    # Стандартный порт для облака
+    ports:
+      - '3306:3306'
+  
+  redis:
+    # Expose вместо ports
+    expose:
+      - '6379'
+  
+  phpmyadmin:
+    # phpMyAdmin на 8080
+    ports:
+      - '8080:80'
+
