@@ -18,13 +18,22 @@ else
     echo "✅ Yii already initialized, skipping"
 fi
 
-# Запуск миграций (для SQLite или первой инициализации)
-echo "🗄️ Running database migrations..."
-cd /var/www/html
-php yii migrate --interactive=0 || echo "⚠️ Migrations failed (continuing...)"
+# Ожидание готовности MySQL (если задан DB_HOST)
+if [ -n "$DB_HOST" ]; then
+    echo "⏳ Waiting for MySQL at $DB_HOST..."
+    for i in {1..30}; do
+        if php -r "new PDO('mysql:host=$DB_HOST;port=3306', '$DB_USER', '$DB_PASSWORD');" 2>/dev/null; then
+            echo "✅ MySQL is ready!"
+            break
+        fi
+        echo "   Waiting... ($i/30)"
+        sleep 2
+    done
+fi
 
 # Компиляция SCSS
 echo "🎨 Compiling SCSS..."
+cd /var/www/html
 php yii scss/compile 1 || echo "⚠️ SCSS compilation failed (continuing...)"
 
 # Обновление настроек
