@@ -33,8 +33,8 @@ WORKDIR /var/www/html
 # Копирование composer файлов
 COPY composer.json composer.lock ./
 
-# Установка зависимостей
-RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction
+# Установка зависимостей (включая dev для debugging)
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --optimize-autoloader --prefer-dist --no-interaction
 
 # Копирование всего кода
 COPY . .
