@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     supervisor \
     gettext-base \
     default-mysql-client \
+    mysql-server \
     netcat \
     && rm -rf /var/lib/apt/lists/*
 
@@ -76,8 +77,12 @@ COPY docker/entrypoint-simple.sh /usr/local/bin/entrypoint.sh
 # Права на выполнение
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# Создание директорий для логов
-RUN mkdir -p /var/log/supervisor /var/log/nginx
+# Создание директорий для логов и MySQL
+RUN mkdir -p /var/log/supervisor /var/log/nginx /var/lib/mysql /var/run/mysqld \
+    && chown -R mysql:mysql /var/lib/mysql /var/run/mysqld
+
+# Volume для сохранения данных MySQL
+VOLUME ["/var/lib/mysql"]
 
 # Открываем порты
 EXPOSE 80 9000
@@ -85,5 +90,5 @@ EXPOSE 80 9000
 # Entrypoint для генерации конфигов из env и инициализации
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
-# Запуск Supervisor (управляет Nginx + PHP-FPM + Queue workers + Cron)
+# Запуск Supervisor (управляет MySQL + Nginx + PHP-FPM + Queue workers + Cron)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

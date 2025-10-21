@@ -7,6 +7,56 @@ set -e
 echo "🚀 Starting LiSCase container..."
 echo "Environment: ${APP_ENV:-production}"
 
+# Инициализация MySQL (если не инициализирован)
+if [ ! -d "/var/lib/mysql/liscase" ]; then
+    echo "🗄️ Initializing MySQL database..."
+    
+    # Создание директорий
+    mkdir -p /var/run/mysqld
+    chown -R mysql:mysql /var/run/mysqld
+    chown -R mysql:mysql /var/lib/mysql
+    
+    # Инициализация MySQL
+    mysqld --initialize-insecure --user=mysql --datadir=/var/lib/mysql
+    
+    # Временный запуск MySQL
+    mysqld --user=mysql --datadir=/var/lib/mysql --skip-networking &
+    MYSQL_PID=$!
+    
+    # Ожидание запуска MySQL
+    echo "⏳ Waiting for MySQL to start..."
+    for i in {1..30}; do
+        if mysqladmin ping -h localhost --silent 2>/dev/null; then
+            echo "✅ MySQL started!"
+            break
+        fi
+        sleep 1
+    done
+    
+    # Создание базы данных и пользователя
+    echo "📝 Creating database..."
+    mysql -u root <<EOF
+CREATE DATABASE IF NOT EXISTS liscase CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';
+FLUSH PRIVILEGES;
+EOF
+    
+    # Импорт init.sql если существует
+    if [ -f "/var/www/html/docker/mysql/init.sql" ]; then
+        echo "📥 Importing database from init.sql..."
+        mysql -u root -proot liscase < /var/www/html/docker/mysql/init.sql || echo "⚠️ Import failed"
+        echo "✅ Database imported"
+    fi
+    
+    # Остановка временного MySQL
+    kill $MYSQL_PID
+    wait $MYSQL_PID 2>/dev/null || true
+    
+    echo "✅ MySQL initialized"
+else
+    echo "✅ MySQL already initialized, skipping"
+fi
+
 # Инициализация Yii приложения (если не выполнена)
 if [ ! -f "/var/www/html/frontend/config/main-local.php" ]; then
     echo "🔧 Initializing Yii application..."
@@ -16,19 +66,6 @@ if [ ! -f "/var/www/html/frontend/config/main-local.php" ]; then
     echo "✅ Yii initialized"
 else
     echo "✅ Yii already initialized, skipping"
-fi
-
-# Ожидание готовности MySQL (если задан DB_HOST)
-if [ -n "$DB_HOST" ]; then
-    echo "⏳ Waiting for MySQL at $DB_HOST..."
-    for i in {1..30}; do
-        if php -r "new PDO('mysql:host=$DB_HOST;port=3306', '$DB_USER', '$DB_PASSWORD');" 2>/dev/null; then
-            echo "✅ MySQL is ready!"
-            break
-        fi
-        echo "   Waiting... ($i/30)"
-        sleep 2
-    done
 fi
 
 # Компиляция SCSS
