@@ -38,9 +38,6 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader -
 # Копирование всего кода
 COPY . .
 
-# Инициализация Yii приложения (Production)
-RUN php init --env=Production --overwrite=All
-
 # Создание необходимых директорий
 RUN mkdir -p /var/www/html/frontend/runtime/cache /var/www/html/frontend/runtime/logs \
     && mkdir -p /var/www/html/backend/runtime/cache /var/www/html/backend/runtime/logs \

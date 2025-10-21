@@ -7,6 +7,16 @@ set -e
 echo "🚀 Starting LiSCase container..."
 echo "Environment: ${APP_ENV:-production}"
 
+# # Инициализация Yii приложения (если не выполнена)
+# if [ ! -f "/var/www/html/frontend/config/main-local.php" ]; then
+#     echo "🔧 Initializing Yii application..."
+#     cd /var/www/html
+#     echo '1' | php init --env=Production --overwrite=All
+#     echo "✅ Yii initialized"
+# else
+#     echo "✅ Yii already initialized, skipping"
+# fi
+
 # Установка значений по умолчанию
 export FRONTEND_DOMAIN="${FRONTEND_DOMAIN:-prostoj.store}"
 export BACKEND_DOMAIN="${BACKEND_DOMAIN:-e.prostoj.store}"
@@ -112,6 +122,20 @@ echo "✅ Database is available!"
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     echo "🔄 Running database migrations..."
     php /var/www/html/yii migrate --interactive=0 || echo "⚠️ Migration failed or already up to date"
+fi
+
+# Компиляция SCSS
+echo "🎨 Compiling SCSS styles..."
+php /var/www/html/yii scss/compile 1 || echo "⚠️ SCSS compilation failed"
+
+# Обновление настроек
+echo "🔧 Updating settings..."
+php /var/www/html/yii settings/update || echo "⚠️ Settings update failed"
+
+# Создание администратора (если задан ADMIN_STEAM_ID)
+if [ -n "$ADMIN_STEAM_ID" ]; then
+    echo "👤 Creating admin user..."
+    php /var/www/html/yii admin/create "$ADMIN_STEAM_ID" || echo "⚠️ Admin creation failed"
 fi
 
 echo "🎉 Container initialization complete!"
