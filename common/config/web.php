@@ -83,8 +83,11 @@ $config = [
             'port'     => 6379,
             'retries'  => 1,
         ],
-        'cache'         => [
+        'cache'         => getenv('REDIS_HOST') ? [
             'class'     => \yii\redis\Cache::class,
+            'keyPrefix' => md5(dirname(__FILE__)),
+        ] : [
+            'class'     => \yii\caching\FileCache::class,
             'keyPrefix' => md5(dirname(__FILE__)),
         ],
         'user' => [
