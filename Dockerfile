@@ -1,4 +1,7 @@
-# Multi-stage build для оптимизации размера образа
+# Multi-stage Dockerfile for LiSCase
+# Production-ready with Nginx + PHP-FPM + Supervisor
+# Mirrors docker-compose.yml configuration
+
 FROM php:7.4-fpm AS base
 
 # Установка системных зависимостей
@@ -14,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     nginx \
     supervisor \
     gettext-base \
+    default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Установка PHP расширений
@@ -29,19 +33,34 @@ WORKDIR /var/www/html
 COPY composer.json composer.lock ./
 
 # Установка зависимостей
-RUN composer install --no-dev --optimize-autoloader --no-scripts
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction
 
-# Копирование остального кода
+# Копирование всего кода
 COPY . .
 
-# Права доступа
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html
+# Инициализация Yii приложения (Production)
+RUN php init --env=Production --overwrite=All
+
+# Создание необходимых директорий
+RUN mkdir -p /var/www/html/frontend/runtime/cache /var/www/html/frontend/runtime/logs \
+    && mkdir -p /var/www/html/backend/runtime/cache /var/www/html/backend/runtime/logs \
+    && mkdir -p /var/www/html/api/runtime/cache /var/www/html/api/runtime/logs \
+    && mkdir -p /var/www/html/console/runtime/cache /var/www/html/console/runtime/logs \
+    && mkdir -p /var/www/html/frontend/web/uploads /var/www/html/backend/web/uploads \
+    && mkdir -p /var/www/html/frontend/web/minify /var/www/html/backend/web/minify /var/www/html/api/web/minify \
+    && mkdir -p /var/www/html/frontend/web/assets /var/www/html/backend/web/assets /var/www/html/api/web/assets
+
+# Установка прав доступа
+RUN chmod -R 777 /var/www/html/frontend/runtime /var/www/html/backend/runtime /var/www/html/api/runtime /var/www/html/console/runtime \
+    && chmod -R 777 /var/www/html/frontend/web/assets /var/www/html/frontend/web/uploads /var/www/html/frontend/web/minify \
+    && chmod -R 777 /var/www/html/backend/web/assets /var/www/html/backend/web/uploads /var/www/html/backend/web/minify \
+    && chmod -R 777 /var/www/html/api/web/assets /var/www/html/api/web/minify \
+    && chown -R www-data:www-data /var/www/html
 
 # Production stage
 FROM base AS production
 
-# Копирование конфигурации Nginx (шаблоны)
+# Копирование конфигурации Nginx
 COPY docker/nginx/default.template.conf /etc/nginx/conf.d/default.template.conf
 COPY docker/nginx/websocket.template.conf /etc/nginx/conf.d/websocket.template.conf
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
@@ -57,15 +76,14 @@ COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/generate-nginx-config.sh && \
     chmod +x /usr/local/bin/entrypoint.sh
 
-# Инициализация приложения
-RUN php init --env=Production --overwrite=All
+# Создание директорий для логов
+RUN mkdir -p /var/log/supervisor /var/log/nginx
 
 # Открываем порты
 EXPOSE 80 9000
 
-# Entrypoint для генерации конфигов из env
+# Entrypoint для генерации конфигов из env и инициализации
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
-# Запуск Supervisor
+# Запуск Supervisor (управляет Nginx + PHP-FPM + Queue workers + Cron)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
-

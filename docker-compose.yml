@@ -1,64 +1,86 @@
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: liscase-nginx
+    depends_on:
+      - php
+    ports:
+      - '${APP_PORT:-80}:80'
+    volumes:
+      - ./:/var/www/html:delegated
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    environment:
+      - FRONTEND_DOMAIN=${FRONTEND_DOMAIN:-localhost}
+      - BACKEND_DOMAIN=${BACKEND_DOMAIN:-backend.localhost}
+      - API_DOMAIN=${API_DOMAIN:-api.localhost}
+
   php:
-    image: yiisoftware/yii2-php:7.4-apache
-    container_name: liscase-dev
+    image: php:7.4-fpm
+    container_name: liscase-php
     depends_on:
       - redis
       - mysql
     volumes:
-      - ~/.composer-docker/cache:/root/.composer/cache:delegated
-      - ./:/app:delegated
-    ports:
-      - '${APP_PORT:-80}:80'
+      - ./:/var/www/html:delegated
+    expose:
+      - '9000'
     environment:
-      - APACHE_DOCUMENT_ROOT=/app/frontend/web
-      - APP_ENV=development
+      - APP_ENV=${APP_ENV:-development}
       - REDIS_HOST=redis
       - DB_HOST=mysql
       - DB_NAME=liscase
       - DB_USER=root
-      - DB_PASSWORD=root
+      - DB_PASSWORD=${DB_PASSWORD:-root}
       - ADMIN_STEAM_ID=${ADMIN_STEAM_ID:-}
     command:
       - bash
       - -c
       - |
-        echo '🚀 Starting LiSCase development server...'
+        echo '🚀 Starting LiSCase PHP-FPM server...'
         echo "   Environment: ${APP_ENV:-development}"
-        echo "   Port: ${APP_PORT:-80} -> 80"
+        
+        # Установка необходимых расширений PHP
+        echo '📦 Installing PHP extensions...'
+        docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip 2>/dev/null || echo '✅ Extensions already installed'
+        
+        # Установка Composer если нет
+        if [ ! -f "/usr/local/bin/composer" ]; then
+          echo '📦 Installing Composer...'
+          curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+        fi
         
         echo '📦 Installing Composer dependencies...'
-        if [ ! -d '/app/vendor' ]; then
-          cd /app
-          COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --prefer-dist || echo 'Composer already installed'
+        if [ ! -d '/var/www/html/vendor' ]; then
+          cd /var/www/html
+          COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --prefer-dist || echo 'Composer install failed'
         else
           echo '✅ Vendor directory exists, skipping composer install'
         fi
         
         echo '🔧 Initializing Yii application...'
-        if [ ! -f '/app/frontend/config/main-local.php' ]; then
-          cd /app
+        if [ ! -f '/var/www/html/frontend/config/main-local.php' ]; then
+          cd /var/www/html
           echo '0' | php init --env=Development --overwrite=All
         else
           echo '✅ App already initialized, skipping'
         fi
         
         echo '📁 Creating runtime directories...'
-        mkdir -p /app/frontend/runtime/cache /app/frontend/runtime/logs
-        mkdir -p /app/backend/runtime/cache /app/backend/runtime/logs
-        mkdir -p /app/api/runtime/cache /app/api/runtime/logs
-        mkdir -p /app/console/runtime/cache /app/console/runtime/logs
-        mkdir -p /app/frontend/web/uploads /app/backend/web/uploads
-        mkdir -p /app/frontend/web/minify /app/backend/web/minify /app/api/web/minify
-        mkdir -p /app/frontend/web/assets /app/backend/web/assets /app/api/web/assets
+        mkdir -p /var/www/html/frontend/runtime/cache /var/www/html/frontend/runtime/logs
+        mkdir -p /var/www/html/backend/runtime/cache /var/www/html/backend/runtime/logs
+        mkdir -p /var/www/html/api/runtime/cache /var/www/html/api/runtime/logs
+        mkdir -p /var/www/html/console/runtime/cache /var/www/html/console/runtime/logs
+        mkdir -p /var/www/html/frontend/web/uploads /var/www/html/backend/web/uploads
+        mkdir -p /var/www/html/frontend/web/minify /var/www/html/backend/web/minify /var/www/html/api/web/minify
+        mkdir -p /var/www/html/frontend/web/assets /var/www/html/backend/web/assets /var/www/html/api/web/assets
         
         echo '🔐 Setting permissions...'
-        chmod 777 /app/frontend/runtime /app/backend/runtime /app/api/runtime /app/console/runtime 2>/dev/null || true
-        chmod 777 /app/frontend/web/assets /app/frontend/web/uploads /app/frontend/web/minify 2>/dev/null || true
-        chmod 777 /app/backend/web/assets /app/backend/web/uploads /app/backend/web/minify 2>/dev/null || true
-        chmod 777 /app/api/web/assets /app/api/web/minify 2>/dev/null || true
-        chown www-data:www-data /app/frontend/web/minify /app/frontend/web/assets /app/frontend/web/uploads 2>/dev/null || true
-        chown www-data:www-data /app/backend/web/minify /app/backend/web/assets /app/backend/web/uploads 2>/dev/null || true
+        chmod -R 777 /var/www/html/frontend/runtime /var/www/html/backend/runtime /var/www/html/api/runtime /var/www/html/console/runtime 2>/dev/null || true
+        chmod -R 777 /var/www/html/frontend/web/assets /var/www/html/frontend/web/uploads /var/www/html/frontend/web/minify 2>/dev/null || true
+        chmod -R 777 /var/www/html/backend/web/assets /var/www/html/backend/web/uploads /var/www/html/backend/web/minify 2>/dev/null || true
+        chmod -R 777 /var/www/html/api/web/assets /var/www/html/api/web/minify 2>/dev/null || true
+        chown -R www-data:www-data /var/www/html 2>/dev/null || true
         
         echo '✅ Permissions configured'
         
@@ -80,85 +102,23 @@ services:
         echo 'ℹ️  To run migrations manually: docker-compose exec php php yii migrate'
         
         echo '🎨 Compiling SCSS styles...'
-        cd /app
+        cd /var/www/html
         php yii scss/compile 1 || echo '⚠️  SCSS compilation failed (continuing...)'
         
         echo '🔧 Updating settings (colors & cache)...'
-        cd /app
+        cd /var/www/html
         php yii settings/update || echo '⚠️  Settings update failed (continuing...)'
         
         echo '👤 Creating admin user from ADMIN_STEAM_ID...'
-        cd /app
+        cd /var/www/html
         if [ -n "$ADMIN_STEAM_ID" ]; then
           php yii admin/create "$ADMIN_STEAM_ID" || echo '⚠️  Admin creation failed (continuing...)'
         else
           echo 'ℹ️  ADMIN_STEAM_ID not set, skipping admin creation'
         fi
         
-        echo '⚙️ Configuring Apache Virtual Hosts...'
-        
-        # Frontend VirtualHost
-        cat > /etc/apache2/sites-available/000-frontend.conf <<'EOF'
-        <VirtualHost *:80>
-            ServerAdmin webmaster@localhost
-            ServerName localhost
-            ServerAlias *.localhost
-            DocumentRoot /app/frontend/web
-            
-            <Directory /app/frontend/web>
-                Options Indexes FollowSymLinks
-                AllowOverride All
-                Require all granted
-            </Directory>
-            
-            ErrorLog ${APACHE_LOG_DIR}/frontend-error.log
-            CustomLog ${APACHE_LOG_DIR}/frontend-access.log combined
-        </VirtualHost>
-        EOF
-        
-        # Backend VirtualHost
-        cat > /etc/apache2/sites-available/001-backend.conf <<'EOF'
-        <VirtualHost *:80>
-            ServerAdmin webmaster@localhost
-            ServerName backend.localhost
-            DocumentRoot /app/backend/web
-            
-            <Directory /app/backend/web>
-                Options Indexes FollowSymLinks
-                AllowOverride All
-                Require all granted
-            </Directory>
-            
-            ErrorLog ${APACHE_LOG_DIR}/backend-error.log
-            CustomLog ${APACHE_LOG_DIR}/backend-access.log combined
-        </VirtualHost>
-        EOF
-        
-        # API VirtualHost
-        cat > /etc/apache2/sites-available/002-api.conf <<'EOF'
-        <VirtualHost *:80>
-            ServerAdmin webmaster@localhost
-            ServerName api.localhost
-            DocumentRoot /app/api/web
-            
-            <Directory /app/api/web>
-                Options Indexes FollowSymLinks
-                AllowOverride All
-                Require all granted
-            </Directory>
-            
-            ErrorLog ${APACHE_LOG_DIR}/api-error.log
-            CustomLog ${APACHE_LOG_DIR}/api-access.log combined
-        </VirtualHost>
-        EOF
-        
-        # Отключаем дефолтный сайт и включаем наши
-        a2dissite 000-default 2>/dev/null || true
-        a2ensite 000-frontend 001-backend 002-api
-        a2enmod rewrite
-        
-        echo '✅ Setup complete! Starting Apache...'
-        apache2-foreground
+        echo '✅ Setup complete! Starting PHP-FPM...'
+        php-fpm
   
   redis:
     image: redis:7-alpine
