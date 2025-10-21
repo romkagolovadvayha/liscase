@@ -18,6 +18,25 @@ else
     echo "✅ Yii already initialized, skipping"
 fi
 
+# Запуск миграций (для SQLite или первой инициализации)
+echo "🗄️ Running database migrations..."
+cd /var/www/html
+php yii migrate --interactive=0 || echo "⚠️ Migrations failed (continuing...)"
+
+# Компиляция SCSS
+echo "🎨 Compiling SCSS..."
+php yii scss/compile 1 || echo "⚠️ SCSS compilation failed (continuing...)"
+
+# Обновление настроек
+echo "🔧 Updating settings..."
+php yii settings/update || echo "⚠️ Settings update failed (continuing...)"
+
+# Создание администратора (если задан ADMIN_STEAM_ID)
+if [ -n "$ADMIN_STEAM_ID" ]; then
+    echo "👤 Creating admin user..."
+    php yii admin/create "$ADMIN_STEAM_ID" || echo "⚠️ Admin creation failed (continuing...)"
+fi
+
 echo "🎉 Container initialization complete!"
 echo "Starting services..."
 
