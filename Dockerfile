@@ -73,8 +73,7 @@ COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint-simple.sh /usr/local/bin/entrypoint.sh
 
 # Права на выполнение
-RUN chmod +x /usr/local/bin/generate-nginx-config.sh && \
-    chmod +x /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Создание директорий для логов
 RUN mkdir -p /var/log/supervisor /var/log/nginx
