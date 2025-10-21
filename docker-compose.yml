@@ -3,10 +3,8 @@ services:
     image: yiisoftware/yii2-php:7.4-apache
     container_name: liscase-dev
     depends_on:
-      redis:
-        condition: service_started
-      mysql:
-        condition: service_healthy
+      - redis
+      - mysql
     volumes:
       - ~/.composer-docker/cache:/root/.composer/cache:delegated
       - ./:/app:delegated
@@ -26,6 +24,8 @@ services:
       - -c
       - |
         echo '🚀 Starting LiSCase development server...'
+        echo "   Environment: ${APP_ENV:-development}"
+        echo "   Port: ${APP_PORT:-80} -> 80"
         
         echo '📦 Installing Composer dependencies...'
         if [ ! -d '/app/vendor' ]; then
@@ -63,8 +63,16 @@ services:
         echo '✅ Permissions configured'
         
         echo '⏳ Waiting for MySQL to be fully ready...'
-        sleep 5
-        echo '✅ MySQL is ready!'
+        sleep 10
+        # Дополнительная проверка готовности MySQL
+        for i in {1..30}; do
+          if php -r "try { new PDO('mysql:host=mysql;port=3306', 'root', 'root'); exit(0); } catch (Exception \$e) { exit(1); }" 2>/dev/null; then
+            echo '✅ MySQL is ready!'
+            break
+          fi
+          echo "   Waiting for MySQL ($i/30)..."
+          sleep 2
+        done
         
         echo '🗄️ Database already initialized from init.sql dump'
         echo 'ℹ️  To run migrations manually: docker-compose exec php php yii migrate'
