@@ -44,12 +44,13 @@ RUN mkdir -p /var/www/html/frontend/runtime/cache /var/www/html/frontend/runtime
     && mkdir -p /var/www/html/backend/runtime/cache /var/www/html/backend/runtime/logs \
     && mkdir -p /var/www/html/api/runtime/cache /var/www/html/api/runtime/logs \
     && mkdir -p /var/www/html/console/runtime/cache /var/www/html/console/runtime/logs \
+    && mkdir -p /var/www/html/runtime \
     && mkdir -p /var/www/html/frontend/web/uploads /var/www/html/backend/web/uploads \
     && mkdir -p /var/www/html/frontend/web/minify /var/www/html/backend/web/minify /var/www/html/api/web/minify \
     && mkdir -p /var/www/html/frontend/web/assets /var/www/html/backend/web/assets /var/www/html/api/web/assets
 
 # Установка прав доступа
-RUN chmod -R 777 /var/www/html/frontend/runtime /var/www/html/backend/runtime /var/www/html/api/runtime /var/www/html/console/runtime \
+RUN chmod -R 777 /var/www/html/frontend/runtime /var/www/html/backend/runtime /var/www/html/api/runtime /var/www/html/console/runtime /var/www/html/runtime \
     && chmod -R 777 /var/www/html/frontend/web/assets /var/www/html/frontend/web/uploads /var/www/html/frontend/web/minify \
     && chmod -R 777 /var/www/html/backend/web/assets /var/www/html/backend/web/uploads /var/www/html/backend/web/minify \
     && chmod -R 777 /var/www/html/api/web/assets /var/www/html/api/web/minify \
