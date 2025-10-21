@@ -3,7 +3,7 @@
 
 FROM php:7.4-fpm AS base
 
-# Установка системных зависимостей
+# Установка системных зависимостей  
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -17,18 +17,8 @@ RUN apt-get update && apt-get install -y \
     supervisor \
     gettext-base \
     wget \
-    gnupg \
-    lsb-release \
     netcat \
-    && rm -rf /var/lib/apt/lists/*
-
-# Установка MySQL 8.0 из официального репозитория
-RUN wget https://dev.mysql.com/get/mysql-apt-config_0.8.24-1_all.deb \
-    && DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.24-1_all.deb \
-    && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys B7B3B788A8D3785C \
-    && apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server mysql-client \
-    && rm -f mysql-apt-config_0.8.24-1_all.deb \
+    sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Установка PHP расширений
