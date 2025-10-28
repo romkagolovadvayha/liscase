@@ -22,11 +22,28 @@ class TelegramSupport
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_USERAGENT, "PostManGoBot 1.0");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
 
         if (!empty($params)) {
+            $attachments = ['photo', 'audio', 'document', 'video'];
+            $hasFile = false;
+
+            foreach ($attachments as $attachment) {
+                if (isset($params[$attachment])) {
+                    $params[$attachment] = $this->curlFile($params[$attachment]);
+                    $hasFile = true;
+                    break;
+                }
+            }
+
             curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+            
+            // Если есть файл, отправляем как multipart/form-data
+            if ($hasFile) {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
+            } else {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+            }
         }
 
         $answer = curl_exec($ch);
@@ -37,6 +54,26 @@ class TelegramSupport
         curl_close($ch);
 
         return json_decode($answer, true);
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return \CURLFile|mixed|string
+     */
+    private function curlFile($path)
+    {
+        if (is_array($path)) {
+            return $path['file_id'];
+        }
+
+        $realPath = realpath($path);
+
+        if (class_exists('CURLFile')) {
+            return new \CURLFile($realPath);
+        }
+
+        return '@' . $realPath;
     }
 
     /**
@@ -110,5 +147,32 @@ class TelegramSupport
             }
             return $this->sendHttpRequest("sendMessage", $params);
         }
+    }
+
+    /**
+     * @param string $audio Path to audio file
+     * @param string $caption
+     * @param array  $inlineKeyboard
+     *
+     * @return array
+     */
+    public function sendAudio($audio, $caption = '', $inlineKeyboard = [])
+    {
+        $chatId = Yii::$app->settings->get('tgbotSupportAlert_chatId');
+
+        $params = [
+            'chat_id' => $chatId,
+            'audio'   => $audio,
+            'caption' => $caption,
+            'parse_mode' => 'Html',
+        ];
+
+        if (!empty($inlineKeyboard)) {
+            $params['reply_markup'] = json_encode([
+                'inline_keyboard' => [$inlineKeyboard]
+            ]);
+        }
+
+        return $this->sendHttpRequest("sendAudio", $params);
     }
 }
