@@ -138,3 +138,4 @@ Write-Host "  docker-compose -f docker-compose.prod.yml down             # Ос�
 Write-Host ""
 Write-Host "🎉 Готово! Приложение запущено!" -ForegroundColor Green
 
+

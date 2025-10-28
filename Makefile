@@ -91,3 +91,4 @@ backup-db: ## Создать backup базы данных
 watch: ## Наблюдать за pod'ами в реальном времени
 	watch kubectl get pods -n $(NAMESPACE)
 
+

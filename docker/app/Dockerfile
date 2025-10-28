@@ -63,3 +63,4 @@ EXPOSE 9000
 ENTRYPOINT ["/usr/local/bin/init-app.sh"]
 CMD ["php-fpm"]
 
+

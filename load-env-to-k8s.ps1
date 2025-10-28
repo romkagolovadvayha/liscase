@@ -41,3 +41,4 @@ Write-Host ""
 Write-Host "💡 Для применения изменений перезапустите pod'ы:" -ForegroundColor Yellow
 Write-Host "  kubectl rollout restart deployment/liscase-app -n $Namespace"
 
+

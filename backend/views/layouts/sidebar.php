@@ -18,6 +18,9 @@ $buildingBadge = \common\models\building\Building::find()
 $skinsBadge = \common\models\serverskin\ServerSkin::find()
     ->andWhere(['status' => \common\models\serverskin\ServerSkin::STATUS_WAIT])
     ->count();
+$radioBadge = \common\models\radio\RadioTrack::find()
+    ->andWhere(['status' => \common\models\radio\RadioTrack::STATUS_WAIT])
+    ->count();
 
 $usersBadge = \common\models\user\User::find()
                                                  ->cache(60)
@@ -119,6 +122,14 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'url' => ['/server-skin'],
                        'visibility' => Yii::$app->settings->get('section_skins') && $moder,
                        'active' => _checkActive('/server-skin'),
+                   ],
+                   [
+                       'label' =>  Yii::t('common', 'Радиостанции'),
+                       'icon' => 'fa-solid fa-music',
+                       'badgeDanger' => $radioBadge,
+                       'url' => ['/radio'],
+                       'visibility' => Yii::$app->settings->get('site_section_radio') && $moder,
+                       'active' => _checkActive('/radio'),
                    ],
                    [
                        'label' => 'Отчеты',

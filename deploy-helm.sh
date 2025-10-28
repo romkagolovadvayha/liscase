@@ -79,3 +79,4 @@ echo "  helm status $RELEASE_NAME -n $NAMESPACE"
 echo "  kubectl logs -f -l app=liscase-app -n $NAMESPACE"
 echo "  kubectl get pods -n $NAMESPACE"
 
+

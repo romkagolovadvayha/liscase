@@ -120,3 +120,4 @@ for domain in "${domains[@]}"; do
 done
 echo ""
 
+

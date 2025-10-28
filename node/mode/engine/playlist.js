@@ -74,6 +74,36 @@ class Playlist extends AbstractClasses.TerminalItemBox {
         }
         super.scroll(scrollKey);
     }
+
+    // ====== REST API METHODS ======
+
+    /**
+     * Get all playlist items
+     * @returns {Array<string>}
+     */
+    getItems() {
+        // Skip first child (header), return only songs
+        return this.box.children.slice(1).map(child => {
+            // Remove "- " prefix
+            return child.content.replace(/^-\s*/, '');
+        });
+    }
+
+    /**
+     * Reload playlist from filesystem
+     */
+    reloadPlaylist() {
+        const Utils = require('../utils');
+        const songs = Utils.readSongs();
+        
+        // Очистить текущий список
+        while (this.box.children.length > 1) {
+            this.box.remove(this.box.children[1]);
+        }
+        
+        // Добавить новые треки
+        this.fillWithItems(songs);
+    }
 }
 
 module.exports = Playlist;
