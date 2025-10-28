@@ -68,7 +68,7 @@ if ($station->currentTrack) {
             
             <div class="station-controls">
                 <?= Html::a(
-                    '<i class="fa fa-upload"></i> ' . Yii::t('common', 'Загрузить трек'), 
+                    '<span class="button__text"><i class="fa fa-upload"></i> ' . Yii::t('common', 'Загрузить трек') . '</span>',
                     ['create', 'stationId' => $station->id], 
                     [
                         'class' => 'button button-primary show-modal-link',

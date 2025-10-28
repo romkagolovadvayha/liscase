@@ -25,7 +25,7 @@ $this->title = Yii::t('common', 'Поставить трек первым в о�
     <?php $form = ActiveForm::begin(['options' => ['class' => 'transfer-form__form']]); ?>
     
     <div class="transfer-form__buttons">
-        <?= Html::submitButton(Yii::t('common', 'Оплатить'), ['class' => 'button button-primary']) ?>
+        <?= Html::submitButton('<span class="button__text">' . Yii::t('common', 'Оплатить') . '</span>', ['class' => 'button button-primary']) ?>
         <button type="button" class="button button-secondary" data-bs-dismiss="modal"><?= Yii::t('common', 'Отмена') ?></button>
     </div>
     

@@ -84,7 +84,7 @@ $this->registerMetaTag([
                     
                     <div class="radio-station_actions">
                         <?= Html::a(
-                            '<i class="fa fa-list"></i> ' . Yii::t('common', 'Список треков'), 
+                            '<span class="button__text"><i class="fa fa-list"></i> ' . Yii::t('common', 'Список треков') . '</span>',
                             ['radio/station', 'id' => $station->id], 
                             ['class' => 'button button-primary']
                         ) ?>
