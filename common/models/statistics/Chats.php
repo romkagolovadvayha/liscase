@@ -346,4 +346,99 @@ class Chats extends ActiveRecord
         }
         return '⛔ Произошла ошибка';
     }
+
+    public static function actionSuccessTrack($buttonValueObj) {
+        $trackId = ArrayHelper::getValue($buttonValueObj, 'track_id');
+        
+        $track = \common\models\radio\RadioTrack::findOne($trackId);
+        
+        if (!$track) {
+            return '⛔ Трек не найден!';
+        }
+        
+        if ($track->status === \common\models\radio\RadioTrack::STATUS_ACTIVE) {
+            return '⛔ Трек уже подтвержден!';
+        }
+        
+        $track->status = \common\models\radio\RadioTrack::STATUS_ACTIVE;
+        if ($track->save()) {
+            // Добавить в очередь Node.js через прямой вызов
+            if ($track->radioStation && $track->filename) {
+                $station = $track->radioStation;
+                
+                try {
+                    $nodeApiUrl = "http://localhost:{$station->port}/api/reload";
+                    $context = stream_context_create([
+                        'http' => [
+                            'timeout' => 3,
+                            'ignore_errors' => true,
+                        ]
+                    ]);
+                    
+                    @file_get_contents($nodeApiUrl, false, $context);
+                } catch (\Exception $e) {
+                    Yii::error("Node.js API error: " . $e->getMessage(), __METHOD__);
+                }
+            }
+            
+            if (!empty($track->user->telegram_chat_id)) {
+                Yii::$app->personalBotTelegram->sendMessage(
+                    $track->user->telegram_chat_id, 
+                    '🎵 Ваш трек "' . $track->title . '" успешно прошёл модерацию и добавлен на радиостанцию!'
+                );
+            }
+            
+            return [
+                'editMessageReplyMarkup' => true,
+                'buttons' => [
+                    [
+                        'text' => '🔴 Отклонить',
+                        'callback_data' => json_encode([
+                            'action' => 'reject-track',
+                            'track_id' => $trackId,
+                        ])
+                    ]
+                ],
+            ];
+        }
+        return '⛔ Произошла ошибка';
+    }
+
+    public static function actionRejectTrack($buttonValueObj) {
+        $trackId = ArrayHelper::getValue($buttonValueObj, 'track_id');
+        
+        $track = \common\models\radio\RadioTrack::findOne($trackId);
+        
+        if (!$track) {
+            return '⛔ Трек не найден!';
+        }
+        
+        if ($track->status === \common\models\radio\RadioTrack::STATUS_REJECT) {
+            return '⛔ Трек уже отклонен!';
+        }
+        
+        $track->status = \common\models\radio\RadioTrack::STATUS_REJECT;
+        if ($track->save()) {
+            if (!empty($track->user->telegram_chat_id)) {
+                Yii::$app->personalBotTelegram->sendMessage(
+                    $track->user->telegram_chat_id, 
+                    '🎵 Ваш трек "' . $track->title . '" не прошёл модерацию.'
+                );
+            }
+            
+            return [
+                'editMessageReplyMarkup' => true,
+                'buttons' => [
+                    [
+                        'text' => '🟢 Принять',
+                        'callback_data' => json_encode([
+                            'action' => 'success-track',
+                            'track_id' => $trackId,
+                        ])
+                    ],
+                ],
+            ];
+        }
+        return '⛔ Произошла ошибка';
+    }
 }

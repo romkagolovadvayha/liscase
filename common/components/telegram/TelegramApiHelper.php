@@ -45,16 +45,24 @@ class TelegramApiHelper extends \yii\base\Component
         if (!empty($params)) {
 
             $attachments = ['sticker', 'audio', 'document', 'video'];
+            $hasFile = false;
 
             foreach ($attachments as $attachment) {
                 if (isset($params[$attachment])) {
                     $params[$attachment] = $this->curlFile($params[$attachment]);
+                    $hasFile = true;
                     break;
                 }
             }
 
             curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+            
+            // Если есть файл, отправляем как multipart/form-data
+            if ($hasFile) {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
+            } else {
+                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+            }
         }
 
         $answer = curl_exec($ch);
@@ -254,6 +262,37 @@ class TelegramApiHelper extends \yii\base\Component
             'caption' => $caption,
             'parse_mode'   => 'Html',
         ]);
+    }
+
+    /**
+     * @param string $audio Path to audio file
+     * @param string $caption
+     * @param array  $inlineKeyboard
+     * @param int|null $chatId Optional chat ID (uses default from settings if not provided)
+     *
+     * @return mixed
+     */
+    public function sendAudio($audio, $caption = '', $inlineKeyboard = [], $chatId = null)
+    {
+        // Get chat ID from settings if not provided (for telegramSupport)
+        if ($chatId === null) {
+            $chatId = Yii::$app->settings->get('tgbotSupportAlert_chatId');
+        }
+        
+        $params = [
+            'chat_id' => $chatId,
+            'audio'   => $audio,
+            'caption' => $caption,
+            'parse_mode' => 'Html',
+        ];
+        
+        if (!empty($inlineKeyboard)) {
+            $params['reply_markup'] = json_encode([
+                'inline_keyboard' => [$inlineKeyboard]
+            ]);
+        }
+        
+        return $this->_sendRequest('sendAudio', $params);
     }
 
     /**

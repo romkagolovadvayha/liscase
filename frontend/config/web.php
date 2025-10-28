@@ -62,6 +62,8 @@ $config = [
                 'sitemap-posts.xml' => 'site/sitemap-posts',
                 'robots.txt' => 'site/robots',
                 'rss' => 'site/rss',
+                'radio' => 'radio/index',
+                'radio/<id:\d+>' => 'radio/station',
                 'db-asset/<root>/<path:.+>' => 'db-asset/serve',
             ],
         ],

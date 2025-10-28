@@ -341,6 +341,12 @@ class PersonalBotSystem extends AbstractSystem
                     if (!empty($action) && $action == 'reject-building') {
                       return Chats::actionRejectbuilding($buttonValueObj);
                     }
+                    if (!empty($action) && $action == 'success-track') {
+                      return Chats::actionSuccessTrack($buttonValueObj);
+                    }
+                    if (!empty($action) && $action == 'reject-track') {
+                      return Chats::actionRejectTrack($buttonValueObj);
+                    }
                 }
             }
         } catch (\Exception $e) {

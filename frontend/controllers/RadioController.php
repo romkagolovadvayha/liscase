@@ -33,12 +33,17 @@ class RadioController extends Controller
                     'rules' => [
                         [
                             'allow' => true,
-                            'actions' => ['queue', 'update-current', 'update-listeners', 'now-playing'],
+                            'actions' => ['index', 'station', 'station-status', 'now-playing', 'get-likes'],
+                            'roles' => ['?', '@'], // Страницы доступны всем
+                        ],
+                        [
+                            'allow' => true,
+                            'actions' => ['queue', 'update-current', 'update-listeners'],
                             'roles' => ['?', '@'], // API доступно всем
                         ],
                         [
                             'allow' => true,
-                            'roles' => ['@'],
+                            'roles' => ['@'], // Остальные действия требуют авторизации
                         ],
                     ],
                 ],
@@ -56,7 +61,7 @@ class RadioController extends Controller
     public function beforeAction($action)
     {
         // Отключаем CSRF для API endpoints (вызываются из Node.js и AJAX)
-        if (in_array($action->id, ['queue', 'update-current', 'update-listeners', 'now-playing'])) {
+        if (in_array($action->id, ['queue', 'update-current', 'update-listeners', 'now-playing', 'station-status', 'get-likes'])) {
             $this->enableCsrfValidation = false;
         }
         
@@ -101,12 +106,15 @@ class RadioController extends Controller
         $searchModel = new RadioTrackSearch();
         $dataProvider = $searchModel->search($this->request->queryParams, $id);
 
-        // Check if user has tracks waiting moderation
-        $userTracksWait = RadioTrack::find()
-            ->andWhere(['user_id' => Yii::$app->user->id])
-            ->andWhere(['radio_station_id' => $id])
-            ->andWhere(['radio_track.status' => RadioTrack::STATUS_WAIT])
-            ->exists();
+        // Check if user has tracks waiting moderation (only for logged in users)
+        $userTracksWait = false;
+        if (!Yii::$app->user->isGuest) {
+            $userTracksWait = RadioTrack::find()
+                ->andWhere(['user_id' => Yii::$app->user->id])
+                ->andWhere(['radio_station_id' => $id])
+                ->andWhere(['radio_track.status' => RadioTrack::STATUS_WAIT])
+                ->exists();
+        }
 
         return $this->render('station', [
             'station' => $station,
@@ -159,6 +167,62 @@ class RadioController extends Controller
                         $model->duration = $duration !== null ? $duration : 0;
                         
                         if ($model->save(false)) { // skip validation, already validated
+                            // Отправляем уведомление в Telegram с аудио файлом
+                            $caption = "🎵 Новый трек отправлен на модерацию!" . PHP_EOL .
+                                PHP_EOL .
+                                "📻 Радиостанция: {$station->name}" . PHP_EOL .
+                                "🎤 Трек: {$model->title}" . ($model->artist ? " - {$model->artist}" : "") . PHP_EOL .
+                                "👤 Пользователь: {$model->user->username}";
+                            
+                            // Отправляем аудио файл в Telegram
+                            try {
+                                $audioResult = Yii::$app->telegramSupport->sendAudio(
+                                    $filePath,
+                                    $caption,
+                                    [
+                                        [
+                                            'text' => '🟢 Принять',
+                                            'callback_data' => json_encode([
+                                                'action' => 'success-track',
+                                                'track_id' => $model->id,
+                                            ])
+                                        ],
+                                        [
+                                            'text' => '🔴 Отклонить',
+                                            'callback_data' => json_encode([
+                                                'action' => 'reject-track',
+                                                'track_id' => $model->id,
+                                            ])
+                                        ]
+                                    ]
+                                );
+                                
+                                // Если не удалось отправить аудио, отправляем текстовое сообщение
+                                if (!$audioResult || (isset($audioResult['ok']) && !$audioResult['ok'])) {
+                                    Yii::$app->telegramSupport->sendMessage(
+                                        $caption,
+                                        [
+                                            [
+                                                'text' => '🟢 Принять',
+                                                'callback_data' => json_encode([
+                                                    'action' => 'success-track',
+                                                    'track_id' => $model->id,
+                                                ])
+                                            ],
+                                            [
+                                                'text' => '🔴 Отклонить',
+                                                'callback_data' => json_encode([
+                                                    'action' => 'reject-track',
+                                                    'track_id' => $model->id,
+                                                ])
+                                            ]
+                                        ]
+                                    );
+                                }
+                            } catch (\Exception $e) {
+                                Yii::error("Failed to send audio to Telegram: " . $e->getMessage(), __METHOD__);
+                            }
+                            
                             Yii::$app->session->setFlash('success', Yii::t('common', 'Трек успешно загружен и отправлен на модерацию!'));
                             return $this->redirect(['station', 'id' => $stationId]);
                         } else {
@@ -190,6 +254,38 @@ class RadioController extends Controller
             'model' => $model,
             'station' => $station,
         ]);
+    }
+
+    /**
+     * Get users who liked a track
+     * @param int $id Track ID
+     * @return array
+     */
+    public function actionGetLikes($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        $track = $this->findTrack($id);
+        
+        $likes = \common\models\radio\RadioTrackLike::find()
+            ->where(['radio_track_id' => $id])
+            ->with(['user'])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->limit(20)
+            ->all();
+        
+        $users = [];
+        foreach ($likes as $like) {
+            $users[] = [
+                'username' => $like->user->username,
+                'avatar' => $like->user->getAvatar(),
+            ];
+        }
+        
+        return [
+            'users' => $users,
+            'total' => count($users),
+        ];
     }
 
     /**
@@ -377,6 +473,77 @@ class RadioController extends Controller
         return ['success' => true, 'listeners' => $count];
     }
 
+    /**
+     * Pay and add track first to queue
+     */
+    public function actionQueueFirstPay()
+    {
+        $id = Yii::$app->request->get('id');
+        $track = $this->findTrack($id);
+        $user = Yii::$app->user->identity;
+        
+        $price = 15; // 15 рублей
+        
+        if ($this->request->isPost) {
+            // Проверяем баланс
+            $balance = $user->getPersonalBalance();
+            
+            if ($balance->balance < $price) {
+                Yii::$app->session->setFlash('error', Yii::t('common', 'Недостаточно средств. Требуется: {price} монет', ['price' => $price]));
+                return $this->refresh();
+            }
+            
+            // Списываем деньги
+            \common\models\invoice\Invoice::createRecord(
+                $user->id,
+                $price,
+                \common\models\invoice\Invoice::TYPE_PAYMENT_RADIO_FIRST,
+                null,
+                null,
+                null,
+                Yii::t('common', 'Постановка трека первым в очередь: {title}', ['title' => $track->title])
+            );
+            
+            // Добавляем в очередь Node.js
+            $station = $track->radioStation;
+            $nodeApiUrl = "http://localhost:{$station->port}/api/queue/add-first?track=" . urlencode($track->filename);
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 2,
+                    'ignore_errors' => true,
+                ]
+            ]);
+            
+            $nodeResponse = @file_get_contents($nodeApiUrl, false, $context);
+            
+            if ($nodeResponse) {
+                $nodeData = json_decode($nodeResponse, true);
+                if (isset($nodeData['success']) && $nodeData['success']) {
+                    Yii::$app->session->setFlash('success', Yii::t('common', 'Трек успешно поставлен первым в очередь! Списанно: {price} монет', ['price' => $price]));
+                    
+                    if (Yii::$app->request->isAjax) {
+                        return $this->redirect(Yii::$app->request->referrer);
+                    }
+                    return $this->redirect(['station', 'id' => $station->id]);
+                }
+            }
+            
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при добавлении в очередь'));
+        }
+        
+        if (Yii::$app->request->isAjax) {
+            return $this->renderAjax('queue-first-pay', [
+                'track' => $track,
+                'price' => $price,
+            ]);
+        }
+        
+        return $this->render('queue-first-pay', [
+            'track' => $track,
+            'price' => $price,
+        ]);
+    }
+    
     /**
      * Add track first to queue via Node.js API
      * @return array

@@ -12,9 +12,48 @@ use yii\widgets\Pjax;
 /** @var frontend\models\radio\RadioTrackSearch $searchModel */
 /** @var bool $userTracksWait */
 
-$this->title = $station->name;
-$this->params['breadcrumbs'][] = ['label' => Yii::t('common', 'Радиостанции'), 'url' => ['index']];
-$this->params['breadcrumbs'][] = $this->title;
+$tracksCount = $station->getApprovedTracks()->count();
+$pageDescription = $station->description 
+    ?: Yii::t('common', 'Слушайте музыку на радиостанции {name}. {count} треков в плейлисте.', [
+        'name' => $station->name, 
+        'count' => $tracksCount
+    ]);
+
+$this->title = $station->name . ' - ' . Yii::t('common', 'Радиостанция') . ' - ' . Yii::$app->name;
+$this->params['breadcrumbs'][] = ['label' => Yii::t('common', 'Радиостанции'), 'url' => ['radio/index']];
+$this->params['breadcrumbs'][] = $station->name;
+
+// SEO мета-теги
+$this->registerMetaTag([
+    'name' => 'description',
+    'content' => $pageDescription
+]);
+
+// Open Graph мета-теги
+$this->registerMetaTag([
+    'property' => 'og:title',
+    'content' => $this->title
+]);
+$this->registerMetaTag([
+    'property' => 'og:description',
+    'content' => $pageDescription
+]);
+$this->registerMetaTag([
+    'property' => 'og:type',
+    'content' => 'website'
+]);
+$this->registerMetaTag([
+    'property' => 'og:url',
+    'content' => \yii\helpers\Url::to(['radio/station', 'id' => $station->id], true)
+]);
+
+// Если есть текущий трек, добавляем дополнительную информацию
+if ($station->currentTrack) {
+    $this->registerMetaTag([
+        'name' => 'twitter:card',
+        'content' => 'player'
+    ]);
+}
 ?>
 
 <?= \frontend\widgets\Alert::widget() ?>
@@ -199,40 +238,6 @@ $(document).on('click', '#close-player-btn', function() {
     $('#radio-player').hide();
 });
 
-// Queue First - добавить трек первым в очередь
-$(document).on('click', '.track-queue-first-btn', function(e) {
-    e.preventDefault();
-    var btn = $(this);
-    var filename = btn.data('track-filename');
-    var stationId = btn.data('station-id');
-    
-    $.ajax({
-        url: '/radio/queue-first',
-        method: 'POST',
-        data: {
-            station_id: stationId,
-            filename: filename,
-            _csrf: yii.getCsrfToken()
-        },
-        success: function(response) {
-            if (response.success) {
-                // Показать уведомление
-                var notification = $('<div class="queue-notification">✓ Трек добавлен первым в очередь!</div>');
-                $('body').append(notification);
-                setTimeout(() => notification.fadeOut(() => notification.remove()), 3000);
-                
-                // Обновить виджет сейчас играет
-                updateNowPlaying();
-            } else {
-                alert('Ошибка: ' + (response.error || 'Не удалось добавить в очередь'));
-            }
-        },
-        error: function(xhr) {
-            alert('Ошибка: не удалось добавить в очередь');
-        }
-    });
-});
-
 // Like functionality
 $(document).on('click', '.track-like-btn', function(e) {
     e.preventDefault();
@@ -259,6 +264,57 @@ $(document).on('click', '.track-like-btn', function(e) {
             }
         }
     });
+});
+
+// Show likes on hover
+$(document).on('mouseenter', '.track-like-btn', function() {
+    var btn = $(this);
+    var trackId = btn.data('track-id');
+    var tooltip = btn.find('.likes-tooltip');
+    
+    // Удаляем старый tooltip
+    tooltip.remove();
+    
+    // Если нет лайков, не показываем
+    var likesCount = parseInt(btn.find('.like-count').text());
+    if (likesCount === 0) {
+        return;
+    }
+    
+    // Показываем загрузку
+    tooltip = $('<div class="likes-tooltip"><div class="tooltip-loading">Загрузка...</div></div>');
+    btn.append(tooltip);
+    
+    // Загружаем список лайков
+    $.ajax({
+        url: '/radio/get-likes',
+        method: 'GET',
+        data: { id: trackId },
+        success: function(response) {
+            if (response.users && response.users.length > 0) {
+                var html = '<div class="tooltip-title">Лайки:</div>';
+                response.users.forEach(function(user) {
+                    html += `
+                        <div class="tooltip-user">
+                            <img src="\${user.avatar}" width="24" height="24">
+                            <span>\${user.username}</span>
+                        </div>
+                    `;
+                });
+                tooltip.html(html);
+            } else {
+                tooltip.remove();
+            }
+        },
+        error: function() {
+            tooltip.remove();
+        }
+    });
+});
+
+// Hide tooltip on mouse leave
+$(document).on('mouseleave', '.track-like-btn', function() {
+    $(this).find('.likes-tooltip').remove();
 });
 
 // Now Playing Widget - update every 5 seconds
@@ -583,6 +639,54 @@ JS
         transform: translateX(0);
         opacity: 1;
     }
+}
+
+/* Likes Tooltip */
+.track-like-btn {
+    position: relative;
+}
+
+.likes-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 8px;
+    background: var(--background-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    padding: 8px;
+    min-width: 200px;
+    max-width: 300px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+.tooltip-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border-primary);
+    font-size: 12px;
+}
+
+.tooltip-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+    font-size: 13px;
+}
+
+.tooltip-user img {
+    border-radius: 50%;
+}
+
+.tooltip-loading {
+    padding: 8px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 13px;
 }
 </style>
 

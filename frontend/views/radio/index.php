@@ -7,7 +7,29 @@ use yii\helpers\Url;
 /** @var yii\web\View $this */
 /** @var RadioStation[] $stations */
 
-$this->title = Yii::t('common', 'Радиостанции');
+$this->title = Yii::t('common', 'Радиостанции') . ' - ' . Yii::$app->name;
+$this->registerMetaTag([
+    'name' => 'description',
+    'content' => Yii::t('common', 'Слушайте музыку в прямом эфире на наших радиостанциях. Загружайте свои треки, ставьте лайки и управляйте плейлистом.')
+]);
+
+// Open Graph мета-теги
+$this->registerMetaTag([
+    'property' => 'og:title',
+    'content' => $this->title
+]);
+$this->registerMetaTag([
+    'property' => 'og:description',
+    'content' => Yii::t('common', 'Слушайте музыку в прямом эфире на наших радиостанциях. Загружайте свои треки, ставьте лайки и управляйте плейлистом.')
+]);
+$this->registerMetaTag([
+    'property' => 'og:type',
+    'content' => 'website'
+]);
+$this->registerMetaTag([
+    'property' => 'og:url',
+    'content' => \yii\helpers\Url::to(['radio/index'], true)
+]);
 ?>
 
 <?= \frontend\widgets\Alert::widget() ?>
@@ -63,7 +85,7 @@ $this->title = Yii::t('common', 'Радиостанции');
                     <div class="radio-station_actions">
                         <?= Html::a(
                             '<i class="fa fa-list"></i> ' . Yii::t('common', 'Список треков'), 
-                            ['station', 'id' => $station->id], 
+                            ['radio/station', 'id' => $station->id], 
                             ['class' => 'button button-primary']
                         ) ?>
                         
@@ -85,12 +107,75 @@ $this->title = Yii::t('common', 'Радиостанции');
 </div>
 
 <?php
-// Обновление статуса через PHP контроллер каждые 10 секунд
 $this->registerJs('
+// Обработчик клика на кнопку "Слушать"
+$(document).on("click", ".radio-listen-btn", function() {
+    var streamUrl = $(this).data("stream-url");
+    var stationId = $(this).data("station-id");
+    
+    // Проверяем существование плеера
+    if ($("#radio-player").length === 0) {
+        // Создаём плеер
+        var playerHtml = `
+            <div id="radio-player" style="display:none;">
+                <div class="player-content">
+                    <div class="player-info">
+                        <div class="player-title">Радио</div>
+                    </div>
+                    <div class="player-controls">
+                        <button id="play-btn" class="player-btn"><i class="fa fa-play"></i></button>
+                        <button id="pause-btn" class="player-btn" style="display:none;"><i class="fa fa-pause"></i></button>
+                        <button id="close-player-btn" class="player-btn close-btn"><i class="fa fa-times"></i></button>
+                    </div>
+                    <audio id="radio-audio" preload="none"></audio>
+                </div>
+            </div>
+        `;
+        $("body").append(playerHtml);
+    }
+    
+    // Устанавливаем URL потока
+    $("#radio-audio").attr("src", streamUrl);
+    
+    // Показываем плеер и проигрываем
+    $("#radio-player").fadeIn();
+    $("#play-btn").hide();
+    $("#pause-btn").show();
+    $("#radio-audio")[0].play();
+});
+
+// Обработчики для плеера
+$(document).on("click", "#play-btn", function() {
+    $("#radio-audio")[0].play();
+    $(this).hide();
+    $("#pause-btn").show();
+});
+
+$(document).on("click", "#pause-btn", function() {
+    $("#radio-audio")[0].pause();
+    $(this).hide();
+    $("#play-btn").show();
+});
+
+$(document).on("click", "#close-player-btn", function() {
+    $("#radio-audio")[0].pause();
+    $("#radio-player").fadeOut();
+});
+
+// Обновление статуса через PHP контроллер каждые 10 секунд
 function updateStationsStatus() {
     $(".radio-station_card").each(function() {
         var card = $(this);
-        var stationId = card.find(".button-primary").attr("href").match(/id=(\d+)/)[1];
+        var button = card.find(".button-primary");
+        if (button.length === 0) return;
+        
+        var href = button.attr("href");
+        if (!href) return;
+        
+        var match = href.match(/id=(\\d+)/);
+        if (!match) return;
+        
+        var stationId = match[1];
         
         $.ajax({
             url: "/radio/station-status",

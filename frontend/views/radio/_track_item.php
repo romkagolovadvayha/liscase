@@ -47,13 +47,18 @@ $isOwner = !Yii::$app->user->isGuest && $model->user_id == Yii::$app->user->id;
 
         <div class="track-actions">
             <?php if ($station->is_running): ?>
-                <button 
-                    class="track-queue-first-btn"
-                    data-track-filename="<?= Html::encode($model->filename) ?>"
-                    data-station-id="<?= $station->id ?>"
-                    title="<?= Yii::t('common', 'Поставить первым в очередь') ?>">
+                <a href="/radio/queue-first-pay?id=<?= $model->id ?>"
+                   class="track-queue-first-btn show-modal-link"
+                   data-size="modal-sm"
+                   data-content-overflow="unset"
+                   data-top-image="<?= Yii::$app->settings->get('design_payPopupImage') ?>"
+                   data-top-class="modal-backdrop-image_pay active"
+                   data-toggl="modal"
+                   data-target="modal-dialog"
+                   data-title="<?= Yii::t('common', 'Поставить трек первым в очередь') ?>"
+                   title="<?= Yii::t('common', 'Поставить первым в очередь - 30 монет') ?>">
                     <i class="fa fa-forward"></i>
-                </button>
+                </a>
             <?php endif; ?>
 
             <div 
