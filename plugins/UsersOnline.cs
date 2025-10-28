@@ -86,10 +86,10 @@ namespace Oxide.Plugins
             SaveAll();
         }
 		
-        string api = "https://prostoj.store/api";
+        string api = "https://api.prostoj.store";
         void UpdateBoomBox()
         {
-            webrequest.Enqueue(api + $"/radio-list", null, (code, response) =>
+            webrequest.Enqueue(api + $"/radio/list", null, (code, response) =>
             {
                 if (code != 200) return;
 				ServerInfo rd = JsonConvert.DeserializeObject<ServerInfo>(response);

@@ -6,6 +6,7 @@ use common\components\queue\process\ActivatedDropJob;
 use common\controllers\WebController;
 use common\models\box\Drop;
 use common\models\promocode\Promocode;
+use common\models\radio\RadioStation;
 use common\models\servers\Servers;
 use common\models\site\SiteSetting;
 use common\models\statistics\Statistics;
@@ -502,15 +503,22 @@ class ApiController extends WebController
               'name' => 'Спутник',
               'url' => 'https://radio.mediacdn.ru/sputnik_fm.mp3',
           ],
-          [
-              'name' => 'PROSTOJ ONE',
-              'url' => 'https://ws.prostoj.store/radio1/stream',
-          ],
-          [
-              'name' => 'PROSTOJ TWO',
-              'url' => 'https://myradio24.org/46527',
-          ],
         ];
+
+        // Получаем радиостанции из базы данных
+        $dbStations = RadioStation::find()
+            ->where(['status' => RadioStation::STATUS_ACTIVE])
+            ->andWhere(['is_running' => 1])
+            ->orderBy(['id' => SORT_ASC])
+            ->all();
+
+        // Добавляем радиостанции из БД в конец списка
+        foreach ($dbStations as $station) {
+            $list[] = [
+                'name' => $station->name,
+                'url' => $station->getStreamUrl(),
+            ];
+        }
 
         $str = "";
         foreach ($list as $item) {

@@ -2,6 +2,7 @@
 
 namespace api\controllers;
 
+use common\models\radio\RadioStation;
 use yii\web\Controller;
 use Yii;
 use yii\web\Response;
@@ -56,16 +57,23 @@ class RadioController extends Controller
           [
               'name' => 'Спутник',
               'url' => 'https://radio.mediacdn.ru/sputnik_fm.mp3',
-          ],
-          [
-              'name' => 'PROSTOJ ONE',
-              'url' => 'https://ws.prostoj.store/radio1/stream',
-          ],
-          [
-              'name' => 'PROSTOJ TWO',
-              'url' => 'https://myradio24.org/46527',
-          ],
+          ]
         ];
+
+        // Получаем радиостанции из базы данных
+        $dbStations = RadioStation::find()
+            ->where(['status' => RadioStation::STATUS_ACTIVE])
+            ->andWhere(['is_running' => 1])
+            ->orderBy(['id' => SORT_ASC])
+            ->all();
+
+        // Добавляем радиостанции из БД в конец списка
+        foreach ($dbStations as $station) {
+            $list[] = [
+                'name' => $station->name,
+                'url' => $station->getStreamUrl(),
+            ];
+        }
 
         $str = "";
         foreach ($list as $item) {
