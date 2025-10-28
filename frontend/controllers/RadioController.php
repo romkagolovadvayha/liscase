@@ -80,9 +80,10 @@ class RadioController extends Controller
      */
     public function actionIndex()
     {
-        // if (!Yii::$app->settings->get('site_section_radio')) {
-        //     throw new NotFoundHttpException('The requested page does not exist.');
-        // }
+         if (!Yii::$app->settings->get('section_radio')) {
+             throw new NotFoundHttpException('The requested page does not exist.');
+         }
+        $this->view->params['page'] = 'radio';
 
         $stations = RadioStation::find()
             ->where(['radio_station.status' => RadioStation::STATUS_ACTIVE])
@@ -102,6 +103,9 @@ class RadioController extends Controller
      */
     public function actionStation($id)
     {
+        if (!Yii::$app->settings->get('section_radio')) {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
         $station = $this->findStation($id);
         $searchModel = new RadioTrackSearch();
         $dataProvider = $searchModel->search($this->request->queryParams, $id);
@@ -115,6 +119,7 @@ class RadioController extends Controller
                 ->andWhere(['radio_track.status' => RadioTrack::STATUS_WAIT])
                 ->exists();
         }
+        $this->view->params['page'] = 'radio';
 
         return $this->render('station', [
             'station' => $station,

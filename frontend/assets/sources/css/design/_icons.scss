@@ -165,6 +165,10 @@
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/buildings.svg") no-repeat center;
     }
+    &_radio {
+      @extend .bg-icon-main;
+      mask: url("/images/design/icons/32px/radio.svg") no-repeat center;
+    }
     &_faq {
       @extend .bg-icon-main;
       mask: url("/images/design/icons/32px/faq.svg") no-repeat center;

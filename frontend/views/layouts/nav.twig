@@ -94,6 +94,16 @@
             'options': {'class': CLASS_ITEM},
         },
         {
+            'label': t('common', 'Радиостанции'),
+            'url': '/radio',
+            'iconClass': "icons icons_32px icons_32px_radio #{CLASS_ICON}",
+            'activeClass': CLASS_ITEM_ACTIVE,
+            'spanClass': CLASS_ITEM_SPAN_TEXT,
+            'active': PAGE == 'radio',
+            'notification': NOTIFICATIONS.BUILDINGS,
+            'options': {'class': CLASS_ITEM},
+        },
+        {
             'label': t('common', 'Ваши скины'),
             'url': '/custom-skins',
             'iconClass': "icons icons_32px icons_32px_training #{CLASS_ICON}",
