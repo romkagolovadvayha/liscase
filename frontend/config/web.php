@@ -60,6 +60,7 @@ $config = [
                 'sitemap-main.xml' => 'site/sitemap-main',
                 'sitemap-servers.xml' => 'site/sitemap-servers',
                 'sitemap-posts.xml' => 'site/sitemap-posts',
+                'sitemap-radio.xml' => 'site/sitemap-radio',
                 'robots.txt' => 'site/robots',
                 'rss' => 'site/rss',
                 'radio' => 'radio/index',

@@ -7,6 +7,7 @@ use common\models\servers\Servers;
 use common\models\servers\ServersTags;
 use common\models\user\UserBox;
 use common\models\user\UserDrop;
+use common\models\radio\RadioStation;
 use frontend\forms\promocode\PromocodeForm;
 use Yii;
 use yii\base\BaseObject;
@@ -220,6 +221,13 @@ class SiteController extends WebController
             'articles' => $articles,
             'categories' => $categories,
         ]);
+    }
+
+    public function actionSitemapRadio()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        Yii::$app->response->headers->add('Content-Type', 'text/xml');
+        return $this->renderPartial('sitemap-radio');
     }
 
     public function actionMenuToggle()

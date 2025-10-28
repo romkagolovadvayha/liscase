@@ -6,4 +6,5 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
     <sitemap><loc><?= Yii::$app->params['homePage'] ?>/sitemap-main.xml</loc></sitemap>
     <sitemap><loc><?= Yii::$app->params['homePage'] ?>/sitemap-servers.xml</loc></sitemap>
     <sitemap><loc><?= Yii::$app->params['homePage'] ?>/sitemap-posts.xml</loc></sitemap>
+    <sitemap><loc><?= Yii::$app->params['homePage'] ?>/sitemap-radio.xml</loc></sitemap>
 </sitemapindex>
