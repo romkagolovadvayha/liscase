@@ -1235,6 +1235,81 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
+     * Отправляет сообщение в игровой чат пользователю о подключении Telegram бота и оповещений о банах
+     * 
+     * @param Servers $server Сервер на котором находится игрок
+     * @return bool
+     */
+    public function sendBanNotifyPromoMessage($server) {
+        // Проверяем что бот не подключен или оповещения отключены
+        $needsPromo = false;
+        $messageRu = '';
+        $messageEn = '';
+        
+        if (empty($this->telegram_chat_id) || $this->is_telegram_blocked) {
+            // Бот не подключен
+            $needsPromo = true;
+            $messageRu = "<color=#feeda1>Подключите Telegram бота</color> для получения оповещений о банах!\n";
+            $messageRu .= "Инструкция: <color=#aaf16e>/help</color> в боте";
+            $messageEn = "<color=#feeda1>Connect Telegram bot</color> to get ban alerts!\n";
+            $messageEn .= "Instructions: <color=#aaf16e>/help</color> in bot";
+        } elseif (!$this->ban_notify) {
+            // Оповещения о банах отключены
+            $needsPromo = true;
+            $messageRu = "<color=#feeda1>Включите оповещения о банах игроков!</color>\n";
+            $messageRu .= "Узнавайте о банах игроков, на которых вы пожаловались";
+            $messageEn = "<color=#feeda1>Enable ban notifications!</color>\n";
+            $messageEn .= "Get notified when reported players are banned";
+        }
+        
+        if (!$needsPromo) {
+            return false;
+        }
+        
+        // Добавляем ссылку на Telegram бота
+        $telegramChannel = Yii::$app->settings->get('social_telegram');
+        if (!empty($telegramChannel)) {
+            $channelLink = str_replace('https://', '', $telegramChannel);
+            $channelLink = str_replace('http://', '', $channelLink);
+            $messageRu .= "\nНаш бот: <color=#aaf16e>{$channelLink}</color>";
+            $messageEn .= "\nOur bot: <color=#aaf16e>{$channelLink}</color>";
+        }
+        
+        // Добавляем ссылку на Telegram канал
+        $telegramChannel = Yii::$app->settings->get('social_telegram_channel');
+        if (!empty($telegramChannel)) {
+            $channelLink = str_replace('https://', '', $telegramChannel);
+            $channelLink = str_replace('http://', '', $channelLink);
+            $messageRu .= "\nНаш канал: <color=#aaf16e>{$channelLink}</color>";
+            $messageEn .= "\nOur channel: <color=#aaf16e>{$channelLink}</color>";
+        }
+        
+        // Отправляем сообщение через RCON
+        $command = "helper message \"{$messageRu}\" \"{$messageEn}\" \"\" \"{$this->steam_id}\"";
+        
+        try {
+            $response = (Yii::$app->curl)
+                ->setHeaders(['Content-Type' => 'application/json'])
+                ->setRawPostData(json_encode(['server' => $server->tag, 'command' => $command]))
+                ->post(Yii::$app->settings->get('site_rconUrl') . '/send');
+            
+            // Сохраняем в лог RCON задач
+            $rconTask = new RconTasks();
+            $rconTask->status = RconTasks::STATUS_DONE;
+            $rconTask->command = $command;
+            $rconTask->result = $response;
+            $rconTask->server_tag = $server->tag;
+            $rconTask->created_at = date('Y-m-d H:i:s');
+            $rconTask->save();
+            
+            return true;
+        } catch (\Exception $e) {
+            Yii::error("Failed to send ban notify promo message to user {$this->id}: " . $e->getMessage(), __METHOD__);
+            return false;
+        }
+    }
+
+    /**
      * Отправляет сообщение в игровой чат пользователю о подключении Telegram бота и оповещений о рейдах
      * 
      * @param Servers $server Сервер на котором находится игрок
@@ -1249,15 +1324,15 @@ class User extends ActiveRecord implements IdentityInterface
         if (empty($this->telegram_chat_id) || $this->is_telegram_blocked) {
             // Бот не подключен
             $needsPromo = true;
-            $messageRu = "🤖 <color=#feeda1>Подключите Telegram бота</color> для получения оповещений о рейдах!\n";
+            $messageRu = "<color=#feeda1>Подключите Telegram бота</color> для получения оповещений о рейдах!\n";
             $messageRu .= "Инструкция: <color=#aaf16e>/help</color> в боте";
-            $messageEn = "🤖 <color=#feeda1>Connect Telegram bot</color> to get raid alerts!\n";
+            $messageEn = "<color=#feeda1>Connect Telegram bot</color> to get raid alerts!\n";
             $messageEn .= "Instructions: <color=#aaf16e>/help</color> in bot";
         } elseif (!$this->raid_notify) {
             // Оповещения о рейдах отключены
             $needsPromo = true;
-            $messageRu = "🔔 <color=#feeda1>Включите оповещения о рейдах!</color>\n";
-            $messageEn = "🔔 <color=#feeda1>Enable raid notifications!</color>\n";
+            $messageRu = "<color=#feeda1>Включите оповещения о рейдах!</color>\n";
+            $messageEn = "<color=#feeda1>Enable raid notifications!</color>\n";
         }
         
         if (!$needsPromo) {
@@ -1269,8 +1344,8 @@ class User extends ActiveRecord implements IdentityInterface
         if (!empty($telegramChannel)) {
             $channelLink = str_replace('https://', '', $telegramChannel);
             $channelLink = str_replace('http://', '', $channelLink);
-            $messageRu .= "\n📢 Наш бот: <color=#aaf16e>{$channelLink}</color>";
-            $messageEn .= "\n📢 Our bot: <color=#aaf16e>{$channelLink}</color>";
+            $messageRu .= "\nНаш бот: <color=#aaf16e>{$channelLink}</color>";
+            $messageEn .= "\nOur bot: <color=#aaf16e>{$channelLink}</color>";
         }
         
         // Добавляем ссылку на Telegram канал
@@ -1278,8 +1353,8 @@ class User extends ActiveRecord implements IdentityInterface
         if (!empty($telegramChannel)) {
             $channelLink = str_replace('https://', '', $telegramChannel);
             $channelLink = str_replace('http://', '', $channelLink);
-            $messageRu .= "\n📢 Наш канал: <color=#aaf16e>{$channelLink}</color>";
-            $messageEn .= "\n📢 Our channel: <color=#aaf16e>{$channelLink}</color>";
+            $messageRu .= "\nНаш канал: <color=#aaf16e>{$channelLink}</color>";
+            $messageEn .= "\nOur channel: <color=#aaf16e>{$channelLink}</color>";
         }
         
         // Отправляем сообщение через RCON

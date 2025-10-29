@@ -120,6 +120,14 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
             $user = User::findBySteamId($item['steam_id'], false, 'report');
             $reportUser = User::findBySteamId($item['recepient_steam_id'], false, 'report 2');
+            
+            // Отправляем уведомление пользователю о включении оповещений о банах
+            if ($user && (empty($user->telegram_chat_id) || $user->is_telegram_blocked || !$user->ban_notify)) {
+                $server = Servers::findOne(['tag' => $this->serverTag, 'status' => Servers::STATUS_ACTIVE]);
+                if ($server) {
+                    $user->sendBanNotifyPromoMessage($server);
+                }
+            }
 
             $countQuery = Reports::find()
                                  ->andWhere(['recepient_steam_id' => $reportUser->steam_id])
