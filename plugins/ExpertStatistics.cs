@@ -282,6 +282,11 @@ namespace Oxide.Plugins
                     break;
             }
 		}
+		void OnCupboardAuthorize(BuildingPrivlidge privilege, BasePlayer player)
+		{
+			if (privilege == null || player == null || !player.userID.IsSteamId()) return;
+			addParametr(player.UserIDString, "cupboard_authorized", 1);
+		}
 		void OnPlayerAttack(BasePlayer attacker, HitInfo info)
         {
 			BasePlayer player = info.HitEntity?.ToPlayer();
