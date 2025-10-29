@@ -322,7 +322,9 @@ class Deposit extends \common\components\base\ActiveRecord
         Yii::$app->telegramPayments->sendMessage($message);
 
         $bonus = 0;
-        if ($amount >= 5000) {
+        if ($amount >= 20000) {
+               $bonus = $amount * 1;
+        } elseif ($amount >= 5000) {
             $bonus = $amount * 0.5;
         } elseif ($amount >= 2000) {
             $bonus = $amount * 0.3;
