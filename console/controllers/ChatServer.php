@@ -414,29 +414,46 @@ class ChatServer extends WebSocketServer
 
         if (!empty($request['user_id'])) {
            $hash = md5(time());
+           $sentCount = 0;
+           
            foreach ($this->clients as $chatClient) {
                if (empty($chatClient->user)) {
                    continue;
                }
                if ($chatClient->user->id == $request['user_id']) {
                    if ($request['code'] == 200) {
-                       $chatClient->send(
-                           json_encode(
-                               [
-                                   'type'    => 'update.balance',
-                                   'code'    => 200,
-                                   'balanceStr'    => $request['balanceStr'],
-                                   'balance'    => $request['balance'],
-                                   'hash'    => $hash,
-                               ]
-                           )
-                       );
+                       try {
+                           $chatClient->send(
+                               json_encode(
+                                   [
+                                       'type'    => 'update.balance',
+                                       'code'    => 200,
+                                       'balanceStr'    => $request['balanceStr'],
+                                       'balance'    => $request['balance'],
+                                       'hash'    => $hash,
+                                   ]
+                               )
+                           );
+                           $sentCount++;
+                       } catch (\Throwable $e) {
+                           $this->log("Failed to send balance update to user {$request['user_id']}: " . $e->getMessage());
+                       }
                    }
                }
            }
+           
+           if ($sentCount > 0) {
+               $this->log("Balance update sent to {$sentCount} client(s) for user {$request['user_id']}");
+           }
         }
 
-        $client->send( json_encode($result) );
+        // Сразу закрываем подключение от NotifyBalanceJob (это не браузерный клиент)
+        try {
+            $client->send(json_encode($result));
+            $client->close();
+        } catch (\Throwable $e) {
+            // Ignore
+        }
     }
 
     public function commandUpdatedOnline(ConnectionInterface $client, $msg)
@@ -662,7 +679,25 @@ class ChatServer extends WebSocketServer
                     $client->launcher = $request['launcher'];
                 }
                 if (!empty($user) && $user->steam_id == $request['steam_id']) {
+                    // Проверяем количество подключений этого пользователя
+                    $userConnectionsCount = 0;
+                    foreach ($this->clients as $existingClient) {
+                        if (!empty($existingClient->user) && $existingClient->user->id == $user->id) {
+                            $userConnectionsCount++;
+                        }
+                    }
+                    
+                    // Ограничение: максимум 5 подключений на пользователя
+                    if ($userConnectionsCount >= 5) {
+                        $this->log("User {$user->id} exceeded connection limit ({$userConnectionsCount})");
+                        $result['message'] = 'Too many connections';
+                        $client->send(json_encode($result));
+                        $client->close();
+                        return;
+                    }
+                    
                     $client->user = $user;
+                    $this->log("User {$user->id} authenticated (total connections: " . ($userConnectionsCount + 1) . ")");
                 } else {
                     $result['message'] = 'Invalid token';
                     $client->send( json_encode($result) );
