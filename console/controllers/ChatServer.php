@@ -22,10 +22,18 @@ use Ratchet\WebSocket\Version\RFC6455\Frame;
 class ChatServer extends WebSocketServer
 {
     /** @var int секунд без активности до закрытия */
-    private $idleCloseSeconds = 45; // NEW
+    private $idleCloseSeconds = 120; // Увеличено с 45 до 120 секунд
+    
+    /** @var bool включить отладочные логи */
+    private $debugMode = false; // Отключаем лишние логи для производительности
+    
+    /** @var int максимальное количество соединений */
+    private $maxConnections = 2000;
 
-    private function log($m) { // NEW
-        echo date('Y-m-d H:i:s') . " [WS] {$m}" . PHP_EOL;
+    private function log($m, $force = false) {
+        if ($this->debugMode || $force) {
+            echo date('Y-m-d H:i:s') . " [WS] {$m}" . PHP_EOL;
+        }
     }
 
     public function init()
@@ -33,6 +41,15 @@ class ChatServer extends WebSocketServer
         parent::init();
 
         $this->on(self::EVENT_CLIENT_CONNECTED, function(WSClientEvent $e) {
+            // Проверка лимита соединений
+            if (count($this->clients) >= $this->maxConnections) {
+                $this->log("Max connections reached ({$this->maxConnections}), rejecting new connection", true);
+                try {
+                    $e->client->close(1008, 'Server is full');
+                } catch (\Throwable $ex) {}
+                return;
+            }
+            
             $e->client->user = null;
             $e->client->chat = null;
             $e->client->launcher = false;
@@ -40,18 +57,26 @@ class ChatServer extends WebSocketServer
             // heartbeat state
             $e->client->lastPong = time();
             $e->client->alive = true;
+            $e->client->connectionTime = time();
         });
         $this->on(self::EVENT_CLIENT_DISCONNECTED, function(WSClientEvent $e) {
+            // Оптимизация: не отправляем chatBlur если нет чата
+            if (empty($e->client->chat) || empty($e->client->user)) {
+                return;
+            }
+            
             foreach ($this->clients as $chatClient) {
-                if (empty($chatClient->chat) || empty($chatClient->user) || empty($e->client->user)) {
+                if (empty($chatClient->chat) || empty($chatClient->user)) {
                     continue;
                 }
                 if ($chatClient->chat !== $e->client->chat || $e->client->user->id === $chatClient->user->id) {
                     continue;
                 }
-                $chatClient->send(json_encode([
-                                                  'type' => 'chatBlur',
-                                              ]));
+                try {
+                    $chatClient->send(json_encode(['type' => 'chatBlur']));
+                } catch (\Throwable $ex) {
+                    // Игнорируем ошибки отправки при отключении
+                }
             }
         });
 
@@ -60,41 +85,83 @@ class ChatServer extends WebSocketServer
             /** @var \Ratchet\Server\IoServer $io */
             $io = $this->server;
             $loop = $io->loop;
+            
+            $this->log("WebSocket server started on port {$this->port}", true);
 
-            // Одноразовый вывод через 60 сек после старта — сколько соединений // NEW
-            $loop->addTimer(60, function () {
-                $this->log("connections after 60s: " . count($this->clients));
+            // Мониторинг соединений каждую минуту
+            $loop->addPeriodicTimer(60, function () {
+                $count = count($this->clients);
+                $this->log("Active connections: {$count}/{$this->maxConnections}", true);
+                
+                // Если близко к лимиту - предупреждение
+                if ($count > $this->maxConnections * 0.9) {
+                    $this->log("WARNING: Approaching max connections limit!", true);
+                }
             });
 
-            $interval = 15; // каждые 15 сек пингуем
+            $interval = 30; // Увеличено с 15 до 30 сек для снижения нагрузки
             $loop->addPeriodicTimer($interval, function () {
                 $now = time();
+                $closed = 0;
+                $errors = 0;
+                
                 foreach ($this->clients as $client) {
-                    // Закрываем по реальному idle-таймауту (не по счётчику) // CHANGED
-                    $idle = $now - (isset($client->lastPong) ? $client->lastPong : 0);
-                    if ($idle >= $this->idleCloseSeconds) {
-                        $this->log("closing idle client ({$idle}s without pong)"); // NEW
-                        try { $client->close(1000, 'heartbeat timeout'); } catch (\Throwable $e) {}
-                        continue;
-                    }
-
-                    // Пробуем WS-ping фрейм (браузер авто-ответит pong) // NEW
                     try {
-                        $client->send(new Frame('', true, Frame::OP_PING));
-                    } catch (\Throwable $e) {
-                        $this->log("ping frame send failed: " . $e->getMessage());
-                        try { $client->close(1011, 'send failed'); } catch (\Throwable $e2) {}
-                        continue;
-                    }
+                        // Закрываем по реальному idle-таймауту
+                        $idle = $now - (isset($client->lastPong) ? $client->lastPong : 0);
+                        if ($idle >= $this->idleCloseSeconds) {
+                            $this->log("Closing idle client ({$idle}s without pong)");
+                            try { 
+                                $client->close(1000, 'heartbeat timeout'); 
+                                $closed++;
+                            } catch (\Throwable $e) {
+                                $errors++;
+                            }
+                            continue;
+                        }
 
-                    // Оставляем и app-уровень ping (на случай не-браузерных клиентов) // NEW
-                    try {
-                        $client->send(json_encode(['type' => 'ping', 'ts' => $now]));
+                        // Закрываем соединения старше 12 часов (защита от утечек памяти)
+                        $lifetime = $now - (isset($client->connectionTime) ? $client->connectionTime : $now);
+                        if ($lifetime > 43200) { // 12 часов
+                            $this->log("Closing old connection ({$lifetime}s lifetime)");
+                            try { 
+                                $client->close(1000, 'connection too old'); 
+                                $closed++;
+                            } catch (\Throwable $e) {
+                                $errors++;
+                            }
+                            continue;
+                        }
+
+                        // Отправляем только WS-ping (браузер авто-ответит pong)
+                        // Убираем app-уровень ping для снижения нагрузки
+                        try {
+                            $client->send(new Frame('', true, Frame::OP_PING));
+                        } catch (\Throwable $e) {
+                            $this->log("Ping failed, closing connection");
+                            try { 
+                                $client->close(1011, 'send failed'); 
+                                $closed++;
+                            } catch (\Throwable $e2) {
+                                $errors++;
+                            }
+                        }
                     } catch (\Throwable $e) {
-                        $this->log("app ping send failed: " . $e->getMessage());
-                        try { $client->close(1011, 'send failed'); } catch (\Throwable $e2) {}
+                        $errors++;
+                        $this->log("Error in heartbeat loop: " . $e->getMessage());
                     }
                 }
+                
+                if ($closed > 0 || $errors > 0) {
+                    $this->log("Heartbeat: closed={$closed}, errors={$errors}, active=" . count($this->clients), true);
+                }
+            });
+            
+            // Сборщик мусора каждые 5 минут
+            $loop->addPeriodicTimer(300, function () {
+                gc_collect_cycles();
+                $mem = round(memory_get_usage(true) / 1024 / 1024, 2);
+                $this->log("Memory usage: {$mem} MB", true);
             });
         });
     }
@@ -468,11 +535,16 @@ class ChatServer extends WebSocketServer
 
         $request = json_decode($msg, true);
         if (empty($client->chat)) {
-            $client->send( json_encode($result) );
-            return;
+            return; // Не отправляем пустой ответ
         }
         try {
-            if (!empty($client->user)) {
+            if (!empty($client->user) && !empty($request['chatId'])) {
+                $message = json_encode([
+                    'type' => 'chatFocus',
+                    'content' => "Пользователь {$client->user->username} печатает сообщение...",
+                ]);
+                
+                // Оптимизированная рассылка: отправляем только нужным клиентам
                 foreach ($this->clients as $chatClient) {
                     if (empty($chatClient) || empty($chatClient->chat)) {
                         continue;
@@ -480,51 +552,45 @@ class ChatServer extends WebSocketServer
                     if ($chatClient->chat != $request['chatId'] || $client->user->id === $chatClient->user->id) {
                         continue;
                     }
-                    $chatClient->send(json_encode([
-                                                      'type' => 'chatFocus',
-                                                      'content' => "Пользователь {$client->user->username} печатает сообщение...",
-                                                  ]));
+                    try {
+                        $chatClient->send($message);
+                    } catch (\Throwable $e) {
+                        // Игнорируем ошибки отправки
+                    }
                 }
-                return;
             }
         } catch (\Exception $e) {
-            echo "commandChatFocus:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
+            $this->log("commandChatFocus error: " . $e->getMessage());
         }
-        $client->send( json_encode($result) );
     }
 
     public function commandChatBlur(ConnectionInterface $client, $msg)
     {
-        $result = ['message' => ''];
-
         $request = json_decode($msg, true);
-        if (empty($client->chat)) {
-            $client->send( json_encode($result) );
-            return;
+        if (empty($client->chat) || empty($client->user) || empty($request['chatId'])) {
+            return; // Не отправляем пустой ответ
         }
+        
         try {
-            if (!empty($client->user)) {
-                foreach ($this->clients as $chatClient) {
-                    try {
-                        if (empty($chatClient) || empty($chatClient->chat)) {
-                            continue;
-                        }
-                    } catch (\Exception $e) {
-                        echo "commandChatBlur1:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
-                    }
-                    if ($chatClient->chat != $request['chatId'] || $client->user->id === $chatClient->user->id) {
-                        continue;
-                    }
-                    $chatClient->send(json_encode([
-                                                      'type' => 'chatBlur',
-                                                  ]));
+            $message = json_encode(['type' => 'chatBlur']);
+            
+            // Оптимизированная рассылка: отправляем только нужным клиентам
+            foreach ($this->clients as $chatClient) {
+                if (empty($chatClient) || empty($chatClient->chat)) {
+                    continue;
                 }
-                return;
+                if ($chatClient->chat != $request['chatId'] || $client->user->id === $chatClient->user->id) {
+                    continue;
+                }
+                try {
+                    $chatClient->send($message);
+                } catch (\Throwable $e) {
+                    // Игнорируем ошибки отправки
+                }
             }
         } catch (\Exception $e) {
-            echo "commandChatBlur:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
+            $this->log("commandChatBlur error: " . $e->getMessage());
         }
-        $client->send( json_encode($result) );
     }
 
     public static function usernameClass($user) {
