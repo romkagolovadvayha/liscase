@@ -21,7 +21,10 @@ use Ratchet\WebSocket\Version\RFC6455\Frame;
 
 class ChatServer extends WebSocketServer
 {
-    private function log($m) {
+    /** @var int секунд без активности до закрытия */
+    private $idleCloseSeconds = 45; // NEW
+
+    private function log($m) { // NEW
         echo date('Y-m-d H:i:s') . " [WS] {$m}" . PHP_EOL;
     }
 
@@ -30,43 +33,25 @@ class ChatServer extends WebSocketServer
         parent::init();
 
         $this->on(self::EVENT_CLIENT_CONNECTED, function(WSClientEvent $e) {
-            try {
-                $this->log("New client connected. Total clients: " . count($this->clients));
-                $e->client->user = null;
-                $e->client->chat = null;
-                $e->client->launcher = false;
-                $e->client->lastPong = time(); // Время последней активности
-            } catch (\Throwable $ex) {
-                $this->log("ERROR in EVENT_CLIENT_CONNECTED: " . $ex->getMessage() . " at " . $ex->getFile() . ":" . $ex->getLine());
-                Yii::$app->telegramChats->sendMessage('ChatServer EVENT_CLIENT_CONNECTED error: ' . $ex->getMessage());
-            }
+            $e->client->user = null;
+            $e->client->chat = null;
+            $e->client->launcher = false;
+
+            // heartbeat state
+            $e->client->lastPong = time();
+            $e->client->alive = true;
         });
-        
         $this->on(self::EVENT_CLIENT_DISCONNECTED, function(WSClientEvent $e) {
-            try {
-                $userId = !empty($e->client->user) ? $e->client->user->id : 'guest';
-                $this->log("Client disconnected (user: {$userId}). Total clients: " . count($this->clients));
-                
-                foreach ($this->clients as $chatClient) {
-                    if (empty($chatClient->chat) || empty($chatClient->user) || empty($e->client->user)) {
-                        continue;
-                    }
-                    if ($chatClient->chat !== $e->client->chat || $e->client->user->id === $chatClient->user->id) {
-                        continue;
-                    }
-                    try {
-                        $chatClient->send(json_encode(['type' => 'chatBlur']));
-                    } catch (\Throwable $ex) {
-                        $this->log("ERROR sending chatBlur: " . $ex->getMessage());
-                    }
+            foreach ($this->clients as $chatClient) {
+                if (empty($chatClient->chat) || empty($chatClient->user) || empty($e->client->user)) {
+                    continue;
                 }
-            } catch (\Throwable $ex) {
-                $this->log("ERROR in EVENT_CLIENT_DISCONNECTED: " . $ex->getMessage() . " at " . $ex->getFile() . ":" . $ex->getLine());
-                try {
-                    Yii::$app->telegramChats->sendMessage('ChatServer EVENT_CLIENT_DISCONNECTED error: ' . $ex->getMessage());
-                } catch (\Throwable $telegramEx) {
-                    // Ignore telegram errors
+                if ($chatClient->chat !== $e->client->chat || $e->client->user->id === $chatClient->user->id) {
+                    continue;
                 }
+                $chatClient->send(json_encode([
+                                                  'type' => 'chatBlur',
+                                              ]));
             }
         });
 
@@ -76,103 +61,38 @@ class ChatServer extends WebSocketServer
             $io = $this->server;
             $loop = $io->loop;
 
-            // Одноразовый вывод через 60 сек после старта — сколько соединений
+            // Одноразовый вывод через 60 сек после старта — сколько соединений // NEW
             $loop->addTimer(60, function () {
-                $memoryUsage = round(memory_get_usage() / 1024 / 1024, 2);
-                $memoryPeak = round(memory_get_peak_usage() / 1024 / 1024, 2);
-                $this->log("Server stats after 60s: clients=" . count($this->clients) . ", memory={$memoryUsage}MB, peak={$memoryPeak}MB");
-            });
-            
-            // Периодическая статистика каждые 5 минут
-            $loop->addPeriodicTimer(300, function () {
-                $memoryUsage = round(memory_get_usage() / 1024 / 1024, 2);
-                $memoryPeak = round(memory_get_peak_usage() / 1024 / 1024, 2);
-                $this->log("Server stats: clients=" . count($this->clients) . ", memory={$memoryUsage}MB, peak={$memoryPeak}MB");
-                
-                // Предупреждение если память больше 500MB
-                if ($memoryUsage > 500) {
-                    $this->log("WARNING: High memory usage detected!");
-                    try {
-                        Yii::$app->telegramChats->sendMessage("ChatServer WARNING: High memory usage {$memoryUsage}MB with " . count($this->clients) . " clients");
-                    } catch (\Throwable $ex) {
-                        // Ignore
-                    }
-                }
+                $this->log("connections after 60s: " . count($this->clients));
             });
 
-            // АГРЕССИВНЫЙ cleanup - проверяем каждые 10 секунд
-            $interval = 10;
+            $interval = 15; // каждые 15 сек пингуем
             $loop->addPeriodicTimer($interval, function () {
-                try {
-                    $now = time();
-                    $totalClients = count($this->clients);
-                    $closedCount = 0;
-                    $errorCount = 0;
-                    
-                    // КРИТИЧНО: Если > 100 соединений, используем агрессивный timeout
-                    $idleTimeout = $totalClients > 100 ? 30 : 60; // 30 сек если много, иначе 60
-                    
-                    foreach ($this->clients as $client) {
-                        try {
-                            // Закрываем неактивные соединения
-                            $idle = $now - (isset($client->lastPong) ? $client->lastPong : 0);
-                            
-                            // Если совсем новое соединение без lastPong - даём 10 секунд
-                            if ($idle > 3600) {
-                                $idle = $now;
-                            }
-                            
-                            if ($idle >= $idleTimeout) {
-                                try { 
-                                    $client->close(1000, 'idle timeout'); 
-                                    $closedCount++;
-                                } catch (\Throwable $e) {
-                                    $errorCount++;
-                                }
-                                continue;
-                            }
-                            
-                            // Проверяем, живо ли соединение (попытка ping)
-                            try {
-                                // Если не можем отправить - соединение мёртвое
-                                $client->send(json_encode(['type' => 'ping', 'ts' => $now]));
-                            } catch (\Throwable $e) {
-                                // Соединение мёртвое - закрываем
-                                try {
-                                    $client->close(1011, 'connection dead');
-                                    $closedCount++;
-                                } catch (\Throwable $e2) {
-                                    $errorCount++;
-                                }
-                            }
-                        } catch (\Throwable $clientEx) {
-                            $errorCount++;
-                            try {
-                                $client->close(1011, 'error');
-                            } catch (\Throwable $e) {}
-                        }
+                $now = time();
+                foreach ($this->clients as $client) {
+                    // Закрываем по реальному idle-таймауту (не по счётчику) // CHANGED
+                    $idle = $now - (isset($client->lastPong) ? $client->lastPong : 0);
+                    if ($idle >= $this->idleCloseSeconds) {
+                        $this->log("closing idle client ({$idle}s without pong)"); // NEW
+                        try { $client->close(1000, 'heartbeat timeout'); } catch (\Throwable $e) {}
+                        continue;
                     }
-                    
-                    // ВСЕГДА логируем если > 100 соединений
-                    if ($totalClients > 100 || $closedCount > 0 || $errorCount > 0) {
-                        $this->log("Cleanup: closed={$closedCount}, errors={$errorCount}, active={$totalClients}, timeout={$idleTimeout}s");
-                    }
-                    
-                    // КРИТИЧНО: Если > 500 соединений - отправляем тревогу
-                    if ($totalClients > 500) {
-                        $this->log("CRITICAL: Too many connections ({$totalClients})!");
-                        try {
-                            Yii::$app->telegramChats->sendMessage("⚠️ WebSocket CRITICAL: {$totalClients} connections! Server may be under attack or memory leak.");
-                        } catch (\Throwable $telegramEx) {
-                            // Ignore
-                        }
-                    }
-                } catch (\Throwable $ex) {
-                    $this->log("ERROR in cleanup timer: " . $ex->getMessage());
+
+                    // Пробуем WS-ping фрейм (браузер авто-ответит pong) // NEW
                     try {
-                        Yii::$app->telegramChats->sendMessage('ChatServer cleanup error: ' . $ex->getMessage());
-                    } catch (\Throwable $telegramEx) {
-                        // Ignore
+                        $client->send(new Frame('', true, Frame::OP_PING));
+                    } catch (\Throwable $e) {
+                        $this->log("ping frame send failed: " . $e->getMessage());
+                        try { $client->close(1011, 'send failed'); } catch (\Throwable $e2) {}
+                        continue;
+                    }
+
+                    // Оставляем и app-уровень ping (на случай не-браузерных клиентов) // NEW
+                    try {
+                        $client->send(json_encode(['type' => 'ping', 'ts' => $now]));
+                    } catch (\Throwable $e) {
+                        $this->log("app ping send failed: " . $e->getMessage());
+                        try { $client->close(1011, 'send failed'); } catch (\Throwable $e2) {}
                     }
                 }
             });
@@ -181,28 +101,22 @@ class ChatServer extends WebSocketServer
 
     protected function getCommand(ConnectionInterface $from, $msg)
     {
-        try {
-            // Любое входящее сообщение обновляет lastPong (клиент активен)
-            $from->lastPong = time();
+        // Любое входящее — клиент «жив»
+        $from->lastPong = time(); // CHANGED (оставляем)
+        $from->alive = true;
 
-            $request = json_decode($msg, true) ?: [];
-            $command = !empty($request['action']) ? $request['action'] : parent::getCommand($from, $msg);
-            
-            // Логируем команды для диагностики
-            $userId = !empty($from->user) ? $from->user->id : 'guest';
-            $this->log("Command: {$command} from user: {$userId}");
-            
-            return $command;
-            
-        } catch (\Throwable $ex) {
-            $this->log("ERROR in getCommand: " . $ex->getMessage());
-            try {
-                Yii::$app->telegramChats->sendMessage('ChatServer getCommand error: ' . $ex->getMessage() . " | msg: " . substr($msg, 0, 100));
-            } catch (\Throwable $telegramEx) {
-                // Ignore
-            }
-            return 'error';
+        $request = json_decode($msg, true) ?: [];
+
+        // Принимаем pong и как action, и как type // NEW
+        if (
+            (isset($request['action']) && $request['action'] === 'pong') ||
+            (isset($request['type']) && $request['type'] === 'pong')
+        ) {
+            // commandPong будет вызван через return 'pong'
+            return 'pong';
         }
+
+        return !empty($request['action']) ? $request['action'] : parent::getCommand($from, $msg);
     }
 
     public function commandSubscription(ConnectionInterface $client, $msg)
@@ -500,46 +414,29 @@ class ChatServer extends WebSocketServer
 
         if (!empty($request['user_id'])) {
            $hash = md5(time());
-           $sentCount = 0;
-           
            foreach ($this->clients as $chatClient) {
                if (empty($chatClient->user)) {
                    continue;
                }
                if ($chatClient->user->id == $request['user_id']) {
                    if ($request['code'] == 200) {
-                       try {
-                           $chatClient->send(
-                               json_encode(
-                                   [
-                                       'type'    => 'update.balance',
-                                       'code'    => 200,
-                                       'balanceStr'    => $request['balanceStr'],
-                                       'balance'    => $request['balance'],
-                                       'hash'    => $hash,
-                                   ]
-                               )
-                           );
-                           $sentCount++;
-                       } catch (\Throwable $e) {
-                           $this->log("Failed to send balance update to user {$request['user_id']}: " . $e->getMessage());
-                       }
+                       $chatClient->send(
+                           json_encode(
+                               [
+                                   'type'    => 'update.balance',
+                                   'code'    => 200,
+                                   'balanceStr'    => $request['balanceStr'],
+                                   'balance'    => $request['balance'],
+                                   'hash'    => $hash,
+                               ]
+                           )
+                       );
                    }
                }
            }
-           
-           if ($sentCount > 0) {
-               $this->log("Balance update sent to {$sentCount} client(s) for user {$request['user_id']}");
-           }
         }
 
-        // Сразу закрываем подключение от NotifyBalanceJob (это не браузерный клиент)
-        try {
-            $client->send(json_encode($result));
-            $client->close();
-        } catch (\Throwable $e) {
-            // Ignore
-        }
+        $client->send( json_encode($result) );
     }
 
     public function commandUpdatedOnline(ConnectionInterface $client, $msg)
@@ -692,9 +589,8 @@ class ChatServer extends WebSocketServer
                     // Для стикеров не применяем htmlspecialchars и HtmlPurifier
                     $message = trim($message);
                 } else {
-                    // ОПТИМИЗАЦИЯ: HtmlPurifier ОЧЕНЬ медленный - заменяем на простой strip_tags
-                    // Для WebSocket важнее скорость, чем детальная очистка
-                    $message = htmlspecialchars(strip_tags(trim($message)), ENT_QUOTES, 'UTF-8');
+                    // Для обычных сообщений применяем стандартную обработку
+                    $message = htmlspecialchars(\yii\helpers\HtmlPurifier::process(trim($message)));
                 }
                 $model = new SupportMessage();
                 $model->user_id = $user->id;
@@ -714,11 +610,6 @@ class ChatServer extends WebSocketServer
                 SupportRead::createRecord($chat->user_id, $user->id, $model->id, $chat->id);
                 $this->commandTicketUpdate($client, json_encode(['user_id' => $chat->user_id]));
                 $hash = md5(time());
-                
-                // ОПТИМИЗАЦИЯ: Собираем user_ids для которых нужен unreadAll, делаем ОДИН запрос
-                $userIdsForUnread = [];
-                $usersToMarkRead = [];
-                
                 foreach ($this->clients as $chatClient) {
                     if (empty($chatClient)) {
                         continue;
@@ -728,52 +619,26 @@ class ChatServer extends WebSocketServer
                         $_user = $chatClient->user;
                         if ($_user->id === $chat->user_id || $_user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
                             if ($user->id !== $_user->id) {
-                                $userIdsForUnread[$_user->id] = $_user;
+                                $chatClient->send(json_encode([
+                                                              'type' => 'support_notifications',
+                                                              'count' => Support::unreadAll($_user->id),
+                                                              'chatId' => $chat->getNumber(),
+                                                              'hash'    => $hash,
+                                                          ]));
                             }
                         }
                     }
-                    if (!empty($chatClient->chat) && $chatClient->chat == $request['chatId'] && !empty($chatClient->user)) {
-                        $usersToMarkRead[] = $chatClient->user->id;
+                    if (empty($chatClient->chat)) {
+                        continue;
                     }
-                }
-                
-                // Один раз получаем непрочитанные для всех нужных пользователей (можно кэшировать)
-                foreach ($userIdsForUnread as $userId => $_user) {
-                    $unreadCount = Yii::$app->cache->getOrSet(
-                        "support_unread_{$userId}",
-                        function() use ($userId) {
-                            return Support::unreadAll($userId);
-                        },
-                        5 // кэш на 5 секунд
-                    );
-                    
-                    foreach ($this->clients as $chatClient) {
-                        if (!empty($chatClient->user) && $chatClient->user->id == $userId) {
-                            $chatClient->send(json_encode([
-                                'type' => 'support_notifications',
-                                'count' => $unreadCount,
-                                'chatId' => $chat->getNumber(),
-                                'hash'    => $hash,
-                            ]));
-                        }
+                    if ($chatClient->chat != $request['chatId']) {
+                        continue;
                     }
-                }
-                
-                // Один раз помечаем прочитанные для всех
-                if (!empty($usersToMarkRead)) {
-                    foreach ($usersToMarkRead as $userId) {
-                        SupportRead::readedAll($model->support_id, $userId);
-                    }
-                }
-                
-                // Отправляем уведомление о новом сообщении
-                foreach ($this->clients as $chatClient) {
-                    if (!empty($chatClient->chat) && $chatClient->chat == $request['chatId']) {
-                        $chatClient->send(json_encode([
-                            'type' => 'chat',
-                            'messageId' => $model->id,
-                        ]));
-                    }
+                    SupportRead::readedAll($model->support_id, $chatClient->user->id);
+                    $chatClient->send(json_encode([
+                                                      'type' => 'chat',
+                                                      'messageId' => $model->id,
+                                                  ]));
                 }
             } else {
                 $result['message'] = 'Enter message';
@@ -792,48 +657,12 @@ class ChatServer extends WebSocketServer
             $result = [];
 
             if (!empty($request['token']) && !empty($request['steam_id'])) {
-                // ОПТИМИЗАЦИЯ: Кэшируем валидацию токенов на 60 секунд
-                $cacheKey = 'ws_token_' . md5($request['token'] . $request['steam_id']);
-                $userId = Yii::$app->cache->get($cacheKey);
-                
-                if ($userId === false) {
-                    // Токен не в кэше - проверяем через DB
-                    $user = User::findByJwtToken($request['token']);
-                    if (!empty($user) && $user->steam_id == $request['steam_id']) {
-                        $userId = $user->id;
-                        Yii::$app->cache->set($cacheKey, $userId, 60);
-                    } else {
-                        $userId = null;
-                    }
-                } else {
-                    // Токен в кэше - загружаем пользователя быстро
-                    $user = User::findOne($userId);
-                }
-                
+                $user = User::findByJwtToken($request['token']);
                 if (isset($request['launcher'])) {
                     $client->launcher = $request['launcher'];
                 }
-                
                 if (!empty($user) && $user->steam_id == $request['steam_id']) {
-                    // Проверяем количество подключений этого пользователя
-                    $userConnectionsCount = 0;
-                    foreach ($this->clients as $existingClient) {
-                        if (!empty($existingClient->user) && $existingClient->user->id == $user->id) {
-                            $userConnectionsCount++;
-                        }
-                    }
-                    
-                    // Ограничение: максимум 5 подключений на пользователя
-                    if ($userConnectionsCount >= 5) {
-                        $this->log("User {$user->id} exceeded connection limit ({$userConnectionsCount})");
-                        $result['message'] = 'Too many connections';
-                        $client->send(json_encode($result));
-                        $client->close();
-                        return;
-                    }
-                    
                     $client->user = $user;
-                    $this->log("User {$user->id} authenticated (total connections: " . ($userConnectionsCount + 1) . ")");
                 } else {
                     $result['message'] = 'Invalid token';
                     $client->send( json_encode($result) );
@@ -843,52 +672,18 @@ class ChatServer extends WebSocketServer
                 $client->send( json_encode($result) );
             }
         } catch (\Exception $ex) {
-            $this->log("ERROR in commandAuth: " . $ex->getMessage());
-            try {
-                Yii::$app->telegramChats->sendMessage('commandAuth: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
-            } catch (\Throwable $telegramEx) {
-                // Ignore
-            }
+            Yii::$app->telegramChats->sendMessage('commandAuth: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
-    /**
-     * Обработчик неизвестных команд
-     */
-    public function commandError(ConnectionInterface $client, $msg)
+    public function commandPong(ConnectionInterface $client, $msg)
     {
         try {
-            $this->log("Unknown/Error command received: " . substr($msg, 0, 100));
-            $client->send(json_encode(['type' => 'error', 'message' => 'Unknown command']));
-        } catch (\Throwable $ex) {
-            $this->log("ERROR in commandError: " . $ex->getMessage());
-        }
-    }
-    
-    /**
-     * Глобальный обработчик ошибок для всех команд
-     */
-    public function __call($name, $arguments)
-    {
-        try {
-            // Если метод не существует
-            if (!method_exists($this, $name)) {
-                $this->log("WARNING: Command method {$name} does not exist");
-                
-                if (isset($arguments[0]) && $arguments[0] instanceof ConnectionInterface) {
-                    $arguments[0]->send(json_encode(['type' => 'error', 'message' => 'Command not supported']));
-                }
-                
-                return;
-            }
-            
-            return parent::__call($name, $arguments);
-        } catch (\Throwable $ex) {
-            $this->log("CRITICAL ERROR in __call({$name}): " . $ex->getMessage() . " at " . $ex->getFile() . ":" . $ex->getLine());
-            try {
-                Yii::$app->telegramChats->sendMessage("ChatServer CRITICAL: {$name} failed: " . $ex->getMessage());
-            } catch (\Throwable $telegramEx) {
-                // Ignore
-            }
+            $client->lastPong = time();
+            $client->alive = true;
+            // лог для поиска причин // NEW
+            // $this->log("pong from client");
+        } catch (\Exception $ex) {
+            Yii::$app->telegramChats->sendMessage('commandPong: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
 }

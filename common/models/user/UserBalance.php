@@ -187,22 +187,23 @@ class UserBalance extends \common\components\base\ActiveRecord
             $this->save(false);
         }
 
-        // Отправка обновления баланса через WebSocket используя очередь
-        // Это предотвращает создание множества параллельных WebSocket подключений
-        if ($this->type === self::TYPE_PERSONAL && $oldBalance != $this->balance) {
-            try {
-                // Добавляем задачу в очередь для асинхронной отправки WebSocket уведомления
-                if (isset(Yii::$app->queue)) {
-                    Yii::$app->queue->push(new \common\components\queue\websocket\NotifyBalanceJob([
-                        'userId'     => $this->user_id,
-                        'balance'    => $this->balanceCeil,
-                        'balanceStr' => $this->getBalanceFormat(),
-                    ]));
-                }
-            } catch (\Exception $ex) {
-                // Игнорируем ошибки WebSocket - они не критичны для бизнес-логики
-                Yii::warning('Failed to queue WebSocket notification: ' . $ex->getMessage(), 'websocket');
+        try {
+            if ($this->type === self::TYPE_PERSONAL && $oldBalance != $this->balance) {
+                $client = new Client(Yii::$app->params['ws']);
+                $client->send(
+                    json_encode(
+                        [
+                            'action'     => 'updatedBalance',
+                            'code'       => 200,
+                            'balanceStr' => $this->getBalanceFormat(),
+                            'balance'    => $this->balanceCeil,
+                            'user_id'    => $this->user_id,
+                        ]
+                    )
+                );
             }
+        } catch (\Exception $ex) {
+            Yii::$app->telegramChats->sendMessage('UserBalance recalculateBalance: ' . Yii::$app->params['ws'] . " " . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
 
