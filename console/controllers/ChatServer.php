@@ -182,6 +182,34 @@ class ChatServer extends WebSocketServer
                     }
                 }
             });
+            
+            // Отправка обновлений онлайна из кеша каждые 5 секунд
+            $loop->addPeriodicTimer(5, function () {
+                try {
+                    $cacheKey = 'ws_online_data';
+                    $data = Yii::$app->cache->get($cacheKey);
+                    
+                    if ($data && (time() - $data['timestamp']) < 10) {
+                        $response = json_encode([
+                            'type'    => 'update.online',
+                            'code'    => 200,
+                            'servers' => $data['servers'],
+                            'total'   => $data['total'],
+                        ]);
+                        
+                        // Отправляем всем клиентам
+                        foreach ($this->clients as $client) {
+                            try {
+                                $client->send($response);
+                            } catch (\Throwable $e) {
+                                // Молча пропускаем
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    $this->log("Error broadcasting online update: " . $e->getMessage());
+                }
+            });
         });
     }
 
@@ -586,6 +614,27 @@ class ChatServer extends WebSocketServer
         }
 
         $client->send( json_encode($result) );
+    }
+    
+    /**
+     * Статический метод для отправки обновлений онлайна без создания WebSocket клиента
+     * Используется в Servers::notify() для избежания rate limiting
+     */
+    public static function broadcastOnlineUpdate($serversData, $total)
+    {
+        try {
+            // Используем файловый сокет для межпроцессного взаимодействия
+            $cacheKey = 'ws_online_data';
+            Yii::$app->cache->set($cacheKey, [
+                'servers' => $serversData,
+                'total' => $total,
+                'timestamp' => time(),
+            ], 10);
+            
+            return true;
+        } catch (\Exception $ex) {
+            return false;
+        }
     }
 
     public function commandChatFocus(ConnectionInterface $client, $msg)

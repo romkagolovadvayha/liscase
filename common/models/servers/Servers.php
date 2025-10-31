@@ -205,7 +205,6 @@ class Servers extends \common\components\base\ActiveRecord
         try {
             /** @var Servers[] $servers */
             $servers = \common\models\servers\Servers::find()->orderBy(['sort' => SORT_ASC])->all();
-            $client = new Client(Yii::$app->params['ws']);
             $projectStats = Statistics::projectStats();
             $total = $projectStats['online'];
 
@@ -221,16 +220,10 @@ class Servers extends \common\components\base\ActiveRecord
                 $serversData = ArrayHelper::merge($serversData, $server->monitoring());
             }
 
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'updatedOnline',
-                        'code' => 200,
-                        'total' => $total,
-                        'servers' => $serversData,
-                    ]
-                )
-            );
+            // Используем новый метод через кеш вместо создания WebSocket клиента
+            // Это избегает rate limiting т.к. не создаются новые подключения
+            \console\controllers\ChatServer::broadcastOnlineUpdate($serversData, $total);
+            
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('Servers notify: ' . $ex->getMessage());
         }
