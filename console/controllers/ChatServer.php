@@ -24,8 +24,66 @@ class ChatServer extends WebSocketServer
     /** @var int секунд без активности до закрытия */
     private $idleCloseSeconds = 45; // NEW
 
+    /** @var array Индекс клиентов по user_id для быстрого поиска */
+    private $clientsByUserId = [];
+
+    /** @var array Индекс клиентов по chat для быстрого поиска */
+    private $clientsByChat = [];
+
     private function log($m) { // NEW
         echo date('Y-m-d H:i:s') . " [WS] {$m}" . PHP_EOL;
+    }
+
+    /**
+     * Получить клиентов по user_id
+     * @param int $userId
+     * @return array
+     */
+    private function getClientsByUserId($userId)
+    {
+        return $this->clientsByUserId[$userId] ?? [];
+    }
+
+    /**
+     * Получить клиентов по chat
+     * @param string $chat
+     * @return array
+     */
+    private function getClientsByChat($chat)
+    {
+        return $this->clientsByChat[$chat] ?? [];
+    }
+
+    /**
+     * Добавить клиента в индекс по user_id
+     */
+    private function indexClientByUserId(ConnectionInterface $client)
+    {
+        if (!empty($client->user)) {
+            $userId = $client->user->id;
+            if (!isset($this->clientsByUserId[$userId])) {
+                $this->clientsByUserId[$userId] = [];
+            }
+            if (!in_array($client, $this->clientsByUserId[$userId], true)) {
+                $this->clientsByUserId[$userId][] = $client;
+            }
+        }
+    }
+
+    /**
+     * Добавить клиента в индекс по chat
+     */
+    private function indexClientByChat(ConnectionInterface $client)
+    {
+        if (!empty($client->chat)) {
+            $chat = $client->chat;
+            if (!isset($this->clientsByChat[$chat])) {
+                $this->clientsByChat[$chat] = [];
+            }
+            if (!in_array($client, $this->clientsByChat[$chat], true)) {
+                $this->clientsByChat[$chat][] = $client;
+            }
+        }
     }
 
     public function init()
@@ -42,16 +100,44 @@ class ChatServer extends WebSocketServer
             $e->client->alive = true;
         });
         $this->on(self::EVENT_CLIENT_DISCONNECTED, function(WSClientEvent $e) {
-            foreach ($this->clients as $chatClient) {
-                if (empty($chatClient->chat) || empty($chatClient->user) || empty($e->client->user)) {
-                    continue;
+            // Удаляем из индексов
+            if (!empty($e->client->user)) {
+                $userId = $e->client->user->id;
+                if (isset($this->clientsByUserId[$userId])) {
+                    $key = array_search($e->client, $this->clientsByUserId[$userId], true);
+                    if ($key !== false) {
+                        unset($this->clientsByUserId[$userId][$key]);
+                        if (empty($this->clientsByUserId[$userId])) {
+                            unset($this->clientsByUserId[$userId]);
+                        }
+                    }
                 }
-                if ($chatClient->chat !== $e->client->chat || $e->client->user->id === $chatClient->user->id) {
-                    continue;
+            }
+            if (!empty($e->client->chat)) {
+                $chat = $e->client->chat;
+                if (isset($this->clientsByChat[$chat])) {
+                    $key = array_search($e->client, $this->clientsByChat[$chat], true);
+                    if ($key !== false) {
+                        unset($this->clientsByChat[$chat][$key]);
+                        if (empty($this->clientsByChat[$chat])) {
+                            unset($this->clientsByChat[$chat]);
+                        }
+                    }
                 }
-                $chatClient->send(json_encode([
-                                                  'type' => 'chatBlur',
-                                              ]));
+            }
+
+            // Уведомляем других пользователей в том же чате
+            if (!empty($e->client->chat) && !empty($e->client->user)) {
+                $chatClients = $this->getClientsByChat($e->client->chat);
+                foreach ($chatClients as $chatClient) {
+                    if ($chatClient !== $e->client && !empty($chatClient->user)) {
+                        try {
+                            $chatClient->send(json_encode(['type' => 'chatBlur']));
+                        } catch (\Exception $ex) {
+                            $this->log("Error sending chatBlur: " . $ex->getMessage());
+                        }
+                    }
+                }
             }
         });
 
@@ -121,17 +207,33 @@ class ChatServer extends WebSocketServer
 
     public function commandSubscription(ConnectionInterface $client, $msg)
     {
-        $request = json_decode($msg, true);
-        $result = ['message' => ''];
+        try {
+            $request = json_decode($msg, true);
+            $result = ['message' => ''];
 
-        if (!empty($client->user) && !empty($request['chat'])) {
-           $ticket = Support::findByNumber($request['chat']);
-           if (Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR) || $ticket->user_id == $client->user->id) {
-               $client->chat = $request['chat'];
-           }
+            if (!empty($client->user) && !empty($request['chat'])) {
+                // Кешируем поиск тикета на 30 секунд
+                $cacheKey = 'ws_ticket_' . $request['chat'];
+                $ticket = Yii::$app->cache->getOrSet($cacheKey, function() use ($request) {
+                    return Support::findByNumber($request['chat']);
+                }, 30);
+
+                if ($ticket && (
+                    Yii::$app->user->can(Role::ROLE_ADMIN) || 
+                    Yii::$app->user->can(Role::ROLE_MODERATOR) || 
+                    $ticket->user_id == $client->user->id
+                )) {
+                    $client->chat = $request['chat'];
+                    
+                    // Добавляем в индекс для быстрого поиска
+                    $this->indexClientByChat($client);
+                }
+            }
+
+            $client->send(json_encode($result));
+        } catch (\Exception $ex) {
+            $this->log("Subscription error: " . $ex->getMessage());
         }
-
-        $client->send( json_encode($result) );
     }
 
     public function commandGetDrop(ConnectionInterface $client, $msg)
@@ -261,15 +363,17 @@ class ChatServer extends WebSocketServer
     {
         $request = json_decode($msg, true);
         if (!empty($request['id'])) {
-            foreach ($this->clients as $chatClient) {
-                if (empty($chatClient) || empty($chatClient->chat)) {
-                    continue;
+            // Используем индекс для быстрого поиска клиентов по chat
+            $chatClients = $this->getClientsByChat($request['id']);
+            $model = new Support();
+            $response = json_encode(['type' => 'redirect', 'url' => $model->getUrl()]);
+            
+            foreach ($chatClients as $chatClient) {
+                try {
+                    $chatClient->send($response);
+                } catch (\Exception $ex) {
+                    $this->log("Error sending support status: " . $ex->getMessage());
                 }
-                if ($chatClient->chat != $request['id']) {
-                    continue;
-                }
-                $model = new Support();
-                $chatClient->send(json_encode(['type' => 'redirect', 'url' => $model->getUrl()]));
             }
         }
     }
@@ -278,16 +382,37 @@ class ChatServer extends WebSocketServer
     {
         $request = json_decode($msg, true);
         if (!empty($request['user_id'])) {
+            // Сначала отправляем конкретному пользователю
+            $userClients = $this->getClientsByUserId($request['user_id']);
+            $response = json_encode(['type' => 'ticketsUpdate']);
+            
+            foreach ($userClients as $chatClient) {
+                if (!empty($chatClient->chat)) {
+                    try {
+                        $chatClient->send($response);
+                    } catch (\Exception $ex) {
+                        $this->log("Error sending ticket update: " . $ex->getMessage());
+                    }
+                }
+            }
+            
+            // Затем отправляем админам/модераторам (перебираем всех, но это редкий случай)
             foreach ($this->clients as $chatClient) {
-                if (empty($chatClient) || empty($chatClient->chat)) {
+                if (empty($chatClient->chat) || empty($chatClient->user)) {
                     continue;
                 }
                 /** @var User $user */
                 $user = $chatClient->user;
-                if ($user->id != $request['user_id'] && !$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
-                    continue;
+                if ($user->id == $request['user_id']) {
+                    continue; // уже отправили выше
                 }
-                $chatClient->send(json_encode(['type' => 'ticketsUpdate']));
+                if ($user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+                    try {
+                        $chatClient->send($response);
+                    } catch (\Exception $ex) {
+                        $this->log("Error sending ticket update to admin: " . $ex->getMessage());
+                    }
+                }
             }
         }
     }
@@ -305,16 +430,19 @@ class ChatServer extends WebSocketServer
     public function commandChatUpdate(ConnectionInterface $client, $msg)
     {
         $request = json_decode($msg, true);
-        if (!empty($request['user_id'])) {
-            foreach ($this->clients as $chatClient) {
-                if (empty($chatClient) || empty($chatClient->chat)) {
-                    continue;
+        if (!empty($request['user_id']) && !empty($request['id'])) {
+            // Используем индекс для быстрого поиска клиентов по chat
+            $chatClients = $this->getClientsByChat($request['id']);
+            $response = json_encode(['type' => 'chat', 'messageId' => $request['messageId']]);
+            
+            foreach ($chatClients as $chatClient) {
+                try {
+                    $chatClient->send($response);
+                } catch (\Exception $ex) {
+                    $this->log("Error sending chat update: " . $ex->getMessage());
                 }
-                if ($chatClient->chat != $request['id']) {
-                    continue;
-                }
-                $chatClient->send(json_encode(['type' => 'chat', 'messageId' => $request['messageId']]));
             }
+            
             $this->commandTicketUpdate($client, json_encode(['user_id' => $request['user_id']]));
         }
     }
@@ -329,35 +457,36 @@ class ChatServer extends WebSocketServer
             if (empty($model->user->server_id)) {
                 return;
             }
-            foreach ($this->clients as $chatClient) {
-                if (empty($chatClient->user)) {
-                    continue;
-                }
-                if ($chatClient->user->id == $model->user->id) {
-                    if ($request['code'] == 200) {
+            
+            // Используем индекс для быстрого поиска клиентов пользователя
+            $userClients = $this->getClientsByUserId($model->user->id);
+            
+            if ($request['code'] == 200) {
+                try {
+                    $response = json_encode([
+                        'type'    => 'store.buy.items',
+                        'code'    => 200,
+                        'id'      => $model->id,
+                        'product' => Yii::$app->view->renderFile(Yii::getAlias('@frontend/views/store') . '/_product.php', [
+                            'drop' => $model->drop[0],
+                            'serverId' => $model->user->server_id,
+                            'userDrop' => $model,
+                        ]),
+                    ]);
+                    
+                    foreach ($userClients as $chatClient) {
                         try {
-                            $chatClient->send(
-                                json_encode(
-                                    [
-                                        'type'    => 'store.buy.items',
-                                        'code'    => 200,
-                                        'id'      => $model->id,
-                                        'product'      => Yii::$app->view->renderFile(Yii::getAlias('@frontend/views/store') . '/_product.php', [
-                                            'drop' => $model->drop[0],
-                                            'serverId' => $model->user->server_id,
-                                            'userDrop' => $model,
-                                        ]),
-                                    ]
-                                )
-                            );
+                            $chatClient->send($response);
                         } catch (\Exception $e) {
-                            print_r($e->getFile() . ":" . $e->getLine() . PHP_EOL . $e->getMessage());
+                            $this->log("Error sending buy drop to client: " . $e->getMessage());
                         }
                     }
+                } catch (\Exception $e) {
+                    $this->log("Error rendering product: " . $e->getFile() . ":" . $e->getLine() . " " . $e->getMessage());
                 }
             }
         }
-        $client->send( json_encode($result) );
+        $client->send(json_encode($result));
     }
 
     public function commandActivatedDrop(ConnectionInterface $client, $msg)
@@ -367,44 +496,40 @@ class ChatServer extends WebSocketServer
 
         if (!empty($request['id'])) {
            $model = UserDrop::findOne($request['id']);
-           foreach ($this->clients as $chatClient) {
-               if (empty($chatClient->user)) {
-                   continue;
-               }
-               if ($chatClient->user->id == $model->user->id) {
-                   if ($request['code'] == 200) {
-                       $chatClient->send(
-                           json_encode(
-                               [
-                                   'type'    => 'store.get.items',
-                                   'code'    => 200,
-                                   'message' => Yii::t(
-                                       'common',
-                                       "Товар успешно получен!",
-                                       [],
-                                       $chatClient->user->current_language
-                                   ),
-                                   'id'      => $request['id'],
-                               ]
-                           )
-                       );
-                   } else {
-                       $chatClient->send(
-                           json_encode(
-                               [
-                                   'type'    => 'store.get.items',
-                                   'code'    => 500,
-                                   'message' => $request['message'],
-                                   'id'      => $request['id'],
-                               ]
-                           )
-                       );
-                   }
+           if (!$model) {
+               $client->send(json_encode($result));
+               return;
+           }
+           
+           // Используем индекс для быстрого поиска клиентов пользователя
+           $userClients = $this->getClientsByUserId($model->user->id);
+           
+           if ($request['code'] == 200) {
+               $response = json_encode([
+                   'type'    => 'store.get.items',
+                   'code'    => 200,
+                   'message' => Yii::t('common', "Товар успешно получен!", [], $model->user->current_language),
+                   'id'      => $request['id'],
+               ]);
+           } else {
+               $response = json_encode([
+                   'type'    => 'store.get.items',
+                   'code'    => 500,
+                   'message' => $request['message'],
+                   'id'      => $request['id'],
+               ]);
+           }
+           
+           foreach ($userClients as $chatClient) {
+               try {
+                   $chatClient->send($response);
+               } catch (\Exception $ex) {
+                   $this->log("Error sending activated drop: " . $ex->getMessage());
                }
            }
         }
 
-        $client->send( json_encode($result) );
+        $client->send(json_encode($result));
     }
 
     public function commandUpdatedBalance(ConnectionInterface $client, $msg)
@@ -412,31 +537,29 @@ class ChatServer extends WebSocketServer
         $request = json_decode($msg, true);
         $result = ['message' => ''];
 
-        if (!empty($request['user_id'])) {
+        if (!empty($request['user_id']) && $request['code'] == 200) {
            $hash = md5(time());
-           foreach ($this->clients as $chatClient) {
-               if (empty($chatClient->user)) {
-                   continue;
-               }
-               if ($chatClient->user->id == $request['user_id']) {
-                   if ($request['code'] == 200) {
-                       $chatClient->send(
-                           json_encode(
-                               [
-                                   'type'    => 'update.balance',
-                                   'code'    => 200,
-                                   'balanceStr'    => $request['balanceStr'],
-                                   'balance'    => $request['balance'],
-                                   'hash'    => $hash,
-                               ]
-                           )
-                       );
-                   }
+           
+           // Используем индекс для быстрого поиска клиентов пользователя
+           $userClients = $this->getClientsByUserId($request['user_id']);
+           $response = json_encode([
+               'type'       => 'update.balance',
+               'code'       => 200,
+               'balanceStr' => $request['balanceStr'],
+               'balance'    => $request['balance'],
+               'hash'       => $hash,
+           ]);
+           
+           foreach ($userClients as $chatClient) {
+               try {
+                   $chatClient->send($response);
+               } catch (\Exception $ex) {
+                   $this->log("Error sending balance update: " . $ex->getMessage());
                }
            }
         }
 
-        $client->send( json_encode($result) );
+        $client->send(json_encode($result));
     }
 
     public function commandUpdatedOnline(ConnectionInterface $client, $msg)
@@ -444,18 +567,21 @@ class ChatServer extends WebSocketServer
         $request = json_decode($msg, true);
         $result = ['message' => ''];
 
-        foreach ($this->clients as $chatClient) {
-            if ($request['code'] == 200) {
-                $chatClient->send(
-                    json_encode(
-                        [
-                            'type'      => 'update.online',
-                            'code'      => 200,
-                            'servers'    => $request['servers'],
-                            'total' => $request['total'],
-                        ]
-                    )
-                );
+        if ($request['code'] == 200) {
+            $response = json_encode([
+                'type'    => 'update.online',
+                'code'    => 200,
+                'servers' => $request['servers'],
+                'total'   => $request['total'],
+            ]);
+            
+            // Отправляем всем клиентам (broadcast)
+            foreach ($this->clients as $chatClient) {
+                try {
+                    $chatClient->send($response);
+                } catch (\Exception $ex) {
+                    // Молча пропускаем ошибки для broadcast сообщений
+                }
             }
         }
 
@@ -467,30 +593,33 @@ class ChatServer extends WebSocketServer
         $result = ['message' => ''];
 
         $request = json_decode($msg, true);
-        if (empty($client->chat)) {
-            $client->send( json_encode($result) );
+        if (empty($client->chat) || empty($client->user) || empty($request['chatId'])) {
+            $client->send(json_encode($result));
             return;
         }
+        
         try {
-            if (!empty($client->user)) {
-                foreach ($this->clients as $chatClient) {
-                    if (empty($chatClient) || empty($chatClient->chat)) {
-                        continue;
+            // Используем индекс для быстрого поиска клиентов по chat
+            $chatClients = $this->getClientsByChat($request['chatId']);
+            $response = json_encode([
+                'type' => 'chatFocus',
+                'content' => "Пользователь {$client->user->username} печатает сообщение...",
+            ]);
+            
+            foreach ($chatClients as $chatClient) {
+                if ($chatClient !== $client && !empty($chatClient->user)) {
+                    try {
+                        $chatClient->send($response);
+                    } catch (\Exception $ex) {
+                        $this->log("Error sending chat focus: " . $ex->getMessage());
                     }
-                    if ($chatClient->chat != $request['chatId'] || $client->user->id === $chatClient->user->id) {
-                        continue;
-                    }
-                    $chatClient->send(json_encode([
-                                                      'type' => 'chatFocus',
-                                                      'content' => "Пользователь {$client->user->username} печатает сообщение...",
-                                                  ]));
                 }
-                return;
             }
         } catch (\Exception $e) {
-            echo "commandChatFocus:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
+            $this->log("commandChatFocus error: " . $e->getLine() . ":" . $e->getMessage());
         }
-        $client->send( json_encode($result) );
+        
+        $client->send(json_encode($result));
     }
 
     public function commandChatBlur(ConnectionInterface $client, $msg)
@@ -498,33 +627,30 @@ class ChatServer extends WebSocketServer
         $result = ['message' => ''];
 
         $request = json_decode($msg, true);
-        if (empty($client->chat)) {
-            $client->send( json_encode($result) );
+        if (empty($client->chat) || empty($client->user) || empty($request['chatId'])) {
+            $client->send(json_encode($result));
             return;
         }
+        
         try {
-            if (!empty($client->user)) {
-                foreach ($this->clients as $chatClient) {
+            // Используем индекс для быстрого поиска клиентов по chat
+            $chatClients = $this->getClientsByChat($request['chatId']);
+            $response = json_encode(['type' => 'chatBlur']);
+            
+            foreach ($chatClients as $chatClient) {
+                if ($chatClient !== $client && !empty($chatClient->user)) {
                     try {
-                        if (empty($chatClient) || empty($chatClient->chat)) {
-                            continue;
-                        }
-                    } catch (\Exception $e) {
-                        echo "commandChatBlur1:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
+                        $chatClient->send($response);
+                    } catch (\Exception $ex) {
+                        $this->log("Error sending chat blur: " . $ex->getMessage());
                     }
-                    if ($chatClient->chat != $request['chatId'] || $client->user->id === $chatClient->user->id) {
-                        continue;
-                    }
-                    $chatClient->send(json_encode([
-                                                      'type' => 'chatBlur',
-                                                  ]));
                 }
-                return;
             }
         } catch (\Exception $e) {
-            echo "commandChatBlur:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
+            $this->log("commandChatBlur error: " . $e->getLine() . ":" . $e->getMessage());
         }
-        $client->send( json_encode($result) );
+        
+        $client->send(json_encode($result));
     }
 
     public static function usernameClass($user) {
@@ -656,22 +782,38 @@ class ChatServer extends WebSocketServer
             $request = json_decode($msg, true);
             $result = [];
 
-            if (!empty($request['token']) && !empty($request['steam_id'])) {
-                $user = User::findByJwtToken($request['token']);
+            // Валидация входных данных
+            if (empty($request['token']) || empty($request['steam_id'])) {
+                $result['message'] = 'Invalid token';
+                $client->send(json_encode($result));
+                return;
+            }
+
+            // Кешируем запрос пользователя на 60 секунд
+            $cacheKey = 'ws_auth_' . md5($request['token'] . $request['steam_id']);
+            $user = Yii::$app->cache->getOrSet($cacheKey, function() use ($request) {
+                return User::find()
+                    ->where(['jwt' => $request['token'], 'steam_id' => $request['steam_id']])
+                    ->limit(1)
+                    ->one();
+            }, 60);
+
+            if ($user) {
+                $client->user = $user;
                 if (isset($request['launcher'])) {
                     $client->launcher = $request['launcher'];
                 }
-                if (!empty($user) && $user->steam_id == $request['steam_id']) {
-                    $client->user = $user;
-                } else {
-                    $result['message'] = 'Invalid token';
-                    $client->send( json_encode($result) );
-                }
+                
+                // Добавляем в индекс для быстрого поиска
+                $this->indexClientByUserId($client);
+                
+                $this->log("User authenticated: {$user->steam_id}");
             } else {
                 $result['message'] = 'Invalid token';
-                $client->send( json_encode($result) );
+                $client->send(json_encode($result));
             }
         } catch (\Exception $ex) {
+            $this->log("Auth error: " . $ex->getMessage());
             Yii::$app->telegramChats->sendMessage('commandAuth: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
