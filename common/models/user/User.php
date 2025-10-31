@@ -1241,6 +1241,7 @@ class User extends ActiveRecord implements IdentityInterface
      * @return bool
      */
     public function sendBanNotifyPromoMessage($server) {
+        return true;
         // Проверяем что бот не подключен или оповещения отключены
         $needsPromo = false;
         $messageRu = '';
@@ -1316,6 +1317,7 @@ class User extends ActiveRecord implements IdentityInterface
      * @return bool
      */
     public function sendRaidNotifyPromoMessage($server) {
+        return true;
         // Проверяем что бот не подключен или оповещения отключены
         $needsPromo = false;
         $messageRu = '';
