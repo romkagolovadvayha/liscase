@@ -27,16 +27,8 @@ class BuyDropJob extends BaseObject implements JobInterface
     {
         try {
             $userDrop = $this->userDrop;
-            $client = new Client(Yii::$app->params['ws']);
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'buyDrop',
-                        'code'   => 200,
-                        'id'     => $userDrop->id,
-                    ]
-                )
-            );
+            // Используем кеш вместо WebSocket клиента
+            \console\controllers\ChatServer::broadcastBuyDrop($userDrop->id, $userDrop->user_id);
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('BuyDropJob: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }

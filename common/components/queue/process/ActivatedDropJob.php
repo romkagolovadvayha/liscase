@@ -23,33 +23,18 @@ class ActivatedDropJob extends BaseObject implements JobInterface
     {
         try {
             $userDrop = $this->userDrop;
-            $client = new Client(Yii::$app->params['ws']);
             if ($userDrop->save()) {
-                $client->send(
-                    json_encode(
-                        [
-                            'action' => 'activatedDrop',
-                            'code'   => 200,
-                            'id'     => $userDrop->id,
-                        ]
-                    )
-                );
+                // Используем кеш вместо WebSocket клиента
+                \console\controllers\ChatServer::broadcastActivatedDrop($userDrop->id, $userDrop->user_id, 200);
             } else {
-                $client->send(
-                    json_encode(
-                        [
-                            'action' => 'activatedDrop',
-                            'code'   => 500,
-                            'message'   => Yii::t(
-                                'common',
-                                "Произошла ошибка при получении товара, попробуйте позже!",
-                                [],
-                                $userDrop->user->current_language
-                            ),
-                            'id'     => $userDrop->id,
-                        ]
-                    )
+                // Используем кеш вместо WebSocket клиента
+                $errorMessage = Yii::t(
+                    'common',
+                    "Произошла ошибка при получении товара, попробуйте позже!",
+                    [],
+                    $userDrop->user->current_language
                 );
+                \console\controllers\ChatServer::broadcastActivatedDrop($userDrop->id, $userDrop->user_id, 500, $errorMessage);
             }
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('ApiController: ' . $ex->getMessage());

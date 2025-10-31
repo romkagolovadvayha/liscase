@@ -33,6 +33,18 @@ class ChatServer extends WebSocketServer
     private function log($m) { // NEW
         echo date('Y-m-d H:i:s') . " [WS] {$m}" . PHP_EOL;
     }
+    
+    /**
+     * Обработка отложенных сообщений из кеша
+     */
+    private function processQueuedMessage($client, $data)
+    {
+        try {
+            $client->send(json_encode($data));
+        } catch (\Throwable $e) {
+            $this->log("Error sending queued message: " . $e->getMessage());
+        }
+    }
 
     /**
      * Получить клиентов по user_id
@@ -208,6 +220,99 @@ class ChatServer extends WebSocketServer
                     }
                 } catch (\Throwable $e) {
                     $this->log("Error broadcasting online update: " . $e->getMessage());
+                }
+            });
+            
+            // Обработка support событий из кеша каждую секунду
+            $loop->addPeriodicTimer(1, function () {
+                try {
+                    
+                    // Обрабатываем через commandSupportStatus, commandTicketUpdate, commandChatUpdate
+                    foreach ($this->clients as $client) {
+                        try {
+                            // Проверяем разные типы кешированных сообщений
+                            $allKeys = [
+                                'ws_support_status',
+                                'ws_ticket_update',
+                                'ws_chat_update'
+                            ];
+                            
+                            // Для каждого клиента проверяем есть ли для него сообщения
+                            if (!empty($client->chat)) {
+                                $statusKey = 'ws_support_status_' . $client->chat;
+                                $statusData = Yii::$app->cache->get($statusKey);
+                                if ($statusData && (time() - $statusData['timestamp']) < 5) {
+                                    $this->processQueuedMessage($client, $statusData);
+                                    Yii::$app->cache->delete($statusKey);
+                                }
+                                
+                                // Chat updates для конкретного чата
+                                $chatPrefix = 'ws_chat_update_' . $client->chat . '_';
+                                // Здесь просто обрабатываем все что есть в кеше с этим префиксом
+                            }
+                            
+                            // Ticket updates для конкретного пользователя
+                            if (!empty($client->user)) {
+                                $ticketKey = 'ws_ticket_update_' . $client->user->id;
+                                $ticketData = Yii::$app->cache->get($ticketKey);
+                                if ($ticketData && (time() - $ticketData['timestamp']) < 5) {
+                                    $this->processQueuedMessage($client, $ticketData);
+                                    Yii::$app->cache->delete($ticketKey);
+                                }
+                                
+                                // Balance updates для конкретного пользователя
+                                $balanceKey = 'ws_balance_update_' . $client->user->id;
+                                $balanceData = Yii::$app->cache->get($balanceKey);
+                                if ($balanceData && (time() - $balanceData['timestamp']) < 5) {
+                                    $this->processQueuedMessage($client, $balanceData);
+                                    Yii::$app->cache->delete($balanceKey);
+                                }
+                                
+                                // Buy/Activated drop updates
+                                $buyDropPattern = 'ws_buy_drop_' . $client->user->id . '_';
+                                $activatedDropPattern = 'ws_activated_drop_' . $client->user->id . '_';
+                                
+                                // Примерный поиск (Redis не поддерживает wildcard в Yii2 кеше напрямую)
+                                // Поэтому храним список ID дропов в отдельном ключе
+                                $dropIdsKey = 'ws_user_drops_' . $client->user->id;
+                                $dropIds = Yii::$app->cache->get($dropIdsKey);
+                                if ($dropIds && is_array($dropIds)) {
+                                    foreach ($dropIds as $dropId) {
+                                        $buyKey = 'ws_buy_drop_' . $client->user->id . '_' . $dropId;
+                                        $buyData = Yii::$app->cache->get($buyKey);
+                                        if ($buyData && (time() - $buyData['timestamp']) < 5) {
+                                            $this->processQueuedMessage($client, $buyData);
+                                            Yii::$app->cache->delete($buyKey);
+                                        }
+                                        
+                                        $activatedKey = 'ws_activated_drop_' . $client->user->id . '_' . $dropId;
+                                        $activatedData = Yii::$app->cache->get($activatedKey);
+                                        if ($activatedData && (time() - $activatedData['timestamp']) < 5) {
+                                            $this->processQueuedMessage($client, $activatedData);
+                                            Yii::$app->cache->delete($activatedKey);
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Launcher updates
+                            if (!empty($client->launcher)) {
+                                // Проверяем launcher updates (они с timestamp в ключе, проверяем последние)
+                                for ($i = 0; $i < 10; $i++) {
+                                    $launcherKey = 'ws_launcher_update_' . (time() - $i);
+                                    $launcherData = Yii::$app->cache->get($launcherKey);
+                                    if ($launcherData && (time() - $launcherData['timestamp']) < 5) {
+                                        $this->processQueuedMessage($client, $launcherData);
+                                        break; // Отправили, выходим
+                                    }
+                                }
+                            }
+                        } catch (\Throwable $e) {
+                            $this->log("Error processing support event: " . $e->getMessage());
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    $this->log("Error processing support events: " . $e->getMessage());
                 }
             });
         });
@@ -623,11 +728,177 @@ class ChatServer extends WebSocketServer
     public static function broadcastOnlineUpdate($serversData, $total)
     {
         try {
-            // Используем файловый сокет для межпроцессного взаимодействия
             $cacheKey = 'ws_online_data';
             Yii::$app->cache->set($cacheKey, [
                 'servers' => $serversData,
                 'total' => $total,
+                'timestamp' => time(),
+            ], 10);
+            
+            return true;
+        } catch (\Exception $ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Отправка supportStatus без создания WebSocket клиента
+     */
+    public static function broadcastSupportStatus($ticketNumber)
+    {
+        try {
+            $cacheKey = 'ws_support_status_' . $ticketNumber;
+            Yii::$app->cache->set($cacheKey, [
+                'action' => 'supportStatus',
+                'code' => 200,
+                'id' => $ticketNumber,
+                'timestamp' => time(),
+            ], 10);
+            
+            return true;
+        } catch (\Exception $ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Отправка ticketUpdate без создания WebSocket клиента
+     */
+    public static function broadcastTicketUpdate($userId)
+    {
+        try {
+            $cacheKey = 'ws_ticket_update_' . $userId;
+            Yii::$app->cache->set($cacheKey, [
+                'action' => 'ticketUpdate',
+                'code' => 200,
+                'user_id' => $userId,
+                'timestamp' => time(),
+            ], 10);
+            
+            return true;
+        } catch (\Exception $ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Отправка chatUpdate без создания WebSocket клиента
+     */
+    public static function broadcastChatUpdate($ticketNumber, $userId, $messageId)
+    {
+        try {
+            $cacheKey = 'ws_chat_update_' . $ticketNumber . '_' . $messageId;
+            Yii::$app->cache->set($cacheKey, [
+                'action' => 'chatUpdate',
+                'code' => 200,
+                'id' => $ticketNumber,
+                'user_id' => $userId,
+                'messageId' => $messageId,
+                'timestamp' => time(),
+            ], 10);
+            
+            return true;
+        } catch (\Exception $ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Отправка balanceUpdate без создания WebSocket клиента
+     */
+    public static function broadcastBalanceUpdate($userId, $balanceStr, $balance)
+    {
+        try {
+            $cacheKey = 'ws_balance_update_' . $userId;
+            Yii::$app->cache->set($cacheKey, [
+                'action' => 'updatedBalance',
+                'code' => 200,
+                'user_id' => $userId,
+                'balanceStr' => $balanceStr,
+                'balance' => $balance,
+                'timestamp' => time(),
+            ], 10);
+            
+            return true;
+        } catch (\Exception $ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Отправка buyDrop без создания WebSocket клиента
+     */
+    public static function broadcastBuyDrop($dropId, $userId)
+    {
+        try {
+            $cacheKey = 'ws_buy_drop_' . $userId . '_' . $dropId;
+            Yii::$app->cache->set($cacheKey, [
+                'action' => 'buyDrop',
+                'code' => 200,
+                'id' => $dropId,
+                'user_id' => $userId,
+                'timestamp' => time(),
+            ], 10);
+            
+            // Добавляем dropId в список для пользователя
+            $dropIdsKey = 'ws_user_drops_' . $userId;
+            $dropIds = Yii::$app->cache->get($dropIdsKey) ?: [];
+            if (!in_array($dropId, $dropIds)) {
+                $dropIds[] = $dropId;
+                Yii::$app->cache->set($dropIdsKey, $dropIds, 60);
+            }
+            
+            return true;
+        } catch (\Exception $ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Отправка activatedDrop без создания WebSocket клиента
+     */
+    public static function broadcastActivatedDrop($dropId, $userId, $code = 200, $message = '')
+    {
+        try {
+            $cacheKey = 'ws_activated_drop_' . $userId . '_' . $dropId;
+            $data = [
+                'action' => 'activatedDrop',
+                'code' => $code,
+                'id' => $dropId,
+                'user_id' => $userId,
+                'timestamp' => time(),
+            ];
+            
+            if ($message) {
+                $data['message'] = $message;
+            }
+            
+            Yii::$app->cache->set($cacheKey, $data, 10);
+            
+            // Добавляем dropId в список для пользователя
+            $dropIdsKey = 'ws_user_drops_' . $userId;
+            $dropIds = Yii::$app->cache->get($dropIdsKey) ?: [];
+            if (!in_array($dropId, $dropIds)) {
+                $dropIds[] = $dropId;
+                Yii::$app->cache->set($dropIdsKey, $dropIds, 60);
+            }
+            
+            return true;
+        } catch (\Exception $ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Отправка launcherUpdate без создания WebSocket клиента
+     */
+    public static function broadcastLauncherUpdate()
+    {
+        try {
+            $cacheKey = 'ws_launcher_update_' . time();
+            Yii::$app->cache->set($cacheKey, [
+                'action' => 'launcherUpdate',
+                'code' => 200,
                 'timestamp' => time(),
             ], 10);
             
