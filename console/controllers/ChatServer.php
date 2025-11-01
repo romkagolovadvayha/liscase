@@ -186,7 +186,6 @@ class ChatServer extends WebSocketServer
                     // Закрываем по реальному idle-таймауту (не по счётчику) // CHANGED
                     $idle = $now - (isset($client->lastPong) ? $client->lastPong : 0);
                     if ($idle >= $this->idleCloseSeconds) {
-                        $this->log("closing idle client ({$idle}s without pong)"); // NEW
                         try { $client->close(1000, 'heartbeat timeout'); } catch (\Throwable $e) {}
                         continue;
                     }
@@ -402,8 +401,6 @@ class ChatServer extends WebSocketServer
                     return Support::findByNumber($request['chat']);
                 }, 30);
 
-                $this->log("Subscription: chat={$request['chat']}, ticket=" . ($ticket ? $ticket->id : 'null') . ", user={$client->user->id}");
-
                 // Если тикет существует - проверяем права доступа
                 if ($ticket) {
                     if ($client->user->canRoles([Role::ROLE_ADMIN]) || 
@@ -411,23 +408,17 @@ class ChatServer extends WebSocketServer
                         $ticket->user_id == $client->user->id
                     ) {
                         $client->chat = $request['chat'];
-                        $this->log("Subscription: SUCCESS - chat set to {$request['chat']} (existing ticket)");
                         
                         // Добавляем в индекс для быстрого поиска
                         $this->indexClientByChat($client);
-                    } else {
-                        $this->log("Subscription: FAILED - no access to existing ticket");
                     }
                 } else {
                     // Если тикета нет - разрешаем подписку (тикет создастся при первом сообщении)
                     $client->chat = $request['chat'];
-                    $this->log("Subscription: SUCCESS - chat set to {$request['chat']} (new ticket)");
                     
                     // Добавляем в индекс для быстрого поиска
                     $this->indexClientByChat($client);
                 }
-            } else {
-                $this->log("Subscription: FAILED - user or chat empty");
             }
             
             $client->send(json_encode($result));
