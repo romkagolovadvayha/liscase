@@ -23,18 +23,41 @@ class ActivatedDropJob extends BaseObject implements JobInterface
     {
         try {
             $userDrop = $this->userDrop;
-            if ($userDrop->save()) {
-                // Используем кеш вместо WebSocket клиента
-                \console\controllers\ChatServer::broadcastActivatedDrop($userDrop->id, $userDrop->user_id, 200);
-            } else {
-                // Используем кеш вместо WebSocket клиента
-                $errorMessage = Yii::t(
-                    'common',
-                    "Произошла ошибка при получении товара, попробуйте позже!",
-                    [],
-                    $userDrop->user->current_language
-                );
-                \console\controllers\ChatServer::broadcastActivatedDrop($userDrop->id, $userDrop->user_id, 500, $errorMessage);
+            
+            // Отправляем через существующее WebSocket подключение
+            $chatServer = \console\controllers\ChatServer::getInstance();
+            if ($chatServer) {
+                // Используем индексы для поиска клиентов пользователя
+                $userClients = $chatServer->getClientsByUserId($userDrop->user_id);
+                
+                if ($userDrop->save()) {
+                    $response = json_encode([
+                        'action' => 'activatedDrop',
+                        'code'   => 200,
+                        'id'     => $userDrop->id,
+                    ]);
+                } else {
+                    $errorMessage = Yii::t(
+                        'common',
+                        "Произошла ошибка при получении товара, попробуйте позже!",
+                        [],
+                        $userDrop->user->current_language
+                    );
+                    $response = json_encode([
+                        'action' => 'activatedDrop',
+                        'code'   => 500,
+                        'message' => $errorMessage,
+                        'id'     => $userDrop->id,
+                    ]);
+                }
+                
+                foreach ($userClients as $client) {
+                    try {
+                        $client->send($response);
+                    } catch (\Exception $ex) {
+                        // Клиент отключен, пропускаем
+                    }
+                }
             }
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('ApiController: ' . $ex->getMessage());

@@ -21,14 +21,25 @@ use Ratchet\WebSocket\Version\RFC6455\Frame;
 
 class ChatServer extends WebSocketServer
 {
+    /** @var ChatServer Singleton instance */
+    private static $instance = null;
+    
     /** @var int секунд без активности до закрытия */
     private $idleCloseSeconds = 45; // NEW
 
     /** @var array Индекс клиентов по user_id для быстрого поиска */
     private $clientsByUserId = [];
-
+    
     /** @var array Индекс клиентов по chat для быстрого поиска */
     private $clientsByChat = [];
+    
+    /**
+     * Получить singleton инстанс сервера
+     */
+    public static function getInstance()
+    {
+        return self::$instance;
+    }
 
     private function log($m) { // NEW
         echo date('Y-m-d H:i:s') . " [WS] {$m}" . PHP_EOL;
@@ -51,7 +62,7 @@ class ChatServer extends WebSocketServer
      * @param int $userId
      * @return array
      */
-    private function getClientsByUserId($userId)
+    public function getClientsByUserId($userId)
     {
         return $this->clientsByUserId[$userId] ?? [];
     }
@@ -101,6 +112,9 @@ class ChatServer extends WebSocketServer
     public function init()
     {
         parent::init();
+        
+        // Устанавливаем singleton instance
+        self::$instance = $this;
 
         $this->on(self::EVENT_CLIENT_CONNECTED, function(WSClientEvent $e) {
             $e->client->user = null;
@@ -258,40 +272,6 @@ class ChatServer extends WebSocketServer
                                 if ($ticketData && (time() - $ticketData['timestamp']) < 5) {
                                     $this->processQueuedMessage($client, $ticketData);
                                     Yii::$app->cache->delete($ticketKey);
-                                }
-                                
-                                // Balance updates для конкретного пользователя
-                                $balanceKey = 'ws_balance_update_' . $client->user->id;
-                                $balanceData = Yii::$app->cache->get($balanceKey);
-                                if ($balanceData && (time() - $balanceData['timestamp']) < 5) {
-                                    $this->processQueuedMessage($client, $balanceData);
-                                    Yii::$app->cache->delete($balanceKey);
-                                }
-                                
-                                // Buy/Activated drop updates
-                                $buyDropPattern = 'ws_buy_drop_' . $client->user->id . '_';
-                                $activatedDropPattern = 'ws_activated_drop_' . $client->user->id . '_';
-                                
-                                // Примерный поиск (Redis не поддерживает wildcard в Yii2 кеше напрямую)
-                                // Поэтому храним список ID дропов в отдельном ключе
-                                $dropIdsKey = 'ws_user_drops_' . $client->user->id;
-                                $dropIds = Yii::$app->cache->get($dropIdsKey);
-                                if ($dropIds && is_array($dropIds)) {
-                                    foreach ($dropIds as $dropId) {
-                                        $buyKey = 'ws_buy_drop_' . $client->user->id . '_' . $dropId;
-                                        $buyData = Yii::$app->cache->get($buyKey);
-                                        if ($buyData && (time() - $buyData['timestamp']) < 5) {
-                                            $this->processQueuedMessage($client, $buyData);
-                                            Yii::$app->cache->delete($buyKey);
-                                        }
-                                        
-                                        $activatedKey = 'ws_activated_drop_' . $client->user->id . '_' . $dropId;
-                                        $activatedData = Yii::$app->cache->get($activatedKey);
-                                        if ($activatedData && (time() - $activatedData['timestamp']) < 5) {
-                                            $this->processQueuedMessage($client, $activatedData);
-                                            Yii::$app->cache->delete($activatedKey);
-                                        }
-                                    }
                                 }
                             }
                             
@@ -819,91 +799,7 @@ class ChatServer extends WebSocketServer
         }
     }
     
-    /**
-     * Отправка balanceUpdate без создания WebSocket клиента
-     */
-    public static function broadcastBalanceUpdate($userId, $balanceStr, $balance)
-    {
-        try {
-            $cacheKey = 'ws_balance_update_' . $userId;
-            Yii::$app->cache->set($cacheKey, [
-                'action' => 'updatedBalance',
-                'code' => 200,
-                'user_id' => $userId,
-                'balanceStr' => $balanceStr,
-                'balance' => $balance,
-                'timestamp' => time(),
-            ], 10);
-            
-            return true;
-        } catch (\Exception $ex) {
-            return false;
-        }
-    }
     
-    /**
-     * Отправка buyDrop без создания WebSocket клиента
-     */
-    public static function broadcastBuyDrop($dropId, $userId)
-    {
-        try {
-            $cacheKey = 'ws_buy_drop_' . $userId . '_' . $dropId;
-            Yii::$app->cache->set($cacheKey, [
-                'action' => 'buyDrop',
-                'code' => 200,
-                'id' => $dropId,
-                'user_id' => $userId,
-                'timestamp' => time(),
-            ], 10);
-            
-            // Добавляем dropId в список для пользователя
-            $dropIdsKey = 'ws_user_drops_' . $userId;
-            $dropIds = Yii::$app->cache->get($dropIdsKey) ?: [];
-            if (!in_array($dropId, $dropIds)) {
-                $dropIds[] = $dropId;
-                Yii::$app->cache->set($dropIdsKey, $dropIds, 60);
-            }
-            
-            return true;
-        } catch (\Exception $ex) {
-            return false;
-        }
-    }
-    
-    /**
-     * Отправка activatedDrop без создания WebSocket клиента
-     */
-    public static function broadcastActivatedDrop($dropId, $userId, $code = 200, $message = '')
-    {
-        try {
-            $cacheKey = 'ws_activated_drop_' . $userId . '_' . $dropId;
-            $data = [
-                'action' => 'activatedDrop',
-                'code' => $code,
-                'id' => $dropId,
-                'user_id' => $userId,
-                'timestamp' => time(),
-            ];
-            
-            if ($message) {
-                $data['message'] = $message;
-            }
-            
-            Yii::$app->cache->set($cacheKey, $data, 10);
-            
-            // Добавляем dropId в список для пользователя
-            $dropIdsKey = 'ws_user_drops_' . $userId;
-            $dropIds = Yii::$app->cache->get($dropIdsKey) ?: [];
-            if (!in_array($dropId, $dropIds)) {
-                $dropIds[] = $dropId;
-                Yii::$app->cache->set($dropIdsKey, $dropIds, 60);
-            }
-            
-            return true;
-        } catch (\Exception $ex) {
-            return false;
-        }
-    }
     
     /**
      * Отправка launcherUpdate без создания WebSocket клиента

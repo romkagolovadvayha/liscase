@@ -97,18 +97,7 @@ class OpenAiJob extends BaseObject implements JobInterface
                 'chatNumber' => $this->chatNumber,
             ]));
             try {
-                $client = new Client(Yii::$app->params['ws']);
-                $client->send(
-                    json_encode(
-                        [
-                            'action'    => 'chatUpdate',
-                            'code'      => 200,
-                            'id'        => $this->chatNumber,
-                            'user_id'   => $this->ownerUserId,
-                            'messageId' => $modelBot->id,
-                        ]
-                    )
-                );
+                \console\controllers\ChatServer::broadcastChatUpdate($this->chatNumber, $this->ownerUserId, $modelBot->id);
             } catch (\Exception $ex) {
                 Yii::$app->telegramChats->sendMessage('Update chat: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
             }

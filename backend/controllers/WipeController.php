@@ -71,15 +71,7 @@ class WipeController extends Controller
         $cacheKeyGetBlocked = "DropBlocked_getBlocked_" . $id;
         Yii::$app->cache->delete($cacheKeyGetBlocked);
 
-        $client = new Client(Yii::$app->params['ws']);
-        $client->send(
-            json_encode(
-                [
-                    'action'    => 'launcherUpdate',
-                    'code'      => 200,
-                ]
-            )
-        );
+        \console\controllers\ChatServer::broadcastLauncherUpdate();
 
         Yii::$app->session->addFlash('success', 'Предметы успешно заблокированы!');
         return $this->redirect('index');

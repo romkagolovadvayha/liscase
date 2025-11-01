@@ -216,17 +216,7 @@ class SupportController extends WebController
         $player->save();
 
         try {
-            $client = new Client(Yii::$app->params['ws']);
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'supportStatus',
-                        'code'   => 200,
-                        'id'     => $ticket->getNumber(),
-                    ]
-                )
-            );
-            $client->close();
+            \console\controllers\ChatServer::broadcastSupportStatus($ticket->getNumber());
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('actionBlocked: ' . $ex->getMessage());
         }
@@ -267,17 +257,7 @@ class SupportController extends WebController
         $player->save();
 
         try {
-            $client = new Client(Yii::$app->params['ws']);
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'supportStatus',
-                        'code'   => 200,
-                        'id'     => $ticket->getNumber(),
-                    ]
-                )
-            );
-            $client->close();
+            \console\controllers\ChatServer::broadcastSupportStatus($ticket->getNumber());
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('actionBlocked: ' . $ex->getMessage());
         }
@@ -321,17 +301,7 @@ class SupportController extends WebController
         }
 
         try {
-            $client = new Client(Yii::$app->params['ws']);
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'supportStatus',
-                        'code'   => 200,
-                        'id'     => $ticket->getNumber(),
-                    ]
-                )
-            );
-            $client->close();
+            \console\controllers\ChatServer::broadcastSupportStatus($ticket->getNumber());
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('actionBlocked: ' . $ex->getMessage());
         }
@@ -436,19 +406,7 @@ class SupportController extends WebController
         $file->created_at = date('Y-m-d H:i:s');
         $file->save();
         try {
-            $client = new Client(Yii::$app->params['ws']);
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'chatUpdate',
-                        'code'   => 200,
-                        'id'     => $chat->getNumber(),
-                        'user_id'     => $chat->user_id,
-                        'messageId'     => $message->id,
-                    ]
-                )
-            );
-            $client->close();
+            \console\controllers\ChatServer::broadcastChatUpdate($chat->getNumber(), $chat->user_id, $message->id);
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('actionUploadFile: ' . $ex->getMessage());
         }
@@ -626,26 +584,8 @@ class SupportController extends WebController
         SupportRead::readedAll($model->id);
 
         try {
-            $client = new Client(Yii::$app->params['ws']);
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'supportStatus',
-                        'code'   => 200,
-                        'id'     => $model->getNumber(),
-                    ]
-                )
-            );
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'ticketUpdate',
-                        'code'   => 200,
-                        'user_id'     => $model->user_id,
-                    ]
-                )
-            );
-            $client->close();
+            \console\controllers\ChatServer::broadcastSupportStatus($model->getNumber());
+            \console\controllers\ChatServer::broadcastTicketUpdate($model->user_id);
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('actionTicketClose: ' . $ex->getMessage());
         }
@@ -675,26 +615,8 @@ class SupportController extends WebController
         $model->save(false);
 
         try {
-            $client = new Client(Yii::$app->params['ws']);
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'supportStatus',
-                        'code'   => 200,
-                        'id'     => $model->getNumber(),
-                    ]
-                )
-            );
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'ticketUpdate',
-                        'code'   => 200,
-                        'user_id'     => $model->user_id,
-                    ]
-                )
-            );
-            $client->close();
+            \console\controllers\ChatServer::broadcastSupportStatus($model->getNumber());
+            \console\controllers\ChatServer::broadcastTicketUpdate($model->user_id);
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('actionTicketOpen: ' . $ex->getMessage());
         }
