@@ -51,7 +51,6 @@ class ChatServer extends WebSocketServer
     private function processQueuedMessage($client, $data)
     {
         try {
-            $this->log("processQueuedMessage: " . json_encode($data));
             $client->send(json_encode($data));
         } catch (\Throwable $e) {
             $this->log("Error sending queued message: " . $e->getMessage());
@@ -258,8 +257,15 @@ class ChatServer extends WebSocketServer
                                 $statusKey = 'ws_support_status_' . $client->chat;
                                 $statusData = Yii::$app->cache->get($statusKey);
                                 if ($statusData && (time() - $statusData['timestamp']) < 5) {
-                                    $this->processQueuedMessage($client, $statusData);
-                                    Yii::$app->cache->delete($statusKey);
+                                    if (!isset($statusData['sent'])) {
+                                        // Отправляем всем клиентам в этом чате
+                                        $chatClients = $this->getClientsByChat($client->chat);
+                                        foreach ($chatClients as $chatClient) {
+                                            $this->processQueuedMessage($chatClient, $statusData);
+                                        }
+                                        $statusData['sent'] = true;
+                                        Yii::$app->cache->set($statusKey, $statusData, 5);
+                                    }
                                 }
                                 
                                 // Chat updates для конкретного чата
@@ -272,16 +278,32 @@ class ChatServer extends WebSocketServer
                                 $ticketKey = 'ws_ticket_update_' . $client->user->id;
                                 $ticketData = Yii::$app->cache->get($ticketKey);
                                 if ($ticketData && (time() - $ticketData['timestamp']) < 5) {
-                                    $this->processQueuedMessage($client, $ticketData);
-                                    Yii::$app->cache->delete($ticketKey);
+                                    if (!isset($ticketData['sent'])) {
+                                        // Отправляем всем клиентам пользователя
+                                        $userClients = $this->getClientsByUserId($client->user->id);
+                                        foreach ($userClients as $userClient) {
+                                            $this->processQueuedMessage($userClient, $ticketData);
+                                        }
+                                        $ticketData['sent'] = true;
+                                        Yii::$app->cache->set($ticketKey, $ticketData, 5);
+                                    }
                                 }
                                 
                                 // Balance updates для конкретного пользователя
                                 $balanceKey = 'ws_balance_update_' . $client->user->id;
                                 $balanceData = Yii::$app->cache->get($balanceKey);
                                 if ($balanceData && (time() - $balanceData['timestamp']) < 30) {
-                                    $this->processQueuedMessage($client, $balanceData);
-                                    Yii::$app->cache->delete($balanceKey);
+                                    // Проверяем не отправлено ли уже
+                                    if (!isset($balanceData['sent'])) {
+                                        // Отправляем всем клиентам пользователя
+                                        $userClients = $this->getClientsByUserId($client->user->id);
+                                        foreach ($userClients as $userClient) {
+                                            $this->processQueuedMessage($userClient, $balanceData);
+                                        }
+                                        // Помечаем как отправленное
+                                        $balanceData['sent'] = true;
+                                        Yii::$app->cache->set($balanceKey, $balanceData, 5);
+                                    }
                                 }
                                 
                                 // Buy/Activated drop updates - используем список дропов
