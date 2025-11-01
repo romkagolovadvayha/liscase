@@ -70,10 +70,13 @@ class ChatServer extends WebSocketServer
             // Проверяем ключи напрямую через Redis
             if (isset($redis->redis)) {
                 $iterator = null;
-                while (false !== ($matchedKeys = $redis->redis->scan($iterator, $prefix . '*', 100))) {
+                $fullPrefix = Yii::$app->cache->keyPrefix . $prefix;
+                
+                while (false !== ($matchedKeys = $redis->redis->scan($iterator, $fullPrefix . '*', 100))) {
                     foreach ($matchedKeys as $key) {
                         // Убираем префикс Yii cache если есть
-                        $keys[] = str_replace(Yii::$app->cache->keyPrefix, '', $key);
+                        $cleanKey = str_replace(Yii::$app->cache->keyPrefix, '', $key);
+                        $keys[] = $cleanKey;
                     }
                     if ($iterator === 0) {
                         break;
@@ -81,11 +84,18 @@ class ChatServer extends WebSocketServer
                 }
             }
             
+            if (count($keys) > 0 && strpos($prefix, 'ws_buy_drop') !== false) {
+                $this->log("Found " . count($keys) . " keys for prefix {$prefix}, client user: " . ($client->user ? $client->user->id : 'null'));
+            }
+            
             foreach ($keys as $key) {
                 $data = Yii::$app->cache->get($key);
                 if ($data && isset($data['timestamp']) && (time() - $data['timestamp']) < 30) {
+                    $this->log("Sending cached message: key={$key}, action=" . ($data['action'] ?? 'unknown'));
                     $this->processQueuedMessage($client, $data);
                     Yii::$app->cache->delete($key);
+                } else {
+                    $this->log("Skipping key {$key}: data=" . ($data ? 'exists' : 'null') . ", age=" . (isset($data['timestamp']) ? (time() - $data['timestamp']) : 'unknown'));
                 }
             }
         } catch (\Throwable $e) {
