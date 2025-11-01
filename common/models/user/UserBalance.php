@@ -192,9 +192,7 @@ class UserBalance extends \common\components\base\ActiveRecord
                 // Сохраняем в кеш для отправки через WebSocket таймер
                 $cacheKey = 'ws_balance_update_' . $this->user_id;
                 Yii::$app->cache->set($cacheKey, [
-                    'action' => 'updatedBalance',
-                    'code' => 200,
-                    'user_id' => $this->user_id,
+                    'type' => 'update.balance',
                     'balanceStr' => $this->getBalanceFormat(),
                     'balance' => $this->balanceCeil,
                     'timestamp' => time(),

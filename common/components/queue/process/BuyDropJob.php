@@ -28,18 +28,17 @@ class BuyDropJob extends BaseObject implements JobInterface
         try {
             $userDrop = $this->userDrop;
             
-            // Сохраняем в кеш для отправки через WebSocket таймер
-            // Используем простой ключ с user_id и drop_id
+            // Сохраняем событие в кеш для обработки в ChatServer
+            // ChatServer имеет доступ к view для рендеринга
             $cacheKey = 'ws_buy_drop_' . $userDrop->user_id . '_' . $userDrop->id;
             $data = [
-                'action' => 'buyDrop',
+                'action' => 'buyDrop', // ChatServer обработает через commandBuyDrop
                 'code' => 200,
                 'id' => $userDrop->id,
-                'user_id' => $userDrop->user_id,
                 'timestamp' => time(),
             ];
             
-            $result = Yii::$app->cache->set($cacheKey, $data, 30);
+            Yii::$app->cache->set($cacheKey, $data, 30);
             
             // Сохраняем список активных дропов для пользователя
             $listKey = 'ws_drops_list_' . $userDrop->user_id;

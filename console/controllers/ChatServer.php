@@ -319,13 +319,11 @@ class ChatServer extends WebSocketServer
                                         if ($buyData && isset($buyData['timestamp']) && (time() - $buyData['timestamp']) < 30) {
                                             // Проверяем не отправлено ли уже
                                             if (!isset($buyData['sent'])) {
-                                                // Отправляем всем клиентам пользователя
-                                                foreach ($userClients as $userClient) {
-                                                    $this->processQueuedMessage($userClient, $buyData);
-                                                }
+                                                // Вызываем commandBuyDrop для рендеринга и отправки
+                                                $this->commandBuyDrop($client, json_encode($buyData));
                                                 // Помечаем как отправленное
                                                 $buyData['sent'] = true;
-                                                Yii::$app->cache->set($buyKey, $buyData, 5); // Короткий TTL после отправки
+                                                Yii::$app->cache->set($buyKey, $buyData, 5);
                                             }
                                         }
                                         
@@ -341,7 +339,7 @@ class ChatServer extends WebSocketServer
                                                 }
                                                 // Помечаем как отправленное
                                                 $activatedData['sent'] = true;
-                                                Yii::$app->cache->set($activatedKey, $activatedData, 5); // Короткий TTL после отправки
+                                                Yii::$app->cache->set($activatedKey, $activatedData, 5);
                                             }
                                         }
                                     }

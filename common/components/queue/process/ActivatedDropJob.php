@@ -26,10 +26,10 @@ class ActivatedDropJob extends BaseObject implements JobInterface
             
             if ($userDrop->save()) {
                 $data = [
-                    'action' => 'activatedDrop',
-                    'code'   => 200,
-                    'id'     => $userDrop->id,
-                    'user_id' => $userDrop->user_id,
+                    'type'    => 'store.get.items',
+                    'code'    => 200,
+                    'message' => Yii::t('common', "Товар успешно получен!", [], $userDrop->user->current_language),
+                    'id'      => $userDrop->id,
                     'timestamp' => time(),
                 ];
             } else {
@@ -40,11 +40,10 @@ class ActivatedDropJob extends BaseObject implements JobInterface
                     $userDrop->user->current_language
                 );
                 $data = [
-                    'action' => 'activatedDrop',
-                    'code'   => 500,
+                    'type'    => 'store.get.items',
+                    'code'    => 500,
                     'message' => $errorMessage,
-                    'id'     => $userDrop->id,
-                    'user_id' => $userDrop->user_id,
+                    'id'      => $userDrop->id,
                     'timestamp' => time(),
                 ];
             }
