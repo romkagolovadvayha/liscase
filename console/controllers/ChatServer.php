@@ -285,24 +285,36 @@ class ChatServer extends WebSocketServer
                                 }
                                 
                                 // Buy/Activated drop updates - используем список дропов
-                                $listKey = 'ws_drops_list_' . $client->user->id;
-                                $dropsList = Yii::$app->cache->get($listKey);
-                                if ($dropsList && is_array($dropsList) && count($dropsList) > 0) {
-                                    foreach ($dropsList as $dropId) {
-                                        // Проверяем buy drop
-                                        $buyKey = 'ws_buy_drop_' . $client->user->id . '_' . $dropId;
-                                        $buyData = Yii::$app->cache->get($buyKey);
-                                        if ($buyData && isset($buyData['timestamp']) && (time() - $buyData['timestamp']) < 30) {
-                                            $this->processQueuedMessage($client, $buyData);
-                                            Yii::$app->cache->delete($buyKey);
-                                        }
-                                        
-                                        // Проверяем activated drop
-                                        $activatedKey = 'ws_activated_drop_' . $client->user->id . '_' . $dropId;
-                                        $activatedData = Yii::$app->cache->get($activatedKey);
-                                        if ($activatedData && isset($activatedData['timestamp']) && (time() - $activatedData['timestamp']) < 30) {
-                                            $this->processQueuedMessage($client, $activatedData);
-                                            Yii::$app->cache->delete($activatedKey);
+                                // Обрабатываем только для первого клиента пользователя, чтобы не дублировать проверки
+                                $userClients = $this->getClientsByUserId($client->user->id);
+                                if (!empty($userClients) && $userClients[0] === $client) {
+                                    $listKey = 'ws_drops_list_' . $client->user->id;
+                                    $dropsList = Yii::$app->cache->get($listKey);
+                                    if ($dropsList && is_array($dropsList) && count($dropsList) > 0) {
+                                        foreach ($dropsList as $dropId) {
+                                            // Проверяем buy drop
+                                            $buyKey = 'ws_buy_drop_' . $client->user->id . '_' . $dropId;
+                                            $buyData = Yii::$app->cache->get($buyKey);
+                                            if ($buyData && isset($buyData['timestamp']) && (time() - $buyData['timestamp']) < 30) {
+                                                // Отправляем всем клиентам пользователя
+                                                foreach ($userClients as $userClient) {
+                                                    $this->processQueuedMessage($userClient, $buyData);
+                                                }
+                                                // Удаляем только после отправки всем
+                                                Yii::$app->cache->delete($buyKey);
+                                            }
+                                            
+                                            // Проверяем activated drop
+                                            $activatedKey = 'ws_activated_drop_' . $client->user->id . '_' . $dropId;
+                                            $activatedData = Yii::$app->cache->get($activatedKey);
+                                            if ($activatedData && isset($activatedData['timestamp']) && (time() - $activatedData['timestamp']) < 30) {
+                                                // Отправляем всем клиентам пользователя
+                                                foreach ($userClients as $userClient) {
+                                                    $this->processQueuedMessage($userClient, $activatedData);
+                                                }
+                                                // Удаляем только после отправки всем
+                                                Yii::$app->cache->delete($activatedKey);
+                                            }
                                         }
                                     }
                                 }
