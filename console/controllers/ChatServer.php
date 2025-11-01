@@ -286,13 +286,12 @@ class ChatServer extends WebSocketServer
                                 // Buy/Activated drop updates - используем список дропов
                                 $listKey = 'ws_drops_list_' . $client->user->id;
                                 $dropsList = Yii::$app->cache->get($listKey);
-                                if ($dropsList && is_array($dropsList)) {
+                                if ($dropsList && is_array($dropsList) && count($dropsList) > 0) {
                                     foreach ($dropsList as $dropId) {
                                         // Проверяем buy drop
                                         $buyKey = 'ws_buy_drop_' . $client->user->id . '_' . $dropId;
                                         $buyData = Yii::$app->cache->get($buyKey);
                                         if ($buyData && isset($buyData['timestamp']) && (time() - $buyData['timestamp']) < 30) {
-                                            $this->log("Sending buy drop: key={$buyKey}, drop_id={$dropId}");
                                             $this->processQueuedMessage($client, $buyData);
                                             Yii::$app->cache->delete($buyKey);
                                         }
@@ -301,7 +300,6 @@ class ChatServer extends WebSocketServer
                                         $activatedKey = 'ws_activated_drop_' . $client->user->id . '_' . $dropId;
                                         $activatedData = Yii::$app->cache->get($activatedKey);
                                         if ($activatedData && isset($activatedData['timestamp']) && (time() - $activatedData['timestamp']) < 30) {
-                                            $this->log("Sending activated drop: key={$activatedKey}, drop_id={$dropId}");
                                             $this->processQueuedMessage($client, $activatedData);
                                             Yii::$app->cache->delete($activatedKey);
                                         }
@@ -310,7 +308,7 @@ class ChatServer extends WebSocketServer
                             }
                             
                             // Launcher updates
-                            if (!empty($client->launcher)) {
+//                            if (!empty($client->launcher)) {
                                 // Проверяем launcher updates (они с timestamp в ключе, проверяем последние)
                                 for ($i = 0; $i < 10; $i++) {
                                     $launcherKey = 'ws_launcher_update_' . (time() - $i);
@@ -320,7 +318,7 @@ class ChatServer extends WebSocketServer
                                         break; // Отправили, выходим
                                     }
                                 }
-                            }
+//                            }
                         } catch (\Throwable $e) {
                             $this->log("Error processing support event: " . $e->getMessage());
                         }

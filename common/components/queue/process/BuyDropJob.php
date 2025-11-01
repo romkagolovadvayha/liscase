@@ -49,8 +49,6 @@ class BuyDropJob extends BaseObject implements JobInterface
                 Yii::$app->cache->set($listKey, $dropsList, 60);
             }
             
-            // Логируем для отладки
-            Yii::$app->telegramChats->sendMessage("BuyDropJob: key={$cacheKey}, saved=" . ($result ? 'yes' : 'no') . ", user_id={$userDrop->user_id}, drop_id={$userDrop->id}");
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('BuyDropJob ERROR: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
