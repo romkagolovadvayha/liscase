@@ -189,26 +189,16 @@ class UserBalance extends \common\components\base\ActiveRecord
 
         try {
             if ($this->type === self::TYPE_PERSONAL && $oldBalance != $this->balance) {
-                // Отправляем через существующее WebSocket подключение
-                $chatServer = \console\controllers\ChatServer::getInstance();
-                if ($chatServer) {
-                    $userClients = $chatServer->getClientsByUserId($this->user_id);
-                    $response = json_encode([
-                        'action' => 'updatedBalance',
-                        'code' => 200,
-                        'user_id' => $this->user_id,
-                        'balanceStr' => $this->getBalanceFormat(),
-                        'balance' => $this->balanceCeil,
-                    ]);
-                    
-                    foreach ($userClients as $client) {
-                        try {
-                            $client->send($response);
-                        } catch (\Exception $ex) {
-                            // Клиент отключен, пропускаем
-                        }
-                    }
-                }
+                // Сохраняем в кеш для отправки через WebSocket таймер
+                $cacheKey = 'ws_balance_update_' . $this->user_id;
+                Yii::$app->cache->set($cacheKey, [
+                    'action' => 'updatedBalance',
+                    'code' => 200,
+                    'user_id' => $this->user_id,
+                    'balanceStr' => $this->getBalanceFormat(),
+                    'balance' => $this->balanceCeil,
+                    'timestamp' => time(),
+                ], 30);
             }
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('UserBalance recalculateBalance: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());

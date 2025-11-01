@@ -27,24 +27,16 @@ class BuyDropJob extends BaseObject implements JobInterface
     {
         try {
             $userDrop = $this->userDrop;
-            // Отправляем через существующее WebSocket подключение
-            // Находим ChatServer и вызываем метод напрямую
-            $chatServer = \console\controllers\ChatServer::getInstance();
-            if ($chatServer) {
-                // Используем индексы для поиска клиентов пользователя
-                $userClients = $chatServer->getClientsByUserId($userDrop->user_id);
-                foreach ($userClients as $client) {
-                    try {
-                        $client->send(json_encode([
-                            'action' => 'buyDrop',
-                            'code'   => 200,
-                            'id'     => $userDrop->id,
-                        ]));
-                    } catch (\Exception $ex) {
-                        // Клиент отключен, пропускаем
-                    }
-                }
-            }
+            
+            // Сохраняем в кеш для отправки через WebSocket таймер
+            $cacheKey = 'ws_buy_drop_' . $userDrop->user_id . '_' . time() . '_' . $userDrop->id;
+            Yii::$app->cache->set($cacheKey, [
+                'action' => 'buyDrop',
+                'code' => 200,
+                'id' => $userDrop->id,
+                'user_id' => $userDrop->user_id,
+                'timestamp' => time(),
+            ], 30);
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('BuyDropJob: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }

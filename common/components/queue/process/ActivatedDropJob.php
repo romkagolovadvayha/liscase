@@ -24,41 +24,34 @@ class ActivatedDropJob extends BaseObject implements JobInterface
         try {
             $userDrop = $this->userDrop;
             
-            // Отправляем через существующее WebSocket подключение
-            $chatServer = \console\controllers\ChatServer::getInstance();
-            if ($chatServer) {
-                // Используем индексы для поиска клиентов пользователя
-                $userClients = $chatServer->getClientsByUserId($userDrop->user_id);
-                
-                if ($userDrop->save()) {
-                    $response = json_encode([
-                        'action' => 'activatedDrop',
-                        'code'   => 200,
-                        'id'     => $userDrop->id,
-                    ]);
-                } else {
-                    $errorMessage = Yii::t(
-                        'common',
-                        "Произошла ошибка при получении товара, попробуйте позже!",
-                        [],
-                        $userDrop->user->current_language
-                    );
-                    $response = json_encode([
-                        'action' => 'activatedDrop',
-                        'code'   => 500,
-                        'message' => $errorMessage,
-                        'id'     => $userDrop->id,
-                    ]);
-                }
-                
-                foreach ($userClients as $client) {
-                    try {
-                        $client->send($response);
-                    } catch (\Exception $ex) {
-                        // Клиент отключен, пропускаем
-                    }
-                }
+            if ($userDrop->save()) {
+                $data = [
+                    'action' => 'activatedDrop',
+                    'code'   => 200,
+                    'id'     => $userDrop->id,
+                    'user_id' => $userDrop->user_id,
+                    'timestamp' => time(),
+                ];
+            } else {
+                $errorMessage = Yii::t(
+                    'common',
+                    "Произошла ошибка при получении товара, попробуйте позже!",
+                    [],
+                    $userDrop->user->current_language
+                );
+                $data = [
+                    'action' => 'activatedDrop',
+                    'code'   => 500,
+                    'message' => $errorMessage,
+                    'id'     => $userDrop->id,
+                    'user_id' => $userDrop->user_id,
+                    'timestamp' => time(),
+                ];
             }
+            
+            // Сохраняем в кеш для отправки через WebSocket таймер
+            $cacheKey = 'ws_activated_drop_' . $userDrop->user_id . '_' . time() . '_' . $userDrop->id;
+            Yii::$app->cache->set($cacheKey, $data, 30);
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('ApiController: ' . $ex->getMessage());
         }

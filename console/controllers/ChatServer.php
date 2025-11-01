@@ -56,6 +56,42 @@ class ChatServer extends WebSocketServer
             $this->log("Error sending queued message: " . $e->getMessage());
         }
     }
+    
+    /**
+     * Обработка кешированных сообщений по префиксу
+     */
+    private function processCachedMessages($client, $prefix)
+    {
+        try {
+            // Получаем все ключи Redis с этим префиксом
+            $keys = [];
+            $redis = Yii::$app->cache;
+            
+            // Проверяем ключи напрямую через Redis
+            if (isset($redis->redis)) {
+                $iterator = null;
+                while (false !== ($matchedKeys = $redis->redis->scan($iterator, $prefix . '*', 100))) {
+                    foreach ($matchedKeys as $key) {
+                        // Убираем префикс Yii cache если есть
+                        $keys[] = str_replace(Yii::$app->cache->keyPrefix, '', $key);
+                    }
+                    if ($iterator === 0) {
+                        break;
+                    }
+                }
+            }
+            
+            foreach ($keys as $key) {
+                $data = Yii::$app->cache->get($key);
+                if ($data && isset($data['timestamp']) && (time() - $data['timestamp']) < 30) {
+                    $this->processQueuedMessage($client, $data);
+                    Yii::$app->cache->delete($key);
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->log("Error processing cached messages for prefix {$prefix}: " . $e->getMessage());
+        }
+    }
 
     /**
      * Получить клиентов по user_id
@@ -273,6 +309,18 @@ class ChatServer extends WebSocketServer
                                     $this->processQueuedMessage($client, $ticketData);
                                     Yii::$app->cache->delete($ticketKey);
                                 }
+                                
+                                // Balance updates для конкретного пользователя
+                                $balanceKey = 'ws_balance_update_' . $client->user->id;
+                                $balanceData = Yii::$app->cache->get($balanceKey);
+                                if ($balanceData && (time() - $balanceData['timestamp']) < 30) {
+                                    $this->processQueuedMessage($client, $balanceData);
+                                    Yii::$app->cache->delete($balanceKey);
+                                }
+                                
+                                // Buy/Activated drop updates - ищем по префиксу
+                                $this->processCachedMessages($client, 'ws_buy_drop_' . $client->user->id . '_');
+                                $this->processCachedMessages($client, 'ws_activated_drop_' . $client->user->id . '_');
                             }
                             
                             // Launcher updates
