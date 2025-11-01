@@ -1071,8 +1071,7 @@ class ChatServer extends WebSocketServer
                 
                 // Добавляем в индекс для быстрого поиска
                 $this->indexClientByUserId($client);
-                
-                $this->log("User authenticated: {$user->steam_id}");
+
             } else {
                 $result['message'] = 'Invalid token';
                 $client->send(json_encode($result));
