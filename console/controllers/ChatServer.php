@@ -51,6 +51,7 @@ class ChatServer extends WebSocketServer
     private function processQueuedMessage($client, $data)
     {
         try {
+            $this->log("processQueuedMessage: " . json_encode($data));
             $client->send(json_encode($data));
         } catch (\Throwable $e) {
             $this->log("Error sending queued message: " . $e->getMessage());
@@ -308,7 +309,7 @@ class ChatServer extends WebSocketServer
                             }
                             
                             // Launcher updates
-//                            if (!empty($client->launcher)) {
+                            if (!empty($client->launcher)) {
                                 // Проверяем launcher updates (они с timestamp в ключе, проверяем последние)
                                 for ($i = 0; $i < 10; $i++) {
                                     $launcherKey = 'ws_launcher_update_' . (time() - $i);
@@ -318,7 +319,7 @@ class ChatServer extends WebSocketServer
                                         break; // Отправили, выходим
                                     }
                                 }
-//                            }
+                            }
                         } catch (\Throwable $e) {
                             $this->log("Error processing support event: " . $e->getMessage());
                         }
