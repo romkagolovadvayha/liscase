@@ -351,18 +351,34 @@ class ChatServer extends WebSocketServer
                     return Support::findByNumber($request['chat']);
                 }, 30);
 
-                if ($ticket && (
-                    Yii::$app->user->can(Role::ROLE_ADMIN) || 
-                    Yii::$app->user->can(Role::ROLE_MODERATOR) || 
-                    $ticket->user_id == $client->user->id
-                )) {
+                $this->log("Subscription: chat={$request['chat']}, ticket=" . ($ticket ? $ticket->id : 'null') . ", user={$client->user->id}");
+
+                // Если тикет существует - проверяем права доступа
+                if ($ticket) {
+                    if ($client->user->canRoles([Role::ROLE_ADMIN]) || 
+                        $client->user->canRoles([Role::ROLE_MODERATOR]) || 
+                        $ticket->user_id == $client->user->id
+                    ) {
+                        $client->chat = $request['chat'];
+                        $this->log("Subscription: SUCCESS - chat set to {$request['chat']} (existing ticket)");
+                        
+                        // Добавляем в индекс для быстрого поиска
+                        $this->indexClientByChat($client);
+                    } else {
+                        $this->log("Subscription: FAILED - no access to existing ticket");
+                    }
+                } else {
+                    // Если тикета нет - разрешаем подписку (тикет создастся при первом сообщении)
                     $client->chat = $request['chat'];
+                    $this->log("Subscription: SUCCESS - chat set to {$request['chat']} (new ticket)");
                     
                     // Добавляем в индекс для быстрого поиска
                     $this->indexClientByChat($client);
                 }
+            } else {
+                $this->log("Subscription: FAILED - user or chat empty");
             }
-
+            
             $client->send(json_encode($result));
         } catch (\Exception $ex) {
             $this->log("Subscription error: " . $ex->getMessage());
@@ -419,7 +435,7 @@ class ChatServer extends WebSocketServer
               }
               Yii::$app->cache->set($cacheKey, $count + 1, 30);
 
-              if (Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR) || $model->user_id == $client->user->id) {
+              if ($client->user->canRoles([Role::ROLE_ADMIN]) || $client->user->canRoles([Role::ROLE_MODERATOR]) || $model->user_id == $client->user->id) {
                   $isBlockedBuilding = $model->drop[0]->is_blocked_building ? 'true' : 'false';
                   $command = "store.take {$model->user->steam_id} {$model->id} {$isBlockedBuilding}";
                   $response = (Yii::$app->curl)
@@ -990,7 +1006,7 @@ class ChatServer extends WebSocketServer
             $result = ['message' => ''];
 
             if (empty($client->chat)) {
-                $client->send( json_encode($result) );
+                $client->send(json_encode($result));
                 return;
             }
 
