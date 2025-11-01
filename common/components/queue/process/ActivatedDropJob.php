@@ -50,8 +50,16 @@ class ActivatedDropJob extends BaseObject implements JobInterface
             }
             
             // Сохраняем в кеш для отправки через WebSocket таймер
-            $cacheKey = 'ws_activated_drop_' . $userDrop->user_id . '_' . time() . '_' . $userDrop->id;
+            $cacheKey = 'ws_activated_drop_' . $userDrop->user_id . '_' . $userDrop->id;
             Yii::$app->cache->set($cacheKey, $data, 30);
+            
+            // Сохраняем список активных дропов для пользователя
+            $listKey = 'ws_drops_list_' . $userDrop->user_id;
+            $dropsList = Yii::$app->cache->get($listKey) ?: [];
+            if (!in_array($userDrop->id, $dropsList)) {
+                $dropsList[] = $userDrop->id;
+                Yii::$app->cache->set($listKey, $dropsList, 60);
+            }
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('ApiController: ' . $ex->getMessage());
         }

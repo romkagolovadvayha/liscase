@@ -57,51 +57,6 @@ class ChatServer extends WebSocketServer
         }
     }
     
-    /**
-     * Обработка кешированных сообщений по префиксу
-     */
-    private function processCachedMessages($client, $prefix)
-    {
-        try {
-            // Получаем все ключи Redis с этим префиксом
-            $keys = [];
-            $redis = Yii::$app->cache;
-            
-            // Проверяем ключи напрямую через Redis
-            if (isset($redis->redis)) {
-                $iterator = null;
-                $fullPrefix = Yii::$app->cache->keyPrefix . $prefix;
-                
-                while (false !== ($matchedKeys = $redis->redis->scan($iterator, $fullPrefix . '*', 100))) {
-                    foreach ($matchedKeys as $key) {
-                        // Убираем префикс Yii cache если есть
-                        $cleanKey = str_replace(Yii::$app->cache->keyPrefix, '', $key);
-                        $keys[] = $cleanKey;
-                    }
-                    if ($iterator === 0) {
-                        break;
-                    }
-                }
-            }
-            
-            if (count($keys) > 0 && strpos($prefix, 'ws_buy_drop') !== false) {
-                $this->log("Found " . count($keys) . " keys for prefix {$prefix}, client user: " . ($client->user ? $client->user->id : 'null'));
-            }
-            
-            foreach ($keys as $key) {
-                $data = Yii::$app->cache->get($key);
-                if ($data && isset($data['timestamp']) && (time() - $data['timestamp']) < 30) {
-                    $this->log("Sending cached message: key={$key}, action=" . ($data['action'] ?? 'unknown'));
-                    $this->processQueuedMessage($client, $data);
-                    Yii::$app->cache->delete($key);
-                } else {
-                    $this->log("Skipping key {$key}: data=" . ($data ? 'exists' : 'null') . ", age=" . (isset($data['timestamp']) ? (time() - $data['timestamp']) : 'unknown'));
-                }
-            }
-        } catch (\Throwable $e) {
-            $this->log("Error processing cached messages for prefix {$prefix}: " . $e->getMessage());
-        }
-    }
 
     /**
      * Получить клиентов по user_id
@@ -328,9 +283,30 @@ class ChatServer extends WebSocketServer
                                     Yii::$app->cache->delete($balanceKey);
                                 }
                                 
-                                // Buy/Activated drop updates - ищем по префиксу
-                                $this->processCachedMessages($client, 'ws_buy_drop_' . $client->user->id . '_');
-                                $this->processCachedMessages($client, 'ws_activated_drop_' . $client->user->id . '_');
+                                // Buy/Activated drop updates - используем список дропов
+                                $listKey = 'ws_drops_list_' . $client->user->id;
+                                $dropsList = Yii::$app->cache->get($listKey);
+                                if ($dropsList && is_array($dropsList)) {
+                                    foreach ($dropsList as $dropId) {
+                                        // Проверяем buy drop
+                                        $buyKey = 'ws_buy_drop_' . $client->user->id . '_' . $dropId;
+                                        $buyData = Yii::$app->cache->get($buyKey);
+                                        if ($buyData && isset($buyData['timestamp']) && (time() - $buyData['timestamp']) < 30) {
+                                            $this->log("Sending buy drop: key={$buyKey}, drop_id={$dropId}");
+                                            $this->processQueuedMessage($client, $buyData);
+                                            Yii::$app->cache->delete($buyKey);
+                                        }
+                                        
+                                        // Проверяем activated drop
+                                        $activatedKey = 'ws_activated_drop_' . $client->user->id . '_' . $dropId;
+                                        $activatedData = Yii::$app->cache->get($activatedKey);
+                                        if ($activatedData && isset($activatedData['timestamp']) && (time() - $activatedData['timestamp']) < 30) {
+                                            $this->log("Sending activated drop: key={$activatedKey}, drop_id={$dropId}");
+                                            $this->processQueuedMessage($client, $activatedData);
+                                            Yii::$app->cache->delete($activatedKey);
+                                        }
+                                    }
+                                }
                             }
                             
                             // Launcher updates

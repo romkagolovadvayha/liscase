@@ -29,7 +29,8 @@ class BuyDropJob extends BaseObject implements JobInterface
             $userDrop = $this->userDrop;
             
             // Сохраняем в кеш для отправки через WebSocket таймер
-            $cacheKey = 'ws_buy_drop_' . $userDrop->user_id . '_' . time() . '_' . $userDrop->id;
+            // Используем простой ключ с user_id и drop_id
+            $cacheKey = 'ws_buy_drop_' . $userDrop->user_id . '_' . $userDrop->id;
             $data = [
                 'action' => 'buyDrop',
                 'code' => 200,
@@ -39,6 +40,14 @@ class BuyDropJob extends BaseObject implements JobInterface
             ];
             
             $result = Yii::$app->cache->set($cacheKey, $data, 30);
+            
+            // Сохраняем список активных дропов для пользователя
+            $listKey = 'ws_drops_list_' . $userDrop->user_id;
+            $dropsList = Yii::$app->cache->get($listKey) ?: [];
+            if (!in_array($userDrop->id, $dropsList)) {
+                $dropsList[] = $userDrop->id;
+                Yii::$app->cache->set($listKey, $dropsList, 60);
+            }
             
             // Логируем для отладки
             Yii::$app->telegramChats->sendMessage("BuyDropJob: key={$cacheKey}, saved=" . ($result ? 'yes' : 'no') . ", user_id={$userDrop->user_id}, drop_id={$userDrop->id}");
