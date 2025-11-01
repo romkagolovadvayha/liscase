@@ -285,35 +285,41 @@ class ChatServer extends WebSocketServer
                                 }
                                 
                                 // Buy/Activated drop updates - используем список дропов
-                                // Обрабатываем только для первого клиента пользователя, чтобы не дублировать проверки
-                                $userClients = $this->getClientsByUserId($client->user->id);
-                                if (!empty($userClients) && $userClients[0] === $client) {
-                                    $listKey = 'ws_drops_list_' . $client->user->id;
-                                    $dropsList = Yii::$app->cache->get($listKey);
-                                    if ($dropsList && is_array($dropsList) && count($dropsList) > 0) {
-                                        foreach ($dropsList as $dropId) {
-                                            // Проверяем buy drop
-                                            $buyKey = 'ws_buy_drop_' . $client->user->id . '_' . $dropId;
-                                            $buyData = Yii::$app->cache->get($buyKey);
-                                            if ($buyData && isset($buyData['timestamp']) && (time() - $buyData['timestamp']) < 30) {
+                                $listKey = 'ws_drops_list_' . $client->user->id;
+                                $dropsList = Yii::$app->cache->get($listKey);
+                                if ($dropsList && is_array($dropsList) && count($dropsList) > 0) {
+                                    $userClients = $this->getClientsByUserId($client->user->id);
+                                    
+                                    foreach ($dropsList as $dropId) {
+                                        // Проверяем buy drop
+                                        $buyKey = 'ws_buy_drop_' . $client->user->id . '_' . $dropId;
+                                        $buyData = Yii::$app->cache->get($buyKey);
+                                        if ($buyData && isset($buyData['timestamp']) && (time() - $buyData['timestamp']) < 30) {
+                                            // Проверяем не отправлено ли уже
+                                            if (!isset($buyData['sent'])) {
                                                 // Отправляем всем клиентам пользователя
                                                 foreach ($userClients as $userClient) {
                                                     $this->processQueuedMessage($userClient, $buyData);
                                                 }
-                                                // Удаляем только после отправки всем
-                                                Yii::$app->cache->delete($buyKey);
+                                                // Помечаем как отправленное
+                                                $buyData['sent'] = true;
+                                                Yii::$app->cache->set($buyKey, $buyData, 5); // Короткий TTL после отправки
                                             }
-                                            
-                                            // Проверяем activated drop
-                                            $activatedKey = 'ws_activated_drop_' . $client->user->id . '_' . $dropId;
-                                            $activatedData = Yii::$app->cache->get($activatedKey);
-                                            if ($activatedData && isset($activatedData['timestamp']) && (time() - $activatedData['timestamp']) < 30) {
+                                        }
+                                        
+                                        // Проверяем activated drop
+                                        $activatedKey = 'ws_activated_drop_' . $client->user->id . '_' . $dropId;
+                                        $activatedData = Yii::$app->cache->get($activatedKey);
+                                        if ($activatedData && isset($activatedData['timestamp']) && (time() - $activatedData['timestamp']) < 30) {
+                                            // Проверяем не отправлено ли уже
+                                            if (!isset($activatedData['sent'])) {
                                                 // Отправляем всем клиентам пользователя
                                                 foreach ($userClients as $userClient) {
                                                     $this->processQueuedMessage($userClient, $activatedData);
                                                 }
-                                                // Удаляем только после отправки всем
-                                                Yii::$app->cache->delete($activatedKey);
+                                                // Помечаем как отправленное
+                                                $activatedData['sent'] = true;
+                                                Yii::$app->cache->set($activatedKey, $activatedData, 5); // Короткий TTL после отправки
                                             }
                                         }
                                     }
