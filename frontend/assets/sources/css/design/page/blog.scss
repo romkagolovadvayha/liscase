@@ -1420,26 +1420,230 @@
     font-size: .9em;
   }
 
-  // таблицы (зебра + скролл на мобилках)
+  // таблицы (современный дизайн с адаптивностью)
   table {
-    max-width: 100%;
-    width: auto;
-    border-collapse: collapse;
-    border: 1px solid var(--tc-border);
-    border-radius: var(--tc-radius);
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 24px 0;
+    background: var(--background-secondary);
+    border-radius: var(--card-radius);
     overflow: hidden;
-    display: inline-block;
-    overflow-x: auto;
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border-color-default);
+    
+    @media (max-width: 1024px) {
+      display: block;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: var(--button-radius);
+      
+      // Скролл индикатор на мобильных
+      &::-webkit-scrollbar {
+        height: 8px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: var(--background-teritiary);
+        border-radius: 4px;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: var(--primary-colors-main);
+        border-radius: 4px;
+        
+        &:hover {
+          background: var(--primary-colors-secondary);
+        }
+      }
+    }
   }
-  thead { background: var(--tc-bg-soft); }
+  
+  thead {
+    background: var(--background-teritiary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    
+    @media (max-width: 1024px) {
+      position: relative;
+    }
+    
+    th {
+      font-weight: 700;
+      color: var(--text-main);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      padding: 16px 20px;
+      vertical-align: middle;
+      border-bottom: 2px solid var(--border-color-default);
+      white-space: nowrap;
+      min-width: 100px;
+      
+      @media (max-width: 768px) {
+        padding: 12px 16px;
+        font-size: 11px;
+        min-width: 80px;
+      }
+      
+      @media (max-width: 480px) {
+        padding: 10px 12px;
+        font-size: 10px;
+        letter-spacing: 0.3px;
+        min-width: 70px;
+      }
+      
+      &:first-child {
+        border-top-left-radius: var(--card-radius);
+        
+        @media (max-width: 1024px) {
+          border-radius: 0;
+        }
+      }
+      
+      &:last-child {
+        border-top-right-radius: var(--card-radius);
+        
+        @media (max-width: 1024px) {
+          border-radius: 0;
+        }
+      }
+    }
+  }
+  
+  tbody {
+    tr {
+      transition: background-color 0.2s ease;
+      border-bottom: 1px solid var(--border-color-default);
+      
+      &:hover {
+        background: var(--background-teritiary);
+      }
+      
+      &:last-child {
+        border-bottom: 0;
+        
+        td {
+          border-bottom: 0;
+          
+          &:first-child {
+            border-bottom-left-radius: var(--card-radius);
+            
+            @media (max-width: 1024px) {
+              border-radius: 0;
+            }
+          }
+          
+          &:last-child {
+            border-bottom-right-radius: var(--card-radius);
+            
+            @media (max-width: 1024px) {
+              border-radius: 0;
+            }
+          }
+        }
+      }
+      
+      &:nth-child(even) {
+        background: color-mix(in srgb, var(--background-teritiary) 30%, transparent);
+      }
+    }
+  }
+  
   th, td {
-    padding: .6em .8em;
+    padding: 16px 20px;
     text-align: left;
-    vertical-align: top;
-    border-bottom: 1px solid var(--tc-border);
+    vertical-align: middle;
+    color: var(--text-main);
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: nowrap;
+    
+    @media (max-width: 768px) {
+      padding: 12px 16px;
+      font-size: 13px;
+      min-width: 80px;
+    }
+    
+    @media (max-width: 480px) {
+      padding: 10px 12px;
+      font-size: 12px;
+      min-width: 70px;
+    }
   }
-  tbody tr:nth-child(odd) { background: color-mix(in srgb, #fff 2%, transparent); }
-  tbody tr:last-child td { border-bottom: 0; }
+  
+  // Класс для ячеек с переносом текста
+  td.wrap,
+  th.wrap {
+    white-space: normal;
+    word-wrap: break-word;
+    max-width: 300px;
+    
+    @media (max-width: 768px) {
+      max-width: 200px;
+    }
+    
+    @media (max-width: 480px) {
+      max-width: 150px;
+    }
+  }
+  
+  // Альтернативный вариант карточек для таблиц с data-label на мобильных
+  table.table-cards {
+    @media (max-width: 768px) {
+      thead {
+        display: none;
+      }
+      
+      tbody tr {
+        display: block;
+        margin-bottom: 16px;
+        border: 1px solid var(--border-color-default);
+        border-radius: var(--button-radius);
+        background: var(--background-secondary);
+        padding: 16px;
+        
+        &:hover {
+          background: var(--background-secondary);
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-card);
+        }
+        
+        &:nth-child(even) {
+          background: var(--background-secondary);
+        }
+      }
+      
+      td {
+        display: block;
+        text-align: left;
+        border-bottom: 1px solid var(--border-color-default);
+        padding: 12px 0 12px 40%;
+        position: relative;
+        white-space: normal;
+        min-width: auto;
+        
+        &:before {
+          content: attr(data-label);
+          position: absolute;
+          left: 0;
+          width: 35%;
+          padding-right: 10px;
+          white-space: nowrap;
+          text-align: left;
+          font-weight: 700;
+          color: var(--text-secondary);
+          font-size: 12px;
+          top: 12px;
+        }
+        
+        &:last-child {
+          border-bottom: 0;
+        }
+      }
+    }
+  }
 
   // инлайн-«эмодзи» (как в твоём примере)
   .emoji, :where(span.emoji) { font-size: 1.1em; line-height: 1; vertical-align: -2px; }
