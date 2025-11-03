@@ -2,6 +2,7 @@
 
 /** @var yii\web\View $this */
 /** @var \frontend\forms\promocode\PromocodeForm $promocodeForm */
+/** @var \common\models\blog\Blog[] $latestPosts */
 
 use common\models\statistics\Statistics;
 use yii\bootstrap5\Html;
@@ -16,6 +17,11 @@ $this->title = Yii::t('database', Yii::$app->settings->get('site_title'));
 
 /** @var \common\models\box\Category[] $categories */
 $categories = \common\models\box\Category::getCategories(true);
+
+// Ensure latestPosts is defined
+if (!isset($latestPosts)) {
+    $latestPosts = [];
+}
 ?>
 <?php
 $locale = substr(Yii::$app->language, 0, 2);
@@ -120,6 +126,7 @@ $this->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
         'AWARDS' => $awards,
         'SETTINGS' => $SETTINGS,
     ]),
+    'latestPosts' => $latestPosts ?? [],
     'SETTINGS' => $SETTINGS,
     'LOGO' => Yii::$app->settings->get('design_logo'),
     'PROJECT_NAME' => Yii::$app->settings->get('site_project_name'),

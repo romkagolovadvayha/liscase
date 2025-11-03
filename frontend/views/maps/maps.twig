@@ -12,11 +12,44 @@
     </ul>
 </nav>
 
-<h1 class="main_title"><span>{{ t('common', 'Голосование за карту на сервере') }} {{ t('database', SERVER.name ) }}</span></h1>
-<p class="maps_snoska">
-    {{ t('common', 'Голосовать за карту могут только игроки, игравшие на сервере более 1 часа.') }}<br/>
-    {{ t('common', 'Следующий вайп на сервере') }}: <span>{{ SERVER.next_wipe|date('d.m.Y H:i') }}</span> {{ t('common', 'МСК') }}
-</p>
+<div class="maps-header">
+    <div class="maps-header-title">
+        <h1>{{ t('common', 'Голосование за карту на сервере') }} <span class="server-name">{{ t('database', SERVER.name) }}</span></h1>
+    </div>
+    
+    <div class="maps-info-cards">
+        <div class="maps-info-card">
+            <div class="info-card-icon">
+                <i class="fas fa-user-clock"></i>
+            </div>
+            <div class="info-card-content">
+                <div class="info-card-label">{{ t('common', 'Требование') }}</div>
+                <div class="info-card-value">{{ t('common', '1+ час игры') }}</div>
+            </div>
+        </div>
+        
+        <div class="maps-info-card">
+            <div class="info-card-icon wipe-icon">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="info-card-content">
+                <div class="info-card-label">{{ t('common', 'Следующий вайп') }}</div>
+                <div class="info-card-value">{{ SERVER.next_wipe|date('d.m.Y H:i') }} {{ t('common', 'МСК') }}</div>
+            </div>
+        </div>
+        
+        <div class="maps-info-card">
+            <div class="info-card-icon vote-icon">
+                <i class="fas fa-vote-yea"></i>
+            </div>
+            <div class="info-card-content">
+                <div class="info-card-label">{{ t('common', 'Как голосовать') }}</div>
+                <div class="info-card-value">{{ t('common', 'Нажмите ❤️ на карте') }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{# Debug: maxVotes = {{ maxVotes }} #}
 <div class="maps">
     <div class="maps_content">
         <div class="maps_content_list">
@@ -25,6 +58,7 @@
                     'dataProvider': dataProvider,
                     'layout': '{items}{pager}',
                     'itemView': 'item.twig',
+                    'viewParams': {'maxVotes': maxVotes},
                     'layout': '<div class="maps_content_list_items">{items}</div>{pager}',
                 })
             }}

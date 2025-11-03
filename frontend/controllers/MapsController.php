@@ -16,6 +16,9 @@ class MapsController extends Controller
 {
     public function actionIndex($serverTag = null)
     {
+        // Register maps asset bundle for likes tooltip functionality
+        \frontend\assets\MapsAsset::register($this->view);
+        
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->cache(30)
@@ -78,11 +81,21 @@ class MapsController extends Controller
 
         $searchModel = new MapsSearch();
         $dataProvider = $searchModel->search($this->request->queryParams, $server->min_map_size, $server->max_map_size, $server->id);
+        
+        // Calculate max votes for progress bars
+        $maxVotes = 0;
+        foreach ($dataProvider->models as $map) {
+            if ($map->votes > $maxVotes) {
+                $maxVotes = $map->votes;
+            }
+        }
+        
         return $this->render('maps.twig', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
             'SERVER' => $server,
             'SERVERS' => $servers,
+            'maxVotes' => $maxVotes,
         ]);
     }
 
@@ -129,5 +142,48 @@ class MapsController extends Controller
             'model' => $model,
             'liked' => !$exist,
         ]);
+    }
+
+    /**
+     * Get list of users who liked the map
+     * @param int $id Map ID
+     * @return array
+     */
+    public function actionGetLikes($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        $map = Map::findOne($id);
+        if (!$map) {
+            return ['users' => [], 'total' => 0];
+        }
+        
+        // Get total count
+        $totalCount = UserMap::find()
+            ->where(['map_id' => $id, 'vote' => 1])
+            ->count();
+        
+        // Get only 5 latest
+        $likes = UserMap::find()
+            ->where(['map_id' => $id, 'vote' => 1])
+            ->with(['user'])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->limit(5)
+            ->all();
+        
+        $users = [];
+        foreach ($likes as $like) {
+            if ($like->user) {
+                $users[] = [
+                    'username' => $like->user->username,
+                    'avatar' => $like->user->getAvatar(),
+                ];
+            }
+        }
+        
+        return [
+            'users' => $users,
+            'total' => (int)$totalCount,
+        ];
     }
 }

@@ -6,6 +6,68 @@
     {{ PRODUCTS|raw }}
     <button class="button-secondary" id="more_products">{{ t('common', 'Показать еще') }}</button>
 </section>
+
+{% if latestPosts is defined and latestPosts|length > 0 %}
+<section class="home-blog-section">
+    <div class="home-blog-header">
+        <div class="home-blog-title">
+            <i class="fas fa-newspaper"></i>
+            <h2>{{ t('common', 'Последние новости') }}</h2>
+        </div>
+        <a href="/posts" class="home-blog-all">
+            {{ t('common', 'Все новости') }}
+            <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+    
+    <div class="home-blog-grid">
+        {% for post in latestPosts %}
+            {% set postDate = date(post.created_at) %}
+            <article class="home-blog-card">
+                {% if post.blogImages[0] is defined %}
+                    <div class="home-blog-card_image">
+                        <a href="{{ post.getUrl() }}">
+                            <img src="{{ post.blogImages[0].getPublicUrl() }}" 
+                                 alt="{{ t('database', post.name) }}"
+                                 loading="lazy">
+                            <div class="home-blog-card_image_overlay">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </a>
+                    </div>
+                {% endif %}
+                
+                <div class="home-blog-card_content">
+                    <div class="home-blog-card_meta">
+                        <div class="home-blog-card_date">
+                            <i class="far fa-calendar-alt"></i>
+                            <time>{{ postDate|date('d.m.Y') }}</time>
+                        </div>
+                        {% if post.blogCategory %}
+                            <div class="home-blog-card_category">
+                                <i class="fas fa-tag"></i>
+                                <span>{{ t('database', post.blogCategory.name) }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <a href="{{ post.getUrl() }}" class="home-blog-card_title-link">
+                        <h3 class="home-blog-card_title">{{ t('database', post.name) }}</h3>
+                    </a>
+                    
+                    <p class="home-blog-card_excerpt">{{ t('database', post.description) }}</p>
+                    
+                    <a href="{{ post.getUrl() }}" class="home-blog-card_read-more">
+                        {{ t('common', 'Читать далее') }}
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
 <section class="seo-block mt-40">
     <div class="container">
         <h2>{{ t('common', 'Rust сервера Prostoj — честная игра, стабильный пинг, понятные вайпы') }}</h2>

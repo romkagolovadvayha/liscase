@@ -7,25 +7,26 @@ use yii\widgets\ListView;
 /** @var \yii\data\ActiveDataProvider $dataProvider */
 
 ?>
-<div class="main_header_data mb-24">
-    <div class="main_header_data_filter">
-        <div class="main_header_sorter">
+<div class="blog-header">
+    <div class="blog-header_controls">
+        <div class="blog-sort-buttons">
             <?= ListView::widget([
-                                     'dataProvider' => $dataProvider,
-                                     'layout'       => "{sorter}",
-                                     'itemOptions' => [
-                                         'tag' => false,
-                                     ],
-                                     'options' => [
-                                         'tag' => false,
-                                     ],
-                                     'sorter' => [
-                                         'attributes' => ['views', 'created_at']
-                                     ],
-                                 ]) ?>
+                'dataProvider' => $dataProvider,
+                'layout'       => "{sorter}",
+                'itemOptions' => ['tag' => false],
+                'options' => ['tag' => false],
+                'sorter' => [
+                    'attributes' => ['views', 'created_at']
+                ],
+            ]) ?>
         </div>
-    </div>
-    <div class="main_header_data_list">
-        <a href="/rss<?=!empty($categoryId) ? "?category=$categoryId" : ''?>" class="main_header_data_list_rss" target="_blank"><i class="fas fa-rss"></i> RSS</a>
+        
+        <a href="/rss<?= !empty($categoryId) ? "?category=$categoryId" : '' ?>" 
+           class="blog-rss-button" 
+           target="_blank"
+           title="<?= Yii::t('common', 'RSS лента') ?>">
+            <i class="fas fa-rss"></i>
+            <span>RSS</span>
+        </a>
     </div>
 </div>

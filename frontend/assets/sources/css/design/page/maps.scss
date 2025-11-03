@@ -1,3 +1,111 @@
+// Maps header section
+.maps-header {
+  &-title {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    
+    i {
+      font-size: 32px;
+      color: var(--primary-colors-main);
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 700;
+      
+      .server-name {
+        color: var(--primary-colors-main);
+        font-weight: 800;
+      }
+    }
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+// Info cards grid
+.maps-info-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.maps-info-card {
+  background: var(--background-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    border-color: var(--primary-colors-main);
+  }
+}
+
+.info-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary-colors-main), var(--primary-colors-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  
+  i {
+    font-size: 24px;
+    color: white;
+  }
+  
+  &.wipe-icon {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+  }
+  
+  &.vote-icon {
+    background: linear-gradient(135deg, #e91e63, #c2185b);
+  }
+}
+
+.info-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.info-card-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.info-card-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .maps {
   &_snoska {
     @extend
@@ -31,9 +139,24 @@
         border-radius: var(--card-radius);
         padding: 10px;
         position: relative;
+        transition: all 0.3s ease;
+        
         &:hover {
           @extend .bg-background-teritiary;
           box-shadow: var(--shadow-card);
+        }
+        
+        // Winner card styling
+        &.map-winner {
+          border: 2px solid var(--primary-colors-main);
+          background: linear-gradient(135deg, 
+            var(--background-secondary) 0%, 
+            rgba(var(--primary-colors-main-rgb, 255, 215, 0), 0.05) 100%);
+          box-shadow: 0 4px 12px rgba(var(--primary-colors-main-rgb, 255, 215, 0), 0.2);
+          
+          &:hover {
+            box-shadow: 0 6px 16px rgba(var(--primary-colors-main-rgb, 255, 215, 0), 0.3);
+          }
         }
         &_images {
           position: relative;
@@ -101,6 +224,7 @@
             outline: none;
             padding: 0;
             border-radius: var(--button-secondary-radius);
+            position: relative;
             .icon_active {
               display: none;
             }
@@ -151,6 +275,183 @@
           }
         }
       }
+    }
+  }
+}
+
+// Tooltip для отображения пользователей, поставивших лайк
+.likes-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 1000;
+  min-width: 200px;
+  max-width: 300px;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--border-primary);
+  }
+}
+
+.tooltip-loading {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.tooltip-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.tooltip-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 6px;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: var(--background-teritiary);
+  }
+  
+  img {
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  
+  span {
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.tooltip-more {
+  text-align: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-primary);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+// Winner badge
+.map-winner-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #000;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+  animation: pulse-winner 2s ease-in-out infinite;
+  
+  i {
+    font-size: 12px;
+  }
+}
+
+@keyframes pulse-winner {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.6);
+  }
+}
+
+// Vote progress bar
+.map-vote-progress {
+  position: relative;
+  margin-top: 8px;
+  height: 24px;
+  background: var(--background-teritiary);
+  border-radius: var(--button-secondary-radius);
+  overflow: hidden;
+  
+  &-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    min-width: 0; // Минимальная ширина для видимости даже при 0%
+    background: linear-gradient(90deg, 
+      var(--primary-colors-main) 0%, 
+      var(--primary-colors-light, var(--primary-colors-main)) 100%);
+    transition: width 0.5s ease;
+    border-radius: var(--button-secondary-radius);
+    
+    // Winner gets gold gradient
+    .map-winner & {
+      background: linear-gradient(90deg, #ffd700, #ffed4e);
+    }
+  }
+  
+  &-text {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    height: 100%;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-main);
+    z-index: 1;
+    text-shadow: 
+      0 1px 2px rgba(0, 0, 0, 0.3),
+      0 0 4px rgba(0, 0, 0, 0.2);
+    
+    // Белый текст на заполненной части для победителя
+    .map-winner & {
+      color: #000;
+      text-shadow: 
+        0 1px 2px rgba(255, 255, 255, 0.5),
+        0 0 4px rgba(255, 255, 255, 0.3);
+      font-weight: 700;
+    }
+    
+    .votes-count {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      
+      &:before {
+        content: '❤️';
+        font-size: 10px;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+      }
+    }
+    
+    .votes-percent {
+      font-weight: 700;
     }
   }
 }

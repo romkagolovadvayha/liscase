@@ -65,7 +65,18 @@ class SiteController extends WebController
         $this->view->params['page'] = 'home';
         $this->view->params['meta_description'] = Yii::t('database', Yii::$app->settings->get('site_description'));
         $this->view->params['meta_keywords']    = Yii::t('database', Yii::$app->settings->get('site_keywords'));
-        return $this->render('index');
+        
+        // Get latest blog posts for homepage
+        $latestPosts = Blog::find()
+            ->where(['status' => Blog::STATUS_ACTIVE])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->limit(3)
+            ->cache(300) // Cache for 5 minutes
+            ->all();
+        
+        return $this->render('index', [
+            'latestPosts' => $latestPosts,
+        ]);
     }
 
     private function _botOpenBox() {

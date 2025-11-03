@@ -102,6 +102,23 @@ if (!empty($imgUrls) || !empty($ogImg)) {
     $articleLd['image'] = $imgUrls ?: [$ogImg];
 }
 
+// Add comment count
+$commentCount = count($blog->comments);
+if ($commentCount > 0) {
+    $articleLd['commentCount'] = $commentCount;
+    $articleLd['interactionStatistic'] = [
+        '@type' => 'InteractionCounter',
+        'interactionType' => 'https://schema.org/CommentAction',
+        'userInteractionCount' => $commentCount
+    ];
+}
+
+// Add word count (approximate)
+$wordCount = str_word_count(strip_tags($blog->content));
+if ($wordCount > 0) {
+    $articleLd['wordCount'] = $wordCount;
+}
+
 // 6) JSON-LD: BreadcrumbList (по твоим хлебным крошкам)
 $crumbs = [
     ['name'=>Yii::t('common','Блог'), 'url'=>Yii::$app->params['homePage'].'/posts'],
@@ -128,137 +145,185 @@ $breadcrumbLd = [
 </script>
 
 <?= Alert::widget() ?>
-    <article id="<?=$blog->id?>" class="blog_item">
-        <div class="blog_item_container_wrap">
-        <div class="blog_item_snippet">
-            <h1 class="blog_item_title"><?=Yii::t('database', $blog->name)?></h1>
-            <div class="blog_item_categories">
-                <a href="<?=$blog->blogCategory->parentCategory->getUrl()?>"><?=Yii::t('database', $blog->blogCategory->parentCategory->name)?></a>, <a href="<?=$blog->blogCategory->getUrl()?>"><?=Yii::t('database', $blog->blogCategory->name)?></a>
+
+<article id="<?=$blog->id?>" class="blog-post" itemscope itemtype="https://schema.org/Article">
+    <!-- Post header -->
+    <div class="blog-post_header">
+        <div class="blog-post_meta">
+            <div class="blog-post_date">
+                <i class="far fa-calendar-alt"></i>
+                <time datetime="<?=$date->format('c')?>" itemprop="datePublished" content="<?=$date->format('c')?>">
+                    <?=$date->format('d.m.Y, H:i')?>
+                </time>
             </div>
-            <div class="blog_item_container">
-                <div class="blog_item_snippet_meta">
-                            <span class="blog_item_snippet_meta_author">
-                                <span class="blog_item_snippet_meta_author_user">
-                                    <span class="blog_item_snippet_meta_author_user_published">
-                                        <time datetime="<?=$date->format('c')?>" title="<?=$date->format('d.m.Y, H:i')?>"><?=$date->format('d.m.Y, H:i')?></time>
-                                    </span>
-                                </span>
-                            </span>
-                </div>
-            </div>
-            <div class="blog_item_body">
-                <?php if (strtotime($blog->created_at) < strtotime('2025-08-28 12:00')): ?>
-                    <?php if (!empty($blog->blogImages)): ?>
-                    <div class="blog_item_body_text_images mb-24">
-                        <?php foreach ($blog->blogImages as $image): ?>
-                            <?=$this->render('_file', [
-                                'url' => $image->getPublicUrl(),
-                                'name' => $image->link
-                            ]); ?>
-                        <?php endforeach; ?>
-                    </div>
-                    <?php endif; ?>
+            
+            <div class="blog-post_categories">
+                <?php if (!empty($blog->blogCategory->parentCategory)): ?>
+                    <a href="<?=$blog->blogCategory->parentCategory->getUrl()?>" class="blog-post_category">
+                        <i class="fas fa-folder"></i>
+                        <?=Yii::t('database', $blog->blogCategory->parentCategory->name)?>
+                    </a>
                 <?php endif; ?>
-                <div class="mb-24 tinymce-content"><?=Yii::t('database', $blog->content)?></div>
-                <?php if ($blog->created_at < '2025-03-30 00:00:00'): ?>
-                    <p class="p2">
-                        <?=Yii::t('common', 'Поставщик новостей')?>: <a href="https://discord.gg/rust-ru" rel="nofollow" class="p2" target="_blank">RustRu</a>
-                    </p>
-                <?php endif; ?>
+                
+                <a href="<?=$blog->blogCategory->getUrl()?>" class="blog-post_category blog-post_category--active">
+                    <i class="fas fa-tag"></i>
+                    <?=Yii::t('database', $blog->blogCategory->name)?>
+                </a>
             </div>
-            <div class="blog_item_data">
-                <div class="blog_item_data_item blog_item_data_views">
-                    <div class="blog_item_data_item_icon_wrapper" title="<?=Yii::t('common', 'Количество просмотров')?>">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="blog_item_data_item_icon">
-                            <path d="M15 12c0 1.654-1.346 3-3 3s-3-1.346-3-3 1.346-3 3-3 3 1.346 3 3zm9-.449s-4.252 8.449-11.985 8.449c-7.18 0-12.015-8.449-12.015-8.449s4.446-7.551 12.015-7.551c7.694 0 11.985 7.551 11.985 7.551zm-7 .449c0-2.757-2.243-5-5-5s-5 2.243-5 5 2.243 5 5 5 5-2.243 5-5z"/>
-                        </svg>
-                        <span><?=$blog->views?></span>
-                    </div>
-                </div>
-                <?php
-                $shareUrl   = $canonical;                               // уже вычисляется выше
-                $shareTitle = Yii::t('database', $blog->name);
-                $shareTxt   = $shareTitle . ' — ' . $shareUrl;
-                ?>
-                <div class="blog_item_data_item blog_item_data_share dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center"
-                            type="button" id="shareDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <!-- share icon -->
-                        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" class="me-1 blog_item_data_item_icon">
-                            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a3.27 3.27 0 000-1.39l7-4.11A3 3 0 0018 7.91 3.09 3.09 0 1021.09 5 3.09 3.09 0 0018 7.91c-.45 0-.88-.1-1.26-.28l-7 4.12a3.09 3.09 0 100 4.5l7-4.12c.38.18.81.28 1.26.28A3.09 3.09 0 1021.09 16 3.09 3.09 0 0018 16.08z"/>
-                        </svg>
-                        <?= Yii::t('common','Поделиться') ?>
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="shareDropdown" style="min-width: 260px">
-                        <!-- Нативный share (мобилки) -->
-                        <li>
-                            <button class="dropdown-item" type="button"
-                                    onclick="if (navigator.share) { navigator.share({title: '<?= addslashes($shareTitle) ?>', text: '<?= addslashes($shareTitle) ?>', url: '<?= $shareUrl ?>'}) } else { alert('Sharing not supported'); }">
-                                📱 <?= Yii::t('common','Поделиться через приложение…') ?>
-                            </button>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-
-                        <!-- Telegram -->
-                        <li><a class="dropdown-item"
-                               href="https://t.me/share/url?url=<?= urlencode($shareUrl) ?>&text=<?= urlencode($shareTitle) ?>"
-                               target="_blank" rel="nofollow noopener"
-                               onclick="return openShare(this.href);">Telegram</a></li>
-
-                        <!-- VK -->
-                        <li><a class="dropdown-item"
-                               href="https://vk.com/share.php?url=<?= urlencode($shareUrl) ?>&title=<?= urlencode($shareTitle) ?>"
-                               target="_blank" rel="nofollow noopener"
-                               onclick="return openShare(this.href);">VK</a></li>
-
-                        <!-- X (Twitter) -->
-                        <li><a class="dropdown-item"
-                               href="https://twitter.com/intent/tweet?url=<?= urlencode($shareUrl) ?>&text=<?= urlencode($shareTitle) ?>"
-                               target="_blank" rel="nofollow noopener"
-                               onclick="return openShare(this.href);">X (Twitter)</a></li>
-
-                        <!-- WhatsApp -->
-                        <li><a class="dropdown-item"
-                               href="https://api.whatsapp.com/send?text=<?= urlencode($shareTxt) ?>"
-                               target="_blank" rel="nofollow noopener"
-                               onclick="return openShare(this.href);">WhatsApp</a></li>
-
-                        <!-- Facebook -->
-                        <li><a class="dropdown-item"
-                               href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($shareUrl) ?>"
-                               target="_blank" rel="nofollow noopener"
-                               onclick="return openShare(this.href);">Facebook</a></li>
-
-                        <li><hr class="dropdown-divider"></li>
-
-                        <!-- Копировать ссылку -->
-                        <li>
-                            <button class="dropdown-item" type="button" onclick="copyShareLink('<?= htmlspecialchars($shareUrl, ENT_QUOTES) ?>')">
-                                🔗 <?= Yii::t('common','Скопировать ссылку') ?>
-                            </button>
-                        </li>
-                    </ul>
-                </div>
+            
+            <div class="blog-post_views">
+                <i class="far fa-eye"></i>
+                <span itemprop="interactionStatistic" itemscope itemtype="https://schema.org/InteractionCounter">
+                    <meta itemprop="interactionType" content="https://schema.org/ViewAction"/>
+                    <meta itemprop="userInteractionCount" content="<?=$blog->views?>"/>
+                    <?= number_format($blog->views, 0, '.', ' ') ?>
+                </span>
             </div>
         </div>
-        </div>
-    </article>
-        <?=$this->render('../layouts/_side_similar_posts', ['model' => $this->params['_blog_model']]);?>
-    <div id="comments" class="mt-12">
-        <?php echo \yii2mod\comments\widgets\Comment::widget([
-                                                                 'model' => $blog,
-                                                                 'commentView' => '@frontend/views/blog/comments/index',
-                                                                 'maxLevel' => 2,
-                                                                 'dataProviderConfig' => [
-                                                                     'pagination' => [
-                                                                         'pageSize' => 10
-                                                                     ],
-                                                                 ],
-                                                                 'listViewConfig' => [
-                                                                     'emptyText' => Yii::t('common', 'Нет комментариев.'),
-                                                                 ],
-                                                             ]); ?>
+        
+        <h1 class="blog-post_title" itemprop="headline"><?=Yii::t('database', $blog->name)?></h1>
     </div>
+    
+    <!-- Post content -->
+    <div class="blog-post_content" itemprop="articleBody">
+        <?php if (strtotime($blog->created_at) < strtotime('2025-08-28 12:00')): ?>
+            <?php if (!empty($blog->blogImages) && count($blog->blogImages) > 1): ?>
+                <div class="blog-post_gallery">
+                    <?php foreach (array_slice($blog->blogImages, 1) as $image): ?>
+                        <?=$this->render('_file', [
+                            'url' => $image->getPublicUrl(),
+                            'name' => $image->link
+                        ]); ?>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        <?php endif; ?>
+        
+        <div class="tinymce-content">
+            <?=Yii::t('database', $blog->content)?>
+        </div>
+        
+        <?php if ($blog->created_at < '2025-03-30 00:00:00'): ?>
+            <div class="blog-post_source">
+                <i class="fas fa-info-circle"></i>
+                <?=Yii::t('common', 'Поставщик новостей')?>: 
+                <a href="https://discord.gg/rust-ru" rel="nofollow" target="_blank">RustRu</a>
+            </div>
+        <?php endif; ?>
+    </div>
+    
+    <!-- Post footer -->
+    <div class="blog-post_footer">
+        <div class="blog-post_stats">
+            <div class="blog-post_stat">
+                <i class="far fa-eye"></i>
+                <span><?= number_format($blog->views, 0, '.', ' ') ?></span>
+                <span class="blog-post_stat_label"><?= Yii::t('common', 'просмотров') ?></span>
+            </div>
+            
+            <div class="blog-post_stat">
+                <i class="far fa-comment"></i>
+                <span><?= count($blog->comments) ?></span>
+                <span class="blog-post_stat_label"><?= Yii::t('common', 'комментариев') ?></span>
+            </div>
+        </div>
+        
+        <!-- Share buttons -->
+        <div class="blog-post_share">
+            <div class="blog-post_share_label">
+                <i class="fas fa-share-alt"></i>
+                <?= Yii::t('common','Поделиться') ?>:
+            </div>
+            
+            <div class="blog-post_share_buttons">
+                <!-- Telegram -->
+                <a href="https://t.me/share/url?url=<?= urlencode($canonical) ?>&text=<?= urlencode(Yii::t('database', $blog->name)) ?>"
+                   target="_blank" 
+                   rel="nofollow noopener"
+                   onclick="return openShare(this.href);"
+                   class="blog-share-btn blog-share-btn--telegram"
+                   title="Telegram">
+                    <i class="fab fa-telegram-plane"></i>
+                </a>
+
+                <!-- VK -->
+                <a href="https://vk.com/share.php?url=<?= urlencode($canonical) ?>&title=<?= urlencode(Yii::t('database', $blog->name)) ?>"
+                   target="_blank" 
+                   rel="nofollow noopener"
+                   onclick="return openShare(this.href);"
+                   class="blog-share-btn blog-share-btn--vk"
+                   title="VK">
+                    <i class="fab fa-vk"></i>
+                </a>
+
+                <!-- X (Twitter) -->
+                <a href="https://twitter.com/intent/tweet?url=<?= urlencode($canonical) ?>&text=<?= urlencode(Yii::t('database', $blog->name)) ?>"
+                   target="_blank" 
+                   rel="nofollow noopener"
+                   onclick="return openShare(this.href);"
+                   class="blog-share-btn blog-share-btn--twitter"
+                   title="X (Twitter)">
+                    <i class="fab fa-x-twitter"></i>
+                </a>
+
+                <!-- WhatsApp -->
+                <a href="https://api.whatsapp.com/send?text=<?= urlencode(Yii::t('database', $blog->name) . ' — ' . $canonical) ?>"
+                   target="_blank" 
+                   rel="nofollow noopener"
+                   onclick="return openShare(this.href);"
+                   class="blog-share-btn blog-share-btn--whatsapp"
+                   title="WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                </a>
+
+                <!-- Copy link -->
+                <button type="button"
+                        onclick="copyShareLink('<?= htmlspecialchars($canonical, ENT_QUOTES) ?>')"
+                        class="blog-share-btn blog-share-btn--copy"
+                        title="<?= Yii::t('common','Скопировать ссылку') ?>">
+                    <i class="fas fa-link"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hidden meta for SEO -->
+    <div itemprop="author" itemscope itemtype="https://schema.org/Person">
+        <meta itemprop="name" content="<?= $author ?>">
+    </div>
+    <meta itemprop="dateModified" content="<?= $updated ?>">
+    <?php if (!empty($blog->blogImages[0])): ?>
+        <meta itemprop="image" content="<?= $blog->blogImages[0]->getPublicUrl() ?>">
+    <?php endif; ?>
+    <div itemprop="publisher" itemscope itemtype="https://schema.org/Organization">
+        <meta itemprop="name" content="<?= $siteName ?>">
+        <div itemprop="logo" itemscope itemtype="https://schema.org/ImageObject">
+            <meta itemprop="url" content="<?= $logoUrl ?>">
+        </div>
+    </div>
+</article>
+
+<!-- Similar posts section -->
+<section class="blog-similar-posts-section">
+    <?=$this->render('../layouts/_side_similar_posts', ['model' => $this->params['_blog_model']]);?>
+</section>
+
+<!-- Comments section -->
+<section id="comments" class="blog-comments-section">
+    <?php echo \yii2mod\comments\widgets\Comment::widget([
+        'model' => $blog,
+        'commentView' => '@frontend/views/blog/comments/index',
+        'maxLevel' => 2,
+        'dataProviderConfig' => [
+            'pagination' => [
+                'pageSize' => 10
+            ],
+        ],
+        'listViewConfig' => [
+            'emptyText' => Yii::t('common', 'Нет комментариев.'),
+        ],
+    ]); ?>
+</section>
 <?=\lo\widgets\magnific\MagnificPopup::widget(
     [
         'target' => '.blog_item_body_text_images_item_preview_wrap',

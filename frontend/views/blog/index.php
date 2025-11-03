@@ -29,23 +29,32 @@ $this->params['breadcrumbs'][] = ['label' => Yii::t('common', "Блог")];
     <!-- Шапка блога (если нужна) -->
     <?= $this->render('_header', ['dataProvider' => $dataProvider]) ?>
 
-    <!-- Фильтр по названию -->
-    <div class="blog-filter">
+    <!-- Поиск -->
+    <div class="blog-search-section">
         <?php $form = ActiveForm::begin([
-                                            'id' => 'blog-filter-form',
-                                            'method' => 'get',
-                                            'action' => ['index'],
-                                            'options' => ['data-pjax' => 1],
-                                        ]); ?>
+            'id' => 'blog-filter-form',
+            'method' => 'get',
+            'action' => ['index'],
+            'options' => ['data-pjax' => 1],
+        ]); ?>
 
-        <?= $form->field($searchModel, 'name')->textInput([
-                                                              'placeholder' => Yii::t('common', 'Поиск по названию…'),
-                                                              'autocomplete' => 'off',
-                                                              'onchange' => 'this.form.submit()',
-                                                          ])->label(false) ?>
+        <div class="blog-search-input-wrapper">
+            <i class="fas fa-search blog-search-icon"></i>
+            <?= Html::activeTextInput($searchModel, 'name', [
+                'placeholder' => Yii::t('common', 'Поиск по названию поста...'),
+                'autocomplete' => 'off',
+                'class' => 'blog-search-input',
+                'onkeyup' => 'if(event.key==="Enter") this.form.submit()',
+            ]) ?>
+            <button type="submit" class="blog-search-submit">
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
 
         <?php ActiveForm::end(); ?>
     </div>
+    
+    <!-- Категории -->
     <?= $this->render('_categories', ['categories' => $categories]) ?>
 
     <!-- Список в виде мозаики -->
@@ -119,7 +128,21 @@ $this->registerJs(<<<JS
       var \$newPager = \$html.find('#blog-list-view .pagination');
 
       if(\$newItems.length){
-        $('#blog-list-view .masonry').append(\$newItems);
+        // Проверяем дубликаты перед добавлением
+        var existingIds = {};
+        $('#blog-list-view .masonry .blog-card').each(function(){
+          var id = $(this).attr('id');
+          if(id) existingIds[id] = true;
+        });
+        
+        \$newItems.each(function(){
+          var \$card = $(this).find('.blog-card');
+          var id = \$card.attr('id');
+          if(!id || !existingIds[id]){
+            $('#blog-list-view .masonry').append($(this));
+            if(id) existingIds[id] = true;
+          }
+        });
       }
       if(\$newPager.length){
         $('#blog-list-view .pagination').replaceWith(\$newPager);
@@ -161,29 +184,33 @@ JS);
 ?>
 
 <script>
-    document.addEventListener('click', function(e){
-        var item = e.target.closest('.blog-cats__item');
-        // клик по "родителю" на таче — открываем/закрываем вместо мгновенного перехода
-        if (e.target.closest('.blog-cats__link')){
-            // если есть подкатегории — блокируем переход первым тапом
-            var hasDrop = !!(item && item.querySelector('.blog-subcats'));
-            if (hasDrop){
-                if (!item.classList.contains('is-open')){
-                    e.preventDefault();
-                    item.classList.add('is-open');
-                    item.querySelector('.blog-cats__link').setAttribute('aria-expanded','true');
-                    return;
-                }
-                // второй тап — пусть ведёт по ссылке
+// Categories dropdown interaction for touch devices
+document.addEventListener('click', function(e){
+    var item = e.target.closest('.blog-categories_item');
+    
+    // Click on category link with dropdown
+    if (e.target.closest('.blog-categories_link')){
+        var hasDrop = !!(item && item.querySelector('.blog-categories_dropdown'));
+        
+        if (hasDrop){
+            // First tap - open dropdown
+            if (!item.classList.contains('is-open')){
+                e.preventDefault();
+                item.classList.add('is-open');
+                item.querySelector('.blog-categories_link').setAttribute('aria-expanded','true');
+                return;
             }
+            // Second tap - follow link
         }
-        // клик вне — закрыть все
-        document.querySelectorAll('.blog-cats__item.is-open').forEach(function(it){
-            if (!it.contains(e.target)){
-                it.classList.remove('is-open');
-                var link = it.querySelector('.blog-cats__link');
-                if (link) link.setAttribute('aria-expanded','false');
-            }
-        });
+    }
+    
+    // Click outside - close all dropdowns
+    document.querySelectorAll('.blog-categories_item.is-open').forEach(function(it){
+        if (!it.contains(e.target)){
+            it.classList.remove('is-open');
+            var link = it.querySelector('.blog-categories_link');
+            if (link) link.setAttribute('aria-expanded','false');
+        }
     });
+});
 </script>
