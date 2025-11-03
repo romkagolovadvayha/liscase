@@ -55,6 +55,7 @@ $config = [
                 '/servers/<serverTag:[a-z0-9_-]+>/rules' => '/servers/rules',
                 '/servers/<serverTag:[a-z0-9_-]+>/wipe-info' => '/servers/wipe-info',
                 '/maps/vote' => '/maps/vote',
+                '/maps/get-likes' => '/maps/get-likes',
                 '/maps/<serverTag:[a-z0-9_-]+>/' => '/maps',
                 'sitemap.xml' => 'site/sitemap',
                 'sitemap-main.xml' => 'site/sitemap-main',
