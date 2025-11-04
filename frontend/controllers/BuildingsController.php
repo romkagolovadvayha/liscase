@@ -35,7 +35,7 @@ class BuildingsController extends WebController
                 'rules' => [
                     [
                         'allow' => true,
-                        'actions' => ['index', 'view']
+                        'actions' => ['index', 'view', 'get-likes']
                     ],
                     [
                         'allow' => true,
@@ -284,6 +284,49 @@ class BuildingsController extends WebController
 
         Yii::$app->session->addFlash('success', Yii::t('common', 'Запись успешно удалена!'));
         return $this->redirect(['index']);
+    }
+
+    /**
+     * Get users who liked this building (for tooltip)
+     * @param int $id Building ID
+     * @return array JSON response
+     */
+    public function actionGetLikes($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        $building = Building::findOne($id);
+        if (!$building) {
+            return ['users' => [], 'total' => 0];
+        }
+        
+        // Get total count
+        $totalCount = BuildingLike::find()
+            ->where(['building_id' => $id])
+            ->count();
+        
+        // Get only 5 latest
+        $likes = BuildingLike::find()
+            ->where(['building_id' => $id])
+            ->with(['user'])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->limit(5)
+            ->all();
+        
+        $users = [];
+        foreach ($likes as $like) {
+            if ($like->user) {
+                $users[] = [
+                    'username' => $like->user->username,
+                    'avatar' => $like->user->getAvatar(),
+                ];
+            }
+        }
+        
+        return [
+            'users' => $users,
+            'total' => (int)$totalCount,
+        ];
     }
 
     /**

@@ -24,14 +24,50 @@ $userLikes = \common\models\building\BuildingLike::find()
                                                  ->queryColumn();
 
 BuildingsAsset::register($this);
-$this->title = Yii::t('common', 'Постройки игроков');
+
+// SEO настройки
+$this->title = Yii::t('common', 'Постройки игроков Rust - Галерея лучших баз и построек');
+$this->registerMetaTag([
+    'name' => 'description',
+    'content' => Yii::t('common', 'Галерея построек игроков Rust. Смотрите лучшие базы, креативные постройки и архитектурные шедевры от нашего сообщества. Делитесь своими творениями и вдохновляйтесь идеями других игроков.')
+]);
+$this->registerMetaTag(['name' => 'keywords', 'content' => 'rust постройки, базы rust, галерея построек, rust база, лучшие постройки rust, креативные базы']);
+
+// Open Graph
+$this->registerMetaTag(['property' => 'og:title', 'content' => $this->title]);
+$this->registerMetaTag(['property' => 'og:description', 'content' => Yii::t('common', 'Галерея построек игроков Rust. Лучшие базы и креативные постройки от нашего сообщества.')]);
+$this->registerMetaTag(['property' => 'og:type', 'content' => 'website']);
+
+// Структурированные данные
+$schema = [
+    '@context' => 'https://schema.org',
+    '@type' => 'CollectionPage',
+    'name' => $this->title,
+    'description' => 'Галерея построек игроков Rust с возможностью фильтрации по серверам',
+    'mainEntity' => [
+        '@type' => 'ItemList',
+        'name' => 'Постройки игроков',
+    ]
+];
+$this->registerMetaTag(['name' => 'schema', 'content' => json_encode($schema, JSON_UNESCAPED_UNICODE)], 'schema');
 ?>
 
 <div class="server_info_page">
     <div class="buildings">
+        <!-- SEO заголовок и описание -->
+        <div class="buildings_header">
+            <h1 class="buildings_header_title">
+                <?= Yii::t('common', 'Постройки игроков Rust') ?>
+            </h1>
+            <div class="buildings_header_description">
+                <p><?= Yii::t('common', 'Добро пожаловать в галерею построек нашего Rust сообщества! Здесь вы найдете самые креативные базы, впечатляющие архитектурные решения и уникальные постройки от талантливых игроков.') ?></p>
+                <p><?= Yii::t('common', 'Изучайте работы других строителей, черпайте вдохновение для своих проектов и делитесь собственными творениями. Каждая постройка — это история, опыт и творческий подход к выживанию в мире Rust.') ?></p>
+            </div>
+        </div>
+
         <?php if (!$userBuildingsWait): ?>
             <div class="buildings_buttons">
-                <?= Html::a('<span class="button__text">' . Yii::t('common', 'Добавить свою постройку') . '</span>', ['create'], ['class' => 'button button-primary button-size__s h-36']) ?>
+                <?= Html::a('<span class="button__text"><i class="fa-solid fa-plus"></i> ' . Yii::t('common', 'Добавить свою постройку') . '</span>', ['create'], ['class' => 'button button-primary button-size__s h-36']) ?>
             </div>
         <?php endif; ?>
 
@@ -45,41 +81,60 @@ $this->title = Yii::t('common', 'Постройки игроков');
                               'formSelector' => '#buildings-filter-form',
                           ]); ?>
 
-        <div class="buildings_filters">
+        <!-- Фильтры в современном дизайне -->
+        <section class="buildings_filters_section">
             <?php $form = ActiveForm::begin([
-                                                'id' => 'buildings-filter-form',
-                                                'method' => 'get',
-                                                'action' => ['index'],
-                                                'options' => ['data-pjax' => 1],
-                                            ]); ?>
+                'id' => 'buildings-filter-form',
+                'method' => 'get',
+                'action' => ['index'],
+                'options' => ['data-pjax' => 1, 'class' => 'buildings_filter_form'],
+            ]); ?>
 
-            <div class="buildings_filter">
-                <?= $form->field($searchModel, 'name')
-                         ->textInput([
-                                         'placeholder' => Yii::t('common','Название постройки'),
-                                         'onchange' => 'this.form.submit()',
-                                     ])->label(false) ?>
+            <div class="buildings_filter_row">
+                <!-- Поиск по названию -->
+                <div class="buildings_filter_search">
+                    <div class="buildings_filter_search_wrapper">
+                        <i class="fa-solid fa-search buildings_filter_search_icon"></i>
+                        <?= $form->field($searchModel, 'name', [
+                            'template' => '{input}',
+                            'options' => ['class' => 'buildings_filter_search_field']
+                        ])->textInput([
+                            'placeholder' => Yii::t('common', 'Поиск постройки...'),
+                            'class' => 'buildings_filter_search_input',
+                            'autocomplete' => 'off'
+                        ]) ?>
+                        <button type="submit" class="buildings_filter_search_submit" title="<?= Yii::t('common', 'Найти') ?>">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
 
-                <?= $form->field($searchModel, 'server_tag')->widget(\kartik\select2\Select2::class, [
-                    'data' => $servers, // tag => Название сервера
-                    'options' => [
-                        'placeholder' => 'Выберите сервер(а)...',
-                        'multiple' => true,
-                        'onchange' => 'this.form.submit()',
-                    ],
-                    'pluginOptions' => [
-                        'allowClear' => true,
-                        'closeOnSelect' => false,
-                    ],
-                    'pluginEvents' => [
-                        "change" => "function(){ $('#buildings-filter-form').submit(); }",
-                    ],
-                    'showToggleAll' => true,
-                ])->label(false); ?>
+                <!-- Фильтр по серверам -->
+                <div class="buildings_filter_servers">
+                    <div class="buildings_filter_servers_content">
+                        <?= $form->field($searchModel, 'server_tag')->widget(\kartik\select2\Select2::class, [
+                            'data' => $servers,
+                            'options' => [
+                                'placeholder' => Yii::t('common', 'Выберите сервер(а)...'),
+                                'multiple' => true,
+                                'id' => 'server-select',
+                            ],
+                            'pluginOptions' => [
+                                'allowClear' => true,
+                                'closeOnSelect' => false,
+                                'theme' => 'default',
+                            ],
+                            'pluginEvents' => [
+                                "change" => "function(){ $('#buildings-filter-form').submit(); }",
+                            ],
+                            'showToggleAll' => true,
+                        ])->label(false) ?>
+                    </div>
+                </div>
             </div>
 
             <?php ActiveForm::end(); ?>
-        </div>
+        </section>
 
         <div class="buildings_content">
             <?php if ($userBuildingsWait): ?>
@@ -146,6 +201,7 @@ $js = <<<JS
 (function(){
   var loading = false;
   var observer = null;
+  var loadedPages = new Set(); // Отслеживаем загруженные страницы
 
   function getNextUrl(){
     var \$a = $('#buildings-list .pagination a[rel="next"], #buildings-list .pagination li.next a');
@@ -158,7 +214,7 @@ $js = <<<JS
       type: 'GET',
       headers: { 'X-PJAX': 'true' },
       data: { _pjax: '#buildings-pjax' },
-      cache: true
+      cache: false // Отключаем кэш чтобы избежать дублей
     });
   }
 
@@ -173,9 +229,21 @@ $js = <<<JS
     if (loading) return;
     var url = getNextUrl();
     if (!url) return;
+    
+    // Проверяем, не загружали ли мы уже эту страницу
+    if (loadedPages.has(url)) {
+      console.log('Page already loaded:', url);
+      return;
+    }
 
     loading = true;
+    loadedPages.add(url); // Добавляем URL в список загруженных
     $('#lazy-trigger').addClass('loading');
+    
+    // Временно отключаем observer во время загрузки
+    if (observer) {
+      observer.disconnect();
+    }
 
     requestPjaxFragment(url).done(function(html){
       var \$html = $('<div>').html(html);
@@ -187,14 +255,31 @@ $js = <<<JS
       }
       var \$newItems = \$newItemsWrap.children();
 
+      // Проверяем на дубликаты перед добавлением
+      var existingIds = new Set();
+      $('#buildings-list .buildings_content_list_items article').each(function(){
+        var itemId = $(this).find('[data-id]').attr('data-id');
+        if (itemId) {
+          existingIds.add(itemId);
+        }
+      });
+
+      // Фильтруем новые элементы, удаляя дубликаты
+      var \$uniqueItems = \$newItems.filter(function(){
+        var itemId = $(this).find('[data-id]').attr('data-id');
+        return !itemId || !existingIds.has(itemId);
+      });
+
       // новая пагинация
       var \$newPager = \$html.find('#buildings-list .pagination');
       if (!\$newPager.length) {
         \$newPager = \$html.find('.pagination');
       }
 
-      // аппендим в текущий список
-      $('#buildings-list .buildings_content_list_items').append(\$newItems);
+      // аппендим в текущий список только уникальные элементы
+      if (\$uniqueItems.length > 0) {
+        $('#buildings-list .buildings_content_list_items').append(\$uniqueItems);
+      }
 
       // заменяем/убираем пагинацию
       var \$oldPager = $('#buildings-list .pagination');
@@ -204,12 +289,15 @@ $js = <<<JS
         \$oldPager.remove();
       }
 
-      // если больше нет страниц — снимаем наблюдатель
-      if (!getNextUrl() && observer) {
-        observer.disconnect();
-      }
-
       ensureTriggerAtBottom();
+      
+      // Если есть еще страницы, возобновляем observer
+      if (getNextUrl()) {
+        bindObserver();
+      }
+    }).fail(function(){
+      // В случае ошибки удаляем URL из загруженных
+      loadedPages.delete(url);
     }).always(function(){
       loading = false;
       $('#lazy-trigger').removeClass('loading');
@@ -217,7 +305,11 @@ $js = <<<JS
   }
 
   function bindObserver(){
-    if (observer) { observer.disconnect(); observer = null; }
+    if (observer) { 
+      observer.disconnect(); 
+      observer = null; 
+    }
+    
     var target = document.getElementById('lazy-trigger');
     if (!target) return;
 
@@ -227,7 +319,11 @@ $js = <<<JS
           loadNext();
         }
       });
-    }, { root: null, rootMargin: '600px 0px', threshold: 0 });
+    }, { 
+      root: null, 
+      rootMargin: '400px 0px', // Уменьшили с 600px чтобы не загружать слишком рано
+      threshold: 0 
+    });
 
     observer.observe(target);
   }
@@ -238,7 +334,7 @@ $js = <<<JS
 
   // после любого PJAX-обновления (фильтры и т.п.) — перевешиваем
   $(document).on('pjax:success', '#buildings-pjax', function(){
-    // window.scrollTo({ top: 0, behavior: 'smooth' }); // если хочешь поднимать при смене фильтра
+    loadedPages.clear(); // Очищаем историю загруженных страниц при фильтрации
     ensureTriggerAtBottom();
     bindObserver();
   });
