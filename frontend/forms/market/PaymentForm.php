@@ -111,11 +111,9 @@ class PaymentForm extends Model
         /** @var User $user */
         $user = Yii::$app->user->identity;
 
-        if (!$user->is_email && !empty($this->email)) {
-            $user->is_email = true;
-            $user->email = $this->email;
-            $user->save();
-        }
+        $user->is_email = true;
+        $user->email = $this->email;
+        $user->save();
 
         $paymentApi = PaymentApi::getInstance($this->payment_id);
         $deposit = Deposit::createOperation($user->id, $this->amount, $this->payment_id);
