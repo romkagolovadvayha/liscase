@@ -446,21 +446,13 @@ $this->registerMetaTag(['name' => 'schema', 'content' => json_encode($schema, JS
         </div>
     </div>
 </article>
-<?=MagnificPopup::widget(
-    [
+<?= MagnificPopup::widget([
         'target' => '#mpup',
         'options' => [
-            'delegate'=> 'a',
+        'delegate' => 'a',
             'gallery' => [
                 'enabled' => true
             ],
         ],
-        'effect' => 'with-zoom' //for zoom effect
-    ]
-);?>
-            ],
-        ],
-        'effect' => 'with-zoom' //for zoom effect
-    ]
-
-);?>
+    'effect' => 'with-zoom'
+]) ?>
