@@ -72,14 +72,6 @@ class PaymentForm extends Model
      */
     public function validateEmail($attribute)
     {
-        /** @var User $user */
-        $user = Yii::$app->user->identity;
-        
-        // Пропускаем валидацию если у пользователя уже подтвержден email
-        if ($user && $user->is_email) {
-            return;
-        }
-        
         // Проверяем валидность email только если он заполнен
         if (!empty($this->email) && !EmailHelper::isValid($this->email)) {
             $this->addError($attribute, Yii::t('common', 'E-mail адрес введен неверно.'));
