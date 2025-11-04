@@ -145,20 +145,6 @@ $this->registerMetaTag(['name' => 'schema', 'content' => json_encode($schema, JS
             </div>
             
             <div class="building-view_header_actions">
-                <div class="building-view_like">
-                    <button type="button" 
-                            class="buildings_content_list_item_images_like<?= ($isActive) ? ' active' : '' ?>" 
-                            data-id="<?= $model->id ?>" 
-                            data-guest="<?= Yii::$app->user->isGuest ? 1 : 0 ?>"
-                            title="<?= Yii::t('common', 'Оценить постройку') ?>">
-                        <span class="buildings_content_list_item_images_like_count"><?= $model->likes ?></span>
-                        <span class="buildings_content_list_item_images_like_icon">
-                                            <i class="icon_active fa-solid fa-heart"></i>
-                                            <i class="icon_noactive fa-regular fa-heart"></i>
-                                    </span>
-                    </button>
-                </div>
-                
                 <?= Html::a(
                     '<i class="fa-solid fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
                     ['index'],
@@ -238,10 +224,8 @@ $this->registerMetaTag(['name' => 'schema', 'content' => json_encode($schema, JS
             </div>
         </div>
 
-        <!-- Основная сетка контента -->
-        <div class="building-view_grid">
-            <!-- Левая колонка (галерея) -->
-            <div class="building-view_main">
+        <!-- Основной контент (одна колонка) -->
+        <div class="building-view_content">
                 <?php if (!empty($model->buildingImage)): ?>
                     <section class="building-gallery">
                         <h2 class="section-title">
@@ -280,172 +264,185 @@ $this->registerMetaTag(['name' => 'schema', 'content' => json_encode($schema, JS
                     </section>
                 <?php endif; ?>
 
-                <!-- Другие постройки жильцов -->
-                <?php if (!empty($otherBuildings)): ?>
-                    <section class="related-buildings">
-                        <h2 class="section-title">
-                            <i class="fa-solid fa-building"></i>
-                            <?= Yii::t('common', 'Другие постройки жильцов') ?>
-                            <span class="section-title_count"><?= count($otherBuildings) ?></span>
-                        </h2>
-                        
-                        <div class="related-buildings_grid">
-                            <?php foreach ($otherBuildings as $building): ?>
-                                <?php if (!empty($building->buildingImage)): ?>
-                                    <a href="<?= Url::to(['/buildings/view', 'id' => $building->id]) ?>" 
-                                       class="related-building_card"
-                                       title="<?= Yii::t('database', $building->name) ?>">
-                                        <div class="related-building_card_image">
-                                            <img src="<?= $building->buildingImage[0]->getPublicUrlPreview() ?>" 
-                                                 alt="<?= Yii::t('database', $building->name) ?>"
-                                                 loading="lazy">
-                                            <div class="related-building_card_overlay">
-                                                <div class="related-building_card_name">
-                                                    <?= Yii::t('database', $building->name) ?>
-                                                </div>
-                                                <div class="related-building_card_server">
-                                                    <i class="fa-solid fa-server"></i>
-                                                    <?= Yii::t('database', $building->server->monitoring_name) ?>
-                                                </div>
-                                            </div>
-                                            <?php if ($building->likes > 0): ?>
-                                                <div class="related-building_card_likes">
-                                                    <i class="fa-solid fa-heart"></i>
-                                                    <?= $building->likes ?>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="related-building_card_footer">
-                                            <div class="related-building_card_author">
-                                                <img src="<?= $building->user->getAvatar() ?>" 
-                                                     alt="<?= $building->user->username ?>">
-                                                <span><?= $building->user->username ?></span>
-                                            </div>
-                                            <div class="related-building_card_date">
-                                                <?= $building->passed() ?>
-                                            </div>
-                                        </div>
-                                    </a>
-                                <?php endif; ?>
-                            <?php endforeach; ?>
-                        </div>
-                    </section>
-                <?php endif; ?>
+            <!-- Жильцы -->
+            <?php if (!empty($model->buildingResident)): ?>
+                <section class="building-section">
+                    <h2 class="section-title">
+                        <i class="fa-solid fa-users"></i>
+                        <?= Yii::t('common', 'Жильцы базы') ?>
+                        <span class="section-title_count"><?= $residentCount ?></span>
+                    </h2>
+                    <div class="building-users_grid">
+                        <?php foreach ($model->buildingResident as $resident): ?>
+                            <a title="<?= Yii::t('common', 'Открыть профиль игрока') ?> <?= $resident->user->username ?>"
+                               target="_blank"
+                               href="/stats/player?steamId=<?= $resident->user->steam_id ?>&server=<?= $model->server_tag ?>"
+                               class="building-user_card">
+                                <img src="<?= $resident->user->getAvatar() ?>" 
+                                     alt="<?= $resident->user->username ?>"
+                                     loading="lazy"/>
+                                <span class="building-user_card_name"><?= $resident->user->username ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
+            <?php endif; ?>
 
-            </div>
-
-            <!-- Правая колонка (информация) -->
-            <aside class="building-view_sidebar">
-                <!-- Жильцы -->
-                <?php if (!empty($model->buildingResident)): ?>
-                    <section class="building-sidebar_section">
-                        <h3 class="sidebar-title">
-                            <i class="fa-solid fa-users"></i>
-                            <?= Yii::t('common', 'Жильцы базы') ?>
-                            <span class="sidebar-title_count"><?= $residentCount ?></span>
-                        </h3>
-                        <div class="building-users_grid">
-                            <?php foreach ($model->buildingResident as $resident): ?>
-                                <a title="<?= Yii::t('common', 'Открыть профиль игрока') ?> <?= $resident->user->username ?>"
-                                   target="_blank"
-                                   href="/stats/player?steamId=<?= $resident->user->steam_id ?>&server=<?= $model->server_tag ?>"
-                                   class="building-user_card">
-                                    <img src="<?= $resident->user->getAvatar() ?>" 
-                                         alt="<?= $resident->user->username ?>"
-                                         loading="lazy"/>
-                                    <span class="building-user_card_name"><?= $resident->user->username ?></span>
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
-                    </section>
-                <?php endif; ?>
-
-                <!-- Оценки -->
+            <!-- Оценки с кнопкой лайка -->
+            <section class="building-section building-likes_section">
+                <div class="building-likes_header">
+                    <h2 class="section-title">
+                        <i class="fa-solid fa-heart"></i>
+                        <?= Yii::t('common', 'Оценили постройку') ?>
+                        <span class="section-title_count"><?= $model->likes ?></span>
+                    </h2>
+                    <div class="building-view_like">
+                        <button type="button" 
+                                class="buildings_content_list_item_images_like<?= ($isActive) ? ' active' : '' ?>" 
+                                data-id="<?= $model->id ?>" 
+                                data-guest="<?= Yii::$app->user->isGuest ? 1 : 0 ?>"
+                                title="<?= Yii::t('common', 'Оценить постройку') ?>">
+                            <span class="buildings_content_list_item_images_like_count"><?= $model->likes ?></span>
+                        <span class="buildings_content_list_item_images_like_icon">
+                                            <i class="icon_active fa-solid fa-heart"></i>
+                                            <i class="icon_noactive fa-regular fa-heart"></i>
+                                    </span>
+                        </button>
+                    </div>
+                    </div>
+                
                 <?php if (!empty($model->buildingLikes)): ?>
-                    <section class="building-sidebar_section">
-                        <h3 class="sidebar-title">
-                            <i class="fa-solid fa-heart"></i>
-                            <?= Yii::t('common', 'Оценили постройку') ?>
-                            <span class="sidebar-title_count"><?= $model->likes ?></span>
-                        </h3>
-                        <div class="building-users_grid">
-                            <?php foreach ($model->buildingLikes as $like): ?>
-                                <a title="<?= Yii::t('common', 'Открыть профиль игрока') ?> <?= $like->user->username ?>"
-                                   target="_blank"
-                                   href="<?= $like->user->getLink('stats') ?>"
-                                   rel="nofollow"
-                                   class="building-user_card">
-                                    <img src="<?= $like->user->getAvatar() ?>" 
-                                         alt="<?= $like->user->username ?>"
-                                         loading="lazy"/>
-                                    <span class="building-user_card_name"><?= $like->user->username ?></span>
-                                </a>
-                            <?php endforeach; ?>
-                        </div>
-                    </section>
+                    <div class="building-users_grid">
+                    <?php foreach ($model->buildingLikes as $like): ?>
+                            <a title="<?= Yii::t('common', 'Открыть профиль игрока') ?> <?= $like->user->username ?>"
+                            target="_blank"
+                               href="<?= $like->user->getLink('stats') ?>"
+                            rel="nofollow"
+                               class="building-user_card">
+                                <img src="<?= $like->user->getAvatar() ?>" 
+                                     alt="<?= $like->user->username ?>"
+                                     loading="lazy"/>
+                                <span class="building-user_card_name"><?= $like->user->username ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+                <?php else: ?>
+                    <p class="building-empty_text"><?= Yii::t('common', 'Станьте первым, кто оценит эту постройку!') ?></p>
                 <?php endif; ?>
+            </section>
 
-                <!-- Рейды -->
-                <?php if (!empty($raids)): ?>
-                    <section class="building-sidebar_section">
-                        <h3 class="sidebar-title">
-                            <i class="fa-solid fa-bomb"></i>
-                            <?= Yii::t('common', 'История рейдов') ?>
-                            <span class="sidebar-title_count"><?= $raidCount ?></span>
-                        </h3>
-                        
-                        <?php if (!empty($uniqueExplosives)): ?>
-                            <div class="raid-explosives">
-                                <div class="raid-explosives_label"><?= Yii::t('common', 'Использованные взрывчатки') ?>:</div>
-                                <div class="raid-explosives_list">
-                                    <?php foreach ($uniqueExplosives as $explosive): ?>
-                                        <span class="raid-explosive_tag"><?= $explosive ?></span>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                        
-                        <div class="raid-timeline">
-                            <?php foreach (array_slice($raids, 0, 5) as $raid): ?>
-                                <div class="raid-timeline_item">
-                                    <div class="raid-timeline_icon">
-                                        <i class="fa-solid fa-explosion"></i>
-                                    </div>
-                                    <div class="raid-timeline_content">
-                                        <?php if ($raid->user): ?>
-                                            <div class="raid-timeline_user">
-                                                <img src="<?= $raid->user->getAvatar() ?>" alt="<?= $raid->user->username ?>">
-                                                <a href="<?= $raid->user->getLink('stats') ?>" 
-                                                   target="_blank" 
-                                                   rel="nofollow">
-                                                    <?= $raid->user->username ?>
-                                                </a>
+            <!-- Другие постройки жильцов -->
+            <?php if (!empty($otherBuildings)): ?>
+                <section class="related-buildings">
+                    <h2 class="section-title">
+                        <i class="fa-solid fa-building"></i>
+                        <?= Yii::t('common', 'Другие постройки жильцов') ?>
+                        <span class="section-title_count"><?= count($otherBuildings) ?></span>
+                    </h2>
+                    
+                    <div class="related-buildings_grid">
+                        <?php foreach ($otherBuildings as $building): ?>
+                            <?php if (!empty($building->buildingImage)): ?>
+                                <a href="<?= Url::to(['/buildings/view', 'id' => $building->id]) ?>" 
+                                   class="related-building_card"
+                                   title="<?= Yii::t('database', $building->name) ?>">
+                                    <div class="related-building_card_image">
+                                        <img src="<?= $building->buildingImage[0]->getPublicUrlPreview() ?>" 
+                                             alt="<?= Yii::t('database', $building->name) ?>"
+                                             loading="lazy">
+                                        <div class="related-building_card_overlay">
+                                            <div class="related-building_card_name">
+                                                <?= Yii::t('database', $building->name) ?>
+                                            </div>
+                                            <div class="related-building_card_server">
+                                                <i class="fa-solid fa-server"></i>
+                                                <?= Yii::t('database', $building->server->monitoring_name) ?>
+                                            </div>
+                                        </div>
+                                        <?php if ($building->likes > 0): ?>
+                                            <div class="related-building_card_likes">
+                                                <i class="fa-solid fa-heart"></i>
+                                                <?= $building->likes ?>
                                             </div>
                                         <?php endif; ?>
-                                        <div class="raid-timeline_type">
-                                            <?php if ($raid->type == 'cupboard'): ?>
-                                                <i class="fa-solid fa-house-damage"></i> <?= Yii::t('common', 'Шкаф уничтожен') ?>
-                                            <?php else: ?>
-                                                <i class="fa-solid fa-door-open"></i> <?= ucfirst($raid->type) ?>
-                                            <?php endif; ?>
+                                    </div>
+                                    <div class="related-building_card_footer">
+                                        <div class="related-building_card_author">
+                                            <img src="<?= $building->user->getAvatar() ?>" 
+                                                 alt="<?= $building->user->username ?>">
+                                            <span><?= $building->user->username ?></span>
                                         </div>
-                                        <div class="raid-timeline_date">
-                                            <i class="fa-solid fa-clock"></i>
-                                            <?= Yii::$app->formatter->asRelativeTime($raid->created_at) ?>
+                                        <div class="related-building_card_date">
+                                            <?= $building->passed() ?>
                                         </div>
                                     </div>
-                                </div>
-                            <?php endforeach; ?>
-                            
-                            <?php if ($raidCount > 5): ?>
-                                <div class="raid-timeline_more">
-                                    <?= Yii::t('common', 'и ещё') ?> <?= $raidCount - 5 ?> <?= Yii::t('common', 'рейдов') ?>
-                                </div>
+                                </a>
                             <?php endif; ?>
-                        </div>
-                    </section>
-                <?php endif; ?>
-            </aside>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
+            <?php endif; ?>
+
+            <!-- Рейды -->
+            <?php if (!empty($raids)): ?>
+                <section class="building-section building-raids_section">
+                    <h2 class="section-title">
+                        <i class="fa-solid fa-bomb"></i>
+                        <?= Yii::t('common', 'История рейдов') ?>
+                        <span class="section-title_count"><?= $raidCount ?></span>
+                    </h2>
+                    
+                    <?php if (!empty($uniqueExplosives)): ?>
+                        <div class="raid-explosives">
+                            <div class="raid-explosives_label"><?= Yii::t('common', 'Использованные взрывчатки') ?>:</div>
+                            <div class="raid-explosives_list">
+                                <?php foreach ($uniqueExplosives as $explosive): ?>
+                                    <span class="raid-explosive_tag"><?= $explosive ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                    <?php endif; ?>
+                    
+                    <div class="raid-timeline">
+                        <?php foreach (array_slice($raids, 0, 5) as $raid): ?>
+                            <div class="raid-timeline_item">
+                                <div class="raid-timeline_icon">
+                                    <i class="fa-solid fa-explosion"></i>
+                                </div>
+                                <div class="raid-timeline_content">
+                                    <?php if ($raid->user): ?>
+                                        <div class="raid-timeline_user">
+                                            <img src="<?= $raid->user->getAvatar() ?>" alt="<?= $raid->user->username ?>">
+                                            <a href="<?= $raid->user->getLink('stats') ?>" 
+                            target="_blank"
+                                               rel="nofollow">
+                                                <?= $raid->user->username ?>
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div class="raid-timeline_type">
+                                        <?php if ($raid->type == 'cupboard'): ?>
+                                            <i class="fa-solid fa-house-damage"></i> <?= Yii::t('common', 'Шкаф уничтожен') ?>
+                                        <?php else: ?>
+                                            <i class="fa-solid fa-door-open"></i> <?= ucfirst($raid->type) ?>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="raid-timeline_date">
+                                        <i class="fa-solid fa-clock"></i>
+                                        <?= Yii::$app->formatter->asRelativeTime($raid->created_at) ?>
+                </div>
+            </div>
+                            </div>
+                        <?php endforeach; ?>
+                        
+                        <?php if ($raidCount > 5): ?>
+                            <div class="raid-timeline_more">
+                                <?= Yii::t('common', 'и ещё') ?> <?= $raidCount - 5 ?> <?= Yii::t('common', 'рейдов') ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </section>
+            <?php endif; ?>
         </div>
     </div>
 </article>
@@ -460,4 +457,10 @@ $this->registerMetaTag(['name' => 'schema', 'content' => json_encode($schema, JS
         ],
         'effect' => 'with-zoom' //for zoom effect
     ]
+);?>
+            ],
+        ],
+        'effect' => 'with-zoom' //for zoom effect
+    ]
+
 );?>

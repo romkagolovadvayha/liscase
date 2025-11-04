@@ -9,6 +9,57 @@ $(document).ready(function() {
     // Active AJAX requests tracker
     var activeRequests = {};
     
+    // Handle like button click
+    $(document).on('click', '.buildings_content_list_item_images_like', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        var btn = $(this);
+        var buildingId = btn.data('id');
+        var guest = btn.data('guest');
+        
+        // Check if user is guest
+        if (guest == 1) {
+            toastr.error('<i class=\'fas fa-exclamation-circle\'></i><div class=\'toast-message_text\'>Чтобы оценивать постройки, вам нужно авторизоваться на сайте.</div>', '', {
+                'progressBar': true, 
+                'positionClass': 'toast-top-right', 
+                'escapeHtml': false
+            });
+            return;
+        }
+        
+        // Find all like buttons for this building (may be multiple on page)
+        var allButtons = $('.buildings_content_list_item_images_like[data-id=' + buildingId + ']');
+        var count = parseInt(btn.find('.buildings_content_list_item_images_like_count').text()) || 0;
+        
+        // Toggle active state and update count
+        if (btn.hasClass('active')) {
+            allButtons.removeClass('active');
+            count = Math.max(0, count - 1);
+        } else {
+            allButtons.addClass('active');
+            count = count + 1;
+        }
+        
+        // Update count display
+        allButtons.find('.buildings_content_list_item_images_like_count').text(count);
+        
+        // Clear cache for this building
+        delete likesCache[buildingId];
+        
+        // Send AJAX request
+        $.ajax({
+            url: '/buildings/like?id=' + buildingId,
+            type: 'POST',
+            error: function(xhr, status, error) {
+                console.error('Like error:', error);
+            },
+            success: function(result, status, xhr) {
+                // Success
+            }
+        });
+    });
+    
     // Show likes tooltip on hover
     $(document).on('mouseenter', '.buildings_content_list_item_images_like', function() {
         var btn = $(this);
