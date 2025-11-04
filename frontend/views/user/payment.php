@@ -56,6 +56,7 @@ $user = Yii::$app->user->identity;
                     'inputOptions' => [
                         'class' => 'search search_pay'
                     ],
+                    'template' => "{input}{error}{hint}"
                 ])
                         ->label(false)
                         ->textInput(['placeholder' => Yii::t('common', 'Ваш E-mail')]); ?>
