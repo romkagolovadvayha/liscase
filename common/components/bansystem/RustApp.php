@@ -79,11 +79,17 @@ class RustApp
                 continue;
             }
 
+            // Validate required fields before adding to ban list
+            if (empty($item['player']['steam_name']) || empty($item['steam_id'])) {
+                Yii::warning('RustApp ban item missing required fields: ' . json_encode($item), 'rustapp');
+                continue;
+            }
+
             $this->_banList[] = [
-                'username' => $item['player']['steam_name'],
-                'steam_id' => $item['steam_id'],
-                'reason' => $item['reason'],
-                'ip' => $item['ban_ip'],
+                'username' => $item['player']['steam_name'] ?? 'Unknown',
+                'steam_id' => $item['steam_id'] ?? null,
+                'reason' => $item['reason'] ?? '',
+                'ip' => $item['ban_ip'] ?? null,
                 'date' => $banDate,
                 'expireDate' => $expireDate,
                 'server_id' => $serverId,
@@ -99,7 +105,12 @@ class RustApp
             $curl = clone Yii::$app->curl;
             $curl->setHeader('accept', 'application/json');
             $curl->setHeader('x-api-key', $rustAppApiKey);
-            return json_decode($curl->get($apiUrl), 1)['results'];
+            $response = json_decode($curl->get($apiUrl), true);
+            
+            if (isset($response['results']) && is_array($response['results'])) {
+                return $response['results'];
+            }
+            
         } catch (\Exception $e) {
             Yii::$app->telegramReports->sendMessage($e->getFile() . ":" . $e->getLine() . PHP_EOL . $e->getMessage());
         }
