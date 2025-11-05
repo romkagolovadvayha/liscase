@@ -49,6 +49,7 @@ JS
 </script>
 
 <?= $content ?>
+<?=Yii::$app->settings->get('metrics_code'); ?>
 <?php $this->endBody() ?>
 </body>
 </html>
