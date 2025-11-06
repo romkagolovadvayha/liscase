@@ -445,7 +445,34 @@ class ChatServer extends WebSocketServer
                                             ]));
                   return;
               }
+              
+              // Защита от повторного вывода: проверяем статус предмета
+              if ($model->status != UserDrop::STATUS_ACTIVE) {
+                  $statusText = UserDrop::getStatusList()[$model->status] ?? 'Недоступен';
+                  $client->send(json_encode([
+                                                'type' => 'store.take',
+                                                'code' => 500,
+                                                'message' => Yii::t('common', "Товар уже был выведен или недоступен! Статус: {status}", ['status' => $statusText], $client->user->current_language),
+                                                'id' => $model->id,
+                                            ]));
+                  return;
+              }
+              
+              // Атомарная блокировка предмета на время обработки
+              $lockKey = 'commandGetDrop_lock_' . $model->id;
+              if (Yii::$app->cache->get($lockKey)) {
+                  $client->send(json_encode([
+                                                'type' => 'store.take',
+                                                'code' => 500,
+                                                'message' => Yii::t('common', "Предмет уже обрабатывается, подождите немного!", [], $client->user->current_language),
+                                                'id' => $model->id,
+                                            ]));
+                  return;
+              }
+              Yii::$app->cache->set($lockKey, true, 10); // Блокируем на 10 секунд
+              
               if (empty($model->user->server)) {
+                  Yii::$app->cache->delete($lockKey); // Снимаем блокировку
                   $client->send(json_encode([
                                                 'type' => 'store.take',
                                                 'code' => 500,
@@ -455,6 +482,7 @@ class ChatServer extends WebSocketServer
                   return;
               }
               if (DropBlocked::getBlocked($model->drop_id, $model->user->server->id)) {
+                  Yii::$app->cache->delete($lockKey); // Снимаем блокировку
                   $client->send(json_encode([
                                                 'type' => 'store.take',
                                                 'code' => 500,
@@ -467,6 +495,7 @@ class ChatServer extends WebSocketServer
               $cacheKey = 'commandGetDrop_kd_' . $model->user->id;
               $count = Yii::$app->cache->get($cacheKey) ?? 0;
               if ($count > 5) {
+                  Yii::$app->cache->delete($lockKey); // Снимаем блокировку
                   $client->send(json_encode([
                                                 'type' => 'store.take',
                                                 'code' => 500,
@@ -494,6 +523,7 @@ class ChatServer extends WebSocketServer
 
                   try {
                       if (empty($response)) {
+                          Yii::$app->cache->delete($lockKey); // Снимаем блокировку при ошибке
                           $client->send(json_encode([
                                                         'type' => 'store.take',
                                                         'code' => 500,
@@ -504,6 +534,7 @@ class ChatServer extends WebSocketServer
                       }
                       $data = json_decode(json_decode($response, 1)['result'], 1);
                       if (!isset($data['success'])) {
+                          Yii::$app->cache->delete($lockKey); // Снимаем блокировку при ошибке
                           $client->send(json_encode([
                                                         'type' => 'store.take',
                                                         'code' => 500,
@@ -513,6 +544,7 @@ class ChatServer extends WebSocketServer
                           return;
                       }
                       if (!$data['success']) {
+                          Yii::$app->cache->delete($lockKey); // Снимаем блокировку при ошибке
                           $client->send(json_encode([
                                                         'type' => 'store.take',
                                                         'code' => 500,
@@ -522,6 +554,11 @@ class ChatServer extends WebSocketServer
                           return;
                       }
                       if ($data['success']) {
+                          // Успешная выдача - меняем статус предмета на "Отправлен"
+                          $model->status = UserDrop::STATUS_SENDED;
+                          $model->save(false);
+                          
+                          Yii::$app->cache->delete($lockKey); // Снимаем блокировку
                           $client->send(json_encode([
                                                         'type' => 'store.take',
                                                         'code' => 200,
@@ -531,6 +568,7 @@ class ChatServer extends WebSocketServer
                           return;
                       }
                   } catch (\Exception $e) {
+                      Yii::$app->cache->delete($lockKey); // Снимаем блокировку при исключении
                       Yii::$app->telegramChats->sendMessage($e->getFile() . ":" . $e->getLine() . "; " . $e->getMessage() . "; " . $model->id . "; " . $model->user->steam_id . "; " . $command . "; " . $response);
                       $client->send(json_encode([
                                                     'type' => 'store.take',
