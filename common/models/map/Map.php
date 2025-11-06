@@ -51,9 +51,10 @@ class Map extends \yii\db\ActiveRecord
     {
         return [
             [['seed', 'size', 'version'], 'required'],
-            [['seed', 'size', 'version'], 'integer'],
+            [['seed', 'size', 'version', 'votes', 'server_id'], 'integer'],
             [['created_at'], 'safe'],
-            [['mapId', 'link', 'image_link', 'image_link_icons'], 'string', 'max' => 255],
+            [['is_archive', 'is_staging'], 'boolean'],
+            [['mapId', 'link', 'image_link', 'image_link_icons', 'name'], 'string', 'max' => 255],
         ];
     }
 
@@ -131,8 +132,8 @@ class Map extends \yii\db\ActiveRecord
         $userMap->created_at = date('Y-m-d H:i:s');
 
         if ($userMap->save()) {
-            $this->votes++;
-            $this->save();
+            // Используем updateCounters для атомарного обновления
+            $this->updateCounters(['votes' => 1]);
             return true;
         }
 
@@ -148,11 +149,13 @@ class Map extends \yii\db\ActiveRecord
             return false;
         }
 
-        $vote->delete();
-        $this->votes--;
-        $this->save();
+        if ($vote->delete()) {
+            // Используем updateCounters для атомарного обновления
+            $this->updateCounters(['votes' => -1]);
+            return true;
+        }
 
-        return true;
+        return false;
     }
 
     /**
