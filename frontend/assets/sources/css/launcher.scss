@@ -1,3 +1,7 @@
+// Import design system colors
+@import "design/colors";
+
+// Legacy Rust colors (for backward compatibility)
 $rust_color: #25251c;
 $rust_color_text: #a9a29b;
 $rust_color_blue: #1b3f5b;
@@ -20,53 +24,28 @@ $rust_logo_text: #b0b0b0;
 $rust_logo_bg: #20201d;
 $color_text: #232323;
 
-h1 {
-  text-align: left;
-  color: $rust_logo_text;
-  font-size: 48px;
-  text-transform: uppercase;
-  @media (max-width: 500px) {
-    font-size: 24px;
-  }
+// Global styles
+* {
+  box-sizing: border-box;
 }
-h1 + p {
-  margin-top: 5px;
-  text-align: left;
-  color: $rust_logo_text;
-  @media (max-width: 500px) {
-    font-size: 14px;
-  }
-}
-.content_text {
-  background: var(--background-secondary);
-  border: 2px solid var(--border-color-default);
-  border-radius: var(--block-radius);
-  padding: 40px;
-  text-align: center;
-  font-size: 18px;
-  color: var(--text-teritiary);
-  margin: 40px auto;
-  max-width: 600px;
-  
-  &_warning {
-    background: linear-gradient(135deg, rgba(235, 12, 53, 0.1), rgba(255, 97, 52, 0.1));
-    border: 2px solid var(--primary-colors-main);
-    animation: pulse 2s ease-in-out infinite;
-  }
-}
+
 html {
   height: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background-main);
+  background: $background-main;
   background-size: cover;
   background-attachment: fixed;
-  font-family: "Roboto Condensed", sans-serif;
-  color: $color_text;
-  padding: 5px;
+  font-family: var(--font-main);
+  color: $text-main;
+  padding: 0;
+  margin: 0;
   min-height: 100%;
   height: auto;
+  overflow-x: hidden;
+  
   &::after {
     background-image: url(https://files.facepunch.com/garry/1b1011b1/test.png?1=);
     content: " ";
@@ -78,11 +57,82 @@ body {
   }
 }
 
+// Typography
+h1 {
+  margin: 0;
+  text-align: left;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 54px;
+  
+  @media (max-width: 768px) {
+    font-size: 32px;
+    line-height: 40px;
+  }
+}
+
+p {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 28px;
+  
+  @media (max-width: 768px) {
+    font-size: 16px;
+    line-height: 24px;
+  }
+}
+
+// Scrollbar
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: $background-secondary;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $border-color-default;
+  border-radius: 6px;
+  transition: background 0.3s ease;
+  
+  &:hover {
+    background: $border-color-hover;
+  }
+}
+
+// Selection
+::selection {
+  background: $primary-colors-main;
+  color: $text-main;
+}
+
+// Content text
+.content_text {
+  background: $background-secondary;
+  border: 2px solid $border-color-default;
+  border-radius: var(--block-radius);
+  padding: 40px;
+  text-align: center;
+  font-size: 18px;
+  color: $text-teritiary;
+  margin: 40px auto;
+  max-width: 600px;
+  
+  &_warning {
+    background: linear-gradient(135deg, $primary-colors-secondary-opacity, rgba($primary-colors-main, 0.1));
+    border: 2px solid $primary-colors-main;
+    color: $text-main;
+    animation: pulse 2s ease-in-out infinite;
+  }
+}
+
 // Store Launcher - Modern Design
 .store_launcher {
   width: 100%;
   padding: 40px 60px;
-  min-height: calc(100vh - 10px);
   
   @media (max-width: 768px) {
     padding: 20px 16px 100px 16px;
@@ -101,12 +151,12 @@ body {
     &::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 600px;
-      height: 400px;
-      background: radial-gradient(circle, var(--primary-colors-main-opacity) 0%, transparent 70%);
-      filter: blur(100px);
+      top: -40px;
+      left: -60px;
+      width: 700px;
+      height: 500px;
+      background: radial-gradient(circle, $primary-colors-main-opacity 0%, transparent 70%);
+      filter: blur(120px);
       z-index: 0;
       pointer-events: none;
     }
@@ -115,43 +165,26 @@ body {
       flex: 1;
       position: relative;
       z-index: 1;
-      text-align: left;
     }
     
     h1 {
-      font-family: var(--font-main);
-      font-size: 48px;
-      font-weight: 700;
-      color: var(--text-main);
-      margin: 0 0 16px 0;
-      text-align: left;
-      background: var(--base-linear-gradiend);
+      color: $text-main;
+      margin-bottom: 16px;
+      background: linear-gradient(90deg, $primary-colors-main 0%, $primary-colors-secondary 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      animation: glow 2s ease-in-out infinite alternate;
+      text-shadow: 0 0 40px rgba($primary-colors-secondary, 0.3);
     }
     
     p {
-      font-family: var(--font-main);
-      font-size: 18px;
-      color: var(--text-teritiary);
-      margin: 0;
-      text-align: left;
+      color: $text-teritiary;
     }
     
     @media (max-width: 768px) {
       flex-direction: column;
       align-items: flex-start;
       gap: 24px;
-      
-      h1 {
-        font-size: 32px;
-      }
-      
-      p {
-        font-size: 16px;
-      }
     }
   }
   
@@ -170,18 +203,20 @@ body {
   }
   
   &_stat {
-    background: var(--background-secondary);
-    border: 1px solid var(--border-color-default);
-    border-radius: var(--button-radius);
+    background: $background-secondary;
+    border: 1px solid $border-color-default;
+    border-radius: $button-radius;
     padding: 16px 24px;
     display: flex;
     align-items: center;
     gap: 12px;
     transition: all 0.3s ease;
+    box-shadow: $shadow-card;
     
     &:hover {
-      border-color: var(--border-color-hover);
+      border-color: $border-color-hover;
       transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
     }
     
     &_icon {
@@ -199,8 +234,10 @@ body {
     }
     
     &_label {
-      font-size: 13px;
-      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 16px;
+      color: $text-secondary;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -208,10 +245,12 @@ body {
     &_value {
       font-size: 24px;
       font-weight: 700;
-      color: var(--text-main);
+      line-height: 28px;
+      color: $text-main;
       
       @media (max-width: 768px) {
         font-size: 20px;
+        line-height: 24px;
       }
     }
     
@@ -221,41 +260,11 @@ body {
     }
   }
   
-  // Categories
-  &_categories {
-    display: flex;
-    gap: 16px;
+  // Categories Wrapper
+  &_categories_wrapper {
+    overflow: hidden;
+    border-radius: var(--card-radius);
     margin-bottom: 40px;
-    padding: 20px;
-    background: var(--background-secondary);
-    border-radius: var(--block-radius);
-    border: 1px solid var(--border-color-default);
-    overflow-x: auto;
-    overflow-y: hidden;
-    flex-wrap: nowrap;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-color-default) var(--background-teritiary);
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    
-    &::-webkit-scrollbar {
-      height: 8px;
-    }
-    
-    &::-webkit-scrollbar-track {
-      background: var(--background-teritiary);
-      border-radius: 4px;
-    }
-    
-    &::-webkit-scrollbar-thumb {
-      background: var(--border-color-default);
-      border-radius: 4px;
-      transition: background 0.3s ease;
-    }
-    
-    &::-webkit-scrollbar-thumb:hover {
-      background: var(--border-color-hover);
-    }
     
     @media (max-width: 768px) {
       position: fixed;
@@ -263,14 +272,54 @@ body {
       left: 0;
       right: 0;
       margin-bottom: 0;
-      padding: 12px 16px;
       border-radius: 0;
+      z-index: 999;
+    }
+  }
+  
+  // Categories
+  &_categories {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    background: $background-secondary;
+    border: 1px solid $border-color-default;
+    border-radius: var(--card-radius);
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    scrollbar-width: thin;
+    scrollbar-color: $border-color-default $background-teritiary;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: $shadow-card;
+    
+    &::-webkit-scrollbar {
+      height: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: $background-teritiary;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: $border-color-default;
+      border-radius: 4px;
+      transition: background 0.3s ease;
+      
+      &:hover {
+        background: $border-color-hover;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      padding: 12px 16px;
       border-left: none;
       border-right: none;
       border-bottom: none;
-      z-index: 999;
       backdrop-filter: blur(10px);
-      background: rgba(25, 16, 45, 0.95);
+      background: rgba($background-secondary, 0.95);
       box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
       gap: 12px;
       
@@ -282,8 +331,8 @@ body {
     &_category {
       position: relative;
       cursor: pointer;
-      background: var(--background-teritiary);
-      border: 2px solid var(--border-color-default);
+      background: $background-teritiary;
+      border: 2px solid $border-color-default;
       border-radius: var(--card-radius);
       padding: 12px 24px;
       display: flex;
@@ -301,21 +350,21 @@ body {
         left: -50%;
         width: 200%;
         height: 200%;
-        background: var(--base-linear-gradiend);
+        background: linear-gradient(90deg, $primary-colors-main 50%, $primary-colors-secondary 100%);
         opacity: 0;
         transition: opacity 0.3s ease;
       }
       
       &:hover {
-        border-color: var(--border-color-hover);
+        border-color: $border-color-hover;
         transform: translateY(-4px) scale(1.05);
-        box-shadow: 0 8px 24px rgba(235, 12, 53, 0.3);
+        box-shadow: 0 8px 24px rgba($primary-colors-main, 0.3);
       }
       
       &.active {
-        border-color: var(--primary-colors-main);
-        background: linear-gradient(135deg, rgba(235, 12, 53, 0.2), rgba(255, 97, 52, 0.2));
-        box-shadow: 0 0 24px rgba(235, 12, 53, 0.5), inset 0 0 20px rgba(255, 97, 52, 0.1);
+        border-color: $primary-colors-main;
+        background: linear-gradient(135deg, rgba($primary-colors-main, 0.2), rgba($primary-colors-secondary, 0.2));
+        box-shadow: 0 0 24px rgba($primary-colors-main, 0.5), inset 0 0 20px rgba($primary-colors-secondary, 0.1);
         
         &::before {
           opacity: 0.1;
@@ -324,14 +373,13 @@ body {
       }
       
       &_name {
-        font-family: var(--font-main);
         font-size: 16px;
         font-weight: 600;
-        color: var(--text-main);
+        line-height: 24px;
+        color: $text-main;
         position: relative;
         z-index: 1;
         white-space: nowrap;
-        line-height: 1.2;
       }
       
       @media (max-width: 768px) {
@@ -339,6 +387,7 @@ body {
         
         &_name {
           font-size: 14px;
+          line-height: 20px;
         }
       }
     }
@@ -347,153 +396,205 @@ body {
   &_cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 24px;
-    padding: 30px;
-    background: var(--background-secondary);
-    border-radius: var(--block-radius);
-    border: 1px solid var(--border-color-default);
+    gap: 12px;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
     
     @media (max-width: 768px) {
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 16px;
-      padding: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
       margin-bottom: 20px;
     }
     
     @media (max-width: 500px) {
       grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     }
-    &_item {
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid #000;
+    
+    // Card wrapper
+    &_item_wrap {
       position: relative;
-      border-radius: 10px;
-      flex: 1 0;
-      &:hover {
-        opacity: 0.7;
-        cursor: pointer;
-      }
-      &_wrap {
-        aspect-ratio: 1 / 1;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        border-radius: 10px;
-        overflow: hidden;
-        &.loader {
-          &:after {
-            position: absolute;
-            content: "";
-            z-index: 2;
-            background: url("/images/icons/loader2.svg");
-            height: 64px;
-            width: 64px;
-            display: block;
-            top: 50%;
-            left: 50%;
-            margin-left: -32px;
-            margin-top: -32px;
-          }
-          &:before {
-            content: "";
-            position: absolute;
-            z-index: 1;
-            background: rgba(0, 0, 0, 0.7);
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-          }
+      animation: fadeIn 0.5s ease;
+      
+      &.loader {
+        opacity: 0.5;
+        pointer-events: none;
+        
+        .store_launcher_cards_item::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 40px;
+          height: 40px;
+          border: 3px solid $border-color-default;
+          border-top-color: $primary-colors-main;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+          z-index: 10;
         }
       }
-      &_title {
-        max-width: 100px;
-        overflow: hidden;
-        color: #a8dc4d;
-        line-height: 12px;
-        font-size: 12px;
-        white-space: nowrap;
-        text-transform: uppercase;
-        text-overflow: ellipsis;
-        position: absolute;
-        top: 5px;
-        right: 5px;
-        background: #5c7137;
-        padding: 5px;
+    }
+    
+    // Card (стиль как category-card)
+    &_item {
+      padding: 12px;
+      position: relative;
+      text-align: center;
+      background: $background-secondary;
+      border-radius: var(--card-radius);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: box-shadow 0.25s ease-in-out, background-color 0.25s ease-in-out, transform 0.25s ease-in-out;
+      min-height: 220px;
+      
+      @media (max-width: 768px) {
+        min-height: 200px;
+        padding: 8px;
       }
-      &_count {
-        overflow: hidden;
-        color: #d9bab4;
-        line-height: 11px;
-        font-size: 11px;
-        text-transform: uppercase;
-        position: absolute;
-        //top: 30px;
-        top: 5px;
-        right: 5px;
-        background: $rust_color_red;
-        padding: 5px;
-        border-radius: 10px;
-      }
+      
+      // Image
       &_image {
-        position: absolute;
-        z-index: 0;
-        top: 5px;
-        left: 5px;
-        right: 5px;
-        bottom: 45px;
-        text-align: center;
+        width: 140px;
+        height: 140px;
+        max-width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        flex-shrink: 0;
+        
         img {
-          height: 100%;
+          object-fit: contain;
+          max-width: 100%;
+          max-height: 100%;
+          transition: transform 0.25s ease-in-out;
+        }
+        
+        @media (max-width: 768px) {
+          width: 100px;
+          height: 100px;
         }
       }
-      &_button {
-        position: absolute;
-        bottom: 5px;
-        right: 5px;
-        left: 5px;
-        border-radius: 10px;
-        font-weight: 700;
-        font-size: 16px;
-        padding: 10px;
-        text-transform: uppercase;
-        background-color: #4f6131;
-        color: #8ec62f;
-        text-shadow: 0 1px 0 rgba(0, 0, 0, .2);
-        border: 0;
-        display: block;
-        transition: background-color .3s ease,color .3s ease;
+      
+      // Count badge
+      &_count {
+        font-size: 14px;
+        font-weight: 400;
         line-height: 20px;
+        position: absolute;
+        text-align: left;
+        color: $text-secondary;
+        top: 8px;
+        left: 8px;
+        z-index: 2;
+      }
+      
+      // Button (простой текст)
+      &_button {
+        width: 100%;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 20px;
+        text-transform: uppercase;
+        color: $primary-colors-secondary;
         text-align: center;
-        &:hover {
-          background-color: #4f6131;
+        padding: 10px 0;
+        transition: color 0.25s ease-in-out;
+      }
+      
+      // Hover effects (как category-card)
+      &:hover {
+        background: $background-teritiary;
+        box-shadow: $shadow-card;
+        
+        .store_launcher_cards_item_image img {
+          transform: scale(1.1) rotate(10deg);
         }
-        &.blocked {
-          color: $rust_color_red_text;
-          background-color: $rust_color_red;
+        
+        .store_launcher_cards_item_button {
+          color: $text-main;
         }
       }
+      
+      // Blocked overlay
       &_blocked {
         &_wrap {
           position: absolute;
           top: 0;
           left: 0;
-          bottom: 0;
           right: 0;
+          bottom: 0;
+          background: rgba($text-secondary, 0.15);
+          backdrop-filter: blur(8px) saturate(0%);
+          border-radius: var(--card-radius);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 16px;
+          z-index: 5;
+        }
+        
+        &_image {
+          width: 80px;
+          height: 80px;
           display: flex;
           align-items: center;
-          text-align: center;
           justify-content: center;
-          flex-direction: column;
-          background: rgba(108, 0, 0, 0.5);
-          box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.71);
-          border: 1px solid $rust_color_red;
+          margin-bottom: 4px;
+          
+          img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            filter: grayscale(100%) opacity(0.5);
+          }
+          
+          @media (max-width: 768px) {
+            width: 60px;
+            height: 60px;
+          }
+        }
+        
+        &_title {
+          font-size: 14px;
+          font-weight: 600;
+          line-height: 20px;
+          color: $text-main;
+          text-align: center;
+          margin-bottom: 4px;
+        }
+        
+        &_subtitle {
           font-size: 12px;
           font-weight: 700;
+          line-height: 16px;
+          color: $primary-colors-main;
+          text-align: center;
           text-transform: uppercase;
-          padding: 5px;
-          z-index: 2;
-          border-radius: 10px;
+          letter-spacing: 1px;
+        }
+        
+        &_timer {
+          font-size: 11px;
+          font-weight: 400;
+          line-height: 16px;
+          color: $text-teritiary;
+          text-align: center;
+          padding: 4px 10px;
+          background: rgba($background-secondary, 0.8);
+          border-radius: $button-radius;
+          border: 1px solid $border-color-default;
+          margin-top: 4px;
         }
       }
     }
@@ -557,4 +658,19 @@ body {
 @keyframes rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
 }

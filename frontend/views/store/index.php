@@ -25,33 +25,37 @@ $categories = \common\models\box\Category::find()
 $this->registerJs(<<<JS
     var categories = $('.store_launcher_categories .store_launcher_categories_category');
     window.currentCategoryId = '';
+    
     window.search = function() {
-        var input, filter, ul, li, a, i, txtValue, categoryId;
-        ul = document.getElementById("products");
-        li = ul.querySelectorAll(".store_launcher_cards_item_wrap");
-        for (i = 0; i < li.length; i++) {
-            txtValue = $(li[i]).attr('data-title');
-            categoryId = $(li[i]).attr('data-category-id');
-            if ( (currentCategoryId === '' || currentCategoryId === undefined || categoryId == currentCategoryId)) {
+        var ul = document.getElementById("products");
+        var li = ul.querySelectorAll(".store_launcher_cards_item_wrap");
+        for (var i = 0; i < li.length; i++) {
+            var categoryId = $(li[i]).attr('data-category-id');
+            if (currentCategoryId === '' || currentCategoryId === 'all' || categoryId == currentCategoryId) {
                 li[i].style.display = "";
             } else {
                 li[i].style.display = "none";
             }
         }
     }
+    
     categories.click(function () {
-        if ($(this).hasClass('active')) {
-            window.currentCategoryId = '';
-            $(this).removeClass('active');
-            search();
-            return;
-        }
-        var categories = $('.store_launcher_categories .store_launcher_categories_category.active');
-        categories.removeClass('active');
+        var clickedId = $(this).attr('data-id');
+        
+        // Убираем active со всех
+        $('.store_launcher_categories .store_launcher_categories_category').removeClass('active');
+        
+        // Добавляем active к нажатой
         $(this).addClass('active');
-        window.currentCategoryId = $(this).attr('data-id');
+        
+        // Устанавливаем текущую категорию
+        window.currentCategoryId = clickedId;
+        
         search();
     });
+    
+    // Активируем "Все" по умолчанию
+    $('.store_launcher_categories_category[data-id="all"]').addClass('active');
 JS
 );
 \frontend\assets\LauncherAsset::register($this);
@@ -107,13 +111,18 @@ JS
         </div>
     <?php elseif (!empty($user->server) && ($user->server->is_store || $user->store)): ?>
         <?php if (!empty($userDrops)):?>
-            <div class="store_launcher_categories">
-                <?php foreach ($categories as $category): ?>
-                    <?php if ($category->id === 1) continue; ?>
-                    <div class="store_launcher_categories_category" data-id="<?=$category->id?>">
-                        <div class="store_launcher_categories_category_name"><?=Yii::t('database', $category->name)?></div>
+            <div class="store_launcher_categories_wrapper">
+                <div class="store_launcher_categories">
+                    <div class="store_launcher_categories_category" data-id="all">
+                        <div class="store_launcher_categories_category_name"><?=Yii::t('common', 'Все')?></div>
                     </div>
-                <?php endforeach; ?>
+                    <?php foreach ($categories as $category): ?>
+                        <?php if ($category->id === 1) continue; ?>
+                        <div class="store_launcher_categories_category" data-id="<?=$category->id?>">
+                            <div class="store_launcher_categories_category_name"><?=Yii::t('database', $category->name)?></div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
             <div class="store_launcher_cards" id="products">
                 <?php $serverId = $user->server->id; ?>
