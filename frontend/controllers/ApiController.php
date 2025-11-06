@@ -255,7 +255,7 @@ class ApiController extends WebController
     private function methodTake($item_id) {
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
-        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
+        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_WAIT) {
             return [
                 'result' => 'fail',
                 'message' => "Предмет уже получен/продан",
