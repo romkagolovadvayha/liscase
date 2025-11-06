@@ -164,6 +164,17 @@ class Map extends \yii\db\ActiveRecord
     {
         return UserMap::find()->where(['map_id' => $this->id, 'vote' => 1])->count();
     }
+    
+    /**
+     * Получает актуальное количество голосов из БД
+     *
+     * @return int
+     */
+    public function getVotes()
+    {
+        // Всегда берем актуальные данные из user_map
+        return (int)UserMap::find()->where(['map_id' => $this->id, 'vote' => 1])->count();
+    }
 
     /**
      * Удаляет карту и ее изображения.

@@ -1,7 +1,7 @@
 {% set isWinner = (maxVotes > 0 and model.votes > 0 and model.votes == maxVotes) %}
-{% set votePercent = (maxVotes > 0 and model.votes > 0) ? ((model.votes / maxVotes * 100)|round(1)) : 0 %}
+{% set votePercent = (totalVotes > 0 and model.votes > 0) ? ((model.votes / totalVotes * 100)|round(1)) : 0 %}
 
-{# Debug: Map {{ model.id }}: votes={{ model.votes }}, maxVotes={{ maxVotes }}, percent={{ votePercent }} #}
+{# Debug: Map {{ model.id }}: votes={{ model.votes }}, totalVotes={{ totalVotes }}, maxVotes={{ maxVotes }}, percent={{ votePercent }} #}
 <div class="maps_content_list_item{{ isWinner ? ' map-winner' : '' }}" data-id="{{ model.id }}" data-votes="{{ model.votes }}" data-max="{{ maxVotes }}" data-percent="{{ votePercent }}">
     {% if isWinner %}
         <div class="map-winner-badge">
