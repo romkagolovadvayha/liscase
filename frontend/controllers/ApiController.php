@@ -116,7 +116,6 @@ class ApiController extends WebController
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
         if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
-            Yii::$app->telegramChats->sendMessage("Предмет уже получен/продан");
             return [
                 'result' => 'fail',
                 'message' => "Предмет уже получен/продан",
@@ -179,7 +178,6 @@ class ApiController extends WebController
 
         \Yii::$app->queueProcess->push(new ActivatedDropJob(['userDrop'  => $userDrop]));
 
-        Yii::$app->telegramChats->sendMessage("success");
         $result = [];
         $result['result'] = "success";
         $result['code'] = 100;
