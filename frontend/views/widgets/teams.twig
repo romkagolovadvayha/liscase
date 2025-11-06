@@ -50,11 +50,10 @@
                     
                     <div class="team-member__status-text">
                         {% if ITEM.is_online %}
-                            <i class="fas fa-circle team-member__online-icon"></i>
                             <span>{{ t('common', 'Онлайн') }}</span>
                         {% else %}
                             <i class="far fa-clock"></i>
-                            <span>{{ t('common', 'Был онлайн') }} <span class="server_timer" data-time="{{ ITEM.time_visit }}">{{ ITEM.date_visit }}</span></span>
+                            <span>{{ t('common', 'Был онлайн') }} <span class="wipe_timer" data-time="{{ ITEM.time_visit }}">{{ ITEM.date_visit }}</span></span>
                         {% endif %}
                     </div>
                 </div>
@@ -76,8 +75,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!showMoreBtn) return;
     
     const list = showMoreBtn.closest('.team-widget').querySelector('.team-widget__list');
-    const hiddenMembers = list.querySelectorAll('.team-member--hidden');
-    const totalCount = parseInt(list.dataset.total);
+    if (!list) return;
+    
+    const textElement = showMoreBtn.querySelector('.team-widget__show-more-text');
+    const iconElement = showMoreBtn.querySelector('i');
+    
+    if (!textElement) return;
+    
     let isExpanded = false;
     
     showMoreBtn.addEventListener('click', function() {
@@ -86,8 +90,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isExpanded) {
             // Показываем следующие 10 элементов
             let shown = 0;
+            const hiddenMembers = list.querySelectorAll('.team-member--hidden');
             hiddenMembers.forEach(member => {
-                if (shown < 10 && member.classList.contains('team-member--hidden')) {
+                if (shown < 10) {
                     member.classList.remove('team-member--hidden');
                     shown++;
                 }
@@ -96,10 +101,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Проверяем, остались ли еще скрытые
             const stillHidden = list.querySelectorAll('.team-member--hidden').length;
             if (stillHidden === 0) {
-                showMoreBtn.querySelector('.team-widget__show-more-text').textContent = showMoreBtn.dataset.textLess;
-                showMoreBtn.querySelector('i').classList.add('team-widget__show-more-icon--rotated');
+                textElement.textContent = showMoreBtn.dataset.textLess;
+                if (iconElement) {
+                    iconElement.classList.add('team-widget__show-more-icon--rotated');
+                }
             } else {
-                showMoreBtn.querySelector('.team-widget__show-more-text').textContent = showMoreBtn.dataset.textMore.replace('{count}', stillHidden);
+                textElement.textContent = showMoreBtn.dataset.textMore.replace('{count}', stillHidden);
             }
         } else {
             // Скрываем все после 5-го
@@ -110,8 +117,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             const hidden = list.querySelectorAll('.team-member--hidden').length;
-            showMoreBtn.querySelector('.team-widget__show-more-text').textContent = showMoreBtn.dataset.textMore.replace('{count}', hidden);
-            showMoreBtn.querySelector('i').classList.remove('team-widget__show-more-icon--rotated');
+            textElement.textContent = showMoreBtn.dataset.textMore.replace('{count}', hidden);
+            if (iconElement) {
+                iconElement.classList.remove('team-widget__show-more-icon--rotated');
+            }
         }
     });
 });
