@@ -1,30 +1,119 @@
 <!-- Команда -->
 {% if ITEMS %}
-<section class="stats-aside__stat-block stat-block">
-    <h4 class="stat-block__title">{{ t('common', 'Команда') }}</h4>
-    <ul class="stat-block__list">
-        {% for ITEM in ITEMS %}
-            <li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
-                <div class="stat-block__list__avatar  {% if not ITEM.is_online %}stat-block__list__avatar_offline{% endif %}">
-                    <img src="{{ ITEM.avatar }}" class="block w-36 h-36 min-w-36 min-h-36 rounded-6 object-cover" alt="{{ ITEM.username }}">
+{% set onlineMembers = [] %}
+{% set offlineMembers = [] %}
+{% for ITEM in ITEMS %}
+    {% if ITEM.is_online %}
+        {% set onlineMembers = onlineMembers|merge([ITEM]) %}
+    {% else %}
+        {% set offlineMembers = offlineMembers|merge([ITEM]) %}
+    {% endif %}
+{% endfor %}
+{% set sortedItems = onlineMembers|merge(offlineMembers) %}
+
+<section class="stats-aside__stat-block stat-block team-widget">
+    <div class="team-widget__header">
+        <h4 class="stat-block__title">{{ t('common', 'Команда') }}</h4>
+        <div class="team-widget__stats">
+            <span class="team-widget__stat team-widget__stat--online">
+                <i class="fas fa-circle"></i>
+                {{ onlineMembers|length }}
+            </span>
+            <span class="team-widget__stat">
+                {{ sortedItems|length }}
+            </span>
+        </div>
+    </div>
+    
+    <ul class="team-widget__list" data-total="{{ sortedItems|length }}">
+        {% for ITEM in sortedItems %}
+            <li class="team-member {% if loop.index > 5 %}team-member--hidden{% endif %}" data-index="{{ loop.index }}">
+                <div class="team-member__avatar {% if not ITEM.is_online %}team-member__avatar--offline{% endif %}">
+                    <img src="{{ ITEM.avatar }}" alt="{{ ITEM.username }}" loading="lazy">
+                    {% if ITEM.is_online %}
+                        <span class="team-member__status"></span>
+                    {% endif %}
                 </div>
-                <div class="flex flex-column w-full gap-y-4">
-                    <p class="flex justify-space-between items-center flex-wrap">
-                        <a href="{{ ITEM.link }}" rel="nofollow" class="p2 link font-medium">{{ ITEM.username }}</a>
+                
+                <div class="team-member__content">
+                    <div class="team-member__info">
+                        <a href="{{ ITEM.link }}" rel="nofollow" class="team-member__name">
+                            {{ ITEM.username }}
+                        </a>
                         {% if ITEM.is_leader %}
-                            <span class="p3 text-text-secondary">{{ t('common', 'лидер') }}</span>
+                            <span class="team-member__badge team-member__badge--leader">
+                                <i class="fas fa-crown"></i>
+                                {{ t('common', 'лидер') }}
+                            </span>
                         {% endif %}
-                    </p>
-                    <p class="p3">
-                        {% if not ITEM.is_online %}
-                            <span class="text-text-secondary mr-1">{{ t('common', 'Был онлайн') }} <span class="text-text-secondary server_timer" data-time="{{ ITEM.time_visit }}">{{ ITEM.date_visit }}</span></span>
+                    </div>
+                    
+                    <div class="team-member__status-text">
+                        {% if ITEM.is_online %}
+                            <i class="fas fa-circle team-member__online-icon"></i>
+                            <span>{{ t('common', 'Онлайн') }}</span>
                         {% else %}
-                            <span class="text-text-secondary mr-1 stat-block__list__status_online">{{ t('common', 'Онлайн') }}</span>
+                            <i class="far fa-clock"></i>
+                            <span>{{ t('common', 'Был онлайн') }} <span class="server_timer" data-time="{{ ITEM.time_visit }}">{{ ITEM.date_visit }}</span></span>
                         {% endif %}
-                    </p>
+                    </div>
                 </div>
             </li>
         {% endfor %}
     </ul>
+    
+    {% if sortedItems|length > 5 %}
+        <button type="button" class="team-widget__show-more" data-text-more="{{ t('common', 'Показать еще {count}') }}" data-text-less="{{ t('common', 'Скрыть') }}">
+            <span class="team-widget__show-more-text">{{ t('common', 'Показать еще {count}')|replace({'{count}': (sortedItems|length - 5)}) }}</span>
+            <i class="fas fa-chevron-down"></i>
+        </button>
+    {% endif %}
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const showMoreBtn = document.querySelector('.team-widget__show-more');
+    if (!showMoreBtn) return;
+    
+    const list = showMoreBtn.closest('.team-widget').querySelector('.team-widget__list');
+    const hiddenMembers = list.querySelectorAll('.team-member--hidden');
+    const totalCount = parseInt(list.dataset.total);
+    let isExpanded = false;
+    
+    showMoreBtn.addEventListener('click', function() {
+        isExpanded = !isExpanded;
+        
+        if (isExpanded) {
+            // Показываем следующие 10 элементов
+            let shown = 0;
+            hiddenMembers.forEach(member => {
+                if (shown < 10 && member.classList.contains('team-member--hidden')) {
+                    member.classList.remove('team-member--hidden');
+                    shown++;
+                }
+            });
+            
+            // Проверяем, остались ли еще скрытые
+            const stillHidden = list.querySelectorAll('.team-member--hidden').length;
+            if (stillHidden === 0) {
+                showMoreBtn.querySelector('.team-widget__show-more-text').textContent = showMoreBtn.dataset.textLess;
+                showMoreBtn.querySelector('i').classList.add('team-widget__show-more-icon--rotated');
+            } else {
+                showMoreBtn.querySelector('.team-widget__show-more-text').textContent = showMoreBtn.dataset.textMore.replace('{count}', stillHidden);
+            }
+        } else {
+            // Скрываем все после 5-го
+            list.querySelectorAll('.team-member').forEach((member, index) => {
+                if (index >= 5) {
+                    member.classList.add('team-member--hidden');
+                }
+            });
+            
+            const hidden = list.querySelectorAll('.team-member--hidden').length;
+            showMoreBtn.querySelector('.team-widget__show-more-text').textContent = showMoreBtn.dataset.textMore.replace('{count}', hidden);
+            showMoreBtn.querySelector('i').classList.remove('team-widget__show-more-icon--rotated');
+        }
+    });
+});
+</script>
 {% endif %}

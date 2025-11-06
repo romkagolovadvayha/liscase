@@ -181,7 +181,7 @@ class Building extends \yii\db\ActiveRecord
         foreach ($buildings as $building) {
             $items[] = [
                 'NAME' => $building->name,
-                'IMAGE' => $building->buildingImage[0]->getPublicUrl(),
+                'IMAGE' => $building->buildingImage[0]->getPublicUrlPreview(),
                 'DATE' => $building->passed(),
                 'URL' => $building->getLink(),
             ];

@@ -1,56 +1,72 @@
-<li class="flex items-center bg-background-teritiary py-14 px-16 rounded-8 gap-x-8 relative transition-all">
-    {% if ITEM.weapon_image %}
-        <img src="{{ ITEM.weapon_image }}" class="block w-36 h-36 min-w-36 min-h-36" loading="lazy" alt="{{ ITEM.weapon_name }}">
-    {% endif %}
-    <div class="block w-full">
-        <p class="p3 flex items-center gap-x-4">
+<li class="kill-item">
+    <div class="kill-item__weapon">
+        {% if ITEM.weapon_image %}
+            <img src="{{ ITEM.weapon_image }}" alt="{{ ITEM.weapon_name }}" loading="lazy">
+        {% else %}
+            <i class="fas fa-skull-crossbones"></i>
+        {% endif %}
+    </div>
+    
+    <div class="kill-item__content">
+        <div class="kill-item__action">
             {% if ITEM.type == 'suicides' %}
                 {{ ITEM.link|raw }}
-                <span class="text-text-main">{{ t('common', 'совершил самоубийство') }}</span>
+                <span class="kill-item__text">{{ t('common', 'совершил самоубийство') }}</span>
             {% endif %}
             {% if ITEM.type == 'animal' %}
                 {{ ITEM.link|raw }}
-                <span class="text-text-main">{{ t('common', 'убил') }} {{ ITEM.animal2 }}</span>
+                <span class="kill-item__text">{{ t('common', 'убил') }} {{ ITEM.animal2 }}</span>
             {% endif %}
             {% if ITEM.type == 'deaths' %}
-                <span class="text-text-main">{{ ITEM.animal }} {{ t('common', 'убил') }}</span>
+                <span class="kill-item__text">{{ ITEM.animal }} {{ t('common', 'убил') }}</span>
                 {{ ITEM.link|raw }}
             {% endif %}
             {% if ITEM.type == 'scientists' %}
                 {{ ITEM.link|raw }}
-                <span class="text-text-main">{{ t('common', 'убил бота') }}</span>
+                <span class="kill-item__text">{{ t('common', 'убил бота') }}</span>
             {% endif %}
             {% if ITEM.type == 'kill' %}
                 {% if ITEM.bot %}
-                    <span class="text-text-main">{{ t('common', 'Бот') }}</span>
+                    <span class="kill-item__text">{{ t('common', 'Бот') }}</span>
                 {% else %}
                     {{ ITEM.link|raw }}
                 {% endif %}
-                <span class="text-text-main">{{ t('common', 'убил') }}</span>
+                <i class="fas fa-arrow-right kill-item__arrow"></i>
                 {{ ITEM.deadLink|raw }}
             {% endif %}
-        </p>
-        <div class="stat-block__list__footer">
-            <p class="p2">
-                <span class="text-text-secondary">{{ t('common', 'Дистанция') }}:</span>
-                <span class="text-text-main">{{ ITEM.distance }} {{ t('common', 'м') }}</span>
-            </p>
+        </div>
+        
+        <div class="kill-item__footer">
+            <div class="kill-item__distance">
+                <i class="fas fa-ruler"></i>
+                <span>{{ ITEM.distance }} {{ t('common', 'м') }}</span>
+            </div>
+            
             {% if ITEM.signs %}
                 {% set break = false %}
                 {% for SIGN in ITEM.signs %}
                     {% if not break %}
                         {% if SIGN == 'sleep' %}
-                            <span class="stat-block__list__footer__label">{{ t('common', 'Спящий') }}</span>
+                            <span class="kill-item__badge kill-item__badge--sleep">
+                                <i class="fas fa-bed"></i>
+                                {{ t('common', 'Спящий') }}
+                            </span>
                             {% set break = true %}
                         {% endif %}
                         {% if SIGN == 'team' %}
-                            <span class="stat-block__list__footer__label">{{ t('common', 'Тимейт') }}</span>
+                            <span class="kill-item__badge kill-item__badge--team">
+                                <i class="fas fa-user-friends"></i>
+                                {{ t('common', 'Тимейт') }}
+                            </span>
                             {% set break = true %}
                         {% endif %}
                     {% endif %}
                 {% endfor %}
             {% elseif ITEM.wears %}
-                <span class="stat-block__list__footer__label">{{ t('common', 'Голый') }}</span>
+                <span class="kill-item__badge kill-item__badge--naked">
+                    <i class="fas fa-user"></i>
+                    {{ t('common', 'Голый') }}
+                </span>
             {% endif %}
         </div>
     </div>

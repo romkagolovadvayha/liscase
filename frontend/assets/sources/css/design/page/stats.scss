@@ -580,3 +580,537 @@
     }
   }
 }
+
+// Виджет "Убийства" в сайдбаре
+.kills-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    .stat-block__title {
+      margin-bottom: 0 !important;
+    }
+  }
+  
+  &__count {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    background: var(--primary-colors-main);
+    color: var(--primary-colors-white);
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+}
+
+.kill-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color-default);
+  border-radius: var(--card-radius);
+  transition: all 0.25s ease-in-out;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--primary-colors-main);
+    opacity: 0;
+    transition: opacity 0.25s ease-in-out;
+  }
+  
+  &:hover {
+    background: var(--background-teritiary);
+    border-color: var(--border-color-hover);
+    box-shadow: var(--shadow-card);
+    transform: translateX(4px);
+    
+    &::before {
+      opacity: 1;
+    }
+    
+    .kill-item__weapon img {
+      transform: scale(1.1) rotate(5deg);
+    }
+    
+    .kill-item__weapon i {
+      transform: scale(1.2);
+    }
+  }
+  
+  &__weapon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    background: var(--background-teritiary);
+    border-radius: var(--button-radius);
+    border: 1px solid var(--border-color-default);
+    overflow: hidden;
+    
+    img {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      transition: transform 0.25s ease-in-out;
+    }
+    
+    i {
+      font-size: 20px;
+      color: var(--text-secondary);
+      transition: transform 0.25s ease-in-out;
+    }
+  }
+  
+  &__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+  
+  &__action {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    line-height: 1.4;
+    
+    a {
+      color: var(--link-color-default);
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 0.2s ease;
+      
+      &:hover {
+        color: var(--link-color-hover);
+      }
+    }
+  }
+  
+  &__text {
+    color: var(--text-secondary);
+  }
+  
+  &__arrow {
+    color: var(--primary-colors-main);
+    font-size: 11px;
+    margin: 0 2px;
+  }
+  
+  &__footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  &__distance {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    background: var(--background-teritiary);
+    border-radius: var(--button-secondary-radius);
+    font-size: 11px;
+    color: var(--text-secondary);
+    
+    i {
+      font-size: 10px;
+      color: var(--text-teritiary);
+    }
+    
+    span {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+  }
+  
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: var(--button-secondary-radius);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    
+    i {
+      font-size: 9px;
+    }
+    
+    &--sleep {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(37, 99, 235, 0.15));
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      
+      i {
+        color: #3b82f6;
+      }
+    }
+    
+    &--team {
+      background: linear-gradient(135deg, rgba(251, 146, 60, 0.15), rgba(249, 115, 22, 0.15));
+      color: #fb923c;
+      border: 1px solid rgba(251, 146, 60, 0.3);
+      
+      i {
+        color: #f97316;
+      }
+    }
+    
+    &--naked {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15));
+      color: #4ade80;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      
+      i {
+        color: #22c55e;
+      }
+    }
+  }
+}
+
+// Адаптивность для мобильных
+@media (max-width: 768px) {
+  .kill-item {
+    padding: 10px;
+    
+    &__weapon {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      
+      img {
+        width: 32px;
+        height: 32px;
+      }
+      
+      i {
+        font-size: 18px;
+      }
+    }
+    
+    &__action {
+      font-size: 12px;
+    }
+    
+    &__distance {
+      font-size: 10px;
+    }
+    
+    &__badge {
+      font-size: 9px;
+      padding: 3px 6px;
+    }
+  }
+}
+
+// Виджет "Команда" в сайдбаре
+.team-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    
+    .stat-block__title {
+      margin-bottom: 0 !important;
+    }
+  }
+  
+  &__stats {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  &__stat {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 32px;
+    height: 28px;
+    padding: 0 10px;
+    background: var(--background-teritiary);
+    color: var(--text-main);
+    border-radius: var(--button-secondary-radius);
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid var(--border-color-default);
+    
+    i {
+      font-size: 8px;
+      color: var(--text-secondary);
+    }
+    
+    &--online {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(22, 163, 74, 0.15));
+      border-color: rgba(34, 197, 94, 0.3);
+      color: #22c55e;
+      
+      i {
+        color: #10b981;
+        animation: pulse 2s ease-in-out infinite;
+      }
+    }
+  }
+  
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  &__show-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    background: var(--background-secondary);
+    border: 1px solid var(--border-color-default);
+    border-radius: var(--button-radius);
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease-in-out;
+    
+    &:hover {
+      background: var(--background-teritiary);
+      border-color: var(--primary-colors-main);
+      color: var(--primary-colors-main);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-card);
+      
+      i {
+        transform: translateY(2px);
+      }
+    }
+    
+    i {
+      font-size: 11px;
+      transition: transform 0.25s ease-in-out;
+    }
+    
+    &-icon--rotated {
+      transform: rotate(180deg) !important;
+    }
+  }
+}
+
+.team-member {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color-default);
+  border-radius: var(--card-radius);
+  transition: all 0.25s ease-in-out;
+  
+  &--hidden {
+    display: none;
+  }
+  
+  &:hover {
+    background: var(--background-teritiary);
+    border-color: var(--border-color-hover);
+    box-shadow: var(--shadow-card);
+    transform: translateY(-2px);
+    
+    .team-member__avatar img {
+      transform: scale(1.1);
+    }
+  }
+  
+  &__avatar {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: var(--avatar-radius);
+    overflow: hidden;
+    
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border: 2px solid var(--primary-colors-main);
+      border-radius: var(--avatar-radius);
+      transition: transform 0.25s ease-in-out;
+    }
+    
+    &--offline {
+      img {
+        border-color: var(--border-color-default);
+        opacity: 0.7;
+      }
+    }
+  }
+  
+  &__status {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 14px;
+    height: 14px;
+    background: #22c55e;
+    border: 3px solid var(--background-secondary);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  
+  &__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  
+  &__info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  &__name {
+    color: var(--link-color-default);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    
+    &:hover {
+      color: var(--link-color-hover);
+    }
+  }
+  
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: var(--button-secondary-radius);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    
+    i {
+      font-size: 9px;
+    }
+    
+    &--leader {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.15));
+      color: #fbbf24;
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      
+      i {
+        color: #f59e0b;
+      }
+    }
+  }
+  
+  &__status-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    
+    i {
+      font-size: 10px;
+    }
+  }
+  
+  &__online-icon {
+    color: #22c55e;
+    animation: pulse 2s ease-in-out infinite;
+  }
+}
+
+// Анимация пульсации для онлайн-статуса
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+// Адаптивность для команды
+@media (max-width: 768px) {
+  .team-member {
+    padding: 10px;
+    
+    &__avatar {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+    }
+    
+    &__name {
+      font-size: 13px;
+    }
+    
+    &__status-text {
+      font-size: 11px;
+    }
+    
+    &__badge {
+      font-size: 9px;
+      padding: 2px 6px;
+    }
+  }
+  
+  .team-widget__show-more {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+}

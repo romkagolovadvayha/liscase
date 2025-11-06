@@ -2048,3 +2048,165 @@
     transform: scale(1.25);
   }
 }
+
+// Виджет "Базы игрока" в сайдбаре
+.buildings-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  
+  .stat-block__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    .stat-block__title {
+      margin-bottom: 0;
+    }
+  }
+  
+  .stat-block__title {
+    margin: 0;
+    flex: 1;
+  }
+  
+  .stat-block__info {
+    opacity: 0.7;
+    transition: opacity 0.25s ease;
+    
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+.buildings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.building-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--background-secondary);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  transition: all 0.25s ease-in-out;
+  text-decoration: none;
+  border: 1px solid var(--border-color-default);
+  
+  &:hover {
+    background: var(--background-teritiary);
+    border-color: var(--border-color-hover);
+    box-shadow: var(--shadow-card);
+    transform: translateY(-2px);
+    
+    .building-card__image {
+      transform: scale(1.05);
+    }
+    
+    .building-card__overlay {
+      opacity: 1;
+    }
+    
+    .building-card__view-icon {
+      transform: scale(1);
+    }
+  }
+  
+  &__image-wrapper {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
+    
+    @media (max-width: 768px) {
+      height: 160px;
+    }
+  }
+  
+  &__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.25s ease-in-out;
+  }
+  
+  &__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.25s ease-in-out;
+  }
+  
+  &__view-icon {
+    font-size: 32px;
+    color: var(--text-main);
+    transform: scale(0.8);
+    transition: transform 0.25s ease-in-out;
+  }
+  
+  &__content {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    
+    @media (max-width: 768px) {
+      padding: 10px;
+    }
+  }
+  
+  &__title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+    color: var(--text-main);
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    
+    @media (max-width: 768px) {
+      font-size: 14px;
+      line-height: 20px;
+    }
+  }
+  
+  &__date {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    
+    i {
+      font-size: 11px;
+    }
+  }
+}
+
+.buildings-widget__add-button {
+  margin-top: 4px;
+  
+  .button__text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  i {
+    font-size: 16px;
+  }
+}

@@ -8,6 +8,9 @@ use common\models\statistics\Kills;
 /** @var array $userData */
 /** @var $SETTINGS */
 
+if ($PAGE === 'stats') {
+    return;
+}
 $kills = Kills::getLive($servers);
 $serversList = [];
 foreach ($servers as $server) {
