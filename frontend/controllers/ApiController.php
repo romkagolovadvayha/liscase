@@ -191,7 +191,7 @@ class ApiController extends WebController
     private function methodItem($item_id, $steam_id = null) {
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
-        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_WAIT) {
+        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_WAIT || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
             return [
                 'result' => 'fail',
                 'message' => "Предмет уже получен/продан",
