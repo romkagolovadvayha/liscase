@@ -212,13 +212,8 @@ class SiteController extends WebController
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
                           ->orderBy(['sort' => SORT_ASC])
                           ->all();
-        $serversTags = ServersTags::find()
-                          ->andWhere(['status' => ServersTags::STATUS_ACTIVE])
-                          ->orderBy(['sort' => SORT_ASC])
-                          ->all();
         return $this->renderPartial('sitemap-servers', [
             'servers' => $servers,
-            'tags' => $serversTags,
         ]);
     }
 
@@ -239,6 +234,19 @@ class SiteController extends WebController
         Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
         Yii::$app->response->headers->add('Content-Type', 'text/xml');
         return $this->renderPartial('sitemap-radio');
+    }
+
+    public function actionSitemapTags()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        Yii::$app->response->headers->add('Content-Type', 'text/xml');
+        $tags = ServersTags::find()
+                          ->andWhere(['status' => ServersTags::STATUS_ACTIVE])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+        return $this->renderPartial('sitemap-tags', [
+            'tags' => $tags,
+        ]);
     }
 
     public function actionMenuToggle()
