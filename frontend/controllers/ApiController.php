@@ -306,7 +306,7 @@ class ApiController extends WebController
 
         /** @var UserDrop[] $userDrops */
         $userDrops = $user->getUserDrop()
-                          ->andWhere(['status' => UserDrop::STATUS_ACTIVE])
+                          ->andWhere(['IN', 'status', [UserDrop::STATUS_ACTIVE, UserDrop::STATUS_WAIT]])
                           ->orderBy(['id' => SORT_DESC])
                           ->all();
 
