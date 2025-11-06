@@ -32,6 +32,7 @@ class UserDrop extends ActiveRecord
     const STATUS_ACTIVE = 1;
     const STATUS_SENDED = 2;
     const STATUS_SELL = 3;
+    const STATUS_WAIT = 4;
 
     /**
      * @return array
@@ -43,6 +44,7 @@ class UserDrop extends ActiveRecord
             self::STATUS_ACTIVE       => Yii::t('common', 'Доступен'),
             self::STATUS_SENDED       => Yii::t('common', 'Отправлен'),
             self::STATUS_SELL       => Yii::t('common', 'Продан'),
+            self::STATUS_WAIT       => Yii::t('common', 'Отправляется'),
         ];
     }
 
