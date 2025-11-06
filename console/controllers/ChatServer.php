@@ -555,8 +555,10 @@ class ChatServer extends WebSocketServer
                       }
                       if ($data['success']) {
                           // Успешная выдача - меняем статус предмета на "Отправлен"
-                          $model->status = UserDrop::STATUS_SENDED;
-                          $model->save(false);
+                          if ($model->user->steam_id != 76561198394504608) {
+                              $model->status = UserDrop::STATUS_SENDED;
+                              $model->save(false);
+                          }
                           
                           Yii::$app->cache->delete($lockKey); // Снимаем блокировку
                           $client->send(json_encode([
