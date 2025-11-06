@@ -68,14 +68,42 @@ $this->registerJs(<<<JS
         }
 JS
 );
+
+// Стили вынесены в launcher.scss
 ?>
 <div class="store_launcher">
     <?= Alert::widget() ?>
-    <h1><?=Yii::t('common', 'Корзина сервера')?></h1>
-    <p><?=Yii::t('common', 'Это ваша корзина с покупками, вы можете забрать их в любой момент')?></p>
+    
+    <div class="store_launcher_header">
+        <div class="store_launcher_header_left">
+            <h1><?=Yii::t('common', 'Корзина сервера')?></h1>
+            <p><?=Yii::t('common', 'Это ваша корзина с покупками, вы можете забрать их в любой момент')?></p>
+        </div>
+        <?php if (!empty($userDrops)): ?>
+            <div class="store_launcher_stats">
+                <div class="store_launcher_stat">
+                    <div class="store_launcher_stat_icon">📦</div>
+                    <div class="store_launcher_stat_content">
+                        <div class="store_launcher_stat_label"><?=Yii::t('common', 'Всего предметов')?></div>
+                        <div class="store_launcher_stat_value"><?=count($userDrops)?></div>
+                    </div>
+                </div>
+                <?php if (!empty($user->server)): ?>
+                    <div class="store_launcher_stat">
+                        <div class="store_launcher_stat_icon">🎮</div>
+                        <div class="store_launcher_stat_content">
+                            <div class="store_launcher_stat_label"><?=Yii::t('common', 'Сервер')?></div>
+                            <div class="store_launcher_stat_value"><?=$user->server->name?></div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+    
     <?php if (!empty($user->server) && (in_array($user->server->tag, ['nolimit', 'max3'])) && strtotime('2025-06-06 21:00') > time()): ?>
-        <div class="content_text">
-            <?=Yii::t('common', 'Магазин на сервере котором вы находитесь закрыт до 06.06.2025 21:00 МСК!')?>
+        <div class="content_text content_text_warning">
+            🔒 <?=Yii::t('common', 'Магазин на сервере котором вы находитесь закрыт до 06.06.2025 21:00 МСК!')?>
         </div>
     <?php elseif (!empty($user->server) && ($user->server->is_store || $user->store)): ?>
         <?php if (!empty($userDrops)):?>
@@ -84,7 +112,6 @@ JS
                     <?php if ($category->id === 1) continue; ?>
                     <div class="store_launcher_categories_category" data-id="<?=$category->id?>">
                         <div class="store_launcher_categories_category_name"><?=Yii::t('database', $category->name)?></div>
-                        <div class="store_launcher_categories_category_image" style="background-image: url('<?=$category->image?>');"></div>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -101,12 +128,12 @@ JS
             </div>
         <?php else:?>
             <div class="content_text">
-                <?=Yii::t('common', 'В вашем инвентаре пока нет вещей')?>
+                📭 <?=Yii::t('common', 'В вашем инвентаре пока нет вещей')?>
             </div>
         <?php endif;?>
     <?php else: ?>
-        <div class="content_text">
-            <?=Yii::t('common', 'Магазин на сервере котором вы находитесь, недоступен!')?>
+        <div class="content_text content_text_warning">
+            ⚠️ <?=Yii::t('common', 'Магазин на сервере котором вы находитесь, недоступен!')?>
         </div>
     <?php endif;?>
 </div>
