@@ -115,7 +115,7 @@ class ApiController extends WebController
     private function methodGived($item_id, $server = null) {
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
-        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_WAIT) {
+        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_WAIT || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
             return [
                 'result' => 'fail',
                 'message' => "Предмет уже получен/продан",
@@ -255,7 +255,7 @@ class ApiController extends WebController
     private function methodTake($item_id) {
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
-        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_WAIT) {
+        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_WAIT || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
             return [
                 'result' => 'fail',
                 'message' => "Предмет уже получен/продан",
