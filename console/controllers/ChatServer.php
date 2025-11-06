@@ -507,6 +507,8 @@ class ChatServer extends WebSocketServer
               Yii::$app->cache->set($cacheKey, $count + 1, 30);
 
               if ($client->user->canRoles([Role::ROLE_ADMIN]) || $client->user->canRoles([Role::ROLE_MODERATOR]) || $model->user_id == $client->user->id) {
+                  $model->status = UserDrop::STATUS_WAIT;
+                  $model->save(false);
                   $isBlockedBuilding = $model->drop[0]->is_blocked_building ? 'true' : 'false';
                   $command = "store.take {$model->user->steam_id} {$model->id} {$isBlockedBuilding}";
                   $response = (Yii::$app->curl)
