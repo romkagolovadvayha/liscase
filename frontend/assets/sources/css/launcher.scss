@@ -1,5 +1,4 @@
-// Import design system colors
-@import "design/colors";
+// Design System - используем var() напрямую из :root в colors.css
 
 // Legacy Rust colors (for backward compatibility)
 $rust_color: #25251c;
@@ -35,11 +34,11 @@ html {
 }
 
 body {
-  background: $background-main;
+  background: var(--background-main);
   background-size: cover;
   background-attachment: fixed;
   font-family: var(--font-main);
-  color: $text-main;
+  color: var(--text-main);
   padding: 0;
   margin: 0;
   min-height: 100%;
@@ -90,41 +89,41 @@ p {
 }
 
 ::-webkit-scrollbar-track {
-  background: $background-secondary;
+  background: var(--background-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: $border-color-default;
+  background: var(--border-color-default);
   border-radius: 6px;
   transition: background 0.3s ease;
   
   &:hover {
-    background: $border-color-hover;
+    background: var(--border-color-hover);
   }
 }
 
 // Selection
 ::selection {
-  background: $primary-colors-main;
-  color: $text-main;
+  background: var(--primary-colors-main);
+  color: var(--text-main);
 }
 
 // Content text
 .content_text {
-  background: $background-secondary;
-  border: 2px solid $border-color-default;
+  background: var(--background-secondary);
+  border: 2px solid var(--border-color-default);
   border-radius: var(--block-radius);
   padding: 40px;
   text-align: center;
   font-size: 18px;
-  color: $text-teritiary;
+  color: var(--text-teritiary);
   margin: 40px auto;
   max-width: 600px;
   
   &_warning {
-    background: linear-gradient(135deg, $primary-colors-secondary-opacity, rgba($primary-colors-main, 0.1));
-    border: 2px solid $primary-colors-main;
-    color: $text-main;
+    background: linear-gradient(135deg, var(--primary-colors-secondary-opacity), var(--primary-colors-main-opacity));
+    border: 2px solid var(--primary-colors-main);
+    color: var(--text-main);
     animation: pulse 2s ease-in-out infinite;
   }
 }
@@ -155,7 +154,7 @@ p {
       left: -60px;
       width: 700px;
       height: 500px;
-      background: radial-gradient(circle, $primary-colors-main-opacity 0%, transparent 70%);
+      background: radial-gradient(circle, var(--primary-colors-main-opacity) 0%, transparent 70%);
       filter: blur(120px);
       z-index: 0;
       pointer-events: none;
@@ -168,17 +167,17 @@ p {
     }
     
     h1 {
-      color: $text-main;
+      color: var(--text-main);
       margin-bottom: 16px;
-      background: linear-gradient(90deg, $primary-colors-main 0%, $primary-colors-secondary 100%);
+      background: var(--base-linear-gradiend);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      text-shadow: 0 0 40px rgba($primary-colors-secondary, 0.3);
+      text-shadow: 0 0 40px var(--primary-colors-secondary-opacity);
     }
     
     p {
-      color: $text-teritiary;
+      color: var(--text-teritiary);
     }
     
     @media (max-width: 768px) {
@@ -203,18 +202,18 @@ p {
   }
   
   &_stat {
-    background: $background-secondary;
-    border: 1px solid $border-color-default;
-    border-radius: $button-radius;
+    background: var(--background-secondary);
+    border: 1px solid var(--border-color-default);
+    border-radius: var(--button-radius);
     padding: 16px 24px;
     display: flex;
     align-items: center;
     gap: 12px;
     transition: all 0.3s ease;
-    box-shadow: $shadow-card;
+    box-shadow: var(--shadow-card);
     
     &:hover {
-      border-color: $border-color-hover;
+      border-color: var(--border-color-hover);
       transform: translateY(-2px);
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
     }
@@ -237,7 +236,7 @@ p {
       font-size: 12px;
       font-weight: 400;
       line-height: 16px;
-      color: $text-secondary;
+      color: var(--text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -246,7 +245,7 @@ p {
       font-size: 24px;
       font-weight: 700;
       line-height: 28px;
-      color: $text-main;
+      color: var(--text-main);
       
       @media (max-width: 768px) {
         font-size: 20px;
@@ -282,34 +281,34 @@ p {
     display: flex;
     gap: 16px;
     padding: 20px;
-    background: $background-secondary;
-    border: 1px solid $border-color-default;
+    background: var(--background-secondary);
+    border: 1px solid var(--border-color-default);
     border-radius: var(--card-radius);
     overflow-x: auto;
     overflow-y: hidden;
     flex-wrap: nowrap;
     scrollbar-width: thin;
-    scrollbar-color: $border-color-default $background-teritiary;
+    scrollbar-color: var(--border-color-default) var(--background-teritiary);
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    box-shadow: $shadow-card;
+    box-shadow: var(--shadow-card);
     
     &::-webkit-scrollbar {
       height: 8px;
     }
     
     &::-webkit-scrollbar-track {
-      background: $background-teritiary;
+      background: var(--background-teritiary);
       border-radius: 4px;
     }
     
     &::-webkit-scrollbar-thumb {
-      background: $border-color-default;
+      background: var(--border-color-default);
       border-radius: 4px;
       transition: background 0.3s ease;
       
       &:hover {
-        background: $border-color-hover;
+        background: var(--border-color-hover);
       }
     }
     
@@ -319,7 +318,7 @@ p {
       border-right: none;
       border-bottom: none;
       backdrop-filter: blur(10px);
-      background: rgba($background-secondary, 0.95);
+      background: rgba(26, 26, 26, 0.95);
       box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
       gap: 12px;
       
@@ -331,8 +330,8 @@ p {
     &_category {
       position: relative;
       cursor: pointer;
-      background: $background-teritiary;
-      border: 2px solid $border-color-default;
+      background: var(--background-teritiary);
+      border: 2px solid var(--border-color-default);
       border-radius: var(--card-radius);
       padding: 12px 24px;
       display: flex;
@@ -350,21 +349,21 @@ p {
         left: -50%;
         width: 200%;
         height: 200%;
-        background: linear-gradient(90deg, $primary-colors-main 50%, $primary-colors-secondary 100%);
+        background: var(--base-linear-gradiend);
         opacity: 0;
         transition: opacity 0.3s ease;
       }
       
       &:hover {
-        border-color: $border-color-hover;
+        border-color: var(--border-color-hover);
         transform: translateY(-4px) scale(1.05);
-        box-shadow: 0 8px 24px rgba($primary-colors-main, 0.3);
+        box-shadow: 0 8px 24px var(--primary-colors-main-opacity);
       }
       
       &.active {
-        border-color: $primary-colors-main;
-        background: linear-gradient(135deg, rgba($primary-colors-main, 0.2), rgba($primary-colors-secondary, 0.2));
-        box-shadow: 0 0 24px rgba($primary-colors-main, 0.5), inset 0 0 20px rgba($primary-colors-secondary, 0.1);
+        border-color: var(--primary-colors-main);
+        background: linear-gradient(135deg, var(--primary-colors-secondary-opacity), var(--primary-colors-main-opacity));
+        box-shadow: 0 0 24px var(--primary-colors-main-opacity), inset 0 0 20px var(--primary-colors-secondary-opacity);
         
         &::before {
           opacity: 0.1;
@@ -376,7 +375,7 @@ p {
         font-size: 16px;
         font-weight: 600;
         line-height: 24px;
-        color: $text-main;
+        color: var(--text-main);
         position: relative;
         z-index: 1;
         white-space: nowrap;
@@ -430,8 +429,8 @@ p {
           transform: translate(-50%, -50%);
           width: 40px;
           height: 40px;
-          border: 3px solid $border-color-default;
-          border-top-color: $primary-colors-main;
+          border: 3px solid var(--border-color-default);
+          border-top-color: var(--primary-colors-main);
           border-radius: 50%;
           animation: spin 0.8s linear infinite;
           z-index: 10;
@@ -444,7 +443,7 @@ p {
       padding: 12px;
       position: relative;
       text-align: center;
-      background: $background-secondary;
+      background: var(--background-secondary);
       border-radius: var(--card-radius);
       display: flex;
       flex-direction: column;
@@ -491,7 +490,7 @@ p {
         line-height: 20px;
         position: absolute;
         text-align: left;
-        color: $text-secondary;
+        color: var(--text-secondary);
         top: 8px;
         left: 8px;
         z-index: 2;
@@ -504,7 +503,7 @@ p {
         font-weight: 500;
         line-height: 20px;
         text-transform: uppercase;
-        color: $primary-colors-secondary;
+        color: var(--primary-colors-secondary);
         text-align: center;
         padding: 10px 0;
         transition: color 0.25s ease-in-out;
@@ -512,15 +511,15 @@ p {
       
       // Hover effects (как category-card)
       &:hover {
-        background: $background-teritiary;
-        box-shadow: $shadow-card;
+        background: var(--background-teritiary);
+        box-shadow: var(--shadow-card);
         
         .store_launcher_cards_item_image img {
           transform: scale(1.1) rotate(10deg);
         }
         
         .store_launcher_cards_item_button {
-          color: $text-main;
+          color: var(--text-main);
         }
       }
       
@@ -532,7 +531,7 @@ p {
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba($text-secondary, 0.15);
+          background: rgba(143, 143, 143, 0.15);
           backdrop-filter: blur(8px) saturate(0%);
           border-radius: var(--card-radius);
           display: flex;
@@ -569,7 +568,7 @@ p {
           font-size: 14px;
           font-weight: 600;
           line-height: 20px;
-          color: $text-main;
+          color: var(--text-main);
           text-align: center;
           margin-bottom: 4px;
         }
@@ -578,7 +577,7 @@ p {
           font-size: 12px;
           font-weight: 700;
           line-height: 16px;
-          color: $primary-colors-main;
+          color: var(--primary-colors-main);
           text-align: center;
           text-transform: uppercase;
           letter-spacing: 1px;
@@ -588,12 +587,12 @@ p {
           font-size: 11px;
           font-weight: 400;
           line-height: 16px;
-          color: $text-teritiary;
+          color: var(--text-teritiary);
           text-align: center;
           padding: 4px 10px;
-          background: rgba($background-secondary, 0.8);
-          border-radius: $button-radius;
-          border: 1px solid $border-color-default;
+          background: rgba(26, 26, 26, 0.8);
+          border-radius: var(--button-radius);
+          border: 1px solid var(--border-color-default);
           margin-top: 4px;
         }
       }
