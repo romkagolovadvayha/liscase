@@ -82,12 +82,14 @@ class MapsController extends Controller
         $searchModel = new MapsSearch();
         $dataProvider = $searchModel->search($this->request->queryParams, $server->min_map_size, $server->max_map_size, $server->id);
         
-        // Calculate max votes for progress bars
+        // Calculate max votes and total votes for progress bars
         $maxVotes = 0;
+        $totalVotes = 0;
         foreach ($dataProvider->models as $map) {
             if ($map->votes > $maxVotes) {
                 $maxVotes = $map->votes;
             }
+            $totalVotes += $map->votes;
         }
         
         return $this->render('maps.twig', [
@@ -96,6 +98,7 @@ class MapsController extends Controller
             'SERVER' => $server,
             'SERVERS' => $servers,
             'maxVotes' => $maxVotes,
+            'totalVotes' => $totalVotes,
         ]);
     }
 
