@@ -86,10 +86,18 @@ class UserController extends Controller
             $user->updated_at = date('Y-m-d H:i:s');
             $user->username = HtmlPurifier::process($infoUser['personaname']);
             $user->save();
+            
+            // Загружаем аватар
             $avatar = $this->_loadImage($infoUser['avatarfull'], $infoUser['steamid']);
-            $user->userProfile->name = HtmlPurifier::process($infoUser['personaname']);
-            $user->userProfile->avatar = $avatar;
-            $user->userProfile->save();
+            
+            // Обновляем профиль только если он существует
+            if (!empty($user->userProfile)) {
+                $user->userProfile->name = HtmlPurifier::process($infoUser['personaname']);
+                $user->userProfile->avatar = $avatar;
+                $user->userProfile->save();
+            } else {
+                \Yii::warning("UserProfile not found for user {$user->steam_id}", __METHOD__);
+            }
         }
     }
 
@@ -97,18 +105,53 @@ class UserController extends Controller
         $uploadDir = \Yii::getAlias('@frontend/web');
         $fileUrl = "/uploads/avatar/steam/{$id}.png";
         $filePath = $uploadDir . $fileUrl;
-        if (file_exists($filePath)) {
-            unlink($filePath);
-        }
+        
+        // Создаем директории если их нет
         if (!file_exists(dirname(dirname($filePath)))) {
-            mkdir(dirname(dirname($filePath)));
-            chmod(dirname(dirname($filePath)), 0777);
+            mkdir(dirname(dirname($filePath)), 0777, true);
         }
         if (!file_exists(dirname($filePath))) {
-            mkdir(dirname($filePath));
-            chmod(dirname($filePath), 0777);
+            mkdir(dirname($filePath), 0777, true);
         }
-        file_put_contents($filePath, file_get_contents($imageUrl));
-        return $fileUrl;
+        
+        try {
+            // Используем curl для более надежной загрузки с таймаутом
+            $ch = curl_init($imageUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            
+            $imageData = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+            
+            if ($imageData === false || $httpCode !== 200) {
+                throw new \Exception("Failed to download avatar. HTTP code: $httpCode, Error: $error");
+            }
+            
+            // Если файл существует, удаляем старый
+            if (file_exists($filePath)) {
+                unlink($filePath);
+            }
+            
+            // Сохраняем новый аватар
+            file_put_contents($filePath, $imageData);
+            
+            return $fileUrl;
+        } catch (\Exception $e) {
+            // Логируем ошибку
+            \Yii::error("Failed to load avatar for user {$id}: " . $e->getMessage(), __METHOD__);
+            
+            // Если аватар уже существует, возвращаем его
+            if (file_exists($filePath)) {
+                return $fileUrl;
+            }
+            
+            // Возвращаем дефолтный аватар Steam
+            return '/images/steam_avatar_default.jpg';
+        }
     }
 }
