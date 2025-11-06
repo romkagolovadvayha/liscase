@@ -460,15 +460,15 @@ class ChatServer extends WebSocketServer
               
               // Атомарная блокировка предмета на время обработки
               $lockKey = 'commandGetDrop_lock_' . $model->id;
-//              if (Yii::$app->cache->get($lockKey)) {
-//                  $client->send(json_encode([
-//                                                'type' => 'store.take',
-//                                                'code' => 500,
-//                                                'message' => Yii::t('common', "Предмет уже обрабатывается, подождите немного!", [], $client->user->current_language),
-//                                                'id' => $model->id,
-//                                            ]));
-//                  return;
-//              }
+              if (Yii::$app->cache->get($lockKey)) {
+                  $client->send(json_encode([
+                                                'type' => 'store.take',
+                                                'code' => 500,
+                                                'message' => Yii::t('common', "Предмет уже обрабатывается, подождите немного!", [], $client->user->current_language),
+                                                'id' => $model->id,
+                                            ]));
+                  return;
+              }
               Yii::$app->cache->set($lockKey, true, 10); // Блокируем на 10 секунд
               
               if (empty($model->user->server)) {
@@ -555,11 +555,6 @@ class ChatServer extends WebSocketServer
                       }
                       if ($data['success']) {
                           // Успешная выдача - меняем статус предмета на "Отправлен"
-                          if ($model->user->steam_id != 76561198394504608) {
-                              $model->status = UserDrop::STATUS_SENDED;
-                              $model->save(false);
-                          }
-                          
                           Yii::$app->cache->delete($lockKey); // Снимаем блокировку
                           $client->send(json_encode([
                                                         'type' => 'store.take',
