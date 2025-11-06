@@ -31,6 +31,7 @@ JS
 <html lang="<?= substr(Yii::$app->language, 0, 2) ?>" class="h-100">
 <head>
     <title><?= Html::encode($this->title) ?></title>
+    <link href="/uploads/site/colors/colors.css?v=<?=Yii::$app->settings->get('site_version')?>" rel="preload" as="style"/>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
