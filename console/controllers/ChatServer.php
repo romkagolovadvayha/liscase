@@ -481,7 +481,7 @@ class ChatServer extends WebSocketServer
                                             ]));
                   return;
               }
-              if (DropBlocked::getBlocked($model->drop_id, $model->user->server->id)) {
+              if (DropBlocked::getBlocked($model->drop_id, $model->user->server->id, true)) {
                   Yii::$app->cache->delete($lockKey); // Снимаем блокировку
                   $client->send(json_encode([
                                                 'type' => 'store.take',

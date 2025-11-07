@@ -119,9 +119,9 @@ class DropBlocked extends ActiveRecord
         return $items;
     }
 
-    public static function getBlocked($dropId, $serverId)
+    public static function getBlocked($dropId, $serverId, $update = false)
     {
-        return Yii::$app->drop->getBlockedByDropId($serverId, $dropId);
+        return Yii::$app->drop->getBlockedByDropId($serverId, $dropId, $update);
     }
 
 }
