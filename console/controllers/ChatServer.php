@@ -532,6 +532,8 @@ class ChatServer extends WebSocketServer
                                                         'message' => Yii::t('common', "Произошла ошибка, попробуйте позже!", [], $client->user->current_language),
                                                         'id' => $model->id,
                                                     ]));
+                            $model->status = UserDrop::STATUS_ACTIVE;
+                            $model->save(false);                        
                           return;
                       }
                       $data = json_decode(json_decode($response, 1)['result'], 1);
@@ -543,6 +545,8 @@ class ChatServer extends WebSocketServer
                                                         'message' => Yii::t('common', "Произошла ошибка, попробуйте позже!", [], $client->user->current_language),
                                                         'id' => $model->id,
                                                     ]));
+                          $model->status = UserDrop::STATUS_ACTIVE;
+                          $model->save(false);        
                           return;
                       }
                       if (!$data['success']) {
@@ -553,6 +557,8 @@ class ChatServer extends WebSocketServer
                                                         'message' => $data['error'],
                                                         'id' => $model->id,
                                                     ]));
+                            $model->status = UserDrop::STATUS_ACTIVE;
+                            $model->save(false);        
                           return;
                       }
                       if ($data['success']) {
