@@ -114,44 +114,47 @@ class UserController extends Controller
             mkdir(dirname($filePath), 0777, true);
         }
         
-        try {
-            // Используем curl для более надежной загрузки с таймаутом
+        $attempts = [0, 2, 5];
+        foreach ($attempts as $attempt => $sleep) {
+            if ($sleep > 0) {
+                sleep($sleep);
+            }
+
             $ch = curl_init($imageUrl);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            
+            curl_setopt($ch, CURLOPT_DNS_CACHE_TIMEOUT, 60);
+
             $imageData = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
             curl_close($ch);
-            
-            if ($imageData === false || $httpCode !== 200) {
-                throw new \Exception("Failed to download avatar. HTTP code: $httpCode, Error: $error");
-            }
-            
-            // Если файл существует, удаляем старый
-            if (file_exists($filePath)) {
-                unlink($filePath);
-            }
-            
-            // Сохраняем новый аватар
-            file_put_contents($filePath, $imageData);
-            
-            return $fileUrl;
-        } catch (\Exception $e) {
-            // Логируем ошибку
-            \Yii::error("Failed to load avatar for user {$id}: " . $e->getMessage(), __METHOD__);
-            
-            // Если аватар уже существует, возвращаем его
-            if (file_exists($filePath)) {
+
+            if ($imageData !== false && $httpCode === 200 && !empty($imageData)) {
+                if (file_exists($filePath)) {
+                    unlink($filePath);
+                }
+                file_put_contents($filePath, $imageData);
                 return $fileUrl;
             }
-            
-            // Возвращаем дефолтный аватар Steam
-            return '/images/steam_avatar_default.jpg';
+
+            \Yii::warning(sprintf(
+                'Attempt %d: failed to load avatar for user %s (HTTP %s, error: %s)',
+                $attempt + 1,
+                $id,
+                $httpCode,
+                $error
+            ), __METHOD__);
         }
+
+        if (file_exists($filePath)) {
+            return $fileUrl;
+        }
+
+        \Yii::error("Failed to load avatar for user {$id}: all attempts exhausted", __METHOD__);
+        return '/images/steam_avatar_default.jpg';
     }
 }

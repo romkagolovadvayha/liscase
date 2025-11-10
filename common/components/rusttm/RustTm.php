@@ -37,18 +37,40 @@ class RustTm
         $secretKey = Yii::$app->settings->get('rusttm_secretKey');
         $name = rawurlencode($name);
         $url = $this->baseUrl . "/buy-for?key={$secretKey}&hash_name=".$name."&price={$price}&partner={$partner}&token={$token}";
-        $response = Yii::$app->curl->get($url);
-        if (empty($response)) {
-            sleep(2);
+        $attempts = [0, 2, 3];
+        $response = null;
+        foreach ($attempts as $sleep) {
+            if ($sleep > 0) {
+                sleep($sleep);
+            }
             $response = Yii::$app->curl->get($url);
-            Yii::error('RustTm buy 2: ' .  $response);
+            if (!empty($response)) {
+                break;
+            }
+            Yii::error(sprintf('RustTm buy empty response (sleep %d): %s', $sleep, $response), __METHOD__);
         }
+
         if (empty($response)) {
-            sleep(3);
-            $response = Yii::$app->curl->get($url);
-            Yii::error('RustTm buy 3: ' .  $response);
+            Yii::error('RustTm buy failed: empty response after retries', __METHOD__);
+            return [
+                'success' => false,
+                'error' => 'empty_response',
+                'message' => 'Rust.tm returned empty response',
+            ];
         }
-        return json_decode($response, 1);
+
+        $decoded = json_decode($response, true);
+        if (!is_array($decoded)) {
+            Yii::error('RustTm buy invalid JSON: ' . $response, __METHOD__);
+            return [
+                'success' => false,
+                'error' => 'invalid_json',
+                'message' => 'Rust.tm returned invalid response',
+                'raw' => $response,
+            ];
+        }
+
+        return $decoded;
     }
 
     /**

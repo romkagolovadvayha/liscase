@@ -95,8 +95,8 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
     protected function sendRaidNotifyPromo($steamId)
     {
         try {
-            // Находим пользователя
-            $user = User::findBySteamId($steamId);
+            // Находим пользователя (без создания нового)
+            $user = User::find()->where(['steam_id' => $steamId])->one();
             if (!$user) {
                 return;
             }
