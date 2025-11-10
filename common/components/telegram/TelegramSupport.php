@@ -29,8 +29,23 @@ class TelegramSupport
             $hasFile = false;
 
             foreach ($attachments as $attachment) {
-                if (isset($params[$attachment])) {
-                    $params[$attachment] = $this->curlFile($params[$attachment]);
+                if (!isset($params[$attachment])) {
+                    continue;
+                }
+
+                $value = $params[$attachment];
+
+                // Если это удалённый URL или Telegram file_id — отправляем как текст
+                if (is_string($value) && preg_match('#^https?://#i', $value)) {
+                    continue;
+                }
+                if (is_array($value) && isset($value['file_id'])) {
+                    continue;
+                }
+
+                $file = $this->curlFile($value);
+                if ($file instanceof \CURLFile || (is_string($file) && isset($file[0]) && $file[0] === '@')) {
+                    $params[$attachment] = $file;
                     $hasFile = true;
                     break;
                 }
@@ -64,10 +79,24 @@ class TelegramSupport
     private function curlFile($path)
     {
         if (is_array($path)) {
-            return $path['file_id'];
+            if (isset($path['file_id'])) {
+                return $path['file_id'];
+            }
+            if (isset($path['path'])) {
+                $path = $path['path'];
+            }
         }
 
-        $realPath = realpath($path);
+        if (is_string($path) && preg_match('#^https?://#i', $path)) {
+            // Удалённый URL — телеграм принимает строки
+            return $path;
+        }
+
+        $realPath = is_string($path) ? realpath($path) : false;
+        if ($realPath === false || !is_file($realPath)) {
+            Yii::error('TelegramSupport: file not found for upload: ' . print_r($path, true));
+            return $path;
+        }
 
         if (class_exists('CURLFile')) {
             return new \CURLFile($realPath);
