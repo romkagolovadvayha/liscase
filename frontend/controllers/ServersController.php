@@ -32,13 +32,43 @@ class ServersController extends WebController
      */
     public function actionIndex()
     {
-        $servers = Servers::find()
-                          ->cache(30)
-                          ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
-                          ->orderBy(['sort' => SORT_ASC])
-                          ->all();
+        $cache = Yii::$app->cache;
+        $cacheKey = 'servers/index:data';
 
-        $projectStats = \common\models\statistics\Statistics::projectStats();
+        $cached = $cache->get($cacheKey);
+        if ($cached) {
+            [$servers, $projectStats, $serversLd] = $cached;
+        } else {
+            $servers = Servers::find()
+                              ->with([
+                                  'serversTags',
+                                  'mapEntity',
+                              ])
+                              ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                              ->orderBy(['sort' => SORT_ASC])
+                              ->all();
+
+            $projectStats = \common\models\statistics\Statistics::projectStats();
+
+            $serversLd = [];
+            foreach ($servers as $s) {
+                $status = $s->status == Servers::STATUS_ACTIVE ? 'Online' :
+                    ($s->status == Servers::STATUS_WAIT ? 'Maintenance' : 'Offline');
+
+                $serversLd[] = [
+                    '@type' => 'GameServer',
+                    'name'  => Yii::t('database', $s->monitoring_description) . ' [' . Yii::t('database', $s->monitoring_name) . ']',
+                    'game'  => ['@type' => 'VideoGame', 'name' => 'Rust'],
+                    'serverStatus' => 'https://schema.org/' . $status,
+                    'playersOnline' => (int)($s->players + $s->joined),
+                    'maximumAttendeeCapacity' => (int)$s->max,
+                    'url'   => Yii::$app->params['homePage'] . $s->getLink('stats'),
+                    'address' => $s->ip . ':' . $s->port
+                ];
+            }
+
+            $cache->set($cacheKey, [$servers, $projectStats, $serversLd], 180);
+        }
         $this->view->title = Yii::t('common', 'Сервера Rust | Выберите сервер для комфортной игры');
         $this->view->params['page'] = 'servers';
         $this->view->params['meta_description'] = Yii::t('common', "Список всех наших серверов Rust с подробным описанием, датами вайпов и IP-адресами. Узнайте, когда следующий вайп, подключитесь к любимому серверу и начните играть уже сегодня!");
@@ -59,29 +89,6 @@ class ServersController extends WebController
         $view->registerMetaTag(['name'=>'twitter:card','content'=>'summary_large_image']);
         $view->registerMetaTag(['name'=>'twitter:title','content'=>$this->view->title]);
         $view->registerMetaTag(['name'=>'twitter:description','content'=>$this->view->params['meta_description']]);
-
-        $nowIso = date(DATE_ATOM);
-        $game = [
-            '@type' => 'VideoGame',
-            'name'  => 'Rust'
-        ];
-
-        $serversLd = [];
-        foreach ($servers as $s) {
-            $status = $s->status == \common\models\servers\Servers::STATUS_ACTIVE ? 'Online' :
-                ($s->status == \common\models\servers\Servers::STATUS_WAIT ? 'Maintenance' : 'Offline');
-
-            $serversLd[] = [
-                '@type' => 'GameServer',
-                'name'  => Yii::t('database', $s->monitoring_description) . ' [' . Yii::t('database', $s->monitoring_name) . ']',
-                'game'  => $game,
-                'serverStatus' => 'https://schema.org/' . $status,
-                'playersOnline' => (int)($s->players + $s->joined),
-                'maximumAttendeeCapacity' => (int)$s->max,
-                'url'   => Yii::$app->params['homePage'] . $s->getLink('stats'),
-                'address' => $s->ip . ':' . $s->port
-            ];
-        }
 
         // Хлебные крошки — ок
         $breadcrumbLd = [

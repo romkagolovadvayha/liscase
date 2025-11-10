@@ -402,35 +402,41 @@ ORDER BY server_id, `key`, value DESC;
         if (empty($items)) {
             $items = [];
             foreach (UserTop::getTopsLabel() as $key => $label) {
-                /** @var UserTop[] $userTops */
-                $userTops = UserTop::find()
-                                   ->andWhere(['key' => $key])
-                                   ->andWhere(['server_id' => $server->id])
-                                   ->andWhere(['wipe' => $wipe])
-                                   ->orderBy(['value' => SORT_DESC])
-                                   ->all();
+                $query = UserTop::find()
+                                ->andWhere(['key' => $key])
+                                ->andWhere(['server_id' => $server->id])
+                                ->andWhere(['wipe' => $wipe])
+                                ->orderBy(['value' => SORT_DESC]);
                 $items[$key] = [
                     'label' => $label,
                     'items' => [],
                 ];
                 if ($key !== 'playtime') {
-                    foreach ($userTops as $position => $item) {
+                    $position = 1;
+                    foreach ($query->each(500) as $item) {
+                        if (empty($item->user)) {
+                            continue;
+                        }
                         $items[$key]['items'][$item->user->steam_id] = [
-                            'position' => $position + 1,
+                            'position' => $position,
                         ];
+                        $position++;
                     }
                 } else {
-                    /** @var Statistics[] $statistics */
-                    $statistics = Statistics::find()
-                                            ->andWhere(['key' => $key])
-                                            ->andWhere(['server_tag' => $server->tag])
-                                            ->andWhere(['wipe' => $wipe])
-                                            ->orderBy(['value' => SORT_DESC])
-                                            ->all();
-                    foreach ($statistics as $position => $item) {
+                    $statQuery = Statistics::find()
+                                           ->andWhere(['key' => $key])
+                                           ->andWhere(['server_tag' => $server->tag])
+                                           ->andWhere(['wipe' => $wipe])
+                                           ->orderBy(['value' => SORT_DESC]);
+                    $position = 1;
+                    foreach ($statQuery->each(500) as $item) {
+                        if (empty($item->steam_id)) {
+                            continue;
+                        }
                         $items[$key]['items'][$item->steam_id] = [
-                            'position' => $position + 1,
+                            'position' => $position,
                         ];
+                        $position++;
                     }
                 }
             }
