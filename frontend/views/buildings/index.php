@@ -25,25 +25,71 @@ $userLikes = \common\models\building\BuildingLike::find()
 
 BuildingsAsset::register($this);
 
-// SEO настройки
-$this->title = Yii::t('common', 'Постройки игроков Rust - Галерея лучших баз и построек');
+$request = Yii::$app->request;
+$pagination = $dataProvider->getPagination();
+$baseTitle = Yii::t('common', 'Постройки игроков Rust - Галерея лучших баз и построек');
+$baseDescription = Yii::t('common', 'Галерея построек игроков Rust. Смотрите лучшие базы, креативные постройки и архитектурные шедевры от нашего сообщества. Делитесь своими творениями и вдохновляйтесь идеями других игроков.');
+$titleParts = [];
+$descriptionParts = [];
+
+if ($pagination) {
+    $pageNumber = (int)$request->get($pagination->pageParam, 1);
+    if ($pageNumber > 1) {
+        $titleParts[] = Yii::t('common', 'Страница {number}', ['number' => $pageNumber]);
+        $descriptionParts[] = Yii::t('common', 'Страница {number} списка построек.', ['number' => $pageNumber]);
+    }
+    $pageSizeParam = $pagination->pageSizeParam;
+    if (!empty($pageSizeParam) && $request->get($pageSizeParam)) {
+        $perPage = (int)$request->get($pageSizeParam);
+        if ($perPage > 0) {
+            $titleParts[] = Yii::t('common', 'Показано {count} записей на страницу', ['count' => $perPage]);
+            $descriptionParts[] = Yii::t('common', 'На странице отображается {count} построек.', ['count' => $perPage]);
+        }
+    }
+}
+
+if (!empty($searchModel->name)) {
+    $queryLabel = Yii::t('common', 'Поиск: «{query}»', ['query' => $searchModel->name]);
+    $titleParts[] = $queryLabel;
+    $descriptionParts[] = Yii::t('common', 'Фильтр по названию: «{query}».', ['query' => $searchModel->name]);
+}
+
+if (!empty($searchModel->server_tag)) {
+    $selectedServers = [];
+    foreach ((array)$searchModel->server_tag as $tag) {
+        if (isset($servers[$tag])) {
+            $selectedServers[] = $servers[$tag];
+        } else {
+            $selectedServers[] = $tag;
+        }
+    }
+    if (!empty($selectedServers)) {
+        $serversLabel = Yii::t('common', 'Серверы: {list}', ['list' => implode(', ', $selectedServers)]);
+        $titleParts[] = $serversLabel;
+        $descriptionParts[] = Yii::t('common', 'Фильтр по серверам: {list}.', ['list' => implode(', ', $selectedServers)]);
+    }
+}
+
+$metaTitle = $baseTitle . (!empty($titleParts) ? ' — ' . implode(' · ', $titleParts) : '');
+$metaDescription = $baseDescription . (!empty($descriptionParts) ? ' ' . implode(' ', $descriptionParts) : '');
+
+$this->title = $metaTitle;
 $this->registerMetaTag([
     'name' => 'description',
-    'content' => Yii::t('common', 'Галерея построек игроков Rust. Смотрите лучшие базы, креативные постройки и архитектурные шедевры от нашего сообщества. Делитесь своими творениями и вдохновляйтесь идеями других игроков.')
-]);
-$this->registerMetaTag(['name' => 'keywords', 'content' => 'rust постройки, базы rust, галерея построек, rust база, лучшие постройки rust, креативные базы']);
+    'content' => $metaDescription,
+], 'description');
 
 // Open Graph
-$this->registerMetaTag(['property' => 'og:title', 'content' => $this->title]);
-$this->registerMetaTag(['property' => 'og:description', 'content' => Yii::t('common', 'Галерея построек игроков Rust. Лучшие базы и креативные постройки от нашего сообщества.')]);
+$this->registerMetaTag(['property' => 'og:title', 'content' => $metaTitle]);
+$this->registerMetaTag(['property' => 'og:description', 'content' => $metaDescription]);
 $this->registerMetaTag(['property' => 'og:type', 'content' => 'website']);
 
 // Структурированные данные
 $schema = [
     '@context' => 'https://schema.org',
     '@type' => 'CollectionPage',
-    'name' => $this->title,
-    'description' => 'Галерея построек игроков Rust с возможностью фильтрации по серверам',
+    'name' => $metaTitle,
+    'description' => $metaDescription,
     'mainEntity' => [
         '@type' => 'ItemList',
         'name' => 'Постройки игроков',

@@ -3,13 +3,83 @@ use yii\widgets\ListView;
 use yii\widgets\ActiveForm;
 use yii\widgets\Pjax;
 use yii\helpers\Html;
+use common\models\blog\BlogCategory;
 
 /** @var yii\web\View $this */
 /** @var \yii\data\ActiveDataProvider $dataProvider */
 /** @var \backend\models\blog\BlogSearch $searchModel */
 /** @var \common\models\blog\BlogCategory[] $categories */
 
-$this->title = Yii::t('common', 'Баги и новости Rust');
+$request = Yii::$app->request;
+$pagination = $dataProvider->getPagination();
+$sort = $dataProvider->getSort();
+$baseTitle = Yii::t('common', 'Баги и новости Rust');
+$baseDescription = Yii::t('common', 'Новости и блог проекта: баги, ошибки, патчи, Twitch Drops, новые скины и обновления. Читайте полезные статьи и гайды для игроков Rust.');
+$titleParts = [];
+$descriptionParts = [];
+
+if ($pagination) {
+    $pageNumber = (int)$request->get($pagination->pageParam, 1);
+    if ($pageNumber > 1) {
+        $titleParts[] = Yii::t('common', 'Страница {number}', ['number' => $pageNumber]);
+        $descriptionParts[] = Yii::t('common', 'Сейчас вы просматриваете страницу {number}.', ['number' => $pageNumber]);
+    }
+    $pageSizeParam = $pagination->pageSizeParam;
+    if (!empty($pageSizeParam) && $request->get($pageSizeParam)) {
+        $perPage = (int)$request->get($pageSizeParam);
+        if ($perPage > 0 && $perPage !== $pagination->pageSize) {
+            $titleParts[] = Yii::t('common', 'Показывать по {count} записей', ['count' => $perPage]);
+            $descriptionParts[] = Yii::t('common', 'На странице отображается {count} публикаций.', ['count' => $perPage]);
+        }
+    }
+}
+
+if ($sort) {
+    $sortValue = $request->get($sort->sortParam);
+    if (!empty($sortValue)) {
+        $sortLabels = [
+            '-created_at' => Yii::t('common', 'Сортировка по дате: новые сверху'),
+            'created_at'  => Yii::t('common', 'Сортировка по дате: старые сверху'),
+            '-views'      => Yii::t('common', 'Сортировка по просмотрам'),
+            'views'       => Yii::t('common', 'Сортировка по просмотрам (по возрастанию)'),
+        ];
+        $label = $sortLabels[$sortValue] ?? Yii::t('common', 'Сортировка: {value}', ['value' => $sortValue]);
+        $titleParts[] = $label;
+        $descriptionParts[] = $label . '.';
+    }
+}
+
+if (!empty($searchModel->name)) {
+    $queryLabel = Yii::t('common', 'Поиск: «{query}»', ['query' => $searchModel->name]);
+    $titleParts[] = $queryLabel;
+    $descriptionParts[] = Yii::t('common', 'Фильтр по названию: «{query}».', ['query' => $searchModel->name]);
+}
+
+$categorySlug = $request->get('categoryLinkNameChild') ?? $request->get('categoryLinkName');
+if (!empty($categorySlug)) {
+    $category = BlogCategory::find()->andWhere([
+        'status' => BlogCategory::STATUS_ACTIVE,
+        'link_name' => $categorySlug,
+    ])->one();
+    if ($category) {
+        $titleParts[] = Yii::t('common', 'Категория: {name}', ['name' => Yii::t('database', $category->name)]);
+        $descriptionParts[] = Yii::t('common', 'Материалы категории «{name}».', ['name' => Yii::t('database', $category->name)]);
+    }
+}
+
+$this->title = $baseTitle . (!empty($titleParts) ? ' — ' . implode(' · ', $titleParts) : '');
+$metaDescription = $baseDescription . (!empty($descriptionParts) ? ' ' . implode(' ', $descriptionParts) : '');
+
+$this->params['meta_description'] = $metaDescription;
+$this->registerMetaTag([
+    'property' => 'og:title',
+    'content' => $this->title,
+], 'og:title');
+$this->registerMetaTag([
+    'property' => 'og:description',
+    'content' => $metaDescription,
+], 'og:description');
+
 $this->params['h1'] = Yii::t('common', 'Блог');
 $this->params['page'] = 'blog';
 $this->params['_blog_comments_block'] = true;

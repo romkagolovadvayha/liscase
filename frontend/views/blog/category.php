@@ -6,6 +6,7 @@ use yii\widgets\Pjax;
 use yii\web\View;
 use frontend\widgets\Alert;
 use common\models\blog\BlogCategory;
+use yii\helpers\Url;
 
 /** @var View $this */
 /** @var BlogCategory $blogCategory */
@@ -13,7 +14,12 @@ use common\models\blog\BlogCategory;
 /** @var \backend\models\blog\BlogSearch $searchModel */
 /** @var BlogCategory[] $categories */
 
-$this->title = Yii::t('database', $blogCategory->name);
+$request = Yii::$app->request;
+$pagination = $dataProvider->getPagination();
+$sort = $dataProvider->getSort();
+
+$baseTitle = Yii::t('database', $blogCategory->name);
+$this->title = $baseTitle;
 $this->params['breadcrumbs'][] = ['label' => Yii::t('common', "Блог"), 'url' => ["/posts"]];
 if (!empty($blogCategory->parentCategory)) {
     $this->params['breadcrumbs'][] = ['label' => Yii::t('database', $blogCategory->parentCategory->name), 'url' => [$blogCategory->parentCategory->getUrl()]];
@@ -25,7 +31,57 @@ $this->params['_blog_category_block'] = true;
 $this->params['_blog_comments_block'] = true;
 $this->params['breadcrumbs'][] = $this->title;
 $this->params['meta_keywords'] = Yii::t('database', $blogCategory->keywords);
-$this->params['meta_description'] = Yii::t('database', $blogCategory->description);
+
+$baseDescription = Yii::t('database', $blogCategory->description);
+$titleParts = [];
+$descriptionParts = [];
+
+if ($pagination) {
+    $pageParamName = $pagination->pageParam;
+    $pageNumber = (int)$request->get($pageParamName, 1);
+    if ($pageNumber > 1) {
+        $titleParts[] = Yii::t('common', 'Страница {number}', ['number' => $pageNumber]);
+        $descriptionParts[] = Yii::t('common', 'Сейчас вы просматриваете страницу {number}.', ['number' => $pageNumber]);
+    }
+
+    $pageSizeParam = $pagination->pageSizeParam;
+    if (!empty($pageSizeParam) && $request->get($pageSizeParam)) {
+        $perPage = (int)$request->get($pageSizeParam);
+        if ($perPage > 0) {
+            $titleParts[] = Yii::t('common', 'По {count} материалов на страницу', ['count' => $perPage]);
+            $descriptionParts[] = Yii::t('common', 'На странице отображается {count} публикаций.', ['count' => $perPage]);
+        }
+    }
+}
+
+$sortValue = $request->get($sort ? $sort->sortParam : 'sort');
+if (!empty($sortValue)) {
+    $sortLabels = [
+        '-created_at' => Yii::t('common', 'Сортировка по дате: новые сверху'),
+        'created_at'  => Yii::t('common', 'Сортировка по дате: старые сверху'),
+        '-views'      => Yii::t('common', 'Сортировка по просмотрам'),
+        'views'       => Yii::t('common', 'Сортировка по просмотрам (по возрастанию)'),
+    ];
+    $label = $sortLabels[$sortValue] ?? Yii::t('common', 'Сортировка: {value}', ['value' => $sortValue]);
+    $titleParts[] = $label;
+    $descriptionParts[] = $label . '.';
+}
+
+if (!empty($searchModel->name)) {
+    $queryLabel = Yii::t('common', 'Поиск: «{query}»', ['query' => $searchModel->name]);
+    $titleParts[] = $queryLabel;
+    $descriptionParts[] = Yii::t('common', 'Фильтр по названию: «{query}».', ['query' => $searchModel->name]);
+}
+
+if (!empty($titleParts)) {
+    $this->title = $baseTitle . ' — ' . implode(' · ', $titleParts);
+}
+
+$metaDescription = trim($baseDescription . (!empty($descriptionParts) ? ' ' . implode(' ', $descriptionParts) : ''));
+if ($metaDescription === '') {
+    $metaDescription = $baseTitle;
+}
+$this->params['meta_description'] = $metaDescription;
 ?>
 
 <?= Alert::widget() ?>
@@ -47,10 +103,10 @@ $this->params['meta_description'] = Yii::t('database', $blogCategory->descriptio
 
 <!-- Поиск -->
 <div class="blog-search-section">
-    <?php $form = ActiveForm::begin([
+<?php $form = ActiveForm::begin([
         'id' => 'blog-filter-form',
         'method' => 'get',
-        'action' => ['index'],
+        'action' => Url::to($blogCategory->getUrl()),
         'options' => ['data-pjax' => 1],
     ]); ?>
 
