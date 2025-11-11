@@ -392,11 +392,8 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
             $buttons = $this->buildRedFlagButtons($reportUser, $server);
 
-            Yii::$app->telegramChats->sendMessage(implode('<br>', $lines));
-            Yii::$app->telegramRedFlag->sendMessage(
-                implode('<br>', $lines),
-                $buttons
-            );
+            $messageBody = implode("\n", $lines);
+            Yii::$app->telegramRedFlag->sendMessage($messageBody, $buttons);
         } catch (\Exception $throwable) {
             Yii::error('Failed to send RedFlag notification: ' . $throwable->getMessage(), __METHOD__);
         }
