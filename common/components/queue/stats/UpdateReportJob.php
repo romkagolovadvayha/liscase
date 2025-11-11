@@ -405,11 +405,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
         $lines[] = '<b>Об игроке:</b>';
 
-        $firstSeen = $this->formatRustAppTimestamp($player->createdAt, $formatter);
-        if ($firstSeen) {
-            $lines[] = 'Впервые замечен: ' . Html::encode($firstSeen);
-        }
-
         if ($player->ip) {
             $lines[] = 'IP адрес: <code>' . Html::encode($player->ip) . '</code>';
         }
@@ -535,11 +530,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
         if ($playtimeWipe > 0) {
             $message .= "Играл в текущий вайп: {$playHourWipe} ч. ({$playtimeWipe} мин)" . PHP_EOL;
-        }
-
-        if (!empty($reportUser->ping)) {
-            $message .= "IP: <code>{$reportUser->ip}</code>" . PHP_EOL;
-            $message .= "Пинг: {$reportUser->ping}ms" . PHP_EOL;
         }
 
         if (!empty($countryItem)) {
