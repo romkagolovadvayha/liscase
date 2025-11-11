@@ -219,10 +219,9 @@ class RustApp
         try {
             $apiUrl = 'https://court.rustapp.io/public/bans';
             $curl = clone Yii::$app->curl;
-            $curl->setHeader('accept', 'accept: */*');
+            $curl->setHeader('accept', '*/*');
             $curl->setHeader('x-api-key', $rustAppApiKey);
             $curl->setHeader('Content-Type', 'application/json');
-            Yii::$app->telegramChats->sendMessage(json_encode($payload, JSON_UNESCAPED_UNICODE));
             $response = $curl->post($apiUrl, json_encode($payload, JSON_UNESCAPED_UNICODE));
             if ($response === false) {
                 Yii::warning('RustApp createBan failed: empty response', __METHOD__);
@@ -232,7 +231,6 @@ class RustApp
                     'message' => 'RustApp returned empty response',
                 ];
             }
-            Yii::$app->telegramChats->sendMessage($response);
             $decoded = json_decode($response, true);
             if (!is_array($decoded)) {
                 Yii::warning('RustApp createBan invalid JSON: ' . $response, __METHOD__);
