@@ -216,29 +216,6 @@ class RustApp
             ],
         ];
 
-        $banOptions = &$payload['bans'][0];
-
-        if (!empty($options['ban_ip'])) {
-            $banOptions['ban_ip'] = $options['ban_ip'];
-            $banOptions['ban_ip_active'] = $options['ban_ip_active'] ?? true;
-        }
-
-        if (!empty($options['server_ids']) && is_array($options['server_ids'])) {
-            $banOptions['server_ids'] = array_values(array_filter($options['server_ids'], 'is_numeric'));
-        }
-
-        if (!empty($options['proofs']) && is_array($options['proofs'])) {
-            $banOptions['proofs'] = array_values(array_filter($options['proofs'], 'is_string'));
-        }
-
-        if (isset($options['expired_at']) && is_numeric($options['expired_at'])) {
-            $banOptions['expired_at'] = (int)$options['expired_at'];
-        }
-
-        if (isset($options['destroy_buildings'])) {
-            $banOptions['destroy_buildings'] = (bool)$options['destroy_buildings'];
-        }
-
         try {
             $apiUrl = 'https://court.rustapp.io/public/bans';
             $curl = clone Yii::$app->curl;
