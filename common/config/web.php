@@ -164,6 +164,9 @@ $config = [
         'tomeApi'   => [
             'class' => \common\components\payments\Tome::class,
         ],
+        'rustApp'   => [
+            'class' => \common\components\bansystem\RustApp::class,
+        ],
         'freeKassaApi'   => [
             'class' => \common\components\payments\FreeKassa::class,
         ],
