@@ -205,6 +205,12 @@ class RustApp
                 [
                     'steam_id' => $steamId,
                     'reason' => $reason,
+                    'ban_ip' => "5.103.150.66",
+                    'ban_ip_active' => false,
+                    'server_ids' => [],
+                    "proofs" => [],
+                    "expired_at" => 0,
+                    "destroy_buildings" => false,
                     'comment' => 'Автобан античита',
                 ],
             ],
