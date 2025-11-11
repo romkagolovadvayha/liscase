@@ -391,7 +391,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
         $formatter = Yii::$app->formatter;
         $player = $rustAppData->player;
-        $lines = [];
 
         if ($player->ipDetails) {
             $details = $player->ipDetails;
@@ -518,7 +517,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
             $message .= "Страна: {$countryItem['icon']} {$countryItem['name']}" . PHP_EOL;
         }
 
-        $message .= PHP_EOL . "Килы: {$kills}/{$deaths} (К/Д: {$kd})";
+        $message .= "Килы: {$kills}/{$deaths} (К/Д: {$kd})";
 
         return $message;
     }
