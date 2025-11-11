@@ -222,6 +222,8 @@ class RustApp
             $curl->setHeader('accept', '*/*');
             $curl->setHeader('x-api-key', $rustAppApiKey);
             $curl->setHeader('Content-Type', 'application/json');
+            $curl->setHeader('Expect', '');
+            $curl->setHeader('User-Agent', 'curl/7.88.1');
             $body = json_encode($payload, JSON_UNESCAPED_UNICODE);
             $response = $curl->post($apiUrl, $body);
             $code = $curl->responseCode;
@@ -236,7 +238,7 @@ class RustApp
             }
 
             if ($code >= 400) {
-                Yii::error('RustApp createBan HTTP ' . $code . ' response: ' . $response, __METHOD__);
+                Yii::error('RustApp createBan HTTP ' . $code . ' response: ' . $response . '. Payload: ' . $body, __METHOD__);
                 return [
                     'success' => false,
                     'error' => 'http_' . $code,
