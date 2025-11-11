@@ -224,7 +224,7 @@ class RustApp
             $curl->setHeader('Content-Type', 'application/json');
             $curl->setHeader('Expect', '');
             $curl->setHeader('User-Agent', 'curl/7.88.1');
-            $body = json_encode($payload, JSON_UNESCAPED_UNICODE);
+            $body = json_encode($payload);
             $response = $curl->post($apiUrl, $body);
             $code = $curl->responseCode;
 
