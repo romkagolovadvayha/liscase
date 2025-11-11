@@ -329,37 +329,27 @@ class UpdateReportJob extends BaseObject implements JobInterface
             $formatter = Yii::$app->formatter;
             $lines = [];
             $lines[] = '🚩 <b>RedFlag: подозрительный игрок</b>';
+            $lines[] = '';
+
+            $lines[] = '<b>Об игроке:</b>';
             if ($server) {
                 $lines[] = 'Сервер: <b>' . Html::encode($server->name) . '</b> (' . Html::encode($this->serverTag) . ')';
             } else {
                 $lines[] = 'Сервер: ' . Html::encode($this->serverName) . ' (' . Html::encode($this->serverTag) . ')';
             }
-            $lines[] = 'Вайп: ' . Html::encode($this->wipeDate);
             $lines[] = 'Причина жалобы: ' . Html::encode($reason);
             $lines[] = 'Жалоб за вайп: <b>' . Html::encode((string)$count) . '</b>';
             $playerLink = 'https://steamcommunity.com/profiles/' . $reportUser->steam_id;
-            $lines[] = 'Игрок: <a href="' . Html::encode($playerLink) . '">' . Html::encode($reportUser->username) . '</a>';
-            $lines[] = 'SteamID: <code>' . Html::encode($reportUser->steam_id) . '</code>';
-            if (!empty($reportUser->ip)) {
-                $lines[] = 'IP: <code>' . Html::encode($reportUser->ip) . '</code>';
-            }
-            if (!empty($reportUser->ping)) {
-                $lines[] = 'Пинг: ' . Html::encode((string)$reportUser->ping) . 'ms';
-            }
+            $lines[] = '';
+            $lines[] = 'Игрок: <a href="' . Html::encode($playerLink) . '">' . Html::encode($reportUser->username) . '</a> (<code>' . Html::encode($reportUser->steam_id) . '</code>)';
             if ($countryItem) {
                 $lines[] = 'Страна: ' . Html::encode($countryItem['name']) . ' ' . $countryItem['icon'];
             }
-            $lines[] = 'Время в игре (всего): <b>' . Html::encode(number_format($totalPlayHour, 1)) . 'ч</b> (' . Html::encode((string)$totalPlaytime) . ' мин)';
-            if ($playtimeWipe > 0) {
-                $lines[] = 'За текущий вайп: <b>' . Html::encode(number_format($playHourWipe, 1)) . 'ч</b> (' . Html::encode((string)$playtimeWipe) . ' мин)';
-            }
+            $lines[] = 'На сервере (всего): <b>' . Html::encode(number_format($totalPlayHour, 1)) . 'ч</b> (' . Html::encode((string)$totalPlaytime) . ' мин)';
             $lines[] = 'Килы / смерти: <b>' . Html::encode((string)$kills) . '</b> / <b>' . Html::encode((string)$deaths) . '</b>';
             $lines[] = 'K/D: <b>' . Html::encode(number_format($kd, 2)) . '</b>';
             if (!empty($reportUser->created_at)) {
                 $lines[] = 'Аккаунт создан: ' . Html::encode($formatter->asDatetime($reportUser->created_at, 'php:d.m.Y H:i'));
-            }
-            if (!empty($reportUser->last_visit_server_at)) {
-                $lines[] = 'Последний визит: ' . Html::encode($formatter->asDatetime($reportUser->last_visit_server_at, 'php:d.m.Y H:i'));
             }
 
             if ($bansExist && !empty(trim($bans))) {
@@ -403,11 +393,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
         $player = $rustAppData->player;
         $lines = [];
 
-        $lines[] = '<b>Об игроке:</b>';
-
-        if ($player->ip) {
-            $lines[] = 'IP адрес: <code>' . Html::encode($player->ip) . '</code>';
-        }
         if ($player->ipDetails) {
             $details = $player->ipDetails;
             if ($details->countryName || $details->city) {
@@ -416,7 +401,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                     $details->city ? Html::encode($details->city) : null,
                 ]);
                 if (!empty($countryCity)) {
-                    $lines[] = 'Страна, город: ' . implode(', ', $countryCity);
+                    $lines[] = 'Город: ' . implode(', ', $countryCity);
                 }
             }
             if ($details->provider) {
@@ -450,9 +435,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
             $steamData = $player->steamData;
             if ($steamData->rustHoursTotal !== null) {
                 $lines[] = 'Часов в RUST: ' . Html::encode((string)$steamData->rustHoursTotal);
-            }
-            if ($steamData->rustHours2Week !== null) {
-                $lines[] = 'Часов за 2 недели: ' . Html::encode((string)$steamData->rustHours2Week);
             }
             if ($steamData->banData) {
                 $vac = $steamData->banData->vacBan && $steamData->banData->vacBan->count !== null ? (int)$steamData->banData->vacBan->count : 0;
