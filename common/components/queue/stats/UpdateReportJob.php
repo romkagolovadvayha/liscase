@@ -295,13 +295,13 @@ class UpdateReportJob extends BaseObject implements JobInterface
             return false;
         }
 
-        if ($playtime >= 60) {
-            return false;
-        }
+        // if ($playtime >= 60) {
+        //     return false;
+        // }
 
-        if ($countryCode === '' || $countryCode === 'ru') {
-            return false;
-        }
+        // if ($countryCode === '' || $countryCode === 'ru') {
+        //     return false;
+        // }
 
         return true;
     }
