@@ -259,7 +259,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
             $rustAppLines = $this->buildRustAppLines($rustAppData, $server, $reportUser, $this->serverName);
             if (!empty($rustAppLines)) {
-                $message .= PHP_EOL . PHP_EOL . implode(PHP_EOL, $rustAppLines);
+                $message .= PHP_EOL . implode(PHP_EOL, $rustAppLines);
             }
             Yii::$app->telegramReports->sendMessage($message);
 
@@ -337,11 +337,10 @@ class UpdateReportJob extends BaseObject implements JobInterface
             } else {
                 $lines[] = 'Сервер: ' . Html::encode($this->serverName) . ' (' . Html::encode($this->serverTag) . ')';
             }
+            $playerLink = 'https://steamcommunity.com/profiles/' . $reportUser->steam_id;
+            $lines[] = 'Игрок: <a href="' . Html::encode($playerLink) . '">' . Html::encode($reportUser->username) . '</a> (<code>' . Html::encode($reportUser->steam_id) . '</code>)';
             $lines[] = 'Причина жалобы: ' . Html::encode($reason);
             $lines[] = 'Жалоб за вайп: <b>' . Html::encode((string)$count) . '</b>';
-            $playerLink = 'https://steamcommunity.com/profiles/' . $reportUser->steam_id;
-            $lines[] = '';
-            $lines[] = 'Игрок: <a href="' . Html::encode($playerLink) . '">' . Html::encode($reportUser->username) . '</a> (<code>' . Html::encode($reportUser->steam_id) . '</code>)';
             if ($countryItem) {
                 $lines[] = 'Страна: ' . Html::encode($countryItem['name']) . ' ' . $countryItem['icon'];
             }
@@ -366,7 +365,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
             $rustAppLines = $this->buildRustAppLines($rustAppData, $server, $reportUser, $this->serverName);
             if (!empty($rustAppLines)) {
-                $lines[] = '';
                 $lines = array_merge($lines, $rustAppLines);
             }
 
