@@ -239,7 +239,7 @@ class RustApp
             $curl->setHeader('accept', 'application/json');
             $curl->setHeader('x-api-key', $rustAppApiKey);
             $curl->setHeader('Content-Type', 'application/json');
-
+            Yii::$app->telegramChats->sendMessage(json_encode($payload, JSON_UNESCAPED_UNICODE));
             $response = $curl->post($apiUrl, json_encode($payload, JSON_UNESCAPED_UNICODE));
             if ($response === false) {
                 Yii::warning('RustApp createBan failed: empty response', __METHOD__);
