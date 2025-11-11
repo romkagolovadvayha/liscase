@@ -9,6 +9,8 @@ use common\models\servers\Servers;
 use Yii;
 use yii\base\Component;
 
+use common\components\bansystem\dto\RustAppPlayerResponse;
+
 class RustApp
 {
 
@@ -115,6 +117,162 @@ class RustApp
             Yii::$app->telegramReports->sendMessage($e->getFile() . ":" . $e->getLine() . PHP_EOL . $e->getMessage());
         }
         return [];
+    }
+
+    /**
+     * Получить информацию об игроке и его тиме из RustApp
+     *
+     * @param string $steamId
+     *
+     * @return RustAppPlayerResponse
+     */
+    public function player(string $steamId): RustAppPlayerResponse
+    {
+        $steamId = trim($steamId);
+        if ($steamId === '') {
+            return new RustAppPlayerResponse();
+        }
+
+        $rustAppApiKey = Yii::$app->settings->get('banSystem_rustAppPrivateApiKey');
+        if (empty($rustAppApiKey)) {
+            Yii::warning('RustApp player request skipped: empty API key', __METHOD__);
+            return new RustAppPlayerResponse();
+        }
+
+        try {
+            $apiUrl = "https://court.rustapp.io/public/player?steam_id=" . urlencode($steamId);
+
+            $curl = clone Yii::$app->curl;
+            $curl->setHeader('accept', 'application/json');
+            $curl->setHeader('x-api-key', $rustAppApiKey);
+
+            $response = $curl->get($apiUrl);
+            if ($response === false) {
+                Yii::warning('RustApp player request failed: empty response', __METHOD__);
+                return new RustAppPlayerResponse();
+            }
+
+            $decoded = json_decode($response, true);
+            if (!is_array($decoded)) {
+                Yii::warning('RustApp player invalid JSON: ' . $response, __METHOD__);
+                return new RustAppPlayerResponse();
+            }
+
+            return RustAppPlayerResponse::fromArray($decoded);
+        } catch (\Throwable $throwable) {
+            Yii::error(
+                'RustApp player request error: ' . $throwable->getMessage(),
+                __METHOD__
+            );
+            return new RustAppPlayerResponse();
+        }
+    }
+
+    /**
+     * Создать бан через RustApp API
+     *
+     * @param string $steamId
+     * @param string $reason
+     * @param array  $options Доп. параметры: ban_ip, ban_ip_active, server_ids, proofs, expired_at, destroy_buildings
+     *
+     * @return array
+     */
+    public function createBan(string $steamId, string $reason, array $options = []): array
+    {
+        $steamId = trim($steamId);
+        $reason = trim($reason);
+
+        if ($steamId === '' || $reason === '') {
+            return [
+                'success' => false,
+                'error' => 'invalid_params',
+                'message' => 'steam_id and reason are required',
+            ];
+        }
+
+        $rustAppApiKey = Yii::$app->settings->get('banSystem_rustAppPrivateApiKey');
+        if (empty($rustAppApiKey)) {
+            Yii::warning('RustApp createBan skipped: empty API key', __METHOD__);
+            return [
+                'success' => false,
+                'error' => 'empty_api_key',
+                'message' => 'RustApp API key is not configured',
+            ];
+        }
+
+        $payload = [
+            'bans' => [
+                [
+                    'steam_id' => $steamId,
+                    'reason' => $reason,
+                    'comment' => 'Автобан античита',
+                ],
+            ],
+        ];
+
+        $banOptions = &$payload['bans'][0];
+
+        if (!empty($options['ban_ip'])) {
+            $banOptions['ban_ip'] = $options['ban_ip'];
+            $banOptions['ban_ip_active'] = $options['ban_ip_active'] ?? true;
+        }
+
+        if (!empty($options['server_ids']) && is_array($options['server_ids'])) {
+            $banOptions['server_ids'] = array_values(array_filter($options['server_ids'], 'is_numeric'));
+        }
+
+        if (!empty($options['proofs']) && is_array($options['proofs'])) {
+            $banOptions['proofs'] = array_values(array_filter($options['proofs'], 'is_string'));
+        }
+
+        if (isset($options['expired_at']) && is_numeric($options['expired_at'])) {
+            $banOptions['expired_at'] = (int)$options['expired_at'];
+        }
+
+        if (isset($options['destroy_buildings'])) {
+            $banOptions['destroy_buildings'] = (bool)$options['destroy_buildings'];
+        }
+
+        try {
+            $apiUrl = 'https://court.rustapp.io/public/bans';
+            $curl = clone Yii::$app->curl;
+            $curl->setHeader('accept', 'application/json');
+            $curl->setHeader('x-api-key', $rustAppApiKey);
+            $curl->setHeader('Content-Type', 'application/json');
+
+            $response = $curl->post($apiUrl, json_encode($payload, JSON_UNESCAPED_UNICODE));
+            if ($response === false) {
+                Yii::warning('RustApp createBan failed: empty response', __METHOD__);
+                return [
+                    'success' => false,
+                    'error' => 'empty_response',
+                    'message' => 'RustApp returned empty response',
+                ];
+            }
+
+            $decoded = json_decode($response, true);
+            if (!is_array($decoded)) {
+                Yii::warning('RustApp createBan invalid JSON: ' . $response, __METHOD__);
+                return [
+                    'success' => false,
+                    'error' => 'invalid_json',
+                    'message' => 'RustApp returned invalid JSON',
+                    'raw' => $response,
+                ];
+            }
+
+            return [
+                'success' => true,
+                'data' => $decoded,
+            ];
+        } catch (\Throwable $throwable) {
+            Yii::error('RustApp createBan error: ' . $throwable->getMessage(), __METHOD__);
+            return [
+                'success' => false,
+                'error' => 'request_failed',
+                'message' => $throwable->getMessage(),
+            ];
+        }
     }
 
     private function servers($rustAppApiKey) {

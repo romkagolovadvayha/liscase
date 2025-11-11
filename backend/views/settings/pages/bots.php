@@ -24,6 +24,10 @@ $tabs = [
         'title' => 'Для оповещений',
         'items' => [
             [
+                'category' => 'tgbotRedFlag',
+                'title' => 'Важные оповещения',
+            ],
+            [
                 'category' => 'tgbotReport',
                 'title' => 'Телеграм канал для репортов',
             ],

@@ -40,7 +40,7 @@ using System.Diagnostics;
 
 namespace Oxide.Plugins
 {
-    [Info("Copy Paste", "misticos", "4.2.4")]
+    [Info("Copy Paste", "misticos", "4.2.5")]
     [Description("Copy and paste buildings to save them or move them")]
     public class CopyPaste : CovalencePlugin
     {
@@ -712,11 +712,11 @@ namespace Oxide.Plugins
                         // Skip entities that are already in the list
                         if (!entity.IsValid() || entity.HasParent())
                             continue;
-                        
+
                         // Skip metal detector flags
                         if (entity.GetComponent<MetalDetectorSource>() != null)
                             continue;
-                        
+
                         if (!houseList.Add(entity))
                             continue;
 
@@ -740,7 +740,7 @@ namespace Oxide.Plugins
 
                         if (entity.GetComponent<BaseLock>() != null)
                             continue;
-                        
+
                         copyData.RawData.Add(EntityData(entity, transform.position,
                             transform.rotation.eulerAngles / Mathf.Rad2Deg, copyData));
                     }
@@ -854,7 +854,7 @@ namespace Oxide.Plugins
                 {
                     if (!child.IsValid())
                         continue;
-                    
+
                     children.Add(EntityData(child, child.transform.position, child.transform.rotation.eulerAngles, copyData));
                 }
 
@@ -896,14 +896,14 @@ namespace Oxide.Plugins
                         data.Add("guestPlayers", codeLock.guestPlayers);
                 }
             }
-            
+
             var keyLock = entity.GetComponent<KeyLock>();
             if (keyLock != null)
             {
                 data.Add("code", keyLock.keyCode.ToString());
                 data.Add("firstKeyCreated", keyLock.firstKeyCreated);
             }
-            
+
             var buildingblock = entity as BuildingBlock;
 
             if (buildingblock != null)
@@ -1026,7 +1026,7 @@ namespace Oxide.Plugins
                 {
                     data.Add("cupboard", new Dictionary<string, object>
                     {
-                        { "authorizedPlayers", cupboard.authorizedPlayers.Select(y => y.userid).ToList() }
+                        { "authorizedPlayers", cupboard.authorizedPlayers.ToList() }
                     });
                 }
 
@@ -1036,7 +1036,7 @@ namespace Oxide.Plugins
                 {
                     data.Add("autoturret", new Dictionary<string, object>
                     {
-                        { "authorizedPlayers", autoTurret.authorizedPlayers.Select(p => p.userid).ToList() }
+                        { "authorizedPlayers", autoTurret.authorizedPlayers.ToList() }
                     });
                 }
             }
@@ -1355,7 +1355,7 @@ namespace Oxide.Plugins
 
             return data;
         }
-        
+
         private List<object> GetLineAnchors(IOEntity.LineAnchor[] lineAnchors, IOEntity ioEntity)
         {
             var anchors = new List<object>();
@@ -1542,14 +1542,14 @@ namespace Oxide.Plugins
 
             var eulerRotation = new Vector3(0f, rotationCorrection * Mathf.Rad2Deg, 0f);
             var quaternionRotation = Quaternion.Euler(eulerRotation);
-            
+
             // Parse VersionNumber
             var version = protocol.ContainsKey("version") ? protocol["version"] as Dictionary<string, object> : null;
-            
+
             VersionNumber vNumber = default;
             if (version != null)
                 vNumber = new VersionNumber((int)version["Major"], (int)version["Minor"], (int)version["Patch"]);
-            
+
             var pasteData = new PasteData
             {
                 HeightAdj = heightAdj,
@@ -1591,7 +1591,7 @@ namespace Oxide.Plugins
             {
                 UndoLoop(new HashSet<BaseEntity>(pasteData.PastedEntities), pasteData.Player,
                     pasteData.PastedEntities.Count);
-                
+
                 return;
             }
 
@@ -1894,7 +1894,7 @@ namespace Oxide.Plugins
 #if DEBUG
             Puts($"{nameof(PasteLoop)}: Entity {prefabname}");
 #endif
-            
+
             var skinid = data.ContainsKey("skinid")
                 ? FilterSkinId(pasteData, ulong.Parse(data["skinid"].ToString()))
                 : 0;
@@ -1928,7 +1928,7 @@ namespace Oxide.Plugins
             var rot = isChild ? Quaternion.identity : (Quaternion)data["rotation"];
             var localPos = isChild ? (Vector3)data["position"] : Vector3.zero;
             var localRot = isChild ? (Quaternion)data["rotation"] : Quaternion.identity;
-                
+
             var ownerId = pasteData.BasePlayer?.userID ?? 0;
             if (data.ContainsKey("ownerid"))
             {
@@ -1978,9 +1978,9 @@ namespace Oxide.Plugins
 
             if (entity == null)
                 return;
-            
+
             var transform = entity.transform;
-            
+
             // If the entity is a child, set the parent and the local position and rotation.
             if (isChild)
             {
@@ -2165,9 +2165,9 @@ namespace Oxide.Plugins
                     parent.SetSlot( slot, entity );
                 }
             }
-            
+
             TryPasteLocks(entity, data, pasteData);
-            
+
             var autoTurret = entity as AutoTurret;
             if (autoTurret != null)
             {
@@ -2189,11 +2189,7 @@ namespace Oxide.Plugins
 
                 foreach (var userId in authorizedPlayers)
                 {
-                    autoTurret.authorizedPlayers.Add(new PlayerNameID
-                    {
-                        userid = userId,
-                        username = "Player"
-                    });
+                    autoTurret.authorizedPlayers.Add(userId);
                 }
 
                 autoTurret.SendNetworkUpdate();
@@ -2475,11 +2471,7 @@ namespace Oxide.Plugins
 
                 foreach (var userId in authorizedPlayers)
                 {
-                    cupboard.authorizedPlayers.Add(new PlayerNameID
-                    {
-                        userid = userId,
-                        username = "Player"
-                    });
+                    cupboard.authorizedPlayers.Add(userId);
                 }
 
                 cupboard.SendNetworkUpdate();

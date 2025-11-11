@@ -131,12 +131,12 @@ namespace Oxide.Plugins
                 BuildingPrivlidge buildingPrivlidge = entity.GetBuildingPrivilege();
                 if (buildingPrivlidge != null)
                 {
-                    HashSet<PlayerNameID> authorizedPlayers = buildingPrivlidge.authorizedPlayers;
-                    foreach (PlayerNameID authorizedPlayer in authorizedPlayers) {
-                        if (attackerUserId == authorizedPlayer.userid.ToString()) {
+                    HashSet<ulong> authorizedPlayers = buildingPrivlidge.authorizedPlayers;
+                    foreach (ulong authorizedPlayer in authorizedPlayers) {
+                        if (attackerUserId == authorizedPlayer.ToString()) {
                             return;
                         }
-                        model.owners.Add(authorizedPlayer.userid.ToString());
+                        model.owners.Add(authorizedPlayer.ToString());
                     }
                 }
 
@@ -209,12 +209,12 @@ namespace Oxide.Plugins
                 BuildingPrivlidge buildingPrivlidge = entity.GetBuildingPrivilege();
                 if (buildingPrivlidge != null)
                 {
-                    HashSet<PlayerNameID> authorizedPlayers = buildingPrivlidge.authorizedPlayers;
-                    foreach (PlayerNameID authorizedPlayer in authorizedPlayers) {
-                        if (attackerUserId == authorizedPlayer.userid.ToString()) {
+                    HashSet<ulong> authorizedPlayers = buildingPrivlidge.authorizedPlayers;
+                    foreach (ulong authorizedPlayer in authorizedPlayers) {
+                        if (attackerUserId == authorizedPlayer.ToString()) {
                             return;
                         }
-                        model.owners.Add(authorizedPlayer.userid.ToString());
+                        model.owners.Add(authorizedPlayer.ToString());
                     }
                 }
 
@@ -255,12 +255,12 @@ namespace Oxide.Plugins
         //     BuildingPrivlidge buildingPrivlidge = entity.GetBuildingPrivilege();
         //     if (buildingPrivlidge != null)
         //     {
-        //         HashSet<PlayerNameID> authorizedPlayers = buildingPrivlidge.authorizedPlayers;
-        //         foreach (PlayerNameID authorizedPlayer in authorizedPlayers) {
-        //             if (attackerUserId == authorizedPlayer.userid.ToString()) {
+        //         HashSet<ulong> authorizedPlayers = buildingPrivlidge.authorizedPlayers;
+        //         foreach (ulong authorizedPlayer in authorizedPlayers) {
+        //             if (attackerUserId == authorizedPlayer.ToString()) {
         //                 return;
         //             }
-        //             model.owners.Add(authorizedPlayer.userid.ToString());
+        //             model.owners.Add(authorizedPlayer.ToString());
         //         }
         //     }
 

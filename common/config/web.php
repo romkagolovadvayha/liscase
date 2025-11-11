@@ -147,6 +147,9 @@ $config = [
         'telegramChats'   => [
             'class'  => \common\components\telegram\TelegramChats::class,
         ],
+        'telegramRedFlag'   => [
+            'class'  => \common\components\telegram\TelegramRedFlag::class,
+        ],
         'telegramSupport'   => [
             'class'  => \common\components\telegram\TelegramSupport::class,
         ],

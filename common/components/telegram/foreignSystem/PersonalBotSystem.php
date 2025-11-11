@@ -347,6 +347,12 @@ class PersonalBotSystem extends AbstractSystem
                     if (!empty($action) && $action == 'reject-track') {
                       return Chats::actionRejectTrack($buttonValueObj);
                     }
+                    if (!empty($action) && $action === 'ban-cheats') {
+                      return $this->actionBanPlayer($buttonValueObj, 'Читы');
+                    }
+                    if (!empty($action) && $action === 'ban-foreign-bans') {
+                      return $this->actionBanPlayer($buttonValueObj, 'Баны на других проектах');
+                    }
                 }
             }
         } catch (\Exception $e) {
@@ -471,6 +477,33 @@ class PersonalBotSystem extends AbstractSystem
 
         Yii::$app->cache->set($cacheKey, $result, 60);
         return $result;
+    }
+
+    private function actionBanPlayer(array $buttonValueObj, string $reason)
+    {
+        $steamId = ArrayHelper::getValue($buttonValueObj, 'steam_id');
+        if (empty($steamId)) {
+            return '⛔ Не удалось определить игрока';
+        }
+
+        $options = [];
+        $serverIds = ArrayHelper::getValue($buttonValueObj, 'server_ids', []);
+        if (is_array($serverIds) && !empty($serverIds)) {
+            $options['server_ids'] = array_values(array_filter(array_map('intval', $serverIds)));
+        }
+
+        try {
+            $result = Yii::$app->rustApp->createBan($steamId, $reason, $options);
+            if (empty($result['success'])) {
+                $message = ArrayHelper::getValue($result, 'message', 'Неизвестная ошибка');
+                return '⛔ Не удалось забанить: ' . $message;
+            }
+        } catch (\Throwable $throwable) {
+            Yii::error('Failed to ban via RustApp: ' . $throwable->getMessage(), __METHOD__);
+            return '⛔ Ошибка при обращении к RustApp';
+        }
+
+        return '✅ Игрок забанен (' . $reason . ')';
     }
 
     /**

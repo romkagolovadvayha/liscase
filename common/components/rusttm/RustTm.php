@@ -79,7 +79,26 @@ class RustTm
     public function prices(): array
     {
         $uploadDir = Yii::getAlias('@frontend/web/uploads/prices');
-        return json_decode(file_get_contents($uploadDir . '/rusttm.json'), true);
+        $file = $uploadDir . '/rusttm.json';
+
+        if (!is_file($file)) {
+            Yii::error('RustTm prices file not found: ' . $file, __METHOD__);
+            return [];
+        }
+
+        $content = file_get_contents($file);
+        if ($content === false) {
+            Yii::error('RustTm prices failed to read file: ' . $file, __METHOD__);
+            return [];
+        }
+
+        $decoded = json_decode($content, true);
+        if (!is_array($decoded)) {
+            Yii::error('RustTm prices invalid JSON: ' . $content, __METHOD__);
+            return [];
+        }
+
+        return $decoded;
     }
 
     public function categories(): array
@@ -99,11 +118,17 @@ class RustTm
     {
         $cacheKey = "RustTm4_items";
         $cacheKeyCategories = "RustTm5_categories";
-        if (Yii::$app->cache->get($cacheKey)) {
-            return Yii::$app->cache->get($cacheKey);
+        $cachedItems = Yii::$app->cache->get($cacheKey);
+        if ($cachedItems) {
+            return $cachedItems;
         }
         $result = [];
-        $items = $this->prices()['items'];
+        $prices = $this->prices();
+        if (empty($prices['items']) || !is_array($prices['items'])) {
+            Yii::error('RustTm items(): prices item list is empty', __METHOD__);
+            return [];
+        }
+        $items = $prices['items'];
         $itemsName = [];
         $categories = [];
         foreach ($items as $id => $item) {

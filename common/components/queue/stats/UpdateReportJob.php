@@ -17,6 +17,8 @@ use GeoIp2\Database\Reader;
 use Yii;
 use yii\base\BaseObject;
 use yii\queue\JobInterface;
+use yii\helpers\Html;
+use common\components\bansystem\dto\RustAppPlayerResponse;
 
 class UpdateReportJob extends BaseObject implements JobInterface
 {
@@ -120,10 +122,10 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
             $user = User::findBySteamId($item['steam_id'], false, 'report');
             $reportUser = User::findBySteamId($item['recepient_steam_id'], false, 'report 2');
+            $server = Servers::findOne(['tag' => $this->serverTag, 'status' => Servers::STATUS_ACTIVE]);
             
             // Отправляем уведомление пользователю о включении оповещений о банах
             if ($user && (empty($user->telegram_chat_id) || $user->is_telegram_blocked || !$user->ban_notify)) {
-                $server = Servers::findOne(['tag' => $this->serverTag, 'status' => Servers::STATUS_ACTIVE]);
                 if ($server) {
                     $user->sendBanNotifyPromoMessage($server);
                 }
@@ -155,32 +157,49 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 } else {
                     $kd = $kills;
                 }
-                $playtime = Statistics::getParam($stats, 'playtime');
+                $playtimeWipe = Statistics::getParam($stats, 'playtime');
             } catch (\Exception $e) {
                 Yii::$app->telegramChats->sendMessage("UpdateReportJob:" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             }
 
-            $playHour = round($playtime/60, 1);
+            $totalPlaytime = (int)Statistics::find()
+                ->select('SUM(value)')
+                ->andWhere(['steam_id' => $reportUser->steam_id, 'key' => 'playtime'])
+                ->scalar();
+            $playtimeWipe = $playtimeWipe ?? 0;
+            $totalPlaytime = max(0, $totalPlaytime);
+
+            $playHourTotal = round($totalPlaytime / 60, 1);
+            $playHourWipe = round($playtimeWipe / 60, 1);
+
+            /** @var RustAppPlayerResponse|null $rustAppData */
+            $rustAppData = null;
+            if (Yii::$app->has('rustApp')) {
+                try {
+                    $rustAppData = Yii::$app->rustApp->player($reportUser->steam_id);
+                } catch (\Throwable $throwable) {
+                    Yii::error('RustApp player fetch failed: ' . $throwable->getMessage(), __METHOD__);
+                }
+            }
+
             $reason = !empty($item['reason']) ? $item['reason'] : 'Не указана';
-            $message = "⚔ <b>{$this->serverName}</b>" . PHP_EOL
-                . "Отправил: {$user->username} (<code>{$user->steam_id}</code>)" . PHP_EOL . PHP_EOL
-                . "Подозреваемый: <a href=\"https://steamcommunity.com/profiles/{$reportUser->steam_id}\">{$reportUser->username}</a>" . PHP_EOL
-                . "SteamId: <code>{$reportUser->steam_id}</code>" . PHP_EOL
-                . "Причина: <b>{$reason}</b>" . PHP_EOL
-                . "Кол-во репортов на игрока: <b>{$count}</b>" . PHP_EOL
-                . "Играл за вайп: {$playHour} ч." . PHP_EOL;
+            $countryCode = strtolower((string)$reportUser->getCountryByIp());
+            $countryItem = $this->country($countryCode);
 
-
-            if (!empty($reportUser->ping)) {
-                $message .= "IP: <code>{$reportUser->ip}</code>" . PHP_EOL;
-                $message .= "Пинг: {$reportUser->ping}ms" . PHP_EOL;
-            }
-            $countryItem = $this->country($reportUser->getCountryByIp());
-            if (!empty($countryItem)) {
-                $message .= "Страна: {$countryItem['icon']} {$countryItem['name']}" . PHP_EOL;
-            }
-
-            $message .=  PHP_EOL . "Килы: {$kills}/{$deaths} (К/Д: {$kd})";
+            $message = $this->buildReportMessage(
+                $user,
+                $reportUser,
+                $reason,
+                $count,
+                $playHourTotal,
+                $totalPlaytime,
+                $playtimeWipe,
+                $playHourWipe,
+                $kills,
+                $deaths,
+                $kd,
+                $countryItem
+            );
 
             $bans = "";
             $bansExist = false;
@@ -237,9 +256,373 @@ class UpdateReportJob extends BaseObject implements JobInterface
             if ($lastCheckExist) {
                 $message .=  PHP_EOL  . PHP_EOL . "Последние проверки игрока:" . PHP_EOL . $lastCheck;
             }
+
+            $rustAppLines = $this->buildRustAppLines($rustAppData, $server, $reportUser, $this->serverName);
+            if (!empty($rustAppLines)) {
+                $message .= PHP_EOL . PHP_EOL . implode(PHP_EOL, $rustAppLines);
+            }
             Yii::$app->telegramReports->sendMessage($message);
+
+            if ($this->shouldNotifyRedFlag($totalPlaytime, $countryCode)) {
+                $this->sendRedFlagNotification(
+                    $reportUser,
+                    $server,
+                    $reason,
+                    $count,
+                    $kills,
+                    $deaths,
+                    $kd,
+                    $totalPlaytime,
+                    $playHourTotal,
+                    $playtimeWipe,
+                    $playHourWipe,
+                    $countryItem,
+                    $bansExist,
+                    $bans,
+                    $lastCheckExist,
+                    $lastCheck,
+                    $rustAppData
+                );
+            }
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage("UpdateReportJob" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
         }
+    }
+
+    private function shouldNotifyRedFlag(int $playtime, string $countryCode): bool
+    {
+        if (!Yii::$app->has('telegramRedFlag')) {
+            return false;
+        }
+
+        if ($playtime >= 60) {
+            return false;
+        }
+
+        if ($countryCode === '' || $countryCode === 'ru') {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function sendRedFlagNotification(
+        User $reportUser,
+        ?Servers $server,
+        string $reason,
+        int $count,
+        int $kills,
+        int $deaths,
+        float $kd,
+        int $totalPlaytime,
+        float $totalPlayHour,
+        int $playtimeWipe,
+        float $playHourWipe,
+        ?array $countryItem,
+        bool $bansExist,
+        string $bans,
+        bool $lastCheckExist,
+        string $lastCheck,
+        ?RustAppPlayerResponse $rustAppData
+    ): void {
+        try {
+            $formatter = Yii::$app->formatter;
+            $lines = [];
+            $lines[] = '🚩 <b>RedFlag: подозрительный игрок</b>';
+            if ($server) {
+                $lines[] = 'Сервер: <b>' . Html::encode($server->name) . '</b> (' . Html::encode($this->serverTag) . ')';
+            } else {
+                $lines[] = 'Сервер: ' . Html::encode($this->serverName) . ' (' . Html::encode($this->serverTag) . ')';
+            }
+            $lines[] = 'Вайп: ' . Html::encode($this->wipeDate);
+            $lines[] = 'Причина жалобы: ' . Html::encode($reason);
+            $lines[] = 'Жалоб за вайп: <b>' . Html::encode((string)$count) . '</b>';
+            $playerLink = 'https://steamcommunity.com/profiles/' . $reportUser->steam_id;
+            $lines[] = 'Игрок: <a href="' . Html::encode($playerLink) . '">' . Html::encode($reportUser->username) . '</a>';
+            $lines[] = 'SteamID: <code>' . Html::encode($reportUser->steam_id) . '</code>';
+            if (!empty($reportUser->ip)) {
+                $lines[] = 'IP: <code>' . Html::encode($reportUser->ip) . '</code>';
+            }
+            if (!empty($reportUser->ping)) {
+                $lines[] = 'Пинг: ' . Html::encode((string)$reportUser->ping) . 'ms';
+            }
+            if ($countryItem) {
+                $lines[] = 'Страна: ' . Html::encode($countryItem['name']) . ' ' . $countryItem['icon'];
+            }
+            $lines[] = 'Время в игре (всего): <b>' . Html::encode(number_format($totalPlayHour, 1)) . 'ч</b> (' . Html::encode((string)$totalPlaytime) . ' мин)';
+            if ($playtimeWipe > 0) {
+                $lines[] = 'За текущий вайп: <b>' . Html::encode(number_format($playHourWipe, 1)) . 'ч</b> (' . Html::encode((string)$playtimeWipe) . ' мин)';
+            }
+            $lines[] = 'Килы / смерти: <b>' . Html::encode((string)$kills) . '</b> / <b>' . Html::encode((string)$deaths) . '</b>';
+            $lines[] = 'K/D: <b>' . Html::encode(number_format($kd, 2)) . '</b>';
+            if (!empty($reportUser->created_at)) {
+                $lines[] = 'Аккаунт создан: ' . Html::encode($formatter->asDatetime($reportUser->created_at, 'php:d.m.Y H:i'));
+            }
+            if (!empty($reportUser->last_visit_server_at)) {
+                $lines[] = 'Последний визит: ' . Html::encode($formatter->asDatetime($reportUser->last_visit_server_at, 'php:d.m.Y H:i'));
+            }
+
+            $teamLines = $this->buildTeamLines($reportUser, $server, $formatter);
+        if (!empty($teamLines)) {
+                $lines[] = '';
+                $lines[] = '<b>Тиммейты:</b>';
+                $lines = array_merge($lines, $teamLines);
+        } else {
+            $lines[] = '';
+            $lines[] = '<b>Тиммейтов нет</b>';
+            }
+
+            if ($bansExist && !empty(trim($bans))) {
+                $lines[] = '';
+                $lines[] = '<b>Баны на других проектах:</b>';
+                $lines[] = nl2br(Html::encode(trim($bans)));
+            }
+
+            if ($lastCheckExist && !empty(trim($lastCheck))) {
+                $lines[] = '';
+                $lines[] = '<b>Последние проверки:</b>';
+                $lines[] = nl2br(Html::encode(trim($lastCheck)));
+            }
+
+            $rustAppLines = $this->buildRustAppLines($rustAppData, $server, $reportUser, $this->serverName);
+            if (!empty($rustAppLines)) {
+                $lines[] = '';
+                $lines = array_merge($lines, $rustAppLines);
+            }
+
+            $buttons = $this->buildRedFlagButtons($reportUser, $server);
+
+            Yii::$app->telegramRedFlag->sendMessage(
+                implode('<br>', $lines),
+                $buttons
+            );
+        } catch (\Throwable $throwable) {
+            Yii::error('Failed to send RedFlag notification: ' . $throwable->getMessage(), __METHOD__);
+        }
+    }
+
+    private function buildTeamLines(User $reportUser, ?Servers $server, \yii\i18n\Formatter $formatter): array
+    {
+        if (!$server) {
+            return [];
+        }
+
+        try {
+            $team = \common\models\teams\Teams::getTeamList($server->id, $reportUser->user_id, $server->currentWipe());
+        } catch (\Throwable $throwable) {
+            Yii::error('Failed to load team for RedFlag: ' . $throwable->getMessage(), __METHOD__);
+            return [];
+        }
+
+        if (empty($team)) {
+            return [];
+        }
+
+        $teamLines = [];
+        foreach ($team as $member) {
+            $link = !empty($member['link']) ? '<a href="' . Html::encode($member['link']) . '">' . Html::encode($member['username']) . '</a>' : Html::encode($member['username']);
+            $status = !empty($member['is_online'])
+                ? 'Онлайн'
+                : ('Был онлайн: ' . (!empty($member['date_visit']) ? $formatter->asDatetime($member['date_visit'], 'php:d.m.Y H:i') : '—'));
+            $role = !empty($member['is_leader']) ? ' (лидер)' : '';
+            $teamLines[] = '• ' . $link . $role . ' — ' . Html::encode($status);
+        }
+
+        return $teamLines;
+    }
+
+    /**
+     * @param RustAppPlayerResponse|null $rustAppData
+     * @return array
+     */
+    private function buildRustAppLines(?RustAppPlayerResponse $rustAppData, ?Servers $server, User $reportUser, string $serverName): array
+    {
+        if (!$rustAppData || !$rustAppData->player) {
+            return [];
+        }
+
+        $formatter = Yii::$app->formatter;
+        $player = $rustAppData->player;
+        $lines = [];
+
+        $lines[] = '<b>Об игроке:</b>';
+
+        $lines[] = 'Играл на: <b>' . Html::encode($server ? $server->name : $serverName) . '</b>';
+        $lines[] = 'SteamID: <code>' . Html::encode($reportUser->steam_id) . '</code>';
+
+        $firstSeen = $this->formatRustAppTimestamp($player->createdAt, $formatter);
+        if ($firstSeen) {
+            $lines[] = 'Впервые замечен: ' . Html::encode($firstSeen);
+        }
+
+        if ($player->ip) {
+            $lines[] = 'IP адрес: <code>' . Html::encode($player->ip) . '</code>';
+        }
+        if ($player->ipDetails) {
+            $details = $player->ipDetails;
+            if ($details->countryName || $details->city) {
+                $countryCity = array_filter([
+                    $details->countryName ? Html::encode($details->countryName) : null,
+                    $details->city ? Html::encode($details->city) : null,
+                ]);
+                if (!empty($countryCity)) {
+                    $lines[] = 'Страна, город: ' . implode(', ', $countryCity);
+                }
+            }
+            if ($details->provider) {
+                $lines[] = 'Провайдер: ' . Html::encode($details->provider);
+            }
+            if ($details->proxy !== null) {
+                $lines[] = 'Proxy: ' . ($details->proxy ? 'да' : 'нет');
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = '<b>Информация из Steam:</b>';
+
+        if ($player->steam) {
+            $steam = $player->steam;
+            if ($steam->profilePrivate !== null) {
+                $lines[] = 'Приватность: ' . ($steam->profilePrivate ? 'Профиль закрыт' : 'Профиль открыт');
+            }
+        }
+
+        $createdAt = $this->formatRustAppTimestamp($player->createdAt, $formatter);
+        if ($createdAt) {
+            $lines[] = 'Аккаунт создан: ' . Html::encode($createdAt);
+        }
+
+        if ($player->lastLanguage) {
+            $lines[] = 'Язык в игре: ' . Html::encode($player->lastLanguage);
+        }
+
+        if ($player->steamData) {
+            $steamData = $player->steamData;
+            if ($steamData->rustHoursTotal !== null) {
+                $lines[] = 'Часов в RUST: ' . Html::encode((string)$steamData->rustHoursTotal);
+            }
+            if ($steamData->rustHours2Week !== null) {
+                $lines[] = 'Часов за 2 недели: ' . Html::encode((string)$steamData->rustHours2Week);
+            }
+            if ($steamData->banData) {
+                $vac = $steamData->banData->vacBan && $steamData->banData->vacBan->count !== null ? (int)$steamData->banData->vacBan->count : 0;
+                $game = $steamData->banData->gameBan && $steamData->banData->gameBan->count !== null ? (int)$steamData->banData->gameBan->count : 0;
+                $lines[] = 'Gamebans / VAC: ' . ($vac || $game ? ("Game: {$game}, VAC: {$vac}") : 'Банов нет');
+            }
+            if ($steamData->updatedAt) {
+                $lastUpdate = $this->formatRustAppTimestamp($steamData->updatedAt, $formatter);
+                if ($lastUpdate) {
+                    $lines[] = 'Последнее обновление: ' . Html::encode($lastUpdate);
+                }
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = '<b>RustApp тиммейты:</b>';
+
+        $teamLines = [];
+        if (!empty($rustAppData->team)) {
+            foreach ($rustAppData->team as $member) {
+                $link = $member->steamId
+                    ? '<a href="https://steamcommunity.com/profiles/' . Html::encode($member->steamId) . '">' . Html::encode($member->steamName ?? $member->steamId) . '</a>'
+                    : Html::encode($member->steamName ?? '');
+                $status = $member->status ? (' (' . Html::encode($member->status) . ')') : '';
+                $teamLines[] = '• ' . $link . $status;
+            }
+        }
+        if (!empty($teamLines)) {
+            $lines = array_merge($lines, $teamLines);
+        } else {
+            $lines[] = '• тиммейтов нет';
+        }
+
+        return $lines;
+    }
+
+    private function formatRustAppTimestamp(?int $timestamp, \yii\i18n\Formatter $formatter): ?string
+    {
+        if (empty($timestamp)) {
+            return null;
+        }
+
+        if ($timestamp > 9999999999) {
+            $timestamp = (int) floor($timestamp / 1000);
+        }
+
+        if ($timestamp <= 0) {
+            return null;
+        }
+
+        return $formatter->asDatetime($timestamp, 'php:d.m.Y H:i');
+    }
+
+    private function buildReportMessage(
+        User $sender,
+        User $reportUser,
+        string $reason,
+        int $count,
+        float $playHourTotal,
+        int $totalPlaytime,
+        int $playtimeWipe,
+        float $playHourWipe,
+        int $kills,
+        int $deaths,
+        float $kd,
+        ?array $countryItem
+    ): string {
+        $message = "⚔ <b>{$this->serverName}</b>" . PHP_EOL
+            . "Отправил: {$sender->username} (<code>{$sender->steam_id}</code>)" . PHP_EOL . PHP_EOL
+            . "Подозреваемый: <a href=\"https://steamcommunity.com/profiles/{$reportUser->steam_id}\">{$reportUser->username}</a>" . PHP_EOL
+            . "SteamId: <code>{$reportUser->steam_id}</code>" . PHP_EOL
+            . "Причина: <b>{$reason}</b>" . PHP_EOL
+            . "Кол-во репортов на игрока: <b>{$count}</b>" . PHP_EOL
+            . "Играл всего: {$playHourTotal} ч. ({$totalPlaytime} мин)" . PHP_EOL;
+
+        if ($playtimeWipe > 0) {
+            $message .= "Играл в текущий вайп: {$playHourWipe} ч. ({$playtimeWipe} мин)" . PHP_EOL;
+        }
+
+        if (!empty($reportUser->ping)) {
+            $message .= "IP: <code>{$reportUser->ip}</code>" . PHP_EOL;
+            $message .= "Пинг: {$reportUser->ping}ms" . PHP_EOL;
+        }
+
+        if (!empty($countryItem)) {
+            $message .= "Страна: {$countryItem['icon']} {$countryItem['name']}" . PHP_EOL;
+        }
+
+        $message .= PHP_EOL . "Килы: {$kills}/{$deaths} (К/Д: {$kd})";
+
+        return $message;
+    }
+
+    private function buildRedFlagButtons(User $reportUser, ?Servers $server): array
+    {
+        $serverId = $server && $server->rust_app_id ? (int)$server->rust_app_id : null;
+        $commonPayload = [
+            'steam_id' => $reportUser->steam_id,
+        ];
+        if ($serverId) {
+            $commonPayload['server_ids'] = [$serverId];
+        }
+
+        $cheatsPayload = $commonPayload;
+        $cheatsPayload['action'] = 'ban-cheats';
+
+        $foreignPayload = $commonPayload;
+        $foreignPayload['action'] = 'ban-foreign-bans';
+
+        return [
+            [
+                [
+                    'text' => '🔴 Читы',
+                    'callback_data' => json_encode($cheatsPayload, JSON_UNESCAPED_UNICODE),
+                ],
+                [
+                    'text' => '🔴 Баны на других проектах',
+                    'callback_data' => json_encode($foreignPayload, JSON_UNESCAPED_UNICODE),
+                ],
+            ],
+        ];
     }
 }

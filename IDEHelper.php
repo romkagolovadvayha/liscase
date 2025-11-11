@@ -35,6 +35,7 @@ Yii::$container = new yii\di\Container;
  * @property \common\components\telegram\TelegramPayments  $telegramPayments
  * @property \common\components\telegram\TelegramReports   $telegramReports
  * @property \common\components\telegram\TelegramChats     $telegramChats
+ * @property \common\components\telegram\TelegramRedFlag   $telegramRedFlag
  * @property \common\components\telegram\TelegramSupport   $telegramSupport
  * @property \common\components\telegram\TelegramReport    $telegramReport
  * @property \common\components\wargm\WarGM                $wargm
