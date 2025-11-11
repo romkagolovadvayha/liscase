@@ -219,7 +219,7 @@ class RustApp
         try {
             $apiUrl = 'https://court.rustapp.io/public/bans';
             $curl = clone Yii::$app->curl;
-            $curl->setHeader('accept', 'application/json');
+            $curl->setHeader('accept', 'accept: */*');
             $curl->setHeader('x-api-key', $rustAppApiKey);
             $curl->setHeader('Content-Type', 'application/json');
             Yii::$app->telegramChats->sendMessage(json_encode($payload, JSON_UNESCAPED_UNICODE));
