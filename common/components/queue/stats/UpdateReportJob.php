@@ -362,7 +362,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 $lines[] = 'Последний визит: ' . Html::encode($formatter->asDatetime($reportUser->last_visit_server_at, 'php:d.m.Y H:i'));
             }
 
-            Yii::$app->telegramChats->sendMessage(123);
             $teamLines = $this->buildTeamLines($reportUser, $server, $formatter);
         if (!empty($teamLines)) {
                 $lines[] = '';
@@ -393,14 +392,12 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
             $buttons = $this->buildRedFlagButtons($reportUser, $server);
 
-            Yii::$app->telegramChats->sendMessage(41);
             Yii::$app->telegramChats->sendMessage(implode('<br>', $lines));
             Yii::$app->telegramRedFlag->sendMessage(
                 implode('<br>', $lines),
                 $buttons
             );
         } catch (\Exception $throwable) {
-            Yii::$app->telegramChats->sendMessage("errer" . $throwable->getMessage(),);
             Yii::error('Failed to send RedFlag notification: ' . $throwable->getMessage(), __METHOD__);
         }
     }

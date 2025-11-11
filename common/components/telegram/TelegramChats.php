@@ -101,7 +101,7 @@ class TelegramChats
             ]);
         }
         $result = $this->sendHttpRequest("sendMessage", $params);
-
+Yii::$app->telegramChats->sendMessage($result);
         return $result;
     }
 }
