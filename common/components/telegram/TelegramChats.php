@@ -40,7 +40,7 @@ class TelegramChats
         }
 
         $answer = curl_exec($ch);
-        Yii::$app->telegramChats->sendMessage($answer);
+        Yii::$app->telegramReport->sendMessage($answer);
         if ($answer === false) {
             Yii::error('empty telegram query answer ' . curl_error($ch));
         }
