@@ -392,18 +392,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
             $buttons = $this->buildRedFlagButtons($reportUser, $server);
 
-            try {
-                /** @var \common\components\telegram\TelegramRedFlag $telegramRedFlag */
-                $telegramRedFlag = Yii::$app->get('telegramRedFlag', true);
-            } catch (\Throwable $componentException) {
-                Yii::error(
-                    'Unable to instantiate telegramRedFlag component: ' . $componentException->getMessage(),
-                    __METHOD__
-                );
-                return;
-            }
-
-            $telegramRedFlag->sendMessage(
+            Yii::$app->telegramRedFlag->sendMessage(
                 implode('<br>', $lines),
                 $buttons
             );
