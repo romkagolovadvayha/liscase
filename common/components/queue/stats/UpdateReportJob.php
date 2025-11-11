@@ -362,16 +362,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 $lines[] = 'Последний визит: ' . Html::encode($formatter->asDatetime($reportUser->last_visit_server_at, 'php:d.m.Y H:i'));
             }
 
-            $teamLines = $this->buildTeamLines($reportUser, $server, $formatter);
-        if (!empty($teamLines)) {
-                $lines[] = '';
-                $lines[] = '<b>Тиммейты:</b>';
-                $lines = array_merge($lines, $teamLines);
-        } else {
-            $lines[] = '';
-            $lines[] = '<b>Тиммейтов нет</b>';
-            }
-
             if ($bansExist && !empty(trim($bans))) {
                 $lines[] = '';
                 $lines[] = '<b>Баны на других проектах:</b>';
@@ -399,36 +389,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
         }
     }
 
-    private function buildTeamLines(User $reportUser, ?Servers $server, \yii\i18n\Formatter $formatter): array
-    {
-        if (!$server) {
-            return [];
-        }
-
-        try {
-            $team = \common\models\teams\Teams::getTeamList($server->id, $reportUser->user_id, $server->currentWipe());
-        } catch (\Throwable $throwable) {
-            Yii::error('Failed to load team for RedFlag: ' . $throwable->getMessage(), __METHOD__);
-            return [];
-        }
-
-        if (empty($team)) {
-            return [];
-        }
-
-        $teamLines = [];
-        foreach ($team as $member) {
-            $link = !empty($member['link']) ? '<a href="' . Html::encode($member['link']) . '">' . Html::encode($member['username']) . '</a>' : Html::encode($member['username']);
-            $status = !empty($member['is_online'])
-                ? 'Онлайн'
-                : ('Был онлайн: ' . (!empty($member['date_visit']) ? $formatter->asDatetime($member['date_visit'], 'php:d.m.Y H:i') : '—'));
-            $role = !empty($member['is_leader']) ? ' (лидер)' : '';
-            $teamLines[] = '• ' . $link . $role . ' — ' . Html::encode($status);
-        }
-
-        return $teamLines;
-    }
-
     /**
      * @param RustAppPlayerResponse|null $rustAppData
      * @return array
@@ -444,9 +404,6 @@ class UpdateReportJob extends BaseObject implements JobInterface
         $lines = [];
 
         $lines[] = '<b>Об игроке:</b>';
-
-        $lines[] = 'Играл на: <b>' . Html::encode($server ? $server->name : $serverName) . '</b>';
-        $lines[] = 'SteamID: <code>' . Html::encode($reportUser->steam_id) . '</code>';
 
         $firstSeen = $this->formatRustAppTimestamp($player->createdAt, $formatter);
         if ($firstSeen) {
@@ -471,7 +428,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 $lines[] = 'Провайдер: ' . Html::encode($details->provider);
             }
             if ($details->proxy !== null) {
-                $lines[] = 'Proxy: ' . ($details->proxy ? 'да' : 'нет');
+                $lines[] = 'VPN: ' . ($details->proxy ? 'да' : 'нет');
             }
         }
 
