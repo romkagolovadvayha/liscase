@@ -261,6 +261,13 @@ class RustApp
                 ];
             }
 
+            if ($response === '' && $code === 201) {
+                return [
+                    'success' => true,
+                    'data' => null,
+                ];
+            }
+
             $decoded = json_decode($response, true);
             if (!is_array($decoded)) {
                 Yii::warning('RustApp createBan invalid JSON: ' . $response, __METHOD__);
