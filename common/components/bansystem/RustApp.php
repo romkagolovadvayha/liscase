@@ -218,18 +218,32 @@ class RustApp
 
         try {
             $apiUrl = 'https://court.rustapp.io/public/bans';
-            $curl = clone Yii::$app->curl;
-            $curl->setHeader('accept', '*/*');
-            $curl->setHeader('x-api-key', $rustAppApiKey);
-            $curl->setHeader('Content-Type', 'application/json');
-            $curl->setHeader('Expect', '');
-            $curl->setHeader('User-Agent', 'curl/7.88.1');
-            $body = json_encode($payload);
-            $response = $curl->post($apiUrl, $body);
-            $code = $curl->responseCode;
+            $body = json_encode($payload, JSON_UNESCAPED_UNICODE);
+            $headers = [
+                'accept: */*',
+                'x-api-key: ' . $rustAppApiKey,
+                'Content-Type: application/json',
+            ];
+
+            $ch = curl_init($apiUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'curl/7.88.1');
+            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2TLS);
+            curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+            curl_setopt($ch, CURLOPT_ENCODING, '');
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+            $response = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            $curlErrNo = curl_errno($ch);
+            $curlError = curl_error($ch);
+            curl_close($ch);
 
             if ($response === false) {
-                Yii::warning('RustApp createBan failed: empty response. Curl error code: ' . $curl->errorCode, __METHOD__);
+                Yii::warning('RustApp createBan failed: empty response. Curl error #' . $curlErrNo . ': ' . $curlError, __METHOD__);
                 return [
                     'success' => false,
                     'error' => 'empty_response',
