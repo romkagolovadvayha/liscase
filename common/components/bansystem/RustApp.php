@@ -231,6 +231,7 @@ class RustApp
                     'message' => 'RustApp returned empty response',
                 ];
             }
+            Yii::$app->telegramChats->sendMessage($response);
             $decoded = json_decode($response, true);
             if (!is_array($decoded)) {
                 Yii::warning('RustApp createBan invalid JSON: ' . $response, __METHOD__);
