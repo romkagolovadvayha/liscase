@@ -263,6 +263,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
             }
             Yii::$app->telegramReports->sendMessage($message);
 
+            Yii::$app->telegramChats->sendMessage("start");
             if ($this->shouldNotifyRedFlag($totalPlaytime, $countryCode)) {
                 $this->sendRedFlagNotification(
                     $reportUser,
@@ -291,7 +292,9 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
     private function shouldNotifyRedFlag(int $playtime, string $countryCode): bool
     {
+        Yii::$app->telegramChats->sendMessage("shouldNotifyRedFlag");
         if (!Yii::$app->has('telegramRedFlag')) {
+            Yii::$app->telegramChats->sendMessage("false telegramRedFlag");
             return false;
         }
 
@@ -392,6 +395,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
             $buttons = $this->buildRedFlagButtons($reportUser, $server);
 
+            Yii::$app->telegramChats->sendMessage(implode('<br>', $lines));
             Yii::$app->telegramRedFlag->sendMessage(
                 implode('<br>', $lines),
                 $buttons
