@@ -6,6 +6,9 @@
 const CACHE_NAME = 'liscase-pwa-v1.0.0';
 const STATIC_CACHE = 'liscase-static-v1.0.0';
 const DYNAMIC_CACHE = 'liscase-dynamic-v1.0.0';
+const DEBUG = ['localhost', '127.0.0.1'].includes(self.location.hostname);
+const log = (...args) => { if (DEBUG) { console.log('[SW]', ...args); } };
+const logError = (...args) => console.error('[SW]', ...args);
 
 // Файлы для кэширования при установке
 const STATIC_FILES = [
@@ -24,28 +27,28 @@ const EXCLUDE_FILES = [
  * Установка Service Worker
  */
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing...');
+  log('Installing...');
   
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('[SW] Caching static files');
+        log('Caching static files');
         // Кэшируем только основные файлы, которые точно существуют
         return cache.addAll([
           '/',
           '/manifest.json'
         ]).catch((error) => {
-          console.log('[SW] Some files failed to cache:', error);
+          log('Some files failed to cache:', error);
           // Продолжаем работу даже если некоторые файлы не кэшировались
           return Promise.resolve();
         });
       })
       .then(() => {
-        console.log('[SW] Installation complete');
+        log('Installation complete');
         return self.skipWaiting();
       })
       .catch((error) => {
-        console.error('[SW] Installation failed:', error);
+        logError('Installation failed:', error);
       })
   );
 });
@@ -54,7 +57,7 @@ self.addEventListener('install', (event) => {
  * Активация Service Worker
  */
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating...');
+  log('Activating...');
   
   event.waitUntil(
     caches.keys()
@@ -62,14 +65,14 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
             if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-              console.log('[SW] Deleting old cache:', cacheName);
+              log('Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
           })
         );
       })
       .then(() => {
-        console.log('[SW] Activation complete');
+        log('Activation complete');
         return self.clients.claim();
       })
   );
@@ -130,7 +133,7 @@ async function handleRequest(request) {
       throw error;
     }
   } catch (error) {
-    console.error('[SW] Request failed:', error);
+    logError('Request failed:', error);
     throw error;
   }
 }
@@ -168,7 +171,7 @@ function isImageRequest(request) {
  * Обработка push уведомлений
  */
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push received:', event);
+  log('Push received:', event);
   
   let data = {};
   if (event.data) {
@@ -183,7 +186,7 @@ self.addEventListener('push', (event) => {
     title: data.title || 'LiSCase',
     body: data.body || 'У вас новое сообщение',
     icon: '/icons/icon-192x192.png',
-    badge: '/icons/badge-72x72.png',
+    badge: '/icons/icon-72x72.png',
     tag: data.tag || 'default',
     data: data.data || {},
     actions: data.actions || [],
@@ -200,7 +203,7 @@ self.addEventListener('push', (event) => {
  * Обработка клика по уведомлению
  */
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification click:', event);
+  log('Notification click:', event);
   
   event.notification.close();
   
@@ -232,7 +235,7 @@ self.addEventListener('notificationclick', (event) => {
  * Синхронизация в фоне
  */
 self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync:', event.tag);
+  log('Background sync:', event.tag);
   
   if (event.tag === 'background-sync-messages') {
     event.waitUntil(syncMessages());
@@ -245,9 +248,9 @@ self.addEventListener('sync', (event) => {
 async function syncMessages() {
   try {
     // Здесь можно добавить логику синхронизации сообщений
-    console.log('[SW] Syncing messages...');
+    log('Syncing messages...');
   } catch (error) {
-    console.error('[SW] Sync failed:', error);
+    logError('Sync failed:', error);
   }
 }
 
@@ -255,9 +258,9 @@ async function syncMessages() {
  * Обработка ошибок
  */
 self.addEventListener('error', (event) => {
-  console.error('[SW] Error:', event.error);
+  logError('Error:', event.error);
 });
 
 self.addEventListener('unhandledrejection', (event) => {
-  console.error('[SW] Unhandled promise rejection:', event.reason);
+  logError('Unhandled promise rejection:', event.reason);
 });

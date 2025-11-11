@@ -25,10 +25,15 @@
     <meta name="theme-color" content="#2c3e50">
     
     {# PWA Icons #}
+    {% set favicon = SETTINGS.get('design_favicon') %}
+    {% if favicon is empty %}
+        {% set favicon = '/favicon.ico' %}
+    {% endif %}
     <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
     <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
     <link rel="mask-icon" href="/icons/icon.svg" color="#2c3e50">
-    <link rel="shortcut icon" href="/icons/favicon.ico">
+    <link rel="icon" href="{{ favicon }}" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ favicon }}">
     
     {# PWA Manifest #}
     <link rel="manifest" href="/manifest.json">
@@ -141,164 +146,88 @@ $policyUrl = Url::to(['/site/privacy']); // поменяй на свою стр�
     
     {# PWA Service Worker Registration #}
     <script>
-        console.log('[PWA] Initializing PWA...');
-        
-        // Регистрация Service Worker для PWA
+        const PWA_DEBUG = {{ constant('YII_ENV_DEV') ? 'true' : 'false' }};
+        const swFile = PWA_DEBUG ? '/sw-debug.js' : '/sw.js';
+        const pwaLog = (...args) => { if (PWA_DEBUG) { console.log('[PWA]', ...args); } };
+        const pwaError = (...args) => console.error('[PWA]', ...args);
+
+        pwaLog('Initializing PWA...');
+
         if ('serviceWorker' in navigator) {
-            console.log('[PWA] Service Worker supported');
-            
+            pwaLog('Service Worker supported');
+
             window.addEventListener('load', function() {
-                console.log('[PWA] Page loaded, registering SW...');
-                
-                navigator.serviceWorker.register('/sw-debug.js')
+                pwaLog('Page loaded, registering SW...', swFile);
+
+                navigator.serviceWorker.register(swFile)
                     .then(function(registration) {
-                        console.log('[PWA] Service Worker registered successfully:', registration.scope);
-                        
-                        // Проверяем обновления
-                        registration.addEventListener('updatefound', function() {
-                            console.log('[PWA] Update found');
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', function() {
-                                console.log('[PWA] New worker state:', newWorker.state);
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // Доступно обновление
-                                    if (confirm('Доступна новая версия приложения. Обновить?')) {
-                                        window.location.reload();
-                                    }
+                        pwaLog('Service Worker registered:', registration.scope);
+
+                        if (PWA_DEBUG) {
+                            registration.addEventListener('updatefound', function() {
+                                pwaLog('Update found');
+                                const newWorker = registration.installing;
+                                if (!newWorker) {
+                                    return;
                                 }
+                                newWorker.addEventListener('statechange', function() {
+                                    pwaLog('New worker state:', newWorker.state);
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        if (confirm('Доступна новая версия приложения. Обновить?')) {
+                                            window.location.reload();
+                                        }
+                                    }
+                                });
                             });
-                        });
+                        }
                     })
                     .catch(function(error) {
-                        console.error('[PWA] Service Worker registration failed:', error);
+                        pwaError('Service Worker registration failed:', error);
                     });
             });
         } else {
-            console.log('[PWA] Service Worker not supported');
+            pwaLog('Service Worker not supported');
         }
-        
-        // Обработка установки PWA
+
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', function(e) {
-            console.log('[PWA] Install prompt triggered', e);
+            pwaLog('Install prompt triggered');
             e.preventDefault();
             deferredPrompt = e;
-            
-            // Показываем кнопку установки
-            //showInstallButton();
         });
-        
-        // Добавляем отладку для других событий PWA
+
         window.addEventListener('appinstalled', function(e) {
-            console.log('[PWA] App was installed successfully', e);
+            pwaLog('App was installed successfully');
         });
-        
-        // Проверяем, установлено ли уже приложение
+
         if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
-            console.log('[PWA] App is running in standalone mode');
+            pwaLog('App is running in standalone mode');
         }
-        
-        // Проверяем, поддерживается ли beforeinstallprompt
-        console.log('[PWA] beforeinstallprompt supported:', 'onbeforeinstallprompt' in window);
-        
-        function showInstallButton() {
-            console.log('[PWA] showInstallButton called');
-            
-            // Проверяем, является ли устройство мобильным
-            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            if (isMobile) {
-                console.log('[PWA] Mobile device detected, skipping install button');
-                return;
-            }
-            
-            // Проверяем, не добавлена ли уже кнопка
-            if (document.querySelector('.pwa-install-button')) {
-                console.log('[PWA] Install button already exists');
-                return;
-            }
-            
-            // Создаем кнопку установки приложения только для десктопа
-            const installButton = document.createElement('button');
-            installButton.textContent = 'Установить приложение';
-            installButton.className = 'pwa-install-button';
-            installButton.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: #2c3e50;
-                color: white;
-                border: none;
-                padding: 12px 20px;
-                border-radius: 25px;
-                cursor: pointer;
-                font-size: 14px;
-                z-index: 1000;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                display: block;
-                animation: slideInUp 0.5s ease;
-            `;
-            
-            installButton.addEventListener('click', function() {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then(function(choiceResult) {
-                        if (choiceResult.outcome === 'accepted') {
-                            console.log('[PWA] User accepted the install prompt');
-                        } else {
-                            console.log('[PWA] User dismissed the install prompt');
-                        }
-                        deferredPrompt = null;
-                        installButton.remove();
-                    });
-                }
-            });
-            
-            document.body.appendChild(installButton);
-            installButton.style.display = 'block';
-            
-            // Скрываем кнопку через 10 секунд
-            setTimeout(() => {
-                if (installButton.parentNode) {
-                    installButton.remove();
-                }
-            }, 10000);
-        }
-        
-        // Обработка успешной установки
-        window.addEventListener('appinstalled', function(e) {
-            console.log('[PWA] App was installed successfully');
-            // Можно показать уведомление об успешной установке
-        });
-        
-        // Обработка офлайн/онлайн статуса
+
+        pwaLog('beforeinstallprompt supported:', 'onbeforeinstallprompt' in window);
+
         window.addEventListener('online', function() {
-            console.log('[PWA] App is online');
-            // Можно показать уведомление о восстановлении соединения
+            pwaLog('App is online');
         });
-        
+
         window.addEventListener('offline', function() {
-            console.log('[PWA] App is offline');
-            // Можно показать уведомление об отсутствии соединения
+            pwaLog('App is offline');
         });
-        
-        // Регистрация для push уведомлений (опционально)
+
         function registerForPushNotifications() {
             if ('Notification' in window && 'serviceWorker' in navigator) {
                 Notification.requestPermission().then(function(permission) {
                     if (permission === 'granted') {
-                        console.log('[PWA] Push notifications granted');
-                        // Здесь можно подписать пользователя на push уведомления
+                        pwaLog('Push notifications granted');
                     }
                 });
             }
         }
-        
-        // Автоматически запрашиваем разрешения для уведомлений при первом посещении
+
         if (!localStorage.getItem('pwa-notifications-asked')) {
             setTimeout(registerForPushNotifications, 3000);
             localStorage.setItem('pwa-notifications-asked', 'true');
         }
-        
     </script>
 </body>
 </html>
