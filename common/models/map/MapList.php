@@ -13,6 +13,29 @@ use Yii;
  * @property string|null $image
  * @property string|null $image_preview
  * @property string|null $size
+ * @property string|null $map_type
+ * @property int|null $seed
+ * @property int|null $save_version
+ * @property string|null $raw_image_url
+ * @property string|null $image_url
+ * @property string|null $image_icon_url
+ * @property string|null $thumbnail_url
+ * @property bool|null $is_staging
+ * @property bool|null $is_custom_map
+ * @property bool|null $can_download
+ * @property int|null $total_monuments
+ * @property string|null $monuments_json
+ * @property int|null $land_percentage
+ * @property string|null $biome_percentages_json
+ * @property int|null $islands
+ * @property int|null $mountains
+ * @property int|null $ice_lakes
+ * @property int|null $rivers
+ * @property int|null $lakes
+ * @property int|null $canyons
+ * @property int|null $oases
+ * @property int|null $buildable_rocks
+ * @property string|null $data_json
  * @property string|null $created_at
  *
  * @property Map[] $maps
@@ -34,7 +57,11 @@ class MapList extends \yii\db\ActiveRecord
     {
         return [
             [['created_at'], 'safe'],
-            [['hash', 'url', 'image', 'size'], 'string', 'max' => 255],
+            [['seed', 'save_version', 'total_monuments', 'land_percentage', 'islands', 'mountains', 'ice_lakes', 'rivers', 'lakes', 'canyons', 'oases', 'buildable_rocks'], 'integer'],
+            [['is_staging', 'is_custom_map', 'can_download'], 'boolean'],
+            [['monuments_json', 'biome_percentages_json', 'data_json'], 'string'],
+            [['hash', 'url', 'image', 'image_preview', 'size', 'raw_image_url', 'image_url', 'image_icon_url', 'thumbnail_url'], 'string', 'max' => 255],
+            [['map_type'], 'string', 'max' => 50],
         ];
     }
 
