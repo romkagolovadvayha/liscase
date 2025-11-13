@@ -1,6 +1,8 @@
 <?php
 
 use yii\db\Migration;
+use yii\db\Schema;
+use yii\db\ColumnSchema;
 
 /**
  * Handles the creation of table `{{%map_list_vote}}`.
@@ -23,9 +25,9 @@ class m251113_000002_create_map_list_vote_table extends Migration
         $serversIdColumn = $this->db->schema->getTableSchema('{{%servers}}')->getColumn('id');
         $userIdColumn = $this->db->schema->getTableSchema('{{%user}}')->getColumn('id');
 
-        $mapListIdType = $mapListIdColumn && $mapListIdColumn->unsigned ? $this->integer()->unsigned() : $this->integer();
-        $serverIdType = $serversIdColumn && $serversIdColumn->unsigned ? $this->integer()->unsigned() : $this->integer();
-        $userIdType = $userIdColumn && $userIdColumn->unsigned ? $this->integer()->unsigned() : $this->integer();
+        $mapListIdType = $this->resolveColumnType($mapListIdColumn);
+        $serverIdType = $this->resolveColumnType($serversIdColumn);
+        $userIdType = $this->resolveColumnType($userIdColumn);
 
         $this->createTable('{{%map_list_vote}}', [
             'id' => $this->primaryKey(),
@@ -88,6 +90,33 @@ class m251113_000002_create_map_list_vote_table extends Migration
         $this->dropIndex('idx-map_list_vote-map_list_id', '{{%map_list_vote}}');
 
         $this->dropTable('{{%map_list_vote}}');
+    }
+
+    private function resolveColumnType(?ColumnSchema $column)
+    {
+        if ($column === null) {
+            return $this->integer();
+        }
+
+        switch ($column->type) {
+            case Schema::TYPE_BIGINT:
+                $builder = $this->bigInteger();
+                break;
+            case Schema::TYPE_SMALLINT:
+                $builder = $this->smallInteger();
+                break;
+            case Schema::TYPE_TINYINT:
+                $builder = $this->tinyInteger();
+                break;
+            default:
+                $builder = $this->integer();
+        }
+
+        if ($column->unsigned) {
+            $builder->unsigned();
+        }
+
+        return $builder;
     }
 }
 

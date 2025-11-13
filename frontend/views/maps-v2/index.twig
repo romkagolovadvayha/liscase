@@ -1,6 +1,6 @@
 {% set hasMaps = maps|length > 0 %}
 
-<div class="maps-v2" id="maps-v2-root"
+<div class="mapsV2" id="mapsV2Root"
      data-server-id="{{ server.id }}"
      data-server-tag="{{ server.tag }}"
      data-vote-url="{{ voteUrlTemplate }}"
@@ -11,187 +11,222 @@
      data-text-empty-voters="{{ t('common', 'Будьте первым, кто проголосует за эту карту') }}"
      data-text-no-votes="{{ t('common', 'Пока никто не голосовал') }}"
      data-text-refresh="{{ t('common', 'Обновить') }}"
+     data-biome-labels='{{ biomeLabels|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES'))|raw }}'
+     data-total-maps="{{ totalMaps }}"
+     data-display-limit="{{ displayLimit }}"
      data-maps='{{ mapsPayloadJson|raw }}'>
 
-    <section class="maps-v2__hero">
-        <div class="maps-v2__hero-header">
-            <div>
-                <p class="maps-v2__eyebrow">{{ t('common', 'Голосование карт v2') }}</p>
-                <h1 class="maps-v2__title">
-                    {{ t('common', 'Выбор следующей карты') }}
-                    <span>{{ t('database', server.name) }}</span>
-                </h1>
-            </div>
-            <div class="maps-v2__meta">
-                <div class="maps-v2__meta-card">
-                    <span class="maps-v2__meta-label">{{ t('common', 'Размер карты') }}</span>
-                    <span class="maps-v2__meta-value">{{ server.min_map_size }} – {{ server.max_map_size }}</span>
-                </div>
-                <div class="maps-v2__meta-card">
-                    <span class="maps-v2__meta-label">{{ t('common', 'Следующий вайп') }}</span>
-                    <span class="maps-v2__meta-value">{{ server.next_wipe|date('d.m.Y H:i') }} МСК</span>
-                </div>
-                <div class="maps-v2__meta-card">
-                    <span class="maps-v2__meta-label">{{ t('common', 'Условия голосования') }}</span>
-                    <span class="maps-v2__meta-value">{{ t('common', '1+ час игры на сервере') }}</span>
-                </div>
-            </div>
+    <header class="mapsV2__hero">
+        <div class="mapsV2__hero-primary">
+            <p class="mapsV2__eyebrow">{{ t('common', 'Голосование карт v2') }}</p>
+            <h1 class="mapsV2__title">
+                {{ t('common', 'Выбор следующей карты') }}
+                <span>{{ t('database', server.name) }}</span>
+            </h1>
         </div>
+        <dl class="mapsV2__meta">
+            <div class="mapsV2__meta-card">
+                <dt class="mapsV2__meta-label">{{ t('common', 'Размер карты') }}</dt>
+                <dd class="mapsV2__meta-value">{{ server.min_map_size }} – {{ server.max_map_size }}</dd>
+            </div>
+            <div class="mapsV2__meta-card">
+                <dt class="mapsV2__meta-label">{{ t('common', 'Следующий вайп') }}</dt>
+                <dd class="mapsV2__meta-value">{{ server.next_wipe|date('d.m.Y H:i') }} МСК</dd>
+            </div>
+            <div class="mapsV2__meta-card">
+                <dt class="mapsV2__meta-label">{{ t('common', 'Условия голосования') }}</dt>
+                <dd class="mapsV2__meta-value">{{ t('common', '1+ час игры на сервере') }}</dd>
+            </div>
+        </dl>
 
-        <nav class="maps-v2__servers">
+        <nav class="mapsV2__servers">
             {% for ITEM in servers %}
-                <a href="/maps-v2/{{ ITEM.tag }}"
-                   class="maps-v2__server-link{% if ITEM.tag == server.tag %} is-active{% endif %}">
+                <a class="mapsV2__server-link{% if ITEM.tag == server.tag %} is-active{% endif %}"
+                   href="/maps-v2/{{ ITEM.tag }}">
                     <span>{{ t('database', ITEM.monitoring_name) }}</span>
                     <small>{{ ITEM.min_map_size }}–{{ ITEM.max_map_size }}</small>
                 </a>
             {% endfor %}
         </nav>
-    </section>
+
+        {% if totalMaps > displayLimit %}
+            <p class="mapsV2__note">
+                {{ t('common', 'Показаны {shown} из {total} доступных карт.', {shown: displayLimit, total: totalMaps}) }}
+            </p>
+        {% endif %}
+    </header>
 
     {% if not hasMaps %}
-        <div class="maps-v2__empty">
-            <div class="maps-v2__empty-icon">
+        <section class="mapsV2__empty">
+            <div class="mapsV2__empty-icon">
                 <i class="fas fa-map"></i>
             </div>
             <h2>{{ t('common', 'Пока нет карт в этом диапазоне') }}</h2>
             <p>{{ t('common', 'Как только карты появятся, вы сможете проголосовать за любимый ландшафт.') }}</p>
-        </div>
+        </section>
     {% else %}
-        <div class="maps-v2__layout">
-            <aside class="maps-v2__list" data-role="map-list">
+        <div class="mapsV2__layout">
+            <div class="mapsV2__cards" data-role="map-list">
                 {% for map in maps %}
                     {% set card = mapCardsData[map.id] %}
                     {% set votes = voteCounts[map.id]|default(0) %}
                     {% set voters = userVotes[map.id]|default([]) %}
                     {% set progress = maxVotes > 0 ? (votes / maxVotes * 100) : 0 %}
-                    <article class="maps-v2__card{% if currentMap and currentMap.id == map.id %} is-active{% endif %}"
+
+                    <article class="mapsV2__card{% if currentMap and currentMap.id == map.id %} is-active{% endif %}"
                              data-map-id="{{ map.id }}">
-                        <div class="maps-v2__card-header">
-                            <span class="maps-v2__card-type">{{ card.type|default('Procedural') }}</span>
+                        {% set rustMapsLink = card.rustMapsUrl|default(card.downloadUrl) %}
+                        <a class="mapsV2__card-image"
+                           {% if rustMapsLink %}
+                               href="{{ rustMapsLink }}"
+                               target="_blank"
+                               rel="nofollow noopener noindex"
+                           {% else %}
+                               href="javascript:void(0);"
+                           {% endif %}>
+                            <img src="{{ card.imagePreview|default(card.image) }}" alt="{{ t('common', 'Превью карты') }}">
+                            <span class="mapsV2__card-chip mapsV2__card-chip--votes">
+                                <i class="fas fa-heart"></i>
+                                <span data-role="card-votes">{{ votes }}</span>
+                            </span>
                             {% if card.isStaging %}
-                                <span class="maps-v2__card-badge maps-v2__card-badge--warning">Staging</span>
+                                <span class="mapsV2__card-chip mapsV2__card-chip--warning">Staging</span>
                             {% endif %}
-                            {% if card.isCustomMap %}
-                                <span class="maps-v2__card-badge maps-v2__card-badge--accent">{{ t('common', 'Custom') }}</span>
-                            {% endif %}
-                        </div>
-                        <h3 class="maps-v2__card-title">{{ card.hash }}</h3>
-                        <div class="maps-v2__card-meta">
-                            <span>#{{ card.seed }}</span>
-                            <span>{{ card.size }} x {{ card.size }}</span>
-                        </div>
-                        <div class="maps-v2__card-progress">
-                            <div class="maps-v2__card-progress-bar" style="--progress: {{ progress }}%;"></div>
-                            <div class="maps-v2__card-votes">
-                                <strong>{{ votes }}</strong>
+                        </a>
+                        <div class="mapsV2__card-body">
+                            <p class="mapsV2__card-meta">
+                                {{ t('common', 'Размер') }}: {{ card.size }} x {{ card.size }}
+                            </p>
+                            <div class="mapsV2__card-progress">
+                                <div class="mapsV2__card-progress-bar" style="--progress: {{ progress }}%;"></div>
+                            </div>
+                            <div class="mapsV2__card-votes">
+                                <strong data-role="card-votes-total">{{ votes }}</strong>
                                 <span>{{ t('common', 'голосов') }}</span>
                             </div>
-                        </div>
-                        {% if voters %}
-                            <div class="maps-v2__card-voters">
-                                {% for voter in voters|slice(0,5) %}
-                                    <img src="{{ voter.avatar }}" alt="{{ voter.username }}" title="{{ voter.username }}">
-                                {% endfor %}
-                                {% if voters|length > 5 %}
-                                    <span class="maps-v2__card-more">+{{ voters|length - 5 }}</span>
+                            <div class="mapsV2__card-voters" data-role="card-voters">
+                                {% if voters %}
+                                    {% for voter in voters|slice(0, 5) %}
+                                        <img src="{{ voter.avatar }}"
+                                             alt="{{ voter.username }}"
+                                             title="{{ voter.username }}">
+                                    {% endfor %}
+                                    {% if voters|length > 5 %}
+                                        <span class="mapsV2__card-more">+{{ voters|length - 5 }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="mapsV2__card-voters-empty">{{ t('common', 'Пока никто не голосовал') }}</span>
                                 {% endif %}
                             </div>
-                        {% else %}
-                            <div class="maps-v2__card-voters maps-v2__card-voters--empty">
-                                <span>{{ t('common', 'Пока никто не голосовал') }}</span>
-                            </div>
-                        {% endif %}
-                        <button class="maps-v2__card-button" type="button" data-action="select-map">
-                            {{ t('common', 'Подробнее') }}
-                        </button>
+                            <button class="mapsV2__card-button"
+                                    type="button"
+                                    data-action="open-detail"
+                                    data-map-id="{{ map.id }}">
+                                {{ t('common', 'Подробнее') }}
+                            </button>
+                        </div>
                     </article>
                 {% endfor %}
-            </aside>
+            </div>
+        </div>
+    {% endif %}
 
-            <section class="maps-v2__detail" data-role="map-detail">
-                {% if currentMap %}
-                    {% set detail = mapCardsData[currentMap.id] %}
-                    <div class="maps-v2__detail-visual">
-                        <div class="maps-v2__preview">
-                            <img src="{{ detail.imagePreview|default(detail.image) }}" alt="{{ detail.hash }}" data-role="preview">
+    {% if hasMaps and currentMap %}
+        {% set detail = mapCardsData[currentMap.id] %}
+    {% endif %}
+
+    <div class="mapsV2__modal" data-role="detail-modal" aria-hidden="true">
+        <div class="mapsV2__modal-backdrop" data-action="close-modal"></div>
+        <div class="mapsV2__modal-dialog" role="dialog" aria-modal="true">
+            <button class="mapsV2__modal-close" type="button" data-action="close-modal" aria-label="{{ t('common', 'Закрыть') }}">
+                <i class="fas fa-times"></i>
+            </button>
+            <section class="mapsV2__detail" data-role="map-detail">
+                {% if hasMaps and detail %}
+                    <div class="mapsV2__detail-visual">
+                        <div class="mapsV2__preview{% if detail.rawImageUrl or detail.image %} is-clickable{% endif %}"
+                             data-role="preview"
+                             data-src="{{ detail.rawImageUrl|default(detail.image|default(detail.imagePreview)) }}">
+                            <img src="{{ detail.imagePreview|default(detail.image) }}" alt="{{ detail.hash }}" data-role="preview-image">
+                            <div class="mapsV2__markers" data-role="markers"></div>
                         </div>
-                        <div class="maps-v2__navigation">
-                            <button class="maps-v2__nav maps-v2__nav--prev" type="button" data-action="prev-map">
+                        <div class="mapsV2__navigation">
+                            <button class="mapsV2__nav mapsV2__nav--prev" type="button" data-action="prev-map">
                                 <i class="fas fa-chevron-left"></i>
                             </button>
-                            <button class="maps-v2__nav maps-v2__nav--next" type="button" data-action="next-map">
+                            <button class="mapsV2__nav mapsV2__nav--next" type="button" data-action="next-map">
                                 <i class="fas fa-chevron-right"></i>
                             </button>
                         </div>
                     </div>
 
-                    <div class="maps-v2__detail-body" data-map-detail-id="{{ detail.id }}">
-                        <header class="maps-v2__detail-header">
+                    <div class="mapsV2__detail-body" data-map-detail-id="{{ detail.id }}">
+                        <header class="mapsV2__detail-header">
                             <div>
-                                <p class="maps-v2__detail-type" data-role="detail-type">{{ detail.type|default('Procedural') }}</p>
-                                <h2 class="maps-v2__detail-title" data-role="detail-title">{{ detail.hash }}</h2>
+                                <p class="mapsV2__detail-type" data-role="detail-type">{{ detail.type|default('Procedural') }}</p>
+                                <h2 class="mapsV2__detail-title" data-role="detail-title">{{ detail.hash }}</h2>
                             </div>
-                            <div class="maps-v2__detail-actions">
-                                <button class="maps-v2__vote-button{% if userVotedMapId and userVotedMapId == detail.id %} is-active{% endif %}"
+                            <div class="mapsV2__detail-actions">
+                                <button class="mapsV2__vote-button{% if userVotedMapId and userVotedMapId == detail.id %} is-active{% endif %}"
                                         data-action="vote"
                                         data-map-id="{{ detail.id }}">
                                     <i class="fas fa-heart"></i>
                                     <span>{{ t('common', 'Проголосовать') }}</span>
                                 </button>
                                 {% if detail.downloadUrl %}
-                                    <a class="maps-v2__download-button" href="{{ detail.downloadUrl }}" target="_blank" rel="nofollow noopener">
+                                    <a class="mapsV2__download-button"
+                                       href="{{ detail.downloadUrl }}"
+                                       target="_blank"
+                                       rel="nofollow noopener">
                                         <i class="fas fa-download"></i>
                                         {{ t('common', 'Скачать карту') }}
                                     </a>
                                 {% endif %}
+                                <button class="mapsV2__open-full{% if not detail.rawImageUrl and not detail.image %} is-hidden{% endif %}"
+                                        type="button"
+                                        data-action="open-fullscreen"
+                                        data-src="{{ detail.rawImageUrl|default(detail.image|default(detail.imagePreview)) }}">
+                                    <i class="fas fa-expand"></i>
+                                    <span>{{ t('common', 'Открыть полностью') }}</span>
+                                </button>
                             </div>
                         </header>
 
-                        <div class="maps-v2__stats-grid">
-                            <div class="maps-v2__stat">
-                                <span class="maps-v2__stat-label">{{ t('common', 'Размер') }}</span>
-                                <span class="maps-v2__stat-value" data-stat="size">{{ detail.size }} x {{ detail.size }}</span>
+                        <div class="mapsV2__stats-grid">
+                            <div class="mapsV2__stat">
+                                <span class="mapsV2__stat-label">{{ t('common', 'Размер') }}</span>
+                                <span class="mapsV2__stat-value" data-stat="size">{{ detail.size }} x {{ detail.size }}</span>
                             </div>
-                            <div class="maps-v2__stat">
-                                <span class="maps-v2__stat-label">{{ t('common', 'Seed') }}</span>
-                                <span class="maps-v2__stat-value" data-stat="seed">{{ detail.seed }}</span>
+                            <div class="mapsV2__stat">
+                                <span class="mapsV2__stat-label">{{ t('common', 'Seed') }}</span>
+                                <span class="mapsV2__stat-value" data-stat="seed">{{ detail.seed }}</span>
                             </div>
-                            <div class="maps-v2__stat">
-                                <span class="maps-v2__stat-label">{{ t('common', 'Сохранённая версия') }}</span>
-                                <span class="maps-v2__stat-value" data-stat="saveVersion">{{ detail.saveVersion ?? '–' }}</span>
+                            <div class="mapsV2__stat">
+                                <span class="mapsV2__stat-label">{{ t('common', 'Сохранённая версия') }}</span>
+                                <span class="mapsV2__stat-value" data-stat="saveVersion">{{ detail.saveVersion ?? '–' }}</span>
                             </div>
-                            <div class="maps-v2__stat">
-                                <span class="maps-v2__stat-label">{{ t('common', 'Голоса') }}</span>
-                                <span class="maps-v2__stat-value" data-role="votes-count">{{ detail.voteCount }}</span>
+                            <div class="mapsV2__stat">
+                                <span class="mapsV2__stat-label">{{ t('common', 'Голоса') }}</span>
+                                <span class="mapsV2__stat-value" data-role="votes-count">{{ detail.voteCount }}</span>
                             </div>
-                            <div class="maps-v2__stat">
-                                <span class="maps-v2__stat-label">{{ t('common', 'Земли на карте') }}</span>
-                                <span class="maps-v2__stat-value" data-stat="landPercentage">{{ detail.landPercentage ?? '–' }}%</span>
+                            <div class="mapsV2__stat">
+                                <span class="mapsV2__stat-label">{{ t('common', 'Земли на карте') }}</span>
+                                <span class="mapsV2__stat-value" data-stat="landPercentage">{{ detail.landPercentage ?? '–' }}%</span>
                             </div>
-                            <div class="maps-v2__stat">
-                                <span class="maps-v2__stat-label">{{ t('common', 'Монументов') }}</span>
-                                <span class="maps-v2__stat-value" data-stat="monuments">{{ detail.totalMonuments ?? (detail.monuments|length) }}</span>
+                            <div class="mapsV2__stat">
+                                <span class="mapsV2__stat-label">{{ t('common', 'Монументов') }}</span>
+                                <span class="mapsV2__stat-value" data-stat="monuments">{{ detail.totalMonuments ?? (detail.monuments|length) }}</span>
                             </div>
                         </div>
 
-                        {% set biomeLabels = {
-                            's': 'Snow',
-                            'd': 'Desert',
-                            'f': 'Forest',
-                            't': 'Tundra',
-                            'j': 'Jungle',
-                            'arctic': 'Arctic'
-                        } %}
-
                         {% if detail.biomePercentages %}
-                            <div class="maps-v2__biomes" data-role="biomes">
+                            <div class="mapsV2__biomes" data-role="biomes">
                                 <h3>{{ t('common', 'Биомы') }}</h3>
-                                <div class="maps-v2__biomes-list" data-role="biomes-list">
+                                <div class="mapsV2__biomes-list" data-role="biomes-list">
                                     {% for code, value in detail.biomePercentages %}
-                                        <div class="maps-v2__biome">
-                                            <span class="maps-v2__biome-label">{{ biomeLabels[code]|default(code|upper) }}</span>
-                                            <span class="maps-v2__biome-value">{{ value|round(1, 'floor') }}%</span>
+                                        <div class="mapsV2__biome">
+                                            <span class="mapsV2__biome-label">{{ biomeLabels[code]|default(code|upper) }}</span>
+                                            <span class="mapsV2__biome-value">{{ value|round(1, 'floor') }}%</span>
                                         </div>
                                     {% endfor %}
                                 </div>
@@ -199,30 +234,32 @@
                         {% endif %}
 
                         {% if detail.monuments %}
-                            <div class="maps-v2__monuments" data-role="monuments">
+                            <div class="mapsV2__monuments" data-role="monuments">
                                 <h3>{{ t('common', 'Монументы') }}</h3>
-                                <div class="maps-v2__monuments-list" data-role="monuments-list">
-                                    {% for monument in detail.monuments|slice(0, 24) %}
-                                        <span class="maps-v2__monument-chip" title="{{ monument.type }}">
-                                            {{ monument.type }}
+                                <div class="mapsV2__monuments-list" data-role="monuments-list">
+                                    {% for monument in detail.monuments|slice(0, 40) %}
+                                        <span class="mapsV2__monument-chip"
+                                              title="{{ monument.label|default(monument.type) }}"
+                                              data-monument-index="{{ loop.index0 }}">
+                                            {{ monument.label|default(monument.type) }}
                                         </span>
                                     {% endfor %}
                                 </div>
                             </div>
                         {% endif %}
 
-                        <div class="maps-v2__voters" data-role="voters">
-                            <div class="maps-v2__voters-header">
+                        <section class="mapsV2__voters" data-role="voters">
+                            <div class="mapsV2__voters-header">
                                 <h3>{{ t('common', 'Кто уже проголосовал') }}</h3>
-                                <button type="button" class="maps-v2__voters-refresh" data-action="refresh-voters">
+                                <button type="button" class="mapsV2__voters-refresh" data-action="refresh-voters">
                                     <i class="fas fa-sync"></i>
                                     {{ t('common', 'Обновить') }}
                                 </button>
                             </div>
-                            <div class="maps-v2__voters-list" data-role="voters-list">
+                            <div class="mapsV2__voters-list" data-role="voters-list">
                                 {% if detail.voters %}
                                     {% for voter in detail.voters %}
-                                        <div class="maps-v2__voter">
+                                        <div class="mapsV2__voter">
                                             <img src="{{ voter.avatar }}" alt="{{ voter.username }}">
                                             <div>
                                                 <strong>{{ voter.username }}</strong>
@@ -231,16 +268,24 @@
                                         </div>
                                     {% endfor %}
                                 {% else %}
-                                    <p class="maps-v2__voters-empty">
+                                    <p class="mapsV2__voters-empty">
                                         {{ t('common', 'Будьте первым, кто проголосует за эту карту') }}
                                     </p>
                                 {% endif %}
                             </div>
+                        </section>
+                    </div>
+                {% else %}
+                    <div class="mapsV2__empty mapsV2__empty--detail">
+                        <div class="mapsV2__empty-icon">
+                            <i class="fas fa-map"></i>
                         </div>
+                        <h2>{{ t('common', 'Выберите карту') }}</h2>
+                        <p>{{ t('common', 'Нажмите на кнопку «Подробнее» у любой карты.') }}</p>
                     </div>
                 {% endif %}
             </section>
         </div>
-    {% endif %}
+    </div>
 </div>
 

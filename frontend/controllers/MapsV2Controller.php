@@ -2,6 +2,7 @@
 
 namespace frontend\controllers;
 
+use common\helpers\MapLocalization;
 use common\models\map\MapList;
 use common\models\map\MapListVote;
 use common\models\servers\Servers;
@@ -65,6 +66,9 @@ class MapsV2Controller extends Controller
         if (empty($maps)) {
             $maps = [];
         }
+
+        $totalMaps = count($maps);
+        $displayLimit = 30;
 
         $mapIds = ArrayHelper::getColumn($maps, 'id');
 
@@ -142,11 +146,32 @@ class MapsV2Controller extends Controller
             });
         }
 
+        if ($totalMaps > $displayLimit) {
+            $maps = array_slice($maps, 0, $displayLimit);
+        }
+
         $mapDetails = [];
         $mapCardsData = [];
+        $language = Yii::$app->language;
+
         foreach ($maps as $map) {
             $details = $map->data_json ? json_decode($map->data_json, true) : [];
             $mapDetails[$map->id] = $details;
+
+            $monumentsRaw = $details['monuments'] ?? json_decode($map->monuments_json ?? '[]', true);
+            if (!is_array($monumentsRaw)) {
+                $monumentsRaw = [];
+            }
+
+            $monuments = [];
+            foreach ($monumentsRaw as $monument) {
+                $type = $monument['type'] ?? '';
+                $monuments[] = [
+                    'type' => $type,
+                    'label' => MapLocalization::monument($type, $language),
+                    'coordinates' => $monument['coordinates'] ?? null,
+                ];
+            }
 
             $mapCardsData[$map->id] = [
                 'id' => (int)$map->id,
@@ -156,6 +181,7 @@ class MapsV2Controller extends Controller
                 'size' => $map->size_int,
                 'saveVersion' => $map->save_version,
                 'downloadUrl' => $map->url,
+                'rustMapsUrl' => $map->hash ? 'https://rustmaps.com/map/' . $map->hash : null,
                 'image' => $map->image ?: ($details['imageUrl'] ?? $map->image_url),
                 'imagePreview' => $map->image_preview ?: ($details['thumbnailUrl'] ?? $map->thumbnail_url),
                 'rawImageUrl' => $map->raw_image_url ?: ($details['rawImageUrl'] ?? null),
@@ -163,7 +189,7 @@ class MapsV2Controller extends Controller
                 'isCustomMap' => (bool)$map->is_custom_map,
                 'canDownload' => (bool)$map->can_download,
                 'totalMonuments' => $map->total_monuments,
-                'monuments' => $details['monuments'] ?? json_decode($map->monuments_json ?? '[]', true),
+                'monuments' => $monuments,
                 'landPercentage' => $map->land_percentage,
                 'biomePercentages' => $details['biomePercentages'] ?? json_decode($map->biome_percentages_json ?? '[]', true),
                 'islands' => $map->islands,
@@ -216,6 +242,9 @@ class MapsV2Controller extends Controller
             'mapCardsData' => $mapCardsData,
             'maxVotes' => $maxVotes,
             'mapsPayloadJson' => Json::encode(array_values($mapCardsData), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'biomeLabels' => MapLocalization::biomeLabels($language),
+            'totalMaps' => $totalMaps,
+            'displayLimit' => $displayLimit,
             'voteUrlTemplate' => Url::to(['/maps-v2/vote', 'id' => 'ID_PLACEHOLDER']),
             'votersUrlTemplate' => Url::to(['/maps-v2/voters', 'id' => 'ID_PLACEHOLDER', 'server_id' => $server->id]),
         ]);
