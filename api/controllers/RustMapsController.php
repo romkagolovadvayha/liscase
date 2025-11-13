@@ -156,7 +156,9 @@ class RustMapsController extends Controller
         }
 
         $model->url = $mapData['downloadUrl'] ?? ($payload['DownloadUrl'] ?? null);
-        $model->size = (string)($mapData['size'] ?? $payload['Size'] ?? '');
+        $sizeValue = $mapData['size'] ?? $payload['Size'] ?? null;
+        $model->size = $sizeValue !== null ? (string)$sizeValue : null;
+        $model->size_int = $sizeValue !== null ? (int)$sizeValue : null;
         $model->map_type = $mapData['type'] ?? null;
         $model->seed = isset($mapData['seed']) ? (int)$mapData['seed'] : null;
         $model->save_version = isset($mapData['saveVersion']) ? (int)$mapData['saveVersion'] : null;

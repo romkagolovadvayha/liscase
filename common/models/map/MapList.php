@@ -13,6 +13,7 @@ use Yii;
  * @property string|null $image
  * @property string|null $image_preview
  * @property string|null $size
+ * @property int|null $size_int
  * @property string|null $map_type
  * @property int|null $seed
  * @property int|null $save_version
@@ -57,7 +58,7 @@ class MapList extends \yii\db\ActiveRecord
     {
         return [
             [['created_at'], 'safe'],
-            [['seed', 'save_version', 'total_monuments', 'land_percentage', 'islands', 'mountains', 'ice_lakes', 'rivers', 'lakes', 'canyons', 'oases', 'buildable_rocks'], 'integer'],
+            [['size_int', 'seed', 'save_version', 'total_monuments', 'land_percentage', 'islands', 'mountains', 'ice_lakes', 'rivers', 'lakes', 'canyons', 'oases', 'buildable_rocks'], 'integer'],
             [['is_staging', 'is_custom_map', 'can_download'], 'boolean'],
             [['monuments_json', 'biome_percentages_json', 'data_json'], 'string'],
             [['hash', 'url', 'image', 'image_preview', 'size', 'raw_image_url', 'image_url', 'image_icon_url', 'thumbnail_url'], 'string', 'max' => 255],
@@ -88,5 +89,66 @@ class MapList extends \yii\db\ActiveRecord
     public function getMaps()
     {
         return $this->hasMany(Map::class, ['map_list_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getVotes()
+    {
+        return $this->hasMany(MapListVote::class, ['map_list_id' => 'id']);
+    }
+
+    /**
+     * @param int $serverId
+     * @return \yii\db\ActiveQuery
+     */
+    public function getVotesForServer(int $serverId)
+    {
+        return $this->getVotes()->andWhere(['server_id' => $serverId]);
+    }
+
+    public function getVoteCount(int $serverId): int
+    {
+        return (int)$this->getVotesForServer($serverId)->count();
+    }
+
+    public function hasUserVoted(int $serverId, int $userId): bool
+    {
+        return $this->getVotesForServer($serverId)
+            ->andWhere(['user_id' => $userId])
+            ->exists();
+    }
+
+    public function addVote(int $serverId, int $userId): bool
+    {
+        if ($this->hasUserVoted($serverId, $userId)) {
+            return true;
+        }
+
+        $vote = new MapListVote([
+            'map_list_id' => $this->id,
+            'server_id' => $serverId,
+            'user_id' => $userId,
+        ]);
+
+        return $vote->save();
+    }
+
+    public function removeVote(int $serverId, int $userId): bool
+    {
+        $vote = MapListVote::find()
+            ->andWhere([
+                'map_list_id' => $this->id,
+                'server_id' => $serverId,
+                'user_id' => $userId,
+            ])
+            ->one();
+
+        if (!$vote) {
+            return true;
+        }
+
+        return (bool)$vote->delete();
     }
 }
