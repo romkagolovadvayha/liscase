@@ -21,9 +21,6 @@ class MapsV2Asset extends AssetBundle
         parent::init();
 
         $version = \Yii::$app->settings->get('site_version');
-        $this->css = [
-            'css/design/page/maps_v2.css?v=' . $version,
-        ];
 
         $this->js = [
             'js/maps-v2.js?v=' . $version,
