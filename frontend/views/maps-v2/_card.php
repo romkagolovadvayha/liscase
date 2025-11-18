@@ -21,14 +21,21 @@ $isActive = $currentMap && $currentMap->id === $map->id;
 $isLeading = $votes > 0 && $votes === $maxVotes && $maxVotes > 0;
 $isVoted = !empty($userVotedMapIds) && in_array($map->id, $userVotedMapIds);
 
+// Проверяем, что server существует и имеет id
+if (!$server || !isset($server->id) || $server->id <= 0) {
+    return; // Не рендерим карточку, если сервер не валиден
+}
+
+$serverId = (int)$server->id;
+
 ?>
 
 <article class="mapsV2__card<?= $isActive ? ' is-active' : '' ?><?= $isLeading ? ' is-leading' : '' ?>"
          data-map-id="<?= $map->id ?>">
     <div class="mapsV2__card-image-wrapper">
-        <a href="/maps-v2/detail/<?= $map->id ?>?server_id=<?= $server->id ?>"
+        <a href="/maps-v2/detail/<?= $map->id ?>?server_id=<?= $serverId ?>"
            class="mapsV2__card-image show-modal-link"
-           data-href="/maps-v2/detail/<?= $map->id ?>?server_id=<?= $server->id ?>"
+           data-href="/maps-v2/detail/<?= $map->id ?>?server_id=<?= $serverId ?>"
            data-target="modal-dialog"
            data-size="modal-lg"
            data-content-overflow="unset"

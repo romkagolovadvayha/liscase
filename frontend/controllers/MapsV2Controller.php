@@ -282,17 +282,17 @@ class MapsV2Controller extends Controller
         }
 
         // Получаем server_id из запроса или параметра
-        if (!$serverId) {
+        if (!$serverId || $serverId <= 0) {
             $serverId = (int)Yii::$app->request->get('server_id');
         }
+        
+        // Также пробуем получить из POST (на случай AJAX запросов)
+        if ((!$serverId || $serverId <= 0) && Yii::$app->request->isPost) {
+            $serverId = (int)Yii::$app->request->post('server_id');
+        }
 
-        $server = null;
-        if ($serverId) {
-            $server = Servers::findOne($serverId);
-            if (!$server) {
-                throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден'));
-            }
-        } else {
+        // Если serverId не передан или равен 0, пытаемся получить из сессии или найти активный сервер
+        if (!$serverId || $serverId <= 0) {
             // Получаем первый активный сервер по умолчанию
             $server = Servers::find()
                 ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
@@ -302,6 +302,20 @@ class MapsV2Controller extends Controller
             
             if (!$server) {
                 throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден'));
+            }
+        } else {
+            $server = Servers::findOne($serverId);
+            if (!$server) {
+                // Если сервер не найден по ID, пытаемся найти активный сервер
+                $server = Servers::find()
+                    ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                    ->andWhere(['secret_map' => 0])
+                    ->orderBy(['sort' => SORT_ASC])
+                    ->one();
+                
+                if (!$server) {
+                    throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден'));
+                }
             }
         }
 
