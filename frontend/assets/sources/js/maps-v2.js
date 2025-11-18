@@ -326,9 +326,16 @@
         
         console.log('maps-v2.js: mouseenter on monument chip', { index, chip });
         
-        const detailEl = document.querySelector('[data-role="map-detail"]');
+        // Ищем map-detail внутри модалки, а не во всем документе
+        const modalEl = document.getElementById('modal-dialog');
+        if (!modalEl) {
+            console.warn('maps-v2.js: modal-dialog not found');
+            return;
+        }
+        
+        const detailEl = modalEl.querySelector('[data-role="map-detail"]');
         if (!detailEl) {
-            console.warn('maps-v2.js: map-detail element not found');
+            console.warn('maps-v2.js: map-detail element not found in modal');
             return;
         }
         
@@ -358,7 +365,11 @@
         
         console.log('maps-v2.js: mouseleave on monument chip', { index, chip });
         
-        const detailEl = document.querySelector('[data-role="map-detail"]');
+        // Ищем map-detail внутри модалки, а не во всем документе
+        const modalEl = document.getElementById('modal-dialog');
+        if (!modalEl) return;
+        
+        const detailEl = modalEl.querySelector('[data-role="map-detail"]');
         if (!detailEl) return;
         
         // Скрываем маркер с таким же индексом
