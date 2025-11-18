@@ -5,7 +5,6 @@
 
 {% set voteChipPjaxId = 'vote-card-pjax-' ~ map.id %}
 {% set voteFormId = 'vote-form-' ~ map.id %}
-{% set voteUrl = '/maps-v2/vote/' ~ map.id %}
 
 {{ use('yii/widgets/Pjax') }}
 {{ use('yii/widgets/ActiveForm') }}
@@ -17,8 +16,6 @@
     'enablePushState': false,
     'timeout': 5000
 }) }}
-
-{{ Alert.widget()|raw }}
 
 <article class="mapsV2__card{% if currentMap and currentMap.id == map.id %} is-active{% endif %}{% if votes > 0 and votes == maxVotes and maxVotes > 0 %} is-leading{% endif %}"
          data-map-id="{{ map.id }}">
@@ -32,6 +29,9 @@
             <img src="{{ card.imagePreview|default(card.image) }}" alt="{{ t('common', 'Превью карты') }}">
         </button>
         
+        {{ Alert.widget()|raw }}
+        
+        {% set voteUrl = '/maps-v2/vote/' ~ map.id %}
         {% set voteForm = ActiveForm.begin({
             'id': voteFormId,
             'action': voteUrl,
