@@ -78,6 +78,7 @@ class MapsV2Controller extends Controller
         $userVotedMapIds = [];
 
         $maxVotes = 0;
+        $totalVotes = 0;
 
         if ($mapIds) {
             $rawCounts = MapListVote::find()
@@ -88,6 +89,7 @@ class MapsV2Controller extends Controller
                 ->all();
             foreach ($rawCounts as $row) {
                 $voteCounts[(int)$row['map_list_id']] = (int)$row['cnt'];
+                $totalVotes += (int)$row['cnt'];
                 if ($voteCounts[(int)$row['map_list_id']] > $maxVotes) {
                     $maxVotes = $voteCounts[(int)$row['map_list_id']];
                 }
@@ -245,6 +247,7 @@ class MapsV2Controller extends Controller
             'mapDetails' => $mapDetails,
             'mapCardsData' => $mapCardsData,
             'maxVotes' => $maxVotes,
+            'totalVotes' => $totalVotes,
             'mapsPayloadJson' => Json::encode(array_values($mapCardsData), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             'biomeLabels' => MapLocalization::biomeLabels($language),
             'totalMaps' => $totalMaps,

@@ -273,8 +273,26 @@
 }
 
 .mapsV2__card.is-leading {
-  border-color: rgba(255, 215, 0, 0.6);
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+  border: 2px solid rgba(255, 215, 0, 0.8);
+  box-shadow: 0 0 24px rgba(255, 215, 0, 0.4), 0 8px 32px rgba(255, 215, 0, 0.25);
+  background: linear-gradient(135deg, var(--background-teritiary) 0%, rgba(255, 215, 0, 0.05) 100%);
+  position: relative;
+}
+
+.mapsV2__card.is-leading::before {
+  content: '👑';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 20px;
+  z-index: 2;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.mapsV2__card.is-leading:hover {
+  border-color: rgba(255, 215, 0, 1);
+  box-shadow: 0 0 32px rgba(255, 215, 0, 0.5), 0 12px 40px rgba(255, 215, 0, 0.3);
+  transform: translateY(-4px);
 }
 
 .mapsV2__card-chip--accent {

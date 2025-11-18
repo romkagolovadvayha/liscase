@@ -18,6 +18,7 @@
     const biomeLabelsMap = safeParseJSON(root.dataset.biomeLabels, {});
     const totalMaps = parseInt(root.dataset.totalMaps || '0', 10) || 0;
     const displayLimit = parseInt(root.dataset.displayLimit || '0', 10) || 0;
+    let totalVotes = parseInt(root.dataset.totalVotes || '0', 10) || 0;
 
     let maps;
     try {
@@ -96,8 +97,15 @@
         return maps.reduce((max, map) => Math.max(max, map.voteCount || 0), 0);
     }
 
+    function calculateTotalVotes() {
+        return maps.reduce((sum, map) => sum + (map.voteCount || 0), 0);
+    }
+
     function updateCards() {
         const maxVotes = calculateMaxVotes();
+        totalVotes = calculateTotalVotes();
+        root.dataset.totalVotes = String(totalVotes);
+        
         listEl.querySelectorAll('.mapsV2__card').forEach((cardEl) => {
             const mapId = parseInt(cardEl.dataset.mapId, 10);
             const map = mapIndex.has(mapId) ? maps[mapIndex.get(mapId)] : null;
@@ -105,27 +113,42 @@
                 return;
             }
 
-            cardEl.classList.toggle('is-active', mapId === getCurrentMap()?.id);
+            const voteCount = map.voteCount || 0;
+            const isLeading = voteCount > 0 && voteCount === maxVotes && maxVotes > 0;
+            const isVoted = userVotedMapIds.has(mapId);
+            const isCurrentActive = mapId === getCurrentMap()?.id;
+
+            // Обновляем классы карточки явно
+            cardEl.classList.toggle('is-active', isCurrentActive);
+            cardEl.classList.toggle('is-leading', isLeading);
 
             const votesBadge = cardEl.querySelector('[data-role="card-votes"]');
             if (votesBadge) {
-                votesBadge.textContent = map.voteCount || 0;
+                votesBadge.textContent = voteCount;
             }
 
             const votesTotal = cardEl.querySelector('[data-role="card-votes-total"]');
             if (votesTotal) {
-                votesTotal.textContent = map.voteCount || 0;
+                votesTotal.textContent = voteCount;
             }
 
             const progressBar = cardEl.querySelector('.mapsV2__card-progress-bar');
             if (progressBar) {
-                const progress = maxVotes > 0 ? (map.voteCount || 0) / maxVotes * 100 : 0;
+                // Прогресс-бар показывает процент голосов от общего количества голосов
+                const progress = totalVotes > 0 ? (voteCount / totalVotes * 100) : 0;
                 progressBar.style.setProperty('--progress', `${progress}`);
             }
 
-            const voteBtn = cardEl.querySelector('[data-action="vote-card"]');
-            if (voteBtn) {
-                voteBtn.classList.toggle('is-active', userVotedMapIds.has(mapId));
+            const voteChip = cardEl.querySelector('.mapsV2__card-chip--votes');
+            if (voteChip) {
+                // Убираем все классы состояния, потом добавляем нужные
+                voteChip.classList.remove('is-active', 'is-leading');
+                if (isVoted) {
+                    voteChip.classList.add('is-active');
+                }
+                if (isLeading) {
+                    voteChip.classList.add('is-leading');
+                }
             }
 
             const votersContainer = cardEl.querySelector('[data-role="card-voters"]');
@@ -487,9 +510,13 @@
                     root.dataset.userVotedId = '';
                 }
 
-                renderDetail(getCurrentMap());
+                // Обновляем все карточки сразу (для пересчета лидирующих и прогресс-баров)
                 updateCards();
 
+                // Обновляем детальную информацию
+                renderDetail(getCurrentMap());
+
+                // Обновляем voters для голосованной карты (но не перезаписываем voteCount, т.к. он уже обновлен)
                 refreshVoters(data.map_id, true).catch((error) => console.error('Failed to refresh voters', error));
             })
             .catch((error) => {
@@ -516,10 +543,15 @@
                 }
                 const map = maps[mapIndex.get(mapId)];
                 map.voters = data.users || [];
-                map.voteCount = data.total || map.voteCount;
+                // Обновляем voteCount только если он изменился (чтобы не перезаписать более актуальное значение)
+                const newVoteCount = data.total || map.voteCount || 0;
+                if (newVoteCount !== map.voteCount) {
+                    map.voteCount = newVoteCount;
+                }
                 if (updateDetail && getCurrentMap()?.id === mapId) {
                     renderDetail(map);
                 }
+                // Обновляем карточки после обновления voters
                 updateCards();
             })
             .catch((error) => {
