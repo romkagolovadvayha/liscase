@@ -252,45 +252,29 @@
 
 .mapsV2__card-chip--votes {
   font-weight: 600;
-  pointer-events: none;
-}
-
-.mapsV2__card-vote-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  border: none;
   cursor: pointer;
-  z-index: 3;
-  backdrop-filter: blur(6px);
-  transition: all 0.2s ease;
-  font-size: 16px;
 }
 
-.mapsV2__card-vote-btn:hover {
-  background: rgba(0, 0, 0, 0.75);
-  transform: scale(1.1);
-}
-
-.mapsV2__card-vote-btn:active {
-  transform: scale(0.95);
-}
-
-.mapsV2__card-vote-btn.is-active {
+.mapsV2__card-chip--votes.is-active {
   background: rgba(255, 77, 77, 0.9);
   color: #fff;
 }
 
-.mapsV2__card-vote-btn.is-active:hover {
-  background: rgba(255, 77, 77, 1);
+.mapsV2__card-chip--votes.is-leading {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.9), rgba(255, 193, 7, 0.9));
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+}
+
+.mapsV2__card-chip--votes.is-leading.is-active {
+  background: linear-gradient(90deg, rgba(255, 77, 77, 0.95), rgba(236, 44, 92, 0.95));
+  box-shadow: 0 0 12px rgba(255, 77, 77, 0.5);
+}
+
+.mapsV2__card.is-leading {
+  border-color: rgba(255, 215, 0, 0.6);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
 }
 
 .mapsV2__card-chip--accent {

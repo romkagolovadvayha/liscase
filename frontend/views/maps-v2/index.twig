@@ -74,7 +74,7 @@
                     {% set voters = userVotes[map.id]|default([]) %}
                     {% set progress = maxVotes > 0 ? (votes / maxVotes * 100) : 0 %}
 
-                    <article class="mapsV2__card{% if currentMap and currentMap.id == map.id %} is-active{% endif %}"
+                    <article class="mapsV2__card{% if currentMap and currentMap.id == map.id %} is-active{% endif %}{% if votes > 0 and votes == maxVotes %} is-leading{% endif %}"
                              data-map-id="{{ map.id }}">
                         <div class="mapsV2__card-image-wrapper">
                             <button class="mapsV2__card-image"
@@ -84,16 +84,13 @@
                                     aria-label="{{ t('common', 'Открыть подробную информацию') }}">
                                 <img src="{{ card.imagePreview|default(card.image) }}" alt="{{ t('common', 'Превью карты') }}">
                             </button>
-                            <span class="mapsV2__card-chip mapsV2__card-chip--votes">
-                                <i class="fas fa-heart"></i>
-                                <span data-role="card-votes">{{ votes }}</span>
-                            </span>
-                            <button class="mapsV2__card-vote-btn{% if userVotedMapIds and map.id in userVotedMapIds %} is-active{% endif %}"
+                            <button class="mapsV2__card-chip mapsV2__card-chip--votes{% if userVotedMapIds and map.id in userVotedMapIds %} is-active{% endif %}{% if votes > 0 and votes == maxVotes %} is-leading{% endif %}"
                                     type="button"
                                     data-action="vote-card"
                                     data-map-id="{{ map.id }}"
                                     aria-label="{{ t('common', 'Проголосовать за карту') }}">
                                 <i class="fas fa-heart"></i>
+                                <span data-role="card-votes">{{ votes }}</span>
                             </button>
                             {% if card.isStaging %}
                                 <span class="mapsV2__card-chip mapsV2__card-chip--warning">Staging</span>
