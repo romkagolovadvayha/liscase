@@ -524,6 +524,22 @@ class MapsV2Controller extends Controller
             ];
         }
 
+        // Сортируем карты так же, как в actionIndex (по голосам, затем по дате)
+        if ($allMaps) {
+            usort($allMaps, static function (MapList $a, MapList $b) use ($voteCounts) {
+                $aVotes = $voteCounts[$a->id] ?? 0;
+                $bVotes = $voteCounts[$b->id] ?? 0;
+
+                if ($aVotes === $bVotes) {
+                    $aTime = strtotime($a->created_at ?? 'now');
+                    $bTime = strtotime($b->created_at ?? 'now');
+                    return $bTime <=> $aTime;
+                }
+
+                return $bVotes <=> $aVotes;
+            });
+        }
+
         // Определяем currentMap
         $currentMap = null;
         if (!Yii::$app->user->isGuest) {

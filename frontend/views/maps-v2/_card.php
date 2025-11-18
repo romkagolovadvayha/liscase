@@ -49,9 +49,6 @@ $isVoted = !empty($userVotedMapIds) && in_array($map->id, $userVotedMapIds);
         <?php endif; ?>
     </div>
     <div class="mapsV2__card-body">
-        <p class="mapsV2__card-meta">
-            <?= Yii::t('common', 'Размер') ?>: <?= Html::encode($card['size'] ?? '') ?> x <?= Html::encode($card['size'] ?? '') ?>
-        </p>
         <div class="mapsV2__card-progress">
             <div class="mapsV2__card-progress-bar" style="--progress: <?= $progress ?>%;"></div>
         </div>
