@@ -175,7 +175,6 @@ if ($hasMaps && $currentMap) {
                         <header class="mapsV2__detail-header">
                             <div>
                                 <p class="mapsV2__detail-type" data-role="detail-type"><?= Html::encode($detail['type'] ?? 'Procedural') ?></p>
-                                <h2 class="mapsV2__detail-title" data-role="detail-title"><?= Html::encode($detail['hash'] ?? '') ?></h2>
                             </div>
                             <div class="mapsV2__detail-actions">
                                 <button class="mapsV2__vote-button<?= ($userVotedMapId && $userVotedMapId == $detail['id']) ? ' is-active' : '' ?>"

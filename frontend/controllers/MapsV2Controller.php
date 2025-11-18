@@ -416,6 +416,40 @@ class MapsV2Controller extends Controller
             'voters' => $userVotes[$map->id] ?? [],
         ];
 
+        // Получаем все карты для навигации
+        $allMapsQuery = MapList::find()
+            ->alias('ml')
+            ->andWhere(['IS NOT', 'ml.size_int', null])
+            ->andWhere(['>=', 'ml.size_int', (int)$server->min_map_size])
+            ->andWhere(['<=', 'ml.size_int', (int)$server->max_map_size])
+            ->orderBy(['ml.created_at' => SORT_DESC]);
+
+        $allMaps = $allMapsQuery->all();
+        $prevMap = null;
+        $nextMap = null;
+        
+        if (!empty($allMaps)) {
+            $currentIndex = -1;
+            foreach ($allMaps as $index => $m) {
+                if ((int)$m->id === (int)$map->id) {
+                    $currentIndex = $index;
+                    break;
+                }
+            }
+            
+            if ($currentIndex >= 0) {
+                // Предыдущая карта (более новая, так как сортировка по убыванию даты)
+                if ($currentIndex > 0) {
+                    $prevMap = $allMaps[$currentIndex - 1];
+                }
+                
+                // Следующая карта (более старая)
+                if ($currentIndex < count($allMaps) - 1) {
+                    $nextMap = $allMaps[$currentIndex + 1];
+                }
+            }
+        }
+
         return $this->renderPartial('detail', [
             'map' => $map,
             'server' => $server,
@@ -423,6 +457,8 @@ class MapsV2Controller extends Controller
             'userVotedMapId' => in_array($map->id, $userVotedMapIds) ? $map->id : null,
             'userVotedMapIds' => $userVotedMapIds,
             'biomeLabels' => MapLocalization::biomeLabels($language),
+            'prevMap' => $prevMap,
+            'nextMap' => $nextMap,
         ]);
     }
 

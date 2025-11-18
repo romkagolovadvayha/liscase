@@ -8,6 +8,8 @@ use yii\helpers\Html;
 /** @var int|null $userVotedMapId */
 /** @var array $userVotedMapIds */
 /** @var array $biomeLabels */
+/** @var \common\models\map\MapList|null $prevMap */
+/** @var \common\models\map\MapList|null $nextMap */
 
 $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds);
 
@@ -25,13 +27,45 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
             <img src="<?= Html::encode($previewSrc) ?>" alt="<?= Html::encode($detail['hash'] ?? '') ?>" data-role="preview-image">
             <div class="mapsV2__markers" data-role="markers"></div>
         </div>
+        <div class="mapsV2__navigation">
+            <?php if ($prevMap): ?>
+                <a href="/maps-v2/detail/<?= $prevMap->id ?>?server_id=<?= $server->id ?>"
+                   class="mapsV2__nav mapsV2__nav--prev show-modal-link"
+                   data-href="/maps-v2/detail/<?= $prevMap->id ?>?server_id=<?= $server->id ?>"
+                   data-target="modal-dialog"
+                   data-size="modal-lg"
+                   data-content-overflow="unset"
+                   aria-label="<?= Yii::t('common', 'Предыдущая карта') ?>">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            <?php else: ?>
+                <button type="button" class="mapsV2__nav mapsV2__nav--prev" disabled aria-label="<?= Yii::t('common', 'Предыдущая карта') ?>">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            <?php endif; ?>
+            
+            <?php if ($nextMap): ?>
+                <a href="/maps-v2/detail/<?= $nextMap->id ?>?server_id=<?= $server->id ?>"
+                   class="mapsV2__nav mapsV2__nav--next show-modal-link"
+                   data-href="/maps-v2/detail/<?= $nextMap->id ?>?server_id=<?= $server->id ?>"
+                   data-target="modal-dialog"
+                   data-size="modal-lg"
+                   data-content-overflow="unset"
+                   aria-label="<?= Yii::t('common', 'Следующая карта') ?>">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            <?php else: ?>
+                <button type="button" class="mapsV2__nav mapsV2__nav--next" disabled aria-label="<?= Yii::t('common', 'Следующая карта') ?>">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            <?php endif; ?>
+        </div>
     </div>
 
     <div class="mapsV2__detail-body" data-map-detail-id="<?= $detail['id'] ?>">
         <header class="mapsV2__detail-header">
             <div>
                 <p class="mapsV2__detail-type" data-role="detail-type"><?= Html::encode($detail['type'] ?? 'Procedural') ?></p>
-                <h2 class="mapsV2__detail-title" data-role="detail-title"><?= Html::encode($detail['hash'] ?? '') ?></h2>
             </div>
             <div class="mapsV2__detail-actions">
                 <?php if (!empty($detail['rustMapsUrl'])): ?>

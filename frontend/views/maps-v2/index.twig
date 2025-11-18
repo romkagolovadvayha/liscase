@@ -119,7 +119,6 @@
                         <header class="mapsV2__detail-header">
                             <div>
                                 <p class="mapsV2__detail-type" data-role="detail-type">{{ detail.type|default('Procedural') }}</p>
-                                <h2 class="mapsV2__detail-title" data-role="detail-title">{{ detail.hash }}</h2>
                             </div>
                             <div class="mapsV2__detail-actions">
                                 <button class="mapsV2__vote-button{% if userVotedMapId and userVotedMapId == detail.id %} is-active{% endif %}"
