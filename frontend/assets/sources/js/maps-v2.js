@@ -339,18 +339,10 @@
             return;
         }
         
-        // Ищем контейнер маркеров внутри modalEl
-        let markersContainer = modalEl.querySelector('[data-role="markers"]');
+        // Ищем контейнер маркеров внутри detailEl (как в initializeModalContent)
+        const markersContainer = detailEl.querySelector('[data-role="markers"]');
         if (!markersContainer) {
-            // Попробуем найти через preview
-            const previewEl = modalEl.querySelector('[data-role="preview"]');
-            if (previewEl) {
-                markersContainer = previewEl.querySelector('[data-role="markers"]');
-            }
-        }
-        
-        if (!markersContainer) {
-            console.warn('maps-v2.js: markers container not found in modal', modalEl);
+            console.warn('maps-v2.js: markers container not found in detailEl', detailEl);
             return;
         }
         
@@ -385,15 +377,11 @@
         const modalEl = document.getElementById('modal-dialog');
         if (!modalEl) return;
         
-        // Ищем контейнер маркеров внутри modalEl
-        let markersContainer = modalEl.querySelector('[data-role="markers"]');
-        if (!markersContainer) {
-            // Попробуем найти через preview
-            const previewEl = modalEl.querySelector('[data-role="preview"]');
-            if (previewEl) {
-                markersContainer = previewEl.querySelector('[data-role="markers"]');
-            }
-        }
+        const detailEl = modalEl.querySelector('[data-role="map-detail"]');
+        if (!detailEl) return;
+        
+        // Ищем контейнер маркеров внутри detailEl (как в initializeModalContent)
+        const markersContainer = detailEl.querySelector('[data-role="markers"]');
         if (!markersContainer) return;
         
         // Скрываем маркер с таким же индексом
