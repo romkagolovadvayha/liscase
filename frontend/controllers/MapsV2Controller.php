@@ -274,6 +274,144 @@ class MapsV2Controller extends Controller
         ]);
     }
 
+    public function actionDetail($id, $serverId = null)
+    {
+        $map = MapList::findOne($id);
+        if (!$map) {
+            throw new NotFoundHttpException(Yii::t('common', 'Карта не найдена'));
+        }
+
+        // Получаем server_id из запроса или параметра
+        if (!$serverId) {
+            $serverId = (int)Yii::$app->request->get('server_id');
+        }
+
+        $server = null;
+        if ($serverId) {
+            $server = Servers::findOne($serverId);
+            if (!$server) {
+                throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден'));
+            }
+        } else {
+            // Получаем первый активный сервер по умолчанию
+            $server = Servers::find()
+                ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                ->andWhere(['secret_map' => 0])
+                ->orderBy(['sort' => SORT_ASC])
+                ->one();
+            
+            if (!$server) {
+                throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден'));
+            }
+        }
+
+        $voteCounts = [];
+        $userVotes = [];
+        $userVotedMapIds = [];
+
+        $rawCounts = MapListVote::find()
+            ->select(['map_list_id', 'cnt' => 'COUNT(*)'])
+            ->andWhere(['map_list_id' => $map->id, 'server_id' => $server->id])
+            ->groupBy('map_list_id')
+            ->asArray()
+            ->all();
+        
+        foreach ($rawCounts as $row) {
+            $voteCounts[(int)$row['map_list_id']] = (int)$row['cnt'];
+        }
+
+        if (!Yii::$app->user->isGuest) {
+            $votes = MapListVote::find()
+                ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
+                ->with('user')
+                ->asArray()
+                ->all();
+
+            foreach ($votes as $vote) {
+                $userId = (int)$vote['user_id'];
+                $mapListId = (int)$vote['map_list_id'];
+                
+                if (!isset($userVotes[$mapListId])) {
+                    $userVotes[$mapListId] = [];
+                }
+                
+                $userData = $vote['user'] ?? null;
+                if ($userData) {
+                    $userVotes[$mapListId][] = [
+                        'id' => $userId,
+                        'username' => $userData['username'] ?? '',
+                        'avatar' => $userData['avatar'] ?? '',
+                        'created_at' => $vote['created_at'] ?? null,
+                    ];
+                }
+                
+                if ($userId === (int)Yii::$app->user->id) {
+                    $userVotedMapIds[] = $mapListId;
+                }
+            }
+        }
+
+        $language = Yii::$app->language;
+        $details = $map->data_json ? json_decode($map->data_json, true) : [];
+        
+        $monumentsRaw = $details['monuments'] ?? json_decode($map->monuments_json ?? '[]', true);
+        if (!is_array($monumentsRaw)) {
+            $monumentsRaw = [];
+        }
+
+        $monuments = [];
+        foreach ($monumentsRaw as $monument) {
+            $type = $monument['type'] ?? '';
+            $monuments[] = [
+                'type' => $type,
+                'label' => MapLocalization::monument($type, $language),
+                'coordinates' => $monument['coordinates'] ?? null,
+            ];
+        }
+
+        $mapCardsData = [
+            'id' => (int)$map->id,
+            'hash' => $map->hash,
+            'type' => $map->map_type,
+            'seed' => $map->seed,
+            'size' => $map->size_int,
+            'saveVersion' => $map->save_version,
+            'downloadUrl' => $map->url,
+            'rustMapsUrl' => $map->hash ? 'https://rustmaps.com/map/' . $map->hash : null,
+            'image' => $map->image ?: ($details['imageUrl'] ?? $map->image_url),
+            'imagePreview' => $map->image_preview ?: ($details['thumbnailUrl'] ?? $map->thumbnail_url),
+            'rawImageUrl' => $map->raw_image_url ?: ($details['rawImageUrl'] ?? null),
+            'imageIconUrl' => $map->image_icon_url ?: ($details['imageIconUrl'] ?? null),
+            'isStaging' => (bool)$map->is_staging,
+            'isCustomMap' => (bool)$map->is_custom_map,
+            'canDownload' => (bool)$map->can_download,
+            'totalMonuments' => $map->total_monuments,
+            'monuments' => $monuments,
+            'landPercentage' => $map->land_percentage,
+            'biomePercentages' => $details['biomePercentages'] ?? json_decode($map->biome_percentages_json ?? '[]', true),
+            'islands' => $map->islands,
+            'mountains' => $map->mountains,
+            'iceLakes' => $map->ice_lakes,
+            'rivers' => $map->rivers,
+            'lakes' => $map->lakes,
+            'canyons' => $map->canyons,
+            'oases' => $map->oases,
+            'buildableRocks' => $map->buildable_rocks,
+            'createdAt' => $map->created_at,
+            'voteCount' => $voteCounts[$map->id] ?? 0,
+            'voters' => $userVotes[$map->id] ?? [],
+        ];
+
+        return $this->renderPartial('detail', [
+            'map' => $map,
+            'server' => $server,
+            'detail' => $mapCardsData,
+            'userVotedMapId' => in_array($map->id, $userVotedMapIds) ? $map->id : null,
+            'userVotedMapIds' => $userVotedMapIds,
+            'biomeLabels' => MapLocalization::biomeLabels($language),
+        ]);
+    }
+
     public function actionVote()
     {
         $mapId = (int)Yii::$app->request->post('map_id');

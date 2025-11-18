@@ -26,14 +26,15 @@ $isVoted = !empty($userVotedMapIds) && in_array($map->id, $userVotedMapIds);
 <article class="mapsV2__card<?= $isActive ? ' is-active' : '' ?><?= $isLeading ? ' is-leading' : '' ?>"
          data-map-id="<?= $map->id ?>">
     <div class="mapsV2__card-image-wrapper">
-        <button class="mapsV2__card-image"
-                type="button"
-                data-action="open-detail"
-                data-map-id="<?= $map->id ?>"
-                data-pjax="0"
-                aria-label="<?= Yii::t('common', 'Открыть подробную информацию') ?>">
+        <a href="/maps-v2/detail/<?= $map->id ?>?server_id=<?= $server->id ?>"
+           class="mapsV2__card-image show-modal-link"
+           data-href="/maps-v2/detail/<?= $map->id ?>?server_id=<?= $server->id ?>"
+           data-target="modal-dialog"
+           data-size="modal-lg"
+           data-content-overflow="unset"
+           aria-label="<?= Yii::t('common', 'Открыть подробную информацию') ?>">
             <img src="<?= Html::encode($card['imagePreview'] ?? $card['image'] ?? '') ?>" alt="<?= Yii::t('common', 'Превью карты') ?>">
-        </button>
+        </a>
         
         <button type="submit" 
                 name="map_id"

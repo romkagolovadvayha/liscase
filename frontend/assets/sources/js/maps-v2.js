@@ -34,11 +34,8 @@
     });
 
     const listEl = root.querySelector('[data-role="map-list"]');
-    const detailEl = root.querySelector('[data-role="map-detail"]');
-    const modalEl = root.querySelector('[data-role="detail-modal"]');
-    const modalDialog = modalEl ? modalEl.querySelector('.mapsV2__modal-dialog') : null;
 
-    if (!listEl || !detailEl || !modalEl || !modalDialog) {
+    if (!listEl) {
         return;
     }
 
@@ -65,18 +62,7 @@
         userVotedMapIds.add(userVotedId);
     }
 
-    let currentIndex = 0;
-    if (userVotedId !== null && mapIndex.has(userVotedId)) {
-        currentIndex = mapIndex.get(userVotedId);
-    }
-
-    const csrfToken = getCsrfToken();
-    let lastFocusedElement = null;
     let lightboxEl;
-
-    function getCurrentMap() {
-        return maps[currentIndex] || null;
-    }
 
     function formatDate(dateString) {
         if (!dateString) {
@@ -122,7 +108,7 @@
             const voteCount = map.voteCount || 0;
             const isLeading = voteCount > 0 && voteCount === maxVotes && maxVotes > 0;
             const isVoted = userVotedMapIds.has(mapId);
-            const isCurrentActive = mapId === getCurrentMap()?.id;
+            const isCurrentActive = false; // Модалка теперь управляется стандартным modal.js
 
             // Обновляем классы карточки явно (убираем старые, добавляем новые)
             cardEl.classList.remove('is-active', 'is-leading');
@@ -195,290 +181,6 @@
         }
     }
 
-    function renderDetail(map) {
-        if (!map) {
-            return;
-        }
-        const previewContainer = detailEl.querySelector('[data-role="preview"]');
-        const previewImage = detailEl.querySelector('[data-role="preview-image"]');
-        const fullImageSrc = map.imageIconUrl || map.rawImageUrl || map.image || map.imagePreview || '';
-        if (previewImage) {
-            previewImage.src = map.imagePreview || map.image || previewImage.src;
-            previewImage.alt = map.hash || '';
-        }
-        if (previewContainer) {
-            previewContainer.dataset.src = fullImageSrc;
-            if (fullImageSrc) {
-                previewContainer.classList.add('is-clickable');
-            } else {
-                previewContainer.classList.remove('is-clickable');
-            }
-        }
-
-        const typeEl = detailEl.querySelector('[data-role="detail-type"]');
-        if (typeEl) {
-            typeEl.textContent = map.type || 'Procedural';
-        }
-
-        const titleEl = detailEl.querySelector('[data-role="detail-title"]');
-        if (titleEl) {
-            titleEl.textContent = map.hash || '';
-        }
-
-        const voteBtn = detailEl.querySelector('[data-action="vote"]');
-        if (voteBtn) {
-            voteBtn.dataset.mapId = map.id;
-            if (userVotedMapIds.has(map.id)) {
-                voteBtn.classList.add('is-active');
-            } else {
-                voteBtn.classList.remove('is-active');
-            }
-        }
-
-        const downloadBtn = detailEl.querySelector('.mapsV2__download-button');
-        if (downloadBtn) {
-            if (map.downloadUrl) {
-                downloadBtn.href = map.downloadUrl;
-                downloadBtn.classList.remove('is-hidden');
-            } else {
-                downloadBtn.classList.add('is-hidden');
-            }
-        }
-
-        const fullscreenBtn = detailEl.querySelector('[data-action="open-fullscreen"]');
-        if (fullscreenBtn) {
-            const iconImageSrc = map.imageIconUrl || map.rawImageUrl || map.image || map.imagePreview || '';
-            if (iconImageSrc) {
-                fullscreenBtn.dataset.src = iconImageSrc;
-                fullscreenBtn.classList.remove('is-hidden');
-            } else {
-                fullscreenBtn.dataset.src = '';
-                fullscreenBtn.classList.add('is-hidden');
-            }
-        }
-
-        const statSize = detailEl.querySelector('[data-stat="size"]');
-        if (statSize) {
-            statSize.textContent = map.size ? `${map.size} x ${map.size}` : '–';
-        }
-
-        const statSeed = detailEl.querySelector('[data-stat="seed"]');
-        if (statSeed) {
-            statSeed.textContent = map.seed || '–';
-        }
-
-        const statSaveVersion = detailEl.querySelector('[data-stat="saveVersion"]');
-        if (statSaveVersion) {
-            statSaveVersion.textContent = map.saveVersion || '–';
-        }
-
-        const votesCountEl = detailEl.querySelector('[data-role="votes-count"]');
-        if (votesCountEl) {
-            votesCountEl.textContent = map.voteCount || 0;
-        }
-
-        const statLand = detailEl.querySelector('[data-stat="landPercentage"]');
-        if (statLand) {
-            statLand.textContent = map.landPercentage != null ? `${map.landPercentage}%` : '–';
-        }
-
-        const statMonuments = detailEl.querySelector('[data-stat="monuments"]');
-        if (statMonuments) {
-            const total = map.totalMonuments != null ? map.totalMonuments : (map.monuments ? map.monuments.length : 0);
-            statMonuments.textContent = total;
-        }
-
-        renderBiomes(map);
-        renderMonuments(map);
-        renderMarkers(map);
-        renderDetailVoters(map);
-        highlightMonument(null);
-    }
-
-    function renderBiomes(map) {
-        const biomesWrapper = detailEl.querySelector('[data-role="biomes"]');
-        const biomesList = detailEl.querySelector('[data-role="biomes-list"]');
-        if (!biomesWrapper || !biomesList) {
-            return;
-        }
-
-        biomesList.innerHTML = '';
-        const biomes = map.biomePercentages || {};
-
-        const entries = Object.entries(biomes);
-        if (!entries.length) {
-            biomesWrapper.classList.add('is-hidden');
-            return;
-        }
-        biomesWrapper.classList.remove('is-hidden');
-
-        entries.forEach(([code, value]) => {
-            const item = document.createElement('div');
-            item.className = 'mapsV2__biome';
-            const label = document.createElement('span');
-            label.className = 'mapsV2__biome-label';
-            label.textContent = biomeLabelsMap[code] || code.toUpperCase();
-            const percent = document.createElement('span');
-            percent.className = 'mapsV2__biome-value';
-            const displayValue = typeof value === 'number' ? Math.round(value * 10) / 10 : value;
-            percent.textContent = `${displayValue}%`;
-            item.appendChild(label);
-            item.appendChild(percent);
-            biomesList.appendChild(item);
-        });
-    }
-
-    function renderMonuments(map) {
-        const monumentsWrapper = detailEl.querySelector('[data-role="monuments"]');
-        const monumentsList = detailEl.querySelector('[data-role="monuments-list"]');
-        if (!monumentsWrapper || !monumentsList) {
-            return;
-        }
-        monumentsList.innerHTML = '';
-        const monuments = map.monuments || [];
-        if (!monuments.length) {
-            monumentsWrapper.classList.add('is-hidden');
-            return;
-        }
-        monumentsWrapper.classList.remove('is-hidden');
-        monuments.slice(0, 40).forEach((monument, index) => {
-            const chip = document.createElement('span');
-            chip.className = 'mapsV2__monument-chip';
-            chip.dataset.index = String(index);
-            chip.textContent = monument.label || monument.type || '';
-            chip.title = monument.label || monument.type || '';
-            chip.addEventListener('mouseenter', () => highlightMonument(index));
-            chip.addEventListener('mouseleave', () => highlightMonument(null));
-            monumentsList.appendChild(chip);
-        });
-    }
-
-    function renderMarkers(map) {
-        const markersContainer = detailEl.querySelector('[data-role="markers"]');
-        if (!markersContainer) {
-            return;
-        }
-        markersContainer.innerHTML = '';
-        const monuments = map.monuments || [];
-        const size = map.size || 0;
-        if (!monuments.length || size <= 0) {
-            return;
-        }
-
-        const halfSize = size / 2;
-        monuments.forEach((monument, index) => {
-            const coordinates = monument.coordinates || {};
-            if (typeof coordinates.x !== 'number' || typeof coordinates.y !== 'number') {
-                return;
-            }
-
-            const posX = ((coordinates.x + halfSize) / size) * 100;
-            const posY = 100 - ((coordinates.y + halfSize) / size) * 100;
-            if (Number.isNaN(posX) || Number.isNaN(posY)) {
-                return;
-            }
-
-            const marker = document.createElement('div');
-            marker.className = 'mapsV2__marker';
-            marker.style.left = `${Math.min(100, Math.max(0, posX))}%`;
-            marker.style.top = `${Math.min(100, Math.max(0, posY))}%`;
-            marker.dataset.index = String(index);
-            marker.title = monument.label || monument.type || '';
-            marker.addEventListener('mouseenter', () => highlightMonument(index));
-            marker.addEventListener('mouseleave', () => highlightMonument(null));
-            marker.addEventListener('click', (event) => event.stopPropagation());
-            markersContainer.appendChild(marker);
-        });
-    }
-
-    function highlightMonument(index) {
-        const chips = detailEl.querySelectorAll('[data-role="monuments-list"] .mapsV2__monument-chip');
-        chips.forEach((chip) => {
-            const chipIndex = Number(chip.dataset.index);
-            chip.classList.toggle('is-active', index !== null && chipIndex === index);
-        });
-
-        const markers = detailEl.querySelectorAll('[data-role="markers"] .mapsV2__marker');
-        markers.forEach((marker) => {
-            const markerIndex = Number(marker.dataset.index);
-            marker.classList.toggle('is-active', index !== null && markerIndex === index);
-        });
-    }
-
-    function renderDetailVoters(map) {
-        const list = detailEl.querySelector('[data-role="voters-list"]');
-        if (!list) {
-            return;
-        }
-        list.innerHTML = '';
-        const voters = map.voters || [];
-        if (!voters.length) {
-            const p = document.createElement('p');
-            p.className = 'mapsV2__voters-empty';
-            p.textContent = texts.emptyVoters;
-            list.appendChild(p);
-            return;
-        }
-
-        voters.forEach((voter) => {
-            const item = document.createElement('div');
-            item.className = 'mapsV2__voter';
-
-            const avatar = document.createElement('img');
-            avatar.src = voter.avatar;
-            avatar.alt = voter.username;
-
-            const text = document.createElement('div');
-            const name = document.createElement('strong');
-            name.textContent = voter.username;
-            const date = document.createElement('span');
-            date.textContent = formatDate(voter.created_at);
-            text.appendChild(name);
-            text.appendChild(date);
-
-            item.appendChild(avatar);
-            item.appendChild(text);
-            list.appendChild(item);
-        });
-    }
-
-    function selectMapById(mapId) {
-        if (!mapIndex.has(mapId)) {
-            return;
-        }
-        currentIndex = mapIndex.get(mapId);
-        renderDetail(getCurrentMap());
-        updateCards();
-        scrollActiveCardIntoView(mapId);
-        if (modalDialog) {
-            modalDialog.scrollTop = 0;
-        }
-    }
-
-    function scrollActiveCardIntoView(mapId) {
-        // Получаем listEl динамически, так как он может быть пересоздан после Pjax
-        const currentListEl = root.querySelector('[data-role="map-list"]');
-        if (!currentListEl) {
-            return;
-        }
-        const card = currentListEl.querySelector(`[data-map-id="${mapId}"]`);
-        if (card && typeof card.scrollIntoView === 'function') {
-            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    }
-
-    function handleNavigation(direction) {
-        if (!maps.length) {
-            return;
-        }
-        currentIndex = (currentIndex + direction + maps.length) % maps.length;
-        renderDetail(getCurrentMap());
-        updateCards();
-        const currentMap = getCurrentMap();
-        if (currentMap) {
-            scrollActiveCardIntoView(currentMap.id);
-        }
-    }
 
     // Голосование теперь обрабатывается через Pjax, без JavaScript
 
@@ -505,9 +207,41 @@
                 // Обновляем только voters, voteCount не трогаем (он уже обновлен из handleVote)
                 map.voters = data.users || [];
                 
-                // Обновляем детальную информацию если нужно
-                if (updateDetail && getCurrentMap()?.id === mapId) {
-                    renderDetail(map);
+                // Обновляем список голосовавших в модалке, если она открыта
+                if (updateDetail) {
+                    const detailEl = document.querySelector('[data-role="map-detail"]');
+                    const list = detailEl ? detailEl.querySelector('[data-role="voters-list"]') : null;
+                    if (list) {
+                        list.innerHTML = '';
+                        const voters = map.voters || [];
+                        if (!voters.length) {
+                            const p = document.createElement('p');
+                            p.className = 'mapsV2__voters-empty';
+                            p.textContent = texts.emptyVoters;
+                            list.appendChild(p);
+                        } else {
+                            voters.forEach((voter) => {
+                                const item = document.createElement('div');
+                                item.className = 'mapsV2__voter';
+                                
+                                const avatar = document.createElement('img');
+                                avatar.src = voter.avatar;
+                                avatar.alt = voter.username;
+                                
+                                const text = document.createElement('div');
+                                const name = document.createElement('strong');
+                                name.textContent = voter.username;
+                                const date = document.createElement('span');
+                                date.textContent = formatDate(voter.created_at);
+                                text.appendChild(name);
+                                text.appendChild(date);
+                                
+                                item.appendChild(avatar);
+                                item.appendChild(text);
+                                list.appendChild(item);
+                            });
+                        }
+                    }
                 }
                 
                 // Voters теперь обновляются автоматически через Pjax при голосовании
@@ -518,160 +252,53 @@
             });
     }
 
-    function setVoteLoading(isLoading) {
-        const voteBtn = detailEl.querySelector('[data-action="vote"]');
-        if (!voteBtn) {
-            return;
-        }
-        if (isLoading) {
-            voteBtn.classList.add('is-loading');
-            voteBtn.disabled = true;
-        } else {
-            voteBtn.classList.remove('is-loading');
-            voteBtn.disabled = false;
-        }
-    }
-
-    function YiiCsrfParam() {
-        if (window.yii && typeof window.yii.getCsrfParam === 'function') {
-            return window.yii.getCsrfParam();
-        }
-        return '_csrf-frontend';
-    }
-
-    function getCsrfToken() {
-        if (window.yii && typeof window.yii.getCsrfToken === 'function') {
-            return window.yii.getCsrfToken();
-        }
-        const meta = document.querySelector('meta[name="csrf-token"]');
-        return meta ? meta.getAttribute('content') : '';
-    }
-
-    function isModalOpen() {
-        return modalEl.classList.contains('is-active');
-    }
-
-    function openModal() {
-        if (isModalOpen()) {
-            return;
-        }
-        modalEl.classList.add('is-active');
-        modalEl.setAttribute('aria-hidden', 'false');
-        document.documentElement.classList.add('mapsV2__modal-open');
-        const closeButton = modalEl.querySelector('[data-action="close-modal"]');
-        if (closeButton) {
-            closeButton.focus({ preventScroll: true });
-        }
-    }
-
-    function closeModal() {
-        if (!isModalOpen()) {
-            return;
-        }
-        modalEl.classList.remove('is-active');
-        modalEl.setAttribute('aria-hidden', 'true');
-        document.documentElement.classList.remove('mapsV2__modal-open');
-        if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
-            lastFocusedElement.focus({ preventScroll: true });
-        }
-    }
 
     function isLightboxOpen() {
         return document.documentElement.classList.contains('mapsV2__lightbox-open');
     }
 
-    // Используем делегирование событий на document, чтобы работало после Pjax обновления
+    // Делегирование событий для действий внутри модалки (загружается динамически)
     document.addEventListener('click', (event) => {
-        // Проверяем, что клик был внутри root элемента
-        if (!root || !root.contains(event.target)) {
-            return;
-        }
-        
-        // Обработка открытия детальной карточки
-        const button = event.target.closest('[data-action="open-detail"]');
-        if (!button) {
-            return;
-        }
-        
-        console.log('Open detail button clicked', button);
-        
-        event.preventDefault();
-        event.stopPropagation();
-        
-        const card = button.closest('[data-map-id]');
-        if (!card) {
-            console.warn('Card not found for button', button);
-            return;
-        }
-        
-        const mapId = parseInt(card.dataset.mapId, 10);
-        if (isNaN(mapId)) {
-            console.warn('Invalid map ID', card.dataset.mapId);
-            return;
-        }
-        
-        console.log('Opening detail for map', mapId);
-        lastFocusedElement = button;
-        selectMapById(mapId);
-        openModal();
-    }, true); // Используем capture фазу для более раннего перехвата
-
-    modalEl.addEventListener('click', (event) => {
-        const actionElement = event.target.closest('[data-action="close-modal"]');
-        if (actionElement) {
+        // Обработка открытия fullscreen изображения
+        const fullscreenBtn = event.target.closest('[data-action="open-fullscreen"]');
+        if (fullscreenBtn) {
             event.preventDefault();
-            closeModal();
-        }
-    });
-
-    detailEl.addEventListener('click', (event) => {
-        const actionBtn = event.target.closest('[data-action]');
-        if (!actionBtn) {
-            return;
-        }
-        const action = actionBtn.dataset.action;
-        if (action === 'prev-map') {
-            handleNavigation(-1);
-        } else if (action === 'next-map') {
-            handleNavigation(1);
-        } else if (action === 'vote') {
-            // Голосование теперь обрабатывается через Pjax в детальной модалке (если там есть форма)
-            // Ничего не делаем, форма сама отправится
-        } else if (action === 'open-fullscreen') {
-            const src = actionBtn.dataset.src;
+            const src = fullscreenBtn.dataset.src;
             if (src) {
                 openLightbox(src);
             }
-        } else if (action === 'refresh-voters') {
-            const currentMap = getCurrentMap();
-            if (currentMap) {
-                refreshVoters(currentMap.id, true);
-            }
-        } else if (action === 'close-modal') {
-            closeModal();
+            return;
         }
-    });
 
-    detailEl.addEventListener('click', (event) => {
+        // Обработка клика по превью для открытия fullscreen
         const preview = event.target.closest('[data-role="preview"]');
         if (preview && !event.target.closest('.mapsV2__marker')) {
             const src = preview.dataset.src;
             if (src) {
                 openLightbox(src);
             }
+            return;
+        }
+
+        // Обработка обновления списка голосовавших
+        const refreshBtn = event.target.closest('[data-action="refresh-voters"]');
+        if (refreshBtn) {
+            event.preventDefault();
+            const detailEl = document.querySelector('[data-role="map-detail"]');
+            if (detailEl) {
+                const mapId = parseInt(detailEl.dataset.mapDetailId, 10);
+                if (!isNaN(mapId)) {
+                    refreshVoters(mapId, true);
+                }
+            }
+            return;
         }
     });
 
+    // Закрытие lightbox по Escape
     document.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape') {
-            return;
-        }
-        if (isLightboxOpen()) {
+        if (event.key === 'Escape' && isLightboxOpen()) {
             closeLightbox();
-            return;
-        }
-        if (isModalOpen()) {
-            closeModal();
         }
     });
 
@@ -799,12 +426,6 @@
     }
 
     // Initial render
-    const initialMap = getCurrentMap() || (maps.length > 0 ? maps[0] : null);
-    if (initialMap) {
-        selectMapById(initialMap.id);
-    } else {
-        updateCards();
-    }
     updateCards();
 
     function safeParseJSON(value, fallback) {
