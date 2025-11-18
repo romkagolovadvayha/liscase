@@ -53,10 +53,9 @@ $this->title = Yii::t('common', 'Вайп');
         <h3>Зафиксировать карту</h3>
         <?php foreach ($servers as $server): ?>
         <?php if ($server->secret_map) continue; ?>
-        <?php $disabled = Yii::$app->cache->get("WIPE_actionSelectMap_{$server->id}") ? ' btn-default disabled' : ' btn-success' ?>
         <?= Html::a($server->name,
                     '/wipe/select-map?id=' . $server->id,
-                    ['class' => 'btn' . $disabled, 'disabled' => true]); ?>
+                    ['class' => 'btn']); ?>
         <?php endforeach; ?>
     </div>
     <div style="margin-top: 10px;">
