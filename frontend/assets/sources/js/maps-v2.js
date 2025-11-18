@@ -340,18 +340,18 @@
         }
         
         // Используем сохраненную ссылку на markersContainer или ищем заново
-        let markersContainer = detailEl._markersContainer;
+        let markersContainer = document._markersContainer;
         console.log('maps-v2.js: detailEl._markersContainer exists?', !!markersContainer);
         if (!markersContainer) {
-            markersContainer = detailEl.querySelector('[data-role="markers"]');
+            markersContainer = document.querySelector('[data-role="markers"]');
             console.log('maps-v2.js: markersContainer found via querySelector?', !!markersContainer);
             if (markersContainer) {
                 detailEl._markersContainer = markersContainer;
-                const markersCount = markersContainer.querySelectorAll('.mapsV2__marker').length;
+                const markersCount = document.querySelectorAll('.mapsV2__marker').length;
                 console.log('maps-v2.js: markersContainer has', markersCount, 'markers');
             }
         } else {
-            const markersCount = markersContainer.querySelectorAll('.mapsV2__marker').length;
+            const markersCount = document.querySelectorAll('.mapsV2__marker').length;
             console.log('maps-v2.js: Using cached markersContainer with', markersCount, 'markers');
         }
         
@@ -361,12 +361,12 @@
         }
         
         // Находим маркер с таким же индексом и показываем его
-        const marker = markersContainer.querySelector('.mapsV2__marker[data-monument-index="' + index + '"]');
+        const marker = document.querySelector('.mapsV2__marker[data-monument-index="' + index + '"]');
         if (marker) {
             marker.style.display = 'block';
             chip.classList.add('is-active');
         } else {
-            const allMarkers = markersContainer.querySelectorAll('.mapsV2__marker');
+            const allMarkers = document.querySelectorAll('.mapsV2__marker');
             console.warn('maps-v2.js: Marker not found for index', index, 'Total markers:', allMarkers.length, 'Markers:', Array.from(allMarkers).map(m => m.dataset.monumentIndex));
         }
     }, true);
