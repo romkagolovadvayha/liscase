@@ -403,9 +403,13 @@
         const detailEl = document.querySelector('[data-role="map-detail"]');
         if (detailEl) {
             console.log('maps-v2.js: map-detail found, hiding markers', detailEl);
+            console.log('maps-v2.js: map-detail HTML', detailEl.innerHTML.substring(0, 500));
+            
             const markersContainer = detailEl.querySelector('[data-role="markers"]');
             if (markersContainer) {
                 console.log('maps-v2.js: markers container found', markersContainer);
+                console.log('maps-v2.js: markers container HTML', markersContainer.innerHTML);
+                console.log('maps-v2.js: markers container children', markersContainer.children.length);
                 const markers = markersContainer.querySelectorAll('.mapsV2__marker');
                 console.log('maps-v2.js: Found markers', markers.length, markers);
                 markers.forEach((marker, i) => {

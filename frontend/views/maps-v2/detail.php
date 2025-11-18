@@ -33,10 +33,13 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
             <div class="mapsV2__markers" data-role="markers">
                 <?php
                 $mapSize = (int)($detail['size'] ?? 0);
-                if ($mapSize > 0 && !empty($detail['monuments'])) {
+                $monumentsData = $detail['monuments'] ?? [];
+                
+                if ($mapSize > 0 && !empty($monumentsData)) {
                     $halfSize = $mapSize / 2;
                     // Рендерим маркеры только для первых 40 монументов (как и чипы)
-                    $monumentsToShow = array_slice($detail['monuments'], 0, 40);
+                    $monumentsToShow = array_slice($monumentsData, 0, 40);
+                    
                     foreach ($monumentsToShow as $index => $monument) {
                         $coordinates = $monument['coordinates'] ?? null;
                         if (!$coordinates || !is_array($coordinates)) {
