@@ -81,6 +81,9 @@ function openModal(modalId, size, title, href, topImage, contentOverflow, topCla
                 }
             });
         }
+        
+        // Триггерим кастомное событие после загрузки контента в модалку
+        $(modalEl).trigger('modal.content.loaded');
     });
 
     modalEl.addEventListener('shown.bs.modal', () => {
