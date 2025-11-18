@@ -594,14 +594,12 @@ html.mapsV2__modal-open {
   transform: translate(-50%, -50%);
   box-shadow: 0 0 8px rgba(124, 101, 255, 0.4);
   opacity: 0.85;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-  display: block;
+  transition: transform 0.2s ease, opacity 0.2s ease, display 0.2s ease;
   cursor: pointer;
   pointer-events: auto;
   z-index: 10;
 }
 
-.mapsV2__marker:hover,
 .mapsV2__marker.is-active {
   transform: translate(-50%, -50%) scale(1.2);
   opacity: 1;

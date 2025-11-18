@@ -27,7 +27,6 @@ use yii\helpers\Html;
             'enableAjaxValidation' => false,
             'options' => [
                 'data-pjax' => 1,
-                'data-pjax-container' => '#maps-v2-voters-pjax-' . $mapId,
             ],
         ]); ?>
         <?= Html::hiddenInput('server_id', $serverId) ?>

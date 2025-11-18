@@ -347,6 +347,7 @@
         }
         if (!target || !target.closest) return false;
         
+        // Обрабатываем только наведение на чипы монументов
         const chip = target.closest('.mapsV2__monument-chip');
         if (chip) {
             if (isEnter) {
@@ -362,30 +363,9 @@
                 if (relatedTarget && relatedTarget.nodeType !== 1) {
                     validRelated = relatedTarget.parentElement;
                 }
-                if (!relatedTarget || !validRelated || !chip.contains(validRelated)) {
-                    currentHighlightedIndex = null;
-                    highlightMonument(null);
-                }
-            }
-            return true;
-        }
-
-        const marker = target.closest('.mapsV2__marker');
-        if (marker) {
-            if (isEnter) {
-                const index = parseInt(marker.dataset.index, 10);
-                if (!isNaN(index) && index >= 0) {
-                    currentHighlightedIndex = index;
-                    highlightMonument(index);
-                }
-            } else {
-                // Простая проверка relatedTarget
-                const relatedTarget = event.relatedTarget;
-                let validRelated = relatedTarget;
-                if (relatedTarget && relatedTarget.nodeType !== 1) {
-                    validRelated = relatedTarget.parentElement;
-                }
-                if (!relatedTarget || !validRelated || !marker.contains(validRelated)) {
+                // Скрываем маркер только если ушли с чипа (не перешли на маркер или другой чип)
+                const relatedChip = validRelated ? validRelated.closest('.mapsV2__monument-chip') : null;
+                if (!relatedTarget || (!validRelated || (!chip.contains(validRelated) && !relatedChip))) {
                     currentHighlightedIndex = null;
                     highlightMonument(null);
                 }
@@ -396,6 +376,7 @@
         return false;
     }
     
+    // Делегирование событий для подсветки монументов при наведении на чипы
     document.addEventListener('mouseover', (event) => {
         // Простая проверка: если target - не элемент, берем родителя
         let target = event.target;
@@ -404,17 +385,16 @@
         }
         if (!target || !target.closest) return;
         
+        // Обрабатываем только наведение на чипы монументов
         const chip = target.closest('.mapsV2__monument-chip');
-        const marker = target.closest('.mapsV2__marker');
-        
-        if (chip || marker) {
-            const element = chip || marker;
+        if (chip) {
             const relatedTarget = event.relatedTarget;
             let validRelated = relatedTarget;
             if (relatedTarget && relatedTarget.nodeType !== 1) {
                 validRelated = relatedTarget.parentElement;
             }
-            if (element && (!relatedTarget || !validRelated || !element.contains(validRelated))) {
+            // Проверяем, что это действительно вход на чип (не всплытие от дочернего элемента)
+            if (!relatedTarget || !validRelated || !chip.contains(validRelated)) {
                 handleMonumentHover(event, true);
             }
         }
@@ -428,22 +408,19 @@
         }
         if (!target || !target.closest) return;
         
-        const relatedTarget = event.relatedTarget;
-        let validRelated = relatedTarget;
-        if (relatedTarget && relatedTarget.nodeType !== 1) {
-            validRelated = relatedTarget.parentElement;
-        }
-        
+        // Обрабатываем только уход с чипов монументов
         const chip = target.closest('.mapsV2__monument-chip');
-        if (chip && (!relatedTarget || !validRelated || !chip.contains(validRelated))) {
-            handleMonumentHover(event, false);
-            return;
-        }
-
-        const marker = target.closest('.mapsV2__marker');
-        if (marker && (!relatedTarget || !validRelated || !marker.contains(validRelated))) {
-            handleMonumentHover(event, false);
-            return;
+        if (chip) {
+            const relatedTarget = event.relatedTarget;
+            let validRelated = relatedTarget;
+            if (relatedTarget && relatedTarget.nodeType !== 1) {
+                validRelated = relatedTarget.parentElement;
+            }
+            // Скрываем маркер только если действительно ушли с чипа
+            const relatedChip = validRelated ? validRelated.closest('.mapsV2__monument-chip') : null;
+            if (!relatedTarget || !validRelated || (!chip.contains(validRelated) && !relatedChip)) {
+                handleMonumentHover(event, false);
+            }
         }
     }, true);
 
@@ -483,6 +460,27 @@
             });
         }
         updateVoteButtonState();
+        
+        // Переинициализируем Pjax для формы голосования в модалке
+        if (typeof $ !== 'undefined' && typeof $.pjax !== 'undefined') {
+            const detailEl = document.querySelector('[data-role="map-detail"]');
+            if (detailEl) {
+                const votersSection = detailEl.querySelector('[data-role="voters"]');
+                if (votersSection) {
+                    const pjaxContainer = votersSection.closest('[id^="maps-v2-voters-pjax-"]');
+                    if (pjaxContainer) {
+                        // Переинициализируем Pjax для контейнера voters
+                        $(pjaxContainer).pjax({
+                            selector: 'form[data-pjax]',
+                            container: '#' + pjaxContainer.id,
+                            push: false,
+                            replace: false,
+                            timeout: 5000
+                        });
+                    }
+                }
+            }
+        }
     }
 
     // Инициализация после загрузки модалки
@@ -638,8 +636,18 @@
         // Обновляем состояние кнопки голосования после обновления списка voters
         $(document).on('pjax:success', '[id^="maps-v2-voters-pjax-"]', function() {
             updateVoteButtonState();
-            // Переинициализируем маркеры после обновления voters (если модалка открыта)
-            initializeMapMarkers();
+            
+            // Переинициализируем Pjax для формы после обновления контейнера
+            const pjaxContainer = this;
+            if (pjaxContainer && typeof $.pjax !== 'undefined') {
+                $(pjaxContainer).pjax({
+                    selector: 'form[data-pjax]',
+                    container: '#' + pjaxContainer.id,
+                    push: false,
+                    replace: false,
+                    timeout: 5000
+                });
+            }
             
             // После обновления voters обновляем основной список карт для синхронизации счетчиков
             const detailEl = document.querySelector('[data-role="map-detail"]');
@@ -658,6 +666,20 @@
                         });
                     }
                 }
+            }
+        });
+
+        // Переинициализируем Pjax после завершения обновления voters
+        $(document).on('pjax:end', '[id^="maps-v2-voters-pjax-"]', function() {
+            const pjaxContainer = this;
+            if (pjaxContainer && typeof $.pjax !== 'undefined') {
+                $(pjaxContainer).pjax({
+                    selector: 'form[data-pjax]',
+                    container: '#' + pjaxContainer.id,
+                    push: false,
+                    replace: false,
+                    timeout: 5000
+                });
             }
         });
 
