@@ -195,7 +195,7 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
             <div class="mapsV2__monuments" data-role="monuments">
                 <h3><?= Yii::t('common', 'Монументы') ?></h3>
                 <div class="mapsV2__monuments-list" data-role="monuments-list">
-                    <?php foreach (array_slice($detail['monuments'], 0, 40) as $index => $monument): ?>
+                    <?php foreach (array_slice($detail['monuments'], 0, 200) as $index => $monument): ?>
                         <span class="mapsV2__monument-chip"
                               title="<?= Html::encode($monument['label'] ?? $monument['type'] ?? '') ?>"
                               data-monument-index="<?= $index ?>">
