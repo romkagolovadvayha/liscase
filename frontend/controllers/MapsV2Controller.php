@@ -259,8 +259,6 @@ class MapsV2Controller extends Controller
 
     public function actionVote($id)
     {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-
         $map = MapList::findOne($id);
         if (!$map) {
             throw new NotFoundHttpException(Yii::t('common', 'Карта не найдена'));
@@ -277,92 +275,199 @@ class MapsV2Controller extends Controller
         }
 
         if (Yii::$app->user->isGuest) {
-            return [
-                'success' => false,
-                'error' => 'auth_required',
-                'message' => Yii::t('common', 'Чтобы голосовать за карту, необходимо авторизоваться'),
-            ];
-        }
-
-        $user = Yii::$app->user->identity;
-        $totalPlaytime = Statistics::find()
-            ->where([
-                'steam_id' => $user->steam_id,
-                'key' => 'playtime',
-            ])
-            ->sum('value');
-
-        if ((int)$totalPlaytime < 60) {
-            return [
-                'success' => false,
-                'error' => 'not_enough_playtime',
-                'message' => Yii::t('common', 'Чтобы голосовать, нужно отыграть минимум 1 час'),
-            ];
-        }
-
-        if ($map->size_int !== null) {
-            if ($map->size_int < (int)$server->min_map_size || $map->size_int > (int)$server->max_map_size) {
-                return [
-                    'success' => false,
-                    'error' => 'size_mismatch',
-                    'message' => Yii::t('common', 'Эта карта не подходит по размеру для выбранного сервера'),
-                ];
-            }
-        }
-
-        // Проверяем, есть ли уже голос за эту карту
-        $existingVote = MapListVote::find()
-            ->where([
-                'map_list_id' => $map->id,
-                'server_id' => $server->id,
-                'user_id' => $user->id,
-            ])
-            ->one();
-
-        $isVoted = false;
-        if ($existingVote) {
-            // Удаляем голос (отмена)
-            if ($existingVote->delete()) {
-                $isVoted = false;
-            } else {
-                return [
-                    'success' => false,
-                    'error' => 'delete_failed',
-                    'message' => Yii::t('common', 'Не удалось отменить голос'),
-                ];
-            }
+            Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать за карту, необходимо авторизоваться'));
         } else {
-            // Добавляем голос
-            $vote = new MapListVote([
-                'map_list_id' => $map->id,
-                'server_id' => $server->id,
-                'user_id' => $user->id,
-            ]);
+            $user = Yii::$app->user->identity;
+            $totalPlaytime = Statistics::find()
+                ->where([
+                    'steam_id' => $user->steam_id,
+                    'key' => 'playtime',
+                ])
+                ->sum('value');
 
-            if (!$vote->save()) {
-                return [
-                    'success' => false,
-                    'error' => 'save_failed',
-                    'message' => Yii::t('common', 'Не удалось сохранить голос'),
-                    'details' => $vote->errors,
-                ];
+            if ((int)$totalPlaytime < 60) {
+                Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать, нужно отыграть минимум 1 час'));
+            } elseif ($map->size_int !== null && 
+                      ($map->size_int < (int)$server->min_map_size || $map->size_int > (int)$server->max_map_size)) {
+                Yii::$app->session->addFlash('danger', Yii::t('common', 'Эта карта не подходит по размеру для выбранного сервера'));
+            } else {
+                // Проверяем, есть ли уже голос за эту карту
+                $existingVote = MapListVote::find()
+                    ->where([
+                        'map_list_id' => $map->id,
+                        'server_id' => $server->id,
+                        'user_id' => $user->id,
+                    ])
+                    ->one();
+
+                if ($existingVote) {
+                    // Удаляем голос (отмена)
+                    if ($existingVote->delete()) {
+                        Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос снят!'));
+                    }
+                } else {
+                    // Добавляем голос
+                    $vote = new MapListVote([
+                        'map_list_id' => $map->id,
+                        'server_id' => $server->id,
+                        'user_id' => $user->id,
+                    ]);
+
+                    if ($vote->save()) {
+                        Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос успешно учтен!'));
+                    }
+                }
             }
-            $isVoted = true;
         }
 
-        $voteCount = MapListVote::find()
-            ->where([
-                'map_list_id' => $map->id,
-                'server_id' => $server->id,
-            ])
-            ->count();
+        // Пересчитываем все данные для возврата обновленной карточки
+        $allMaps = MapList::find()
+            ->alias('ml')
+            ->andWhere(['IS NOT', 'ml.size_int', null])
+            ->andWhere(['>=', 'ml.size_int', (int)$server->min_map_size])
+            ->andWhere(['<=', 'ml.size_int', (int)$server->max_map_size])
+            ->orderBy(['ml.created_at' => SORT_DESC])
+            ->all();
 
-        return [
-            'success' => true,
-            'map_id' => $map->id,
-            'votes' => (int)$voteCount,
-            'is_voted' => $isVoted,
+        $mapIds = ArrayHelper::getColumn($allMaps, 'id');
+        $voteCounts = [];
+        $userVotes = [];
+        $userVotedMapIds = [];
+        $maxVotes = 0;
+        $totalVotes = 0;
+
+        if ($mapIds) {
+            $rawCounts = MapListVote::find()
+                ->select(['map_list_id', 'cnt' => 'COUNT(*)'])
+                ->andWhere(['map_list_id' => $mapIds, 'server_id' => $server->id])
+                ->groupBy('map_list_id')
+                ->asArray()
+                ->all();
+            
+            foreach ($rawCounts as $row) {
+                $voteCounts[(int)$row['map_list_id']] = (int)$row['cnt'];
+                $totalVotes += (int)$row['cnt'];
+                if ($voteCounts[(int)$row['map_list_id']] > $maxVotes) {
+                    $maxVotes = $voteCounts[(int)$row['map_list_id']];
+                }
+            }
+
+            $votes = MapListVote::find()
+                ->where(['map_list_id' => $mapIds, 'server_id' => $server->id])
+                ->with('user')
+                ->orderBy(['created_at' => SORT_DESC])
+                ->all();
+
+            foreach ($votes as $vote) {
+                if (!$vote->user) {
+                    continue;
+                }
+                $mapIdKey = (int)$vote->map_list_id;
+                if (!isset($userVotes[$mapIdKey])) {
+                    $userVotes[$mapIdKey] = [];
+                }
+                $userVotes[$mapIdKey][] = [
+                    'username' => $vote->user->username,
+                    'avatar' => $vote->user->getAvatar(),
+                    'created_at' => $vote->created_at,
+                ];
+                if (count($userVotes[$mapIdKey]) > 12) {
+                    $userVotes[$mapIdKey] = array_slice($userVotes[$mapIdKey], 0, 12);
+                }
+            }
+
+            if (!Yii::$app->user->isGuest) {
+                $userVotedMapIds = MapListVote::find()
+                    ->select('map_list_id')
+                    ->andWhere([
+                        'server_id' => $server->id,
+                        'user_id' => Yii::$app->user->id,
+                    ])
+                    ->column();
+                if ($userVotedMapIds) {
+                    $userVotedMapIds = array_map('intval', $userVotedMapIds);
+                }
+            }
+        }
+
+        // Находим карту в списке
+        $currentMapForCard = null;
+        foreach ($allMaps as $m) {
+            if ($m->id === $map->id) {
+                $currentMapForCard = $m;
+                break;
+            }
+        }
+
+        if (!$currentMapForCard) {
+            throw new NotFoundHttpException(Yii::t('common', 'Карта не найдена в списке'));
+        }
+
+        // Подготавливаем данные карты
+        $language = Yii::$app->language;
+        $details = $currentMapForCard->data_json ? json_decode($currentMapForCard->data_json, true) : [];
+        $monumentsRaw = $details['monuments'] ?? json_decode($currentMapForCard->monuments_json ?? '[]', true);
+        if (!is_array($monumentsRaw)) {
+            $monumentsRaw = [];
+        }
+
+        $monuments = [];
+        foreach ($monumentsRaw as $monument) {
+            $type = $monument['type'] ?? '';
+            $monuments[] = [
+                'type' => $type,
+                'label' => MapLocalization::monument($type, $language),
+                'coordinates' => $monument['coordinates'] ?? null,
+            ];
+        }
+
+        $mapCardsData = [
+            $currentMapForCard->id => [
+                'id' => (int)$currentMapForCard->id,
+                'hash' => $currentMapForCard->hash,
+                'type' => $currentMapForCard->map_type,
+                'seed' => $currentMapForCard->seed,
+                'size' => $currentMapForCard->size_int,
+                'saveVersion' => $currentMapForCard->save_version,
+                'downloadUrl' => $currentMapForCard->url,
+                'rustMapsUrl' => $currentMapForCard->hash ? 'https://rustmaps.com/map/' . $currentMapForCard->hash : null,
+                'image' => $currentMapForCard->image ?: ($details['imageUrl'] ?? $currentMapForCard->image_url),
+                'imagePreview' => $currentMapForCard->image_preview ?: ($details['thumbnailUrl'] ?? $currentMapForCard->thumbnail_url),
+                'rawImageUrl' => $currentMapForCard->raw_image_url ?: ($details['rawImageUrl'] ?? null),
+                'imageIconUrl' => $currentMapForCard->image_icon_url ?: ($details['imageIconUrl'] ?? null),
+                'isStaging' => (bool)$currentMapForCard->is_staging,
+                'isCustomMap' => (bool)$currentMapForCard->is_custom_map,
+                'canDownload' => (bool)$currentMapForCard->can_download,
+                'totalMonuments' => $currentMapForCard->total_monuments,
+                'monuments' => $monuments,
+                'landPercentage' => $currentMapForCard->land_percentage,
+                'biomePercentages' => $details['biomePercentages'] ?? json_decode($currentMapForCard->biome_percentages_json ?? '[]', true),
+            ],
         ];
+
+        // Определяем currentMap для карточки
+        $currentMap = null;
+        if (!Yii::$app->user->isGuest) {
+            $votedMapId = null;
+            if ($userVotedMapIds) {
+                $votedMapId = (int)end($userVotedMapIds);
+            }
+            if ($votedMapId && $votedMapId === $map->id) {
+                $currentMap = $currentMapForCard;
+            }
+        }
+
+        return $this->renderAjax('_card.twig', [
+            'map' => $currentMapForCard,
+            'mapCardsData' => $mapCardsData,
+            'voteCounts' => $voteCounts,
+            'userVotes' => $userVotes,
+            'userVotedMapIds' => $userVotedMapIds,
+            'currentMap' => $currentMap,
+            'maxVotes' => $maxVotes,
+            'totalVotes' => $totalVotes,
+            'server' => $server,
+        ]);
     }
 
     public function actionVoters($id, $server_id)

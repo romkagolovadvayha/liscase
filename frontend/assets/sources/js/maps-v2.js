@@ -118,20 +118,28 @@
             const isVoted = userVotedMapIds.has(mapId);
             const isCurrentActive = mapId === getCurrentMap()?.id;
 
-            // Обновляем классы карточки явно
-            cardEl.classList.toggle('is-active', isCurrentActive);
-            cardEl.classList.toggle('is-leading', isLeading);
+            // Обновляем классы карточки явно (убираем старые, добавляем новые)
+            cardEl.classList.remove('is-active', 'is-leading');
+            if (isCurrentActive) {
+                cardEl.classList.add('is-active');
+            }
+            if (isLeading) {
+                cardEl.classList.add('is-leading');
+            }
 
+            // Обновляем счетчик голосов в чипе
             const votesBadge = cardEl.querySelector('[data-role="card-votes"]');
             if (votesBadge) {
                 votesBadge.textContent = voteCount;
             }
 
+            // Обновляем общий счетчик голосов
             const votesTotal = cardEl.querySelector('[data-role="card-votes-total"]');
             if (votesTotal) {
                 votesTotal.textContent = voteCount;
             }
 
+            // Обновляем прогресс-бар
             const progressBar = cardEl.querySelector('.mapsV2__card-progress-bar');
             if (progressBar) {
                 // Прогресс-бар показывает процент голосов от общего количества голосов
@@ -139,6 +147,7 @@
                 progressBar.style.setProperty('--progress', `${progress}`);
             }
 
+            // Обновляем состояние чипа с голосами
             const voteChip = cardEl.querySelector('.mapsV2__card-chip--votes');
             if (voteChip) {
                 // Убираем все классы состояния, потом добавляем нужные
@@ -151,8 +160,9 @@
                 }
             }
 
+            // Обновляем список голосующих (если voters уже загружены)
             const votersContainer = cardEl.querySelector('[data-role="card-voters"]');
-            if (votersContainer) {
+            if (votersContainer && map.voters) {
                 renderCardVoters(votersContainer, map);
             }
         });
@@ -465,66 +475,7 @@
         }
     }
 
-    function handleVote(mapId) {
-        const url = voteUrlTemplate.replace('ID_PLACEHOLDER', String(mapId));
-        const body = new URLSearchParams();
-        body.append('server_id', String(serverId));
-        if (csrfToken) {
-            body.append(YiiCsrfParam(), csrfToken);
-        }
-
-        setVoteLoading(true);
-
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            body: body.toString(),
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                if (!data.success) {
-                    throw new Error(data.message || 'Vote failed');
-                }
-
-                const map = mapIndex.has(data.map_id) ? maps[mapIndex.get(data.map_id)] : null;
-                if (map) {
-                    map.voteCount = data.votes;
-                }
-
-                // Обновляем множество проголосованных карт
-                if (data.is_voted) {
-                    userVotedMapIds.add(data.map_id);
-                } else {
-                    userVotedMapIds.delete(data.map_id);
-                }
-
-                // Обновляем userVotedId для обратной совместимости (последний голос)
-                if (userVotedMapIds.size > 0) {
-                    userVotedId = Math.max(...Array.from(userVotedMapIds));
-                    root.dataset.userVotedId = String(userVotedId);
-                } else {
-                    userVotedId = null;
-                    root.dataset.userVotedId = '';
-                }
-
-                // Обновляем все карточки сразу (для пересчета лидирующих и прогресс-баров)
-                updateCards();
-
-                // Обновляем детальную информацию
-                renderDetail(getCurrentMap());
-
-                // Обновляем voters для голосованной карты (но не перезаписываем voteCount, т.к. он уже обновлен)
-                refreshVoters(data.map_id, true).catch((error) => console.error('Failed to refresh voters', error));
-            })
-            .catch((error) => {
-                console.error(error);
-                alert(error.message || 'Не удалось проголосовать. Повторите позже.');
-            })
-            .finally(() => setVoteLoading(false));
-    }
+    // Голосование теперь обрабатывается через Pjax, без JavaScript
 
     function refreshVoters(mapId, updateDetail) {
         const url = votersUrlTemplate.replace('ID_PLACEHOLDER', String(mapId));
@@ -542,17 +493,20 @@
                     return;
                 }
                 const map = maps[mapIndex.get(mapId)];
-                map.voters = data.users || [];
-                // Обновляем voteCount только если он изменился (чтобы не перезаписать более актуальное значение)
-                const newVoteCount = data.total || map.voteCount || 0;
-                if (newVoteCount !== map.voteCount) {
-                    map.voteCount = newVoteCount;
+                if (!map) {
+                    return;
                 }
+                
+                // Обновляем только voters, voteCount не трогаем (он уже обновлен из handleVote)
+                map.voters = data.users || [];
+                
+                // Обновляем детальную информацию если нужно
                 if (updateDetail && getCurrentMap()?.id === mapId) {
                     renderDetail(map);
                 }
-                // Обновляем карточки после обновления voters
-                updateCards();
+                
+                // Voters теперь обновляются автоматически через Pjax при голосовании
+                // Можно оставить для ручного обновления через кнопку "Обновить"
             })
             .catch((error) => {
                 console.error(error);
@@ -622,16 +576,6 @@
     }
 
     listEl.addEventListener('click', (event) => {
-        // Обработка голосования с карточки
-        const voteBtn = event.target.closest('[data-action="vote-card"]');
-        if (voteBtn) {
-            event.preventDefault();
-            event.stopPropagation();
-            const mapId = parseInt(voteBtn.dataset.mapId, 10);
-            handleVote(mapId);
-            return;
-        }
-
         // Обработка открытия детальной карточки
         const button = event.target.closest('[data-action="open-detail"]');
         if (!button) {
@@ -666,10 +610,8 @@
         } else if (action === 'next-map') {
             handleNavigation(1);
         } else if (action === 'vote') {
-            const currentMap = getCurrentMap();
-            if (currentMap) {
-                handleVote(currentMap.id);
-            }
+            // Голосование теперь обрабатывается через Pjax в детальной модалке (если там есть форма)
+            // Ничего не делаем, форма сама отправится
         } else if (action === 'open-fullscreen') {
             const src = actionBtn.dataset.src;
             if (src) {

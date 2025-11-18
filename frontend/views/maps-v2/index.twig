@@ -70,60 +70,17 @@
         <div class="mapsV2__layout">
             <div class="mapsV2__cards" data-role="map-list">
                 {% for map in maps %}
-                    {% set card = mapCardsData[map.id] %}
-                    {% set votes = voteCounts[map.id]|default(0) %}
-                    {% set voters = userVotes[map.id]|default([]) %}
-                    {% set progress = totalVotes > 0 ? (votes / totalVotes * 100) : 0 %}
-
-                    <article class="mapsV2__card{% if currentMap and currentMap.id == map.id %} is-active{% endif %}{% if votes > 0 and votes == maxVotes %} is-leading{% endif %}"
-                             data-map-id="{{ map.id }}">
-                        <div class="mapsV2__card-image-wrapper">
-                            <button class="mapsV2__card-image"
-                                    type="button"
-                                    data-action="open-detail"
-                                    data-map-id="{{ map.id }}"
-                                    aria-label="{{ t('common', 'Открыть подробную информацию') }}">
-                                <img src="{{ card.imagePreview|default(card.image) }}" alt="{{ t('common', 'Превью карты') }}">
-                            </button>
-                            <button class="mapsV2__card-chip mapsV2__card-chip--votes{% if userVotedMapIds and map.id in userVotedMapIds %} is-active{% endif %}{% if votes > 0 and votes == maxVotes %} is-leading{% endif %}"
-                                    type="button"
-                                    data-action="vote-card"
-                                    data-map-id="{{ map.id }}"
-                                    aria-label="{{ t('common', 'Проголосовать за карту') }}">
-                                <i class="fas fa-heart"></i>
-                                <span data-role="card-votes">{{ votes }}</span>
-                            </button>
-                            {% if card.isStaging %}
-                                <span class="mapsV2__card-chip mapsV2__card-chip--warning">Staging</span>
-                            {% endif %}
-                        </div>
-                        <div class="mapsV2__card-body">
-                            <p class="mapsV2__card-meta">
-                                {{ t('common', 'Размер') }}: {{ card.size }} x {{ card.size }}
-                            </p>
-                            <div class="mapsV2__card-progress">
-                                <div class="mapsV2__card-progress-bar" style="--progress: {{ progress }}%;"></div>
-                            </div>
-                            <div class="mapsV2__card-votes">
-                                <strong data-role="card-votes-total">{{ votes }}</strong>
-                                <span>{{ t('common', 'голосов') }}</span>
-                            </div>
-                            <div class="mapsV2__card-voters" data-role="card-voters">
-                                {% if voters %}
-                                    {% for voter in voters|slice(0, 5) %}
-                                        <img src="{{ voter.avatar }}"
-                                             alt="{{ voter.username }}"
-                                             title="{{ voter.username }}">
-                                    {% endfor %}
-                                    {% if voters|length > 5 %}
-                                        <span class="mapsV2__card-more">+{{ voters|length - 5 }}</span>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="mapsV2__card-voters-empty">{{ t('common', 'Пока никто не голосовал') }}</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </article>
+                    {{ include('_card.twig', {
+                        'map': map,
+                        'mapCardsData': mapCardsData,
+                        'voteCounts': voteCounts,
+                        'userVotes': userVotes,
+                        'userVotedMapIds': userVotedMapIds,
+                        'currentMap': currentMap,
+                        'maxVotes': maxVotes,
+                        'totalVotes': totalVotes,
+                        'server': server,
+                    }, with_context = false) }}
                 {% endfor %}
             </div>
         </div>
