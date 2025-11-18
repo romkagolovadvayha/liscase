@@ -329,8 +329,8 @@
             
             if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) {
                 console.warn('maps-v2: Invalid coordinates for monument:', monument, coordinates);
-                return;
-            }
+            return;
+        }
 
             // Конвертируем координаты из игровых в проценты
             // Координаты в Rust обычно от -size/2 до +size/2
@@ -391,8 +391,14 @@
 
     // Делегирование событий для действий внутри модалки (загружается динамически)
     document.addEventListener('click', (event) => {
+        // Проверяем, что target является элементом
+        const target = event.target;
+        if (!target || typeof target.closest !== 'function') {
+            return;
+        }
+        
         // Обработка открытия fullscreen изображения
-        const fullscreenBtn = event.target.closest('[data-action="open-fullscreen"]');
+        const fullscreenBtn = target.closest('[data-action="open-fullscreen"]');
         if (fullscreenBtn) {
             event.preventDefault();
             const src = fullscreenBtn.dataset.src;
@@ -403,8 +409,8 @@
         }
 
         // Обработка клика по превью для открытия fullscreen
-        const preview = event.target.closest('[data-role="preview"]');
-        if (preview && !event.target.closest('.mapsV2__marker')) {
+        const preview = target.closest('[data-role="preview"]');
+        if (preview && !target.closest('.mapsV2__marker')) {
             const src = preview.dataset.src;
             if (src) {
                 openLightbox(src);
@@ -417,51 +423,95 @@
     });
 
     // Делегирование событий для подсветки монументов при наведении
-    // Используем mouseenter/mouseleave на уровне документа для более надежной работы
+    // Используем mouseover/mouseout с проверкой, так как они всплывают
     let currentHighlightedIndex = null;
     
-    document.addEventListener('mouseenter', (event) => {
-        const chip = event.target.closest('.mapsV2__monument-chip');
+    function handleMonumentHover(event, isEnter) {
+        // Проверяем, что target является элементом
+        const target = event.target;
+        if (!target || typeof target.closest !== 'function') {
+            return false;
+        }
+        
+        const chip = target.closest('.mapsV2__monument-chip');
         if (chip) {
-            const index = parseInt(chip.dataset.monumentIndex, 10);
-            if (!isNaN(index) && index >= 0) {
-                currentHighlightedIndex = index;
-                highlightMonument(index);
+            if (isEnter) {
+                const index = parseInt(chip.dataset.monumentIndex, 10);
+                if (!isNaN(index) && index >= 0) {
+                    currentHighlightedIndex = index;
+                    highlightMonument(index);
+                }
+            } else {
+                // Проверяем, что мышь действительно покинула элемент
+                const relatedTarget = event.relatedTarget;
+                if (!relatedTarget || !chip.contains(relatedTarget)) {
+                    currentHighlightedIndex = null;
+                    highlightMonument(null);
+                }
             }
-            return;
+            return true;
         }
 
-        const marker = event.target.closest('.mapsV2__marker');
+        const marker = target.closest('.mapsV2__marker');
         if (marker) {
-            const index = parseInt(marker.dataset.index, 10);
-            if (!isNaN(index) && index >= 0) {
-                currentHighlightedIndex = index;
-                highlightMonument(index);
+            if (isEnter) {
+                const index = parseInt(marker.dataset.index, 10);
+                if (!isNaN(index) && index >= 0) {
+                    currentHighlightedIndex = index;
+                    highlightMonument(index);
+                }
+            } else {
+                // Проверяем, что мышь действительно покинула элемент
+                const relatedTarget = event.relatedTarget;
+                if (!relatedTarget || !marker.contains(relatedTarget)) {
+                    currentHighlightedIndex = null;
+                    highlightMonument(null);
+                }
             }
+            return true;
+        }
+        
+        return false;
+    }
+    
+    document.addEventListener('mouseover', (event) => {
+        // Проверяем, что target является элементом (не текстовым узлом)
+        const target = event.target;
+        if (!target || typeof target.closest !== 'function') {
             return;
+        }
+        
+        // Проверяем, что это первый вход в элемент (не всплытие от дочернего)
+        const chip = target.closest('.mapsV2__monument-chip');
+        const marker = target.closest('.mapsV2__marker');
+        
+        if (chip || marker) {
+            const element = chip || marker;
+            const relatedTarget = event.relatedTarget;
+            if (element && (!relatedTarget || !element.contains(relatedTarget))) {
+                handleMonumentHover(event, true);
+            }
         }
     }, true);
 
-    document.addEventListener('mouseleave', (event) => {
-        const chip = event.target.closest('.mapsV2__monument-chip');
-        if (chip) {
-            // Проверяем, что мышь действительно покинула элемент (не перешла на дочерний)
-            const relatedTarget = event.relatedTarget;
-            if (!chip.contains(relatedTarget)) {
-                currentHighlightedIndex = null;
-                highlightMonument(null);
-            }
+    document.addEventListener('mouseout', (event) => {
+        // Проверяем, что target является элементом (не текстовым узлом)
+        const target = event.target;
+        if (!target || typeof target.closest !== 'function') {
+            return;
+        }
+        
+        // Проверяем, что мышь покинула элемент (не перешла на дочерний)
+        const relatedTarget = event.relatedTarget;
+        const chip = target.closest('.mapsV2__monument-chip');
+        if (chip && (!relatedTarget || !chip.contains(relatedTarget))) {
+            handleMonumentHover(event, false);
             return;
         }
 
-        const marker = event.target.closest('.mapsV2__marker');
-        if (marker) {
-            // Проверяем, что мышь действительно покинула элемент
-            const relatedTarget = event.relatedTarget;
-            if (!marker.contains(relatedTarget)) {
-                currentHighlightedIndex = null;
-                highlightMonument(null);
-            }
+        const marker = target.closest('.mapsV2__marker');
+        if (marker && (!relatedTarget || !marker.contains(relatedTarget))) {
+            handleMonumentHover(event, false);
             return;
         }
     }, true);
@@ -561,11 +611,14 @@
                 closeLightbox();
                 return;
             }
-            const closeBtn = event.target.closest('[data-action="close-lightbox"]');
-            if (closeBtn) {
-                event.preventDefault();
-                event.stopPropagation();
-                closeLightbox();
+            const target = event.target;
+            if (target && typeof target.closest === 'function') {
+                const closeBtn = target.closest('[data-action="close-lightbox"]');
+                if (closeBtn) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeLightbox();
+                }
             }
         });
         document.body.appendChild(lightboxEl);
