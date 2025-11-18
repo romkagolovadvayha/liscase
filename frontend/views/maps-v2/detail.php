@@ -51,8 +51,23 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
                 
                 if ($mapSize > 0 && !empty($monumentsData)) {
                     $halfSize = $mapSize / 2;
-                    // Рендерим маркеры только для первых 200 монументов (как и чипы)
-                    $monumentsToShow = array_slice($monumentsData, 0, 200);
+                    
+                    // Фильтруем монументы: исключаем те, что содержат определенные слова
+                    $excludedWords = ['подстанция', 'Наковальня', 'ЛЭП', 'камень', 'глыба', 'скала'];
+                    $filteredMonuments = array_filter($monumentsData, function($monument) use ($excludedWords) {
+                        $label = mb_strtolower($monument['label'] ?? '', 'UTF-8');
+                        $type = mb_strtolower($monument['type'] ?? '', 'UTF-8');
+                        foreach ($excludedWords as $word) {
+                            $wordLower = mb_strtolower($word, 'UTF-8');
+                            if (mb_strpos($label, $wordLower) !== false || mb_strpos($type, $wordLower) !== false) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    });
+                    
+                    // Рендерим маркеры только для первых 200 отфильтрованных монументов
+                    $monumentsToShow = array_slice($filteredMonuments, 0, 200);
                     
                     foreach ($monumentsToShow as $index => $monument) {
                         $coordinates = $monument['coordinates'] ?? null;
@@ -192,10 +207,25 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
         <?php endif; ?>
 
         <?php if (!empty($detail['monuments'])): ?>
+            <?php
+            // Фильтруем монументы: исключаем те, что содержат определенные слова
+            $excludedWords = ['подстанция', 'Наковальня', 'ЛЭП', 'камень', 'глыба', 'скала'];
+            $filteredMonuments = array_filter($detail['monuments'], function($monument) use ($excludedWords) {
+                $label = mb_strtolower($monument['label'] ?? '', 'UTF-8');
+                $type = mb_strtolower($monument['type'] ?? '', 'UTF-8');
+                foreach ($excludedWords as $word) {
+                    $wordLower = mb_strtolower($word, 'UTF-8');
+                    if (mb_strpos($label, $wordLower) !== false || mb_strpos($type, $wordLower) !== false) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+            ?>
             <div class="mapsV2__monuments" data-role="monuments">
                 <h3><?= Yii::t('common', 'Монументы') ?></h3>
                 <div class="mapsV2__monuments-list" data-role="monuments-list">
-                    <?php foreach (array_slice($detail['monuments'], 0, 200) as $index => $monument): ?>
+                    <?php foreach (array_slice($filteredMonuments, 0, 200) as $index => $monument): ?>
                         <span class="mapsV2__monument-chip"
                               title="<?= Html::encode($monument['label'] ?? $monument['type'] ?? '') ?>"
                               data-monument-index="<?= $index ?>">
