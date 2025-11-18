@@ -457,7 +457,7 @@ class MapsV2Controller extends Controller
             }
         }
 
-        return $this->renderAjax('_card.twig', [
+        return $this->renderAjax('_card.php', [
             'map' => $currentMapForCard,
             'mapCardsData' => $mapCardsData,
             'voteCounts' => $voteCounts,
