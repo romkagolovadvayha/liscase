@@ -309,7 +309,13 @@
     console.log('maps-v2.js: Setting up monument hover handlers');
     
     document.addEventListener('mouseenter', function(event) {
-        const chip = event.target.closest('.mapsV2__monument-chip');
+        let target = event.target;
+        if (!target || target.nodeType !== 1) {
+            target = target && target.parentElement;
+        }
+        if (!target || !target.closest) return;
+        
+        const chip = target.closest('.mapsV2__monument-chip');
         if (!chip) return;
         
         const index = chip.dataset.monumentIndex;
@@ -333,12 +339,18 @@
             marker.style.display = 'block';
             chip.classList.add('is-active');
         } else {
-            console.warn('maps-v2.js: Marker not found for index', index);
+            console.warn('maps-v2.js: Marker not found for index', index, 'Total markers:', detailEl.querySelectorAll('.mapsV2__marker').length);
         }
     }, true);
 
     document.addEventListener('mouseleave', function(event) {
-        const chip = event.target.closest('.mapsV2__monument-chip');
+        let target = event.target;
+        if (!target || target.nodeType !== 1) {
+            target = target && target.parentElement;
+        }
+        if (!target || !target.closest) return;
+        
+        const chip = target.closest('.mapsV2__monument-chip');
         if (!chip) return;
         
         const index = chip.dataset.monumentIndex;
@@ -391,12 +403,18 @@
         const detailEl = document.querySelector('[data-role="map-detail"]');
         if (detailEl) {
             console.log('maps-v2.js: map-detail found, hiding markers', detailEl);
-            const markers = detailEl.querySelectorAll('.mapsV2__marker');
-            console.log('maps-v2.js: Found markers', markers.length);
-            markers.forEach((marker, i) => {
-                marker.style.display = 'none';
-                console.log('maps-v2.js: Hidden marker', i, marker.dataset.monumentIndex);
-            });
+            const markersContainer = detailEl.querySelector('[data-role="markers"]');
+            if (markersContainer) {
+                console.log('maps-v2.js: markers container found', markersContainer);
+                const markers = markersContainer.querySelectorAll('.mapsV2__marker');
+                console.log('maps-v2.js: Found markers', markers.length, markers);
+                markers.forEach((marker, i) => {
+                    marker.style.display = 'none';
+                    console.log('maps-v2.js: Hidden marker', i, marker.dataset.monumentIndex, marker);
+                });
+            } else {
+                console.warn('maps-v2.js: markers container not found');
+            }
         } else {
             console.warn('maps-v2.js: map-detail element not found in initializeModalContent');
         }
