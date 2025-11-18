@@ -265,41 +265,6 @@
     }
 
     // Инициализация маркеров и монументов при загрузке модалки
-    // Упрощенная функция подсветки монументов - просто показываем/скрываем маркеры
-    function highlightMonument(index) {
-        const detailEl = document.querySelector('[data-role="map-detail"]');
-        if (!detailEl) {
-            return;
-        }
-
-        // Подсвечиваем чипы монументов
-        const chips = detailEl.querySelectorAll('.mapsV2__monument-chip');
-        chips.forEach((chip) => {
-            const chipIndex = parseInt(chip.dataset.monumentIndex, 10);
-            if (!isNaN(chipIndex)) {
-                if (index !== null && chipIndex === index) {
-                    chip.classList.add('is-active');
-                } else {
-                    chip.classList.remove('is-active');
-                }
-            }
-        });
-
-        // Показываем/скрываем маркеры
-        const markers = detailEl.querySelectorAll('.mapsV2__marker');
-        markers.forEach((marker) => {
-            const markerIndex = parseInt(marker.dataset.monumentIndex, 10);
-            if (!isNaN(markerIndex)) {
-                if (index !== null && markerIndex === index) {
-                    marker.style.display = 'block';
-                    marker.classList.add('is-active');
-                } else {
-                    marker.style.display = 'none';
-                    marker.classList.remove('is-active');
-                }
-            }
-        });
-    }
 
     // Делегирование событий для действий внутри модалки (загружается динамически)
     document.addEventListener('click', (event) => {
@@ -335,96 +300,42 @@
         // без перехвата JS событий
     });
 
-    // Делегирование событий для подсветки монументов при наведении
-    // Используем mouseover/mouseout с проверкой, так как они всплывают
-    let currentHighlightedIndex = null;
-    
-    function handleMonumentHover(event, isEnter) {
-        // Простая проверка: если target - не элемент, берем родителя
-        let target = event.target;
-        if (!target || target.nodeType !== 1) {
-            target = target && target.parentElement;
-        }
-        if (!target || !target.closest) return false;
+    // Простая логика: при наведении на чип монумента показываем маркер с таким же индексом
+    document.addEventListener('mouseenter', function(event) {
+        const chip = event.target.closest('.mapsV2__monument-chip');
+        if (!chip) return;
         
-        // Обрабатываем только наведение на чипы монументов
-        const chip = target.closest('.mapsV2__monument-chip');
-        if (chip) {
-            if (isEnter) {
-                const index = parseInt(chip.dataset.monumentIndex, 10);
-                if (!isNaN(index) && index >= 0) {
-                    currentHighlightedIndex = index;
-                    highlightMonument(index);
-                }
-            } else {
-                // Простая проверка relatedTarget
-                const relatedTarget = event.relatedTarget;
-                let validRelated = relatedTarget;
-                if (relatedTarget && relatedTarget.nodeType !== 1) {
-                    validRelated = relatedTarget.parentElement;
-                }
-                // Скрываем маркер только если ушли с чипа (не перешли на маркер или другой чип)
-                const relatedChip = validRelated ? validRelated.closest('.mapsV2__monument-chip') : null;
-                if (!relatedTarget || (!validRelated || (!chip.contains(validRelated) && !relatedChip))) {
-                    currentHighlightedIndex = null;
-                    highlightMonument(null);
-                }
-            }
-            return true;
-        }
+        const index = chip.dataset.monumentIndex;
+        if (!index) return;
         
-        return false;
-    }
-    
-    // Делегирование событий для подсветки монументов при наведении на чипы
-    // Используем простую логику через делегирование на контейнере монументов
-    document.addEventListener('mouseover', (event) => {
-        let target = event.target;
-        if (!target || target.nodeType !== 1) {
-            target = target && target.parentElement;
-        }
-        if (!target || !target.closest) return;
+        const detailEl = document.querySelector('[data-role="map-detail"]');
+        if (!detailEl) return;
         
-        const chip = target.closest('.mapsV2__monument-chip');
-        if (chip) {
-            const relatedTarget = event.relatedTarget;
-            let relatedValid = relatedTarget;
-            if (relatedTarget && relatedTarget.nodeType !== 1) {
-                relatedValid = relatedTarget.parentElement;
-            }
-            // Показываем маркер только если действительно вошли на чип
-            if (!relatedTarget || !relatedValid || !chip.contains(relatedValid)) {
-                const index = parseInt(chip.dataset.monumentIndex, 10);
-                if (!isNaN(index) && index >= 0) {
-                    highlightMonument(index);
-                }
-            }
+        // Находим маркер с таким же индексом и показываем его
+        const marker = detailEl.querySelector('.mapsV2__marker[data-monument-index="' + index + '"]');
+        if (marker) {
+            marker.style.display = 'block';
+            chip.classList.add('is-active');
         }
-    });
+    }, true);
 
-    document.addEventListener('mouseout', (event) => {
-        let target = event.target;
-        if (!target || target.nodeType !== 1) {
-            target = target && target.parentElement;
-        }
-        if (!target || !target.closest) return;
+    document.addEventListener('mouseleave', function(event) {
+        const chip = event.target.closest('.mapsV2__monument-chip');
+        if (!chip) return;
         
-        const chip = target.closest('.mapsV2__monument-chip');
-        if (chip) {
-            const relatedTarget = event.relatedTarget;
-            let relatedValid = relatedTarget;
-            if (relatedTarget && relatedTarget.nodeType !== 1) {
-                relatedValid = relatedTarget.parentElement;
-            }
-            // Скрываем маркер только если действительно ушли с чипа
-            if (!relatedTarget || !relatedValid || !chip.contains(relatedValid)) {
-                const relatedChip = relatedValid ? relatedValid.closest('.mapsV2__monument-chip') : null;
-                if (!relatedChip) {
-                    highlightMonument(null);
-                }
-            }
+        const index = chip.dataset.monumentIndex;
+        if (!index) return;
+        
+        const detailEl = document.querySelector('[data-role="map-detail"]');
+        if (!detailEl) return;
+        
+        // Скрываем маркер с таким же индексом
+        const marker = detailEl.querySelector('.mapsV2__marker[data-monument-index="' + index + '"]');
+        if (marker) {
+            marker.style.display = 'none';
+            chip.classList.remove('is-active');
         }
-    });
+    }, true);
 
     // Инициализация маркеров и обновление состояния кнопки голосования после загрузки модалки
     function updateVoteButtonState() {
