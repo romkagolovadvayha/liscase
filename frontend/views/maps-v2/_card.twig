@@ -22,33 +22,38 @@
 
 <article class="mapsV2__card{% if currentMap and currentMap.id == map.id %} is-active{% endif %}{% if votes > 0 and votes == maxVotes and maxVotes > 0 %} is-leading{% endif %}"
          data-map-id="{{ map.id }}">
-    {% set voteForm = ActiveForm.begin({
-        'id': voteFormId,
-        'action': voteUrl,
-        'method': 'post',
-        'enableClientValidation': false,
-        'enableAjaxValidation': false,
-        'options': {
-            'data-pjax': 1,
-        },
-    }) %}
-    
-    {{ Html.hiddenInput('server_id', server.id) }}
-    
     <div class="mapsV2__card-image-wrapper">
         <button class="mapsV2__card-image"
                 type="button"
                 data-action="open-detail"
                 data-map-id="{{ map.id }}"
+                data-pjax="0"
                 aria-label="{{ t('common', 'Открыть подробную информацию') }}">
             <img src="{{ card.imagePreview|default(card.image) }}" alt="{{ t('common', 'Превью карты') }}">
         </button>
+        
+        {% set voteForm = ActiveForm.begin({
+            'id': voteFormId,
+            'action': voteUrl,
+            'method': 'post',
+            'enableClientValidation': false,
+            'enableAjaxValidation': false,
+            'options': {
+                'data-pjax': 1,
+            },
+        }) %}
+        
+        {{ Html.hiddenInput('server_id', server.id) }}
+        
         <button type="submit" 
                 class="mapsV2__card-chip mapsV2__card-chip--votes{% if userVotedMapIds and map.id in userVotedMapIds %} is-active{% endif %}{% if votes > 0 and votes == maxVotes and maxVotes > 0 %} is-leading{% endif %}"
                 aria-label="{{ t('common', 'Проголосовать за карту') }}">
             <i class="fas fa-heart"></i>
             <span data-role="card-votes">{{ votes }}</span>
         </button>
+        
+        {{ ActiveForm.end() }}
+        
         {% if card.isStaging %}
             <span class="mapsV2__card-chip mapsV2__card-chip--warning">Staging</span>
         {% endif %}
@@ -79,8 +84,6 @@
             {% endif %}
         </div>
     </div>
-    
-    {{ ActiveForm.end() }}
 </article>
 
 {{ Pjax.end() }}
