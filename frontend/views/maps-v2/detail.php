@@ -35,6 +35,13 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
                 $mapSize = (int)($detail['size'] ?? 0);
                 $monumentsData = $detail['monuments'] ?? [];
                 
+                // Временный отладочный вывод
+                echo "<!-- DEBUG: mapSize=" . $mapSize . ", monumentsCount=" . count($monumentsData);
+                if (!empty($monumentsData)) {
+                    echo ", firstMonument=" . print_r($monumentsData[0] ?? null, true);
+                }
+                echo " -->";
+                
                 if ($mapSize > 0 && !empty($monumentsData)) {
                     $halfSize = $mapSize / 2;
                     // Рендерим маркеры только для первых 40 монументов (как и чипы)
