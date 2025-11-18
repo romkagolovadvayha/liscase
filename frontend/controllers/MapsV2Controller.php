@@ -128,11 +128,15 @@ class MapsV2Controller extends Controller
                         'user_id' => Yii::$app->user->id,
                     ])
                     ->column();
-                if ($userVotedMapIds) {
+                if (!empty($userVotedMapIds)) {
                     $userVotedMapIds = array_map('intval', $userVotedMapIds);
                     // Для обратной совместимости берем последний голос
                     $votedMapId = (int)end($userVotedMapIds);
+                } else {
+                    $userVotedMapIds = [];
                 }
+            } else {
+                $userVotedMapIds = [];
             }
         }
 
@@ -335,34 +339,30 @@ class MapsV2Controller extends Controller
             $voteCounts[(int)$row['map_list_id']] = (int)$row['cnt'];
         }
 
-        if (!Yii::$app->user->isGuest) {
-            $votes = MapListVote::find()
-                ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
-                ->with('user')
-                ->asArray()
-                ->all();
+        $votes = MapListVote::find()
+            ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
+            ->with('user')
+            ->all();
 
-            foreach ($votes as $vote) {
-                $userId = (int)$vote['user_id'];
-                $mapListId = (int)$vote['map_list_id'];
-                
-                if (!isset($userVotes[$mapListId])) {
-                    $userVotes[$mapListId] = [];
-                }
-                
-                $userData = $vote['user'] ?? null;
-                if ($userData) {
-                    $userVotes[$mapListId][] = [
-                        'id' => $userId,
-                        'username' => $userData['username'] ?? '',
-                        'avatar' => $userData['avatar'] ?? '',
-                        'created_at' => $vote['created_at'] ?? null,
-                    ];
-                }
-                
-                if ($userId === (int)Yii::$app->user->id) {
-                    $userVotedMapIds[] = $mapListId;
-                }
+        foreach ($votes as $vote) {
+            $userId = (int)$vote->user_id;
+            $mapListId = (int)$vote->map_list_id;
+            
+            if (!isset($userVotes[$mapListId])) {
+                $userVotes[$mapListId] = [];
+            }
+            
+            if ($vote->user) {
+                $userVotes[$mapListId][] = [
+                    'id' => $userId,
+                    'username' => $vote->user->username ?? '',
+                    'avatar' => $vote->user->getAvatar(),
+                    'created_at' => $vote->created_at ?? null,
+                ];
+            }
+            
+            if (!Yii::$app->user->isGuest && $userId === (int)Yii::$app->user->id) {
+                $userVotedMapIds[] = $mapListId;
             }
         }
 
@@ -500,9 +500,13 @@ class MapsV2Controller extends Controller
                 ])
                 ->one();
 
+            $voteAdded = false;
+            $voteRemoved = false;
+
             if ($existingVote) {
                 // Удаляем голос (отмена) - можно снять голос без проверки playtime
                 if ($existingVote->delete()) {
+                    $voteRemoved = true;
                     Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос снят!'));
                 }
             } else {
@@ -523,6 +527,7 @@ class MapsV2Controller extends Controller
                     ]);
 
                     if ($vote->save()) {
+                        $voteAdded = true;
                         Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос успешно учтен!'));
                     }
                 }
@@ -593,9 +598,24 @@ class MapsV2Controller extends Controller
                         'user_id' => Yii::$app->user->id,
                     ])
                     ->column();
-                if ($userVotedMapIds) {
+                if (!empty($userVotedMapIds)) {
                     $userVotedMapIds = array_map('intval', $userVotedMapIds);
+                } else {
+                    $userVotedMapIds = [];
                 }
+                
+                // Гарантируем, что после голосования ID карты включен в список
+                if ($voteAdded && !in_array($map->id, $userVotedMapIds)) {
+                    $userVotedMapIds[] = (int)$map->id;
+                }
+                
+                // Гарантируем, что после снятия голоса ID карты удален из списка
+                if ($voteRemoved && in_array($map->id, $userVotedMapIds)) {
+                    $userVotedMapIds = array_diff($userVotedMapIds, [(int)$map->id]);
+                    $userVotedMapIds = array_values($userVotedMapIds); // Переиндексируем массив
+                }
+            } else {
+                $userVotedMapIds = [];
             }
         }
 
