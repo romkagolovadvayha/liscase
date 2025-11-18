@@ -428,6 +428,13 @@
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
 }
 
+// Добавляем размер modal-xxl больше чем modal-xl
+@media (min-width: 1200px) {
+  .modal-xxl {
+    --bs-modal-width: 1400px;
+  }
+}
+
 .mapsV2__modal-close {
   position: absolute;
   top: 16px;
@@ -464,33 +471,32 @@ html.mapsV2__modal-open {
 .mapsV2__detail {
   width: 100%;
   max-width: 100%;
-  min-width: 0; // Позволяет grid элементам сжиматься ниже их минимального размера контента
+  min-width: 0;
   box-sizing: border-box;
-  padding: 28px;
+  padding: 20px;
   display: grid;
-  grid-template-columns: minmax(0, minmax(260px, 320px)) minmax(0, 1fr); // minmax(0, ...) позволяет колонкам сжиматься
-  gap: 28px;
-}
-
-.mapsV2__detail-visual {
-  min-width: 0; // Позволяет элементу сжиматься в grid
-  max-width: 100%;
-}
-
-.mapsV2__detail-body {
-  min-width: 0; // Позволяет элементу сжиматься в grid
-  max-width: 100%;
-  display: flex;
-  flex-direction: column;
+  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
   gap: 24px;
 }
 
-.mapsV2__detail-header {
+.mapsV2__detail-visual {
+  min-width: 0;
+  max-width: 100%;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mapsV2__detail-body {
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  justify-content: space-between;
-  align-items: center;
+}
+
+.mapsV2__detail-header {
+  margin-bottom: 4px;
 }
 
 .mapsV2__detail-type {
@@ -509,12 +515,13 @@ html.mapsV2__modal-open {
 
 .mapsV2__vote-button,
 .mapsV2__download-button,
-.mapsV2__rustmaps-button,
-.mapsV2__open-full {
+.mapsV2__rustmaps-button {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
   border-radius: var(--button-secondary-radius);
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.05);
@@ -523,14 +530,14 @@ html.mapsV2__modal-open {
   transition: var(--transition-all);
 }
 
-.mapsV2__open-full {
-  cursor: pointer;
+.mapsV2__detail-links .mapsV2__download-button,
+.mapsV2__detail-links .mapsV2__rustmaps-button {
+  width: 100%;
 }
 
 .mapsV2__vote-button:hover,
 .mapsV2__download-button:hover,
-.mapsV2__rustmaps-button:hover,
-.mapsV2__open-full:hover {
+.mapsV2__rustmaps-button:hover {
   border-color: var(--primary-colors-secondary);
 }
 
@@ -546,8 +553,7 @@ html.mapsV2__modal-open {
   pointer-events: none;
 }
 
-.mapsV2__download-button.is-hidden,
-.mapsV2__open-full.is-hidden {
+.mapsV2__download-button.is-hidden {
   display: none;
 }
 
@@ -556,7 +562,8 @@ html.mapsV2__modal-open {
   overflow: hidden;
   border-radius: var(--card-radius);
   background: rgba(0, 0, 0, 0.25);
-  min-height: 260px;
+  min-height: 200px;
+  width: 100%;
 }
 
 .mapsV2__preview.is-clickable {
@@ -600,16 +607,21 @@ html.mapsV2__modal-open {
 .mapsV2__navigation {
   display: flex;
   justify-content: center;
-  gap: 12px;
-  margin-top: 16px;
+  gap: 8px;
+}
+
+.mapsV2__detail-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .mapsV2__nav {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.05);
@@ -629,72 +641,77 @@ html.mapsV2__modal-open {
   }
   
   i {
-    font-size: 16px;
+    font-size: 14px;
   }
 }
 
 .mapsV2__stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 10px;
 }
 
 .mapsV2__stat {
   background: var(--background-teritiary);
   border-radius: var(--card-radius);
-  padding: 14px 16px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .mapsV2__stat-label {
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-secondary);
 }
 
 .mapsV2__stat-value {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .mapsV2__biomes,
-.mapsV2__monuments,
-.mapsV2__voters {
+.mapsV2__monuments {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
 }
 
 .mapsV2__biomes-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 8px;
 }
 
 .mapsV2__biome {
   background: var(--background-teritiary);
   border-radius: var(--button-secondary-radius);
-  padding: 12px 14px;
+  padding: 8px 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .mapsV2__monuments-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .mapsV2__monument-chip {
   background: var(--background-teritiary);
   border-radius: var(--button-secondary-radius);
-  padding: 6px 10px;
-  font-size: 12px;
+  padding: 4px 8px;
+  font-size: 11px;
   border: 1px solid transparent;
   cursor: pointer;
   transition: var(--transition-all);
@@ -710,22 +727,36 @@ html.mapsV2__modal-open {
   color: var(--primary-colors-light);
 }
 
+.mapsV2__voters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+  }
+}
+
 .mapsV2__voters-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .mapsV2__voters-refresh {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
   border-radius: var(--button-secondary-radius);
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.05);
   transition: var(--transition-all);
+  cursor: pointer;
 }
 
 .mapsV2__voters-refresh:hover {
@@ -735,43 +766,43 @@ html.mapsV2__modal-open {
 .mapsV2__voters-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 220px;
+  gap: 6px;
+  max-height: 200px;
   overflow-y: auto;
-  padding-right: 6px;
+  padding-right: 4px;
 }
 
 .mapsV2__voter {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 6px 10px;
   border-radius: var(--card-radius);
   background: var(--background-teritiary);
 }
 
 .mapsV2__voter img {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .mapsV2__voter strong {
   display: block;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .mapsV2__voter span {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
 }
 
 .mapsV2__voters-empty {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text-secondary);
   text-align: center;
-  padding: 16px;
+  padding: 12px;
 }
 
 .mapsV2__lightbox {
@@ -829,24 +860,15 @@ html.mapsV2__modal-open {
 @media (max-width: 1180px) {
   .mapsV2__detail {
     grid-template-columns: 1fr;
+    padding: 16px;
   }
 
-  .mapsV2__detail-header {
-    flex-direction: column;
-    align-items: flex-start;
+  .mapsV2__detail-visual {
+    order: 2;
   }
 
-  .mapsV2__detail-actions {
-    width: 100%;
-    flex-direction: column;
-  }
-
-  .mapsV2__detail-actions .mapsV2__vote-button,
-  .mapsV2__detail-actions .mapsV2__download-button,
-  .mapsV2__detail-actions .mapsV2__rustmaps-button,
-  .mapsV2__detail-actions .mapsV2__open-full {
-    width: 100%;
-    justify-content: center;
+  .mapsV2__detail-body {
+    order: 1;
   }
 
   .mapsV2__modal {

@@ -30,6 +30,8 @@ function openModal(modalId, size, title, href, topImage, contentOverflow, topCla
     var modal = new bootstrap.Modal(document.getElementById(modalId), {});
     mQ.removeClass('modal-lg');
     mQ.removeClass('modal-sm');
+    mQ.removeClass('modal-xl');
+    mQ.removeClass('modal-xxl');
     var modalEl = document.getElementById('modal-dialog');
     $(modalEl).find('.modal-backdrop-image').removeClass('active');
     $(modalEl).find('.modal-content').css('overflow', 'hidden');

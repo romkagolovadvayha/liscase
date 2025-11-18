@@ -19,21 +19,22 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
         <?php
         $imageSrc = $detail['imageIconUrl'] ?? $detail['rawImageUrl'] ?? $detail['image'] ?? $detail['imagePreview'] ?? '';
         $previewSrc = $detail['imagePreview'] ?? $detail['image'] ?? '';
-        $isClickable = !empty($detail['imageIconUrl']) || !empty($detail['rawImageUrl']) || !empty($detail['image']);
+        $hasFullImage = !empty($detail['imageIconUrl']) || !empty($detail['rawImageUrl']) || !empty($detail['image']);
         ?>
-        <div class="mapsV2__preview<?= $isClickable ? ' is-clickable' : '' ?>"
+        <div class="mapsV2__preview<?= $hasFullImage ? ' is-clickable' : '' ?>"
              data-role="preview"
              data-src="<?= Html::encode($imageSrc) ?>">
             <img src="<?= Html::encode($previewSrc) ?>" alt="<?= Html::encode($detail['hash'] ?? '') ?>" data-role="preview-image">
             <div class="mapsV2__markers" data-role="markers"></div>
         </div>
+        
         <div class="mapsV2__navigation">
             <?php if ($prevMap): ?>
                 <a href="/maps-v2/detail/<?= $prevMap->id ?>?server_id=<?= $server->id ?>"
                    class="mapsV2__nav mapsV2__nav--prev show-modal-link"
                    data-href="/maps-v2/detail/<?= $prevMap->id ?>?server_id=<?= $server->id ?>"
                    data-target="modal-dialog"
-                   data-size="modal-lg"
+                   data-size="modal-xxl"
                    data-content-overflow="unset"
                    aria-label="<?= Yii::t('common', 'Предыдущая карта') ?>">
                     <i class="fas fa-chevron-left"></i>
@@ -49,7 +50,7 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
                    class="mapsV2__nav mapsV2__nav--next show-modal-link"
                    data-href="/maps-v2/detail/<?= $nextMap->id ?>?server_id=<?= $server->id ?>"
                    data-target="modal-dialog"
-                   data-size="modal-lg"
+                   data-size="modal-xxl"
                    data-content-overflow="unset"
                    aria-label="<?= Yii::t('common', 'Следующая карта') ?>">
                     <i class="fas fa-chevron-right"></i>
@@ -60,46 +61,32 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
                 </button>
             <?php endif; ?>
         </div>
+        
+        <div class="mapsV2__detail-links">
+            <?php if (!empty($detail['rustMapsUrl'])): ?>
+                <a class="mapsV2__rustmaps-button"
+                   href="<?= Html::encode($detail['rustMapsUrl']) ?>"
+                   target="_blank"
+                   rel="nofollow noopener">
+                    <i class="fas fa-external-link-alt"></i>
+                    <?= Yii::t('common', 'RustMaps') ?>
+                </a>
+            <?php endif; ?>
+            <?php if (!empty($detail['downloadUrl'])): ?>
+                <a class="mapsV2__download-button"
+                   href="<?= Html::encode($detail['downloadUrl']) ?>"
+                   target="_blank"
+                   rel="nofollow noopener">
+                    <i class="fas fa-download"></i>
+                    <?= Yii::t('common', 'Скачать карту') ?>
+                </a>
+            <?php endif; ?>
+        </div>
     </div>
 
     <div class="mapsV2__detail-body" data-map-detail-id="<?= $detail['id'] ?>">
         <header class="mapsV2__detail-header">
-            <div>
-                <p class="mapsV2__detail-type" data-role="detail-type"><?= Html::encode($detail['type'] ?? 'Procedural') ?></p>
-            </div>
-            <div class="mapsV2__detail-actions">
-                <?php if (!empty($detail['rustMapsUrl'])): ?>
-                    <a class="mapsV2__rustmaps-button"
-                       href="<?= Html::encode($detail['rustMapsUrl']) ?>"
-                       target="_blank"
-                       rel="nofollow noopener">
-                        <i class="fas fa-external-link-alt"></i>
-                        <?= Yii::t('common', 'RustMaps') ?>
-                    </a>
-                <?php endif; ?>
-                <?php if (!empty($detail['downloadUrl'])): ?>
-                    <a class="mapsV2__download-button"
-                       href="<?= Html::encode($detail['downloadUrl']) ?>"
-                       target="_blank"
-                       rel="nofollow noopener">
-                        <i class="fas fa-download"></i>
-                        <?= Yii::t('common', 'Скачать карту') ?>
-                    </a>
-                <?php endif; ?>
-                <?php
-                $hasFullImage = !empty($detail['imageIconUrl']) || !empty($detail['rawImageUrl']) || !empty($detail['image']);
-                $fullImageSrc = $detail['imageIconUrl'] ?? $detail['rawImageUrl'] ?? $detail['image'] ?? $detail['imagePreview'] ?? '';
-                ?>
-                <?php if ($hasFullImage): ?>
-                    <button class="mapsV2__open-full"
-                            type="button"
-                            data-action="open-fullscreen"
-                            data-src="<?= Html::encode($fullImageSrc) ?>">
-                        <i class="fas fa-expand"></i>
-                        <span><?= Yii::t('common', 'Открыть полностью') ?></span>
-                    </button>
-                <?php endif; ?>
-            </div>
+            <p class="mapsV2__detail-type" data-role="detail-type"><?= Html::encode($detail['type'] ?? 'Procedural') ?></p>
         </header>
 
         <div class="mapsV2__stats-grid">

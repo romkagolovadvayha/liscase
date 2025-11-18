@@ -37,7 +37,7 @@ $serverId = (int)$server->id;
            class="mapsV2__card-image show-modal-link"
            data-href="/maps-v2/detail/<?= $map->id ?>?server_id=<?= $serverId ?>"
            data-target="modal-dialog"
-           data-size="modal-lg"
+           data-size="modal-xxl"
            data-content-overflow="unset"
            aria-label="<?= Yii::t('common', 'Открыть подробную информацию') ?>">
             <img src="<?= Html::encode($card['imagePreview'] ?? $card['image'] ?? '') ?>" alt="<?= Yii::t('common', 'Превью карты') ?>">
