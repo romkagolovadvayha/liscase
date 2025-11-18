@@ -1,6 +1,7 @@
 <?php
 
 use yii\widgets\Pjax;
+use yii\bootstrap5\ActiveForm;
 use frontend\widgets\Alert;
 use yii\helpers\Html;
 use yii\helpers\Json;
@@ -103,19 +104,40 @@ if ($hasMaps && $currentMap) {
         <div class="mapsV2__layout">
             <?php
             $pjaxId = 'maps-v2-cards-pjax';
+            
+            $form = ActiveForm::begin([
+                'id' => 'vote-form',
+                'action' => '/maps-v2/vote',
+                'method' => 'post',
+                'enableClientValidation' => false,
+                'enableAjaxValidation' => false,
+                'options' => [
+                    'data-pjax' => 1,
+                ],
+            ]);
+            ?>
+            
+            <?= Html::hiddenInput('server_id', $server->id) ?>
+            
+            <?php
             Pjax::begin([
                 'id' => $pjaxId,
                 'enablePushState' => false,
                 'timeout' => 5000
             ]);
             ?>
+            
             <?= Alert::widget() ?>
+            
             <div class="mapsV2__cards" data-role="map-list">
                 <?php foreach ($maps as $map): ?>
                     <?= $cardsHtml[$map->id] ?? '' ?>
                 <?php endforeach; ?>
             </div>
+            
             <?php Pjax::end(); ?>
+            
+            <?php ActiveForm::end(); ?>
         </div>
     <?php endif; ?>
 
