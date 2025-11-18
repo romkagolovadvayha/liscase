@@ -410,6 +410,20 @@
                 console.log('maps-v2.js: markers container found', markersContainer);
                 console.log('maps-v2.js: markers container HTML', markersContainer.innerHTML);
                 console.log('maps-v2.js: markers container children', markersContainer.children.length);
+                
+                // Читаем отладочные data-атрибуты
+                const debugSize = markersContainer.getAttribute('data-debug-size');
+                const debugMonumentsCount = markersContainer.getAttribute('data-debug-monuments-count');
+                console.log('maps-v2.js: DEBUG - mapSize=', debugSize, ', monumentsCount=', debugMonumentsCount);
+                
+                // Пытаемся прочитать отладочный комментарий из HTML
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = markersContainer.innerHTML;
+                const commentNode = Array.from(tempDiv.childNodes).find(node => node.nodeType === 8); // 8 = COMMENT_NODE
+                if (commentNode) {
+                    console.log('maps-v2.js: DEBUG comment found:', commentNode.textContent);
+                }
+                
                 const markers = markersContainer.querySelectorAll('.mapsV2__marker');
                 console.log('maps-v2.js: Found markers', markers.length, markers);
                 markers.forEach((marker, i) => {

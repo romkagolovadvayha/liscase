@@ -30,15 +30,22 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
              data-role="preview"
              data-src="<?= Html::encode($imageSrc) ?>">
             <img src="<?= Html::encode($previewSrc) ?>" alt="<?= Html::encode($detail['hash'] ?? '') ?>" data-role="preview-image">
-            <div class="mapsV2__markers" data-role="markers">
+            <div class="mapsV2__markers" data-role="markers" data-debug-size="<?= (int)($detail['size'] ?? 0) ?>" data-debug-monuments-count="<?= count($detail['monuments'] ?? []) ?>">
                 <?php
                 $mapSize = (int)($detail['size'] ?? 0);
                 $monumentsData = $detail['monuments'] ?? [];
                 
-                // Временный отладочный вывод
+                // Временный отладочный вывод (также в data-атрибуты для JS)
                 echo "<!-- DEBUG: mapSize=" . $mapSize . ", monumentsCount=" . count($monumentsData);
                 if (!empty($monumentsData)) {
-                    echo ", firstMonument=" . print_r($monumentsData[0] ?? null, true);
+                    $firstMon = $monumentsData[0] ?? null;
+                    if ($firstMon) {
+                        echo ", firstMonumentType=" . htmlspecialchars($firstMon['type'] ?? 'N/A');
+                        echo ", firstMonumentCoords=" . htmlspecialchars(json_encode($firstMon['coordinates'] ?? null));
+                    }
+                } else {
+                    echo ", monumentsDataIsEmpty=true";
+                    echo ", detailKeys=" . htmlspecialchars(implode(',', array_keys($detail ?? [])));
                 }
                 echo " -->";
                 
