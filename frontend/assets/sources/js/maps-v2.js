@@ -377,52 +377,54 @@
     }
     
     // Делегирование событий для подсветки монументов при наведении на чипы
+    // Используем простую логику через делегирование на контейнере монументов
     document.addEventListener('mouseover', (event) => {
-        // Простая проверка: если target - не элемент, берем родителя
         let target = event.target;
         if (!target || target.nodeType !== 1) {
             target = target && target.parentElement;
         }
         if (!target || !target.closest) return;
         
-        // Обрабатываем только наведение на чипы монументов
         const chip = target.closest('.mapsV2__monument-chip');
         if (chip) {
             const relatedTarget = event.relatedTarget;
-            let validRelated = relatedTarget;
+            let relatedValid = relatedTarget;
             if (relatedTarget && relatedTarget.nodeType !== 1) {
-                validRelated = relatedTarget.parentElement;
+                relatedValid = relatedTarget.parentElement;
             }
-            // Проверяем, что это действительно вход на чип (не всплытие от дочернего элемента)
-            if (!relatedTarget || !validRelated || !chip.contains(validRelated)) {
-                handleMonumentHover(event, true);
+            // Показываем маркер только если действительно вошли на чип
+            if (!relatedTarget || !relatedValid || !chip.contains(relatedValid)) {
+                const index = parseInt(chip.dataset.monumentIndex, 10);
+                if (!isNaN(index) && index >= 0) {
+                    highlightMonument(index);
+                }
             }
         }
-    }, true);
+    });
 
     document.addEventListener('mouseout', (event) => {
-        // Простая проверка: если target - не элемент, берем родителя
         let target = event.target;
         if (!target || target.nodeType !== 1) {
             target = target && target.parentElement;
         }
         if (!target || !target.closest) return;
         
-        // Обрабатываем только уход с чипов монументов
         const chip = target.closest('.mapsV2__monument-chip');
         if (chip) {
             const relatedTarget = event.relatedTarget;
-            let validRelated = relatedTarget;
+            let relatedValid = relatedTarget;
             if (relatedTarget && relatedTarget.nodeType !== 1) {
-                validRelated = relatedTarget.parentElement;
+                relatedValid = relatedTarget.parentElement;
             }
             // Скрываем маркер только если действительно ушли с чипа
-            const relatedChip = validRelated ? validRelated.closest('.mapsV2__monument-chip') : null;
-            if (!relatedTarget || !validRelated || (!chip.contains(validRelated) && !relatedChip)) {
-                handleMonumentHover(event, false);
+            if (!relatedTarget || !relatedValid || !chip.contains(relatedValid)) {
+                const relatedChip = relatedValid ? relatedValid.closest('.mapsV2__monument-chip') : null;
+                if (!relatedChip) {
+                    highlightMonument(null);
+                }
             }
         }
-    }, true);
+    });
 
     // Инициализация маркеров и обновление состояния кнопки голосования после загрузки модалки
     function updateVoteButtonState() {
@@ -465,20 +467,38 @@
         if (typeof $ !== 'undefined' && typeof $.pjax !== 'undefined') {
             const detailEl = document.querySelector('[data-role="map-detail"]');
             if (detailEl) {
-                const votersSection = detailEl.querySelector('[data-role="voters"]');
-                if (votersSection) {
-                    const pjaxContainer = votersSection.closest('[id^="maps-v2-voters-pjax-"]');
-                    if (pjaxContainer) {
-                        // Переинициализируем Pjax для контейнера voters
-                        $(pjaxContainer).pjax({
-                            selector: 'form[data-pjax]',
-                            container: '#' + pjaxContainer.id,
-                            push: false,
-                            replace: false,
-                            timeout: 5000
+                // Находим все Pjax контейнеры внутри модалки
+                const pjaxContainers = detailEl.querySelectorAll('[id^="maps-v2-voters-pjax-"]');
+                pjaxContainers.forEach((container) => {
+                    // Удаляем старые обработчики если есть
+                    $(container).off('pjax:submit');
+                    
+                    // Инициализируем Pjax для всех форм внутри контейнера
+                    const containerId = container.id || container.getAttribute('id');
+                    if (containerId) {
+                        $(container).on('submit', 'form[data-pjax]', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const form = $(this);
+                            const formAction = form.attr('action') || form.attr('href');
+                            const formMethod = (form.attr('method') || 'GET').toUpperCase();
+                            const formData = formMethod === 'POST' ? form.serialize() : null;
+                            
+                            $.pjax({
+                                type: formMethod,
+                                url: formAction,
+                                container: '#' + containerId,
+                                data: formData,
+                                push: false,
+                                replace: false,
+                                timeout: 5000,
+                                scrollTo: false
+                            });
+                            
+                            return false;
                         });
                     }
-                }
+                });
             }
         }
     }
@@ -637,16 +657,34 @@
         $(document).on('pjax:success', '[id^="maps-v2-voters-pjax-"]', function() {
             updateVoteButtonState();
             
-            // Переинициализируем Pjax для формы после обновления контейнера
+            // Переинициализируем обработчик формы после обновления
             const pjaxContainer = this;
-            if (pjaxContainer && typeof $.pjax !== 'undefined') {
-                $(pjaxContainer).pjax({
-                    selector: 'form[data-pjax]',
-                    container: '#' + pjaxContainer.id,
-                    push: false,
-                    replace: false,
-                    timeout: 5000
-                });
+            if (pjaxContainer) {
+                const containerId = pjaxContainer.id || pjaxContainer.getAttribute('id');
+                if (containerId) {
+                    $(pjaxContainer).off('submit', 'form[data-pjax]');
+                    $(pjaxContainer).on('submit', 'form[data-pjax]', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const form = $(this);
+                        const formAction = form.attr('action') || form.attr('href');
+                        const formMethod = (form.attr('method') || 'GET').toUpperCase();
+                        const formData = formMethod === 'POST' ? form.serialize() : null;
+                        
+                        $.pjax({
+                            type: formMethod,
+                            url: formAction,
+                            container: '#' + containerId,
+                            data: formData,
+                            push: false,
+                            replace: false,
+                            timeout: 5000,
+                            scrollTo: false
+                        });
+                        
+                        return false;
+                    });
+                }
             }
             
             // После обновления voters обновляем основной список карт для синхронизации счетчиков
@@ -666,20 +704,6 @@
                         });
                     }
                 }
-            }
-        });
-
-        // Переинициализируем Pjax после завершения обновления voters
-        $(document).on('pjax:end', '[id^="maps-v2-voters-pjax-"]', function() {
-            const pjaxContainer = this;
-            if (pjaxContainer && typeof $.pjax !== 'undefined') {
-                $(pjaxContainer).pjax({
-                    selector: 'form[data-pjax]',
-                    container: '#' + pjaxContainer.id,
-                    push: false,
-                    replace: false,
-                    timeout: 5000
-                });
             }
         });
 
