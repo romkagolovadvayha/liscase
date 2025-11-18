@@ -1,8 +1,13 @@
 (function () {
+    console.log('maps-v2.js: Script started');
+    
     const root = document.getElementById('mapsV2Root');
     if (!root) {
+        console.warn('maps-v2.js: mapsV2Root element not found, script stopped');
         return;
     }
+    
+    console.log('maps-v2.js: Root element found', root);
 
     const serverId = parseInt(root.dataset.serverId, 10);
     const voteUrlTemplate = root.dataset.voteUrl || '';
@@ -301,21 +306,34 @@
     });
 
     // Простая логика: при наведении на чип монумента показываем маркер с таким же индексом
+    console.log('maps-v2.js: Setting up monument hover handlers');
+    
     document.addEventListener('mouseenter', function(event) {
         const chip = event.target.closest('.mapsV2__monument-chip');
         if (!chip) return;
         
         const index = chip.dataset.monumentIndex;
-        if (!index) return;
+        if (!index) {
+            console.warn('maps-v2.js: Monument chip found but no index', chip);
+            return;
+        }
+        
+        console.log('maps-v2.js: mouseenter on monument chip', { index, chip });
         
         const detailEl = document.querySelector('[data-role="map-detail"]');
-        if (!detailEl) return;
+        if (!detailEl) {
+            console.warn('maps-v2.js: map-detail element not found');
+            return;
+        }
         
         // Находим маркер с таким же индексом и показываем его
         const marker = detailEl.querySelector('.mapsV2__marker[data-monument-index="' + index + '"]');
         if (marker) {
+            console.log('maps-v2.js: Showing marker', { index, marker });
             marker.style.display = 'block';
             chip.classList.add('is-active');
+        } else {
+            console.warn('maps-v2.js: Marker not found for index', index);
         }
     }, true);
 
@@ -326,12 +344,15 @@
         const index = chip.dataset.monumentIndex;
         if (!index) return;
         
+        console.log('maps-v2.js: mouseleave on monument chip', { index, chip });
+        
         const detailEl = document.querySelector('[data-role="map-detail"]');
         if (!detailEl) return;
         
         // Скрываем маркер с таким же индексом
         const marker = detailEl.querySelector('.mapsV2__marker[data-monument-index="' + index + '"]');
         if (marker) {
+            console.log('maps-v2.js: Hiding marker', { index, marker });
             marker.style.display = 'none';
             chip.classList.remove('is-active');
         }
@@ -364,13 +385,20 @@
     }
 
     function initializeModalContent() {
+        console.log('maps-v2.js: initializeModalContent called');
+        
         // Скрываем все маркеры по умолчанию (они показываются только при наведении)
         const detailEl = document.querySelector('[data-role="map-detail"]');
         if (detailEl) {
+            console.log('maps-v2.js: map-detail found, hiding markers', detailEl);
             const markers = detailEl.querySelectorAll('.mapsV2__marker');
-            markers.forEach((marker) => {
+            console.log('maps-v2.js: Found markers', markers.length);
+            markers.forEach((marker, i) => {
                 marker.style.display = 'none';
+                console.log('maps-v2.js: Hidden marker', i, marker.dataset.monumentIndex);
             });
+        } else {
+            console.warn('maps-v2.js: map-detail element not found in initializeModalContent');
         }
         updateVoteButtonState();
         
@@ -415,29 +443,47 @@
     }
 
     // Инициализация после загрузки модалки
+    console.log('maps-v2.js: Setting up modal event handlers, jQuery available:', typeof $ !== 'undefined');
+    
     if (typeof $ !== 'undefined') {
         $(document).on('modal.content.loaded', '#modal-dialog', function() {
+            console.log('maps-v2.js: modal.content.loaded event fired');
             const detailEl = this.querySelector('[data-role="map-detail"]');
             if (detailEl) {
+                console.log('maps-v2.js: map-detail found in modal.content.loaded, initializing...');
                 setTimeout(initializeModalContent, 100);
+            } else {
+                console.warn('maps-v2.js: map-detail not found in modal.content.loaded');
             }
         });
 
         $(document).on('shown.bs.modal', '#modal-dialog', function() {
+            console.log('maps-v2.js: shown.bs.modal event fired');
             const detailEl = this.querySelector('[data-role="map-detail"]');
             if (detailEl) {
+                console.log('maps-v2.js: map-detail found in shown.bs.modal, initializing...');
                 setTimeout(initializeModalContent, 50);
+            } else {
+                console.warn('maps-v2.js: map-detail not found in shown.bs.modal');
             }
         });
     } else {
+        console.warn('maps-v2.js: jQuery not available, using native events');
         const modalEl = document.getElementById('modal-dialog');
         if (modalEl) {
+            console.log('maps-v2.js: modal-dialog element found, adding native event listener');
             modalEl.addEventListener('shown.bs.modal', function() {
+                console.log('maps-v2.js: shown.bs.modal (native) event fired');
                 const detailEl = this.querySelector('[data-role="map-detail"]');
                 if (detailEl) {
+                    console.log('maps-v2.js: map-detail found in shown.bs.modal (native), initializing...');
                     setTimeout(initializeModalContent, 50);
+                } else {
+                    console.warn('maps-v2.js: map-detail not found in shown.bs.modal (native)');
                 }
             });
+        } else {
+            console.warn('maps-v2.js: modal-dialog element not found');
         }
     }
 
@@ -545,7 +591,7 @@
         }
 
         // Обновляем карточки
-        updateCards();
+    updateCards();
         
         // Обновляем состояние кнопки голосования в модалке, если она открыта
         updateVoteButtonState();
@@ -647,7 +693,9 @@
     }
 
     // Initial render
+    console.log('maps-v2.js: Initial render, updating cards');
     updateCards();
+    console.log('maps-v2.js: Initialization complete');
 
     function safeParseJSON(value, fallback) {
         if (!value) {
