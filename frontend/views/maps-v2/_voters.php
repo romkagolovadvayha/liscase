@@ -1,0 +1,61 @@
+<?php
+
+use yii\widgets\Pjax;
+use yii\bootstrap5\ActiveForm;
+use yii\helpers\Html;
+
+/** @var array $voters */
+/** @var int $mapId */
+/** @var int $serverId */
+/** @var bool $isVoted */
+
+?>
+<?php Pjax::begin([
+    'id' => 'maps-v2-voters-pjax-' . $mapId,
+    'enablePushState' => false,
+    'timeout' => 5000
+]); ?>
+
+<section class="mapsV2__voters" data-role="voters">
+    <div class="mapsV2__voters-header">
+        <h3><?= Yii::t('common', 'Кто уже проголосовал') ?></h3>
+        <?php $form = ActiveForm::begin([
+            'id' => 'vote-form-detail-' . $mapId,
+            'action' => '/maps-v2/vote',
+            'method' => 'post',
+            'enableClientValidation' => false,
+            'enableAjaxValidation' => false,
+            'options' => [
+                'data-pjax' => 1,
+                'data-pjax-container' => '#maps-v2-cards-pjax',
+            ],
+        ]); ?>
+        <?= Html::hiddenInput('server_id', $serverId) ?>
+        <?= Html::hiddenInput('map_id', $mapId) ?>
+        <button type="submit" class="mapsV2__vote-button<?= $isVoted ? ' is-active' : '' ?>" data-action="vote-from-detail" data-map-id="<?= $mapId ?>">
+            <i class="<?= $isVoted ? 'fas' : 'far' ?> fa-heart"></i>
+            <?= Yii::t('common', 'Проголосовать') ?>
+        </button>
+        <?php ActiveForm::end(); ?>
+    </div>
+    <div class="mapsV2__voters-list" data-role="voters-list">
+        <?php if (!empty($voters)): ?>
+            <?php foreach ($voters as $voter): ?>
+                <div class="mapsV2__voter">
+                    <img src="<?= Html::encode($voter['avatar'] ?? '') ?>" alt="<?= Html::encode($voter['username'] ?? '') ?>">
+                    <div>
+                        <strong><?= Html::encode($voter['username'] ?? '') ?></strong>
+                        <span><?= !empty($voter['created_at']) ? date('d.m H:i', strtotime($voter['created_at'])) : '' ?></span>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <p class="mapsV2__voters-empty">
+                <?= Yii::t('common', 'Будьте первым, кто проголосует за эту карту') ?>
+            </p>
+        <?php endif; ?>
+    </div>
+</section>
+
+<?php Pjax::end(); ?>
+

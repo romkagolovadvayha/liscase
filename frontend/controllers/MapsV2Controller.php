@@ -776,6 +776,11 @@ class MapsV2Controller extends Controller
 
     public function actionVoters($id, $server_id)
     {
+        // Проверяем, это Pjax запрос или обычный JSON
+        if (Yii::$app->request->isPjax) {
+            return $this->actionVotersPjax($id, $server_id);
+        }
+
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         $map = MapList::findOne($id);
@@ -820,6 +825,62 @@ class MapsV2Controller extends Controller
                 ])
                 ->count(),
         ];
+    }
+
+    public function actionVotersPjax($id, $server_id)
+    {
+        $map = MapList::findOne($id);
+        if (!$map) {
+            throw new NotFoundHttpException(Yii::t('common', 'Карта не найдена'));
+        }
+
+        $server = Servers::findOne($server_id);
+        if (!$server) {
+            throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден'));
+        }
+
+        $votes = MapListVote::find()
+            ->where([
+                'map_list_id' => $map->id,
+                'server_id' => $server->id,
+            ])
+            ->with('user')
+            ->orderBy(['created_at' => SORT_DESC])
+            ->all();
+
+        $voters = [];
+        foreach ($votes as $vote) {
+            if (!$vote->user) {
+                continue;
+            }
+            $voters[] = [
+                'id' => $vote->user->id,
+                'username' => $vote->user->username,
+                'avatar' => $vote->user->getAvatar(),
+                'created_at' => $vote->created_at,
+            ];
+        }
+
+        // Проверяем, проголосовал ли текущий пользователь
+        $userVotedMapIds = [];
+        if (!Yii::$app->user->isGuest) {
+            $userVotes = MapListVote::find()
+                ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
+                ->andWhere(['user_id' => Yii::$app->user->id])
+                ->all();
+            foreach ($userVotes as $vote) {
+                $userVotedMapIds[] = $vote->map_list_id;
+            }
+        }
+
+        $isVoted = in_array($map->id, $userVotedMapIds);
+
+        return $this->renderPartial('_voters', [
+            'voters' => $voters,
+            'mapId' => $map->id,
+            'serverId' => $server->id,
+            'isVoted' => $isVoted,
+        ]);
     }
 
     private function registerSeo(Servers $server): void

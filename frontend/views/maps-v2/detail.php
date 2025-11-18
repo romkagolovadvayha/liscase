@@ -18,6 +18,7 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
          data-role="map-detail"
          data-map-detail-id="<?= $detail['id'] ?>"
          data-map-size="<?= $detail['size'] ?? '' ?>"
+         data-map-server-id="<?= $server->id ?>"
          data-map-monuments='<?= Html::encode(json_encode($detail['monuments'] ?? [])) ?>'>
     <div class="mapsV2__detail-visual">
         <?php
@@ -149,32 +150,12 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
             </div>
         <?php endif; ?>
 
-        <section class="mapsV2__voters" data-role="voters">
-            <div class="mapsV2__voters-header">
-                <h3><?= Yii::t('common', 'Кто уже проголосовал') ?></h3>
-                <button type="button" class="mapsV2__vote-button<?= $isVoted ? ' is-active' : '' ?>" data-action="vote-from-detail" data-map-id="<?= $detail['id'] ?>">
-                    <i class="<?= $isVoted ? 'fas' : 'far' ?> fa-heart"></i>
-                    <?= Yii::t('common', 'Проголосовать') ?>
-                </button>
-            </div>
-            <div class="mapsV2__voters-list" data-role="voters-list">
-                <?php if (!empty($detail['voters'])): ?>
-                    <?php foreach ($detail['voters'] as $voter): ?>
-                        <div class="mapsV2__voter">
-                            <img src="<?= Html::encode($voter['avatar'] ?? '') ?>" alt="<?= Html::encode($voter['username'] ?? '') ?>">
-                            <div>
-                                <strong><?= Html::encode($voter['username'] ?? '') ?></strong>
-                                <span><?= !empty($voter['created_at']) ? date('d.m H:i', strtotime($voter['created_at'])) : '' ?></span>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <p class="mapsV2__voters-empty">
-                        <?= Yii::t('common', 'Будьте первым, кто проголосует за эту карту') ?>
-                    </p>
-                <?php endif; ?>
-            </div>
-        </section>
+        <?= $this->render('_voters', [
+            'voters' => $detail['voters'] ?? [],
+            'mapId' => $detail['id'],
+            'serverId' => $server->id,
+            'isVoted' => $isVoted,
+        ]) ?>
     </div>
 </section>
 

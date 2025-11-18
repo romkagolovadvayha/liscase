@@ -197,13 +197,13 @@
                     throw new Error(data.message || 'Failed to load voters');
                 }
                 if (!mapIndex.has(mapId)) {
-                    return;
-                }
+            return;
+        }
                 const map = maps[mapIndex.get(mapId)];
                 if (!map) {
-                    return;
-                }
-                
+            return;
+        }
+
                 // Обновляем только voters, voteCount не трогаем (он уже обновлен из handleVote)
                 map.voters = data.users || [];
                 
@@ -211,43 +211,43 @@
                 if (updateDetail) {
                     const detailEl = document.querySelector('[data-role="map-detail"]');
                     if (!detailEl) {
-                        return;
-                    }
+                return;
+            }
                     const detailMapId = parseInt(detailEl.dataset.mapDetailId, 10);
                     if (detailMapId !== mapId) {
-                        return;
-                    }
-                    const list = detailEl.querySelector('[data-role="voters-list"]');
+                return;
+            }
+        const list = detailEl.querySelector('[data-role="voters-list"]');
                     if (list) {
-                        list.innerHTML = '';
-                        const voters = map.voters || [];
-                        if (!voters.length) {
-                            const p = document.createElement('p');
-                            p.className = 'mapsV2__voters-empty';
-                            p.textContent = texts.emptyVoters;
-                            list.appendChild(p);
+        list.innerHTML = '';
+        const voters = map.voters || [];
+        if (!voters.length) {
+            const p = document.createElement('p');
+            p.className = 'mapsV2__voters-empty';
+            p.textContent = texts.emptyVoters;
+            list.appendChild(p);
                         } else {
-                            voters.forEach((voter) => {
-                                const item = document.createElement('div');
-                                item.className = 'mapsV2__voter';
-                                
-                                const avatar = document.createElement('img');
-                                avatar.src = voter.avatar;
-                                avatar.alt = voter.username;
-                                
-                                const text = document.createElement('div');
-                                const name = document.createElement('strong');
-                                name.textContent = voter.username;
-                                const date = document.createElement('span');
-                                date.textContent = formatDate(voter.created_at);
-                                text.appendChild(name);
-                                text.appendChild(date);
-                                
-                                item.appendChild(avatar);
-                                item.appendChild(text);
-                                list.appendChild(item);
-                            });
-                        }
+        voters.forEach((voter) => {
+            const item = document.createElement('div');
+            item.className = 'mapsV2__voter';
+
+            const avatar = document.createElement('img');
+            avatar.src = voter.avatar;
+            avatar.alt = voter.username;
+
+            const text = document.createElement('div');
+            const name = document.createElement('strong');
+            name.textContent = voter.username;
+            const date = document.createElement('span');
+            date.textContent = formatDate(voter.created_at);
+            text.appendChild(name);
+            text.appendChild(date);
+
+            item.appendChild(avatar);
+            item.appendChild(text);
+            list.appendChild(item);
+        });
+    }
                     }
                 }
                 
@@ -309,15 +309,28 @@
         const halfSize = size / 2;
         monuments.forEach((monument, index) => {
             const coordinates = monument.coordinates || {};
-            if (typeof coordinates.x !== 'number' || typeof coordinates.y !== 'number') {
+            
+            // Проверяем разные варианты формата координат
+            let x = null, y = null;
+            if (typeof coordinates === 'object' && coordinates !== null) {
+                x = coordinates.x ?? coordinates.X ?? null;
+                y = coordinates.y ?? coordinates.Y ?? null;
+            }
+            
+            if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) {
+                console.warn('Invalid coordinates for monument:', monument, coordinates);
                 return;
             }
 
-            const posX = ((coordinates.x + halfSize) / size) * 100;
-            const posY = 100 - ((coordinates.y + halfSize) / size) * 100;
+            // Конвертируем координаты из игровых в проценты
+            // Координаты в Rust обычно от -size/2 до +size/2
+            const posX = ((x + halfSize) / size) * 100;
+            const posY = 100 - ((y + halfSize) / size) * 100;
+            
             if (Number.isNaN(posX) || Number.isNaN(posY)) {
-                return;
-            }
+                console.warn('NaN position calculated:', { x, y, halfSize, size, posX, posY });
+            return;
+        }
 
             const marker = document.createElement('div');
             marker.className = 'mapsV2__marker';
@@ -399,24 +412,10 @@
         const voteBtn = event.target.closest('[data-action="vote-from-detail"]');
         if (voteBtn) {
             event.preventDefault();
-            const mapId = parseInt(voteBtn.dataset.mapId, 10);
-            if (!isNaN(mapId) && mapId > 0) {
-                // Находим форму голосования
-                const voteForm = document.getElementById('vote-form');
-                if (voteForm) {
-                    // Устанавливаем map_id
-                    let mapIdInput = voteForm.querySelector('input[name="map_id"]');
-                    if (!mapIdInput) {
-                        mapIdInput = document.createElement('input');
-                        mapIdInput.type = 'hidden';
-                        mapIdInput.name = 'map_id';
-                        voteForm.appendChild(mapIdInput);
-                    }
-                    mapIdInput.value = mapId;
-                    
-                    // Отправляем форму
-                    voteForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-                }
+            // Кнопка находится внутри формы, просто отправляем форму
+            const form = voteBtn.closest('form');
+            if (form) {
+                form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
             }
             return;
         }
@@ -584,11 +583,33 @@
         $(document).on('pjax:success', '#maps-v2-cards-pjax', function() {
             console.log('Pjax success for maps-v2-cards-pjax');
             reinitializeAfterPjax();
+            
+            // Обновляем список voters в модалке, если она открыта
+            const detailEl = document.querySelector('[data-role="map-detail"]');
+            if (detailEl) {
+                const mapId = parseInt(detailEl.dataset.mapDetailId, 10);
+                const serverId = parseInt(detailEl.dataset.mapServerId, 10);
+                const votersPjax = document.querySelector(`#maps-v2-voters-pjax-${mapId}`);
+                if (votersPjax && mapId > 0 && serverId > 0) {
+                    const url = `/maps-v2/voters/${mapId}/${serverId}`;
+                    $.pjax({
+                        url: url,
+                        container: `#maps-v2-voters-pjax-${mapId}`,
+                        timeout: 5000,
+                        replace: false
+                    });
+                }
+            }
         });
 
         $(document).on('pjax:end', '#maps-v2-cards-pjax', function() {
             console.log('Pjax end for maps-v2-cards-pjax');
             reinitializeAfterPjax();
+        });
+
+        // Обновляем состояние кнопки голосования после обновления списка voters
+        $(document).on('pjax:success', '[id^="maps-v2-voters-pjax-"]', function() {
+            updateVoteButtonState();
         });
     } else {
         // Fallback для нативного JavaScript, если jQuery недоступен
