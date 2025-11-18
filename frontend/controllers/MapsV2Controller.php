@@ -235,6 +235,22 @@ class MapsV2Controller extends Controller
             }
         }
 
+        // Рендерим карточки через PHP
+        $cardsHtml = [];
+        foreach ($maps as $map) {
+            $cardsHtml[$map->id] = $this->renderPartial('_card', [
+                'map' => $map,
+                'mapCardsData' => $mapCardsData,
+                'voteCounts' => $voteCounts,
+                'userVotes' => $userVotes,
+                'userVotedMapIds' => $userVotedMapIds,
+                'currentMap' => $currentMap ?? null,
+                'maxVotes' => $maxVotes,
+                'totalVotes' => $totalVotes,
+                'server' => $server,
+            ]);
+        }
+
         return $this->render('index.twig', [
             'servers' => $servers,
             'server' => $server,
@@ -248,6 +264,7 @@ class MapsV2Controller extends Controller
             'mapCardsData' => $mapCardsData,
             'maxVotes' => $maxVotes,
             'totalVotes' => $totalVotes,
+            'cardsHtml' => $cardsHtml,
             'mapsPayloadJson' => Json::encode(array_values($mapCardsData), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             'biomeLabels' => MapLocalization::biomeLabels($language),
             'totalMaps' => $totalMaps,

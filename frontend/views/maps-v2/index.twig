@@ -70,17 +70,7 @@
         <div class="mapsV2__layout">
             <div class="mapsV2__cards" data-role="map-list">
                 {% for map in maps %}
-                    {{ include('_card.php', {
-                        'map': map,
-                        'mapCardsData': mapCardsData,
-                        'voteCounts': voteCounts,
-                        'userVotes': userVotes,
-                        'userVotedMapIds': userVotedMapIds,
-                        'currentMap': currentMap,
-                        'maxVotes': maxVotes,
-                        'totalVotes': totalVotes,
-                        'server': server,
-                    }, with_context = false) }}
+                    {{ cardsHtml[map.id]|raw }}
                 {% endfor %}
             </div>
         </div>
