@@ -75,6 +75,7 @@ class MapsV2Controller extends Controller
         $voteCounts = [];
         $userVotes = [];
         $votedMapId = null;
+        $userVotedMapIds = [];
 
         $maxVotes = 0;
 
@@ -117,16 +118,17 @@ class MapsV2Controller extends Controller
             }
 
             if (!Yii::$app->user->isGuest) {
-                $userVote = MapListVote::find()
+                $userVotedMapIds = MapListVote::find()
                     ->select('map_list_id')
                     ->andWhere([
                         'server_id' => $server->id,
                         'user_id' => Yii::$app->user->id,
                     ])
-                    ->orderBy(['created_at' => SORT_DESC])
-                    ->scalar();
-                if ($userVote) {
-                    $votedMapId = (int)$userVote;
+                    ->column();
+                if ($userVotedMapIds) {
+                    $userVotedMapIds = array_map('intval', $userVotedMapIds);
+                    // Для обратной совместимости берем последний голос
+                    $votedMapId = (int)end($userVotedMapIds);
                 }
             }
         }
@@ -185,6 +187,7 @@ class MapsV2Controller extends Controller
                 'image' => $map->image ?: ($details['imageUrl'] ?? $map->image_url),
                 'imagePreview' => $map->image_preview ?: ($details['thumbnailUrl'] ?? $map->thumbnail_url),
                 'rawImageUrl' => $map->raw_image_url ?: ($details['rawImageUrl'] ?? null),
+                'imageIconUrl' => $map->image_icon_url ?: ($details['imageIconUrl'] ?? null),
                 'isStaging' => (bool)$map->is_staging,
                 'isCustomMap' => (bool)$map->is_custom_map,
                 'canDownload' => (bool)$map->can_download,
@@ -238,6 +241,7 @@ class MapsV2Controller extends Controller
             'voteCounts' => $voteCounts,
             'userVotes' => $userVotes,
             'userVotedMapId' => $votedMapId,
+            'userVotedMapIds' => $userVotedMapIds,
             'mapDetails' => $mapDetails,
             'mapCardsData' => $mapCardsData,
             'maxVotes' => $maxVotes,
@@ -303,34 +307,44 @@ class MapsV2Controller extends Controller
             }
         }
 
-        $previousMapId = MapListVote::find()
-            ->select('map_list_id')
+        // Проверяем, есть ли уже голос за эту карту
+        $existingVote = MapListVote::find()
             ->where([
+                'map_list_id' => $map->id,
                 'server_id' => $server->id,
                 'user_id' => $user->id,
             ])
-            ->scalar();
+            ->one();
 
-        if ($previousMapId) {
-            MapListVote::deleteAll([
+        $isVoted = false;
+        if ($existingVote) {
+            // Удаляем голос (отмена)
+            if ($existingVote->delete()) {
+                $isVoted = false;
+            } else {
+                return [
+                    'success' => false,
+                    'error' => 'delete_failed',
+                    'message' => Yii::t('common', 'Не удалось отменить голос'),
+                ];
+            }
+        } else {
+            // Добавляем голос
+            $vote = new MapListVote([
+                'map_list_id' => $map->id,
                 'server_id' => $server->id,
                 'user_id' => $user->id,
             ]);
-        }
 
-        $vote = new MapListVote([
-            'map_list_id' => $map->id,
-            'server_id' => $server->id,
-            'user_id' => $user->id,
-        ]);
-
-        if (!$vote->save()) {
-            return [
-                'success' => false,
-                'error' => 'save_failed',
-                'message' => Yii::t('common', 'Не удалось сохранить голос'),
-                'details' => $vote->errors,
-            ];
+            if (!$vote->save()) {
+                return [
+                    'success' => false,
+                    'error' => 'save_failed',
+                    'message' => Yii::t('common', 'Не удалось сохранить голос'),
+                    'details' => $vote->errors,
+                ];
+            }
+            $isVoted = true;
         }
 
         $voteCount = MapListVote::find()
@@ -340,23 +354,11 @@ class MapsV2Controller extends Controller
             ])
             ->count();
 
-        $previousVotes = null;
-        if ($previousMapId && (int)$previousMapId !== (int)$map->id) {
-            $previousVotes = MapListVote::find()
-                ->where([
-                    'map_list_id' => $previousMapId,
-                    'server_id' => $server->id,
-                ])
-                ->count();
-        }
-
         return [
             'success' => true,
             'map_id' => $map->id,
             'votes' => (int)$voteCount,
-            'voted_map_id' => $map->id,
-            'previous_map_id' => $previousMapId ? (int)$previousMapId : null,
-            'previous_votes' => $previousVotes !== null ? (int)$previousVotes : null,
+            'is_voted' => $isVoted,
         ];
     }
 

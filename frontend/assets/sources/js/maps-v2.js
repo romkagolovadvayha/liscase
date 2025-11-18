@@ -46,6 +46,24 @@
         userVotedId = null;
     }
 
+    // Множественные проголосованные карты
+    let userVotedMapIds = new Set();
+    try {
+        const votedIdsJson = root.dataset.userVotedIds;
+        if (votedIdsJson) {
+            const votedIds = JSON.parse(votedIdsJson);
+            if (Array.isArray(votedIds)) {
+                votedIds.forEach(id => userVotedMapIds.add(parseInt(id, 10)));
+            }
+        }
+    } catch (e) {
+        console.error('Failed to parse user voted map IDs', e);
+    }
+    // Для обратной совместимости
+    if (userVotedId !== null && !userVotedMapIds.has(userVotedId)) {
+        userVotedMapIds.add(userVotedId);
+    }
+
     let currentIndex = 0;
     if (userVotedId !== null && mapIndex.has(userVotedId)) {
         currentIndex = mapIndex.get(userVotedId);
@@ -105,6 +123,11 @@
                 progressBar.style.setProperty('--progress', `${progress}`);
             }
 
+            const voteBtn = cardEl.querySelector('[data-action="vote-card"]');
+            if (voteBtn) {
+                voteBtn.classList.toggle('is-active', userVotedMapIds.has(mapId));
+            }
+
             const votersContainer = cardEl.querySelector('[data-role="card-voters"]');
             if (votersContainer) {
                 renderCardVoters(votersContainer, map);
@@ -145,7 +168,7 @@
         }
         const previewContainer = detailEl.querySelector('[data-role="preview"]');
         const previewImage = detailEl.querySelector('[data-role="preview-image"]');
-        const fullImageSrc = map.rawImageUrl || map.image || map.imagePreview || '';
+        const fullImageSrc = map.imageIconUrl || map.rawImageUrl || map.image || map.imagePreview || '';
         if (previewImage) {
             previewImage.src = map.imagePreview || map.image || previewImage.src;
             previewImage.alt = map.hash || '';
@@ -172,7 +195,7 @@
         const voteBtn = detailEl.querySelector('[data-action="vote"]');
         if (voteBtn) {
             voteBtn.dataset.mapId = map.id;
-            if (userVotedId === map.id) {
+            if (userVotedMapIds.has(map.id)) {
                 voteBtn.classList.add('is-active');
             } else {
                 voteBtn.classList.remove('is-active');
@@ -191,8 +214,9 @@
 
         const fullscreenBtn = detailEl.querySelector('[data-action="open-fullscreen"]');
         if (fullscreenBtn) {
-            if (fullImageSrc) {
-                fullscreenBtn.dataset.src = fullImageSrc;
+            const iconImageSrc = map.imageIconUrl || map.rawImageUrl || map.image || map.imagePreview || '';
+            if (iconImageSrc) {
+                fullscreenBtn.dataset.src = iconImageSrc;
                 fullscreenBtn.classList.remove('is-hidden');
             } else {
                 fullscreenBtn.dataset.src = '';
@@ -446,20 +470,27 @@
                 if (map) {
                     map.voteCount = data.votes;
                 }
-                if (data.previous_map_id && mapIndex.has(data.previous_map_id) && data.previous_votes !== null) {
-                    maps[mapIndex.get(data.previous_map_id)].voteCount = data.previous_votes;
+
+                // Обновляем множество проголосованных карт
+                if (data.is_voted) {
+                    userVotedMapIds.add(data.map_id);
+                } else {
+                    userVotedMapIds.delete(data.map_id);
                 }
 
-                userVotedId = data.voted_map_id;
-                root.dataset.userVotedId = String(userVotedId);
+                // Обновляем userVotedId для обратной совместимости (последний голос)
+                if (userVotedMapIds.size > 0) {
+                    userVotedId = Math.max(...Array.from(userVotedMapIds));
+                    root.dataset.userVotedId = String(userVotedId);
+                } else {
+                    userVotedId = null;
+                    root.dataset.userVotedId = '';
+                }
 
                 renderDetail(getCurrentMap());
                 updateCards();
 
-                Promise.all([
-                    refreshVoters(data.map_id, true),
-                    data.previous_map_id ? refreshVoters(data.previous_map_id, false) : Promise.resolve(),
-                ]).catch((error) => console.error('Failed to refresh voters', error));
+                refreshVoters(data.map_id, true).catch((error) => console.error('Failed to refresh voters', error));
             })
             .catch((error) => {
                 console.error(error);
@@ -559,6 +590,17 @@
     }
 
     listEl.addEventListener('click', (event) => {
+        // Обработка голосования с карточки
+        const voteBtn = event.target.closest('[data-action="vote-card"]');
+        if (voteBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const mapId = parseInt(voteBtn.dataset.mapId, 10);
+            handleVote(mapId);
+            return;
+        }
+
+        // Обработка открытия детальной карточки
         const button = event.target.closest('[data-action="open-detail"]');
         if (!button) {
             return;
@@ -649,7 +691,14 @@
             </div>
         `;
         lightboxEl.addEventListener('click', (event) => {
-            if (event.target === lightboxEl || event.target.dataset.action === 'close-lightbox') {
+            if (event.target === lightboxEl) {
+                closeLightbox();
+                return;
+            }
+            const closeBtn = event.target.closest('[data-action="close-lightbox"]');
+            if (closeBtn) {
+                event.preventDefault();
+                event.stopPropagation();
                 closeLightbox();
             }
         });

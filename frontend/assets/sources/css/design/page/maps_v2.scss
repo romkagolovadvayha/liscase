@@ -192,6 +192,19 @@
   aspect-ratio: 1 / 1;
   background: rgba(0, 0, 0, 0.2);
   display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.mapsV2__card-image:hover {
+  opacity: 0.9;
+}
+
+.mapsV2__card-image:active {
+  transform: scale(0.98);
 }
 
 .mapsV2__card-image img {
@@ -239,6 +252,45 @@
 
 .mapsV2__card-chip--votes {
   font-weight: 600;
+  pointer-events: none;
+}
+
+.mapsV2__card-vote-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  z-index: 3;
+  backdrop-filter: blur(6px);
+  transition: all 0.2s ease;
+  font-size: 16px;
+}
+
+.mapsV2__card-vote-btn:hover {
+  background: rgba(0, 0, 0, 0.75);
+  transform: scale(1.1);
+}
+
+.mapsV2__card-vote-btn:active {
+  transform: scale(0.95);
+}
+
+.mapsV2__card-vote-btn.is-active {
+  background: rgba(255, 77, 77, 0.9);
+  color: #fff;
+}
+
+.mapsV2__card-vote-btn.is-active:hover {
+  background: rgba(255, 77, 77, 1);
 }
 
 .mapsV2__card-chip--accent {
@@ -339,30 +391,6 @@
   margin-left: 4px;
 }
 
-.mapsV2__card-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border-radius: var(--button-secondary-radius);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition-all);
-}
-
-.mapsV2__card-button:hover {
-  border-color: var(--primary-colors-secondary);
-  background: rgba(124, 101, 255, 0.12);
-}
-
-.mapsV2__card-button:active {
-  transform: translateY(1px);
-}
 
 .mapsV2__modal {
   position: fixed;
@@ -476,6 +504,7 @@ html.mapsV2__modal-open {
 
 .mapsV2__vote-button,
 .mapsV2__download-button,
+.mapsV2__rustmaps-button,
 .mapsV2__open-full {
   display: inline-flex;
   align-items: center;
@@ -495,6 +524,7 @@ html.mapsV2__modal-open {
 
 .mapsV2__vote-button:hover,
 .mapsV2__download-button:hover,
+.mapsV2__rustmaps-button:hover,
 .mapsV2__open-full:hover {
   border-color: var(--primary-colors-secondary);
 }
@@ -795,6 +825,7 @@ html.mapsV2__modal-open {
 
   .mapsV2__detail-actions .mapsV2__vote-button,
   .mapsV2__detail-actions .mapsV2__download-button,
+  .mapsV2__detail-actions .mapsV2__rustmaps-button,
   .mapsV2__detail-actions .mapsV2__open-full {
     width: 100%;
     justify-content: center;

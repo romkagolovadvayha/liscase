@@ -6,6 +6,7 @@
      data-vote-url="{{ voteUrlTemplate }}"
      data-voters-url="{{ votersUrlTemplate }}"
      data-user-voted-id="{{ userVotedMapId|default('') }}"
+     data-user-voted-ids='{{ userVotedMapIds|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES'))|raw }}'
      data-text-vote="{{ t('common', 'Проголосовать') }}"
      data-text-download="{{ t('common', 'Скачать карту') }}"
      data-text-empty-voters="{{ t('common', 'Будьте первым, кто проголосует за эту карту') }}"
@@ -75,25 +76,24 @@
 
                     <article class="mapsV2__card{% if currentMap and currentMap.id == map.id %} is-active{% endif %}"
                              data-map-id="{{ map.id }}">
-                        {% set rustMapsLink = card.rustMapsUrl|default(card.downloadUrl) %}
                         <div class="mapsV2__card-image-wrapper">
-                            <a class="mapsV2__card-image"
-                               {% if rustMapsLink %}
-                                   href="{{ rustMapsLink }}"
-                                   target="_blank"
-                                   rel="nofollow noopener noindex"
-                               {% else %}
-                                   href="javascript:void(0);"
-                               {% endif %}>
-                                <img src="{{ card.imagePreview|default(card.image) }}" alt="{{ t('common', 'Превью карты') }}">
-                            </a>
-                            <button class="mapsV2__card-chip mapsV2__card-chip--votes"
+                            <button class="mapsV2__card-image"
                                     type="button"
                                     data-action="open-detail"
                                     data-map-id="{{ map.id }}"
-                                    aria-label="{{ t('common', 'Проголосовать за карту') }}">
+                                    aria-label="{{ t('common', 'Открыть подробную информацию') }}">
+                                <img src="{{ card.imagePreview|default(card.image) }}" alt="{{ t('common', 'Превью карты') }}">
+                            </button>
+                            <span class="mapsV2__card-chip mapsV2__card-chip--votes">
                                 <i class="fas fa-heart"></i>
                                 <span data-role="card-votes">{{ votes }}</span>
+                            </span>
+                            <button class="mapsV2__card-vote-btn{% if userVotedMapIds and map.id in userVotedMapIds %} is-active{% endif %}"
+                                    type="button"
+                                    data-action="vote-card"
+                                    data-map-id="{{ map.id }}"
+                                    aria-label="{{ t('common', 'Проголосовать за карту') }}">
+                                <i class="fas fa-heart"></i>
                             </button>
                             {% if card.isStaging %}
                                 <span class="mapsV2__card-chip mapsV2__card-chip--warning">Staging</span>
@@ -124,12 +124,6 @@
                                     <span class="mapsV2__card-voters-empty">{{ t('common', 'Пока никто не голосовал') }}</span>
                                 {% endif %}
                             </div>
-                            <button class="mapsV2__card-button"
-                                    type="button"
-                                    data-action="open-detail"
-                                    data-map-id="{{ map.id }}">
-                                {{ t('common', 'Подробнее') }}
-                            </button>
                         </div>
                     </article>
                 {% endfor %}
@@ -150,9 +144,9 @@
             <section class="mapsV2__detail" data-role="map-detail">
                 {% if hasMaps and detail %}
                     <div class="mapsV2__detail-visual">
-                        <div class="mapsV2__preview{% if detail.rawImageUrl or detail.image %} is-clickable{% endif %}"
+                        <div class="mapsV2__preview{% if detail.imageIconUrl or detail.rawImageUrl or detail.image %} is-clickable{% endif %}"
                              data-role="preview"
-                             data-src="{{ detail.rawImageUrl|default(detail.image|default(detail.imagePreview)) }}">
+                             data-src="{{ detail.imageIconUrl|default(detail.rawImageUrl|default(detail.image|default(detail.imagePreview))) }}">
                             <img src="{{ detail.imagePreview|default(detail.image) }}" alt="{{ detail.hash }}" data-role="preview-image">
                             <div class="mapsV2__markers" data-role="markers"></div>
                         </div>
@@ -179,6 +173,15 @@
                                     <i class="fas fa-heart"></i>
                                     <span>{{ t('common', 'Проголосовать') }}</span>
                                 </button>
+                                {% if detail.rustMapsUrl %}
+                                    <a class="mapsV2__rustmaps-button"
+                                       href="{{ detail.rustMapsUrl }}"
+                                       target="_blank"
+                                       rel="nofollow noopener">
+                                        <i class="fas fa-external-link-alt"></i>
+                                        {{ t('common', 'RustMaps') }}
+                                    </a>
+                                {% endif %}
                                 {% if detail.downloadUrl %}
                                     <a class="mapsV2__download-button"
                                        href="{{ detail.downloadUrl }}"
@@ -188,10 +191,10 @@
                                         {{ t('common', 'Скачать карту') }}
                                     </a>
                                 {% endif %}
-                                <button class="mapsV2__open-full{% if not detail.rawImageUrl and not detail.image %} is-hidden{% endif %}"
+                                <button class="mapsV2__open-full{% if not detail.imageIconUrl and not detail.rawImageUrl and not detail.image %} is-hidden{% endif %}"
                                         type="button"
                                         data-action="open-fullscreen"
-                                        data-src="{{ detail.rawImageUrl|default(detail.image|default(detail.imagePreview)) }}">
+                                        data-src="{{ detail.imageIconUrl|default(detail.rawImageUrl|default(detail.image|default(detail.imagePreview))) }}">
                                     <i class="fas fa-expand"></i>
                                     <span>{{ t('common', 'Открыть полностью') }}</span>
                                 </button>
