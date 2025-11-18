@@ -392,9 +392,14 @@
     // Делегирование событий для действий внутри модалки (загружается динамически)
     document.addEventListener('click', (event) => {
         // Проверяем, что target является элементом
-        const target = event.target;
+        let target = event.target;
+        // Если target - не элемент (текстовый узел), берем родителя
         if (!target || typeof target.closest !== 'function') {
-            return;
+            if (target && target.parentElement) {
+                target = target.parentElement;
+            } else {
+                return;
+            }
         }
         
         // Обработка открытия fullscreen изображения
@@ -428,9 +433,14 @@
     
     function handleMonumentHover(event, isEnter) {
         // Проверяем, что target является элементом
-        const target = event.target;
+        let target = event.target;
+        // Если target - не элемент (текстовый узел), берем родителя
         if (!target || typeof target.closest !== 'function') {
-            return false;
+            if (target && target.parentElement) {
+                target = target.parentElement;
+            } else {
+                return false;
+            }
         }
         
         const chip = target.closest('.mapsV2__monument-chip');
@@ -444,7 +454,15 @@
             } else {
                 // Проверяем, что мышь действительно покинула элемент
                 const relatedTarget = event.relatedTarget;
-                if (!relatedTarget || !chip.contains(relatedTarget)) {
+                let validRelatedTarget = null;
+                if (relatedTarget) {
+                    if (typeof relatedTarget.nodeType !== 'undefined' && relatedTarget.nodeType === 1) {
+                        validRelatedTarget = relatedTarget;
+                    } else if (relatedTarget.parentElement && typeof relatedTarget.parentElement.nodeType !== 'undefined' && relatedTarget.parentElement.nodeType === 1) {
+                        validRelatedTarget = relatedTarget.parentElement;
+                    }
+                }
+                if (!relatedTarget || !validRelatedTarget || !chip.contains(validRelatedTarget)) {
                     currentHighlightedIndex = null;
                     highlightMonument(null);
                 }
@@ -463,7 +481,15 @@
             } else {
                 // Проверяем, что мышь действительно покинула элемент
                 const relatedTarget = event.relatedTarget;
-                if (!relatedTarget || !marker.contains(relatedTarget)) {
+                let validRelatedTarget = null;
+                if (relatedTarget) {
+                    if (typeof relatedTarget.nodeType !== 'undefined' && relatedTarget.nodeType === 1) {
+                        validRelatedTarget = relatedTarget;
+                    } else if (relatedTarget.parentElement && typeof relatedTarget.parentElement.nodeType !== 'undefined' && relatedTarget.parentElement.nodeType === 1) {
+                        validRelatedTarget = relatedTarget.parentElement;
+                    }
+                }
+                if (!relatedTarget || !validRelatedTarget || !marker.contains(validRelatedTarget)) {
                     currentHighlightedIndex = null;
                     highlightMonument(null);
                 }
@@ -476,9 +502,14 @@
     
     document.addEventListener('mouseover', (event) => {
         // Проверяем, что target является элементом (не текстовым узлом)
-        const target = event.target;
+        let target = event.target;
+        // Если target - не элемент (текстовый узел), берем родителя
         if (!target || typeof target.closest !== 'function') {
-            return;
+            if (target && target.parentElement) {
+                target = target.parentElement;
+            } else {
+                return;
+            }
         }
         
         // Проверяем, что это первый вход в элемент (не всплытие от дочернего)
@@ -488,7 +519,16 @@
         if (chip || marker) {
             const element = chip || marker;
             const relatedTarget = event.relatedTarget;
-            if (element && (!relatedTarget || !element.contains(relatedTarget))) {
+            // relatedTarget может быть null или не элементом
+            let validRelatedTarget = null;
+            if (relatedTarget) {
+                if (typeof relatedTarget.nodeType !== 'undefined' && relatedTarget.nodeType === 1) {
+                    validRelatedTarget = relatedTarget;
+                } else if (relatedTarget.parentElement && typeof relatedTarget.parentElement.nodeType !== 'undefined' && relatedTarget.parentElement.nodeType === 1) {
+                    validRelatedTarget = relatedTarget.parentElement;
+                }
+            }
+            if (element && (!relatedTarget || !validRelatedTarget || !element.contains(validRelatedTarget))) {
                 handleMonumentHover(event, true);
             }
         }
@@ -496,23 +536,41 @@
 
     document.addEventListener('mouseout', (event) => {
         // Проверяем, что target является элементом (не текстовым узлом)
-        const target = event.target;
+        let target = event.target;
+        // Если target - не элемент (текстовый узел), берем родителя
         if (!target || typeof target.closest !== 'function') {
-            return;
+            if (target && target.parentElement) {
+                target = target.parentElement;
+            } else {
+                return;
+            }
         }
         
         // Проверяем, что мышь покинула элемент (не перешла на дочерний)
         const relatedTarget = event.relatedTarget;
+        let validRelatedTarget = null;
+        if (relatedTarget) {
+            if (typeof relatedTarget.nodeType !== 'undefined' && relatedTarget.nodeType === 1) {
+                validRelatedTarget = relatedTarget;
+            } else if (relatedTarget.parentElement && typeof relatedTarget.parentElement.nodeType !== 'undefined' && relatedTarget.parentElement.nodeType === 1) {
+                validRelatedTarget = relatedTarget.parentElement;
+            }
+        }
+        
         const chip = target.closest('.mapsV2__monument-chip');
-        if (chip && (!relatedTarget || !chip.contains(relatedTarget))) {
-            handleMonumentHover(event, false);
-            return;
+        if (chip) {
+            if (!relatedTarget || !validRelatedTarget || !chip.contains(validRelatedTarget)) {
+                handleMonumentHover(event, false);
+                return;
+            }
         }
 
         const marker = target.closest('.mapsV2__marker');
-        if (marker && (!relatedTarget || !marker.contains(relatedTarget))) {
-            handleMonumentHover(event, false);
-            return;
+        if (marker) {
+            if (!relatedTarget || !validRelatedTarget || !marker.contains(validRelatedTarget)) {
+                handleMonumentHover(event, false);
+                return;
+            }
         }
     }, true);
 
@@ -611,14 +669,20 @@
                 closeLightbox();
                 return;
             }
-            const target = event.target;
-            if (target && typeof target.closest === 'function') {
-                const closeBtn = target.closest('[data-action="close-lightbox"]');
-                if (closeBtn) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    closeLightbox();
+            let target = event.target;
+            // Если target - не элемент (текстовый узел), берем родителя
+            if (!target || typeof target.closest !== 'function') {
+                if (target && target.parentElement) {
+                    target = target.parentElement;
+                } else {
+                    return;
                 }
+            }
+            const closeBtn = target.closest('[data-action="close-lightbox"]');
+            if (closeBtn) {
+                event.preventDefault();
+                event.stopPropagation();
+                closeLightbox();
             }
         });
         document.body.appendChild(lightboxEl);
