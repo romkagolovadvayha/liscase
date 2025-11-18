@@ -339,21 +339,35 @@
             return;
         }
         
-        // Ищем контейнер маркеров внутри detailEl
-        const markersContainer = detailEl.querySelector('[data-role="markers"]');
+        // Ищем контейнер маркеров внутри detailEl (может быть внутри .mapsV2__preview)
+        const markersContainer = modalEl.querySelector('[data-role="markers"]');
         if (!markersContainer) {
-            console.warn('maps-v2.js: markers container not found in detailEl', detailEl);
+            console.warn('maps-v2.js: markers container not found in detailEl. Searching in preview...', detailEl);
+            const previewEl = modalEl.querySelector('[data-role="preview"]');
+            if (previewEl) {
+                const markersInPreview = previewEl.querySelector('[data-role="markers"]');
+                if (markersInPreview) {
+                    console.log('maps-v2.js: Found markers container in preview');
+                    const marker = markersInPreview.querySelector('.mapsV2__marker[data-monument-index="' + index + '"]');
+                    if (marker) {
+                        console.log('maps-v2.js: Showing marker', { index, marker });
+                        marker.style.display = 'block';
+                        chip.classList.add('is-active');
+                        return;
+                    }
+                }
+            }
             return;
         }
         
         // Находим маркер с таким же индексом и показываем его
-        const marker = markersContainer.querySelector('.mapsV2__marker[data-monument-index="' + index + '"]');
+        const marker = modalEl.querySelector('.mapsV2__marker[data-monument-index="' + index + '"]');
         if (marker) {
             console.log('maps-v2.js: Showing marker', { index, marker });
             marker.style.display = 'block';
             chip.classList.add('is-active');
         } else {
-            const allMarkers = markersContainer.querySelectorAll('.mapsV2__marker');
+            const allMarkers = modalEl.querySelectorAll('.mapsV2__marker');
             console.warn('maps-v2.js: Marker not found for index', index, 'Total markers:', allMarkers.length, 'Markers:', Array.from(allMarkers).map(m => m.dataset.monumentIndex));
         }
     }, true);
@@ -380,12 +394,17 @@
         const detailEl = modalEl.querySelector('[data-role="map-detail"]');
         if (!detailEl) return;
         
-        // Ищем контейнер маркеров внутри detailEl
-        const markersContainer = detailEl.querySelector('[data-role="markers"]');
-        if (!markersContainer) return;
+        // Ищем контейнер маркеров внутри detailEl (может быть внутри .mapsV2__preview)
+        let markersContainer = modalEl.querySelector('[data-role="markers"]');
+        if (!markersContainer) {
+            const previewEl = modalEl.querySelector('[data-role="preview"]');
+            if (previewEl) {
+                markersContainer = modalEl.querySelector('[data-role="markers"]');
+            }
+        }
         
         // Скрываем маркер с таким же индексом
-        const marker = markersContainer.querySelector('.mapsV2__marker[data-monument-index="' + index + '"]');
+        const marker = modalEl.querySelector('.mapsV2__marker[data-monument-index="' + index + '"]');
         if (marker) {
             console.log('maps-v2.js: Hiding marker', { index, marker });
             marker.style.display = 'none';
