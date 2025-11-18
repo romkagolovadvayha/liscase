@@ -245,8 +245,8 @@ class MapsV2Controller extends Controller
             'biomeLabels' => MapLocalization::biomeLabels($language),
             'totalMaps' => $totalMaps,
             'displayLimit' => $displayLimit,
-            'voteUrlTemplate' => Url::to(['/maps-v2/vote', 'id' => 'ID_PLACEHOLDER']),
-            'votersUrlTemplate' => Url::to(['/maps-v2/voters', 'id' => 'ID_PLACEHOLDER', 'server_id' => $server->id]),
+            'voteUrlTemplate' => '/maps-v2/vote/ID_PLACEHOLDER',
+            'votersUrlTemplate' => '/maps-v2/voters/ID_PLACEHOLDER?server_id=' . $server->id,
         ]);
     }
 

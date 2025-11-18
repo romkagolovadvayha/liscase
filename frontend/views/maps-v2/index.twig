@@ -76,23 +76,29 @@
                     <article class="mapsV2__card{% if currentMap and currentMap.id == map.id %} is-active{% endif %}"
                              data-map-id="{{ map.id }}">
                         {% set rustMapsLink = card.rustMapsUrl|default(card.downloadUrl) %}
-                        <a class="mapsV2__card-image"
-                           {% if rustMapsLink %}
-                               href="{{ rustMapsLink }}"
-                               target="_blank"
-                               rel="nofollow noopener noindex"
-                           {% else %}
-                               href="javascript:void(0);"
-                           {% endif %}>
-                            <img src="{{ card.imagePreview|default(card.image) }}" alt="{{ t('common', 'Превью карты') }}">
-                            <span class="mapsV2__card-chip mapsV2__card-chip--votes">
+                        <div class="mapsV2__card-image-wrapper">
+                            <a class="mapsV2__card-image"
+                               {% if rustMapsLink %}
+                                   href="{{ rustMapsLink }}"
+                                   target="_blank"
+                                   rel="nofollow noopener noindex"
+                               {% else %}
+                                   href="javascript:void(0);"
+                               {% endif %}>
+                                <img src="{{ card.imagePreview|default(card.image) }}" alt="{{ t('common', 'Превью карты') }}">
+                            </a>
+                            <button class="mapsV2__card-chip mapsV2__card-chip--votes"
+                                    type="button"
+                                    data-action="open-detail"
+                                    data-map-id="{{ map.id }}"
+                                    aria-label="{{ t('common', 'Проголосовать за карту') }}">
                                 <i class="fas fa-heart"></i>
                                 <span data-role="card-votes">{{ votes }}</span>
-                            </span>
+                            </button>
                             {% if card.isStaging %}
                                 <span class="mapsV2__card-chip mapsV2__card-chip--warning">Staging</span>
                             {% endif %}
-                        </a>
+                        </div>
                         <div class="mapsV2__card-body">
                             <p class="mapsV2__card-meta">
                                 {{ t('common', 'Размер') }}: {{ card.size }} x {{ card.size }}

@@ -183,10 +183,15 @@
   box-shadow: 0 10px 28px rgba(124, 101, 255, 0.28);
 }
 
+.mapsV2__card-image-wrapper {
+  position: relative;
+}
+
 .mapsV2__card-image {
   position: relative;
   aspect-ratio: 1 / 1;
   background: rgba(0, 0, 0, 0.2);
+  display: block;
 }
 
 .mapsV2__card-image img {
@@ -209,6 +214,19 @@
   color: #fff;
   font-size: 13px;
   backdrop-filter: blur(6px);
+  border: none;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.mapsV2__card-chip:hover {
+  background: rgba(0, 0, 0, 0.75);
+  transform: scale(1.05);
+}
+
+.mapsV2__card-chip:active {
+  transform: scale(0.95);
 }
 
 .mapsV2__card-chip i {
