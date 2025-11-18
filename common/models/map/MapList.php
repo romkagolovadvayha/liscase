@@ -210,21 +210,37 @@ class MapList extends \yii\db\ActiveRecord
             $server->save(false);
             
             // Загружаем карту на S3 хранилище
-            if (!empty($winningMap->url) && !empty($server->tag)) {
+            if (empty($winningMap->url)) {
+                Yii::error("Map URL is empty for map ID: {$winningMap->id}, server ID: {$serverId}", __METHOD__);
+            } elseif (empty($server->tag)) {
+                Yii::error("Server tag is empty for server ID: {$serverId}, map ID: {$winningMap->id}", __METHOD__);
+            } else {
                 try {
                     // Скачиваем файл карты по URL
-                    $mapFileContent = @file_get_contents($winningMap->url);
+                    $mapFileContent = file_get_contents($winningMap->url);
                     
-                    if ($mapFileContent !== false && !empty($mapFileContent)) {
+                    if ($mapFileContent === false) {
+                        $error = error_get_last();
+                        Yii::error("Failed to download map file from URL: {$winningMap->url}, error: " . ($error['message'] ?? 'Unknown error'), __METHOD__);
+                    } elseif (empty($mapFileContent)) {
+                        Yii::error("Downloaded map file is empty from URL: {$winningMap->url}, map ID: {$winningMap->id}", __METHOD__);
+                    } else {
                         // Формируем путь в S3: server-maps/{server_tag}.map
                         $s3Path = 'server-maps/' . $server->tag . '.map';
                         
                         // Загружаем файл на S3 (если файл существует, он будет перезаписан)
-                        Yii::$app->s3Api->uploadFile($s3Path, $mapFileContent);
+                        $fileSize = strlen($mapFileContent);
+                        $result = Yii::$app->s3Api->uploadFile($s3Path, $mapFileContent);
+                        
+                        if ($result) {
+                            Yii::error("Successfully uploaded map to S3: {$s3Path}, size: {$fileSize} bytes, map ID: {$winningMap->id}, server ID: {$serverId}", __METHOD__);
+                        } else {
+                            Yii::error("Failed to upload map to S3: {$s3Path}, map ID: {$winningMap->id}, server ID: {$serverId}", __METHOD__);
+                        }
                     }
                 } catch (\Exception $e) {
                     // Логируем ошибку, но не прерываем выполнение метода
-                    Yii::error('Error uploading map to S3: ' . $e->getMessage(), __METHOD__);
+                    Yii::error('Error uploading map to S3: ' . $e->getMessage() . ', URL: ' . $winningMap->url . ', map ID: ' . $winningMap->id . ', server ID: ' . $serverId, __METHOD__);
                 }
             }
         }
