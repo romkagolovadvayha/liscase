@@ -30,7 +30,44 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
              data-role="preview"
              data-src="<?= Html::encode($imageSrc) ?>">
             <img src="<?= Html::encode($previewSrc) ?>" alt="<?= Html::encode($detail['hash'] ?? '') ?>" data-role="preview-image">
-            <div class="mapsV2__markers" data-role="markers"></div>
+            <div class="mapsV2__markers" data-role="markers">
+                <?php
+                $mapSize = (int)($detail['size'] ?? 0);
+                if ($mapSize > 0 && !empty($detail['monuments'])) {
+                    $halfSize = $mapSize / 2;
+                    foreach ($detail['monuments'] as $index => $monument) {
+                        $coordinates = $monument['coordinates'] ?? null;
+                        if (!$coordinates || !is_array($coordinates)) {
+                            continue;
+                        }
+                        
+                        $x = $coordinates['x'] ?? $coordinates['X'] ?? null;
+                        $y = $coordinates['y'] ?? $coordinates['Y'] ?? null;
+                        
+                        if ($x === null || $y === null || !is_numeric($x) || !is_numeric($y)) {
+                            continue;
+                        }
+                        
+                        // Конвертируем координаты из игровых в проценты
+                        $posX = (($x + $halfSize) / $mapSize) * 100;
+                        $posY = 100 - ((($y + $halfSize) / $mapSize) * 100);
+                        
+                        // Ограничиваем значения от 0 до 100
+                        $posX = max(0, min(100, $posX));
+                        $posY = max(0, min(100, $posY));
+                        
+                        $monumentLabel = Html::encode($monument['label'] ?? $monument['type'] ?? '');
+                        ?>
+                        <div class="mapsV2__marker"
+                             data-monument-index="<?= $index ?>"
+                             style="left: <?= $posX ?>%; top: <?= $posY ?>%;"
+                             title="<?= $monumentLabel ?>">
+                        </div>
+                        <?php
+                    }
+                }
+                ?>
+            </div>
         </div>
         
         <div class="mapsV2__navigation">

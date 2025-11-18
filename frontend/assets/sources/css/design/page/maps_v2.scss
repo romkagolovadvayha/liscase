@@ -584,6 +584,7 @@ html.mapsV2__modal-open {
 }
 
 .mapsV2__marker {
+  display: none; // Скрыты по умолчанию, показываются только при наведении на чипы монументов
   position: absolute;
   width: 18px;
   height: 18px;
