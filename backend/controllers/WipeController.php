@@ -81,11 +81,6 @@ class WipeController extends Controller
 
     public function actionSelectMap($id)
     {
-        $cacheKey = "WIPE_actionSelectMap_{$id}";
-        if (Yii::$app->cache->get($cacheKey)) {
-            return Yii::$app->cache->get($cacheKey);
-        }
-        Yii::$app->cache->set($cacheKey, 1, 30*60);
 
         \Yii::$app->queueProcess->push(new MapFixJob(['serverId' => $id]));
         Yii::$app->session->addFlash('success', 'Фиксация карты запущена!');

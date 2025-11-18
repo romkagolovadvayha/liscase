@@ -216,12 +216,11 @@ class MapList extends \yii\db\ActiveRecord
                 Yii::error("Server tag is empty for server ID: {$serverId}, map ID: {$winningMap->id}", __METHOD__);
             } else {
                 try {
-                    // Скачиваем файл карты по URL
-                    $mapFileContent = file_get_contents($winningMap->url);
+                    // Пытаемся скачать файл карты с повторными попытками
+                    $mapFileContent = self::downloadMapFileWithRetry($winningMap->url, $winningMap->id);
                     
                     if ($mapFileContent === false) {
-                        $error = error_get_last();
-                        Yii::error("Failed to download map file from URL: {$winningMap->url}, error: " . ($error['message'] ?? 'Unknown error'), __METHOD__);
+                        Yii::error("Failed to download map file after all retries from URL: {$winningMap->url}, map ID: {$winningMap->id}", __METHOD__);
                     } elseif (empty($mapFileContent)) {
                         Yii::error("Downloaded map file is empty from URL: {$winningMap->url}, map ID: {$winningMap->id}", __METHOD__);
                     } else {
@@ -246,6 +245,74 @@ class MapList extends \yii\db\ActiveRecord
         }
 
         return $winningMap;
+    }
+
+    /**
+     * Скачивает файл карты по URL с повторными попытками при ошибках
+     * 
+     * @param string $url URL файла карты
+     * @param int $mapId ID карты для логирования
+     * @param int $maxAttempts Максимальное количество попыток
+     * @return string|false Содержимое файла или false в случае ошибки
+     */
+    private static function downloadMapFileWithRetry(string $url, int $mapId, int $maxAttempts = 3)
+    {
+        $attempts = [0, 3, 5]; // Задержки между попытками в секундах
+        $attempts = array_slice($attempts, 0, $maxAttempts);
+        
+        foreach ($attempts as $attemptNumber => $sleep) {
+            if ($sleep > 0 && $attemptNumber > 0) {
+                sleep($sleep);
+            }
+            
+            $ch = null;
+            try {
+                // Используем curl для лучшего контроля над таймаутами и обработкой ошибок
+                $ch = curl_init($url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 300); // 5 минут таймаут для больших файлов
+                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30); // 30 секунд на подключение
+                curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+                
+                $content = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $error = curl_error($ch);
+                
+                if ($content === false || !empty($error)) {
+                    Yii::warning("Attempt " . ($attemptNumber + 1) . " failed to download map file from URL: {$url}, map ID: {$mapId}, error: {$error}", __METHOD__);
+                    curl_close($ch);
+                    continue;
+                }
+                
+                if ($httpCode >= 200 && $httpCode < 300) {
+                    if (!empty($content)) {
+                        curl_close($ch);
+                        return $content;
+                    } else {
+                        Yii::warning("Attempt " . ($attemptNumber + 1) . " downloaded empty file from URL: {$url}, map ID: {$mapId}, HTTP code: {$httpCode}", __METHOD__);
+                        curl_close($ch);
+                    }
+                } else {
+                    Yii::warning("Attempt " . ($attemptNumber + 1) . " failed with HTTP code {$httpCode} from URL: {$url}, map ID: {$mapId}", __METHOD__);
+                    curl_close($ch);
+                    
+                    // Для 5xx ошибок делаем повторные попытки, для 4xx - сразу возвращаем false
+                    if ($httpCode >= 400 && $httpCode < 500) {
+                        return false;
+                    }
+                }
+            } catch (\Exception $e) {
+                if ($ch !== null) {
+                    curl_close($ch);
+                }
+                Yii::warning("Attempt " . ($attemptNumber + 1) . " exception when downloading map file from URL: {$url}, map ID: {$mapId}, error: " . $e->getMessage(), __METHOD__);
+            }
+        }
+        
+        return false;
     }
 
     /**
