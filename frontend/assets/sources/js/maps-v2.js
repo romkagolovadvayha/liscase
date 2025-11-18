@@ -346,6 +346,11 @@
             return;
         }
         
+        console.log('maps-v2.js: markersContainer found', markersContainer);
+        console.log('maps-v2.js: markersContainer.innerHTML length', markersContainer.innerHTML.length);
+        console.log('maps-v2.js: markersContainer.children.length', markersContainer.children.length);
+        console.log('maps-v2.js: markersContainer.querySelectorAll("*").length', markersContainer.querySelectorAll('*').length);
+        
         // Находим маркер с таким же индексом и показываем его
         const marker = markersContainer.querySelector('.mapsV2__marker[data-monument-index="' + index + '"]');
         if (marker) {
@@ -354,7 +359,9 @@
             chip.classList.add('is-active');
         } else {
             const allMarkers = markersContainer.querySelectorAll('.mapsV2__marker');
-            console.warn('maps-v2.js: Marker not found for index', index, 'Total markers:', allMarkers.length, 'Markers:', Array.from(allMarkers).map(m => m.dataset.monumentIndex));
+            const allDivs = markersContainer.querySelectorAll('div');
+            console.warn('maps-v2.js: Marker not found for index', index, 'Total markers:', allMarkers.length, 'Total divs:', allDivs.length, 'Markers:', Array.from(allMarkers).map(m => m.dataset.monumentIndex));
+            console.warn('maps-v2.js: markersContainer classes', markersContainer.className);
         }
     }, true);
 
