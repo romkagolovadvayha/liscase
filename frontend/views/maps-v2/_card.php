@@ -50,7 +50,7 @@ $isVoted = !empty($userVotedMapIds) && in_array($map->id, $userVotedMapIds);
     </div>
     <div class="mapsV2__card-body">
         <div class="mapsV2__card-progress">
-            <div class="mapsV2__card-progress-bar" style="--progress: <?= $progress ?>%;"></div>
+            <div class="mapsV2__card-progress-bar" style="--progress: <?= $progress ?>"></div>
         </div>
         <div class="mapsV2__card-votes">
             <strong data-role="card-votes-total"><?= $votes ?></strong>

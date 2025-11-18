@@ -106,7 +106,13 @@
         totalVotes = calculateTotalVotes();
         root.dataset.totalVotes = String(totalVotes);
         
-        listEl.querySelectorAll('.mapsV2__card').forEach((cardEl) => {
+        // Получаем listEl динамически, так как он может быть пересоздан после Pjax
+        const currentListEl = root.querySelector('[data-role="map-list"]');
+        if (!currentListEl) {
+            return;
+        }
+        
+        currentListEl.querySelectorAll('.mapsV2__card').forEach((cardEl) => {
             const mapId = parseInt(cardEl.dataset.mapId, 10);
             const map = mapIndex.has(mapId) ? maps[mapIndex.get(mapId)] : null;
             if (!map) {
@@ -450,7 +456,12 @@
     }
 
     function scrollActiveCardIntoView(mapId) {
-        const card = listEl.querySelector(`[data-map-id="${mapId}"]`);
+        // Получаем listEl динамически, так как он может быть пересоздан после Pjax
+        const currentListEl = root.querySelector('[data-role="map-list"]');
+        if (!currentListEl) {
+            return;
+        }
+        const card = currentListEl.querySelector(`[data-map-id="${mapId}"]`);
         if (card && typeof card.scrollIntoView === 'function') {
             card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
@@ -569,7 +580,8 @@
         return document.documentElement.classList.contains('mapsV2__lightbox-open');
     }
 
-    listEl.addEventListener('click', (event) => {
+    // Используем делегирование событий на root, чтобы работало после Pjax обновления
+    root.addEventListener('click', (event) => {
         // Обработка открытия детальной карточки
         const button = event.target.closest('[data-action="open-detail"]');
         if (!button) {
