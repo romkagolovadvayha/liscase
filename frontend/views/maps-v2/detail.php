@@ -14,7 +14,11 @@ use yii\helpers\Html;
 $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds);
 
 ?>
-<section class="mapsV2__detail">
+<section class="mapsV2__detail"
+         data-role="map-detail"
+         data-map-detail-id="<?= $detail['id'] ?>"
+         data-map-size="<?= $detail['size'] ?? '' ?>"
+         data-map-monuments='<?= Html::encode(json_encode($detail['monuments'] ?? [])) ?>'>
     <div class="mapsV2__detail-visual">
         <?php
         $imageSrc = $detail['imageIconUrl'] ?? $detail['rawImageUrl'] ?? $detail['image'] ?? $detail['imagePreview'] ?? '';
@@ -84,7 +88,7 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
         </div>
     </div>
 
-    <div class="mapsV2__detail-body" data-map-detail-id="<?= $detail['id'] ?>">
+    <div class="mapsV2__detail-body">
         <header class="mapsV2__detail-header">
             <p class="mapsV2__detail-type" data-role="detail-type"><?= Html::encode($detail['type'] ?? 'Procedural') ?></p>
         </header>
@@ -148,9 +152,9 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
         <section class="mapsV2__voters" data-role="voters">
             <div class="mapsV2__voters-header">
                 <h3><?= Yii::t('common', 'Кто уже проголосовал') ?></h3>
-                <button type="button" class="mapsV2__voters-refresh" data-action="refresh-voters">
-                    <i class="fas fa-sync"></i>
-                    <?= Yii::t('common', 'Обновить') ?>
+                <button type="button" class="mapsV2__vote-button<?= $isVoted ? ' is-active' : '' ?>" data-action="vote-from-detail" data-map-id="<?= $detail['id'] ?>">
+                    <i class="<?= $isVoted ? 'fas' : 'far' ?> fa-heart"></i>
+                    <?= Yii::t('common', 'Проголосовать') ?>
                 </button>
             </div>
             <div class="mapsV2__voters-list" data-role="voters-list">

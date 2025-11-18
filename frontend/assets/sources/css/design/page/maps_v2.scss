@@ -746,30 +746,58 @@ html.mapsV2__modal-open {
   gap: 8px;
 }
 
-.mapsV2__voters-refresh {
+.mapsV2__voters-header .mapsV2__vote-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
-  font-size: 11px;
+  padding: 6px 12px;
+  font-size: 12px;
   border-radius: var(--button-secondary-radius);
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  text-decoration: none;
   transition: var(--transition-all);
   cursor: pointer;
 }
 
-.mapsV2__voters-refresh:hover {
+.mapsV2__voters-header .mapsV2__vote-button:hover {
   border-color: var(--primary-colors-secondary);
+}
+
+.mapsV2__voters-header .mapsV2__vote-button.is-active {
+  background: linear-gradient(90deg, rgba(236, 44, 92, 0.85), rgba(255, 120, 165, 0.85));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 12px 28px rgba(236, 44, 92, 0.32);
 }
 
 .mapsV2__voters-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 200px;
+  max-height: 400px;
   overflow-y: auto;
   padding-right: 4px;
+  
+  // Кастомный скроллбар
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(124, 101, 255, 0.4);
+    border-radius: 3px;
+    
+    &:hover {
+      background: rgba(124, 101, 255, 0.6);
+    }
+  }
 }
 
 .mapsV2__voter {

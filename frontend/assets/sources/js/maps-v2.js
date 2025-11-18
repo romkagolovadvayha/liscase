@@ -210,7 +210,14 @@
                 // Обновляем список голосовавших в модалке, если она открыта
                 if (updateDetail) {
                     const detailEl = document.querySelector('[data-role="map-detail"]');
-                    const list = detailEl ? detailEl.querySelector('[data-role="voters-list"]') : null;
+                    if (!detailEl) {
+                        return;
+                    }
+                    const detailMapId = parseInt(detailEl.dataset.mapDetailId, 10);
+                    if (detailMapId !== mapId) {
+                        return;
+                    }
+                    const list = detailEl.querySelector('[data-role="voters-list"]');
                     if (list) {
                         list.innerHTML = '';
                         const voters = map.voters || [];
@@ -257,6 +264,114 @@
         return document.documentElement.classList.contains('mapsV2__lightbox-open');
     }
 
+    // Инициализация маркеров и монументов при загрузке модалки
+    function initializeMapMarkers() {
+        const detailEl = document.querySelector('[data-role="map-detail"]');
+        if (!detailEl) {
+            return;
+        }
+
+        const markersContainer = detailEl.querySelector('[data-role="markers"]');
+        const monumentsList = detailEl.querySelector('[data-role="monuments-list"]');
+        
+        if (!markersContainer || !monumentsList) {
+            return;
+        }
+
+        // Получаем данные из data-атрибутов детальной карточки
+        const size = parseInt(detailEl.dataset.mapSize, 10) || 0;
+        if (size <= 0) {
+            return;
+        }
+
+        let monuments = [];
+        try {
+            const monumentsJson = detailEl.dataset.mapMonuments;
+            if (monumentsJson) {
+                monuments = JSON.parse(monumentsJson);
+                if (!Array.isArray(monuments)) {
+                    monuments = [];
+                }
+            }
+        } catch (e) {
+            console.error('Failed to parse monuments data', e);
+            return;
+        }
+
+        if (!monuments.length) {
+            return;
+        }
+
+        // Очищаем существующие маркеры
+        markersContainer.innerHTML = '';
+
+        // Рендерим маркеры на карте
+        const halfSize = size / 2;
+        monuments.forEach((monument, index) => {
+            const coordinates = monument.coordinates || {};
+            if (typeof coordinates.x !== 'number' || typeof coordinates.y !== 'number') {
+                return;
+            }
+
+            const posX = ((coordinates.x + halfSize) / size) * 100;
+            const posY = 100 - ((coordinates.y + halfSize) / size) * 100;
+            if (Number.isNaN(posX) || Number.isNaN(posY)) {
+                return;
+            }
+
+            const marker = document.createElement('div');
+            marker.className = 'mapsV2__marker';
+            marker.style.left = `${Math.min(100, Math.max(0, posX))}%`;
+            marker.style.top = `${Math.min(100, Math.max(0, posY))}%`;
+            marker.dataset.index = String(index);
+            marker.title = monument.label || monument.type || '';
+            markersContainer.appendChild(marker);
+        });
+
+        // Добавляем обработчики событий для чипов монументов через делегирование
+        monumentsList.querySelectorAll('.mapsV2__monument-chip').forEach((chip) => {
+            chip.addEventListener('mouseenter', function() {
+                const index = parseInt(this.dataset.monumentIndex, 10);
+                highlightMonument(index);
+            });
+            
+            chip.addEventListener('mouseleave', function() {
+                highlightMonument(null);
+            });
+        });
+
+        // Также добавляем обработчики для маркеров
+        markersContainer.querySelectorAll('.mapsV2__marker').forEach((marker) => {
+            marker.addEventListener('mouseenter', function() {
+                const index = parseInt(this.dataset.index, 10);
+                highlightMonument(index);
+            });
+            
+            marker.addEventListener('mouseleave', function() {
+                highlightMonument(null);
+            });
+        });
+    }
+
+    function highlightMonument(index) {
+        const detailEl = document.querySelector('[data-role="map-detail"]');
+        if (!detailEl) {
+            return;
+        }
+
+        const chips = detailEl.querySelectorAll('.mapsV2__monument-chip');
+        chips.forEach((chip) => {
+            const chipIndex = parseInt(chip.dataset.monumentIndex, 10);
+            chip.classList.toggle('is-active', index !== null && chipIndex === index);
+        });
+
+        const markers = detailEl.querySelectorAll('.mapsV2__marker');
+        markers.forEach((marker) => {
+            const markerIndex = parseInt(marker.dataset.index, 10);
+            marker.classList.toggle('is-active', index !== null && markerIndex === index);
+        });
+    }
+
     // Делегирование событий для действий внутри модалки (загружается динамически)
     document.addEventListener('click', (event) => {
         // Обработка открытия fullscreen изображения
@@ -280,20 +395,84 @@
             return;
         }
 
-        // Обработка обновления списка голосовавших
-        const refreshBtn = event.target.closest('[data-action="refresh-voters"]');
-        if (refreshBtn) {
+        // Обработка голосования из детальной карточки
+        const voteBtn = event.target.closest('[data-action="vote-from-detail"]');
+        if (voteBtn) {
             event.preventDefault();
-            const detailEl = document.querySelector('[data-role="map-detail"]');
-            if (detailEl) {
-                const mapId = parseInt(detailEl.dataset.mapDetailId, 10);
-                if (!isNaN(mapId)) {
-                    refreshVoters(mapId, true);
+            const mapId = parseInt(voteBtn.dataset.mapId, 10);
+            if (!isNaN(mapId) && mapId > 0) {
+                // Находим форму голосования
+                const voteForm = document.getElementById('vote-form');
+                if (voteForm) {
+                    // Устанавливаем map_id
+                    let mapIdInput = voteForm.querySelector('input[name="map_id"]');
+                    if (!mapIdInput) {
+                        mapIdInput = document.createElement('input');
+                        mapIdInput.type = 'hidden';
+                        mapIdInput.name = 'map_id';
+                        voteForm.appendChild(mapIdInput);
+                    }
+                    mapIdInput.value = mapId;
+                    
+                    // Отправляем форму
+                    voteForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
                 }
             }
             return;
         }
     });
+
+    // Инициализация маркеров и обновление состояния кнопки голосования после загрузки модалки
+    function updateVoteButtonState() {
+        const detailEl = document.querySelector('[data-role="map-detail"]');
+        if (!detailEl) {
+            return;
+        }
+
+        const voteBtn = detailEl.querySelector('[data-action="vote-from-detail"]');
+        if (!voteBtn) {
+            return;
+        }
+
+        const mapId = parseInt(voteBtn.dataset.mapId, 10);
+        if (!isNaN(mapId) && mapId > 0) {
+            const isVoted = userVotedMapIds.has(mapId);
+            voteBtn.classList.toggle('is-active', isVoted);
+            
+            // Обновляем иконку и текст
+            const icon = voteBtn.querySelector('i');
+            const text = voteBtn.childNodes[voteBtn.childNodes.length - 1];
+            if (icon) {
+                icon.className = isVoted ? 'fas fa-heart' : 'far fa-heart';
+            }
+        }
+    }
+
+    function initializeModalContent() {
+        initializeMapMarkers();
+        updateVoteButtonState();
+    }
+
+    // Инициализация маркеров после загрузки модалки
+    if (typeof $ !== 'undefined') {
+        // Инициализируем при загрузке контента в модалку
+        $(document).on('shown.bs.modal', '#modal-dialog', function() {
+            // Небольшая задержка для гарантии, что DOM полностью обновлен
+            setTimeout(initializeModalContent, 100);
+        });
+    } else {
+        // Fallback: проверяем наличие модалки и инициализируем
+        const checkModal = setInterval(() => {
+            const modal = document.getElementById('modal-dialog');
+            if (modal && modal.classList.contains('show')) {
+                clearInterval(checkModal);
+                setTimeout(initializeModalContent, 100);
+            }
+        }, 100);
+        
+        // Останавливаем проверку через 5 секунд
+        setTimeout(() => clearInterval(checkModal), 5000);
+    }
 
     // Закрытие lightbox по Escape
     document.addEventListener('keydown', (event) => {
@@ -394,6 +573,9 @@
 
         // Обновляем карточки
         updateCards();
+        
+        // Обновляем состояние кнопки голосования в модалке, если она открыта
+        updateVoteButtonState();
     }
 
     // Обработчик события Pjax для переинициализации после обновления
