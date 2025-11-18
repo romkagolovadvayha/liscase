@@ -709,6 +709,64 @@
         document.documentElement.classList.remove('mapsV2__lightbox-open');
     }
 
+    // Функция для переинициализации данных после Pjax обновления
+    function reinitializeAfterPjax() {
+        // Обновляем данные из root элемента
+        const newTotalVotes = parseInt(root.dataset.totalVotes || '0', 10) || 0;
+        if (newTotalVotes !== totalVotes) {
+            totalVotes = newTotalVotes;
+        }
+
+        // Обновляем userVotedMapIds из root
+        try {
+            const votedIdsJson = root.dataset.userVotedIds;
+            if (votedIdsJson) {
+                const votedIds = JSON.parse(votedIdsJson);
+                if (Array.isArray(votedIds)) {
+                    userVotedMapIds.clear();
+                    votedIds.forEach(id => userVotedMapIds.add(parseInt(id, 10)));
+                }
+            }
+        } catch (e) {
+            console.error('Failed to parse user voted map IDs after Pjax', e);
+        }
+
+        // Обновляем maps данные из HTML (из data-role="card-votes")
+        const currentListEl = root.querySelector('[data-role="map-list"]');
+        if (currentListEl) {
+            currentListEl.querySelectorAll('.mapsV2__card').forEach((cardEl) => {
+                const mapId = parseInt(cardEl.dataset.mapId, 10);
+                const votesBadge = cardEl.querySelector('[data-role="card-votes"]');
+                if (votesBadge && mapIndex.has(mapId)) {
+                    const map = maps[mapIndex.get(mapId)];
+                    if (map) {
+                        map.voteCount = parseInt(votesBadge.textContent, 10) || 0;
+                    }
+                }
+            });
+        }
+
+        // Обновляем карточки
+        updateCards();
+    }
+
+    // Обработчик события Pjax для переинициализации после обновления
+    document.addEventListener('pjax:success', function(event) {
+        // Проверяем, что это обновление нашего Pjax контейнера
+        const pjaxContainer = document.getElementById('maps-v2-cards-pjax');
+        if (pjaxContainer && (event.target === pjaxContainer || pjaxContainer.contains(event.target))) {
+            reinitializeAfterPjax();
+        }
+    });
+
+    // Также обрабатываем pjax:complete для надежности
+    document.addEventListener('pjax:complete', function(event) {
+        const pjaxContainer = document.getElementById('maps-v2-cards-pjax');
+        if (pjaxContainer && (event.target === pjaxContainer || pjaxContainer.contains(event.target))) {
+            reinitializeAfterPjax();
+        }
+    });
+
     // Initial render
     const initialMap = getCurrentMap() || (maps.length > 0 ? maps[0] : null);
     if (initialMap) {
