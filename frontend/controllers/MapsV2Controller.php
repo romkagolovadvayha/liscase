@@ -269,14 +269,19 @@ class MapsV2Controller extends Controller
             'biomeLabels' => MapLocalization::biomeLabels($language),
             'totalMaps' => $totalMaps,
             'displayLimit' => $displayLimit,
-            'voteUrlTemplate' => '/maps-v2/vote/ID_PLACEHOLDER',
+            'voteUrlTemplate' => '/maps-v2/vote',
             'votersUrlTemplate' => '/maps-v2/voters/ID_PLACEHOLDER?server_id=' . $server->id,
         ]);
     }
 
-    public function actionVote($id)
+    public function actionVote()
     {
-        $map = MapList::findOne($id);
+        $mapId = (int)Yii::$app->request->post('map_id');
+        if (!$mapId) {
+            throw new BadRequestHttpException('map_id is required');
+        }
+
+        $map = MapList::findOne($mapId);
         if (!$map) {
             throw new NotFoundHttpException(Yii::t('common', 'Карта не найдена'));
         }
@@ -561,6 +566,7 @@ class MapsV2Controller extends Controller
         return $this->renderPartial('_cards_list', [
             'maps' => $allMaps,
             'cardsHtml' => $cardsHtml,
+            'server' => $server,
         ]);
     }
 

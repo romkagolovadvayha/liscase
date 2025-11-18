@@ -1,6 +1,5 @@
 <?php
 
-use yii\bootstrap5\ActiveForm;
 use yii\helpers\Html;
 
 /** @var \common\models\map\MapList $map */
@@ -18,27 +17,11 @@ $votes = $voteCounts[$map->id] ?? 0;
 $voters = $userVotes[$map->id] ?? [];
 $progress = $totalVotes > 0 ? ($votes / $totalVotes * 100) : 0;
 
-$voteFormId = 'vote-form-' . $map->id;
-$voteUrl = '/maps-v2/vote/' . $map->id;
-
 $isActive = $currentMap && $currentMap->id === $map->id;
 $isLeading = $votes > 0 && $votes === $maxVotes && $maxVotes > 0;
 $isVoted = !empty($userVotedMapIds) && in_array($map->id, $userVotedMapIds);
 
 ?>
-
-<?php $form = ActiveForm::begin([
-    'id' => $voteFormId,
-    'action' => $voteUrl,
-    'method' => 'post',
-    'enableClientValidation' => false,
-    'enableAjaxValidation' => false,
-    'options' => [
-        'data-pjax' => 1,
-    ],
-]); ?>
-
-<?= Html::hiddenInput('server_id', $server->id) ?>
 
 <article class="mapsV2__card<?= $isActive ? ' is-active' : '' ?><?= $isLeading ? ' is-leading' : '' ?>"
          data-map-id="<?= $map->id ?>">
@@ -53,6 +36,8 @@ $isVoted = !empty($userVotedMapIds) && in_array($map->id, $userVotedMapIds);
         </button>
         
         <button type="submit" 
+                name="map_id"
+                value="<?= $map->id ?>"
                 class="mapsV2__card-chip mapsV2__card-chip--votes<?= $isVoted ? ' is-active' : '' ?><?= $isLeading ? ' is-leading' : '' ?>"
                 aria-label="<?= Yii::t('common', 'Проголосовать за карту') ?>">
             <i class="fas fa-heart"></i>
@@ -90,6 +75,4 @@ $isVoted = !empty($userVotedMapIds) && in_array($map->id, $userVotedMapIds);
         </div>
     </div>
 </article>
-
-<?php ActiveForm::end(); ?>
 
