@@ -883,6 +883,119 @@ class MapsV2Controller extends Controller
         ]);
     }
 
+    public function actionVoteDetail()
+    {
+        $mapId = (int)Yii::$app->request->post('map_id');
+        if (!$mapId) {
+            throw new BadRequestHttpException('map_id is required');
+        }
+
+        $map = MapList::findOne($mapId);
+        if (!$map) {
+            throw new NotFoundHttpException(Yii::t('common', 'Карта не найдена'));
+        }
+
+        $serverId = (int)Yii::$app->request->post('server_id');
+        if (!$serverId) {
+            throw new BadRequestHttpException('server_id is required');
+        }
+
+        $server = Servers::findOne($serverId);
+        if (!$server) {
+            throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден'));
+        }
+
+        if (Yii::$app->user->isGuest) {
+            Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать за карту, необходимо авторизоваться'));
+        } else {
+            $user = Yii::$app->user->identity;
+            $totalPlaytime = Statistics::find()
+                ->where([
+                    'steam_id' => $user->steam_id,
+                    'key' => 'playtime',
+                ])
+                ->sum('value');
+
+            if ((int)$totalPlaytime < 60) {
+                Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать, нужно отыграть минимум 1 час'));
+            } elseif ($map->size_int !== null && 
+                      ($map->size_int < (int)$server->min_map_size || $map->size_int > (int)$server->max_map_size)) {
+                Yii::$app->session->addFlash('danger', Yii::t('common', 'Эта карта не подходит по размеру для выбранного сервера'));
+            } else {
+                // Проверяем, есть ли уже голос за эту карту
+                $existingVote = MapListVote::find()
+                    ->where([
+                        'map_list_id' => $map->id,
+                        'server_id' => $server->id,
+                        'user_id' => $user->id,
+                    ])
+                    ->one();
+
+                if ($existingVote) {
+                    // Удаляем голос (отмена)
+                    if ($existingVote->delete()) {
+                        Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос снят!'));
+                    }
+                } else {
+                    // Добавляем голос
+                    $vote = new MapListVote([
+                        'map_list_id' => $map->id,
+                        'server_id' => $server->id,
+                        'user_id' => $user->id,
+                    ]);
+
+                    if ($vote->save()) {
+                        Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос успешно учтен!'));
+                    }
+                }
+            }
+        }
+
+        // Получаем обновленный список voters
+        $votes = MapListVote::find()
+            ->where([
+                'map_list_id' => $map->id,
+                'server_id' => $server->id,
+            ])
+            ->with('user')
+            ->orderBy(['created_at' => SORT_DESC])
+            ->all();
+
+        $voters = [];
+        foreach ($votes as $vote) {
+            if (!$vote->user) {
+                continue;
+            }
+            $voters[] = [
+                'id' => $vote->user->id,
+                'username' => $vote->user->username,
+                'avatar' => $vote->user->getAvatar(),
+                'created_at' => $vote->created_at,
+            ];
+        }
+
+        // Проверяем, проголосовал ли текущий пользователь
+        $userVotedMapIds = [];
+        if (!Yii::$app->user->isGuest) {
+            $userVotes = MapListVote::find()
+                ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
+                ->andWhere(['user_id' => Yii::$app->user->id])
+                ->all();
+            foreach ($userVotes as $vote) {
+                $userVotedMapIds[] = $vote->map_list_id;
+            }
+        }
+
+        $isVoted = in_array($map->id, $userVotedMapIds);
+
+        return $this->renderPartial('_voters', [
+            'voters' => $voters,
+            'mapId' => $map->id,
+            'serverId' => $server->id,
+            'isVoted' => $isVoted,
+        ]);
+    }
+
     private function registerSeo(Servers $server): void
     {
         $desc = Yii::t(

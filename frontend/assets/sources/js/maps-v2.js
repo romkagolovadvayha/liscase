@@ -341,29 +341,8 @@
             markersContainer.appendChild(marker);
         });
 
-        // Добавляем обработчики событий для чипов монументов через делегирование
-        monumentsList.querySelectorAll('.mapsV2__monument-chip').forEach((chip) => {
-            chip.addEventListener('mouseenter', function() {
-                const index = parseInt(this.dataset.monumentIndex, 10);
-                highlightMonument(index);
-            });
-            
-            chip.addEventListener('mouseleave', function() {
-                highlightMonument(null);
-            });
-        });
-
-        // Также добавляем обработчики для маркеров
-        markersContainer.querySelectorAll('.mapsV2__marker').forEach((marker) => {
-            marker.addEventListener('mouseenter', function() {
-                const index = parseInt(this.dataset.index, 10);
-                highlightMonument(index);
-            });
-            
-            marker.addEventListener('mouseleave', function() {
-                highlightMonument(null);
-            });
-        });
+        // Обработчики событий для монументов добавляются через делегирование
+        // в основном обработчике событий документа
     }
 
     function highlightMonument(index) {
@@ -420,6 +399,50 @@
             return;
         }
     });
+
+    // Делегирование событий для подсветки монументов при наведении
+    // Используем mouseover/mouseout, так как они всплывают, в отличие от mouseenter/mouseleave
+    document.addEventListener('mouseover', (event) => {
+        const chip = event.target.closest('.mapsV2__monument-chip');
+        if (chip) {
+            const index = parseInt(chip.dataset.monumentIndex, 10);
+            if (!isNaN(index) && index >= 0) {
+                highlightMonument(index);
+            }
+            return;
+        }
+
+        const marker = event.target.closest('.mapsV2__marker');
+        if (marker) {
+            const index = parseInt(marker.dataset.index, 10);
+            if (!isNaN(index) && index >= 0) {
+                highlightMonument(index);
+            }
+            return;
+        }
+    }, true);
+
+    document.addEventListener('mouseout', (event) => {
+        const chip = event.target.closest('.mapsV2__monument-chip');
+        if (chip) {
+            // Проверяем, что мышь действительно покинула элемент (не перешла на дочерний)
+            const relatedTarget = event.relatedTarget;
+            if (!chip.contains(relatedTarget)) {
+                highlightMonument(null);
+            }
+            return;
+        }
+
+        const marker = event.target.closest('.mapsV2__marker');
+        if (marker) {
+            // Проверяем, что мышь действительно покинула элемент
+            const relatedTarget = event.relatedTarget;
+            if (!marker.contains(relatedTarget)) {
+                highlightMonument(null);
+            }
+            return;
+        }
+    }, true);
 
     // Инициализация маркеров и обновление состояния кнопки голосования после загрузки модалки
     function updateVoteButtonState() {
@@ -583,23 +606,6 @@
         $(document).on('pjax:success', '#maps-v2-cards-pjax', function() {
             console.log('Pjax success for maps-v2-cards-pjax');
             reinitializeAfterPjax();
-            
-            // Обновляем список voters в модалке, если она открыта
-            const detailEl = document.querySelector('[data-role="map-detail"]');
-            if (detailEl) {
-                const mapId = parseInt(detailEl.dataset.mapDetailId, 10);
-                const serverId = parseInt(detailEl.dataset.mapServerId, 10);
-                const votersPjax = document.querySelector(`#maps-v2-voters-pjax-${mapId}`);
-                if (votersPjax && mapId > 0 && serverId > 0) {
-                    const url = `/maps-v2/voters/${mapId}/${serverId}`;
-                    $.pjax({
-                        url: url,
-                        container: `#maps-v2-voters-pjax-${mapId}`,
-                        timeout: 5000,
-                        replace: false
-                    });
-                }
-            }
         });
 
         $(document).on('pjax:end', '#maps-v2-cards-pjax', function() {
@@ -610,6 +616,44 @@
         // Обновляем состояние кнопки голосования после обновления списка voters
         $(document).on('pjax:success', '[id^="maps-v2-voters-pjax-"]', function() {
             updateVoteButtonState();
+            // Переинициализируем маркеры после обновления voters (если модалка открыта)
+            initializeMapMarkers();
+            
+            // После обновления voters обновляем основной список карт для синхронизации счетчиков
+            const detailEl = document.querySelector('[data-role="map-detail"]');
+            if (detailEl) {
+                const mapId = parseInt(detailEl.dataset.mapDetailId, 10);
+                if (mapId > 0 && typeof $ !== 'undefined') {
+                    const mainForm = document.getElementById('vote-form');
+                    if (mainForm) {
+                        // Обновляем основную форму через Pjax для синхронизации счетчиков
+                        $.pjax({
+                            url: window.location.href.split('?')[0],
+                            container: '#maps-v2-cards-pjax',
+                            timeout: 5000,
+                            replace: false,
+                            push: false
+                        });
+                    }
+                }
+            }
+        });
+
+        // Переинициализируем маркеры при загрузке нового контента в модалку
+        $(document).on('shown.bs.modal', '#modal-dialog', function() {
+            setTimeout(initializeModalContent, 100);
+        });
+
+        // Также переинициализируем маркеры после Pjax обновления модалки (если используется)
+        $(document).on('pjax:success', function(event, data) {
+            // Проверяем, был ли обновлен контент модалки
+            const modal = document.getElementById('modal-dialog');
+            if (modal && modal.classList.contains('show')) {
+                const detailEl = modal.querySelector('[data-role="map-detail"]');
+                if (detailEl) {
+                    setTimeout(initializeModalContent, 100);
+                }
+            }
         });
     } else {
         // Fallback для нативного JavaScript, если jQuery недоступен

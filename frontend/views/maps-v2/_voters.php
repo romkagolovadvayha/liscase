@@ -21,13 +21,13 @@ use yii\helpers\Html;
         <h3><?= Yii::t('common', 'Кто уже проголосовал') ?></h3>
         <?php $form = ActiveForm::begin([
             'id' => 'vote-form-detail-' . $mapId,
-            'action' => '/maps-v2/vote',
+            'action' => '/maps-v2/vote-detail',
             'method' => 'post',
             'enableClientValidation' => false,
             'enableAjaxValidation' => false,
             'options' => [
                 'data-pjax' => 1,
-                'data-pjax-container' => '#maps-v2-cards-pjax',
+                'data-pjax-container' => '#maps-v2-voters-pjax-' . $mapId,
             ],
         ]); ?>
         <?= Html::hiddenInput('server_id', $serverId) ?>
