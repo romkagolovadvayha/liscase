@@ -69,6 +69,13 @@ $this->title = Yii::t('common', 'Вайп');
                     ['class' => 'btn' . $disabled, 'disabled' => true]); ?>
         <?php endforeach; ?>
     </div>
+    <div style="margin-top: 10px;">
+        <h3>Удалить не зафиксированные карты</h3>
+        <?php $disabled = Yii::$app->cache->get("WIPE_actionDeleteUnfixedMaps") ? ' btn-default disabled' : ' btn-success' ?>
+        <?= Html::a(Yii::t('common', 'Удалить'),
+                    '/wipe/delete-unfixed-maps',
+                    ['class' => 'btn' . $disabled]); ?>
+    </div>
     <hr>
     <div style="margin-top: 10px;">
         <h3>Обнулить промокод</h3>

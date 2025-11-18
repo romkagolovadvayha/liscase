@@ -56,16 +56,39 @@ class MapsV2Controller extends Controller
 
         $this->registerSeo($server);
 
+        // Получаем ID карт, которые уже зафиксированы на любом из серверов
+        $fixedMapIds = Servers::find()
+            ->select('map_list_id')
+            ->andWhere(['IS NOT', 'map_list_id', null])
+            ->column();
+
         $mapQuery = MapList::find()
             ->alias('ml')
             ->andWhere(['IS NOT', 'ml.size_int', null])
             ->andWhere(['>=', 'ml.size_int', (int)$server->min_map_size])
             ->andWhere(['<=', 'ml.size_int', (int)$server->max_map_size])
             ->orderBy(['ml.created_at' => SORT_DESC]);
+        
+        // Исключаем зафиксированные карты из списка
+        if (!empty($fixedMapIds)) {
+            $mapQuery->andWhere(['NOT IN', 'ml.id', $fixedMapIds]);
+        }
 
         $maps = $mapQuery->all();
         if (empty($maps)) {
             $maps = [];
+        }
+
+        // Проверяем, есть ли зафиксированная карта для текущего сервера
+        $fixedMap = null;
+        $fixedMapId = null;
+        if (!empty($server->map_list_id)) {
+            $fixedMapId = (int)$server->map_list_id;
+            $fixedMap = MapList::findOne($fixedMapId);
+            if ($fixedMap) {
+                // Добавляем зафиксированную карту в начало списка
+                array_unshift($maps, $fixedMap);
+            }
         }
 
         $totalMaps = count($maps);
@@ -182,6 +205,8 @@ class MapsV2Controller extends Controller
                 ];
             }
 
+            $isFixed = ($fixedMapId !== null && (int)$map->id === $fixedMapId);
+
             $mapCardsData[$map->id] = [
                 'id' => (int)$map->id,
                 'hash' => $map->hash,
@@ -213,6 +238,7 @@ class MapsV2Controller extends Controller
                 'createdAt' => $map->created_at,
                 'voteCount' => $voteCounts[$map->id] ?? 0,
                 'voters' => $userVotes[$map->id] ?? [],
+                'isFixed' => $isFixed,
             ];
         }
 
@@ -489,15 +515,15 @@ class MapsV2Controller extends Controller
             Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать, нужно авторизоваться на сайте!'));
         } else {
             /** @var User $user */
-            $user = Yii::$app->user->identity;
+        $user = Yii::$app->user->identity;
 
             // Проверяем, есть ли уже голос за эту карту
             $existingVote = MapListVote::find()
-                ->where([
+            ->where([
                     'map_list_id' => $map->id,
-                    'server_id' => $server->id,
-                    'user_id' => $user->id,
-                ])
+                'server_id' => $server->id,
+                'user_id' => $user->id,
+            ])
                 ->one();
 
             $voteAdded = false;
@@ -520,11 +546,11 @@ class MapsV2Controller extends Controller
                     Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы проголосовать, нужно отыграть на сервере минимум 1 час!'));
                 } else {
                     // Добавляем голос
-                    $vote = new MapListVote([
-                        'map_list_id' => $map->id,
-                        'server_id' => $server->id,
-                        'user_id' => $user->id,
-                    ]);
+        $vote = new MapListVote([
+            'map_list_id' => $map->id,
+            'server_id' => $server->id,
+            'user_id' => $user->id,
+        ]);
 
                     if ($vote->save()) {
                         $voteAdded = true;
@@ -534,14 +560,38 @@ class MapsV2Controller extends Controller
             }
         }
 
+        // Получаем ID карт, которые уже зафиксированы на любом из серверов
+        $fixedMapIds = Servers::find()
+            ->select('map_list_id')
+            ->andWhere(['IS NOT', 'map_list_id', null])
+            ->column();
+        
         // Пересчитываем все данные для возврата обновленной карточки
-        $allMaps = MapList::find()
+        $allMapsQuery = MapList::find()
             ->alias('ml')
             ->andWhere(['IS NOT', 'ml.size_int', null])
             ->andWhere(['>=', 'ml.size_int', (int)$server->min_map_size])
             ->andWhere(['<=', 'ml.size_int', (int)$server->max_map_size])
-            ->orderBy(['ml.created_at' => SORT_DESC])
-            ->all();
+            ->orderBy(['ml.created_at' => SORT_DESC]);
+        
+        // Исключаем зафиксированные карты из списка
+        if (!empty($fixedMapIds)) {
+            $allMapsQuery->andWhere(['NOT IN', 'ml.id', $fixedMapIds]);
+        }
+        
+        $allMaps = $allMapsQuery->all();
+        
+        // Проверяем, есть ли зафиксированная карта для текущего сервера
+        $fixedMapVote = null;
+        $fixedMapIdVote = null;
+        if (!empty($server->map_list_id)) {
+            $fixedMapIdVote = (int)$server->map_list_id;
+            $fixedMapVote = MapList::findOne($fixedMapIdVote);
+            if ($fixedMapVote) {
+                // Добавляем зафиксированную карту в начало списка
+                array_unshift($allMaps, $fixedMapVote);
+            }
+        }
 
         $mapIds = ArrayHelper::getColumn($allMaps, 'id');
         $voteCounts = [];
@@ -697,6 +747,8 @@ class MapsV2Controller extends Controller
                 ];
             }
 
+            $isFixedVote = ($fixedMapIdVote !== null && (int)$mapItem->id === $fixedMapIdVote);
+            
             $allMapCardsData[$mapItem->id] = [
                 'id' => (int)$mapItem->id,
                 'hash' => $mapItem->hash,
@@ -728,6 +780,7 @@ class MapsV2Controller extends Controller
                 'createdAt' => $mapItem->created_at,
                 'voteCount' => $voteCounts[$mapItem->id] ?? 0,
                 'voters' => $userVotes[$mapItem->id] ?? [],
+                'isFixed' => $isFixedVote,
             ];
         }
 

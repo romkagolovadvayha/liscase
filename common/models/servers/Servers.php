@@ -57,9 +57,11 @@ use yii\helpers\ArrayHelper;
  * @property int $min_map_size
  * @property int $max_map_size
  * @property int $map_id
+ * @property int $map_list_id
  * @property string $secret_key
  *
  * @property Map $mapEntity
+ * @property \common\models\map\MapList $mapList
  * @property ServersTagsRelation[] $serversTagsRelations
  * @property ServersTags[] $serversTags
  */
@@ -127,6 +129,7 @@ class Servers extends \common\components\base\ActiveRecord
             'min_map_size'          => Yii::t('common', 'Минимальный размер карты'),
             'max_map_size'          => Yii::t('common', 'Максимальный размер карты'),
             'map_id'          => Yii::t('common', 'ID карты'),
+            'map_list_id'          => Yii::t('common', 'ID карты из списка'),
             'secret_key'          => Yii::t('common', 'Секретный ключ'),
             'secret_map'          => Yii::t('common', 'Секретная карты'),
         ];
@@ -137,7 +140,7 @@ class Servers extends \common\components\base\ActiveRecord
         return [
             [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description', 'min_map_size', 'max_map_size'], 'required'],
             [['description', 'name', 'ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'secret_key'], 'string'],
-            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size'], 'integer'],
+            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id'], 'integer'],
             [['wipe', 'next_wipe', 'global_wipe', 'secret_map'], 'safe'],
         ];
     }
@@ -425,6 +428,16 @@ class Servers extends \common\components\base\ActiveRecord
     public function getMapEntity()
     {
         return $this->hasOne(Map::class, ['id' => 'map_id']);
+    }
+
+    /**
+     * Gets query for [[MapList]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getMapList()
+    {
+        return $this->hasOne(\common\models\map\MapList::class, ['id' => 'map_list_id']);
     }
 
     /**

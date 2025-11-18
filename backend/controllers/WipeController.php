@@ -4,9 +4,11 @@ namespace backend\controllers;
 
 use common\components\helpers\Role;
 use common\components\queue\process\MapGenerateJob;
+use common\components\queue\process\MapFixJob;
 use common\models\box\Drop;
 use common\models\box\DropBlocked;
 use common\models\map\Map;
+use common\models\map\MapList;
 use common\models\profit\Profit;
 use common\models\promocode\Promocode;
 use common\models\servers\Servers;
@@ -84,18 +86,9 @@ class WipeController extends Controller
             return Yii::$app->cache->get($cacheKey);
         }
         Yii::$app->cache->set($cacheKey, 1, 30*60);
-        /** @var Map $map */
-        $map = Map::find()
-            ->andWhere(['server_id' => $id])
-            ->andWhere(['is_archive' => 0])
-            ->orderBy(['votes' => SORT_DESC])
-            ->one();
 
-        $server = Servers::findOne($id);
-        $server->map_id = $map->id;
-        $server->save(false);
-
-        Yii::$app->session->addFlash('success', 'Карта успешно зафиксирована!');
+        \Yii::$app->queueProcess->push(new MapFixJob(['serverId' => $id]));
+        Yii::$app->session->addFlash('success', 'Фиксация карты запущена!');
         return $this->redirect('index');
     }
 
@@ -109,6 +102,19 @@ class WipeController extends Controller
 
         \Yii::$app->queueProcess->push(new MapGenerateJob(['serverId'  => $id]));
         Yii::$app->session->addFlash('success', 'Генерирация запущена!');
+        return $this->redirect('index');
+    }
+
+    public function actionDeleteUnfixedMaps()
+    {
+        $cacheKey = "WIPE_actionDeleteUnfixedMaps";
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        Yii::$app->cache->set($cacheKey, 1, 5*60);
+
+        MapList::deleteUnfixedMaps();
+        Yii::$app->session->addFlash('success', 'Не зафиксированные карты удалены!');
         return $this->redirect('index');
     }
 

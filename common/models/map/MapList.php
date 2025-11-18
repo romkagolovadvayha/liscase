@@ -151,4 +151,112 @@ class MapList extends \yii\db\ActiveRecord
 
         return (bool)$vote->delete();
     }
+
+    /**
+     * Фиксирует карту с наибольшим количеством голосов для указанного сервера
+     * и обновляет поле map_list_id в таблице servers
+     * 
+     * @param int $serverId ID сервера
+     * @return MapList|null Карта с наибольшим количеством голосов или null, если голосов нет
+     */
+    public static function fixWinningMapForServer(int $serverId): ?self
+    {
+        // Получаем количество голосов для каждой карты на данном сервере
+        $voteCounts = MapListVote::find()
+            ->select(['map_list_id', 'vote_count' => 'COUNT(*)'])
+            ->where(['server_id' => $serverId])
+            ->groupBy('map_list_id')
+            ->orderBy(['vote_count' => SORT_DESC])
+            ->asArray()
+            ->all();
+
+        if (empty($voteCounts)) {
+            // Нет голосов, можно сбросить map_list_id или оставить null
+            $server = \common\models\servers\Servers::findOne($serverId);
+            if ($server) {
+                $server->map_list_id = null;
+                $server->save(false);
+            }
+            return null;
+        }
+
+        // Находим максимальное количество голосов
+        $maxVotes = (int)$voteCounts[0]['vote_count'];
+        
+        // Получаем все карты с максимальным количеством голосов
+        $winningMapIds = [];
+        foreach ($voteCounts as $row) {
+            if ((int)$row['vote_count'] === $maxVotes) {
+                $winningMapIds[] = (int)$row['map_list_id'];
+            } else {
+                break; // Так как сортировка по убыванию, дальше будут карты с меньшим количеством голосов
+            }
+        }
+
+        // Если несколько карт с одинаковым количеством голосов, выбираем самую новую по created_at
+        $winningMap = self::find()
+            ->where(['id' => $winningMapIds])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->one();
+
+        if (!$winningMap) {
+            return null;
+        }
+
+        // Обновляем map_list_id в таблице servers
+        $server = \common\models\servers\Servers::findOne($serverId);
+        if ($server) {
+            $server->map_list_id = $winningMap->id;
+            $server->save(false);
+            
+            // Загружаем карту на S3 хранилище
+            if (!empty($winningMap->url) && !empty($server->tag)) {
+                try {
+                    // Скачиваем файл карты по URL
+                    $mapFileContent = @file_get_contents($winningMap->url);
+                    
+                    if ($mapFileContent !== false && !empty($mapFileContent)) {
+                        // Формируем путь в S3: server-maps/{server_tag}.map
+                        $s3Path = 'server-maps/' . $server->tag . '.map';
+                        
+                        // Загружаем файл на S3 (если файл существует, он будет перезаписан)
+                        Yii::$app->s3Api->uploadFile($s3Path, $mapFileContent);
+                    }
+                } catch (\Exception $e) {
+                    // Логируем ошибку, но не прерываем выполнение метода
+                    Yii::error('Error uploading map to S3: ' . $e->getMessage(), __METHOD__);
+                }
+            }
+        }
+
+        return $winningMap;
+    }
+
+    /**
+     * Удаляет все не зафиксированные карты из таблицы map_list
+     * Остаются только карты, которые зафиксированы хотя бы на одном сервере
+     * 
+     * @return void
+     */
+    public static function deleteUnfixedMaps(): void
+    {
+        try {
+            // Получаем ID всех зафиксированных карт на любом из серверов
+            $fixedMapIds = \common\models\servers\Servers::find()
+                ->select('map_list_id')
+                ->andWhere(['IS NOT', 'map_list_id', null])
+                ->column();
+            
+            // Если есть зафиксированные карты, удаляем все остальные
+            if (!empty($fixedMapIds)) {
+                self::deleteAll(['NOT IN', 'id', $fixedMapIds]);
+            } else {
+                // Если нет зафиксированных карт, удаляем все карты
+                self::deleteAll();
+            }
+        } catch (\Exception $e) {
+            // Логируем ошибку, но не прерываем выполнение метода
+            Yii::error('Error deleting unfixed maps: ' . $e->getMessage(), __METHOD__);
+        }
+    }
 }

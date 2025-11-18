@@ -20,6 +20,7 @@ $progress = $totalVotes > 0 ? ($votes / $totalVotes * 100) : 0;
 $isActive = $currentMap && $currentMap->id === $map->id;
 $isLeading = $votes > 0 && $votes === $maxVotes && $maxVotes > 0;
 $isVoted = !empty($userVotedMapIds) && in_array($map->id, $userVotedMapIds);
+$isFixed = !empty($card['isFixed']);
 
 // Проверяем, что server существует и имеет id
 if (!$server || !isset($server->id) || $server->id <= 0) {
@@ -43,14 +44,22 @@ $serverId = (int)$server->id;
             <img src="<?= Html::encode($card['imagePreview'] ?? $card['image'] ?? '') ?>" alt="<?= Yii::t('common', 'Превью карты') ?>">
         </a>
         
-        <button type="submit" 
-                name="map_id"
-                value="<?= $map->id ?>"
-                class="mapsV2__card-chip mapsV2__card-chip--votes<?= $isVoted ? ' is-active' : '' ?><?= $isLeading ? ' is-leading' : '' ?>"
-                aria-label="<?= Yii::t('common', 'Проголосовать за карту') ?>">
-            <i class="fas fa-heart"></i>
-            <span data-role="card-votes"><?= $votes ?></span>
-        </button>
+        <?php if (!$isFixed): ?>
+            <button type="submit" 
+                    name="map_id"
+                    value="<?= $map->id ?>"
+                    class="mapsV2__card-chip mapsV2__card-chip--votes<?= $isVoted ? ' is-active' : '' ?><?= $isLeading ? ' is-leading' : '' ?>"
+                    aria-label="<?= Yii::t('common', 'Проголосовать за карту') ?>">
+                <i class="fas fa-heart"></i>
+                <span data-role="card-votes"><?= $votes ?></span>
+            </button>
+        <?php else: ?>
+            <div class="mapsV2__card-chip mapsV2__card-chip--votes mapsV2__card-chip--fixed" 
+                 aria-label="<?= Yii::t('common', 'Текущая карта сервера') ?>">
+                <i class="fas fa-check-circle"></i>
+                <span data-role="card-votes"><?= $votes ?></span>
+            </div>
+        <?php endif; ?>
         
         <?php if (!empty($card['isStaging'])): ?>
             <span class="mapsV2__card-chip mapsV2__card-chip--warning">Staging</span>
