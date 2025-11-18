@@ -580,22 +580,41 @@
         return document.documentElement.classList.contains('mapsV2__lightbox-open');
     }
 
-    // Используем делегирование событий на root, чтобы работало после Pjax обновления
-    root.addEventListener('click', (event) => {
+    // Используем делегирование событий на document, чтобы работало после Pjax обновления
+    document.addEventListener('click', (event) => {
+        // Проверяем, что клик был внутри root элемента
+        if (!root || !root.contains(event.target)) {
+            return;
+        }
+        
         // Обработка открытия детальной карточки
         const button = event.target.closest('[data-action="open-detail"]');
         if (!button) {
             return;
         }
+        
+        console.log('Open detail button clicked', button);
+        
         event.preventDefault();
+        event.stopPropagation();
+        
         const card = button.closest('[data-map-id]');
-        if (card) {
-            const mapId = parseInt(card.dataset.mapId, 10);
-            lastFocusedElement = button;
-            selectMapById(mapId);
-            openModal();
+        if (!card) {
+            console.warn('Card not found for button', button);
+            return;
         }
-    });
+        
+        const mapId = parseInt(card.dataset.mapId, 10);
+        if (isNaN(mapId)) {
+            console.warn('Invalid map ID', card.dataset.mapId);
+            return;
+        }
+        
+        console.log('Opening detail for map', mapId);
+        lastFocusedElement = button;
+        selectMapById(mapId);
+        openModal();
+    }, true); // Используем capture фазу для более раннего перехвата
 
     modalEl.addEventListener('click', (event) => {
         const actionElement = event.target.closest('[data-action="close-modal"]');
@@ -751,21 +770,33 @@
     }
 
     // Обработчик события Pjax для переинициализации после обновления
-    document.addEventListener('pjax:success', function(event) {
-        // Проверяем, что это обновление нашего Pjax контейнера
-        const pjaxContainer = document.getElementById('maps-v2-cards-pjax');
-        if (pjaxContainer && (event.target === pjaxContainer || pjaxContainer.contains(event.target))) {
+    // Используем jQuery, так как Yii2 Pjax использует jQuery события
+    if (typeof $ !== 'undefined') {
+        $(document).on('pjax:success', '#maps-v2-cards-pjax', function() {
+            console.log('Pjax success for maps-v2-cards-pjax');
             reinitializeAfterPjax();
-        }
-    });
+        });
 
-    // Также обрабатываем pjax:complete для надежности
-    document.addEventListener('pjax:complete', function(event) {
-        const pjaxContainer = document.getElementById('maps-v2-cards-pjax');
-        if (pjaxContainer && (event.target === pjaxContainer || pjaxContainer.contains(event.target))) {
+        $(document).on('pjax:end', '#maps-v2-cards-pjax', function() {
+            console.log('Pjax end for maps-v2-cards-pjax');
             reinitializeAfterPjax();
-        }
-    });
+        });
+    } else {
+        // Fallback для нативного JavaScript, если jQuery недоступен
+        document.addEventListener('pjax:success', function(event) {
+            const pjaxContainer = document.getElementById('maps-v2-cards-pjax');
+            if (pjaxContainer && event.target === pjaxContainer) {
+                reinitializeAfterPjax();
+            }
+        });
+
+        document.addEventListener('pjax:complete', function(event) {
+            const pjaxContainer = document.getElementById('maps-v2-cards-pjax');
+            if (pjaxContainer && event.target === pjaxContainer) {
+                reinitializeAfterPjax();
+            }
+        });
+    }
 
     // Initial render
     const initialMap = getCurrentMap() || (maps.length > 0 ? maps[0] : null);
