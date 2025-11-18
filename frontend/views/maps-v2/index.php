@@ -105,6 +105,16 @@ if ($hasMaps && $currentMap) {
             <?php
             $pjaxId = 'maps-v2-cards-pjax';
             
+            Pjax::begin([
+                'id' => $pjaxId,
+                'enablePushState' => false,
+                'timeout' => 5000
+            ]);
+            ?>
+            
+            <?= Alert::widget() ?>
+            
+            <?php
             $form = ActiveForm::begin([
                 'id' => 'vote-form',
                 'action' => '/maps-v2/vote',
@@ -119,25 +129,15 @@ if ($hasMaps && $currentMap) {
             
             <?= Html::hiddenInput('server_id', $server->id) ?>
             
-            <?php
-            Pjax::begin([
-                'id' => $pjaxId,
-                'enablePushState' => false,
-                'timeout' => 5000
-            ]);
-            ?>
-            
-            <?= Alert::widget() ?>
-            
             <div class="mapsV2__cards" data-role="map-list">
                 <?php foreach ($maps as $map): ?>
                     <?= $cardsHtml[$map->id] ?? '' ?>
                 <?php endforeach; ?>
             </div>
             
-            <?php Pjax::end(); ?>
-            
             <?php ActiveForm::end(); ?>
+            
+            <?php Pjax::end(); ?>
         </div>
     <?php endif; ?>
 
