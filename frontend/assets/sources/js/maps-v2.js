@@ -340,20 +340,10 @@
         }
         
         // Используем сохраненную ссылку на markersContainer или ищем заново
-        let markersContainer = detailEl._markersContainer;
+        let markersContainer = markersContainer = detailEl.querySelector('[data-role="markers"]');
         console.log('maps-v2.js: detailEl._markersContainer exists?', !!markersContainer);
-        if (!markersContainer) {
-            markersContainer = detailEl.querySelector('[data-role="markers"]');
-            console.log('maps-v2.js: markersContainer found via querySelector?', !!markersContainer);
-            if (markersContainer) {
-                detailEl._markersContainer = markersContainer;
-                const markersCount = markersContainer.querySelectorAll('.mapsV2__marker').length;
-                console.log('maps-v2.js: markersContainer has', markersCount, 'markers');
-            }
-        } else {
-            const markersCount = markersContainer.querySelectorAll('.mapsV2__marker').length;
-            console.log('maps-v2.js: Using cached markersContainer with', markersCount, 'markers');
-        }
+        const markersCount = markersContainer.querySelectorAll('.mapsV2__marker').length;
+        console.log('maps-v2.js: Using cached markersContainer with', markersCount, 'markers');
         
         if (!markersContainer) {
             console.warn('maps-v2.js: markers container not found in detailEl', detailEl);
