@@ -7,6 +7,7 @@ use common\models\map\MapList;
 use common\models\map\MapListVote;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
+use common\models\user\User;
 use frontend\assets\MapsV2Asset;
 use Yii;
 use yii\helpers\ArrayHelper;
@@ -485,43 +486,41 @@ class MapsV2Controller extends Controller
         }
 
         if (Yii::$app->user->isGuest) {
-            Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать за карту, необходимо авторизоваться'));
+            Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать, нужно авторизоваться на сайте!'));
         } else {
-        $user = Yii::$app->user->identity;
-        $totalPlaytime = Statistics::find()
-            ->where([
-                'steam_id' => $user->steam_id,
-                'key' => 'playtime',
-            ])
-            ->sum('value');
+            /** @var User $user */
+            $user = Yii::$app->user->identity;
 
-        if ((int)$totalPlaytime < 60) {
-                Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать, нужно отыграть минимум 1 час'));
-            } elseif ($map->size_int !== null && 
-                      ($map->size_int < (int)$server->min_map_size || $map->size_int > (int)$server->max_map_size)) {
-                Yii::$app->session->addFlash('danger', Yii::t('common', 'Эта карта не подходит по размеру для выбранного сервера'));
+            // Проверяем, есть ли уже голос за эту карту
+            $existingVote = MapListVote::find()
+                ->where([
+                    'map_list_id' => $map->id,
+                    'server_id' => $server->id,
+                    'user_id' => $user->id,
+                ])
+                ->one();
+
+            if ($existingVote) {
+                // Удаляем голос (отмена) - можно снять голос без проверки playtime
+                if ($existingVote->delete()) {
+                    Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос снят!'));
+                }
             } else {
-                // Проверяем, есть ли уже голос за эту карту
-                $existingVote = MapListVote::find()
-            ->where([
-                        'map_list_id' => $map->id,
-                'server_id' => $server->id,
-                'user_id' => $user->id,
-            ])
-                    ->one();
+                // Проверяем playtime только при добавлении голоса
+                $playtime = Statistics::find()
+                    ->andWhere(['steam_id' => $user->steam_id])
+                    ->andWhere(['key' => 'playtime'])
+                    ->sum('value');
 
-                if ($existingVote) {
-                    // Удаляем голос (отмена)
-                    if ($existingVote->delete()) {
-                        Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос снят!'));
-                    }
+                if ((int)$playtime < 60) {
+                    Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы проголосовать, нужно отыграть на сервере минимум 1 час!'));
                 } else {
                     // Добавляем голос
-        $vote = new MapListVote([
-            'map_list_id' => $map->id,
-            'server_id' => $server->id,
-            'user_id' => $user->id,
-        ]);
+                    $vote = new MapListVote([
+                        'map_list_id' => $map->id,
+                        'server_id' => $server->id,
+                        'user_id' => $user->id,
+                    ]);
 
                     if ($vote->save()) {
                         Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос успешно учтен!'));
@@ -906,36 +905,34 @@ class MapsV2Controller extends Controller
         }
 
         if (Yii::$app->user->isGuest) {
-            Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать за карту, необходимо авторизоваться'));
+            Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать, нужно авторизоваться на сайте!'));
         } else {
+            /** @var User $user */
             $user = Yii::$app->user->identity;
-            $totalPlaytime = Statistics::find()
+
+            // Проверяем, есть ли уже голос за эту карту
+            $existingVote = MapListVote::find()
                 ->where([
-                    'steam_id' => $user->steam_id,
-                    'key' => 'playtime',
+                    'map_list_id' => $map->id,
+                    'server_id' => $server->id,
+                    'user_id' => $user->id,
                 ])
-                ->sum('value');
+                ->one();
 
-            if ((int)$totalPlaytime < 60) {
-                Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать, нужно отыграть минимум 1 час'));
-            } elseif ($map->size_int !== null && 
-                      ($map->size_int < (int)$server->min_map_size || $map->size_int > (int)$server->max_map_size)) {
-                Yii::$app->session->addFlash('danger', Yii::t('common', 'Эта карта не подходит по размеру для выбранного сервера'));
+            if ($existingVote) {
+                // Удаляем голос (отмена) - можно снять голос без проверки playtime
+                if ($existingVote->delete()) {
+                    Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос снят!'));
+                }
             } else {
-                // Проверяем, есть ли уже голос за эту карту
-                $existingVote = MapListVote::find()
-                    ->where([
-                        'map_list_id' => $map->id,
-                        'server_id' => $server->id,
-                        'user_id' => $user->id,
-                    ])
-                    ->one();
+                // Проверяем playtime только при добавлении голоса
+                $playtime = Statistics::find()
+                    ->andWhere(['steam_id' => $user->steam_id])
+                    ->andWhere(['key' => 'playtime'])
+                    ->sum('value');
 
-                if ($existingVote) {
-                    // Удаляем голос (отмена)
-                    if ($existingVote->delete()) {
-                        Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос снят!'));
-                    }
+                if ((int)$playtime < 60) {
+                    Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы проголосовать, нужно отыграть на сервере минимум 1 час!'));
                 } else {
                     // Добавляем голос
                     $vote = new MapListVote([

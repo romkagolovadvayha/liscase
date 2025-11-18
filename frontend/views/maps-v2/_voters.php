@@ -40,12 +40,22 @@ use yii\helpers\Html;
     <div class="mapsV2__voters-list" data-role="voters-list">
         <?php if (!empty($voters)): ?>
             <?php foreach ($voters as $voter): ?>
-                <div class="mapsV2__voter">
-                    <img src="<?= Html::encode($voter['avatar'] ?? '') ?>" alt="<?= Html::encode($voter['username'] ?? '') ?>">
-                    <div>
-                        <strong><?= Html::encode($voter['username'] ?? '') ?></strong>
-                        <span><?= !empty($voter['created_at']) ? date('d.m H:i', strtotime($voter['created_at'])) : '' ?></span>
-                    </div>
+                <div class="mapsV2__voter-tag" title="<?= Html::encode($voter['username'] ?? '') ?>">
+                    <?php 
+                    $avatarUrl = $voter['avatar'] ?? ''; 
+                    $hasAvatar = !empty($avatarUrl);
+                    $firstLetter = mb_strtoupper(mb_substr($voter['username'] ?? '?', 0, 1));
+                    ?>
+                    <?php if ($hasAvatar): ?>
+                        <img src="<?= Html::encode($avatarUrl) ?>" 
+                             alt="<?= Html::encode($voter['username'] ?? '') ?>"
+                             class="mapsV2__voter-tag-avatar"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <?php endif; ?>
+                    <span class="mapsV2__voter-tag-avatar-fallback" style="<?= $hasAvatar ? 'display: none;' : 'display: flex;' ?>">
+                        <?= $firstLetter ?>
+                    </span>
+                    <span class="mapsV2__voter-tag-username"><?= Html::encode($voter['username'] ?? '') ?></span>
                 </div>
             <?php endforeach; ?>
         <?php else: ?>

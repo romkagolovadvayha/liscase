@@ -473,7 +473,7 @@ html.mapsV2__modal-open {
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  padding: 20px;
+  padding: 0 20px 20px 20px;
   display: grid;
   grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
   gap: 24px;
@@ -776,7 +776,7 @@ html.mapsV2__modal-open {
 
 .mapsV2__voters-list {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 6px;
   max-height: 400px;
   overflow-y: auto;
@@ -802,30 +802,50 @@ html.mapsV2__modal-open {
   }
 }
 
-.mapsV2__voter {
-  display: flex;
+.mapsV2__voter-tag {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: var(--card-radius);
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 12px;
   background: var(--background-teritiary);
+  font-size: 11px;
+  line-height: 1.2;
+  transition: var(--transition-all);
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
 }
 
-.mapsV2__voter img {
-  width: 28px;
-  height: 28px;
+.mapsV2__voter-tag-avatar {
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   object-fit: cover;
-}
-
-.mapsV2__voter strong {
+  flex-shrink: 0;
   display: block;
-  font-size: 12px;
 }
 
-.mapsV2__voter span {
-  font-size: 11px;
-  color: var(--text-secondary);
+.mapsV2__voter-tag-avatar-fallback {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary-colors-secondary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.mapsV2__voter-tag-username {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
 }
 
 .mapsV2__voters-empty {
