@@ -1,8 +1,6 @@
 <?php
 
 use yii\bootstrap5\ActiveForm;
-use frontend\widgets\Alert;
-use yii\widgets\Pjax;
 use yii\helpers\Html;
 
 /** @var \common\models\map\MapList $map */
@@ -20,7 +18,6 @@ $votes = $voteCounts[$map->id] ?? 0;
 $voters = $userVotes[$map->id] ?? [];
 $progress = $totalVotes > 0 ? ($votes / $totalVotes * 100) : 0;
 
-$voteChipPjaxId = 'vote-card-pjax-' . $map->id;
 $voteFormId = 'vote-form-' . $map->id;
 $voteUrl = '/maps-v2/vote/' . $map->id;
 
@@ -29,14 +26,6 @@ $isLeading = $votes > 0 && $votes === $maxVotes && $maxVotes > 0;
 $isVoted = !empty($userVotedMapIds) && in_array($map->id, $userVotedMapIds);
 
 ?>
-
-<?php Pjax::begin([
-    'id' => $voteChipPjaxId,
-    'enablePushState' => false,
-    'timeout' => 5000
-]); ?>
-
-<?= Alert::widget() ?>
 
 <?php $form = ActiveForm::begin([
     'id' => $voteFormId,
@@ -103,5 +92,4 @@ $isVoted = !empty($userVotedMapIds) && in_array($map->id, $userVotedMapIds);
 </article>
 
 <?php ActiveForm::end(); ?>
-<?php Pjax::end(); ?>
 

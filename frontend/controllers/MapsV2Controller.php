@@ -251,7 +251,7 @@ class MapsV2Controller extends Controller
             ]);
         }
 
-        return $this->render('index.twig', [
+        return $this->render('index', [
             'servers' => $servers,
             'server' => $server,
             'maps' => $maps,
@@ -294,15 +294,15 @@ class MapsV2Controller extends Controller
         if (Yii::$app->user->isGuest) {
             Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать за карту, необходимо авторизоваться'));
         } else {
-            $user = Yii::$app->user->identity;
-            $totalPlaytime = Statistics::find()
-                ->where([
-                    'steam_id' => $user->steam_id,
-                    'key' => 'playtime',
-                ])
-                ->sum('value');
+        $user = Yii::$app->user->identity;
+        $totalPlaytime = Statistics::find()
+            ->where([
+                'steam_id' => $user->steam_id,
+                'key' => 'playtime',
+            ])
+            ->sum('value');
 
-            if ((int)$totalPlaytime < 60) {
+        if ((int)$totalPlaytime < 60) {
                 Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать, нужно отыграть минимум 1 час'));
             } elseif ($map->size_int !== null && 
                       ($map->size_int < (int)$server->min_map_size || $map->size_int > (int)$server->max_map_size)) {
@@ -310,11 +310,11 @@ class MapsV2Controller extends Controller
             } else {
                 // Проверяем, есть ли уже голос за эту карту
                 $existingVote = MapListVote::find()
-                    ->where([
+            ->where([
                         'map_list_id' => $map->id,
-                        'server_id' => $server->id,
-                        'user_id' => $user->id,
-                    ])
+                'server_id' => $server->id,
+                'user_id' => $user->id,
+            ])
                     ->one();
 
                 if ($existingVote) {
@@ -324,11 +324,11 @@ class MapsV2Controller extends Controller
                     }
                 } else {
                     // Добавляем голос
-                    $vote = new MapListVote([
-                        'map_list_id' => $map->id,
-                        'server_id' => $server->id,
-                        'user_id' => $user->id,
-                    ]);
+        $vote = new MapListVote([
+            'map_list_id' => $map->id,
+            'server_id' => $server->id,
+            'user_id' => $user->id,
+        ]);
 
                     if ($vote->save()) {
                         Yii::$app->session->addFlash('success', Yii::t('common', 'Ваш голос успешно учтен!'));
@@ -462,28 +462,105 @@ class MapsV2Controller extends Controller
             ],
         ];
 
-        // Определяем currentMap для карточки
+        // Подготавливаем данные для всех карт (как в actionIndex)
+        $mapDetails = [];
+        $allMapCardsData = [];
+        
+        foreach ($allMaps as $mapItem) {
+            $details = $mapItem->data_json ? json_decode($mapItem->data_json, true) : [];
+            $mapDetails[$mapItem->id] = $details;
+
+            $monumentsRaw = $details['monuments'] ?? json_decode($mapItem->monuments_json ?? '[]', true);
+            if (!is_array($monumentsRaw)) {
+                $monumentsRaw = [];
+            }
+
+            $monuments = [];
+            foreach ($monumentsRaw as $monument) {
+                $type = $monument['type'] ?? '';
+                $monuments[] = [
+                    'type' => $type,
+                    'label' => MapLocalization::monument($type, $language),
+                    'coordinates' => $monument['coordinates'] ?? null,
+                ];
+            }
+
+            $allMapCardsData[$mapItem->id] = [
+                'id' => (int)$mapItem->id,
+                'hash' => $mapItem->hash,
+                'type' => $mapItem->map_type,
+                'seed' => $mapItem->seed,
+                'size' => $mapItem->size_int,
+                'saveVersion' => $mapItem->save_version,
+                'downloadUrl' => $mapItem->url,
+                'rustMapsUrl' => $mapItem->hash ? 'https://rustmaps.com/map/' . $mapItem->hash : null,
+                'image' => $mapItem->image ?: ($details['imageUrl'] ?? $mapItem->image_url),
+                'imagePreview' => $mapItem->image_preview ?: ($details['thumbnailUrl'] ?? $mapItem->thumbnail_url),
+                'rawImageUrl' => $mapItem->raw_image_url ?: ($details['rawImageUrl'] ?? null),
+                'imageIconUrl' => $mapItem->image_icon_url ?: ($details['imageIconUrl'] ?? null),
+                'isStaging' => (bool)$mapItem->is_staging,
+                'isCustomMap' => (bool)$mapItem->is_custom_map,
+                'canDownload' => (bool)$mapItem->can_download,
+                'totalMonuments' => $mapItem->total_monuments,
+                'monuments' => $monuments,
+                'landPercentage' => $mapItem->land_percentage,
+                'biomePercentages' => $details['biomePercentages'] ?? json_decode($mapItem->biome_percentages_json ?? '[]', true),
+                'islands' => $mapItem->islands,
+                'mountains' => $mapItem->mountains,
+                'iceLakes' => $mapItem->ice_lakes,
+                'rivers' => $mapItem->rivers,
+                'lakes' => $mapItem->lakes,
+                'canyons' => $mapItem->canyons,
+                'oases' => $mapItem->oases,
+                'buildableRocks' => $mapItem->buildable_rocks,
+                'createdAt' => $mapItem->created_at,
+                'voteCount' => $voteCounts[$mapItem->id] ?? 0,
+                'voters' => $userVotes[$mapItem->id] ?? [],
+            ];
+        }
+
+        // Определяем currentMap
         $currentMap = null;
         if (!Yii::$app->user->isGuest) {
             $votedMapId = null;
             if ($userVotedMapIds) {
                 $votedMapId = (int)end($userVotedMapIds);
             }
-            if ($votedMapId && $votedMapId === $map->id) {
-                $currentMap = $currentMapForCard;
+            if ($votedMapId) {
+                foreach ($allMaps as $mapItem) {
+                    if ((int)$mapItem->id === $votedMapId) {
+                        $currentMap = $mapItem;
+                        break;
+                    }
+                }
             }
+            if (!$currentMap && !empty($allMaps)) {
+                $currentMap = $allMaps[0];
+            }
+        } elseif (!empty($allMaps)) {
+            $currentMap = $allMaps[0];
         }
 
-        return $this->renderAjax('_card.php', [
-            'map' => $currentMapForCard,
-            'mapCardsData' => $mapCardsData,
-            'voteCounts' => $voteCounts,
-            'userVotes' => $userVotes,
-            'userVotedMapIds' => $userVotedMapIds,
-            'currentMap' => $currentMap,
-            'maxVotes' => $maxVotes,
-            'totalVotes' => $totalVotes,
-            'server' => $server,
+        // Рендерим все карточки
+        $cardsHtml = [];
+        foreach ($allMaps as $mapItem) {
+            $cardsHtml[$mapItem->id] = $this->renderPartial('_card', [
+                'map' => $mapItem,
+                'mapCardsData' => $allMapCardsData,
+                'voteCounts' => $voteCounts,
+                'userVotes' => $userVotes,
+                'userVotedMapIds' => $userVotedMapIds,
+                'currentMap' => $currentMap,
+                'maxVotes' => $maxVotes,
+                'totalVotes' => $totalVotes,
+                'server' => $server,
+            ]);
+        }
+
+        // Возвращаем HTML всех карточек с Pjax и Alert
+        return $this->renderPartial('_cards_list', [
+            'maps' => $allMaps,
+            'cardsHtml' => $cardsHtml,
         ]);
     }
 

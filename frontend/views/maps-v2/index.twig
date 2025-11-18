@@ -68,11 +68,21 @@
         </section>
     {% else %}
         <div class="mapsV2__layout">
+            {% set pjaxId = 'maps-v2-cards-pjax' %}
+            {{ use('yii/widgets/Pjax') }}
+            {{ use('frontend/widgets/Alert') }}
+            {{ Pjax.begin({
+                'id': pjaxId,
+                'enablePushState': false,
+                'timeout': 5000
+            }) }}
+            {{ Alert.widget()|raw }}
             <div class="mapsV2__cards" data-role="map-list">
                 {% for map in maps %}
                     {{ cardsHtml[map.id]|raw }}
                 {% endfor %}
             </div>
+            {{ Pjax.end() }}
         </div>
     {% endif %}
 

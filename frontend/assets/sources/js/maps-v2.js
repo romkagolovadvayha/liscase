@@ -139,13 +139,7 @@
                 votesTotal.textContent = voteCount;
             }
 
-            // Обновляем прогресс-бар
-            const progressBar = cardEl.querySelector('.mapsV2__card-progress-bar');
-            if (progressBar) {
-                // Прогресс-бар показывает процент голосов от общего количества голосов
-                const progress = totalVotes > 0 ? (voteCount / totalVotes * 100) : 0;
-                progressBar.style.setProperty('--progress', `${progress}`);
-            }
+            // Прогресс-бар рассчитывается только в PHP, не обновляем его в JS
 
             // Обновляем состояние чипа с голосами
             const voteChip = cardEl.querySelector('.mapsV2__card-chip--votes');
