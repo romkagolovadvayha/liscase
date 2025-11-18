@@ -1,6 +1,7 @@
 <?php
 
 use yii\helpers\Html;
+use common\helpers\MapLocalization;
 
 /** @var \common\models\map\MapList $map */
 /** @var array $detail */
@@ -53,7 +54,7 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
                     $halfSize = $mapSize / 2;
                     
                     // Фильтруем монументы: исключаем те, что содержат определенные слова
-                    $excludedWords = ['подстанция', 'Наковальня', 'ЛЭП', 'камень', 'глыба', 'скала'];
+                    $excludedWords = ['подстанция', 'Наковальня', 'ЛЭП', 'камень', 'глыба', 'скала', 'скважина', 'ice', 'вход', 'Cave', 'powerline', 'ruin', 'руины'];
                     $filteredMonuments = array_filter($monumentsData, function($monument) use ($excludedWords) {
                         $label = mb_strtolower($monument['label'] ?? '', 'UTF-8');
                         $type = mb_strtolower($monument['type'] ?? '', 'UTF-8');
@@ -90,7 +91,8 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
                         $posX = max(0, min(100, $posX));
                         $posY = max(0, min(100, $posY));
                         
-                        $monumentLabel = Html::encode($monument['label'] ?? $monument['type'] ?? '');
+                        $monumentName = $monument['label'] ?? $monument['type'] ?? '';
+                        $monumentLabel = Html::encode(MapLocalization::monument($monumentName, 'ru-RU'));
                         ?>
                         <div class="mapsV2__marker"
                              data-monument-index="<?= $index ?>"
@@ -209,7 +211,7 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
         <?php if (!empty($detail['monuments'])): ?>
             <?php
             // Фильтруем монументы: исключаем те, что содержат определенные слова
-            $excludedWords = ['подстанция', 'Наковальня', 'ЛЭП', 'камень', 'глыба', 'скала'];
+            $excludedWords = ['подстанция', 'Наковальня', 'ЛЭП', 'камень', 'глыба', 'скала', 'скважина', 'ice', 'вход', 'Cave', 'powerline', 'ruin', 'руины'];
             $filteredMonuments = array_filter($detail['monuments'], function($monument) use ($excludedWords) {
                 $label = mb_strtolower($monument['label'] ?? '', 'UTF-8');
                 $type = mb_strtolower($monument['type'] ?? '', 'UTF-8');
@@ -226,10 +228,14 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
                 <h3><?= Yii::t('common', 'Монументы') ?></h3>
                 <div class="mapsV2__monuments-list" data-role="monuments-list">
                     <?php foreach (array_slice($filteredMonuments, 0, 200) as $index => $monument): ?>
+                        <?php
+                        $monumentName = $monument['label'] ?? $monument['type'] ?? '';
+                        $monumentTranslated = MapLocalization::monument($monumentName, 'ru-RU');
+                        ?>
                         <span class="mapsV2__monument-chip"
-                              title="<?= Html::encode($monument['label'] ?? $monument['type'] ?? '') ?>"
+                              title="<?= Html::encode($monumentTranslated) ?>"
                               data-monument-index="<?= $index ?>">
-                            <?= Html::encode($monument['label'] ?? $monument['type'] ?? '') ?>
+                            <?= Html::encode($monumentTranslated) ?>
                         </span>
                     <?php endforeach; ?>
                 </div>
