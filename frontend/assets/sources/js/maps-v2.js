@@ -396,51 +396,46 @@
         }
     }
 
-    function initializeModalContent() {
-        console.log('maps-v2.js: initializeModalContent called');
+    function initializeModalContent(modalEl) {
+        console.log('maps-v2.js: initializeModalContent called', modalEl);
         
-        // Скрываем все маркеры по умолчанию (они показываются только при наведении)
-        const detailEl = document.querySelector('[data-role="map-detail"]');
-        if (detailEl) {
-            console.log('maps-v2.js: map-detail found, hiding markers', detailEl);
-            console.log('maps-v2.js: map-detail HTML', detailEl.innerHTML.substring(0, 500));
-            
-            const markersContainer = detailEl.querySelector('[data-role="markers"]');
-            if (markersContainer) {
-                console.log('maps-v2.js: markers container found', markersContainer);
-                console.log('maps-v2.js: markers container HTML', markersContainer.innerHTML);
-                console.log('maps-v2.js: markers container children', markersContainer.children.length);
+        // Используем контекст модалки, если передан, иначе ищем во всем документе
+        const searchContext = modalEl || document;
+        
+        // Используем setTimeout чтобы дать DOM время полностью обновиться после загрузки контента
+        setTimeout(function() {
+            // Скрываем все маркеры по умолчанию (они показываются только при наведении)
+            const detailEl = searchContext.querySelector('[data-role="map-detail"]');
+            if (detailEl) {
+                console.log('maps-v2.js: map-detail found, hiding markers', detailEl);
                 
-                // Читаем отладочные data-атрибуты
-                const debugSize = markersContainer.getAttribute('data-debug-size');
-                const debugMonumentsCount = markersContainer.getAttribute('data-debug-monuments-count');
-                console.log('maps-v2.js: DEBUG - mapSize=', debugSize, ', monumentsCount=', debugMonumentsCount);
-                
-                // Пытаемся прочитать отладочный комментарий из HTML
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = markersContainer.innerHTML;
-                const commentNode = Array.from(tempDiv.childNodes).find(node => node.nodeType === 8); // 8 = COMMENT_NODE
-                if (commentNode) {
-                    console.log('maps-v2.js: DEBUG comment found:', commentNode.textContent);
+                const markersContainer = detailEl.querySelector('[data-role="markers"]');
+                if (markersContainer) {
+                    console.log('maps-v2.js: markers container found', markersContainer);
+                    
+                    // Читаем отладочные data-атрибуты
+                    const debugSize = markersContainer.getAttribute('data-debug-size');
+                    const debugMonumentsCount = markersContainer.getAttribute('data-debug-monuments-count');
+                    console.log('maps-v2.js: DEBUG - mapSize=', debugSize, ', monumentsCount=', debugMonumentsCount);
+                    
+                    const markers = markersContainer.querySelectorAll('.mapsV2__marker');
+                    console.log('maps-v2.js: Found markers', markers.length);
+                    markers.forEach((marker, i) => {
+                        marker.style.display = 'none';
+                        console.log('maps-v2.js: Hidden marker', i, marker.dataset.monumentIndex);
+                    });
+                } else {
+                    console.warn('maps-v2.js: markers container not found');
                 }
-                
-                const markers = markersContainer.querySelectorAll('.mapsV2__marker');
-                console.log('maps-v2.js: Found markers', markers.length, markers);
-                markers.forEach((marker, i) => {
-                    marker.style.display = 'none';
-                    console.log('maps-v2.js: Hidden marker', i, marker.dataset.monumentIndex, marker);
-                });
             } else {
-                console.warn('maps-v2.js: markers container not found');
+                console.warn('maps-v2.js: map-detail element not found in initializeModalContent');
             }
-        } else {
-            console.warn('maps-v2.js: map-detail element not found in initializeModalContent');
-        }
+        }, 50); // Небольшая задержка для полного обновления DOM
         updateVoteButtonState();
         
         // Переинициализируем Pjax для формы голосования в модалке
         if (typeof $ !== 'undefined' && typeof $.pjax !== 'undefined') {
-            const detailEl = document.querySelector('[data-role="map-detail"]');
+            const detailEl = searchContext.querySelector('[data-role="map-detail"]');
             if (detailEl) {
                 // Находим все Pjax контейнеры внутри модалки
                 const pjaxContainers = detailEl.querySelectorAll('[id^="maps-v2-voters-pjax-"]');
@@ -484,24 +479,18 @@
     if (typeof $ !== 'undefined') {
         $(document).on('modal.content.loaded', '#modal-dialog', function() {
             console.log('maps-v2.js: modal.content.loaded event fired');
-            const detailEl = this.querySelector('[data-role="map-detail"]');
-            if (detailEl) {
-                console.log('maps-v2.js: map-detail found in modal.content.loaded, initializing...');
-                setTimeout(initializeModalContent, 100);
-            } else {
-                console.warn('maps-v2.js: map-detail not found in modal.content.loaded');
-            }
+            const modalEl = this;
+            setTimeout(function() {
+                initializeModalContent(modalEl);
+            }, 100);
         });
 
         $(document).on('shown.bs.modal', '#modal-dialog', function() {
             console.log('maps-v2.js: shown.bs.modal event fired');
-            const detailEl = this.querySelector('[data-role="map-detail"]');
-            if (detailEl) {
-                console.log('maps-v2.js: map-detail found in shown.bs.modal, initializing...');
-                setTimeout(initializeModalContent, 50);
-            } else {
-                console.warn('maps-v2.js: map-detail not found in shown.bs.modal');
-            }
+            const modalEl = this;
+            setTimeout(function() {
+                initializeModalContent(modalEl);
+            }, 50);
         });
     } else {
         console.warn('maps-v2.js: jQuery not available, using native events');
@@ -510,13 +499,10 @@
             console.log('maps-v2.js: modal-dialog element found, adding native event listener');
             modalEl.addEventListener('shown.bs.modal', function() {
                 console.log('maps-v2.js: shown.bs.modal (native) event fired');
-                const detailEl = this.querySelector('[data-role="map-detail"]');
-                if (detailEl) {
-                    console.log('maps-v2.js: map-detail found in shown.bs.modal (native), initializing...');
-                    setTimeout(initializeModalContent, 50);
-                } else {
-                    console.warn('maps-v2.js: map-detail not found in shown.bs.modal (native)');
-                }
+                const modalEl = this;
+                setTimeout(function() {
+                    initializeModalContent(modalEl);
+                }, 50);
             });
         } else {
             console.warn('maps-v2.js: modal-dialog element not found');
