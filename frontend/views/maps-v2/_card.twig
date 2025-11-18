@@ -20,7 +20,7 @@
 {{ Alert.widget()|raw }}
 
 {% set voteUrl = '/maps-v2/vote/' ~ map.id %}
-{% set voteForm = ActiveForm.begin({
+{{ ActiveForm.begin({
     'id': voteFormId,
     'action': voteUrl,
     'method': 'post',
@@ -29,7 +29,7 @@
     'options': {
         'data-pjax': 1,
     },
-}) %}
+})|raw }}
 
 {{ Html.hiddenInput('server_id', server.id) }}
 
