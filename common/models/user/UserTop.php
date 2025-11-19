@@ -182,7 +182,9 @@ class UserTop extends \yii\db\ActiveRecord
             'rocket_basic' => 0.5,
             'rocket_basic_rpg' => 0.5, // учитывается вместе с rocket_basic через сумму в Statistics.php
             'rocket_hv' => 0.1,
+            'rocket_hv_rpg' => 0.1, // учитывается вместе с rocket_hv через сумму в Statistics.php
             'rocket_fire' => 0.1,
+            'rocket_fire_rpg' => 0.1, // учитывается вместе с rocket_fire через сумму в Statistics.php
             'ammo_explosive' => 0.01,
             'grenade.f1.deployed' => 0.02,
             'grenade.molotov.deployed' => 0.05,
