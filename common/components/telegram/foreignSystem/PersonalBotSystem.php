@@ -315,7 +315,7 @@ class PersonalBotSystem extends AbstractSystem
         $skinsBalance = $user->getSkinsBalance();
         
         $text = "💰 <b>Баланс аккаунта</b>" 
-            . PHP_EOL . PHP_EOL
+            . PHP_EOL
             . "👤 Пользователь: <b>{$user->username}</b>" 
             . PHP_EOL . PHP_EOL
             . "💳 Лицевой счет:" 
@@ -326,7 +326,7 @@ class PersonalBotSystem extends AbstractSystem
         
         $domain = Yii::$app->settings->get('site_domain');
         $text .= PHP_EOL . PHP_EOL
-            . "🔗 <a href=\"https://{$domain}/custom-skins\">Перейти в магазин</a>";
+            . "🔗 <a href=\"https://{$domain}\">Перейти в магазин</a>";
         
         Yii::$app->cache->set($cacheKey, $text, 30);
         return $text;
