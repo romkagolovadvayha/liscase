@@ -16,9 +16,7 @@ class MapsController extends Controller
 {
     public function actionIndex($serverTag = null)
     {
-        // Register maps asset bundle for likes tooltip functionality
-        \frontend\assets\MapsAsset::register($this->view);
-        
+        // Редирект 301 со старой версии на новую
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->cache(30)
@@ -27,79 +25,22 @@ class MapsController extends Controller
                           ->orderBy(['sort' => SORT_ASC])
                           ->all();
 
+        // Определяем целевой URL для редиректа
         if (empty($serverTag) && !Yii::$app->user->isGuest) {
             $user = Yii::$app->user->identity;
             if (!empty($user->server)) {
-                return $this->redirect($user->server->getLink('maps'));
+                $redirectUrl = '/maps-v2/' . $user->server->tag;
             } else {
-                return $this->redirect($servers[0]->getLink('maps'));
+                $redirectUrl = '/maps-v2/' . $servers[0]->tag;
             }
-        }
-        foreach ($servers as $item) {
-            if ($item->tag === $serverTag) {
-                $server = $item;
-                break;
-            }
+        } elseif (!empty($serverTag)) {
+            $redirectUrl = '/maps-v2/' . $serverTag;
+        } else {
+            $redirectUrl = '/maps-v2';
         }
 
-        if (empty($server)) {
-            throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден!'));
-        }
-        $this->view->title = Yii::t('common', 'Выбор карты на сервере') . " " . Yii::t('database', $server->name);
-        $this->view->params['page'] = 'maps';
-
-        // уникальный description
-        $desc = Yii::t('common',
-                       'Голосование за карту на сервере {server}. Играть могут пользователи, проведшие на сервере 1+ часа. Диапазон размеров карты: {min}–{max}. Следующий вайп: {date} МСК.',
-                       [
-                           'server' => Yii::t('database', $server->name),
-                           'min'    => (int)$server->min_map_size,
-                           'max'    => (int)$server->max_map_size,
-                           'date'   => Yii::$app->formatter->asDatetime($server->next_wipe, 'php:d.m.Y H:i'),
-                       ]
-        );
-
-        // meta description
-        $this->view->registerMetaTag([
-                                         'name'    => 'description',
-                                         'content' => $desc,
-                                     ], 'description');
-
-        // canonical (на текущий URL страницы голосования)
-        $this->view->registerLinkTag([
-                                         'rel'  => 'canonical',
-                                         'href' => $server->getLink('maps'),
-                                     ]);
-
-        // (опционально) og:title/og:description для шаринга
-        $this->view->registerMetaTag(['property' => 'og:title', 'content' => $this->view->title], 'og:title');
-        $this->view->registerMetaTag(['property' => 'og:description', 'content' => $desc], 'og:description');
-
-
-        $canonical = Yii::$app->params['homePage'] . '/maps';
-        $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
-
-        $searchModel = new MapsSearch();
-        $dataProvider = $searchModel->search($this->request->queryParams, $server->min_map_size, $server->max_map_size, $server->id);
-        
-        // Calculate max votes and total votes for progress bars
-        $maxVotes = 0;
-        $totalVotes = 0;
-        foreach ($dataProvider->models as $map) {
-            if ($map->votes > $maxVotes) {
-                $maxVotes = $map->votes;
-            }
-            $totalVotes += $map->votes;
-        }
-        
-        return $this->render('maps.twig', [
-            'searchModel' => $searchModel,
-            'dataProvider' => $dataProvider,
-            'SERVER' => $server,
-            'SERVERS' => $servers,
-            'maxVotes' => $maxVotes,
-            'totalVotes' => $totalVotes,
-        ]);
+        // Выполняем редирект 301 на новую версию
+        return $this->redirect($redirectUrl, 301);
     }
 
     public function actionVote($id = null)

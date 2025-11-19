@@ -38,11 +38,8 @@
         mapIndex.set(map.id, index);
     });
 
+    // listEl может отсутствовать, если нет карт в диапазоне, но обработчики модального окна должны работать
     const listEl = root.querySelector('[data-role="map-list"]');
-
-    if (!listEl) {
-        return;
-    }
 
     let userVotedId = parseInt(root.dataset.userVotedId, 10);
     if (Number.isNaN(userVotedId)) {

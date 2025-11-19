@@ -368,5 +368,58 @@ if ($hasMaps && $currentMap) {
             </section>
         </div>
     </div>
+
+    <section class="seo-block mt-48">
+        <h2 class="h3 text-left">
+            <?= Yii::t('common', 'Как проходит голосование карты на сервере') ?> <?= Yii::t('database', $server->name) ?>
+        </h2>
+
+        <p class="mt-12 p1 text-text-secondary">
+            <?= Yii::t('common', 'Игроки, проведшие на сервере 1+ часа, могут выбрать карту следующего вайпа. Итог фиксируется автоматически перед вайпом.') ?>
+        </p>
+
+        <div class="mt-16 flex flex-wrap gap-8">
+            <a class="button button-secondary mr-6" href="/wipe-calendar">
+                <?= Yii::t('common', 'Календарь вайпов') ?>
+            </a>
+            <a class="button button-secondary mr-6" href="/servers/<?= Html::encode($server->tag) ?>/rules">
+                <?= Yii::t('common', 'Правила сервера') ?>
+            </a>
+            <a class="button button-secondary" href="/servers/<?= Html::encode($server->tag) ?>">
+                <?= Yii::t('common', 'Статистика сервера') ?>
+            </a>
+        </div>
+
+        <div class="seo-faq mt-24">
+            <h3 class="h4"><?= Yii::t('common', 'Частые вопросы о голосовании карты') ?></h3>
+
+            <details class="faq-item mt-12">
+                <summary class="p1">
+                    <strong><?= Yii::t('common', 'Почему я не вижу кнопку голосования?') ?></strong>
+                </summary>
+                <div class="p2 mt-8">
+                    <?= Yii::t('common', 'Голосование доступно только игрокам с временем игры 1+ часа. Авторизуйтесь через Steam и наиграйте минимум час на сервере.') ?>
+                </div>
+            </details>
+
+            <details class="faq-item mt-12">
+                <summary class="p1">
+                    <strong><?= Yii::t('common', 'Можно ли изменить выбор?') ?></strong>
+                </summary>
+                <div class="p2 mt-8">
+                    <?= Yii::t('common', 'До окончания голосования изменить вариант можно. Выбирайте внимательно.') ?>
+                </div>
+            </details>
+
+            <details class="faq-item mt-12">
+                <summary class="p1">
+                    <strong><?= Yii::t('common', 'Когда подводятся итоги?') ?></strong>
+                </summary>
+                <div class="p2 mt-8">
+                    <?= Yii::t('common', 'Итоги фиксируются перед вайпом:') ?> <?= date('d.m.Y H:i', strtotime($server->next_wipe)) ?> <?= Yii::t('common', 'МСК') ?>.
+                </div>
+            </details>
+        </div>
+    </section>
 </div>
 

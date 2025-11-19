@@ -107,39 +107,41 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
             </div>
         </div>
         
-        <div class="mapsV2__navigation">
-            <?php if ($prevMap): ?>
-                <a href="/maps-v2/detail/<?= $prevMap->id ?>?server_id=<?= $server->id ?>"
-                   class="mapsV2__nav mapsV2__nav--prev show-modal-link"
-                   data-href="/maps-v2/detail/<?= $prevMap->id ?>?server_id=<?= $server->id ?>"
-                   data-target="modal-dialog"
-                   data-size="modal-xxl"
-                   data-content-overflow="unset"
-                   aria-label="<?= Yii::t('common', 'Предыдущая карта') ?>">
-                    <i class="fas fa-chevron-left"></i>
-                </a>
-            <?php else: ?>
-                <button type="button" class="mapsV2__nav mapsV2__nav--prev" disabled aria-label="<?= Yii::t('common', 'Предыдущая карта') ?>">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-            <?php endif; ?>
-            
-            <?php if ($nextMap): ?>
-                <a href="/maps-v2/detail/<?= $nextMap->id ?>?server_id=<?= $server->id ?>"
-                   class="mapsV2__nav mapsV2__nav--next show-modal-link"
-                   data-href="/maps-v2/detail/<?= $nextMap->id ?>?server_id=<?= $server->id ?>"
-                   data-target="modal-dialog"
-                   data-size="modal-xxl"
-                   data-content-overflow="unset"
-                   aria-label="<?= Yii::t('common', 'Следующая карта') ?>">
-                    <i class="fas fa-chevron-right"></i>
-                </a>
-            <?php else: ?>
-                <button type="button" class="mapsV2__nav mapsV2__nav--next" disabled aria-label="<?= Yii::t('common', 'Следующая карта') ?>">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            <?php endif; ?>
-        </div>
+        <?php if (!$isFixed): ?>
+            <div class="mapsV2__navigation">
+                <?php if ($prevMap): ?>
+                    <a href="/maps-v2/detail/<?= $prevMap->id ?>?server_id=<?= $server->id ?>"
+                       class="mapsV2__nav mapsV2__nav--prev show-modal-link"
+                       data-href="/maps-v2/detail/<?= $prevMap->id ?>?server_id=<?= $server->id ?>"
+                       data-target="modal-dialog"
+                       data-size="modal-xxl"
+                       data-content-overflow="unset"
+                       aria-label="<?= Yii::t('common', 'Предыдущая карта') ?>">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                <?php else: ?>
+                    <button type="button" class="mapsV2__nav mapsV2__nav--prev" disabled aria-label="<?= Yii::t('common', 'Предыдущая карта') ?>">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                <?php endif; ?>
+                
+                <?php if ($nextMap): ?>
+                    <a href="/maps-v2/detail/<?= $nextMap->id ?>?server_id=<?= $server->id ?>"
+                       class="mapsV2__nav mapsV2__nav--next show-modal-link"
+                       data-href="/maps-v2/detail/<?= $nextMap->id ?>?server_id=<?= $server->id ?>"
+                       data-target="modal-dialog"
+                       data-size="modal-xxl"
+                       data-content-overflow="unset"
+                       aria-label="<?= Yii::t('common', 'Следующая карта') ?>">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                <?php else: ?>
+                    <button type="button" class="mapsV2__nav mapsV2__nav--next" disabled aria-label="<?= Yii::t('common', 'Следующая карта') ?>">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
         
         <div class="mapsV2__detail-links">
             <?php if (!empty($detail['rustMapsUrl'])): ?>

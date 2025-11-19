@@ -43,6 +43,7 @@ class ServersController extends WebController
                               ->with([
                                   'serversTags',
                                   'mapEntity',
+                                  'mapList',
                               ])
                               ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
                               ->orderBy(['sort' => SORT_ASC])
