@@ -102,7 +102,39 @@ class S3Api
                                          'UploadId' => $uploadId
                                      ]);
 
-        return $response->getIterator()->offsetGet('Key');
+        return $response->get('Key');
+    }
+
+    /**
+     * Удаляет файл из S3 хранилища
+     * 
+     * @param string $fileName Путь к файлу в S3
+     * @return bool true в случае успеха, false в случае ошибки
+     */
+    public function deleteFile($fileName)
+    {
+        try {
+            putenv("AWS_SUPPRESS_PHP_DEPRECATION_WARNING=true");
+            $credentials = new Credentials($this->accessKey, $this->secretAccessKey);
+
+            $s3 = new S3Client([
+                                   'version' => '2006-03-01',
+                                   'region' => $this->region,
+                                   'endpoint' => $this->baseUrl,
+                                   'use_path_style_endpoint' => true,
+                                   'credentials' => $credentials,
+                               ]);
+
+            $s3->deleteObject([
+                'Bucket' => $this->uid,
+                'Key' => $fileName,
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Yii::error('Error deleting file from S3: ' . $e->getMessage() . ', file: ' . $fileName, __METHOD__);
+            return false;
+        }
     }
 
 

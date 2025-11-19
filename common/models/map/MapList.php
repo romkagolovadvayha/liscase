@@ -206,8 +206,38 @@ class MapList extends \yii\db\ActiveRecord
         // Обновляем map_list_id в таблице servers
         $server = \common\models\servers\Servers::findOne($serverId);
         if ($server) {
+            // Сохраняем старый map_list_id для удаления старого файла
+            $oldMapListId = $server->map_list_id;
+            $oldMap = null;
+            $oldS3Path = null;
+            
+            // Если есть старая зафиксированная карта, получаем путь к её файлу для удаления
+            if (!empty($oldMapListId)) {
+                $oldMap = self::findOne($oldMapListId);
+                if ($oldMap && !empty($oldMap->url)) {
+                    $oldFileName = basename(parse_url($oldMap->url, PHP_URL_PATH));
+                    if (!empty($oldFileName)) {
+                        $oldS3Path = 'server-maps/' . $oldFileName;
+                    }
+                }
+            }
+            
             $server->map_list_id = $winningMap->id;
             $server->save(false);
+            
+            // Удаляем старый файл из S3 перед загрузкой нового
+            if (!empty($oldS3Path)) {
+                try {
+                    $deleted = Yii::$app->s3Api->deleteFile($oldS3Path);
+                    if ($deleted) {
+                        Yii::info("Successfully deleted old map file from S3: {$oldS3Path}, old map ID: {$oldMapListId}, server ID: {$serverId}", __METHOD__);
+                    } else {
+                        Yii::warning("Failed to delete old map file from S3: {$oldS3Path}, old map ID: {$oldMapListId}, server ID: {$serverId}", __METHOD__);
+                    }
+                } catch (\Exception $e) {
+                    Yii::error("Error deleting old map file from S3: {$oldS3Path}, old map ID: {$oldMapListId}, server ID: {$serverId}, error: " . $e->getMessage(), __METHOD__);
+                }
+            }
             
             // Загружаем карту на S3 хранилище
             if (empty($winningMap->url)) {
@@ -224,8 +254,16 @@ class MapList extends \yii\db\ActiveRecord
                     } elseif (empty($mapFileContent)) {
                         Yii::error("Downloaded map file is empty from URL: {$winningMap->url}, map ID: {$winningMap->id}", __METHOD__);
                     } else {
-                        // Формируем путь в S3: server-maps/{server_tag}.map
-                        $s3Path = 'server-maps/' . $server->tag . '.map';
+                        // Извлекаем оригинальное имя файла из URL
+                        $originalFileName = basename(parse_url($winningMap->url, PHP_URL_PATH));
+                        
+                        // Если не удалось извлечь имя файла, используем fallback
+                        if (empty($originalFileName)) {
+                            $originalFileName = $server->tag . '.map';
+                        }
+                        
+                        // Формируем путь в S3: server-maps/{оригинальное_имя_файла}
+                        $s3Path = 'server-maps/' . $originalFileName;
                         
                         // Загружаем файл на S3 (если файл существует, он будет перезаписан)
                         $fileSize = strlen($mapFileContent);
