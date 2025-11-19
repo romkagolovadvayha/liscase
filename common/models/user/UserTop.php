@@ -180,6 +180,7 @@ class UserTop extends \yii\db\ActiveRecord
             'c4thrown' => 1,
             'satchelsthrown' => 0.2,
             'rocket_basic' => 0.5,
+            'rocket_basic_rpg' => 0.5, // учитывается вместе с rocket_basic через сумму в Statistics.php
             'rocket_hv' => 0.1,
             'rocket_fire' => 0.1,
             'ammo_explosive' => 0.01,

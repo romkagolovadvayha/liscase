@@ -157,7 +157,7 @@ class Statistics extends ActiveRecord
                     //c4thrown + satchelsthrown * 0.2 + rocketsfired * 0.5
                     $item['reider'] = round(Statistics::getParam($params, 'c4thrown')
                                             + Statistics::getParam($params, 'satchelsthrown') * 0.2
-                                            + Statistics::getParam($params, 'rocket_basic') * 0.5
+                                            + (Statistics::getParam($params, 'rocket_basic') + Statistics::getParam($params, 'rocket_basic_rpg')) * 0.5
                                             + Statistics::getParam($params, 'rocket_hv') * 0.1
                                             + Statistics::getParam($params, 'rocket_fire') * 0.1
                                             + Statistics::getParam($params, 'ammo_explosive') * 0.01

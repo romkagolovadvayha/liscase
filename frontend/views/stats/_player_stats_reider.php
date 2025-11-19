@@ -14,7 +14,7 @@ use common\models\statistics\Statistics;
 $items = [
     ['key' => 'c4thrown', 'score' => 1],
     ['key' => 'satchelsthrown', 'score' => 0.2],
-    ['key' => 'rocket_basic', 'score' => 0.5],
+    ['key' => 'rocket_basic', 'score' => 0.5, 'combined' => ['rocket_basic_rpg']],
     ['key' => 'rocket_hv', 'score' => 0.1],
     ['key' => 'rocket_fire', 'score' => 0.1],
     ['key' => 'ammo_explosive', 'score' => 0.01],
@@ -38,7 +38,19 @@ $items = [
 
 $reider = [];
 foreach ($items as $item) {
-    $reider[] = Statistics::getRaiderItem($names, $images, $player, $item['key'], $item['score']);
+    $itemData = Statistics::getRaiderItem($names, $images, $player, $item['key'], $item['score']);
+    
+    // Если есть combined ключи, добавляем их значения к основному
+    if (!empty($item['combined']) && is_array($item['combined'])) {
+        $combinedCount = $itemData['count'];
+        foreach ($item['combined'] as $combinedKey) {
+            $combinedCount += Statistics::getParam($player, $combinedKey);
+        }
+        $itemData['count'] = $combinedCount;
+        $itemData['desc'] = $combinedCount;
+    }
+    
+    $reider[] = $itemData;
 }
 
 ?>
