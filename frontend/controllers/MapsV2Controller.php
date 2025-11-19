@@ -79,15 +79,59 @@ class MapsV2Controller extends Controller
             $maps = [];
         }
 
-        // Проверяем, есть ли зафиксированная карта для текущего сервера
+        // Получаем зафиксированную карту для текущего сервера
         $fixedMap = null;
-        $fixedMapId = null;
+        $fixedMapData = null;
         if (!empty($server->map_list_id)) {
-            $fixedMapId = (int)$server->map_list_id;
-            $fixedMap = MapList::findOne($fixedMapId);
+            $fixedMap = MapList::findOne($server->map_list_id);
             if ($fixedMap) {
-                // Добавляем зафиксированную карту в начало списка
-                array_unshift($maps, $fixedMap);
+                $details = $fixedMap->data_json ? json_decode($fixedMap->data_json, true) : [];
+                $monumentsRaw = $details['monuments'] ?? json_decode($fixedMap->monuments_json ?? '[]', true);
+                if (!is_array($monumentsRaw)) {
+                    $monumentsRaw = [];
+                }
+
+                $monuments = [];
+                $language = Yii::$app->language;
+                foreach ($monumentsRaw as $monument) {
+                    $type = $monument['type'] ?? '';
+                    $monuments[] = [
+                        'type' => $type,
+                        'label' => MapLocalization::monument($type, $language),
+                        'coordinates' => $monument['coordinates'] ?? null,
+                    ];
+                }
+
+                $fixedMapData = [
+                    'id' => (int)$fixedMap->id,
+                    'hash' => $fixedMap->hash,
+                    'type' => $fixedMap->map_type,
+                    'seed' => $fixedMap->seed,
+                    'size' => $fixedMap->size_int,
+                    'saveVersion' => $fixedMap->save_version,
+                    'downloadUrl' => $fixedMap->url,
+                    'rustMapsUrl' => $fixedMap->hash ? 'https://rustmaps.com/map/' . $fixedMap->hash : null,
+                    'image' => $fixedMap->image ?: ($details['imageUrl'] ?? $fixedMap->image_url),
+                    'imagePreview' => $fixedMap->image_preview ?: ($details['thumbnailUrl'] ?? $fixedMap->thumbnail_url),
+                    'rawImageUrl' => $fixedMap->raw_image_url ?: ($details['rawImageUrl'] ?? null),
+                    'imageIconUrl' => $fixedMap->image_icon_url ?: ($details['imageIconUrl'] ?? null),
+                    'isStaging' => (bool)$fixedMap->is_staging,
+                    'isCustomMap' => (bool)$fixedMap->is_custom_map,
+                    'canDownload' => (bool)$fixedMap->can_download,
+                    'totalMonuments' => $fixedMap->total_monuments,
+                    'monuments' => $monuments,
+                    'landPercentage' => $fixedMap->land_percentage,
+                    'biomePercentages' => $details['biomePercentages'] ?? json_decode($fixedMap->biome_percentages_json ?? '[]', true),
+                    'islands' => $fixedMap->islands,
+                    'mountains' => $fixedMap->mountains,
+                    'iceLakes' => $fixedMap->ice_lakes,
+                    'rivers' => $fixedMap->rivers,
+                    'lakes' => $fixedMap->lakes,
+                    'canyons' => $fixedMap->canyons,
+                    'oases' => $fixedMap->oases,
+                    'buildableRocks' => $fixedMap->buildable_rocks,
+                    'createdAt' => $fixedMap->created_at,
+                ];
             }
         }
 
@@ -205,8 +249,6 @@ class MapsV2Controller extends Controller
                 ];
             }
 
-            $isFixed = ($fixedMapId !== null && (int)$map->id === $fixedMapId);
-
             $mapCardsData[$map->id] = [
                 'id' => (int)$map->id,
                 'hash' => $map->hash,
@@ -238,7 +280,6 @@ class MapsV2Controller extends Controller
                 'createdAt' => $map->created_at,
                 'voteCount' => $voteCounts[$map->id] ?? 0,
                 'voters' => $userVotes[$map->id] ?? [],
-                'isFixed' => $isFixed,
             ];
         }
 
@@ -302,6 +343,8 @@ class MapsV2Controller extends Controller
             'displayLimit' => $displayLimit,
             'voteUrlTemplate' => '/maps-v2/vote',
             'votersUrlTemplate' => '/maps-v2/voters/ID_PLACEHOLDER?server_id=' . $server->id,
+            'fixedMap' => $fixedMap,
+            'fixedMapData' => $fixedMapData,
         ]);
     }
 
@@ -477,6 +520,9 @@ class MapsV2Controller extends Controller
             }
         }
 
+        // Проверяем, зафиксирована ли карта для текущего сервера
+        $isFixed = !empty($server->map_list_id) && (int)$server->map_list_id === (int)$map->id;
+
         return $this->renderPartial('detail', [
             'map' => $map,
             'server' => $server,
@@ -486,6 +532,7 @@ class MapsV2Controller extends Controller
             'biomeLabels' => MapLocalization::biomeLabels($language),
             'prevMap' => $prevMap,
             'nextMap' => $nextMap,
+            'isFixed' => $isFixed,
         ]);
     }
 
@@ -580,18 +627,6 @@ class MapsV2Controller extends Controller
         }
         
         $allMaps = $allMapsQuery->all();
-        
-        // Проверяем, есть ли зафиксированная карта для текущего сервера
-        $fixedMapVote = null;
-        $fixedMapIdVote = null;
-        if (!empty($server->map_list_id)) {
-            $fixedMapIdVote = (int)$server->map_list_id;
-            $fixedMapVote = MapList::findOne($fixedMapIdVote);
-            if ($fixedMapVote) {
-                // Добавляем зафиксированную карту в начало списка
-                array_unshift($allMaps, $fixedMapVote);
-            }
-        }
 
         $mapIds = ArrayHelper::getColumn($allMaps, 'id');
         $voteCounts = [];
@@ -747,8 +782,6 @@ class MapsV2Controller extends Controller
                 ];
             }
 
-            $isFixedVote = ($fixedMapIdVote !== null && (int)$mapItem->id === $fixedMapIdVote);
-            
             $allMapCardsData[$mapItem->id] = [
                 'id' => (int)$mapItem->id,
                 'hash' => $mapItem->hash,
@@ -780,7 +813,6 @@ class MapsV2Controller extends Controller
                 'createdAt' => $mapItem->created_at,
                 'voteCount' => $voteCounts[$mapItem->id] ?? 0,
                 'voters' => $userVotes[$mapItem->id] ?? [],
-                'isFixed' => $isFixedVote,
             ];
         }
 

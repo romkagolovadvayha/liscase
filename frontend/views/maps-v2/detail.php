@@ -11,6 +11,7 @@ use common\helpers\MapLocalization;
 /** @var array $biomeLabels */
 /** @var \common\models\map\MapList|null $prevMap */
 /** @var \common\models\map\MapList|null $nextMap */
+/** @var bool $isFixed */
 
 $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds);
 
@@ -242,12 +243,14 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
             </div>
         <?php endif; ?>
 
-        <?= $this->render('_voters', [
-            'voters' => $detail['voters'] ?? [],
-            'mapId' => $detail['id'],
-            'serverId' => $server->id,
-            'isVoted' => $isVoted,
-        ]) ?>
+        <?php if (!$isFixed): ?>
+            <?= $this->render('_voters', [
+                'voters' => $detail['voters'] ?? [],
+                'mapId' => $detail['id'],
+                'serverId' => $server->id,
+                'isVoted' => $isVoted,
+            ]) ?>
+        <?php endif; ?>
     </div>
 </section>
 

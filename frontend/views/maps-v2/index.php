@@ -25,6 +25,8 @@ use yii\helpers\Json;
 /** @var string $votersUrlTemplate */
 /** @var string $mapsPayloadJson */
 /** @var array $cardsHtml */
+/** @var \common\models\map\MapList|null $fixedMap */
+/** @var array|null $fixedMapData */
 
 $hasMaps = !empty($maps);
 $detail = null;
@@ -74,6 +76,40 @@ if ($hasMaps && $currentMap) {
                 <dd class="mapsV2__meta-value"><?= Yii::t('common', '1+ час игры на сервере') ?></dd>
             </div>
         </dl>
+
+        <?php if ($fixedMap && $fixedMapData): ?>
+            <div class="mapsV2__hero-current-map">
+                <div class="mapsV2__hero-current-map-content">
+                    <div class="mapsV2__hero-current-map-image">
+                        <img src="<?= Html::encode($fixedMapData['imagePreview'] ?? $fixedMapData['image'] ?? '') ?>" 
+                             alt="<?= Html::encode($fixedMapData['hash'] ?? '') ?>">
+                    </div>
+                    <div class="mapsV2__hero-current-map-info">
+                        <div class="mapsV2__hero-current-map-label">
+                            <?= Yii::t('common', 'Текущая карта') ?>
+                        </div>
+                        <div class="mapsV2__hero-current-map-title">
+                            <?= Html::encode($fixedMapData['hash'] ?? '') ?>
+                        </div>
+                        <div class="mapsV2__hero-current-map-meta">
+                            <span><?= Html::encode($fixedMapData['size'] ?? '') ?> × <?= Html::encode($fixedMapData['size'] ?? '') ?></span>
+                            <?php if (!empty($fixedMapData['totalMonuments'])): ?>
+                                <span>•</span>
+                                <span><?= $fixedMapData['totalMonuments'] ?> <?= Yii::t('common', 'монументов') ?></span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <a href="/maps-v2/detail/<?= $fixedMapData['id'] ?>?server_id=<?= $server->id ?>"
+                   class="mapsV2__hero-current-map-button show-modal-link"
+                   data-href="/maps-v2/detail/<?= $fixedMapData['id'] ?>?server_id=<?= $server->id ?>"
+                   data-target="modal-dialog"
+                   data-size="modal-xxl"
+                   data-content-overflow="unset">
+                    <?= Yii::t('common', 'Подробнее') ?>
+                </a>
+            </div>
+        <?php endif; ?>
 
         <nav class="mapsV2__servers">
             <?php foreach ($servers as $item): ?>
