@@ -7,6 +7,7 @@ use common\models\servers\Servers;
 use common\models\servers\ServersTags;
 use common\models\stats\Teams;
 use common\models\stats\Wipe;
+use frontend\assets\MapsV2Asset;
 use yii\web\NotFoundHttpException;
 use Yii;
 
@@ -140,6 +141,17 @@ class ServersController extends WebController
         // Отдавай оба (двумя <script>), если нужно:
         $this->view->params['ld_json'] = [$breadcrumbLd, $itemListLd, $gameServersGraph];
 
+        // Регистрируем MapsV2Asset для работы модального окна с деталями карты
+        $hasFixedMap = false;
+        foreach ($servers as $server) {
+            if ($server->map_list_id && $server->mapList) {
+                $hasFixedMap = true;
+                break;
+            }
+        }
+        if ($hasFixedMap) {
+            MapsV2Asset::register($this->view);
+        }
 
         return $this->render('servers-list.twig', [
             'SERVERS' => $servers,

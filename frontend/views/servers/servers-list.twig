@@ -180,18 +180,6 @@
 {{ this.params.ld_json|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES'))|raw }}
 </script>
 {% endif %}
-{{
-magnific_popup_widget({
-    'target': '.servers_page',
-    'options': {
-        'delegate': '.servers_page_item_actions_r_image',
-        'gallery': {
-            'enabled': false
-        },
-    },
-    'effect': 'with-zoom'
-})
-}}
 
 {% set faq_list = [
     {

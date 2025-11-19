@@ -2,17 +2,42 @@
     console.log('maps-v2.js: Script started');
     
     const root = document.getElementById('mapsV2Root');
-    if (!root) {
-        console.warn('maps-v2.js: mapsV2Root element not found, script stopped');
-        return;
-    }
+    const hasRoot = !!root;
     
-    console.log('maps-v2.js: Root element found', root);
+    if (!hasRoot) {
+        console.warn('maps-v2.js: mapsV2Root element not found, will only initialize modal handlers');
+    } else {
+        console.log('maps-v2.js: Root element found', root);
+    }
 
-    const serverId = parseInt(root.dataset.serverId, 10);
-    const voteUrlTemplate = root.dataset.voteUrl || '';
-    const votersUrlTemplate = root.dataset.votersUrl || '';
-    const texts = {
+    // Переменные для работы с картами (только если root найден)
+    let serverId = null;
+    let voteUrlTemplate = '';
+    let votersUrlTemplate = '';
+    let texts = {
+        vote: 'Проголосовать',
+        download: 'Скачать карту',
+        emptyVoters: 'Будьте первым, кто проголосует за эту карту',
+        noVotes: 'Пока никто не голосовал',
+        refresh: 'Обновить',
+    };
+    let biomeLabelsMap = {};
+    let totalMaps = 0;
+    let displayLimit = 0;
+    let totalVotes = 0;
+    let maps = [];
+    const mapIndex = new Map();
+    let listEl = null;
+    let userVotedId = null;
+    let userVotedMapIds = new Set();
+    let lightboxEl;
+
+    // Инициализация данных только если root найден
+    if (hasRoot) {
+        serverId = parseInt(root.dataset.serverId, 10);
+        voteUrlTemplate = root.dataset.voteUrl || '';
+        votersUrlTemplate = root.dataset.votersUrl || '';
+        texts = {
         vote: root.dataset.textVote || 'Проголосовать',
         download: root.dataset.textDownload || 'Скачать карту',
         emptyVoters: root.dataset.textEmptyVoters || 'Будьте первым, кто проголосует за эту карту',
@@ -20,12 +45,11 @@
         refresh: root.dataset.textRefresh || 'Обновить',
     };
 
-    const biomeLabelsMap = safeParseJSON(root.dataset.biomeLabels, {});
-    const totalMaps = parseInt(root.dataset.totalMaps || '0', 10) || 0;
-    const displayLimit = parseInt(root.dataset.displayLimit || '0', 10) || 0;
-    let totalVotes = parseInt(root.dataset.totalVotes || '0', 10) || 0;
+        biomeLabelsMap = safeParseJSON(root.dataset.biomeLabels, {});
+        totalMaps = parseInt(root.dataset.totalMaps || '0', 10) || 0;
+        displayLimit = parseInt(root.dataset.displayLimit || '0', 10) || 0;
+        totalVotes = parseInt(root.dataset.totalVotes || '0', 10) || 0;
 
-    let maps;
     try {
         maps = JSON.parse(root.dataset.maps || '[]');
     } catch (e) {
@@ -33,38 +57,46 @@
         console.error('Failed to parse maps payload', e);
     }
 
-    const mapIndex = new Map();
     maps.forEach((map, index) => {
         mapIndex.set(map.id, index);
     });
 
-    // listEl может отсутствовать, если нет карт в диапазоне, но обработчики модального окна должны работать
-    const listEl = root.querySelector('[data-role="map-list"]');
+        // listEl может отсутствовать, если нет карт в диапазоне, но обработчики модального окна должны работать
+        listEl = root.querySelector('[data-role="map-list"]');
 
-    let userVotedId = parseInt(root.dataset.userVotedId, 10);
+        userVotedId = parseInt(root.dataset.userVotedId, 10);
     if (Number.isNaN(userVotedId)) {
         userVotedId = null;
     }
 
-    // Множественные проголосованные карты
-    let userVotedMapIds = new Set();
-    try {
-        const votedIdsJson = root.dataset.userVotedIds;
-        if (votedIdsJson) {
-            const votedIds = JSON.parse(votedIdsJson);
-            if (Array.isArray(votedIds)) {
-                votedIds.forEach(id => userVotedMapIds.add(parseInt(id, 10)));
+        // Множественные проголосованные карты
+        try {
+            const votedIdsJson = root.dataset.userVotedIds;
+            if (votedIdsJson) {
+                const votedIds = JSON.parse(votedIdsJson);
+                if (Array.isArray(votedIds)) {
+                    votedIds.forEach(id => userVotedMapIds.add(parseInt(id, 10)));
+                }
             }
+        } catch (e) {
+            console.error('Failed to parse user voted map IDs', e);
         }
-    } catch (e) {
-        console.error('Failed to parse user voted map IDs', e);
-    }
-    // Для обратной совместимости
-    if (userVotedId !== null && !userVotedMapIds.has(userVotedId)) {
-        userVotedMapIds.add(userVotedId);
+        // Для обратной совместимости
+        if (userVotedId !== null && !userVotedMapIds.has(userVotedId)) {
+            userVotedMapIds.add(userVotedId);
+        }
     }
 
-    let lightboxEl;
+    function safeParseJSON(value, fallback) {
+        if (!value) {
+            return fallback;
+        }
+        try {
+            return JSON.parse(value);
+        } catch (error) {
+            return fallback;
+        }
+    }
 
     function formatDate(dateString) {
         if (!dateString) {
@@ -90,6 +122,9 @@
     }
 
     function updateCards() {
+        if (!hasRoot || !root) {
+            return;
+        }
         const maxVotes = calculateMaxVotes();
         totalVotes = calculateTotalVotes();
         root.dataset.totalVotes = String(totalVotes);
@@ -609,6 +644,12 @@
 
     // Функция для переинициализации данных после Pjax обновления
     function reinitializeAfterPjax() {
+        if (!hasRoot || !root) {
+            // Если root нет, обновляем только состояние кнопки голосования в модалке
+            updateVoteButtonState();
+            return;
+        }
+        
         // Обновляем данные из root элемента
         const newTotalVotes = parseInt(root.dataset.totalVotes || '0', 10) || 0;
         if (newTotalVotes !== totalVotes) {
@@ -746,20 +787,11 @@
         });
     }
 
-    // Initial render
-    console.log('maps-v2.js: Initial render, updating cards');
-    updateCards();
-    console.log('maps-v2.js: Initialization complete');
-
-    function safeParseJSON(value, fallback) {
-        if (!value) {
-            return fallback;
-        }
-        try {
-            return JSON.parse(value);
-        } catch (error) {
-            return fallback;
-        }
+    // Initial render (только если root найден)
+    if (hasRoot) {
+        console.log('maps-v2.js: Initial render, updating cards');
+        updateCards();
     }
+    console.log('maps-v2.js: Initialization complete');
 })(); 
 
