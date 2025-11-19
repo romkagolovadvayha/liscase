@@ -195,6 +195,13 @@
   }
 }
 
+.mapsV2__hero-current-map-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
 .mapsV2__hero-current-map-button {
   padding: 10px 20px;
   border-radius: var(--button-radius);
@@ -206,11 +213,31 @@
   transition: var(--transition-all);
   white-space: nowrap;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   
   &:hover {
     background: var(--primary-colors-primary);
     box-shadow: var(--shadow-button);
     color: var(--text-on-primary);
+  }
+  
+  i {
+    font-size: 12px;
+  }
+}
+
+.mapsV2__hero-current-map-button--download {
+  background: var(--background-secondary);
+  color: var(--text-main);
+  border: 1px solid var(--border-color-default);
+  
+  &:hover {
+    background: var(--background-teritiary);
+    border-color: var(--primary-colors-secondary);
+    box-shadow: var(--shadow-card);
+    color: var(--text-main);
   }
 }
 
@@ -1030,9 +1057,15 @@ html.mapsV2__modal-open {
     align-items: stretch;
   }
 
+  .mapsV2__hero-current-map-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
   .mapsV2__hero-current-map-button {
     width: 100%;
     text-align: center;
+    justify-content: center;
   }
 
   .mapsV2__cards {

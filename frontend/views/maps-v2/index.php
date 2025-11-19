@@ -89,7 +89,18 @@ if ($hasMaps && $currentMap) {
                             <?= Yii::t('common', 'Текущая карта') ?>
                         </div>
                         <div class="mapsV2__hero-current-map-title">
-                            <?= Html::encode($fixedMapData['hash'] ?? '') ?>
+                            <?php if (!empty($fixedMapData['biomePercentages']) && is_array($fixedMapData['biomePercentages'])): ?>
+                                <?php
+                                $biomeNames = [];
+                                foreach ($fixedMapData['biomePercentages'] as $code => $value) {
+                                    $biomeName = $biomeLabels[$code] ?? strtoupper($code);
+                                    $biomeNames[] = Html::encode($biomeName);
+                                }
+                                echo implode(', ', $biomeNames);
+                                ?>
+                            <?php else: ?>
+                                <?= Html::encode($fixedMapData['hash'] ?? '') ?>
+                            <?php endif; ?>
                         </div>
                         <div class="mapsV2__hero-current-map-meta">
                             <span><?= Html::encode($fixedMapData['size'] ?? '') ?> × <?= Html::encode($fixedMapData['size'] ?? '') ?></span>
@@ -100,14 +111,25 @@ if ($hasMaps && $currentMap) {
                         </div>
                     </div>
                 </div>
-                <a href="/maps-v2/detail/<?= $fixedMapData['id'] ?>?server_id=<?= $server->id ?>"
-                   class="mapsV2__hero-current-map-button show-modal-link"
-                   data-href="/maps-v2/detail/<?= $fixedMapData['id'] ?>?server_id=<?= $server->id ?>"
-                   data-target="modal-dialog"
-                   data-size="modal-xxl"
-                   data-content-overflow="unset">
-                    <?= Yii::t('common', 'Подробнее') ?>
-                </a>
+                <div class="mapsV2__hero-current-map-actions">
+                    <?php if (!empty($fixedMapData['downloadUrl'])): ?>
+                        <a href="<?= Html::encode($fixedMapData['downloadUrl']) ?>"
+                           class="mapsV2__hero-current-map-button mapsV2__hero-current-map-button--download"
+                           target="_blank"
+                           rel="nofollow noopener">
+                            <i class="fas fa-download"></i>
+                            <?= Yii::t('common', 'Скачать') ?>
+                        </a>
+                    <?php endif; ?>
+                    <a href="/maps-v2/detail/<?= $fixedMapData['id'] ?>?server_id=<?= $server->id ?>"
+                       class="mapsV2__hero-current-map-button show-modal-link"
+                       data-href="/maps-v2/detail/<?= $fixedMapData['id'] ?>?server_id=<?= $server->id ?>"
+                       data-target="modal-dialog"
+                       data-size="modal-xxl"
+                       data-content-overflow="unset">
+                        <?= Yii::t('common', 'Подробнее') ?>
+                    </a>
+                </div>
             </div>
         <?php endif; ?>
 
