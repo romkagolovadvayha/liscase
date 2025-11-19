@@ -235,6 +235,11 @@ class ServersController extends WebController
     {
         /** @var ServersTags $serversTag */
         $serversTag = ServersTags::find()
+                          ->with([
+                              'servers' => function($query) {
+                                  $query->with('mapList');
+                              }
+                          ])
                           ->cache(30)
                           ->andWhere(['IN', 'status', [ServersTags::STATUS_ACTIVE]])
                           ->andWhere(['link_name' => $tagLink])
@@ -245,6 +250,20 @@ class ServersController extends WebController
         }
         $this->view->title = Yii::t('database', $serversTag->title);
         $this->view->params['meta_description'] = Yii::t('database', $serversTag->short_description);
+
+        // Регистрируем MapsV2Asset для работы модального окна с деталями карты
+        $hasFixedMap = false;
+        if ($serversTag->servers) {
+            foreach ($serversTag->servers as $server) {
+                if ($server->map_list_id && $server->mapList) {
+                    $hasFixedMap = true;
+                    break;
+                }
+            }
+        }
+        if ($hasFixedMap) {
+            MapsV2Asset::register($this->view);
+        }
 
         return $this->render('tag.twig', [
             'TAG' => $serversTag,

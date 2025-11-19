@@ -92,6 +92,7 @@
                                        data-href="/maps-v2/detail/{{ SERVER.map_list_id }}?server_id={{ SERVER.id }}"
                                        data-target="modal-dialog"
                                        data-size="modal-xxl"
+                                       data-title="{{ t('common', 'Текущая карта') }}"
                                        data-content-overflow="unset"
                                        title="{{ t('common', 'Текущая карта') }}">
                                         {{ t('common', 'Текущая карта') }}
@@ -100,10 +101,6 @@
                                         {% elseif SERVER.mapList.image %}
                                             <img src="{{ SERVER.mapList.image }}" loading="lazy" alt="{{ SERVER.mapList.hash }}">
                                         {% endif %}
-                                    </a>
-                                {% elseif SERVER.map_id and SERVER.mapEntity and not SERVER.secret_map %}
-                                    <a class="button button-secondary servers_page_item_actions_r_image" href="{{ SERVER.mapEntity.getImage() }}" title="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}" target="_blank" >
-                                        {{ t('common', 'Текущая карта') }}<img src="{{ SERVER.mapEntity.getPreviewImage() }}" loading="lazy" alt="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}">
                                     </a>
                                 {% endif %}
                                 <a class="button button-secondary" href="{{ SERVER.getLink('rules') }}">{{ t('common', 'Правила сервера') }}</a>

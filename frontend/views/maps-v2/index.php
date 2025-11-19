@@ -126,6 +126,7 @@ if ($hasMaps && $currentMap) {
                        data-href="/maps-v2/detail/<?= $fixedMapData['id'] ?>?server_id=<?= $server->id ?>"
                        data-target="modal-dialog"
                        data-size="modal-xxl"
+                       data-title="<?= Yii::t('common', 'Текущая карта') ?>"
                        data-content-overflow="unset">
                         <?= Yii::t('common', 'Подробнее') ?>
                     </a>
