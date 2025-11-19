@@ -88,20 +88,20 @@ if ($hasMaps && $currentMap) {
                         <div class="mapsV2__hero-current-map-label">
                             <?= Yii::t('common', 'Текущая карта') ?>
                         </div>
-                        <div class="mapsV2__hero-current-map-title">
-                            <?php if (!empty($fixedMapData['biomePercentages']) && is_array($fixedMapData['biomePercentages'])): ?>
-                                <?php
-                                $biomeNames = [];
-                                foreach ($fixedMapData['biomePercentages'] as $code => $value) {
-                                    $biomeName = $biomeLabels[$code] ?? strtoupper($code);
-                                    $biomeNames[] = Html::encode($biomeName);
-                                }
-                                echo implode(', ', $biomeNames);
-                                ?>
-                            <?php else: ?>
+                        <?php if (!empty($fixedMapData['biomePercentages']) && is_array($fixedMapData['biomePercentages'])): ?>
+                            <div class="mapsV2__hero-current-map-biomes">
+                                <?php foreach ($fixedMapData['biomePercentages'] as $code => $value): ?>
+                                    <div class="mapsV2__hero-current-map-biome">
+                                        <span class="mapsV2__hero-current-map-biome-label"><?= Html::encode($biomeLabels[$code] ?? strtoupper($code)) ?></span>
+                                        <span class="mapsV2__hero-current-map-biome-value"><?= floor($value * 10) / 10 ?>%</span>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="mapsV2__hero-current-map-title">
                                 <?= Html::encode($fixedMapData['hash'] ?? '') ?>
-                            <?php endif; ?>
-                        </div>
+                            </div>
+                        <?php endif; ?>
                         <div class="mapsV2__hero-current-map-meta">
                             <span><?= Html::encode($fixedMapData['size'] ?? '') ?> × <?= Html::encode($fixedMapData['size'] ?? '') ?></span>
                             <?php if (!empty($fixedMapData['totalMonuments'])): ?>

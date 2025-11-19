@@ -181,12 +181,46 @@
   word-break: break-all;
 }
 
+.mapsV2__hero-current-map-biomes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mapsV2__hero-current-map-biome {
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color-default);
+  border-radius: var(--button-secondary-radius);
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  transition: var(--transition-all);
+  
+  &:hover {
+    border-color: var(--primary-colors-secondary);
+    box-shadow: var(--shadow-card-soft);
+  }
+}
+
+.mapsV2__hero-current-map-biome-label {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.mapsV2__hero-current-map-biome-value {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
 .mapsV2__hero-current-map-meta {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
   color: var(--text-secondary);
+  margin-top: 4px;
   
   span {
     &:nth-child(2) {
@@ -198,8 +232,10 @@
 .mapsV2__hero-current-map-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   flex-shrink: 0;
+  padding-left: 16px;
+  border-left: 1px solid var(--border-color-default);
 }
 
 .mapsV2__hero-current-map-button {
@@ -1060,6 +1096,10 @@ html.mapsV2__modal-open {
   .mapsV2__hero-current-map-actions {
     width: 100%;
     flex-direction: column;
+    padding-left: 0;
+    border-left: none;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color-default);
   }
 
   .mapsV2__hero-current-map-button {
