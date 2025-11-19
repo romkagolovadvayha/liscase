@@ -116,6 +116,7 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
                        data-target="modal-dialog"
                        data-size="modal-xxl"
                        data-content-overflow="unset"
+                       data-pjax="0"
                        aria-label="<?= Yii::t('common', 'Предыдущая карта') ?>">
                         <i class="fas fa-chevron-left"></i>
                     </a>
@@ -132,6 +133,7 @@ $isVoted = !empty($userVotedMapIds) && in_array($detail['id'], $userVotedMapIds)
                        data-target="modal-dialog"
                        data-size="modal-xxl"
                        data-content-overflow="unset"
+                       data-pjax="0"
                        aria-label="<?= Yii::t('common', 'Следующая карта') ?>">
                         <i class="fas fa-chevron-right"></i>
                     </a>

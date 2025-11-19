@@ -39,6 +39,8 @@ $serverId = (int)$server->id;
            data-target="modal-dialog"
            data-size="modal-xxl"
            data-content-overflow="unset"
+           data-title="<?= Yii::t('common', 'Выбор карты') ?>"
+           data-pjax="0"
            aria-label="<?= Yii::t('common', 'Открыть подробную информацию') ?>">
             <img src="<?= Html::encode($card['imagePreview'] ?? $card['image'] ?? '') ?>" alt="<?= Yii::t('common', 'Превью карты') ?>">
         </a>

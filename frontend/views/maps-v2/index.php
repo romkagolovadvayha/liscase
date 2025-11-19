@@ -127,7 +127,8 @@ if ($hasMaps && $currentMap) {
                        data-target="modal-dialog"
                        data-size="modal-xxl"
                        data-title="<?= Yii::t('common', 'Текущая карта') ?>"
-                       data-content-overflow="unset">
+                       data-content-overflow="unset"
+                       data-pjax="0">
                         <?= Yii::t('common', 'Подробнее') ?>
                     </a>
                 </div>
