@@ -18,6 +18,7 @@ use consik\yii2websocket\WebSocketServer;
 use Ratchet\ConnectionInterface;
 use yii\base\BaseObject;
 use Ratchet\WebSocket\Version\RFC6455\Frame;
+use yii\db\Exception as DbException;
 
 class ChatServer extends WebSocketServer
 {
@@ -1114,6 +1115,63 @@ class ChatServer extends WebSocketServer
         }
     }
 
+    /**
+     * Безопасное выполнение запроса к БД с автоматическим переподключением
+     * @param callable $callback Функция, выполняющая запрос к БД
+     * @param int $maxRetries Максимальное количество попыток
+     * @return mixed Результат выполнения callback
+     * @throws \Exception
+     */
+    private function safeDbQuery(callable $callback, $maxRetries = 2)
+    {
+        $attempt = 0;
+        while ($attempt < $maxRetries) {
+            try {
+                return $callback();
+            } catch (DbException $e) {
+                $attempt++;
+                // Проверяем, является ли это ошибкой "MySQL server has gone away"
+                if (strpos($e->getMessage(), '2006') !== false || 
+                    strpos($e->getMessage(), 'MySQL server has gone away') !== false ||
+                    strpos($e->getMessage(), 'server has gone away') !== false) {
+                    
+                    $this->log("Database connection lost, attempting to reconnect (attempt {$attempt}/{$maxRetries})");
+                    
+                    // Закрываем текущее соединение
+                    try {
+                        Yii::$app->db->close();
+                    } catch (\Exception $closeEx) {
+                        // Игнорируем ошибки при закрытии
+                    }
+                    
+                    // Переподключаемся
+                    try {
+                        Yii::$app->db->open();
+                        $this->log("Database reconnected successfully");
+                    } catch (\Exception $reconnectEx) {
+                        $this->log("Failed to reconnect: " . $reconnectEx->getMessage());
+                        if ($attempt >= $maxRetries) {
+                            throw $e; // Бросаем исходную ошибку, если не удалось переподключиться
+                        }
+                        // Небольшая задержка перед следующей попыткой
+                        usleep(100000); // 0.1 секунды
+                        continue;
+                    }
+                    
+                    // Если переподключились, пробуем снова
+                    if ($attempt < $maxRetries) {
+                        continue;
+                    }
+                }
+                
+                // Если это не ошибка переподключения или попытки закончились, пробрасываем исключение
+                throw $e;
+            }
+        }
+        
+        throw new \Exception("Failed to execute database query after {$maxRetries} attempts");
+    }
+
     public function commandAuth(ConnectionInterface $client, $msg)
     {
         try {
@@ -1130,10 +1188,13 @@ class ChatServer extends WebSocketServer
             // Кешируем запрос пользователя на 60 секунд
             $cacheKey = 'ws_auth_' . md5($request['token'] . $request['steam_id']);
             $user = Yii::$app->cache->getOrSet($cacheKey, function() use ($request) {
-                return User::find()
-                    ->where(['jwt' => $request['token'], 'steam_id' => $request['steam_id']])
-                    ->limit(1)
-                    ->one();
+                // Используем безопасный запрос с автоматическим переподключением
+                return $this->safeDbQuery(function() use ($request) {
+                    return User::find()
+                        ->where(['jwt' => $request['token'], 'steam_id' => $request['steam_id']])
+                        ->limit(1)
+                        ->one();
+                });
             }, 60);
 
             if ($user) {
