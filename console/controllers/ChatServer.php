@@ -19,6 +19,7 @@ use Ratchet\ConnectionInterface;
 use yii\base\BaseObject;
 use Ratchet\WebSocket\Version\RFC6455\Frame;
 use yii\db\Exception as DbException;
+use PDOException;
 
 class ChatServer extends WebSocketServer
 {
@@ -1116,57 +1117,135 @@ class ChatServer extends WebSocketServer
     }
 
     /**
+     * Проверяет, является ли ошибка ошибкой "MySQL server has gone away"
+     * @param \Exception $e Исключение для проверки
+     * @return bool
+     */
+    private function isGoneAwayError(\Exception $e)
+    {
+        $message = $e->getMessage();
+        $code = $e->getCode();
+        
+        // Проверяем код ошибки 2006 или текст сообщения
+        return $code == 2006 || 
+               strpos($message, '2006') !== false || 
+               strpos($message, 'MySQL server has gone away') !== false ||
+               strpos($message, 'server has gone away') !== false ||
+               strpos($message, 'HY000') !== false && strpos($message, '2006') !== false;
+    }
+
+    /**
+     * Переподключается к базе данных
+     * @return bool Успешно ли переподключение
+     */
+    private function reconnectDatabase()
+    {
+        try {
+            // Закрываем текущее соединение
+            if (Yii::$app->db->isActive) {
+                Yii::$app->db->close();
+            }
+            
+            // Небольшая задержка перед переподключением
+            usleep(50000); // 0.05 секунды
+            
+            // Переподключаемся
+            Yii::$app->db->open();
+            
+            // Проверяем, что соединение действительно установлено
+            if (Yii::$app->db->isActive) {
+                $this->log("Database reconnected successfully");
+                return true;
+            }
+            
+            return false;
+        } catch (\Exception $e) {
+            $this->log("Failed to reconnect: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Безопасное выполнение запроса к БД с автоматическим переподключением
      * @param callable $callback Функция, выполняющая запрос к БД
      * @param int $maxRetries Максимальное количество попыток
      * @return mixed Результат выполнения callback
      * @throws \Exception
      */
-    private function safeDbQuery(callable $callback, $maxRetries = 2)
+    private function safeDbQuery(callable $callback, $maxRetries = 3)
     {
         $attempt = 0;
+        $lastException = null;
+        
         while ($attempt < $maxRetries) {
             try {
                 return $callback();
             } catch (DbException $e) {
+                $lastException = $e;
                 $attempt++;
+                
                 // Проверяем, является ли это ошибкой "MySQL server has gone away"
-                if (strpos($e->getMessage(), '2006') !== false || 
-                    strpos($e->getMessage(), 'MySQL server has gone away') !== false ||
-                    strpos($e->getMessage(), 'server has gone away') !== false) {
+                if ($this->isGoneAwayError($e)) {
+                    $this->log("Database connection lost (attempt {$attempt}/{$maxRetries}): " . $e->getMessage());
                     
-                    $this->log("Database connection lost, attempting to reconnect (attempt {$attempt}/{$maxRetries})");
-                    
-                    // Закрываем текущее соединение
-                    try {
-                        Yii::$app->db->close();
-                    } catch (\Exception $closeEx) {
-                        // Игнорируем ошибки при закрытии
-                    }
-                    
-                    // Переподключаемся
-                    try {
-                        Yii::$app->db->open();
-                        $this->log("Database reconnected successfully");
-                    } catch (\Exception $reconnectEx) {
-                        $this->log("Failed to reconnect: " . $reconnectEx->getMessage());
-                        if ($attempt >= $maxRetries) {
-                            throw $e; // Бросаем исходную ошибку, если не удалось переподключиться
+                    // Пытаемся переподключиться
+                    if ($this->reconnectDatabase()) {
+                        // Если переподключились успешно, пробуем снова
+                        continue;
+                    } else {
+                        // Если не удалось переподключиться, ждем немного и пробуем еще раз
+                        if ($attempt < $maxRetries) {
+                            usleep(200000); // 0.2 секунды
+                            continue;
                         }
-                        // Небольшая задержка перед следующей попыткой
-                        usleep(100000); // 0.1 секунды
-                        continue;
-                    }
-                    
-                    // Если переподключились, пробуем снова
-                    if ($attempt < $maxRetries) {
-                        continue;
                     }
                 }
                 
                 // Если это не ошибка переподключения или попытки закончились, пробрасываем исключение
                 throw $e;
+            } catch (PDOException $e) {
+                $lastException = $e;
+                $attempt++;
+                
+                // Проверяем, является ли это ошибкой "MySQL server has gone away"
+                if ($this->isGoneAwayError($e)) {
+                    $this->log("Database connection lost (PDO, attempt {$attempt}/{$maxRetries}): " . $e->getMessage());
+                    
+                    // Пытаемся переподключиться
+                    if ($this->reconnectDatabase()) {
+                        // Если переподключились успешно, пробуем снова
+                        continue;
+                    } else {
+                        // Если не удалось переподключиться, ждем немного и пробуем еще раз
+                        if ($attempt < $maxRetries) {
+                            usleep(200000); // 0.2 секунды
+                            continue;
+                        }
+                    }
+                }
+                
+                // Если это не ошибка переподключения или попытки закончились, пробрасываем исключение
+                throw $e;
+            } catch (\Exception $e) {
+                // Для других исключений проверяем, может быть это тоже ошибка БД
+                if ($this->isGoneAwayError($e)) {
+                    $lastException = $e;
+                    $attempt++;
+                    $this->log("Database connection lost (generic, attempt {$attempt}/{$maxRetries}): " . $e->getMessage());
+                    
+                    if ($this->reconnectDatabase() && $attempt < $maxRetries) {
+                        continue;
+                    }
+                }
+                
+                // Для всех остальных исключений пробрасываем сразу
+                throw $e;
             }
+        }
+        
+        // Если все попытки исчерпаны, бросаем последнее исключение
+        if ($lastException) {
+            throw $lastException;
         }
         
         throw new \Exception("Failed to execute database query after {$maxRetries} attempts");
@@ -1187,15 +1266,27 @@ class ChatServer extends WebSocketServer
 
             // Кешируем запрос пользователя на 60 секунд
             $cacheKey = 'ws_auth_' . md5($request['token'] . $request['steam_id']);
-            $user = Yii::$app->cache->getOrSet($cacheKey, function() use ($request) {
-                // Используем безопасный запрос с автоматическим переподключением
-                return $this->safeDbQuery(function() use ($request) {
+            
+            try {
+                $user = Yii::$app->cache->getOrSet($cacheKey, function() use ($request) {
+                    // Используем безопасный запрос с автоматическим переподключением
+                    return $this->safeDbQuery(function() use ($request) {
+                        return User::find()
+                            ->where(['jwt' => $request['token'], 'steam_id' => $request['steam_id']])
+                            ->limit(1)
+                            ->one();
+                    });
+                }, 60);
+            } catch (\Exception $cacheEx) {
+                // Если ошибка при работе с кешем, пробуем напрямую запросить из БД
+                $this->log("Cache error in commandAuth, trying direct DB query: " . $cacheEx->getMessage());
+                $user = $this->safeDbQuery(function() use ($request) {
                     return User::find()
                         ->where(['jwt' => $request['token'], 'steam_id' => $request['steam_id']])
                         ->limit(1)
                         ->one();
                 });
-            }, 60);
+            }
 
             if ($user) {
                 $client->user = $user;
@@ -1212,7 +1303,16 @@ class ChatServer extends WebSocketServer
             }
         } catch (\Exception $ex) {
             $this->log("Auth error: " . $ex->getMessage());
-            Yii::$app->telegramChats->sendMessage('commandAuth: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
+            $errorMessage = 'commandAuth: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage();
+            
+            // Отправляем ошибку в Telegram только если это не ошибка переподключения
+            if (!$this->isGoneAwayError($ex)) {
+                try {
+                    Yii::$app->telegramChats->sendMessage($errorMessage);
+                } catch (\Exception $telegramEx) {
+                    $this->log("Failed to send error to Telegram: " . $telegramEx->getMessage());
+                }
+            }
         }
     }
     public function commandPong(ConnectionInterface $client, $msg)
