@@ -9,6 +9,7 @@ use common\models\user\User;
 use common\models\user\UserDrop;
 use common\models\user\UserProfile;
 use common\models\servers\Servers;
+use common\models\rcon\RconTasks;
 use Yii;
 use yii\base\BaseObject;
 use yii\console\Controller;
@@ -292,6 +293,7 @@ class UserController extends Controller
         echo "===========================================" . PHP_EOL . PHP_EOL;
         
         $index = 1;
+        $executedCommands = 0;
         foreach ($usersWithSkins as $userId => $data) {
             if (!isset($usersOnServer[$userId])) {
                 continue; // Пропускаем, если пользователь не найден
@@ -299,6 +301,7 @@ class UserController extends Controller
             
             $user = $usersOnServer[$userId];
             $totalDays = $data['totalDays'];
+            $daysToAdd = $totalDays + 3; // Добавляем 3 дня к оставшимся дням
             
             echo "{$index}. {$user->username} (SteamID: {$user->steam_id})" . PHP_EOL;
             echo "   Осталось дней скинов: {$totalDays}" . PHP_EOL;
@@ -309,11 +312,36 @@ class UserController extends Controller
                 echo "     - Drop ID {$skin['drop_id']} ({$skinType}): осталось {$skin['remaining_days']} дней (выведен: {$skin['sended_at']})" . PHP_EOL;
             }
             
+            // Выполняем RCON команду
+            $command = "addgroup {$user->steam_id} skins {$daysToAdd}d";
+            echo "   Выполняем команду: rcon {$command}" . PHP_EOL;
+            
+            try {
+                $response = (Yii::$app->curl)
+                    ->setHeaders(['Content-Type' => 'application/json'])
+                    ->setRawPostData(json_encode(['server' => $server->tag, 'command' => $command]))
+                    ->post(Yii::$app->settings->get('site_rconUrl') . '/send');
+                
+                $rconTask = new RconTasks();
+                $rconTask->status = RconTasks::STATUS_DONE;
+                $rconTask->command = $command;
+                $rconTask->result = $response;
+                $rconTask->server_tag = $server->tag;
+                $rconTask->created_at = date('Y-m-d H:i:s');
+                $rconTask->save();
+                
+                $executedCommands++;
+                echo "   ✓ Команда выполнена успешно" . PHP_EOL;
+            } catch (\Exception $e) {
+                echo "   ✗ Ошибка выполнения команды: " . $e->getMessage() . PHP_EOL;
+            }
+            
             echo PHP_EOL;
             $index++;
         }
         
         echo "===========================================" . PHP_EOL;
         echo "Всего игроков с активными скинами: " . count($usersWithSkins) . PHP_EOL;
+        echo "Выполнено RCON команд: {$executedCommands}" . PHP_EOL;
     }
 }
