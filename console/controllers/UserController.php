@@ -6,7 +6,9 @@ use common\components\helpers\CacheArrayHelper;
 use common\components\oauth\Steam;
 use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\models\user\User;
+use common\models\user\UserDrop;
 use common\models\user\UserProfile;
+use common\models\servers\Servers;
 use Yii;
 use yii\base\BaseObject;
 use yii\console\Controller;
@@ -156,5 +158,148 @@ class UserController extends Controller
 
         \Yii::error("Failed to load avatar for user {$id}: all attempts exhausted", __METHOD__);
         return '/images/steam_avatar_default.jpg';
+    }
+
+    /**
+     * user/skin-expiration-check
+     * 
+     * Находит всех игроков на сервере classicx2, которые выводили скины (drop_id 847, 846, 845)
+     * и показывает сколько дней скинов у них осталось
+     */
+    public function actionSkinExpirationCheck()
+    {
+        $serverTag = 'classicx2';
+        
+        // Находим сервер
+        $server = Servers::find()
+            ->andWhere(['tag' => $serverTag])
+            ->one();
+            
+        if (empty($server)) {
+            echo "Сервер с тегом '{$serverTag}' не найден!" . PHP_EOL;
+            return;
+        }
+        
+        echo "Сервер найден: {$server->name} (ID: {$server->id})" . PHP_EOL;
+        echo "===========================================" . PHP_EOL . PHP_EOL;
+        
+        // Находим всех игроков, которые когда-либо играли на этом сервере
+        $users = User::find()
+            ->andWhere(['server_id' => $server->id])
+            ->andWhere(['status' => User::STATUS_ACTIVE])
+            ->all();
+            
+        if (empty($users)) {
+            echo "Не найдено игроков, которые играли на этом сервере" . PHP_EOL;
+            return;
+        }
+        
+        echo "Найдено игроков, которые играли на сервере: " . count($users) . PHP_EOL . PHP_EOL;
+        
+        // Маппинг drop_id -> количество дней
+        $skinDaysMap = [
+            847 => 90,  // Скины на 90 дней
+            846 => 30,  // Скины на 30 дней
+            845 => 14,  // Скины на 14 дней
+        ];
+        
+        $skinDropIds = array_keys($skinDaysMap);
+        $userIds = array_map(function($user) { return $user->id; }, $users);
+        
+        // Находим все выведенные скины для этих игроков
+        $userDrops = UserDrop::find()
+            ->andWhere(['IN', 'user_id', $userIds])
+            ->andWhere(['IN', 'drop_id', $skinDropIds])
+            ->andWhere(['status' => UserDrop::STATUS_SENDED])
+            ->andWhere(['IS NOT', 'sended_at', null])
+            ->with('user')
+            ->all();
+            
+        if (empty($userDrops)) {
+            echo "Не найдено выведенных скинов для игроков этого сервера" . PHP_EOL;
+            return;
+        }
+        
+        echo "Найдено выведенных скинов: " . count($userDrops) . PHP_EOL . PHP_EOL;
+        
+        // Группируем по пользователям и проверяем срок действия
+        $usersWithSkins = [];
+        $now = time();
+        
+        foreach ($userDrops as $userDrop) {
+            if (empty($userDrop->sended_at)) {
+                continue;
+            }
+            
+            $days = $skinDaysMap[$userDrop->drop_id] ?? 0;
+            if ($days == 0) {
+                continue;
+            }
+            
+            $sendedTimestamp = strtotime($userDrop->sended_at);
+            $expirationTimestamp = $sendedTimestamp + ($days * 24 * 60 * 60);
+            
+            // Проверяем, не истек ли срок
+            if ($expirationTimestamp < $now) {
+                continue; // Срок истек, пропускаем
+            }
+            
+            $remainingDays = ceil(($expirationTimestamp - $now) / (24 * 60 * 60));
+            
+            $userId = $userDrop->user_id;
+            if (!isset($usersWithSkins[$userId])) {
+                $usersWithSkins[$userId] = [
+                    'user' => $userDrop->user,
+                    'skins' => [],
+                    'totalDays' => 0,
+                ];
+            }
+            
+            $usersWithSkins[$userId]['skins'][] = [
+                'drop_id' => $userDrop->drop_id,
+                'days' => $days,
+                'sended_at' => $userDrop->sended_at,
+                'remaining_days' => $remainingDays,
+            ];
+            
+            // Суммируем общее количество дней (складываем все активные скины)
+            $usersWithSkins[$userId]['totalDays'] += $remainingDays;
+        }
+        
+        if (empty($usersWithSkins)) {
+            echo "Не найдено активных скинов (срок не истек) для игроков на сервере" . PHP_EOL;
+            return;
+        }
+        
+        // Сортируем по количеству оставшихся дней (по убыванию)
+        uasort($usersWithSkins, function($a, $b) {
+            return $b['totalDays'] <=> $a['totalDays'];
+        });
+        
+        // Выводим результат
+        echo "===========================================" . PHP_EOL;
+        echo "ИГРОКИ НА СЕРВЕРЕ {$serverTag} С АКТИВНЫМИ СКИНАМИ" . PHP_EOL;
+        echo "===========================================" . PHP_EOL . PHP_EOL;
+        
+        $index = 1;
+        foreach ($usersWithSkins as $data) {
+            $user = $data['user'];
+            $totalDays = $data['totalDays'];
+            
+            echo "{$index}. {$user->username} (SteamID: {$user->steam_id})" . PHP_EOL;
+            echo "   Осталось дней скинов: {$totalDays}" . PHP_EOL;
+            echo "   Скины:" . PHP_EOL;
+            
+            foreach ($data['skins'] as $skin) {
+                $skinType = $skinDaysMap[$skin['drop_id']] . " дней";
+                echo "     - Drop ID {$skin['drop_id']} ({$skinType}): осталось {$skin['remaining_days']} дней (выведен: {$skin['sended_at']})" . PHP_EOL;
+            }
+            
+            echo PHP_EOL;
+            $index++;
+        }
+        
+        echo "===========================================" . PHP_EOL;
+        echo "Всего игроков с активными скинами: " . count($usersWithSkins) . PHP_EOL;
     }
 }
