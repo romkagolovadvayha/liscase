@@ -245,16 +245,83 @@
     border-width: 1px;
     border-style: solid;
     border-color: transparent;
+    &.completed {
+      // Полученные дни - обесцвечиваем
+      & .category__count-and-img img,
+      & .category__count-and-img .tasksV2__coin-icon {
+        filter: grayscale(100%);
+        opacity: 0.5;
+      }
+      // Добавляем цветную галочку
+      &::after {
+        content: "";
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 24px;
+        height: 24px;
+        background: var(--system-colors-success-color);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
+        background-size: 16px 16px;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+    }
     &.available {
       background-color: var(--background-main);
-      border-color: var(--border-color-default);
-      //background-color: var(--background-main);
+      border-color: var(--primary-colors-main);
+      box-shadow: 0 0 0 2px var(--primary-colors-main-opacity);
+      // Выделяем текущий день иконкой
+      &::after {
+        content: "";
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 24px;
+        height: 24px;
+        background: var(--primary-colors-main);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E");
+        background-size: 16px 16px;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
     }
     &.disabled {
       border-color: var(--border-color-default);
       background-color: transparent;
-      & .category__count-and-img img {
+      & .category__count-and-img img,
+      & .category__count-and-img .tasksV2__coin-icon {
         filter: grayscale(100%);
+        opacity: 0.5;
+      }
+      // Добавляем иконку песочных часов для следующих дней
+      &::after {
+        content: "";
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 24px;
+        height: 24px;
+        background: var(--text-secondary);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M6 2v6h.01L6 8.01 10 12l-4 4 .01.01H6V22h12v-6h-.01L18 15.99 14 12l4-4-.01-.01H18V2H6zm10 14.5V20H8v-3.5l4-4 4 4zm-4-5l-4-4V4h8v3.5l-4 4z'/%3E%3C/svg%3E");
+        background-size: 16px 16px;
+        background-position: center;
+        background-repeat: no-repeat;
       }
     }
     & img {

@@ -1,18 +1,18 @@
 <?php
 namespace backend\controllers;
 
+use backend\components\BackendController;
 use common\components\helpers\Role;
 use common\components\settings\Settings;
 use common\models\box\BoxImage;
 use Yii;
 use yii\base\BaseObject;
 use yii\filters\VerbFilter;
-use yii\web\Controller;
 use common\models\site\SiteSetting;
 use yii\web\UploadedFile;
 use yii\helpers\ArrayHelper;
 
-class SettingsController extends Controller
+class SettingsController extends BackendController
 {
 
     public function behaviors()

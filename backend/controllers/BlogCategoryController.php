@@ -6,17 +6,17 @@ use common\components\helpers\Role;
 use common\components\queue\openAi\GenCategoriesJob;
 use common\models\blog\BlogCategory;
 use backend\models\blog\BlogCategorySearch;
+use backend\components\BackendController;
 use yii\base\BaseObject;
 use Yii;
 use yii\filters\AccessControl;
-use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 
 /**
  * BlogCategoryController implements the CRUD actions for BlogCategory model.
  */
-class BlogCategoryController extends Controller
+class BlogCategoryController extends BackendController
 {
 
     /**

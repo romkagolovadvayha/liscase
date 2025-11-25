@@ -112,6 +112,65 @@ class RustTm
     }
 
     /**
+     * Справочник переводов типов предметов Rust
+     * @return array
+     */
+    public static function getItemTypeTranslations(): array
+    {
+        return [
+            'Armor' => 'Броня',
+            'Hat' => 'Шляпа',
+            'Mask' => 'Маска',
+            'Backpack' => 'Рюкзак',
+            'Tool' => 'Инструмент',
+            'Resource' => 'Ресурс',
+            'Food' => 'Еда',
+            'Medical' => 'Медицина',
+            'Construction' => 'Конструкция',
+            'Electrical' => 'Электрика',
+            'Fun' => 'Развлечение',
+            'Misc' => 'Прочее',
+            'Component' => 'Компонент',
+            'Ammunition' => 'Боеприпасы',
+            'Attire' => 'Одежда',
+            'Common' => 'Обычный',
+            'Uncommon' => 'Необычный',
+            'Rare' => 'Редкий',
+            'Very Rare' => 'Очень редкий',
+            'Legendary' => 'Легендарный',
+            'Weapon' => 'Оружие',
+            'Clothing' => 'Одежда',
+            'Tool' => 'Инструмент',
+            'Resource' => 'Ресурс',
+            'Food' => 'Еда',
+            'Medical' => 'Медицина',
+            'Construction' => 'Конструкция',
+            'Electrical' => 'Электрика',
+            'Fun' => 'Развлечение',
+            'Misc' => 'Прочее',
+            'Component' => 'Компонент',
+            'Ammunition' => 'Боеприпасы',
+            'Attire' => 'Одежда',
+            'Common' => 'Обычный',
+            'Uncommon' => 'Необычный',
+            'Rare' => 'Редкий',
+            'Very Rare' => 'Очень редкий',
+            'Legendary' => 'Легендарный',
+        ];
+    }
+
+    /**
+     * Получить перевод типа предмета
+     * @param string $type
+     * @return string
+     */
+    public static function translateItemType(string $type): string
+    {
+        $translations = self::getItemTypeTranslations();
+        return $translations[$type] ?? $type;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function items(): array

@@ -476,6 +476,74 @@ p {
   transition: box-shadow 0.25s ease-in-out, background-color 0.25s ease-in-out, transform 0.25s ease-in-out, -webkit-box-shadow 0.25s ease-in-out, -webkit-transform 0.25s ease-in-out;
   min-height: 220px;
 }
+.store_launcher_cards_item_return {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: var(--button-radius);
+  background: var(--background-teritiary);
+  border: 1px solid var(--border-color-default);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  z-index: 10;
+  -webkit-transition: all 0.25s ease-in-out;
+  transition: all 0.25s ease-in-out;
+  font-size: 14px;
+  -webkit-box-shadow: var(--shadow-card);
+          box-shadow: var(--shadow-card);
+}
+.store_launcher_cards_item_return:hover {
+  background: var(--background-secondary);
+  border-color: var(--primary-colors-secondary);
+  color: var(--primary-colors-secondary);
+  -webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+.store_launcher_cards_item_return:active {
+  -webkit-transform: scale(0.95);
+          transform: scale(0.95);
+  -webkit-box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.store_launcher_cards_item_return:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  -webkit-transform: none;
+          transform: none;
+  pointer-events: none;
+}
+.store_launcher_cards_item_return i {
+  pointer-events: none;
+  font-size: 14px;
+}
+@media (max-width: 768px) {
+  .store_launcher_cards_item_return {
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    min-height: 28px;
+    font-size: 12px;
+    top: 6px;
+    right: 6px;
+  }
+  .store_launcher_cards_item_return i {
+    font-size: 12px;
+  }
+}
 @media (max-width: 768px) {
   .store_launcher_cards_item {
     min-height: 200px;

@@ -1,0 +1,67 @@
+// Новогодняя тематика - снег
+
+// Контейнер для снега
+.snow-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000; // Поверх других элементов, но ниже модальных окон
+  overflow: hidden;
+}
+
+// Снежинки
+.snowflake {
+  position: absolute;
+  top: -10px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1em;
+  font-family: Arial, sans-serif;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+  animation: snowfall linear forwards;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, opacity;
+  
+  &::before {
+    content: '❄';
+  }
+}
+
+// Анимация падения снега с эффектом таяния (ускорено в 2 раза)
+@keyframes snowfall {
+  0% {
+    transform: translateY(var(--start-y, 0px)) translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  35% {
+    opacity: 0.8;
+  }
+  42.5% {
+    opacity: 0.4;
+  }
+  47.5% {
+    opacity: 0.1;
+  }
+  100% {
+    transform: translateY(100vh) translateX(var(--snow-drift, 0px)) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+// Адаптивность для мобильных устройств
+@media (max-width: 768px) {
+  .snowflake {
+    font-size: 0.8em;
+  }
+}
+
+// Отключение на очень маленьких экранах для производительности
+@media (max-width: 480px) {
+  .snow-container {
+    display: none;
+  }
+}
+

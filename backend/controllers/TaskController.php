@@ -7,12 +7,12 @@ use common\components\base\Model;
 use common\components\helpers\Role;
 use common\models\box\Drop;
 use common\models\box\DropSearch;
+use backend\components\BackendController;
 use common\models\tasks\Task;
 use yii\web\Response;
-use yii\web\Controller;
 use Yii;
 
-class TaskController extends Controller
+class TaskController extends BackendController
 {
 
     public function behaviors()

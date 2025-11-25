@@ -6,16 +6,16 @@ use common\components\helpers\Role;
 use common\models\blog\BlogImage;
 use backend\models\blog\BlogImageSearch;
 use frontend\forms\blog\BlogImageForm;
+use backend\components\BackendController;
 use yii\base\BaseObject;
 use yii\filters\AccessControl;
-use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 
 /**
  * BlogImageController implements the CRUD actions for BlogImage model.
  */
-class BlogImageController extends Controller
+class BlogImageController extends BackendController
 {
 
     /**

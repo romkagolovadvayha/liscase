@@ -194,6 +194,8 @@ $modal-dialog-margin-y-sm-up: 0;
 @import "page/custom-skins";
 @import "page/raid-table";
 @import "page/media";
+@import "page/tasks_v2";
+@import "snow";
 
 .user-select-none {
   user-select: none;
@@ -334,6 +336,8 @@ $modal-dialog-margin-y-sm-up: 0;
 
 .main {
   overflow: visible;
+  position: relative;
+  z-index: 10; // Над снегом и сугробами
   @extend .grid, .pr-24, .transition-grid-template-columns, .gap-x-20;
   grid-template-columns: 241px 1fr 335px;
 

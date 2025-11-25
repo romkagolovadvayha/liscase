@@ -12,6 +12,11 @@ $blocked = !empty($blockedAt);
 ?>
 <div class="store_launcher_cards_item_wrap" data-category-id="<?=$drop->category_id?>" data-title="<?=Yii::t('database', $drop->name)?>">
     <div class="store_launcher_cards_item category-card" data-id="<?=$userDrop->id?>">
+        <?php if (empty($userDrop->box_id) && empty($userDrop->sets_id) && empty($userDrop->parent_drop_id)): ?>
+            <button class="store_launcher_cards_item_return" data-return-id="<?=$userDrop->id?>" title="<?=Yii::t('common', 'Вернуть')?>">
+                <i class="fas fa-undo"></i>
+            </button>
+        <?php endif; ?>
         <div class="store_launcher_cards_item_image category-card__image">
             <img src="<?= $drop->image100() ?>" alt="<?=Yii::t('database', $drop->name)?>" loading="lazy">
         </div>

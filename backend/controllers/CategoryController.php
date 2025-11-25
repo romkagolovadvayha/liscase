@@ -5,16 +5,16 @@ namespace backend\controllers;
 use common\components\helpers\Role;
 use common\models\box\Category;
 use common\models\box\CategorySearch;
+use backend\components\BackendController;
 use common\models\box\Drop;
 use yii\filters\AccessControl;
-use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 
 /**
  * CategoryController implements the CRUD actions for Category model.
  */
-class CategoryController extends Controller
+class CategoryController extends BackendController
 {
     /**
      * @return array

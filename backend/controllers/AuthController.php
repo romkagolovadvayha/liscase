@@ -2,13 +2,13 @@
 
 namespace backend\controllers;
 
+use backend\components\BackendController;
 use Yii;
 use yii\filters\AccessControl;
-use yii\web\Controller;
 use backend\forms\LoginForm;
 use yii\web\ForbiddenHttpException;
 
-class AuthController extends Controller
+class AuthController extends BackendController
 {
     /**
      * {@inheritdoc}

@@ -1,5 +1,7 @@
 .header {
   @extend .flex, .pt-20, .pr-24, .pb-20, .pl-32, .items-center, .justify-space-between;
+  position: relative;
+  z-index: 100; // Над всем, включая снег
   height: 76px;
   border-bottom: 1px solid var(--border-color-default);
   grid-column-start: 1;

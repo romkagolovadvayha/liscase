@@ -14,6 +14,8 @@ use common\models\user\User;
 use common\models\user\UserDrop;
 use common\models\user\UserProfile;
 use common\models\user\UserTask;
+use common\models\user\UserPayoutSkins;
+use yii\helpers\ArrayHelper;
 use frontend\forms\market\PaymentForm;
 use frontend\forms\profile\ProfileForm;
 use frontend\forms\promocode\UserPromocodeForm;
@@ -68,26 +70,8 @@ class UserController extends WebController
      */
     public function actionInventory()
     {
-        if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
-            throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован!'));
-        }
-        $post = Yii::$app->request->post();
-        $this->view->params['_profile'] = true;
-        $this->view->params['page'] = 'user-inventory';
-        if (!empty($post['sell'])) {
-            $userBalance = Yii::$app->user->identity->getPersonalBalance();
-            $userDrop = UserDrop::findOne($post['sell']);
-            if (!empty($userDrop->box_id) || !empty($userDrop->sets_id) || !empty($userDrop->parent_drop_id)) {
-                throw new HttpException(402, Yii::t('common', 'Не подлежит возврату!'));
-            }
-            if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
-                throw new HttpException(402, Yii::t('common', 'Не найдена вещь в корзине!'));
-            }
-            $this->_sellUserDrop($userDrop, $userBalance->id);
-            Yii::$app->session->addFlash('success', Yii::t('common', 'Предмет успешно продан!'));
-            return $this->refresh();
-        }
-        return $this->render('inventory');
+        // Постоянный редирект 301 на /store
+        return $this->redirect(['/store'], 301);
     }
     /**
      *
@@ -340,6 +324,161 @@ class UserController extends WebController
             'providerSkins' => $provider,
             'filterSkins' => $data,
             'form' => $form,
+        ]);
+    }
+
+    public function actionSkinConfirm($id, $type = 'rust')
+    {
+        if (!Yii::$app->settings->get('section_skindrops')) {
+            throw new NotFoundHttpException(Yii::t('common', "Страница не найдена"));
+        }
+
+        $user = Yii::$app->user->identity;
+        
+        if ($type == 'rust') {
+            $market = Yii::$app->rustTm;
+        } else {
+            $market = Yii::$app->csGoMarket;
+        }
+        
+        $data = $market->items();
+        if (empty($data[$id])) {
+            throw new NotFoundHttpException(Yii::t('common', "Скин не найден"));
+        }
+        
+        $item = $data[$id];
+        $balance = $user->getSkinsBalance();
+        
+        if ($item['price'] > $balance->balance) {
+            throw new NotFoundHttpException(Yii::t('common', "Недостаточно средств"));
+        }
+        
+        $formModel = new SkinsForm();
+        $formModel->market = $market;
+        $formModel->type = $type;
+        $formModel->id = $id;
+        $formModel->amount = $item['price'];
+        
+        if (Yii::$app->request->isPost && $formModel->load(Yii::$app->request->post())) {
+            if ($formModel->saveRecord()) {
+                Yii::$app->session->addFlash('success', Yii::t('common', 'Скин отправляется, ожидайте трейд-обмен'));
+                // Закрываем модальное окно и обновляем страницу через JS
+                if (Yii::$app->request->isPjax) {
+                    return '<script>
+                        if (typeof $ !== "undefined" && $.fn.modal) {
+                            $(".modal").modal("hide");
+                        }
+                        window.location.reload();
+                    </script>';
+                }
+                return $this->redirect('/user/skins?type=' . $type);
+            } else {
+                if (!empty($formModel->getFirstErrors())) {
+                    Yii::$app->session->addFlash('danger', array_values($formModel->getFirstErrors())[0]);
+                } else {
+                    Yii::$app->session->addFlash('danger', Yii::t('common', 'Ошибка при получении скина'));
+                }
+            }
+        }
+        
+        return $this->renderAjax('skin-confirm', [
+            'item' => $item,
+            'formModel' => $formModel,
+            'balance' => $balance->balance,
+            'type' => $type,
+        ]);
+    }
+
+    public function actionSkinsOperations()
+    {
+        if (!Yii::$app->settings->get('section_skindrops')) {
+            throw new NotFoundHttpException(Yii::t('common', "Страница не найдена"));
+        }
+
+        $user = Yii::$app->user->identity;
+
+        $skinCount = Skindrops::find()
+                            ->andWhere(['steam_id' => $user->steam_id])
+                            ->count();
+
+        $skins = Skindrops::find()
+                                           ->select([
+                                                        'name' => 'name',
+                                                        'image' => 'image',
+                                                        'amount' => 'real_price',
+                                                        'created_at' => 'created_at'
+                                           ])
+                                           ->andWhere(['steam_id' => $user->steam_id])
+                                           ->asArray()
+                                           ->orderBy(['created_at' => SORT_DESC])
+                                           ->all();
+
+        // Добавление текста в поле comment
+        foreach ($skins as &$skin) {
+            $skin['status'] = Yii::t('common', "Зачислено");
+            $skin['statusKey'] = null; // У скинов нет statusKey
+        }
+
+        $payouts = UserPayoutSkins::find()
+         ->select([
+            'statusKey' => 'status',
+            'amount',
+            'image',
+            'image300',
+            'name',
+            'created_at'
+         ])
+        ->andWhere(['user_id' => $user->id])
+        ->asArray()
+        ->orderBy(['created_at' => SORT_DESC])
+        ->all();
+
+        // Добавление текста в поле comment
+        foreach ($payouts as &$payout) {
+            $payout['amount'] = $payout['amount'] * (-1);
+            $payout['status'] = ArrayHelper::getValue(UserPayoutSkins::getStatusList(), $payout['statusKey']);
+            if ($payout['statusKey'] == UserPayoutSkins::STATUS_REJECT) {
+                $payout['amount'] = 0;
+            }
+        }
+
+        $personalBalance = $user->getPersonalBalance();
+        $transfers = Profit::find()
+                       ->select([
+                            'amount',
+                            'created_at'
+                       ])
+                       ->andWhere(['IN', 'type', [Profit::TYPE_TRANSFER_SKINS]])
+                       ->andWhere(['user_balance_id' => $personalBalance->id])
+                       ->asArray()
+                       ->orderBy(['created_at' => SORT_DESC])
+                       ->all();
+
+        // Добавление текста в поле comment
+        foreach ($transfers as &$transfer) {
+            $transfer['amount'] = $transfer['amount'] * (-1);
+            $transfer['status'] = Yii::t('common', "Перевод в магазин");
+            $transfer['image'] = null;
+            $transfer['name'] = null;
+        }
+
+        $items = ArrayHelper::merge($payouts, $skins);
+        $items = ArrayHelper::merge($items, $transfers);
+
+        $dataProvider = new \yii\data\ArrayDataProvider([
+                                                        'allModels' => $items,
+                                                        'totalCount' => count($items),
+                                                        'pagination' => [
+                                                            'pageSize' => 10,
+                                                        ],
+                                                        'sort'  => [
+                                                            'attributes' => ['created_at', 'amount'],
+                                                            'defaultOrder' => ['created_at' => SORT_DESC],
+                                                        ],
+                                                    ]);
+
+        return $this->renderAjax('operations', [
+            'dataProvider' => $dataProvider,
         ]);
     }
 

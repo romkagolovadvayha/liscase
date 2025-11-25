@@ -2,11 +2,11 @@
 
 namespace backend\controllers;
 
+use backend\components\BackendController;
 use common\components\helpers\Role;
 use common\models\servers\Servers;
 use common\models\servers\ServersTagsRelation;
 use backend\models\ServersSearch;
-use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use Yii;
@@ -14,7 +14,7 @@ use Yii;
 /**
  * ServersController implements the CRUD actions for Servers model.
  */
-class ServersController extends Controller
+class ServersController extends BackendController
 {
 
     public function behaviors()

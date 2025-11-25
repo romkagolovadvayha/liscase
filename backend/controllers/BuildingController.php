@@ -2,17 +2,17 @@
 
 namespace backend\controllers;
 
+use backend\components\BackendController;
 use common\models\building\Building;
 use Yii;
 use backend\models\building\BuildingSearch;
-use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 
 /**
  * BuildingController implements the CRUD actions for Building model.
  */
-class BuildingController extends Controller
+class BuildingController extends BackendController
 {
     /**
      * @inheritDoc

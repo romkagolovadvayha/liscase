@@ -8,6 +8,7 @@ use common\components\helpers\Role;
 use common\models\box\Drop;
 use common\models\box\DropSearch;
 use common\models\user\User;
+use yii\helpers\Json;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
 use Yii;
@@ -154,6 +155,60 @@ class DropController extends \backend\components\CrudController
         }
 
         return ['items' => $items];
+    }
+
+    /**
+     * JSON API для Select2 - список предметов
+     */
+    public function actionListJson($q = null) {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $dropsQuery = Drop::find()
+            ->andWhere('rust_id is not null');
+
+        if (!empty($q)) {
+            $dropsQuery->andWhere(['LIKE', 'name', $q]);
+        }
+
+        $drops = $dropsQuery
+            ->orderBy(['sort' => SORT_ASC])
+            ->limit(50)
+            ->all();
+
+        $results = [];
+        foreach ($drops as $drop) {
+            $results[] = [
+                'id' => $drop->id,
+                'text' => Json::encode([
+                    'id' => $drop->id,
+                    'name' => $drop->name,
+                    'image' => $drop->imageOrig ? $drop->imageOrig->getImagePubUrl() : '',
+                ]),
+            ];
+        }
+
+        return ['results' => $results];
+    }
+
+    /**
+     * JSON API для получения одного предмета
+     */
+    public function actionGetJson($id) {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $drop = Drop::findOne($id);
+        if (!$drop) {
+            return ['id' => null, 'text' => ''];
+        }
+
+        return [
+            'id' => $drop->id,
+            'text' => Json::encode([
+                'id' => $drop->id,
+                'name' => $drop->name,
+                'image' => $drop->imageOrig ? $drop->imageOrig->getImagePubUrl() : '',
+            ]),
+        ];
     }
 
 }

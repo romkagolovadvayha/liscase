@@ -49,6 +49,11 @@ function connectWs() {
             if (response.type && response.type === 'store.get.items') {
                 storeGetItems(response);
             }
+            if (response.type && response.type === 'store.return.item') {
+                if (typeof storeReturnItem === 'function') {
+                    storeReturnItem(response);
+                }
+            }
         }
         if ($('.balance_count').length) {
             if (response.type && response.type === 'update.balance') {

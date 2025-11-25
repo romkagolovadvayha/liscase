@@ -9,9 +9,9 @@ use common\components\queue\openAi\GenPostsJob;
 use common\models\blog\Blog;
 use backend\models\blog\BlogSearch;
 use common\models\blog\BlogCategory;
+use backend\components\BackendController;
 use yii\base\BaseObject;
 use yii\filters\AccessControl;
-use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use Yii;
@@ -19,7 +19,7 @@ use Yii;
 /**
  * BlogController implements the CRUD actions for Blog model.
  */
-class BlogController extends Controller
+class BlogController extends BackendController
 {
 
     /**

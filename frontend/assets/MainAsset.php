@@ -30,6 +30,7 @@ class MainAsset extends AssetBundle
             'js/clipboard.min.js?v=' . \Yii::$app->settings->get('site_version'),
             'js/design/main.js?v=' . \Yii::$app->settings->get('site_version'),
             'js/design/menu.js?v=' . \Yii::$app->settings->get('site_version'),
+            'js/snow.js?v=' . \Yii::$app->settings->get('site_version'),
             'js/main.js?v=' . \Yii::$app->settings->get('site_version'),
         ];
         $this->css = [

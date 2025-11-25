@@ -8,6 +8,8 @@
     .flex-wrap,
     .gap-y-32,
     .content-visibility-auto;
+  position: relative;
+  z-index: 10; // Над снегом и сугробами
   border-top: 1px solid var(--border-color-default);
   grid-column-start: 1;
   grid-column-end: 4;
