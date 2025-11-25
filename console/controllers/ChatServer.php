@@ -9,6 +9,7 @@ use common\models\support\SupportFile;
 use common\models\support\SupportMessage;
 use common\models\support\SupportRead;
 use common\models\user\UserDrop;
+use common\models\profit\Profit;
 use Yii;
 use common\components\helpers\Role;
 use common\models\support\Support;
@@ -341,6 +342,22 @@ class ChatServer extends WebSocketServer
                                                 // Помечаем как отправленное
                                                 $activatedData['sent'] = true;
                                                 Yii::$app->cache->set($activatedKey, $activatedData, 5);
+                                            }
+                                        }
+                                        
+                                        // Проверяем return drop
+                                        $returnKey = 'ws_return_drop_' . $client->user->id . '_' . $dropId;
+                                        $returnData = Yii::$app->cache->get($returnKey);
+                                        if ($returnData && isset($returnData['timestamp']) && (time() - $returnData['timestamp']) < 30) {
+                                            // Проверяем не отправлено ли уже
+                                            if (!isset($returnData['sent'])) {
+                                                // Отправляем всем клиентам пользователя
+                                                foreach ($userClients as $userClient) {
+                                                    $this->processQueuedMessage($userClient, $returnData);
+                                                }
+                                                // Помечаем как отправленное
+                                                $returnData['sent'] = true;
+                                                Yii::$app->cache->set($returnKey, $returnData, 5);
                                             }
                                         }
                                     }
@@ -724,6 +741,106 @@ class ChatServer extends WebSocketServer
             }
         }
         $client->send(json_encode($result));
+    }
+
+    public function commandReturnDrop(ConnectionInterface $client, $msg)
+    {
+        try {
+            $request = json_decode($msg, true);
+            $result = ['message' => ''];
+
+            if (!empty($client->user) && !empty($request['id'])) {
+                $model = UserDrop::findOne($request['id']);
+                
+                if (!$model) {
+                    $client->send(json_encode([
+                        'type' => 'store.return.item',
+                        'code' => 500,
+                        'message' => Yii::t('common', "Товар не найден!", [], $client->user->current_language),
+                        'id' => $request['id'],
+                    ]));
+                    return;
+                }
+
+                if ($client->user->id != $model->user->id) {
+                    $client->send(json_encode([
+                        'type' => 'store.return.item',
+                        'code' => 500,
+                        'message' => Yii::t('common', "Товар вам не принадлежит!", [], $client->user->current_language),
+                        'id' => $model->id,
+                    ]));
+                    return;
+                }
+
+                if (!empty($model->box_id) || !empty($model->sets_id) || !empty($model->parent_drop_id)) {
+                    $client->send(json_encode([
+                        'type' => 'store.return.item',
+                        'code' => 500,
+                        'message' => Yii::t('common', "Не подлежит возврату!", [], $client->user->current_language),
+                        'id' => $model->id,
+                    ]));
+                    return;
+                }
+
+                if ($model->status !== UserDrop::STATUS_ACTIVE) {
+                    $client->send(json_encode([
+                        'type' => 'store.return.item',
+                        'code' => 500,
+                        'message' => Yii::t('common', "Не найдена вещь в корзине!", [], $client->user->current_language),
+                        'id' => $model->id,
+                    ]));
+                    return;
+                }
+
+                // Выполняем возврат
+                $userBalance = $model->user->getPersonalBalance();
+                $this->_sellUserDrop($model, $userBalance->id);
+
+                // Отправляем через websocket
+                Yii::$app->queueProcess->push(new \common\components\queue\process\ReturnDropJob(['userDrop' => $model]));
+
+                $client->send(json_encode([
+                    'type' => 'store.return.item',
+                    'code' => 200,
+                    'message' => Yii::t('common', "Предмет успешно возвращен!", [], $client->user->current_language),
+                    'id' => $model->id,
+                ]));
+            }
+        } catch (\Exception $ex) {
+            $this->log("ReturnDrop error: " . $ex->getMessage());
+            if (!empty($request['id'])) {
+                $client->send(json_encode([
+                    'type' => 'store.return.item',
+                    'code' => 500,
+                    'message' => Yii::t('common', "Произошла ошибка при возврате товара!", [], $client->user->current_language ?? 'ru-RU'),
+                    'id' => $request['id'],
+                ]));
+            }
+        }
+    }
+
+    /**
+     * Продажа товара (возврат)
+     * @param UserDrop $userDrop
+     * @param int $userBalanceId
+     */
+    private function _sellUserDrop($userDrop, $userBalanceId)
+    {
+        /** @var \common\models\box\Drop $drop */
+        foreach ($userDrop->drop as $drop) {
+            $profit = new Profit();
+            $profit->status = 1;
+            $profit->type = Profit::TYPE_SELL_DROP;
+            $profit->amount = $drop->getRealPrice(false);
+            $profit->user_balance_id = $userBalanceId;
+            $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
+                'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
+            ], 'ru-RU');
+            $profit->created_at = date('Y-m-d H:i:s');
+            $profit->save(false);
+        }
+        $userDrop->status = UserDrop::STATUS_SELL;
+        $userDrop->save(false);
     }
 
     public function commandActivatedDrop(ConnectionInterface $client, $msg)
