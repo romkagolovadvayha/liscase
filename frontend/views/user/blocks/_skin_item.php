@@ -9,7 +9,10 @@
 use yii\helpers\Url;
 
 ?>
-<?php if ($balance > $model['price']): ?>
+<?php 
+// Округляем баланс в большую сторону для корректного сравнения с ценой
+$balanceCeil = ceil($balance);
+if ($balanceCeil >= $model['price']): ?>
     <div class="skins_item available show-modal-link" 
          data-id="<?=$model['id']?>" 
          data-href="<?=Url::to(['/user/skin-confirm', 'id' => $model['id'], 'type' => $type])?>"

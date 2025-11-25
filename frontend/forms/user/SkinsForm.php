@@ -66,7 +66,9 @@ class SkinsForm extends \common\components\base\ActiveRecord
             $this->addError('id', Yii::t('common', 'Этот скин ксожалению уже купили, выберите другой!'));
             return false;
         }
-        if ($item['price'] > $balance->balance) {
+        // Округляем баланс в большую сторону для корректного сравнения с ценой (которая уже округлена вверх)
+        $balanceCeil = ceil($balance->balance);
+        if ($item['price'] > $balanceCeil) {
             $this->addError('id', Yii::t('common', 'Недостаточно средств на счету!'));
             return false;
         }

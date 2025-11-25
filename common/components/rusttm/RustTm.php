@@ -267,6 +267,7 @@ class RustTm
                 "ru_name" => $titleRu,
                 "market_hash_name" => $item['market_hash_name'],
                 "category" => $category,
+                // Округляем цену в большую сторону (умножаем на 1.3 и применяем ceil)
                 "price" => ceil($item['price'] * 1.3),
                 "popularity_7d" => $item['popularity_7d'],
                 "ru_quality" => $item['ru_quality'],
