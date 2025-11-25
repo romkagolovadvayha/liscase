@@ -271,8 +271,22 @@ class ChatServer extends WebSocketServer
                                 }
                                 
                                 // Chat updates для конкретного чата
-                                $chatPrefix = 'ws_chat_update_' . $client->chat . '_';
-                                // Здесь просто обрабатываем все что есть в кеше с этим префиксом
+                                $chatKey = 'ws_chat_update_' . $client->chat;
+                                $chatData = Yii::$app->cache->get($chatKey);
+                                if ($chatData && isset($chatData['timestamp']) && (time() - $chatData['timestamp']) < 5) {
+                                    if (!isset($chatData['sent'])) {
+                                        // Отправляем всем клиентам в этом чате
+                                        $chatClients = $this->getClientsByChat($client->chat);
+                                        foreach ($chatClients as $chatClient) {
+                                            $this->processQueuedMessage($chatClient, [
+                                                'type' => 'chat',
+                                                'messageId' => $chatData['messageId'] ?? null,
+                                            ]);
+                                        }
+                                        $chatData['sent'] = true;
+                                        Yii::$app->cache->set($chatKey, $chatData, 5);
+                                    }
+                                }
                             }
                             
                             // Ticket updates для конкретного пользователя
@@ -1008,8 +1022,20 @@ class ChatServer extends WebSocketServer
     public static function broadcastChatUpdate($ticketNumber, $userId, $messageId)
     {
         try {
-            $cacheKey = 'ws_chat_update_' . $ticketNumber . '_' . $messageId;
+            // Основной ключ для последнего сообщения чата
+            $cacheKey = 'ws_chat_update_' . $ticketNumber;
             Yii::$app->cache->set($cacheKey, [
+                'action' => 'chatUpdate',
+                'code' => 200,
+                'id' => $ticketNumber,
+                'user_id' => $userId,
+                'messageId' => $messageId,
+                'timestamp' => time(),
+            ], 10);
+            
+            // Также сохраняем с messageId для обратной совместимости
+            $cacheKeyWithId = 'ws_chat_update_' . $ticketNumber . '_' . $messageId;
+            Yii::$app->cache->set($cacheKeyWithId, [
                 'action' => 'chatUpdate',
                 'code' => 200,
                 'id' => $ticketNumber,

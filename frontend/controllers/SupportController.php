@@ -405,8 +405,13 @@ class SupportController extends WebController
         $file->mimetype = $mimetype;
         $file->created_at = date('Y-m-d H:i:s');
         $file->save();
+        
+        // Создаем запись о прочтении
+        SupportRead::createRecord($chat->user_id, $user->id, $message->id, $chat->id);
+        
         try {
             \console\controllers\ChatServer::broadcastChatUpdate($chat->getNumber(), $chat->user_id, $message->id);
+            \console\controllers\ChatServer::broadcastTicketUpdate($chat->user_id);
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('actionUploadFile: ' . $ex->getMessage());
         }
