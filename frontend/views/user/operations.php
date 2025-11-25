@@ -94,7 +94,8 @@ use common\models\user\UserPayoutSkins;
                                                           return '';
                                                       }
                                                       $class = '';
-                                                      $amount = number_format($model['amount'], 0, '.', ' ');
+                                                      $amountValue = abs($model['amount']);
+                                                      $amount = number_format($amountValue, 0, '.', ' ');
                                                       if ($model['amount'] < 0) {
                                                           $class = 'line_sum_munus';
                                                           $amount = '-' . $amount;
