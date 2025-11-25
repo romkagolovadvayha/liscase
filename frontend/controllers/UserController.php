@@ -15,6 +15,9 @@ use common\models\user\UserDrop;
 use common\models\user\UserProfile;
 use common\models\user\UserTask;
 use common\models\user\UserPayoutSkins;
+use common\models\user\UserRaid;
+use common\models\user\UserTop;
+use common\models\user\UserTree;
 use yii\helpers\ArrayHelper;
 use frontend\forms\market\PaymentForm;
 use frontend\forms\profile\ProfileForm;
@@ -709,5 +712,369 @@ class UserController extends WebController
         return $this->renderAjax('promocode', [
             'promocodeForm' => $promocodeForm
         ]);
+    }
+
+    /**
+     * Генерация изображения итогов года
+     * @return Response
+     */
+    public function actionYearSummary()
+    {
+        $user = Yii::$app->user->identity;
+        if (!$user) {
+            throw new NotFoundHttpException(Yii::t('common', 'Пользователь не найден'));
+        }
+
+        // Собираем статистику
+        $stats = $this->collectYearStats($user);
+
+        // Генерируем изображение
+        $image = $this->generateYearSummaryImage($user, $stats);
+
+        // Возвращаем изображение
+        Yii::$app->response->format = Response::FORMAT_RAW;
+        Yii::$app->response->headers->set('Content-Type', 'image/png');
+        Yii::$app->response->headers->set('Content-Disposition', 'inline; filename="year-summary-' . $user->id . '.png"');
+        Yii::$app->response->data = $image;
+        
+        return Yii::$app->response;
+    }
+
+    /**
+     * Сбор статистики за все время
+     * @param User $user
+     * @return array
+     */
+    private function collectYearStats($user)
+    {
+        $stats = [];
+
+        // Сумма выигранных скинов
+        $skinsBalance = $user->getSkinsBalance();
+        $wonSkinsSum = Profit::find()
+            ->andWhere(['user_balance_id' => $skinsBalance->id])
+            ->andWhere(['type' => Profit::TYPE_WINNER_SKINS])
+            ->sum('amount') ?: 0;
+        $stats['won_skins_sum'] = (int)$wonSkinsSum;
+
+        // Количество выведенных скинов Rust
+        $stats['skins_rust_count'] = UserPayoutSkins::find()
+            ->andWhere(['user_id' => $user->id])
+            ->andWhere(['type' => 'rust'])
+            ->andWhere(['IN', 'status', [UserPayoutSkins::STATUS_SUCCESS, UserPayoutSkins::STATUS_NEW, UserPayoutSkins::STATUS_WAIT]])
+            ->count();
+
+        // Количество выведенных скинов CS2
+        $stats['skins_cs2_count'] = UserPayoutSkins::find()
+            ->andWhere(['user_id' => $user->id])
+            ->andWhere(['type' => 'cs2'])
+            ->andWhere(['IN', 'status', [UserPayoutSkins::STATUS_SUCCESS, UserPayoutSkins::STATUS_NEW, UserPayoutSkins::STATUS_WAIT]])
+            ->count();
+
+        // Количество рейдов (сделал)
+        $stats['raids_done'] = UserRaid::find()
+            ->andWhere(['user_id' => $user->id])
+            ->count();
+
+        // Количество раз, когда зарейдили (steam_id в owners)
+        $stats['raids_received'] = UserRaid::find()
+            ->andWhere(['LIKE', 'owners', $user->steam_id])
+            ->count();
+
+        // Количество ежедневных наград
+        $personalBalance = $user->getPersonalBalance();
+        $stats['daily_rewards'] = Profit::find()
+            ->andWhere(['user_balance_id' => $personalBalance->id])
+            ->andWhere(['IN', 'type', [
+                Profit::TYPE_DAILY_REWARD_LIST,
+                Profit::TYPE_DAILY_REWARD_LIST_BOX_SMALL,
+                Profit::TYPE_DAILY_REWARD_LIST_BOX_BIG
+            ]])
+            ->count();
+
+        // Количество приглашенных людей
+        $stats['referrals_count'] = UserTree::find()
+            ->andWhere(['parent_user_id' => $user->id])
+            ->count();
+
+        // Топы (позиции 1-3)
+        // Получаем все топы пользователя
+        $userTops = UserTop::find()
+            ->andWhere(['user_id' => $user->id])
+            ->andWhere(['IN', 'key', array_keys(UserTop::getTopsLabel())])
+            ->all();
+        
+        $topPositions = [];
+        $topsLabel = UserTop::getTopsLabel();
+        
+        foreach ($userTops as $userTop) {
+            // Подсчитываем позицию: сколько пользователей имеют значение больше
+            $position = UserTop::find()
+                ->andWhere(['key' => $userTop->key])
+                ->andWhere(['server_id' => $userTop->server_id])
+                ->andWhere(['wipe' => $userTop->wipe])
+                ->andWhere(['>', 'value', $userTop->value])
+                ->count() + 1; // +1 потому что позиция начинается с 1
+            
+            if ($position <= 3) {
+                $topLabel = $topsLabel[$userTop->key] ?? $userTop->key;
+                $topPositions[] = [
+                    'position' => $position,
+                    'type' => $topLabel,
+                    'server' => $userTop->server->name ?? '',
+                ];
+            }
+        }
+        $stats['top_positions'] = $topPositions;
+        $stats['top_count'] = count($topPositions);
+
+        return $stats;
+    }
+
+    /**
+     * Генерация изображения итогов года
+     * @param User $user
+     * @param array $stats
+     * @return string
+     */
+    private function generateYearSummaryImage($user, $stats)
+    {
+        // Размеры изображения
+        $width = 1024;
+        $height = 768;
+        
+        // Путь к шрифту Roboto (поддерживает кириллицу)
+        $fontPath = Yii::getAlias('@frontend/assets/sources/css/fonts/Roboto-Regular.ttf');
+        $fontBoldPath = Yii::getAlias('@frontend/assets/sources/css/fonts/Roboto-Bold.ttf');
+        
+        // Если шрифт не найден, используем системный
+        if (!file_exists($fontPath)) {
+            $fontPath = $this->findSystemFont();
+        }
+        
+        // Создаем изображение
+        $image = imagecreatetruecolor($width, $height);
+        
+        // Включаем альфа-канал
+        imagealphablending($image, true);
+        imagesavealpha($image, false);
+        
+        // Цвета
+        $bgColor = imagecolorallocate($image, 18, 18, 28); // Темный фон
+        $cardBgColor = imagecolorallocate($image, 28, 28, 40); // Фон карточек
+        $cardBorderColor = imagecolorallocate($image, 50, 50, 65); // Граница карточек
+        $textColor = imagecolorallocate($image, 255, 255, 255); // Белый текст
+        $accentColor = imagecolorallocate($image, 235, 12, 53); // Акцентный цвет
+        $secondaryColor = imagecolorallocate($image, 160, 160, 180); // Вторичный текст
+        $goldColor = imagecolorallocate($image, 255, 215, 0); // Золотой
+        $silverColor = imagecolorallocate($image, 192, 192, 192); // Серебряный
+        $bronzeColor = imagecolorallocate($image, 205, 127, 50); // Бронзовый
+        
+        // Заливаем фон
+        imagefill($image, 0, 0, $bgColor);
+        
+        // Градиент сверху
+        for ($i = 0; $i < 250; $i++) {
+            $alpha = (int)(80 * (1 - $i / 250));
+            $gradientColor = imagecolorallocatealpha($image, 235, 12, 53, $alpha);
+            imageline($image, 0, $i, $width, $i, $gradientColor);
+        }
+        
+        // Функция для вывода текста с поддержкой кириллицы
+        $drawText = function($text, $x, $y, $color, $fontSize = 20, $bold = false) use ($image, $fontPath, $fontBoldPath) {
+            $font = $bold && file_exists($fontBoldPath) ? $fontBoldPath : $fontPath;
+            if (file_exists($font)) {
+                imagettftext($image, $fontSize, 0, $x, $y, $color, $font, $text);
+            } else {
+                imagestring($image, 4, $x, $y - 15, $text, $color);
+            }
+        };
+        
+        // Функция для вычисления ширины текста
+        $getTextWidth = function($text, $fontSize = 20, $bold = false) use ($fontPath, $fontBoldPath) {
+            $font = $bold && file_exists($fontBoldPath) ? $fontBoldPath : $fontPath;
+            if (file_exists($font)) {
+                $bbox = imagettfbbox($fontSize, 0, $font, $text);
+                return $bbox[4] - $bbox[0];
+            }
+            return strlen($text) * 8;
+        };
+        
+        // Функция для обрезки текста, если он не помещается
+        $truncateText = function($text, $maxWidth, $fontSize = 20, $bold = false) use ($getTextWidth) {
+            $width = $getTextWidth($text, $fontSize, $bold);
+            if ($width <= $maxWidth) {
+                return $text;
+            }
+            while ($width > $maxWidth && mb_strlen($text) > 0) {
+                $text = mb_substr($text, 0, -1);
+                $width = $getTextWidth($text . '...', $fontSize, $bold);
+            }
+            return $text . '...';
+        };
+        
+        // Функция для рисования карточки
+        $drawCard = function($x, $y, $w, $h, $label, $value, $valueColor = null) use ($image, $cardBgColor, $cardBorderColor, $textColor, $secondaryColor, $drawText, $getTextWidth, $truncateText) {
+            // Фон карточки
+            imagefilledrectangle($image, $x, $y, $x + $w, $y + $h, $cardBgColor);
+            // Граница
+            imagerectangle($image, $x, $y, $x + $w, $y + $h, $cardBorderColor);
+            
+            // Метка
+            $labelSize = 14;
+            $labelText = $truncateText($label, $w - 20, $labelSize);
+            $drawText($labelText, $x + 12, $y + 25, $secondaryColor, $labelSize);
+            
+            // Значение
+            $valueSize = 24;
+            $valueColor = $valueColor ?: $textColor;
+            $valueText = $truncateText($value, $w - 20, $valueSize);
+            $valueWidth = $getTextWidth($valueText, $valueSize);
+            $valueX = $x + ($w - $valueWidth) / 2;
+            $drawText($valueText, $valueX, $y + 55, $valueColor, $valueSize, true);
+        };
+        
+        // Заголовок
+        $title = "Итоги " . date('Y');
+        $titleSize = 38;
+        $titleWidth = $getTextWidth($title, $titleSize, true);
+        $titleX = ($width - $titleWidth) / 2;
+        $drawText($title, $titleX, 60, $textColor, $titleSize, true);
+        
+        // Имя пользователя
+        $username = mb_substr($user->username, 0, 25);
+        $usernameSize = 22;
+        $usernameWidth = $getTextWidth($username, $usernameSize);
+        $usernameX = ($width - $usernameWidth) / 2;
+        $drawText($username, $usernameX, 95, $accentColor, $usernameSize);
+        
+        // Разделитель
+        imageline($image, 60, 120, $width - 60, 120, $cardBorderColor);
+        
+        // Статистика в карточках (2 колонки)
+        $cardWidth = 280;
+        $cardHeight = 85;
+        $cardGap = 30;
+        $startX = ($width - ($cardWidth * 2 + $cardGap)) / 2;
+        $startY = 160;
+        $rowGap = 20;
+        
+        $cards = [
+            ['label' => 'Выиграно скинов', 'value' => number_format($stats['won_skins_sum'], 0, '.', ' ') . ' монет', 'color' => $goldColor],
+            ['label' => 'Скинов Rust', 'value' => (string)$stats['skins_rust_count'], 'color' => null],
+            ['label' => 'Скинов CS2', 'value' => (string)$stats['skins_cs2_count'], 'color' => null],
+            ['label' => 'Рейдов сделано', 'value' => (string)$stats['raids_done'], 'color' => null],
+            ['label' => 'Раз зарейдили', 'value' => (string)$stats['raids_received'], 'color' => null],
+            ['label' => 'Ежедневных наград', 'value' => (string)$stats['daily_rewards'], 'color' => null],
+            ['label' => 'Приглашено людей', 'value' => (string)$stats['referrals_count'], 'color' => null],
+        ];
+        
+        $row = 0;
+        $col = 0;
+        foreach ($cards as $card) {
+            $x = $startX + $col * ($cardWidth + $cardGap);
+            $y = $startY + $row * ($cardHeight + $rowGap);
+            
+            $drawCard($x, $y, $cardWidth, $cardHeight, $card['label'], $card['value'], $card['color']);
+            
+            $col++;
+            if ($col >= 2) {
+                $col = 0;
+                $row++;
+            }
+        }
+        
+        // Топы внизу
+        $topY = $startY + (ceil(count($cards) / 2) * ($cardHeight + $rowGap)) + 30;
+        
+        if ($stats['top_count'] > 0) {
+            // Заголовок топов
+            $topTitle = "Достижения в топах";
+            $topTitleSize = 20;
+            $topTitleWidth = $getTextWidth($topTitle, $topTitleSize, true);
+            $topTitleX = ($width - $topTitleWidth) / 2;
+            $drawText($topTitle, $topTitleX, $topY, $accentColor, $topTitleSize, true);
+            
+            $topY += 35;
+            
+            // Топы в одну строку (максимум 3)
+            $topCards = array_slice($stats['top_positions'], 0, 3);
+            $topCardWidth = 300;
+            $topCardHeight = 70;
+            $topCardGap = 20;
+            $topStartX = ($width - (count($topCards) * $topCardWidth + (count($topCards) - 1) * $topCardGap)) / 2;
+            
+            foreach ($topCards as $index => $top) {
+                $topX = $topStartX + $index * ($topCardWidth + $topCardGap);
+                
+                $positionColor = $textColor;
+                $positionText = '';
+                if ($top['position'] == 1) {
+                    $positionText = "1-е место";
+                    $positionColor = $goldColor;
+                } elseif ($top['position'] == 2) {
+                    $positionText = "2-е место";
+                    $positionColor = $silverColor;
+                } else {
+                    $positionText = "3-е место";
+                    $positionColor = $bronzeColor;
+                }
+                
+                $topLabel = $truncateText(Yii::t('common', $top['type']), $topCardWidth - 20, 14);
+                $topValue = $positionText;
+                
+                $drawCard($topX, $topY, $topCardWidth, $topCardHeight, $topLabel, $topValue, $positionColor);
+            }
+        } else {
+            $noTopText = "Достижений в топах пока нет";
+            $noTopSize = 16;
+            $noTopWidth = $getTextWidth($noTopText, $noTopSize);
+            $noTopX = ($width - $noTopWidth) / 2;
+            $drawText($noTopText, $noTopX, $topY, $secondaryColor, $noTopSize);
+        }
+        
+        // Год внизу
+        $year = date('Y');
+        $yearSize = 28;
+        $yearWidth = $getTextWidth($year, $yearSize, true);
+        $yearX = ($width - $yearWidth) / 2;
+        $drawText($year, $yearX, $height - 30, $accentColor, $yearSize, true);
+        
+        // Выводим изображение
+        ob_start();
+        imagepng($image, null, 9);
+        $imageData = ob_get_contents();
+        ob_end_clean();
+        
+        // Освобождаем память
+        imagedestroy($image);
+        
+        return $imageData;
+    }
+    
+    /**
+     * Поиск системного шрифта с поддержкой кириллицы
+     * @return string|null
+     */
+    private function findSystemFont()
+    {
+        // Список возможных путей к системным шрифтам
+        $systemFonts = [
+            // Windows
+            'C:/Windows/Fonts/arial.ttf',
+            'C:/Windows/Fonts/tahoma.ttf',
+            // Linux
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+            '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+            '/usr/share/fonts/TTF/DejaVuSans.ttf',
+        ];
+        
+        foreach ($systemFonts as $font) {
+            if (file_exists($font)) {
+                return $font;
+            }
+        }
+        
+        return null;
     }
 }
