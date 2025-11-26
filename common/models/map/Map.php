@@ -269,7 +269,6 @@ class Map extends \yii\db\ActiveRecord
                 sleep(1);
             }
             
-            Yii::error("Map::getMapsList: Result: " . count($result), __METHOD__);
             if (!empty($result)) {
                 Yii::$app->cache->set($cacheKey, $result, 60*60);
             }
