@@ -200,6 +200,26 @@ $this->title = Yii::t('common', 'Вайп');
 
     <div class="wipe-section">
         <h3 class="wipe-section-title">
+            <i class="fas fa-sync-alt"></i>
+            <?= Yii::t('common', 'Сгенерировать карты') ?>
+        </h3>
+        <div class="wipe-buttons-grid">
+            <?php foreach ($serversNotSecret as $server): ?>
+                <?php 
+                $disabled = Yii::$app->cache->get("WIPE_actionGenerateMap2_{$server->id}");
+                $class = $disabled ? 'wipe-button btn-default disabled' : 'wipe-button btn-success';
+                ?>
+                <?= Html::a(
+                    '<i class="fas fa-server"></i> ' . Html::encode($server->name),
+                    '/wipe/generate-map?id=' . $server->id,
+                    ['class' => $class]
+                ) ?>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
+    <div class="wipe-section">
+        <h3 class="wipe-section-title">
             <i class="fas fa-map-marked-alt"></i>
             <?= Yii::t('common', 'Зафиксировать карту') ?>
         </h3>
