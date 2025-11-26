@@ -51,6 +51,8 @@ class MapGenerateJob extends BaseObject implements JobInterface
             }
 
             // Генерируем карты для каждого подходящего размера
+            // Всего добавляем 10 карт, распределяя их между размерами
+            $totalCount = 10;
             foreach ($sizes as $size) {
                 if ($server->min_map_size > $size) {
                     continue;
@@ -58,7 +60,7 @@ class MapGenerateJob extends BaseObject implements JobInterface
                 if ($server->max_map_size < $size) {
                     continue;
                 }
-                $countPerSize = (int)(10 / $countSizes);
+                $countPerSize = (int)($totalCount / $countSizes);
                 $this->generateMapsForSize($size, $server->id, $countPerSize);
             }
         } catch (\Exception $e) {
@@ -82,21 +84,31 @@ class MapGenerateJob extends BaseObject implements JobInterface
             return;
         }
 
-        // Получаем список карт через RustMaps API
-        $mapList = Map::getMapsList($size);
+        Yii::error("MapGenerateJob: Starting generation for size {$size}, server {$serverId}, count {$count}", __METHOD__);
+
+        // Получаем список карт через RustMaps API (без кэша для свежих данных)
+        $mapList = Map::getMapsList($size, false);
         if (empty($mapList)) {
             Yii::warning("MapGenerateJob: No maps found for size {$size}", __METHOD__);
             return;
         }
 
+        Yii::error("MapGenerateJob: Received " . count($mapList) . " maps from API for size {$size}", __METHOD__);
+
         $processed = 0;
+        $skippedExisting = 0;
+        $errors = 0;
         foreach ($mapList as $item) {
             if ($processed >= $count) {
+                Yii::error("MapGenerateJob: Reached target count {$count} for size {$size}", __METHOD__);
                 break;
             }
 
-            $mapId = $item['id'] ?? null;
+            // В ответе search API приходит mapId, а не id
+            $mapId = $item['mapId'] ?? $item['id'] ?? null;
             if (empty($mapId)) {
+                Yii::error("MapGenerateJob: Empty mapId in item: " . json_encode($item), __METHOD__);
+                $errors++;
                 continue;
             }
 
@@ -106,6 +118,7 @@ class MapGenerateJob extends BaseObject implements JobInterface
                 ->one();
 
             if ($existingMap) {
+                $skippedExisting++;
                 continue;
             }
 
@@ -118,12 +131,19 @@ class MapGenerateJob extends BaseObject implements JobInterface
 
                 $mapResponse = json_decode($mapResponseRaw, true);
                 if (!is_array($mapResponse) || ($mapResponse['meta']['statusCode'] ?? null) !== 200) {
-                    Yii::warning("MapGenerateJob: Invalid API response for map {$mapId}", __METHOD__);
+                    Yii::error("MapGenerateJob: Invalid API response for map {$mapId}. Response: " . substr($mapResponseRaw, 0, 500), __METHOD__);
                     continue;
                 }
 
                 $mapData = $mapResponse['data'] ?? null;
                 if (empty($mapData)) {
+                    Yii::error("MapGenerateJob: Empty data in API response for map {$mapId}", __METHOD__);
+                    continue;
+                }
+
+                // Проверяем наличие обязательного поля id
+                if (empty($mapData['id'])) {
+                    Yii::error("MapGenerateJob: Missing 'id' field in mapData for mapId {$mapId}. Data: " . json_encode($mapData), __METHOD__);
                     continue;
                 }
 
@@ -131,14 +151,27 @@ class MapGenerateJob extends BaseObject implements JobInterface
                 $mapListModel = $this->saveMapToList($mapData);
 
                 if ($mapListModel) {
+                    Yii::error("MapGenerateJob: Successfully saved map {$mapData['id']} to MapList", __METHOD__);
                     $processed++;
+                } else {
+                    Yii::error("MapGenerateJob: Failed to save map {$mapData['id']} to MapList", __METHOD__);
                 }
 
                 sleep(1); // Задержка между запросами
             } catch (\Exception $e) {
-                Yii::error("MapGenerateJob: Error processing map {$mapId}: " . $e->getMessage(), __METHOD__);
+                Yii::error("MapGenerateJob: Error processing map {$mapId}: " . $e->getMessage() . "\nTrace: " . $e->getTraceAsString(), __METHOD__);
+                $errors++;
                 continue;
             }
+        }
+
+        $summary = "MapGenerateJob: Completed for size {$size}. Processed: {$processed}, Skipped (existing): {$skippedExisting}, Errors: {$errors}";
+        Yii::error($summary, __METHOD__);
+        
+        try {
+            Yii::$app->telegramChats->sendMessage($summary);
+        } catch (\Throwable $e) {
+            // Игнорируем ошибки отправки в Telegram
         }
     }
 
@@ -216,10 +249,11 @@ class MapGenerateJob extends BaseObject implements JobInterface
         }
 
         if (!$model->save()) {
-            Yii::error('MapGenerateJob failed to save MapList: ' . json_encode($model->errors, JSON_UNESCAPED_UNICODE), __METHOD__);
+            Yii::error('MapGenerateJob failed to save MapList: ' . json_encode($model->errors, JSON_UNESCAPED_UNICODE) . ', Attributes: ' . json_encode($model->attributes, JSON_UNESCAPED_UNICODE), __METHOD__);
             return null;
         }
 
+        Yii::info("MapGenerateJob: Saved MapList record with hash {$model->hash}, id {$model->id}", __METHOD__);
         return $model;
     }
 }
