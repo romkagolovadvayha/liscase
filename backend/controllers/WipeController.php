@@ -89,7 +89,7 @@ class WipeController extends Controller
 
     public function actionGenerateMap($id)
     {
-        $cacheKey = "WIPE_actionGenerateMap2_{$id}";
+        $cacheKey = "WIPE_actionGenerateMap3_{$id}";
         if (Yii::$app->cache->get($cacheKey)) {
             return Yii::$app->cache->get($cacheKey);
         }
