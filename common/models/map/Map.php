@@ -237,8 +237,9 @@ class Map extends \yii\db\ActiveRecord
     }
 
     public static function getMapsList($size = 0) {
+      Yii::$app->telegramChats->sendMessage("getMapsList: " . $size);
         $result = [];
-        $cacheKey = 'MapsController_getMapsList2_' . $size;
+        $cacheKey = 'MapsController_getMapsList3_' . $size;
         if (Yii::$app->cache->get($cacheKey)) {
             $result = Yii::$app->cache->get($cacheKey);
         }
@@ -251,7 +252,7 @@ class Map extends \yii\db\ActiveRecord
                     ->setRawPostData(Map::getSearchQuery($size))
                     ->post('https://api.rustmaps.com/v4/maps/search?page=' . $i . '&staging=' . $staging . '&includeAllProtocols=false&customMaps=false');
 
-                    Yii::$app->telegramChats->sendMessage(json_encode($response));
+                    Yii::$app->telegramChats->sendMessage($response);
                 $response = json_decode($response, 1);
 
                 if ($response['meta']['statusCode'] !== 200) {
