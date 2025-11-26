@@ -237,7 +237,6 @@ class Map extends \yii\db\ActiveRecord
     }
 
     public static function getMapsList($size = 0) {
-      Yii::$app->telegramChats->sendMessage("getMapsList: " . $size);
         $result = [];
         $cacheKey = 'MapsController_getMapsList3_' . $size;
         if (Yii::$app->cache->get($cacheKey)) {
@@ -252,16 +251,16 @@ class Map extends \yii\db\ActiveRecord
                     ->setRawPostData(Map::getSearchQuery($size))
                     ->post('https://api.rustmaps.com/v4/maps/search?page=' . $i . '&staging=' . $staging . '&includeAllProtocols=false&customMaps=false');
 
-                    Yii::$app->telegramChats->sendMessage($response);
                 $response = json_decode($response, 1);
 
-                if ($response['meta']['statusCode'] !== 200) {
-                    Yii::$app->telegramChats->sendMessage('Ошибка парсинга карт.');
+                if (!is_array($response) || ($response['meta']['statusCode'] ?? null) !== 200) {
+                    Yii::warning("Map::getMapsList: Error parsing maps for size {$size}, page {$i}", __METHOD__);
                     continue;
                 }
 
-
-                $result = ArrayHelper::merge($result, $response['data']);
+                if (!empty($response['data']) && is_array($response['data'])) {
+                    $result = ArrayHelper::merge($result, $response['data']);
+                }
                 sleep(1);
             }
             Yii::$app->cache->set($cacheKey, $result, 60*60);
