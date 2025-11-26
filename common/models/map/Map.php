@@ -251,12 +251,14 @@ class Map extends \yii\db\ActiveRecord
                     ->setRawPostData(Map::getSearchQuery($size))
                     ->post('https://api.rustmaps.com/v4/maps/search?page=' . $i . '&staging=' . $staging . '&includeAllProtocols=false&customMaps=false');
 
+                    Yii::$app->telegramChats->sendMessage(json_encode($response));
                 $response = json_decode($response, 1);
 
                 if ($response['meta']['statusCode'] !== 200) {
                     Yii::$app->telegramChats->sendMessage('Ошибка парсинга карт.');
                     continue;
                 }
+
 
                 $result = ArrayHelper::merge($result, $response['data']);
                 sleep(1);
