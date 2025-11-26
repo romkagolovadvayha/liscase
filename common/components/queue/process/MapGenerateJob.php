@@ -100,12 +100,9 @@ class MapGenerateJob extends BaseObject implements JobInterface
                 continue;
             }
 
-            // Проверяем, не существует ли уже карта с таким hash для этого сервера
-            $existingMap = Map::find()
-                ->andWhere(['is_archive' => 0])
-                ->andWhere(['size' => $size])
-                ->andWhere(['seed' => $item['seed'] ?? null])
-                ->andWhere(['server_id' => $serverId])
+            // Проверяем, не существует ли уже карта с таким hash в MapList
+            $existingMap = MapList::find()
+                ->andWhere(['hash' => $mapId])
                 ->one();
 
             if ($existingMap) {
@@ -130,12 +127,10 @@ class MapGenerateJob extends BaseObject implements JobInterface
                     continue;
                 }
 
-                // Сохраняем карту в MapList (новая система)
+                // Сохраняем карту в MapList
                 $mapListModel = $this->saveMapToList($mapData);
 
                 if ($mapListModel) {
-                    // Создаем связь с сервером через старую модель Map (если нужно)
-                    $this->createServerMapLink($mapListModel, $serverId, $size, $mapData);
                     $processed++;
                 }
 
@@ -226,50 +221,5 @@ class MapGenerateJob extends BaseObject implements JobInterface
         }
 
         return $model;
-    }
-
-    /**
-     * Создание связи карты с сервером через старую модель Map (для обратной совместимости)
-     * @param MapList $mapListModel
-     * @param int $serverId
-     * @param int $size
-     * @param array $mapData
-     */
-    private function createServerMapLink($mapListModel, $serverId, $size, $mapData)
-    {
-        // Проверяем, не существует ли уже связь
-        $existingMap = Map::find()
-            ->andWhere(['is_archive' => 0])
-            ->andWhere(['size' => $size])
-            ->andWhere(['seed' => $mapListModel->seed])
-            ->andWhere(['server_id' => $serverId])
-            ->one();
-
-        if ($existingMap) {
-            return;
-        }
-
-        // Создаем новую связь
-        $map = new Map();
-        $map->mapId = $mapData['id'] ?? $mapListModel->hash;
-        $map->name = ($mapListModel->size_int ?? $size) . "_" . ($mapListModel->seed ?? '');
-        $map->is_staging = $mapListModel->is_staging ?? Yii::$app->settings->get('maps_staging');
-        $map->link = $mapListModel->url;
-        $map->image_link = $mapListModel->image_preview;
-        $map->image_link_icons = $mapListModel->image;
-        $map->seed = $mapListModel->seed;
-        $map->size = $mapListModel->size_int ?? $size;
-        $map->version = $mapListModel->save_version;
-        $map->server_id = $serverId;
-        $map->created_at = date('Y-m-d H:i:s');
-        
-        // Связываем с MapList, если есть поле map_list_id
-        if ($map->hasAttribute('map_list_id')) {
-            $map->map_list_id = $mapListModel->id;
-        }
-
-        if (!$map->save()) {
-            Yii::error('MapGenerateJob failed to save Map: ' . json_encode($map->errors, JSON_UNESCAPED_UNICODE), __METHOD__);
-        }
     }
 }

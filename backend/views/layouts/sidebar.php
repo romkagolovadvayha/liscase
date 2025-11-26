@@ -71,7 +71,7 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'icon' => 'fas fa-gamepad',
                        'url' => [''],
                        'visibility' => $admin,
-                       'active' => _checkActive('/servers'),
+                       'active' => _checkActive('/servers') || _checkActive('/map-list'),
                        'items' => [
                            [
                                'label' => 'Список серверов',
@@ -90,6 +90,12 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                                'icon' => 'fas fa-sort',
                                'url' => ['/servers/sort'],
                                'active' => _checkActive('/servers/sort'),
+                           ],
+                           [
+                               'label' => 'Карты',
+                               'icon' => 'fas fa-map',
+                               'url' => ['/map-list/index'],
+                               'active' => _checkActive('/map-list'),
                            ],
                        ],
                    ],
@@ -127,9 +133,30 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'label' =>  Yii::t('common', 'Радиостанции'),
                        'icon' => 'fa-solid fa-music',
                        'badgeDanger' => $radioBadge,
-                       'url' => ['/radio'],
+                       'url' => [''],
                        'visibility' => Yii::$app->settings->get('site_section_radio') && $moder,
                        'active' => _checkActive('/radio'),
+                       'items' => [
+                           [
+                               'label' => 'Главная',
+                               'icon' => 'fas fa-home',
+                               'url' => ['/radio/index'],
+                               'active' => _checkActive('/radio/index') || (_checkActive('/radio') && !_checkActive('/radio/tracks') && !_checkActive('/radio/stations')),
+                           ],
+                           [
+                               'label' => 'Станции',
+                               'icon' => 'fas fa-broadcast-tower',
+                               'url' => ['/radio/stations'],
+                               'active' => _checkActive('/radio/stations') || _checkActive('/radio/station'),
+                           ],
+                           [
+                               'label' => 'Треки',
+                               'icon' => 'fas fa-music',
+                               'badgeDanger' => $radioBadge,
+                               'url' => ['/radio/tracks'],
+                               'active' => _checkActive('/radio/tracks') || _checkActive('/radio/view'),
+                           ],
+                       ],
                    ],
                    [
                        'label' => 'Отчеты',
@@ -203,39 +230,6 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'icon'   => 'fa-solid fa-table-cells',
                        'active' => _checkActive('/category/'),
                    ],
-//                    [
-//                        'label' => 'Товары',
-//                        'icon' => 'fa-solid fa-list',
-//                        'url' => ['/rbac/permission'],
-//                        'visibility' => $admin,
-//                        'active' => _checkActive('/box/') || _checkActive('/sets/') || _checkActive('/drop/') || _checkActive('/select/'),
-//                        'items' => [
-//                            [
-//                                'label'  => Yii::t('common', 'Рулетки'),
-//                                'url'    => '/box/index',
-//                                'icon'   => 'fa-solid fa-gift',
-//                                'active' => _checkActive('/box/'),
-//                            ],
-//                            [
-//                                'label'  => Yii::t('common', 'Наборы'),
-//                                'url'    => '/sets/index',
-//                                'icon'   => 'fa-solid fa-suitcase',
-//                                'active' => _checkActive('/sets/'),
-//                            ],
-//                            [
-//                                'label'  => Yii::t('common', 'Наборы с выбором'),
-//                                'url'    => '/select/index',
-//                                'icon'   => 'fa-solid fa-object-ungroup',
-//                                'active' => _checkActive('/select/'),
-//                            ],
-//                            [
-//                                'label'  => Yii::t('common', 'Предметы'),
-//                                'url'    => '/drop/index',
-//                                'icon'   => 'fa-solid fa-table-cells',
-//                                'active' => _checkActive('/drop/'),
-//                            ],
-//                        ]
-//                    ],
                    [
                        'label'  => Yii::t('common', 'Блог'),
                        'icon'   => 'fa-regular fa-newspaper',
@@ -261,7 +255,7 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'label' => 'Бонусы',
                        'icon' => 'fas fa-cog',
                        'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
-                       'active' => _checkActive('/achievements-daily') || _checkActive('/payment-bonuses') || _checkActive('/promocode') || _checkActive('/task') || _checkActive('/settings/index?category=referral'),
+                       'active' => _checkActive('/payment-bonuses') || _checkActive('/promocode') || _checkActive('/tasks-v2') || _checkActive('/settings/index?category=referral'),
                        'items' => [
                            [
                                'label' => 'Промокоды',
@@ -271,29 +265,22 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                                'active' => _checkActive('/promocode'),
                            ],
                            [
-                               'label' => 'Ежедневная награда',
-                               'icon' => 'fa-solid fa-cloud-sun',
-                               'url' => ['/achievements-daily'],
-                               'visibility' => $admin,
-                               'active' => _checkActive('/achievements-daily'),
-                           ],
-                           [
                                'label'  => Yii::t('common', 'Задания'),
                                'icon'   => 'fa-solid fa-list-check',
-                               'url'    => '/task',
+                               'url'    => '/tasks-v2',
                                'visibility' => Yii::$app->settings->get('section_tasks') && $admin,
-                               'active' => _checkActive('/task'),
+                               'active' => _checkActive('/tasks-v2'),
                            ],
                            [
                                'label'  => Yii::t('common', 'Реферальная система'),
-                               'icon'   => 'fa-solid fa-list-check',
+                               'icon'   => 'fa-solid fa-users',
                                'url'    => '/settings/index?category=referral',
                                'visibility' => Yii::$app->settings->get('referral_bonus') && $admin,
                                'active' => _checkActive('/settings/index?category=referral'),
                            ],
                            [
                                'label'  => Yii::t('common', 'При пополнении'),
-                               'icon'   => 'fa-solid fa-list-check',
+                               'icon'   => 'fa-solid fa-ruble-sign',
                                'url'    => '/payment-bonuses',
                                'visibility' => $admin,
                                'active' => _checkActive('/payment-bonuses'),
