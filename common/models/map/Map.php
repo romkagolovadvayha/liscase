@@ -236,12 +236,17 @@ class Map extends \yii\db\ActiveRecord
         ]);
     }
 
-    public static function getMapsList($size = 0) {
+    public static function getMapsList($size = 0, $useCache = true) {
         $result = [];
         $cacheKey = 'MapsController_getMapsList3_' . $size;
-        if (Yii::$app->cache->get($cacheKey)) {
-            $result = Yii::$app->cache->get($cacheKey);
+        
+        if ($useCache) {
+            $cached = Yii::$app->cache->get($cacheKey);
+            if (!empty($cached) && is_array($cached)) {
+                $result = $cached;
+            }
         }
+        
         if (empty($result)) {
             for ($i = 0; $i < 20; $i++) {
                 $staging = Yii::$app->settings->get('maps_staging') ? 'true' : 'false';
@@ -263,7 +268,10 @@ class Map extends \yii\db\ActiveRecord
                 }
                 sleep(1);
             }
-            Yii::$app->cache->set($cacheKey, $result, 60*60);
+            
+            if (!empty($result)) {
+                Yii::$app->cache->set($cacheKey, $result, 60*60);
+            }
         }
 
         shuffle($result);
