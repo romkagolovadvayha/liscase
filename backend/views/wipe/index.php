@@ -206,7 +206,7 @@ $this->title = Yii::t('common', 'Вайп');
         <div class="wipe-buttons-grid">
             <?php foreach ($serversNotSecret as $server): ?>
                 <?php 
-                $disabled = Yii::$app->cache->get("WIPE_actionGenerateMap4_{$server->id}");
+                $disabled = Yii::$app->cache->get("WIPE_actionGenerateMap5_{$server->id}");
                 $class = $disabled ? 'wipe-button btn-default disabled' : 'wipe-button btn-success';
                 ?>
                 <?= Html::a(
