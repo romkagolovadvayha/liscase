@@ -1,0 +1,112 @@
+// ============================================
+// DESIGN SYSTEM - Темная тема для админки
+// ============================================
+
+// ============================================
+// ЦВЕТОВАЯ ПАЛИТРА
+// ============================================
+
+// Основные цвета
+$ds-bg-primary: hsl(0 0% 7.8% / 1);        // Основной фон
+$ds-bg-secondary: hsl(0 0% 11.8% / 1);     // Вторичный фон (карточки, инпуты)
+$ds-bg-tertiary: hsl(0 0% 15.3% / 1);      // Третичный фон (модалки, таблицы)
+$ds-bg-hover: hsl(0 0% 20.4% / 1);         // Фон при наведении
+
+// Текст
+$ds-text-primary: hsl(0 0% 94.9% / 1);     // Основной текст
+$ds-text-secondary: hsl(0 0% 55.3% / 1);   // Вторичный текст
+$ds-text-muted: hsl(0 0% 40% / 1);         // Приглушенный текст
+
+// Акцентные цвета
+$ds-success: #006c2e;
+$ds-success-light: lighten($ds-success, 15%);
+$ds-success-dark: darken($ds-success, 15%);
+
+$ds-primary: #00536c;
+$ds-primary-light: lighten($ds-primary, 15%);
+$ds-primary-dark: darken($ds-primary, 15%);
+
+$ds-danger: #6c0000;
+$ds-danger-light: lighten($ds-danger, 15%);
+$ds-danger-dark: darken($ds-danger, 15%);
+
+$ds-warning: #856404;
+$ds-warning-light: lighten($ds-warning, 15%);
+
+$ds-info: #0c5460;
+$ds-info-light: lighten($ds-info, 15%);
+
+// Границы
+$ds-border-color: hsl(0 0% 15.3% / 1);
+$ds-border-color-light: hsl(0 0% 20% / 1);
+
+// Тени
+$ds-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+$ds-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+$ds-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+
+// ============================================
+// ТИПОГРАФИКА
+// ============================================
+
+$ds-font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$ds-font-size-xs: 0.75rem;    // 12px
+$ds-font-size-sm: 0.875rem;   // 14px
+$ds-font-size-base: 1rem;     // 16px
+$ds-font-size-lg: 1.125rem;   // 18px
+$ds-font-size-xl: 1.25rem;    // 20px
+$ds-font-size-2xl: 1.5rem;    // 24px
+$ds-font-size-3xl: 1.875rem;  // 30px
+
+$ds-font-weight-light: 300;
+$ds-font-weight-normal: 400;
+$ds-font-weight-medium: 500;
+$ds-font-weight-semibold: 600;
+$ds-font-weight-bold: 700;
+
+$ds-line-height-tight: 1.25;
+$ds-line-height-normal: 1.5;
+$ds-line-height-relaxed: 1.75;
+
+// ============================================
+// ОТСТУПЫ
+// ============================================
+
+$ds-spacing-xs: 0.25rem;   // 4px
+$ds-spacing-sm: 0.5rem;    // 8px
+$ds-spacing-md: 1rem;      // 16px
+$ds-spacing-lg: 1.5rem;    // 24px
+$ds-spacing-xl: 2rem;      // 32px
+$ds-spacing-2xl: 3rem;     // 48px
+
+// ============================================
+// РАДИУСЫ СКРУГЛЕНИЯ
+// ============================================
+
+$ds-radius-sm: 0.25rem;    // 4px
+$ds-radius-md: 0.375rem;   // 6px
+$ds-radius-lg: 0.5rem;     // 8px
+$ds-radius-xl: 0.75rem;    // 12px
+$ds-radius-2xl: 1rem;      // 16px
+$ds-radius-full: 9999px;
+
+// ============================================
+// ПЕРЕХОДЫ
+// ============================================
+
+$ds-transition-fast: 150ms ease-in-out;
+$ds-transition-base: 200ms ease-in-out;
+$ds-transition-slow: 300ms ease-in-out;
+
+// ============================================
+// Z-INDEX
+// ============================================
+
+$ds-z-dropdown: 1000;
+$ds-z-sticky: 1020;
+$ds-z-fixed: 1030;
+$ds-z-modal-backdrop: 1040;
+$ds-z-modal: 1050;
+$ds-z-popover: 1060;
+$ds-z-tooltip: 1070;
+

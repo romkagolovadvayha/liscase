@@ -6,7 +6,10 @@ use common\components\queue\telegram\SendMessageJob;
 use common\components\queue\telegram\SendPhotoJob;
 use common\components\queue\telegram\TelegramJob;
 use common\components\queue\telegram\TelegramMassJob;
+use common\components\queue\vk\SendVkMessageJob;
 use common\components\telegram\TelegramPersonalBot;
+use common\components\vk\VkApiHelper;
+use common\models\vk\VkUser;
 use common\models\country\Country;
 use common\models\country\CountryPromo;
 use common\models\credit\Credit;
@@ -45,7 +48,8 @@ class TelegramConstructor extends \yii\db\ActiveRecord
     public const STATUS_ERROR = 4;
 
     public const PERSONAL_BOT = 1;
-    public const OTHER_BOT = 2;
+    public const VK_GROUP = 2;
+    public const OTHER_BOT = 3;
 
     public const AUDIENCE_TEST = 1;
     public const AUDIENCE_ALL = 2;
@@ -80,7 +84,7 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             'id' => 'ID',
             'title' => 'Название рассылки',
             'audience_id' => 'Аудитория',
-            'bot_id' => 'Бот',
+            'bot_id' => 'Платформа',
             'status' => 'Статус',
             'telegram_constructor_message_id' => 'Сообщение',
             'created_at' => 'Дата создания',
@@ -95,9 +99,19 @@ class TelegramConstructor extends \yii\db\ActiveRecord
         try {
             $this->status = self::STATUS_NEW;
             $this->created_at = date('Y-m-d H:i:s');
-            $this->save(false);
+            
+            // Приводим к int для корректного сохранения
+            $this->bot_id = (int)$this->bot_id;
+            $this->audience_id = (int)$this->audience_id;
+            $this->telegram_constructor_message_id = (int)$this->telegram_constructor_message_id;
+            
+            if (!$this->save(false)) {
+                \Yii::error("TelegramConstructor save failed: " . json_encode($this->errors, JSON_UNESCAPED_UNICODE), __METHOD__);
+                return false;
+            }
         } catch (\Exception $e) {
-            \Yii::info("Telegram message not save " . print_r($e->getMessage(), 1), 'problem');
+            \Yii::error("TelegramConstructor save exception: " . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
+            $this->addError('id', 'Ошибка сохранения: ' . $e->getMessage());
             return false;
         }
         return true;
@@ -109,7 +123,8 @@ class TelegramConstructor extends \yii\db\ActiveRecord
     public static function getBotList(): array
     {
         return [
-            self::PERSONAL_BOT => 'Персональный бот',
+            self::PERSONAL_BOT => 'Telegram: Персональный бот',
+            self::VK_GROUP => 'ВКонтакте: Группа',
 //            self::OTHER_BOT => 'Other Bot'
         ];
     }
@@ -140,6 +155,28 @@ class TelegramConstructor extends \yii\db\ActiveRecord
     }
 
     /**
+     * Универсальный метод отправки рассылки
+     * @return bool
+     */
+    public function send()
+    {
+        if ($this->status !== self::STATUS_IN_PROGRESS) {
+            return false;
+        }
+
+        switch ($this->bot_id) {
+            case self::PERSONAL_BOT:
+                return $this->sendPersonalBot();
+            case self::VK_GROUP:
+                return $this->sendVkGroup();
+            default:
+                Yii::error("Unknown bot_id: {$this->bot_id}", __METHOD__);
+                return false;
+        }
+    }
+
+    /**
+     * Отправка в Telegram персональный бот
      * @return bool|void
      */
     public function sendPersonalBot()
@@ -148,9 +185,13 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             return false;
         }
 
-        foreach (self::getAudience($this->audience_id) as $userId) {
+        foreach (self::getAudience($this->audience_id, self::PERSONAL_BOT) as $userId) {
             /** @var User $user */
             $user = User::findOne($userId);
+            if (empty($user) || empty($user->telegram_chat_id)) {
+                continue;
+            }
+            
             $cacheKey = "sendPersonalBot_{$this->telegramConstructorMessage->id}_{$user->current_language}";
             $cacheData = Yii::$app->cache->get($cacheKey);
             if (!empty($cacheData)) {
@@ -189,40 +230,118 @@ class TelegramConstructor extends \yii\db\ActiveRecord
     }
 
     /**
+     * Отправка в личные сообщения участников группы ВКонтакте
+     * @return bool
+     */
+    public function sendVkGroup()
+    {
+        if ($this->status !== self::STATUS_IN_PROGRESS) {
+            return false;
+        }
+
+        $groupId = Yii::$app->settings->get('vk_group_id');
+        if (empty($groupId)) {
+            Yii::error("VK group_id is not configured", __METHOD__);
+            return false;
+        }
+
+        // Используем русский язык по умолчанию
+        $language = 'ru-RU';
+        $message = $this->telegramConstructorMessage->getVkMessage($language);
+        $imageLink = $this->telegramConstructorMessage->getImageLink($language);
+        
+        $photo = null;
+        if (!empty($imageLink)) {
+            $photo = $this->telegramConstructorMessage->getPubUrl('', $language);
+        }
+
+        // Получаем список участников группы с учетом фильтрации по аудитории
+        $recipients = self::getAudience($this->audience_id, self::VK_GROUP);
+        if (empty($recipients)) {
+            Yii::error("VK: No recipients found for audience {$this->audience_id}", __METHOD__);
+            return false;
+        }
+
+        $vkApi = new VkApiHelper();
+
+        // Отправляем сообщения через очередь или напрямую
+        if (isset(Yii::$app->queueVk)) {
+            foreach ($recipients as $userId) {
+                Yii::$app->queueVk->push(new SendVkMessageJob([
+                    'user_id' => $userId,
+                    'message' => $message,
+                    'photo' => $photo,
+                ]));
+            }
+        } else {
+            // Если очередь не настроена, отправляем напрямую с задержками
+            foreach ($recipients as $userId) {
+                $result = $vkApi->sendMessage($userId, $message, $photo);
+                if ($result === false) {
+                    Yii::warning("VK: Failed to send message to user {$userId}", __METHOD__);
+                }
+                // Задержка для соблюдения rate limits VK API (не более 3 сообщений в секунду)
+                usleep(350000); // 0.35 секунды
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Получение аудитории для рассылки
+     * @param int $audienceId ID аудитории
+     * @param int|null $botId ID бота/платформы (для фильтрации)
      * @return array
      */
-    public static function getAudience($audienceId) {
-        if ($audienceId == self::AUDIENCE_TEST) {
-            return User::find()
-                                    ->select('DISTINCT(u.id)')
-                                    ->alias('u')
-                                    ->andWhere(['u.status' => User::STATUS_ACTIVE])
-                                    ->andWhere('telegram_chat_id is NOT NULL')
-                                    ->andWhere(['is_telegram_blocked' => 0])
-                                    ->andWhere(['IN', 'u.id', [509]])
-//                                    ->andWhere(['IN', 'u.id', [2373, 509]])
-                                    ->createCommand()
-                                    ->queryColumn();
+    public static function getAudience($audienceId, $botId = null) {
+        // Приводим к int для корректного сравнения
+        $audienceId = (int)$audienceId;
+        $botId = $botId !== null ? (int)$botId : null;
+        
+        // Фильтрация по платформе
+        if ($botId === self::PERSONAL_BOT) {
+            $query = User::find()
+                ->select('DISTINCT(u.id)')
+                ->alias('u')
+                ->andWhere(['u.status' => User::STATUS_ACTIVE])
+                ->andWhere('telegram_chat_id is NOT NULL')
+                ->andWhere(['is_telegram_blocked' => 0]);
+            
+            if ($audienceId == self::AUDIENCE_TEST) {
+                $query->andWhere(['IN', 'u.id', [509]]);
+            } elseif ($audienceId == self::AUDIENCE_ALL) {
+                // Без дополнительных фильтров
+            } elseif ($audienceId == self::AUDIENCE_WINNER) {
+                $query->andWhere(['IN', 'steam_id', [76561198161653962]]);
+            } else {
+                return [];
+            }
+
+            return $query->createCommand()->queryColumn();
+        } elseif ($botId === self::VK_GROUP) {
+            // Для VK группы получаем список участников из базы данных (тех, кто разрешил отправку сообщений)
+            $vkUsers = VkUser::getUsersWithPermission();
+            
+            if (empty($vkUsers)) {
+                return [];
+            }
+            
+            // Применяем фильтрацию по аудитории
+            if ($audienceId == self::AUDIENCE_TEST) {
+                // Для тестовой аудитории берем только первых 5 участников
+                return [33610634];
+            } elseif ($audienceId == self::AUDIENCE_ALL) {
+                // Для всех пользователей возвращаем всех с разрешением
+                return $vkUsers;
+            } elseif ($audienceId == self::AUDIENCE_WINNER) {
+                // Для победителей пока возвращаем всех (можно добавить фильтрацию позже)
+                return $vkUsers;
+            }
+            
+            return [];
         }
-        if ($audienceId == self::AUDIENCE_ALL) {
-            return User::find()
-                       ->select('DISTINCT(u.id)')
-                       ->alias('u')
-                       ->andWhere(['u.status' => User::STATUS_ACTIVE])
-                       ->andWhere('telegram_chat_id is NOT NULL')
-                       ->andWhere(['is_telegram_blocked' => 0])
-                       ->createCommand()
-                       ->queryColumn();
-        }
-        if ($audienceId == self::AUDIENCE_WINNER) {
-            return User::find()
-                       ->select('DISTINCT(id)')
-                       ->andWhere(['IN', 'steam_id', [76561198161653962]])
-                       ->andWhere('telegram_chat_id is NOT NULL')
-                       ->andWhere(['is_telegram_blocked' => 0])
-                       ->createCommand()
-                       ->queryColumn();
-        }
+
         return [];
     }
 

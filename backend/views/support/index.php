@@ -10,21 +10,21 @@ use yii\widgets\Pjax;
 /** @var backend\models\support\SupportSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-$this->title = 'Supports';
+$this->title = 'Поддержка';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
-<div class="support-index">
+<div class="support-index-page">
+    <div class="content-header">
+        <div class="ds-flex ds-flex--between">
+            <h1><?= Html::encode($this->title) ?></h1>
+            <?= Html::a('<i class="fas fa-plus"></i> Создать тикет', ['create'], ['class' => 'ds-btn ds-btn--success']) ?>
+        </div>
+    </div>
 
-    <h1><?= Html::encode($this->title) ?></h1>
-
-    <p>
-        <?= Html::a('Create Support', ['create'], ['class' => 'btn btn-success']) ?>
-    </p>
-
-    <?php Pjax::begin(); ?>
-    <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
-
-    <?= GridView::widget([
+    <div class="content">
+        <div class="ds-card">
+            <?php Pjax::begin(); ?>
+            <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'columns' => [
@@ -44,6 +44,7 @@ $this->params['breadcrumbs'][] = $this->title;
         ],
     ]); ?>
 
-    <?php Pjax::end(); ?>
-
+            <?php Pjax::end(); ?>
+        </div>
+    </div>
 </div>

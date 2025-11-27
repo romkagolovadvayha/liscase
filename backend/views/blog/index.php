@@ -15,13 +15,20 @@ $this->title = 'Блог';
 $this->params['breadcrumbs'][] = $this->title;
 $cacheData = Yii::$app->cache->get('actionGeneratePosts');
 ?>
-<div class="blog-index">
-    <p>
-        <?= Html::a('Добавить пост', ['create'], ['class' => 'btn btn-success']) ?>
-        <?= Html::a('Категории', ['/blog-category'], ['class' => 'btn btn-success']) ?>
-    </p>
+<div class="blog-index-page">
+    <div class="content-header">
+        <div class="ds-flex ds-flex--between">
+            <h1><?= Html::encode($this->title) ?></h1>
+            <div class="ds-flex ds-flex--gap-md">
+                <?= Html::a('<i class="fas fa-plus"></i> Добавить пост', ['create'], ['class' => 'ds-btn ds-btn--success']) ?>
+                <?= Html::a('<i class="fas fa-folder"></i> Категории', ['/blog-category'], ['class' => 'ds-btn ds-btn--primary']) ?>
+            </div>
+        </div>
+    </div>
 
-    <?= GridView::widget([
+    <div class="content">
+        <div class="ds-card">
+            <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'columns' => [
@@ -35,7 +42,10 @@ $cacheData = Yii::$app->cache->get('actionGeneratePosts');
                 'options'   => ['width' => '250'],
                 'format'    => 'raw',
                 'value'     => function (Blog $model) {
-                    return Html::a($model->blogCategory->name, ['/blog-category/view', 'id' => $model->blogCategory->id]);
+                    return Html::a(Html::encode($model->blogCategory->name), 
+                        ['/blog-category/view', 'id' => $model->blogCategory->id],
+                        ['class' => 'ds-text--primary', 'style' => 'text-decoration: none;']
+                    );
                 },
             ],
             [
@@ -43,8 +53,11 @@ $cacheData = Yii::$app->cache->get('actionGeneratePosts');
                 'options'   => ['width' => '180'],
                 'filterType'  => GridView::FILTER_SELECT2,
                 'filter'    => ArrayHelper::merge(['' => 'Любой'], Blog::getStatusList()),
+                'format'    => 'raw',
                 'value'     => function (Blog $model) {
-                    return ArrayHelper::getValue(Blog::getStatusList(), $model->status);
+                    $status = ArrayHelper::getValue(Blog::getStatusList(), $model->status);
+                    $badgeClass = $model->status == Blog::STATUS_ACTIVE ? 'ds-badge--success' : 'ds-badge--danger';
+                    return Html::tag('span', Html::encode($status), ['class' => 'ds-badge ' . $badgeClass]);
                 },
             ],
             [
@@ -60,6 +73,6 @@ $cacheData = Yii::$app->cache->get('actionGeneratePosts');
             ],
         ],
     ]); ?>
-
-
+        </div>
+    </div>
 </div>

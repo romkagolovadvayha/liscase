@@ -2,7 +2,7 @@
 
 use common\models\box\Drop;
 use kartik\grid\GridView;
-use yii\bootstrap5\Html;
+use yii\helpers\Html;
 use yii\helpers\ArrayHelper;
 
 /** @var $dataProvider */
@@ -11,13 +11,24 @@ use yii\helpers\ArrayHelper;
 
 $this->title = Yii::t('common', 'Предметы');
 ?>
+<div class="drop-index-page">
+    <div class="content-header">
+        <div class="ds-flex ds-flex--between">
+            <h1><?= Html::encode($this->title) ?></h1>
+            <div class="ds-flex ds-flex--gap-md">
+                <?= Html::a('<i class="fas fa-plus"></i> ' . Yii::t('common', 'Добавить предмет'),
+                    ['/drop/create'],
+                    ['class' => 'ds-btn ds-btn--success']) ?>
+                <?= Html::a('<i class="fas fa-sort"></i> ' . Yii::t('common', 'Сортировать'),
+                    ['/drop/sort'],
+                    ['class' => 'ds-btn ds-btn--primary']) ?>
+            </div>
+        </div>
+    </div>
 
-<?= Html::a(Yii::t('common', 'Добавить предмет'),
-    '/drop/create',
-    ['class' => 'btn btn-success']); ?> <?= Html::a(Yii::t('common', 'Сортировать'),
-    '/drop/sort',
-    ['class' => 'btn btn-primary']); ?>
-<?= GridView::widget([
+    <div class="content">
+        <div class="ds-card">
+            <?= GridView::widget([
     'dataProvider' => $dataProvider,
     'filterModel'  => $searchModel,
     'columns'      => [
@@ -33,7 +44,13 @@ $this->title = Yii::t('common', 'Предметы');
                 if (empty($model->imageOrig)) {
                     return null;
                 }
-                return Html::img($model->imageOrig->getImagePubUrl(false), ['width' => '40px']);
+                return Html::img($model->imageOrig->getImagePubUrl(false), [
+                    'width' => '40px',
+                    'height' => '40px',
+                    'loading' => 'lazy',
+                    'alt' => Html::encode($model->name ?? ''),
+                    'style' => 'border-radius: 4px; object-fit: cover;'
+                ]);
             },
         ],
         'name',
@@ -59,5 +76,7 @@ $this->title = Yii::t('common', 'Предметы');
             'options'  => ['width' => '30'],
         ],
     ],
-]);
-?>
+]); ?>
+        </div>
+    </div>
+</div>

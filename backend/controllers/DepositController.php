@@ -34,6 +34,7 @@ class DepositController extends Controller
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'accept' => ['POST'],
                 ],
             ],
         ]);
@@ -114,6 +115,33 @@ class DepositController extends Controller
         return $this->render('update', [
             'model' => $model,
         ]);
+    }
+
+    /**
+     * Accepts a deposit (sets status to SUCCESS)
+     * @param int $id ID
+     * @return \yii\web\Response
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    public function actionAccept($id)
+    {
+        $model = $this->findModel($id);
+        $oldStatus = $model->status;
+
+        if ($model->status != Deposit::STATUS_SUCCESS) {
+            $model->status = Deposit::STATUS_SUCCESS;
+            if ($model->save()) {
+                Deposit::bonus($model->user, $model->amount, $model->payment_type);
+                $model->user->getPersonalBalance()->recalculateBalance();
+                \Yii::$app->session->setFlash('success', 'Депозит успешно принят!');
+            } else {
+                \Yii::$app->session->setFlash('error', 'Ошибка при принятии депозита.');
+            }
+        } else {
+            \Yii::$app->session->setFlash('warning', 'Депозит уже принят.');
+        }
+
+        return $this->redirect(['index']);
     }
 
     /**

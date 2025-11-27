@@ -138,31 +138,7 @@ $( "#sortable-buttons" ).sortable({
     connectWith: ".connectedSortable",
 }).disableSelection();
 
-var telegramconstructor_audience_id = $('.field-telegramconstructor-audience_id');
-function updateAudienceId(audience_id) {
-    var audience_info_block = telegramconstructor_audience_id.find('.audience-info-block');
-    audience_info_block.html('<img style="width: 24px" src="/images/loader.gif"/> Идет подсчет получателей...');
-    $.ajax({
-        url: '/telegram-constructor-message/get-audience-info',
-        method: 'GET',
-        data: {
-            audienceId: audience_id,
-        },
-        success: function(response){
-            audience_info_block.html(response);
-        }
-    });
-}
-if (telegramconstructor_audience_id) {
-    telegramconstructor_audience_id.append($($.parseHTML('<div class="audience-info-block"></div>')));
-    var audience_id = telegramconstructor_audience_id.find('select').value;
-    if (audience_id) {
-        updateAudienceId(audience_id);
-    }
-    telegramconstructor_audience_id.on('change', 'select', function (e) {
-        updateAudienceId(this.value);
-    });
-}
+// Функция updateAudienceId удалена, используется новая логика в форме
 if ($.fn.filseinputLocales) {
     $.fn.filseinputLocales['ru']['dropZoneTitle'] = "Выберите файлы";
 }

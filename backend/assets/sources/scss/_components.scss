@@ -1,0 +1,339 @@
+// ============================================
+// ПЕРЕИСПОЛЬЗУЕМЫЕ КОМПОНЕНТЫ
+// ============================================
+
+@import 'design-system';
+
+// ============================================
+// КАРТОЧКИ
+// ============================================
+
+.ds-card {
+  background: $ds-bg-tertiary;
+  border-radius: $ds-radius-lg;
+  padding: $ds-spacing-lg;
+  box-shadow: $ds-shadow-sm;
+  border: 1px solid $ds-border-color;
+  transition: all $ds-transition-base;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $ds-spacing-md;
+    padding-bottom: $ds-spacing-md;
+    border-bottom: 1px solid $ds-border-color;
+
+    &-title {
+      font-size: $ds-font-size-lg;
+      font-weight: $ds-font-weight-semibold;
+      color: $ds-text-primary;
+      margin: 0;
+    }
+  }
+
+  &__body {
+    color: $ds-text-primary;
+  }
+
+  &__footer {
+    margin-top: $ds-spacing-md;
+    padding-top: $ds-spacing-md;
+    border-top: 1px solid $ds-border-color;
+  }
+
+  &--hover {
+    &:hover {
+      box-shadow: $ds-shadow-md;
+      border-color: $ds-border-color-light;
+    }
+  }
+}
+
+// ============================================
+// КНОПКИ
+// ============================================
+
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $ds-spacing-sm;
+  padding: $ds-spacing-sm $ds-spacing-md;
+  font-size: $ds-font-size-sm;
+  font-weight: $ds-font-weight-medium;
+  line-height: $ds-line-height-normal;
+  border-radius: $ds-radius-md;
+  border: none;
+  cursor: pointer;
+  transition: all $ds-transition-base;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: $ds-bg-secondary;
+    color: $ds-text-secondary;
+
+    &:hover:not(:disabled) {
+      background: $ds-bg-hover;
+      color: $ds-text-primary;
+    }
+  }
+
+  &--success {
+    background: $ds-success;
+    color: $ds-text-primary;
+
+    &:hover:not(:disabled) {
+      background: $ds-success-light;
+    }
+  }
+
+  &--danger {
+    background: $ds-danger;
+    color: $ds-text-primary;
+
+    &:hover:not(:disabled) {
+      background: $ds-danger-light;
+    }
+  }
+
+  &--sm {
+    padding: $ds-spacing-xs $ds-spacing-sm;
+    font-size: $ds-font-size-xs;
+  }
+
+  &--lg {
+    padding: $ds-spacing-md $ds-spacing-lg;
+    font-size: $ds-font-size-base;
+  }
+
+  &--icon {
+    padding: $ds-spacing-sm;
+    width: 2rem;
+    height: 2rem;
+  }
+
+  &--secondary {
+    background: $ds-bg-secondary;
+    color: $ds-text-secondary;
+
+    &:hover:not(:disabled) {
+      background: $ds-bg-hover;
+      color: $ds-text-primary;
+    }
+  }
+}
+
+// ============================================
+// ФОРМЫ
+// ============================================
+
+.ds-input {
+  width: 100%;
+  padding: $ds-spacing-sm $ds-spacing-md;
+  font-size: $ds-font-size-sm;
+  line-height: $ds-line-height-normal;
+  color: $ds-text-primary;
+  background: $ds-bg-secondary;
+  border: 1px solid $ds-border-color;
+  border-radius: $ds-radius-md;
+  transition: all $ds-transition-base;
+
+  &:focus {
+    outline: none;
+    border-color: $ds-primary;
+    box-shadow: 0 0 0 3px rgba($ds-primary, 0.1);
+  }
+
+  &::placeholder {
+    color: $ds-text-muted;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.ds-label {
+  display: block;
+  font-size: $ds-font-size-sm;
+  font-weight: $ds-font-weight-medium;
+  color: $ds-text-primary;
+  margin-bottom: $ds-spacing-xs;
+
+  &--required::after {
+    content: ' *';
+    color: $ds-danger-light;
+  }
+}
+
+.ds-form-group {
+  margin-bottom: $ds-spacing-md;
+
+  &__error {
+    margin-top: $ds-spacing-xs;
+    font-size: $ds-font-size-xs;
+    color: $ds-danger-light;
+  }
+
+  &__help {
+    margin-top: $ds-spacing-xs;
+    font-size: $ds-font-size-xs;
+    color: $ds-text-muted;
+  }
+}
+
+// ============================================
+// БАДЖИ И МЕТКИ
+// ============================================
+
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: $ds-spacing-xs $ds-spacing-sm;
+  font-size: $ds-font-size-xs;
+  font-weight: $ds-font-weight-medium;
+  border-radius: $ds-radius-full;
+  line-height: 1;
+
+  &--success {
+    background: rgba($ds-success, 0.2);
+    color: $ds-success-light;
+  }
+
+  &--danger {
+    background: rgba($ds-danger, 0.2);
+    color: $ds-danger-light;
+  }
+
+  &--warning {
+    background: rgba($ds-warning, 0.2);
+    color: $ds-warning-light;
+  }
+
+  &--info {
+    background: rgba($ds-info, 0.2);
+    color: $ds-info-light;
+  }
+}
+
+// ============================================
+// АЛЕРТЫ
+// ============================================
+
+.ds-alert {
+  padding: $ds-spacing-md;
+  border-radius: $ds-radius-md;
+  border: 1px solid;
+  margin-bottom: $ds-spacing-md;
+
+  &--success {
+    background: rgba($ds-success, 0.1);
+    border-color: $ds-success-light;
+    color: $ds-success-light;
+  }
+
+  &--danger {
+    background: rgba($ds-danger, 0.1);
+    border-color: $ds-danger-light;
+    color: $ds-danger-light;
+  }
+
+  &--warning {
+    background: rgba($ds-warning, 0.1);
+    border-color: $ds-warning-light;
+    color: $ds-warning-light;
+  }
+
+  &--info {
+    background: rgba($ds-info, 0.1);
+    border-color: $ds-info-light;
+    color: $ds-info-light;
+  }
+}
+
+// ============================================
+// СЧЕТЧИКИ
+// ============================================
+
+.ds-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $ds-spacing-md;
+  background: $ds-bg-tertiary;
+  border-radius: $ds-radius-lg;
+  border: 1px solid $ds-border-color;
+  min-height: 100px;
+
+  &__value {
+    font-size: $ds-font-size-3xl;
+    font-weight: $ds-font-weight-bold;
+    color: $ds-text-primary;
+    line-height: $ds-line-height-tight;
+  }
+
+  &__label {
+    font-size: $ds-font-size-sm;
+    color: $ds-text-secondary;
+    margin-top: $ds-spacing-xs;
+    text-align: center;
+  }
+}
+
+// ============================================
+// РАЗДЕЛИТЕЛИ
+// ============================================
+
+.ds-divider {
+  height: 1px;
+  background: $ds-border-color;
+  border: none;
+  margin: $ds-spacing-lg 0;
+}
+
+// ============================================
+// УТИЛИТЫ
+// ============================================
+
+.ds-text {
+  &--primary { color: $ds-text-primary; }
+  &--secondary { color: $ds-text-secondary; }
+  &--muted { color: $ds-text-muted; }
+  &--success { color: $ds-success-light; }
+  &--danger { color: $ds-danger-light; }
+  &--warning { color: $ds-warning-light; }
+  &--info { color: $ds-info-light; }
+}
+
+.ds-bg {
+  &--primary { background: $ds-bg-primary; }
+  &--secondary { background: $ds-bg-secondary; }
+  &--tertiary { background: $ds-bg-tertiary; }
+}
+
+.ds-flex {
+  display: flex;
+
+  &--center {
+    align-items: center;
+    justify-content: center;
+  }
+
+  &--between {
+    justify-content: space-between;
+  }
+
+  &--gap-sm { gap: $ds-spacing-sm; }
+  &--gap-md { gap: $ds-spacing-md; }
+  &--gap-lg { gap: $ds-spacing-lg; }
+}
+

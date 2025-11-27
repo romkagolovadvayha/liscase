@@ -10,16 +10,17 @@ use yii\grid\GridView;
 /** @var backend\models\map\MapListSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-$this->title = 'Map List';
+$this->title = 'Карты';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
-<div class="map-list-index">
+<div class="map-list-index-page">
+    <div class="content-header">
+        <h1><?= Html::encode($this->title) ?></h1>
+    </div>
 
-    <h1><?= Html::encode($this->title) ?></h1>
-
-    <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
-
-    <?= GridView::widget([
+    <div class="content">
+        <div class="ds-card">
+            <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'columns' => [
@@ -32,7 +33,11 @@ $this->params['breadcrumbs'][] = $this->title;
                 'format' => 'raw',
                 'value' => function ($model) {
                     if ($model->image_preview) {
-                        return Html::img($model->image_preview, ['style' => 'max-width: 100px; max-height: 100px;']);
+                        return Html::img($model->image_preview, [
+                            'style' => 'max-width: 100px; max-height: 100px; border-radius: 4px;',
+                            'loading' => 'lazy',
+                            'alt' => 'Карта ' . Html::encode($model->hash ?? '')
+                        ]);
                     }
                     return '-';
                 },
@@ -58,7 +63,7 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
         ],
     ]); ?>
-
-
+        </div>
+    </div>
 </div>
 

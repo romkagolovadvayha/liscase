@@ -14,14 +14,20 @@ use yii\helpers\ArrayHelper;
 $this->title = 'Сервера';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
-<div class="servers-index">
-    <p>
-        <?= Html::a('Новый сервер', ['create'], ['class' => 'btn btn-success']) ?> <?= Html::a(Yii::t('common', 'Сортировать'),
-                                                                                               ['sort'],
-                                                                                               ['class' => 'btn btn-primary']); ?>
-    </p>
+<div class="servers-index-page">
+    <div class="content-header">
+        <div class="ds-flex ds-flex--between">
+            <h1><?= Html::encode($this->title) ?></h1>
+            <div class="ds-flex ds-flex--gap-md">
+                <?= Html::a('<i class="fas fa-plus"></i> Новый сервер', ['create'], ['class' => 'ds-btn ds-btn--success']) ?>
+                <?= Html::a('<i class="fas fa-sort"></i> ' . Yii::t('common', 'Сортировать'), ['sort'], ['class' => 'ds-btn ds-btn--primary']) ?>
+            </div>
+        </div>
+    </div>
 
-    <?= GridView::widget([
+    <div class="content">
+        <div class="ds-card">
+            <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'columns' => [
@@ -67,8 +73,11 @@ $this->params['breadcrumbs'][] = $this->title;
                 'filterType'  => GridView::FILTER_SELECT2,
                 'filter'    => ArrayHelper::merge(['' => 'Все'], Servers::getStatusList()),
                 'options'   => ['width' => '100'],
+                'format'    => 'raw',
                 'value'     => function (Servers $model) {
-                    return ArrayHelper::getValue(Servers::getStatusList(), $model->status);
+                    $status = ArrayHelper::getValue(Servers::getStatusList(), $model->status);
+                    $badgeClass = $model->status == Servers::STATUS_ACTIVE ? 'ds-badge--success' : 'ds-badge--danger';
+                    return Html::tag('span', Html::encode($status), ['class' => 'ds-badge ' . $badgeClass]);
                 },
             ],
             [
@@ -81,6 +90,6 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
         ],
     ]); ?>
-
-
+        </div>
+    </div>
 </div>

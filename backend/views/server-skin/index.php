@@ -11,11 +11,17 @@ use backend\models\serverskin\ServerSkinSearch;
 /** @var ServerSkinSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-$this->title =  Yii::t('common', 'Свои скины');
+$this->title = Yii::t('common', 'Свои скины');
 $this->params['breadcrumbs'][] = $this->title;
 ?>
-<div class="ServerSkin-index">
-    <?= GridView::widget([
+<div class="server-skin-index-page">
+    <div class="content-header">
+        <h1><?= Html::encode($this->title) ?></h1>
+    </div>
+
+    <div class="content">
+        <div class="ds-card">
+            <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'columns' => [
@@ -28,7 +34,11 @@ $this->params['breadcrumbs'][] = $this->title;
                 'options'   => ['width' => '150'],
                 'format'    => 'raw',
                 'value'          => function (ServerSkin $model) {
-                    return "<a href=\"/user/profile?userId={$model->user->id}\">{$model->user->username}</a>";
+                    $url = \yii\helpers\Url::to(['/user/profile', 'userId' => $model->user->id]);
+                    return Html::a(Html::encode($model->user->username), $url, [
+                        'class' => 'ds-text--primary',
+                        'style' => 'text-decoration: none;'
+                    ]);
                 },
             ],
             'name',
@@ -38,9 +48,12 @@ $this->params['breadcrumbs'][] = $this->title;
                 'options'   => ['width' => '140'],
                 'filterType'  => GridView::FILTER_SELECT2,
                 'filter'          => \yii\helpers\ArrayHelper::merge(['' => 'Любой'], ServerSkin::getStatusList()),
+                'format'    => 'raw',
                 'value'           => function (ServerSkin $model) {
                     $statusList = ServerSkin::getStatusList();
-                    return \yii\helpers\ArrayHelper::getValue($statusList, $model->status);
+                    $status = \yii\helpers\ArrayHelper::getValue($statusList, $model->status);
+                    $badgeClass = $model->status == ServerSkin::STATUS_ACTIVE ? 'ds-badge--success' : 'ds-badge--danger';
+                    return Html::tag('span', Html::encode($status), ['class' => 'ds-badge ' . $badgeClass]);
                 },
             ],
             [
@@ -55,6 +68,6 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
         ],
     ]); ?>
-
-
+        </div>
+    </div>
 </div>

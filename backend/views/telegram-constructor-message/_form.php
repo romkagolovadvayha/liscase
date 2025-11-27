@@ -15,9 +15,12 @@ $languages = [
 
 ?>
 
-<div class="telegram-constructor-message-form">
-
-    <?php $form = ActiveForm::begin(); ?>
+<div class="ds-card">
+    <div class="ds-card__header">
+        <h5 class="ds-card__header-title"><?= $model->isNewRecord ? 'Создать сообщение' : 'Редактировать сообщение' ?></h5>
+    </div>
+    <div class="ds-card__body">
+        <?php $form = ActiveForm::begin(); ?>
 
     <?= $form->field($model, 'title')->textInput() ?>
 
@@ -96,11 +99,12 @@ $languages = [
     </div>
 
 
-    <div class="form-group">
-        <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
-    </div>
+        <div class="form-group">
+            <?= Html::submitButton('<i class="bi bi-check-circle"></i> Сохранить', ['class' => 'ds-btn ds-btn--success']) ?>
+        </div>
 
-    <?php ActiveForm::end(); ?>
+        <?php ActiveForm::end(); ?>
+    </div>
 </div>
 
 <div class="modal fade" id="modalFormAddButtonTgConstructor" tabindex="-1" role="dialog" aria-labelledby="modalForm">

@@ -14,12 +14,9 @@ use common\models\user\UserChecking;
 use common\models\user\UserSearch;
 use common\models\user\UserTree;
 use Yii;
-use yii\base\BaseObject;
 use yii\filters\AccessControl;
-use yii\helpers\ArrayHelper;
 use common\models\user\User;
 use backend\components\CrudController;
-use yii2mod\editable\EditableAction;
 
 class UserController extends CrudController
 {
@@ -37,11 +34,6 @@ class UserController extends CrudController
                         'allow' => true,
                         'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
                     ],
-                    [
-                        'allow' => true,
-                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
-                        'actions' => ['profile']
-                    ]
                 ],
             ],
         ]);
@@ -69,84 +61,69 @@ class UserController extends CrudController
     {
         /** @var User $user */
         $user = User::findOne($userId);
-        $roleForm = new RoleForm();
-        $roleForm->setUserId($userId);
-        $bonusForm = new BonusForm();
-        $bonusForm->setUserId($userId);
-        $payoutForm = new PayoutForm();
-        $payoutForm->setUserId($userId);
-        $skinForm = new SkinForm();
-        $skinForm->setUserId($userId);
-        $banForm = new BanForm();
-        $banForm->setUserId($userId);
-        $muteForm = new MuteForm();
-        $muteForm->setUserId($userId);
+        if (!$user) {
+            throw new \yii\web\NotFoundHttpException('Пользователь не найден');
+        }
+
+        $forms = [
+            'roleForm' => new RoleForm(),
+            'bonusForm' => new BonusForm(),
+            'payoutForm' => new PayoutForm(),
+            'skinForm' => new SkinForm(),
+            'banForm' => new BanForm(),
+            'muteForm' => new MuteForm(),
+        ];
+
+        foreach ($forms as $form) {
+            $form->setUserId($userId);
+        }
+
         $bodyParams = Yii::$app->request->bodyParams;
-        if (!empty($bodyParams['RoleForm'])
-            && $roleForm->load(Yii::$app->request->post())
-            && $roleForm->saveRecord()) {
-            Yii::$app->session->addFlash('success', 'Роль пользователя успешно изменена!');
-            return $this->redirect(['profile', 'userId' => $userId]);
+        $messages = [
+            'RoleForm' => 'Роль пользователя успешно изменена!',
+            'User' => 'Пользователь успешно изменен!',
+            'BonusForm' => 'Бонус успешно начислен!',
+            'PayoutForm' => 'Вывод успешно проведен!',
+            'SkinForm' => 'Скин успешно отправлен!',
+            'BanForm' => 'Бан успешно выдан!',
+            'MuteForm' => 'Мут успешно выдан!',
+        ];
+
+        foreach ($messages as $formName => $message) {
+            if (!empty($bodyParams[$formName])) {
+                $form = $formName === 'User' ? $user : $forms[lcfirst($formName)];
+                if ($form->load(Yii::$app->request->post()) && 
+                    ($formName === 'User' ? $form->save() : $form->saveRecord())) {
+                    Yii::$app->session->addFlash('success', $message);
+                    return $this->redirect(['profile', 'userId' => $userId]);
+                }
+            }
         }
-        if (!empty($bodyParams['User'])
-            && $user->load(Yii::$app->request->post())
-            && $user->save()) {
-            Yii::$app->session->addFlash('success', 'Пользователь успешно изменен!');
-            return $this->redirect(['profile', 'userId' => $userId]);
-        }
-        if (!empty($bodyParams['BonusForm'])
-            && $bonusForm->load(Yii::$app->request->post())
-            && $bonusForm->saveRecord()) {
-            Yii::$app->session->addFlash('success', 'Бонус успешно начислен!');
-            return $this->redirect(['profile', 'userId' => $userId]);
-        }
-        if (!empty($bodyParams['PayoutForm'])
-            && $payoutForm->load(Yii::$app->request->post())
-            && $payoutForm->saveRecord()) {
-            Yii::$app->session->addFlash('success', 'Вывод успешно проведен!');
-            return $this->redirect(['profile', 'userId' => $userId]);
-        }
-        if (!empty($bodyParams['SkinForm'])
-            && $skinForm->load(Yii::$app->request->post())
-            && $skinForm->saveRecord()) {
-            Yii::$app->session->addFlash('success', 'Скин успешно отправлен!');
-            return $this->redirect(['profile', 'userId' => $userId]);
-        }
-        if (!empty($bodyParams['BanForm'])
-            && $banForm->load(Yii::$app->request->post())
-            && $banForm->saveRecord()) {
-            Yii::$app->session->addFlash('success', 'Бан успешно выдан!');
-            return $this->redirect(['profile', 'userId' => $userId]);
-        }
-        if (!empty($bodyParams['MuteForm'])
-            && $muteForm->load(Yii::$app->request->post())
-            && $muteForm->saveRecord()) {
-            Yii::$app->session->addFlash('success', 'Мут успешно выдан!');
-            return $this->redirect(['profile', 'userId' => $userId]);
-        }
-        return $this->render('profile', [
+
+        return $this->render('profile', array_merge([
             'user' => $user,
-            'roleForm' => $roleForm,
-            'bonusForm' => $bonusForm,
-            'skinForm' => $skinForm,
-            'banForm' => $banForm,
-            'muteForm' => $muteForm,
-            'payoutForm' => $payoutForm,
-        ]);
+        ], $forms));
     }
 
     public function actionUnban($userId)
     {
         $user = User::findOne($userId);
+        if (!$user) {
+            throw new \yii\web\NotFoundHttpException('Пользователь не найден');
+        }
         $user->unban();
         Yii::$app->session->addFlash('success', 'Бан успешно снят!');
-        return $this->redirect('/user/profile?userId=' . $userId);
+        return $this->redirect(['profile', 'userId' => $userId]);
     }
 
     public function actionCheckingStart($userId)
     {
-        $moder = Yii::$app->user->identity;
         $user = User::findOne($userId);
+        if (!$user) {
+            throw new \yii\web\NotFoundHttpException('Пользователь не найден');
+        }
+
+        $moder = Yii::$app->user->identity;
         $model = new UserChecking();
         $model->user_id = $user->id;
         $model->status = UserChecking::STATUS_CHECKING;
@@ -158,26 +135,33 @@ class UserController extends CrudController
         RconTasks::execute($command);
 
         Yii::$app->session->addFlash('success', 'Игрок вызван на проверку!');
-        return $this->redirect('/user/profile?userId=' . $userId);
+        return $this->redirect(['profile', 'userId' => $userId]);
     }
 
     public function actionCheckingStop($userId)
     {
         $user = User::findOne($userId);
+        if (!$user) {
+            throw new \yii\web\NotFoundHttpException('Пользователь не найден');
+        }
+
         /** @var UserChecking $model */
         $model = UserChecking::find()
             ->andWhere(['user_id' => $user->id])
             ->andWhere(['status' => UserChecking::STATUS_CHECKING])
             ->one();
-        $model->status = UserChecking::STATUS_DONE;
-        $model->done_at = date('Y-m-d H:i:s');
-        $model->save();
 
-        $command = "iqrs dismiss2 \"{$user->steam_id}\"";
-        RconTasks::execute($command);
+        if ($model) {
+            $model->status = UserChecking::STATUS_DONE;
+            $model->done_at = date('Y-m-d H:i:s');
+            $model->save();
+
+            $command = "iqrs dismiss2 \"{$user->steam_id}\"";
+            RconTasks::execute($command);
+        }
 
         Yii::$app->session->addFlash('success', 'Проверка завершена!');
-        return $this->redirect('/user/profile?userId=' . $userId);
+        return $this->redirect(['profile', 'userId' => $userId]);
     }
 
     public function actionConfirmPhone($id)
@@ -205,17 +189,4 @@ class UserController extends CrudController
         return $this->redirect($url);
     }
 
-    /**
-     * @param $id
-     * @return \yii\web\Response
-     */
-    public function actionCalculate($id): \yii\web\Response
-    {
-        $agent = UserAgents::findOne(['user_id' => $id,'status' => 1]);
-        if($agent !== null){
-            $userAgentModel = new UserAgents();
-            $userAgentModel->salary($agent);
-        }
-        return $this->goBack();
-    }
 }

@@ -114,6 +114,13 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'active' => _checkActive('/telegram-constructor'),
                    ],
                    [
+                       'label' => 'Дизайн-система',
+                       'icon' => 'fa-solid fa-palette',
+                       'url' => ['/design-system'],
+                       'visibility' => $admin,
+                       'active' => _checkActive('/design-system'),
+                   ],
+                   [
                        'label' =>  Yii::t('common', 'Постройки'),
                        'icon' => 'fa-solid fa-house',
                        'badgeDanger' => $buildingBadge,
@@ -170,12 +177,6 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                                'icon' => 'fa-brands fa-product-hunt',
                                'url' => ['/report/products'],
                                'active' => _checkActive('/report/products'),
-                           ],
-                           [
-                               'label' => 'Сеты',
-                               'icon' => 'fa-solid fa-object-ungroup',
-                               'url' => ['/report/sets'],
-                               'active' => _checkActive('/report/sets'),
                            ],
                            [
                                'label' => 'Пополнения',
@@ -236,13 +237,6 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'url'    => '/blog',
                        'visibility' => Yii::$app->settings->get('section_blog') && $admin,
                        'active' => _checkActive('/blog/'),
-                   ],
-                   [
-                       'label'  => Yii::t('common', 'Переводы'),
-                       'icon'   => 'fa-solid fa-language',
-                       'url'    => '/translateManager',
-                       'visibility' => $admin,
-                       'active' => _checkActive('/translateManager'),
                    ],
                     [
                         'label' => 'WIPE меню',

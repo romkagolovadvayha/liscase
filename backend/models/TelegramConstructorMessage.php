@@ -173,6 +173,50 @@ class TelegramConstructorMessage extends \yii\db\ActiveRecord
     }
 
     /**
+     * Получение сообщения в формате для VK (без HTML тегов)
+     * @param string $language
+     * @return string
+     */
+    public function getVkMessage($language = 'ru-RU') {
+        $message = $this->getMessage($language);
+        $message = $this->makeStringUTF8($message);
+        
+        // Конвертируем HTML ссылки в формат VK: [url|text] или просто url
+        $message = preg_replace_callback('/<a\s+href=["\']([^"\']+)["\'][^>]*>(.*?)<\/a>/is', function($matches) {
+            $url = $matches[1];
+            $text = strip_tags($matches[2]);
+            // Если текст ссылки совпадает с URL, просто возвращаем URL
+            if (trim($text) === $url || empty(trim($text))) {
+                return $url;
+            }
+            // Иначе используем формат VK: [url|text]
+            return $text . ' (' . $url . ')';
+        }, $message);
+        
+        // Конвертируем HTML теги в текст
+        // Заменяем <br> и <br/> на перенос строки
+        $message = preg_replace('/<br\s*\/?>/i', "\n", $message);
+        
+        // Заменяем <p> на перенос строки в начале и конце
+        $message = preg_replace('/<p[^>]*>/i', "\n", $message);
+        $message = str_replace('</p>', "\n", $message);
+        
+        // Удаляем остальные HTML теги
+        $message = strip_tags($message);
+        
+        // Заменяем HTML entities (включая &mdash;)
+        $message = html_entity_decode($message, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
+        // Заменяем множественные переносы строк на двойной перенос
+        $message = preg_replace('/\n{3,}/', "\n\n", $message);
+        
+        // Удаляем пустые строки в начале и конце
+        $message = trim($message);
+        
+        return $message;
+    }
+
+    /**
      * @param $data
      * @return array|false|string|string[]|null
      */

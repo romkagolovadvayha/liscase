@@ -12,20 +12,22 @@ $this->title = Yii::t('common', 'Задания v2');
 $this->params['breadcrumbs'][] = $this->title;
 
 ?>
-<div class="tasks-v2-index">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1><?= Html::encode($this->title) ?></h1>
-        <?= Html::a(
-            '<i class="fas fa-plus"></i> ' . Yii::t('common', 'Создать задание'),
-            ['create'],
-            ['class' => 'btn btn-success']
-        ) ?>
+<div class="tasks-v2-index-page">
+    <div class="content-header">
+        <div class="ds-flex ds-flex--between">
+            <h1><?= Html::encode($this->title) ?></h1>
+            <?= Html::a(
+                '<i class="fas fa-plus"></i> ' . Yii::t('common', 'Создать задание'),
+                ['create'],
+                ['class' => 'ds-btn ds-btn--success']
+            ) ?>
+        </div>
     </div>
 
-    <?= \frontend\widgets\Alert::widget() ?>
+    <div class="content">
+        <?= \frontend\widgets\Alert::widget() ?>
 
-    <div class="card">
-        <div class="card-body">
+        <div class="ds-card">
             <div class="mb-3">
                 <?= Html::beginForm(['tasks-v2/index'], 'get', ['class' => 'form-inline']) ?>
                 

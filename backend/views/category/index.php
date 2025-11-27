@@ -13,14 +13,17 @@ use yii\grid\GridView;
 $this->title = 'Категории';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
-<div class="category-index">
-    <p>
-        <?= Html::a('Добавить', ['create'], ['class' => 'btn btn-success']) ?>
-    </p>
+<div class="category-index-page">
+    <div class="content-header">
+        <div class="ds-flex ds-flex--between">
+            <h1><?= Html::encode($this->title) ?></h1>
+            <?= Html::a('<i class="fas fa-plus"></i> Добавить', ['create'], ['class' => 'ds-btn ds-btn--success']) ?>
+        </div>
+    </div>
 
-    <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
-
-    <?= GridView::widget([
+    <div class="content">
+        <div class="ds-card">
+            <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'columns' => [
@@ -42,6 +45,6 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
         ],
     ]); ?>
-
-
+        </div>
+    </div>
 </div>
