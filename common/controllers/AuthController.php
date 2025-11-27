@@ -52,7 +52,7 @@ class AuthController extends WebController
                         'roles'   => ['?'],
                     ],
                     [
-                        'actions' => ['login-success', 'logout', 'oauth', 'two-step-scan', 'disable-two-step-auth'],
+                        'actions' => ['login-success', 'logout', 'oauth', 'two-step-scan', 'disable-two-step-auth', 'discord'],
                         'allow'   => true,
                         'roles'   => ['@'],
                     ],
