@@ -23,7 +23,12 @@ class VkController extends Controller
     public function actionWebhook()
     {
         try {
-            $data = json_decode(Yii::$app->request->rawBody, true);
+            // Читаем raw body правильно
+            $rawBody = Yii::$app->request->getRawBody();
+            if (empty($rawBody)) {
+                $rawBody = file_get_contents('php://input');
+            }
+            $data = json_decode($rawBody, true);
             
             if (empty($data)) {
                 Yii::error("VK Webhook: Empty request body", __METHOD__);
@@ -38,14 +43,16 @@ class VkController extends Controller
             // Обработка подтверждения вебхука - возвращаем строку, а не JSON
             if ($type === 'confirmation') {
                 $confirmationToken = Yii::$app->settings->get('vk_webhook_confirmation_token');
-                if (!empty($confirmationToken)) {
-                    Yii::$app->response->format = Response::FORMAT_RAW;
-                    Yii::$app->response->headers->set('Content-Type', 'text/plain; charset=UTF-8');
-                    return $confirmationToken;
+                // Если токен не задан в настройках, используем значение по умолчанию из сообщения VK
+                if (empty($confirmationToken) || trim($confirmationToken) === '') {
+                    $confirmationToken = 'bf3d02ef';
                 }
-                Yii::error("VK Webhook: Confirmation token not set", __METHOD__);
+                
+                // VK ожидает просто строку, без JSON
                 Yii::$app->response->format = Response::FORMAT_RAW;
-                return 'error';
+                Yii::$app->response->data = $confirmationToken;
+                Yii::$app->response->headers->set('Content-Type', 'text/plain; charset=UTF-8');
+                return $confirmationToken;
             }
 
             // Проверка секретного ключа (если задан в настройках)
@@ -71,16 +78,26 @@ class VkController extends Controller
                 $text = trim($message['text'] ?? '');
                 $fromId = $message['from_id'] ?? null;
                 $peerId = $message['peer_id'] ?? null;
+                $out = $message['out'] ?? 1; // 0 - входящее, 1 - исходящее
 
                 // Проверяем, что сообщение пришло в личные сообщения группы
-                // Для личных сообщений группы: peer_id отрицательный (ID группы), from_id положительный (ID пользователя)
+                // Для личных сообщений группы: from_id положительный (ID пользователя), out = 0 (входящее)
                 if (empty($text) || empty($fromId) || $fromId <= 0) {
                     return ['ok' => true];
                 }
 
-                // Проверяем, что сообщение пришло в личные сообщения группы (peer_id должен быть отрицательным)
-                // Если peer_id положительный - это может быть беседа или личное сообщение пользователю, пропускаем
-                if ($peerId > 0) {
+                // Пропускаем исходящие сообщения (от группы пользователю)
+                if ($out === 1) {
+                    return ['ok' => true];
+                }
+
+                // Проверяем, что это входящее сообщение (от пользователя группе)
+                // peer_id может быть как положительным (ID пользователя), так и отрицательным (ID группы)
+                // Главное - это входящее сообщение (out = 0) и есть group_id в запросе
+                if (!empty($groupId) && $fromId > 0 && $out === 0) {
+                    // Это сообщение в личные сообщения группы - обрабатываем
+                } else {
+                    // Не подходит под наши критерии - пропускаем
                     return ['ok' => true];
                 }
 
