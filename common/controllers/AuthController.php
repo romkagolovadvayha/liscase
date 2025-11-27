@@ -102,12 +102,18 @@ class AuthController extends WebController
         }
 
         $clientId = Yii::$app->settings->get('discord_client_id');
-        $redirectUri = Yii::$app->params['homePage'] . '/auth/discord-callback';
+        $redirectUri = Yii::$app->params['homePage'] . '/api/discord/callback';
+
+        Yii::info("Discord OAuth: clientId=" . ($clientId ? 'set' : 'empty') . ", redirectUri={$redirectUri}, userId=" . Yii::$app->user->id, __METHOD__);
 
         if (empty($clientId)) {
+            Yii::warning("Discord OAuth: client_id not configured", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'Discord OAuth не настроен. Обратитесь к администратору.'));
-            return $this->goBack();
+            return $this->redirect(['/user/profile']);
         }
+
+        // Сохраняем user_id в сессии для последующей привязки
+        Yii::$app->session->set('discord_oauth_user_id', Yii::$app->user->id);
 
         // Сохраняем состояние для защиты от CSRF
         $state = Yii::$app->security->generateRandomString(32);
@@ -122,6 +128,8 @@ class AuthController extends WebController
         ];
 
         $authUrl = 'https://discord.com/api/oauth2/authorize?' . http_build_query($params);
+
+        Yii::info("Discord OAuth: redirecting to {$authUrl}", __METHOD__);
 
         return $this->redirect($authUrl);
     }
