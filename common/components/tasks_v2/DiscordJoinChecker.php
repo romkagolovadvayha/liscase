@@ -17,7 +17,7 @@ class DiscordJoinChecker implements TaskCheckerInterface
     public function check(TaskV2 $task, User $user): CheckResult
     {
         $params = $task->check_params ?? [];
-        $guildId = $params['discord_guild_id'] ?? null;
+        $guildId = Yii::$app->settings->get('discord_guild_id') ?? null;
 
         if (!$guildId) {
             return CheckResult::failure(
