@@ -106,7 +106,7 @@ class AuthController extends WebController
         }
 
         $clientId = Yii::$app->settings->get('discord_client_id');
-        $redirectUri = Yii::$app->params['homePage'] . '/api/discord/callback';
+        $redirectUri = Yii::$app->settings->get('site_api_url') . '/discord/callback';
         $userId = Yii::$app->user->id;
 
         Yii::$app->telegramChats->sendMessage("Discord OAuth: clientId=" . ($clientId ? 'set (' . substr($clientId, 0, 10) . '...)' : 'empty') . ", redirectUri={$redirectUri}, userId={$userId}");
