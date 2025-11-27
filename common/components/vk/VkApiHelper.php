@@ -468,9 +468,18 @@ class VkApiHelper extends \yii\base\Component
         $url = 'https://api.vk.com/method/' . $method;
 
         try {
+            // Преобразуем массив attachments в строку, если это массив
+            if (isset($params['attachments']) && is_array($params['attachments'])) {
+                $params['attachments'] = implode(',', $params['attachments']);
+            }
+            
+            // VK API принимает параметры как form-data, но можно отправить как JSON
+            // Используем setRequestBody для отправки JSON в теле запроса
+            $jsonBody = json_encode($params);
+            
             $response = Yii::$app->curl
                 ->setHeaders(['Content-Type' => 'application/json'])
-                ->setRawPostData(json_encode($params))
+                ->setRequestBody($jsonBody)
                 ->post($url);
 
             if (empty($response)) {
