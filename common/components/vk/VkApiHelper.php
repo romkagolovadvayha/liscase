@@ -378,8 +378,8 @@ class VkApiHelper extends \yii\base\Component
     private function uploadPhotoForGroup($groupId, $photoUrl)
     {
         try {
-            // Используем photos.getUploadServer с group_id для загрузки в альбом группы
-            $uploadServer = $this->_sendRequest('photos.getUploadServer', [
+            // Используем photos.getWallUploadServer для загрузки фото на стену группы
+            $uploadServer = $this->_sendRequest('photos.getWallUploadServer', [
                 'group_id' => abs($groupId),
                 'v' => $this->apiVersion,
             ]);
@@ -397,7 +397,6 @@ class VkApiHelper extends \yii\base\Component
             }
 
             $uploadUrl = $uploadServer['response']['upload_url'];
-            $albumId = $uploadServer['response']['album_id'] ?? null;
 
             // Скачиваем изображение с увеличенным таймаутом
             $ch = curl_init($photoUrl);
@@ -447,20 +446,14 @@ class VkApiHelper extends \yii\base\Component
                 return false;
             }
 
-            // Сохраняем фото в альбом группы
-            $saveParams = [
+            // Сохраняем фото на стену группы
+            $saveResult = $this->_sendRequest('photos.saveWallPhoto', [
                 'group_id' => abs($groupId),
                 'photo' => $uploadData['photo'],
                 'server' => $uploadData['server'],
                 'hash' => $uploadData['hash'],
                 'v' => $this->apiVersion,
-            ];
-            
-            if (!empty($albumId)) {
-                $saveParams['album_id'] = $albumId;
-            }
-            
-            $saveResult = $this->_sendRequest('photos.save', $saveParams);
+            ]);
 
             if (!empty($saveResult['response'][0]['id'])) {
                 $photo = $saveResult['response'][0];
