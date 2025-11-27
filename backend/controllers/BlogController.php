@@ -14,6 +14,11 @@ use yii\base\BaseObject;
 use yii\filters\AccessControl;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use common\components\vk\VkApiHelper;
+use common\components\openAi\OpenAiVkPost;
+use common\components\openAi\OpenAiTelegramPost;
+use common\components\telegram\TelegramChannelHelper;
+use yii\helpers\Html;
 use Yii;
 
 /**
@@ -212,6 +217,294 @@ class BlogController extends BackendController
             return ['error' => 'Save failed'];
         }
         return ['location' => $baseUrl . '/' . $fname];
+    }
+
+    /**
+     * Публикация поста в группу ВКонтакте
+     * @param int $id ID поста
+     * @return \yii\web\Response
+     * @throws NotFoundHttpException
+     */
+    public function actionPublishToVk($id)
+    {
+        $model = $this->findModel($id);
+        
+        // Получаем ID группы ВК из настроек или из URL
+        $vkGroupId = Yii::$app->settings->get('vk_group_id');
+        if (empty($vkGroupId)) {
+            // Пытаемся извлечь ID из URL группы
+            $vkUrl = Yii::$app->params['vk'] ?? '';
+            if (preg_match('/club(\d+)/', $vkUrl, $matches)) {
+                $vkGroupId = $matches[1];
+            } elseif (preg_match('/public(\d+)/', $vkUrl, $matches)) {
+                $vkGroupId = $matches[1];
+            } else {
+                Yii::$app->session->addFlash('danger', 'ID группы ВКонтакте не найден. Установите настройку vk_group_id или проверьте параметр vk в конфигурации.');
+                return $this->redirect(['view', 'id' => $id]);
+            }
+        }
+        
+        // Преобразуем в отрицательное число для owner_id (группы имеют отрицательный ID)
+        $vkGroupId = abs($vkGroupId);
+        if ($vkGroupId > 0) {
+            $vkGroupId = -$vkGroupId;
+        }
+        
+        try {
+            $vkHelper = new VkApiHelper();
+            $vkHelper->setAccessToken(Yii::$app->settings->get('vk_token'));
+            
+            // Обрабатываем статью через OpenAI перед публикацией
+            $postUrl = Yii::$app->params['baseUrl'] . $model->getUrl();
+            $message = null;
+            
+            try {
+                /** @var OpenAiVkPost $openAiVkPost */
+                $openAiVkPost = Yii::$app->openAiVkPost;
+                $processedMessage = $openAiVkPost->processForVk(
+                    $model->name,
+                    $model->content ?? '',
+                    $model->description ?? null
+                );
+                
+                if (!empty($processedMessage)) {
+                    // Используем обработанный текст от OpenAI
+                    $message = $processedMessage;
+                    
+                    // Добавляем ссылку на пост, если её нет в тексте
+                    if (strpos($message, $postUrl) === false) {
+                        $message .= "\n\nЧитать полностью: " . $postUrl;
+                    }
+                }
+            } catch (\Exception $e) {
+                Yii::error("OpenAI VK Post processing error: " . $e->getMessage(), __METHOD__);
+                // Продолжаем с обычной обработкой, если OpenAI не сработал
+            }
+            
+            // Если OpenAI не обработал, используем стандартную обработку
+            if (empty($message)) {
+                // Конвертируем HTML контент в VK markdown
+                $content = $model->content ?? '';
+                // Удаляем HTML теги и конвертируем в простой текст
+                $content = strip_tags($content);
+                // Заменяем множественные переносы строк на одинарные
+                $content = preg_replace('/\n{3,}/', "\n\n", $content);
+                // Обрезаем слишком длинный контент
+                if (mb_strlen($content) > 1000) {
+                    $content = mb_substr($content, 0, 1000) . '...';
+                }
+                
+                $message = $model->name . "\n\n";
+                
+                // Добавляем описание, если есть
+                if (!empty($model->description)) {
+                    $description = strip_tags($model->description);
+                    $message .= $description . "\n\n";
+                }
+                
+                // Добавляем часть контента, если есть
+                if (!empty($content)) {
+                    $message .= $content . "\n\n";
+                }
+                
+                // Добавляем ссылку на пост в формате VK markdown
+                $message .= "Читать полностью: " . $postUrl;
+            }
+            
+            // Получаем изображения из HTML-контента статьи (теги <img>)
+            $photoUrls = [];
+            $content = $model->content ?? '';
+            
+            if (!empty($content)) {
+                // Извлекаем все URL изображений из тегов <img>
+                preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $content, $matches);
+                
+                if (!empty($matches[1])) {
+                    foreach ($matches[1] as $imgSrc) {
+                        // Формируем полный URL изображения
+                        if (strpos($imgSrc, 'http') === 0) {
+                            // Уже полный URL
+                            $photoUrls[] = $imgSrc;
+                        } elseif (strpos($imgSrc, '//') === 0) {
+                            // URL без протокола
+                            $photoUrls[] = 'https:' . $imgSrc;
+                        } elseif (strpos($imgSrc, '/') === 0) {
+                            // Относительный URL от корня
+                            $photoUrls[] = Yii::$app->params['baseUrl'] . $imgSrc;
+                        } else {
+                            // Относительный URL
+                            $photoUrls[] = Yii::$app->params['baseUrl'] . '/' . $imgSrc;
+                        }
+                    }
+                }
+            }
+            
+            // Если изображений в HTML нет, берем из blogImages
+            if (empty($photoUrls)) {
+                $blogImages = $model->getBlogImages()->all();
+                foreach ($blogImages as $blogImage) {
+                    // Используем метод getPublicUrl() для получения полного URL
+                    if (!empty($blogImage->link)) {
+                        $imageUrl = $blogImage->getPublicUrl();
+                        $photoUrls[] = $imageUrl;
+                    }
+                }
+            }
+            
+            // Публикуем в группу со всеми изображениями
+            $result = $vkHelper->postToGroup($vkGroupId, $message, $photoUrls);
+            
+            if ($result !== false && !empty($result['response']['post_id'])) {
+                Yii::$app->session->addFlash('success', 'Пост успешно опубликован в группу ВКонтакте!');
+            } else {
+                $error = $result['error']['error_msg'] ?? 'Неизвестная ошибка';
+                Yii::$app->session->addFlash('danger', 'Ошибка при публикации в ВКонтакте: ' . $error);
+            }
+        } catch (\Exception $e) {
+            Yii::$app->session->addFlash('danger', 'Ошибка при публикации в ВКонтакте: ' . $e->getMessage());
+            Yii::error("VK publish error: " . $e->getMessage(), __METHOD__);
+        }
+        
+        return $this->redirect(['view', 'id' => $id]);
+    }
+
+    /**
+     * Публикация поста в Telegram канал
+     * @param int $id ID поста
+     * @return \yii\web\Response
+     * @throws NotFoundHttpException
+     */
+    public function actionPublishToTelegram($id)
+    {
+        $model = $this->findModel($id);
+        
+        // Получаем токен и ID канала из настроек
+        $telegramToken = Yii::$app->settings->get('telegramChannel_token');
+        $telegramChannelId = Yii::$app->settings->get('telegramChannel_channelId');
+        
+        if (empty($telegramToken) || empty($telegramChannelId)) {
+            Yii::$app->session->addFlash('danger', 'Токен или ID Telegram канала не настроены. Установите настройки telegramChannel_token и telegramChannel_channelId.');
+            return $this->redirect(['view', 'id' => $id]);
+        }
+        
+        try {
+            $telegramHelper = new TelegramChannelHelper();
+            $telegramHelper->setAccessToken($telegramToken);
+            
+            // Обрабатываем статью через OpenAI перед публикацией
+            $postUrl = Yii::$app->params['baseUrl'] . $model->getUrl();
+            $message = null;
+            
+            try {
+                /** @var OpenAiTelegramPost $openAiTelegramPost */
+                $openAiTelegramPost = Yii::$app->openAiTelegramPost;
+                $processedMessage = $openAiTelegramPost->processForTelegram(
+                    $model->name,
+                    $model->content ?? '',
+                    $model->description ?? null
+                );
+                
+                if (!empty($processedMessage)) {
+                    // Используем обработанный текст от OpenAI
+                    $message = $processedMessage;
+                    
+                    // Добавляем ссылку на пост, если её нет в тексте
+                    if (strpos($message, $postUrl) === false) {
+                        $message .= "\n\nЧитать полностью: <a href=\"" . Html::encode($postUrl) . "\">" . Html::encode($postUrl) . "</a>";
+                    }
+                }
+            } catch (\Exception $e) {
+                Yii::error("OpenAI Telegram Post processing error: " . $e->getMessage(), __METHOD__);
+                // Продолжаем с обычной обработкой, если OpenAI не сработал
+            }
+            
+            // Если OpenAI не обработал, используем стандартную обработку
+            if (empty($message)) {
+                // Конвертируем HTML контент, оставляя разрешенные теги для Telegram
+                $content = $model->content ?? '';
+                // Удаляем все теги кроме разрешенных для Telegram: <b>, <i>, <code>, <a>
+                $allowedTags = '<b><i><code><a>';
+                $content = strip_tags($content, $allowedTags);
+                // Заменяем множественные переносы строк на одинарные
+                $content = preg_replace('/\n{3,}/', "\n\n", $content);
+                
+                $message = "<b>" . Html::encode($model->name) . "</b>\n\n";
+                
+                // Добавляем описание, если есть
+                if (!empty($model->description)) {
+                    $description = strip_tags($model->description, $allowedTags);
+                    $message .= $description . "\n\n";
+                }
+                
+                // Добавляем часть контента, если есть
+                if (!empty($content)) {
+                    $message .= $content . "\n\n";
+                }
+                
+                // Добавляем ссылку на пост
+                $message .= "Читать полностью: <a href=\"" . Html::encode($postUrl) . "\">Перейти к статье</a>";
+            }
+            
+            // Получаем изображения из HTML-контента статьи (теги <img>)
+            $photoUrls = [];
+            $content = $model->content ?? '';
+            
+            if (!empty($content)) {
+                // Извлекаем все URL изображений из тегов <img>
+                preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $content, $matches);
+                
+                if (!empty($matches[1])) {
+                    foreach ($matches[1] as $imgSrc) {
+                        // Формируем полный URL изображения
+                        if (strpos($imgSrc, 'http') === 0) {
+                            // Уже полный URL
+                            $photoUrls[] = $imgSrc;
+                        } elseif (strpos($imgSrc, '//') === 0) {
+                            // URL без протокола
+                            $photoUrls[] = 'https:' . $imgSrc;
+                        } elseif (strpos($imgSrc, '/') === 0) {
+                            // Относительный URL от корня
+                            $photoUrls[] = Yii::$app->params['baseUrl'] . $imgSrc;
+                        } else {
+                            // Относительный URL
+                            $photoUrls[] = Yii::$app->params['baseUrl'] . '/' . $imgSrc;
+                        }
+                    }
+                }
+            }
+            
+            // Если изображений в HTML нет, берем из blogImages
+            if (empty($photoUrls)) {
+                $blogImages = $model->getBlogImages()->all();
+                foreach ($blogImages as $blogImage) {
+                    // Используем метод getPublicUrl() для получения полного URL
+                    if (!empty($blogImage->link)) {
+                        $imageUrl = $blogImage->getPublicUrl();
+                        $photoUrls[] = $imageUrl;
+                    }
+                }
+            }
+
+            // Публикуем в канал со всеми изображениями
+            $result = $telegramHelper->postToChannel($telegramChannelId, $message, $photoUrls);
+            
+            if ($result !== false && !empty($result['ok']) && $result['ok'] === true) {
+                Yii::$app->session->addFlash('success', 'Пост успешно опубликован в Telegram канал!');
+            } else {
+                $error = 'Неизвестная ошибка';
+                if (is_array($result) && isset($result['description'])) {
+                    $error = $result['description'];
+                } elseif ($result === false) {
+                    $error = 'Не удалось отправить запрос к Telegram API. Проверьте логи для деталей.';
+                }
+                Yii::$app->session->addFlash('danger', 'Ошибка при публикации в Telegram: ' . $error);
+            }
+        } catch (\Exception $e) {
+            Yii::$app->session->addFlash('danger', 'Ошибка при публикации в Telegram: ' . $e->getMessage());
+            Yii::error("Telegram publish error: " . $e->getMessage(), __METHOD__);
+        }
+        
+        return $this->redirect(['view', 'id' => $id]);
     }
 
 

@@ -223,6 +223,15 @@ $config = [
         'openAiComment' => [
             'class' => \common\components\openAi\OpenAiComment::class,
         ],
+        'openAiVkPost' => [
+            'class' => \common\components\openAi\OpenAiVkPost::class,
+        ],
+        'openAiTelegramPost' => [
+            'class' => \common\components\openAi\OpenAiTelegramPost::class,
+        ],
+        'telegramChannelHelper' => [
+            'class' => \common\components\telegram\TelegramChannelHelper::class,
+        ],
         'drop' => [
             'class' => \common\components\drop\Drop::class
         ],

@@ -66,7 +66,38 @@ $cacheData = Yii::$app->cache->get('actionGeneratePosts');
             ],
             [
                 'class' => ActionColumn::className(),
-                'options'   => ['width' => '60'],
+                'options'   => ['width' => '120'],
+                'template' => '{view} {update} {delete} {publish-vk} {publish-telegram}',
+                'buttons' => [
+                    'publish-vk' => function ($url, Blog $model, $key) {
+                        return Html::a(
+                            '<i class="fab fa-vk"></i>',
+                            ['publish-to-vk', 'id' => $model->id],
+                            [
+                                'class' => 'ds-btn ds-btn--warning ds-btn--sm',
+                                'title' => 'Опубликовать в ВКонтакте',
+                                'data' => [
+                                    'confirm' => 'Опубликовать этот пост в группу ВКонтакте?',
+                                    'method' => 'post',
+                                ],
+                            ]
+                        );
+                    },
+                    'publish-telegram' => function ($url, Blog $model, $key) {
+                        return Html::a(
+                            '<i class="fab fa-telegram"></i>',
+                            ['publish-to-telegram', 'id' => $model->id],
+                            [
+                                'class' => 'ds-btn ds-btn--info ds-btn--sm',
+                                'title' => 'Опубликовать в Telegram',
+                                'data' => [
+                                    'confirm' => 'Опубликовать этот пост в Telegram канал?',
+                                    'method' => 'post',
+                                ],
+                            ]
+                        );
+                    },
+                ],
                 'urlCreator' => function ($action, Blog $model, $key, $index, $column) {
                     return Url::toRoute([$action, 'id' => $model->id]);
                  }

@@ -244,7 +244,7 @@ class VkApiHelper extends \yii\base\Component
      * Публикация поста в группу ВКонтакте
      * @param int|string $groupId ID группы (может быть отрицательным числом)
      * @param string $message Текст сообщения
-     * @param string|null $photoUrl URL изображения (опционально)
+     * @param string|array|null $photoUrl URL изображения или массив URL изображений (опционально)
      * @return array|false
      */
     public function postToGroup($groupId, $message, $photoUrl = null)
@@ -255,11 +255,25 @@ class VkApiHelper extends \yii\base\Component
             'v' => $this->apiVersion,
         ];
 
-        // Если есть фото, сначала загружаем его
+        // Если есть фото, загружаем их
         if (!empty($photoUrl)) {
-            $photoId = $this->uploadPhoto($groupId, $photoUrl);
-            if ($photoId) {
-                $params['attachments'] = $photoId;
+            $photoIds = [];
+            
+            // Поддерживаем как одно изображение, так и массив
+            $photoUrls = is_array($photoUrl) ? $photoUrl : [$photoUrl];
+            
+            foreach ($photoUrls as $url) {
+                if (!empty($url)) {
+                    $photoId = $this->uploadPhoto($groupId, $url);
+                    if ($photoId) {
+                        $photoIds[] = $photoId;
+                    }
+                }
+            }
+            
+            // Прикрепляем все загруженные фото
+            if (!empty($photoIds)) {
+                $params['attachments'] = implode(',', $photoIds);
             }
         }
 
