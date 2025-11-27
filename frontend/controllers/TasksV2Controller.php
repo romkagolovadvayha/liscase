@@ -327,6 +327,18 @@ class TasksV2Controller extends WebController
 
         if (!$checkResult->success) {
             $maxProgress = $task->max_progress ?? $checkResult->maxProgress;
+            
+            // Если есть редирект, возвращаем его
+            if (!empty($checkResult->redirectUrl)) {
+                return [
+                    'success' => false,
+                    'message' => $checkResult->message,
+                    'progress' => $checkResult->progress,
+                    'maxProgress' => $maxProgress,
+                    'redirect' => $checkResult->redirectUrl,
+                ];
+            }
+            
             return [
                 'success' => false,
                 'message' => $checkResult->message,
