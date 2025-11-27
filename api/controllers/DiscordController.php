@@ -35,17 +35,21 @@ class DiscordController extends Controller
             ];
         }
 
-        // Проверяем state для защиты от CSRF
-        $savedState = Yii::$app->session->get('discord_oauth_state');
-        if (empty($state) || $state !== $savedState) {
-            Yii::error("Discord OAuth state mismatch", __METHOD__);
+        // Проверяем state для защиты от CSRF (используем кеш, так как api и frontend имеют разные сессии)
+        $stateCacheKey = 'discord_oauth_state_' . $state;
+        $stateData = Yii::$app->cache->get($stateCacheKey);
+        
+        if (empty($state) || empty($stateData) || $stateData['state'] !== $state) {
+            Yii::$app->telegramChats->sendMessage("Discord OAuth state mismatch. State: {$state}, Saved: " . ($stateData ? json_encode($stateData) : 'empty'));
             return [
                 'success' => false,
                 'error' => 'invalid_state',
                 'message' => 'Ошибка безопасности при авторизации Discord',
             ];
         }
-        Yii::$app->session->remove('discord_oauth_state');
+        
+        $userId = $stateData['user_id'] ?? null;
+        Yii::$app->cache->delete($stateCacheKey);
 
         if (empty($code)) {
             return [
@@ -57,7 +61,11 @@ class DiscordController extends Controller
 
         $clientId = Yii::$app->settings->get('discord_client_id');
         $clientSecret = Yii::$app->settings->get('discord_client_secret');
-        $redirectUri = Yii::$app->params['homePage'] . '/api/discord/callback';
+        // Используем основной домен для redirectUri
+        $baseUrl = Yii::$app->params['homePage'] ?? 'https://prostoj.store';
+        $redirectUri = $baseUrl . '/api/discord/callback';
+        
+        Yii::$app->telegramChats->sendMessage("Discord OAuth callback: code=" . (!empty($code) ? 'received' : 'empty') . ", state={$state}, userId={$userId}, redirectUri={$redirectUri}");
 
         if (empty($clientId) || empty($clientSecret)) {
             Yii::error("Discord OAuth not configured", __METHOD__);
@@ -88,10 +96,11 @@ class DiscordController extends Controller
 
         $tokenResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
         if ($httpCode !== 200) {
-            Yii::error("Discord OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}", __METHOD__);
+            Yii::$app->telegramChats->sendMessage("Discord OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}, cURL Error: {$curlError}, redirectUri: {$redirectUri}");
             return [
                 'success' => false,
                 'error' => 'token_error',
@@ -138,8 +147,15 @@ class DiscordController extends Controller
             ];
         }
 
-        // Сохраняем discord_id и user_id в сессии для последующей привязки
-        $userId = Yii::$app->session->get('discord_oauth_user_id');
+        // Получаем user_id из кеша (так как api и frontend имеют разные сессии)
+        if (empty($userId)) {
+            $cacheKey = 'discord_oauth_user_id_' . ($stateData['user_id'] ?? '');
+            $userId = Yii::$app->cache->get($cacheKey);
+            if ($userId) {
+                Yii::$app->cache->delete($cacheKey);
+            }
+        }
+        
         if (!empty($userId)) {
             $user = User::findOne($userId);
             if ($user) {

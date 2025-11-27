@@ -52,7 +52,7 @@ class AuthController extends WebController
                         'roles'   => ['?'],
                     ],
                     [
-                        'actions' => ['login-success', 'logout', 'oauth', 'two-step-scan', 'disable-two-step-auth', 'discord'],
+                        'actions' => ['login-success', 'logout', 'oauth', 'two-step-scan', 'disable-two-step-auth', 'discord', 'discord-callback'],
                         'allow'   => true,
                         'roles'   => ['@'],
                     ],
@@ -106,7 +106,9 @@ class AuthController extends WebController
         }
 
         $clientId = Yii::$app->settings->get('discord_client_id');
-        $redirectUri = Yii::$app->settings->get('site_api_url') . '/discord/callback';
+        // Используем frontend для redirectUri
+        $baseUrl = Yii::$app->params['homePage'] ?? 'https://prostoj.store';
+        $redirectUri = $baseUrl . '/auth/discord-callback';
         $userId = Yii::$app->user->id;
 
         Yii::$app->telegramChats->sendMessage("Discord OAuth: clientId=" . ($clientId ? 'set (' . substr($clientId, 0, 10) . '...)' : 'empty') . ", redirectUri={$redirectUri}, userId={$userId}");
@@ -146,14 +148,17 @@ class AuthController extends WebController
     {
         if (Yii::$app->user->isGuest) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Для привязки Discord необходимо быть авторизованным.'));
-            return $this->goHome();
+            return $this->redirect(['/']);
         }
 
         $code = Yii::$app->request->get('code');
         $state = Yii::$app->request->get('state');
         $error = Yii::$app->request->get('error');
 
+        Yii::$app->telegramChats->sendMessage("Discord OAuth callback: code=" . (!empty($code) ? 'received' : 'empty') . ", state={$state}, error=" . ($error ?? 'none'));
+
         if (!empty($error)) {
+            Yii::$app->telegramChats->sendMessage("Discord OAuth error: {$error}");
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при авторизации Discord: {error}', ['error' => $error]));
             return $this->redirect(['/user/profile']);
         }
@@ -161,6 +166,7 @@ class AuthController extends WebController
         // Проверяем state для защиты от CSRF
         $savedState = Yii::$app->session->get('discord_oauth_state');
         if (empty($state) || $state !== $savedState) {
+            Yii::$app->telegramChats->sendMessage("Discord OAuth state mismatch. State: {$state}, Saved: " . ($savedState ?? 'empty'));
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка безопасности при авторизации Discord.'));
             return $this->redirect(['/user/profile']);
         }
@@ -173,9 +179,11 @@ class AuthController extends WebController
 
         $clientId = Yii::$app->settings->get('discord_client_id');
         $clientSecret = Yii::$app->settings->get('discord_client_secret');
-        $redirectUri = Yii::$app->params['homePage'] . '/auth/discord-callback';
+        $baseUrl = Yii::$app->params['homePage'] ?? 'https://prostoj.store';
+        $redirectUri = $baseUrl . '/auth/discord-callback';
 
         if (empty($clientId) || empty($clientSecret)) {
+            Yii::$app->telegramChats->sendMessage("Discord OAuth not configured");
             Yii::$app->session->setFlash('error', Yii::t('common', 'Discord OAuth не настроен. Обратитесь к администратору.'));
             return $this->redirect(['/user/profile']);
         }
@@ -200,16 +208,18 @@ class AuthController extends WebController
 
         $tokenResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
 
         if ($httpCode !== 200) {
-            Yii::error("Discord OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}", __METHOD__);
+            Yii::$app->telegramChats->sendMessage("Discord OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}, cURL Error: {$curlError}, redirectUri: {$redirectUri}");
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении токена Discord.'));
             return $this->redirect(['/user/profile']);
         }
 
         $tokenData = json_decode($tokenResponse, true);
         if (empty($tokenData['access_token'])) {
+            Yii::$app->telegramChats->sendMessage("Discord OAuth: no access_token in response");
             Yii::$app->session->setFlash('error', Yii::t('common', 'Токен Discord не получен.'));
             return $this->redirect(['/user/profile']);
         }
@@ -227,24 +237,38 @@ class AuthController extends WebController
         curl_close($ch);
 
         if ($httpCode !== 200) {
-            Yii::error("Discord API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);
+            Yii::$app->telegramChats->sendMessage("Discord API user error: HTTP {$httpCode}, Response: {$userResponse}");
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении данных пользователя Discord.'));
             return $this->redirect(['/user/profile']);
         }
 
         $discordUser = json_decode($userResponse, true);
         if (empty($discordUser['id'])) {
+            Yii::$app->telegramChats->sendMessage("Discord OAuth: no user id in response");
             Yii::$app->session->setFlash('error', Yii::t('common', 'ID пользователя Discord не получен.'));
             return $this->redirect(['/user/profile']);
         }
 
         // Сохраняем discord_id
-        $user = Yii::$app->user->identity;
-        $user->discord_id = $discordUser['id'];
-        if ($user->save(false)) {
-            Yii::$app->session->setFlash('success', Yii::t('common', 'Discord аккаунт успешно привязан!'));
+        $userId = Yii::$app->session->get('discord_oauth_user_id');
+        if (empty($userId)) {
+            $userId = Yii::$app->user->id;
+        }
+        Yii::$app->session->remove('discord_oauth_user_id');
+
+        $user = User::findOne($userId);
+        if ($user) {
+            $user->discord_id = $discordUser['id'];
+            if ($user->save(false)) {
+                Yii::$app->telegramChats->sendMessage("Discord OAuth: Successfully linked discord_id={$discordUser['id']} to user_id={$userId}");
+                Yii::$app->session->setFlash('success', Yii::t('common', 'Discord аккаунт успешно привязан!'));
+            } else {
+                Yii::$app->telegramChats->sendMessage("Discord OAuth: Failed to save discord_id. Errors: " . json_encode($user->getErrors()));
+                Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при сохранении Discord ID.'));
+            }
         } else {
-            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при сохранении Discord ID.'));
+            Yii::$app->telegramChats->sendMessage("Discord OAuth: User not found. userId={$userId}");
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Пользователь не найден.'));
         }
 
         return $this->redirect(['/user/profile']);
