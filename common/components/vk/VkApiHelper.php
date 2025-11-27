@@ -268,15 +268,23 @@ class VkApiHelper extends \yii\base\Component
             'v' => $this->apiVersion,
         ];
 
-        // Если есть фото, добавляем его как прямую ссылку
+        // Если есть фото, загружаем первое изображение через API
         if (!empty($photoUrl)) {
             // Поддерживаем как одно изображение, так и массив
             $photoUrls = is_array($photoUrl) ? $photoUrl : [$photoUrl];
             $photoUrls = array_filter($photoUrls); // Убираем пустые значения
             
             if (!empty($photoUrls)) {
-                // Берем только первое изображение и отправляем как прямую ссылку
-                $params['attachments'] = reset($photoUrls);
+                // Берем только первое изображение и загружаем через API
+                $firstPhotoUrl = reset($photoUrls);
+                $photoId = $this->uploadPhotoForGroup($groupId, $firstPhotoUrl);
+                
+                if ($photoId) {
+                    $params['attachments'] = $photoId;
+                } else {
+                    // Если загрузка не удалась, логируем предупреждение
+                    Yii::warning("VK: Failed to upload photo, posting without photo", __METHOD__);
+                }
             }
         }
 
