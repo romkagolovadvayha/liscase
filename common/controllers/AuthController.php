@@ -97,10 +97,10 @@ class AuthController extends WebController
     public function actionDiscord()
     {
         // Детальное логирование для отладки
-        Yii::info("Discord OAuth actionDiscord called. isGuest=" . (Yii::$app->user->isGuest ? 'true' : 'false'), __METHOD__);
+        Yii::$app->telegramChats->sendMessage("Discord OAuth actionDiscord called. isGuest=" . (Yii::$app->user->isGuest ? 'true' : 'false'));
         
         if (Yii::$app->user->isGuest) {
-            Yii::warning("Discord OAuth: User is guest, redirecting to home", __METHOD__);
+            Yii::$app->telegramChats->sendMessage("Discord OAuth: User is guest, redirecting to home");
             Yii::$app->session->setFlash('error', Yii::t('common', 'Для привязки Discord необходимо быть авторизованным.'));
             return $this->redirect(['/']);
         }
@@ -109,10 +109,10 @@ class AuthController extends WebController
         $redirectUri = Yii::$app->params['homePage'] . '/api/discord/callback';
         $userId = Yii::$app->user->id;
 
-        Yii::info("Discord OAuth: clientId=" . ($clientId ? 'set (' . substr($clientId, 0, 10) . '...)' : 'empty') . ", redirectUri={$redirectUri}, userId={$userId}", __METHOD__);
+        Yii::$app->telegramChats->sendMessage("Discord OAuth: clientId=" . ($clientId ? 'set (' . substr($clientId, 0, 10) . '...)' : 'empty') . ", redirectUri={$redirectUri}, userId={$userId}");
 
         if (empty($clientId)) {
-            Yii::warning("Discord OAuth: client_id not configured. Redirecting to profile.", __METHOD__);
+            Yii::$app->telegramChats->sendMessage("Discord OAuth: client_id not configured. Redirecting to profile.");
             Yii::$app->session->setFlash('error', Yii::t('common', 'Discord OAuth не настроен. Обратитесь к администратору.'));
             return $this->redirect(['/user/profile']);
         }
@@ -134,7 +134,7 @@ class AuthController extends WebController
 
         $authUrl = 'https://discord.com/api/oauth2/authorize?' . http_build_query($params);
 
-        Yii::info("Discord OAuth: redirecting to Discord. authUrl length=" . strlen($authUrl), __METHOD__);
+        Yii::$app->telegramChats->sendMessage("Discord OAuth: redirecting to Discord. authUrl length=" . strlen($authUrl));
 
         return $this->redirect($authUrl);
     }
