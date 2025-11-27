@@ -63,7 +63,14 @@ class ProfileForm extends UserProfile
         }
 
         if (!empty($this->discord_disabled)) {
+            // Сохраняем discord_id перед обнулением для удаления роли
+            $discordId = $this->user->discord_id;
             $this->user->discord_id = null;
+            
+            // Удаляем роль в Discord, если была привязана
+            if (!empty($discordId)) {
+                \common\controllers\AuthController::removeDiscordRole($discordId);
+            }
         }
 
         $this->skindrops = 0;
