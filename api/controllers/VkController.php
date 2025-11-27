@@ -22,13 +22,12 @@ class VkController extends Controller
      */
     public function actionWebhook()
     {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-        
         try {
             $data = json_decode(Yii::$app->request->rawBody, true);
             
             if (empty($data)) {
                 Yii::error("VK Webhook: Empty request body", __METHOD__);
+                Yii::$app->response->format = Response::FORMAT_JSON;
                 return ['ok' => false];
             }
 
@@ -36,22 +35,29 @@ class VkController extends Controller
             $groupId = $data['group_id'] ?? null;
             $secret = $data['secret'] ?? null;
 
+            // Обработка подтверждения вебхука - возвращаем строку, а не JSON
+            if ($type === 'confirmation') {
+                $confirmationToken = Yii::$app->settings->get('vk_webhook_confirmation_token');
+                if (!empty($confirmationToken)) {
+                    Yii::$app->response->format = Response::FORMAT_RAW;
+                    Yii::$app->response->headers->set('Content-Type', 'text/plain; charset=UTF-8');
+                    return $confirmationToken;
+                }
+                Yii::error("VK Webhook: Confirmation token not set", __METHOD__);
+                Yii::$app->response->format = Response::FORMAT_RAW;
+                return 'error';
+            }
+
             // Проверка секретного ключа (если задан в настройках)
             $webhookSecret = Yii::$app->settings->get('vk_webhook_secret');
             if (!empty($webhookSecret) && $secret !== $webhookSecret) {
                 Yii::error("VK Webhook: Invalid secret key", __METHOD__);
+                Yii::$app->response->format = Response::FORMAT_JSON;
                 return ['ok' => false];
             }
 
-            // Обработка подтверждения вебхука
-            if ($type === 'confirmation') {
-                $confirmationToken = Yii::$app->settings->get('vk_webhook_confirmation_token');
-                if (!empty($confirmationToken)) {
-                    return $confirmationToken;
-                }
-                Yii::error("VK Webhook: Confirmation token not set", __METHOD__);
-                return ['ok' => false];
-            }
+            // Для остальных типов событий используем JSON формат
+            Yii::$app->response->format = Response::FORMAT_JSON;
 
             // Обработка нового сообщения
             if ($type === 'message_new') {
