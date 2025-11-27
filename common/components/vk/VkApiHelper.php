@@ -262,7 +262,7 @@ class VkApiHelper extends \yii\base\Component
     public function postToGroup($groupId, $message, $photoUrl = null)
     {
         $params = [
-            'owner_id' => "-" . $groupId,
+            'owner_id' => $groupId,
             'friends_only' => 0,
             'from_group' => 1, // Публикация от имени группы
             'v' => $this->apiVersion,
