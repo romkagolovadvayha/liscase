@@ -254,6 +254,12 @@ class BlogController extends BackendController
             $vkHelper = new VkApiHelper();
             $vkHelper->setAccessToken(Yii::$app->settings->get('vk_token'));
             
+            // Пытаемся использовать токен пользователя для загрузки фото (если доступен)
+            $vkUserToken = Yii::$app->settings->get('vk_user_token');
+            if (!empty($vkUserToken)) {
+                $vkHelper->setUserAccessToken($vkUserToken);
+            }
+            
             // Обрабатываем статью через OpenAI перед публикацией
             $postUrl = Yii::$app->params['baseUrl'] . $model->getUrl();
             $message = null;
@@ -355,7 +361,12 @@ class BlogController extends BackendController
             $result = $vkHelper->postToGroup($vkGroupId, $message, $photoUrls);
             
             if ($result !== false && !empty($result['response']['post_id'])) {
-                Yii::$app->session->addFlash('success', 'Пост успешно опубликован в группу ВКонтакте!');
+                $successMessage = 'Пост успешно опубликован в группу ВКонтакте!';
+                // Если были фото, но они не загрузились, предупреждаем
+                if (!empty($photoUrls) && empty($vkUserToken)) {
+                    $successMessage .= ' (Опубликовано без фото. Для публикации с фото добавьте настройку vk_user_token)';
+                }
+                Yii::$app->session->addFlash('success', $successMessage);
             } else {
                 $error = 'Неизвестная ошибка';
                 if (is_array($result) && isset($result['error'])) {
@@ -363,6 +374,10 @@ class BlogController extends BackendController
                     $errorCode = $result['error']['error_code'] ?? '';
                     if ($errorCode) {
                         $error = "[{$errorCode}] {$error}";
+                    }
+                    // Если ошибка связана с правами доступа, подсказываем про токен пользователя
+                    if ($errorCode == 15 && !empty($photoUrls) && empty($vkUserToken)) {
+                        $error .= '. Для публикации с фото необходимо добавить настройку vk_user_token (токен пользователя с правами photos, wall, groups)';
                     }
                 } elseif ($result === false) {
                     $error = 'Не удалось отправить запрос к VK API. Проверьте логи для деталей.';

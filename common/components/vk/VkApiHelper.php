@@ -8,6 +8,7 @@ use yii\helpers\ArrayHelper;
 class VkApiHelper extends \yii\base\Component
 {
     public string $accessToken;
+    public string $userAccessToken; // Токен пользователя для загрузки фото
     public string $apiVersion = '5.131';
 
     /**
@@ -18,6 +19,17 @@ class VkApiHelper extends \yii\base\Component
     public function setAccessToken($token)
     {
         $this->accessToken = $token;
+        return $this;
+    }
+
+    /**
+     * Установка токена пользователя для загрузки фото
+     * @param string $token
+     * @return $this
+     */
+    public function setUserAccessToken($token)
+    {
+        $this->userAccessToken = $token;
         return $this;
     }
 
@@ -371,11 +383,24 @@ class VkApiHelper extends \yii\base\Component
     private function uploadPhoto($groupId, $photoUrl)
     {
         try {
+            // Используем токен пользователя для загрузки фото, если он доступен
+            $useUserToken = !empty($this->userAccessToken);
+            $originalToken = $this->accessToken;
+            
+            if ($useUserToken) {
+                $this->accessToken = $this->userAccessToken;
+            }
+            
             // Получаем адрес сервера для загрузки
             $uploadServer = $this->_sendRequest('photos.getWallUploadServer', [
                 'group_id' => abs($groupId),
                 'v' => $this->apiVersion,
             ]);
+            
+            // Восстанавливаем оригинальный токен
+            if ($useUserToken) {
+                $this->accessToken = $originalToken;
+            }
 
             if ($uploadServer === false) {
                 Yii::error("VK: Failed to get upload server - request failed", __METHOD__);
@@ -384,7 +409,14 @@ class VkApiHelper extends \yii\base\Component
 
             if (empty($uploadServer['response']['upload_url'])) {
                 $errorInfo = isset($uploadServer['error']) ? json_encode($uploadServer['error']) : 'Unknown error';
-                Yii::error("VK: Failed to get upload server. Response: " . json_encode($uploadServer) . ", Error: {$errorInfo}", __METHOD__);
+                $errorCode = isset($uploadServer['error']['error_code']) ? $uploadServer['error']['error_code'] : null;
+                
+                // Если ошибка связана с токеном группы (код 27), это нормально - просто не загружаем фото
+                if ($errorCode == 27) {
+                    Yii::warning("VK: Cannot upload photo with group token (error 27). Post will be published without photos. Consider using vk_user_token setting.", __METHOD__);
+                } else {
+                    Yii::error("VK: Failed to get upload server. Response: " . json_encode($uploadServer) . ", Error: {$errorInfo}", __METHOD__);
+                }
                 return false;
             }
 
@@ -426,6 +458,14 @@ class VkApiHelper extends \yii\base\Component
                 return false;
             }
 
+            // Используем токен пользователя для сохранения фото, если он доступен
+            $useUserToken = !empty($this->userAccessToken);
+            $originalToken = $this->accessToken;
+            
+            if ($useUserToken) {
+                $this->accessToken = $this->userAccessToken;
+            }
+            
             // Сохраняем фото в альбом группы
             $saveResult = $this->_sendRequest('photos.saveWallPhoto', [
                 'group_id' => abs($groupId),
@@ -434,6 +474,11 @@ class VkApiHelper extends \yii\base\Component
                 'hash' => $uploadData['hash'],
                 'v' => $this->apiVersion,
             ]);
+            
+            // Восстанавливаем оригинальный токен
+            if ($useUserToken) {
+                $this->accessToken = $originalToken;
+            }
 
             if (!empty($saveResult['response'][0]['id'])) {
                 $photo = $saveResult['response'][0];
