@@ -358,15 +358,24 @@ class BlogController extends BackendController
                 Yii::$app->session->addFlash('success', 'Пост успешно опубликован в группу ВКонтакте!');
             } else {
                 $error = 'Неизвестная ошибка';
+                $errorCode = null;
+                
                 if (is_array($result) && isset($result['error'])) {
                     $error = $result['error']['error_msg'] ?? 'Неизвестная ошибка';
                     $errorCode = $result['error']['error_code'] ?? '';
                     if ($errorCode) {
                         $error = "[{$errorCode}] {$error}";
                     }
+                    
+                    // Если ошибка связана с правами доступа (код 15)
+                    if ($errorCode == 15) {
+                        $error .= '. Токен группы должен быть создан с правами (scopes): wall, photos. ';
+                        $error .= 'Пересоздайте токен группы в настройках сообщества ВКонтакте с этими правами.';
+                    }
                 } elseif ($result === false) {
                     $error = 'Не удалось отправить запрос к VK API. Проверьте логи для деталей.';
                 }
+                
                 Yii::$app->session->addFlash('danger', 'Ошибка при публикации в ВКонтакте: ' . $error);
             }
         } catch (\Exception $e) {

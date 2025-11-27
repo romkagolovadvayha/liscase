@@ -269,23 +269,14 @@ class VkApiHelper extends \yii\base\Component
         ];
 
         // Если есть фото, добавляем их URL напрямую в attachments
-        // VK API поддерживает прямые URL изображений в attachments для wall.post с токеном группы
         if (!empty($photoUrl)) {
-            $attachments = [];
-            
             // Поддерживаем как одно изображение, так и массив
             $photoUrls = is_array($photoUrl) ? $photoUrl : [$photoUrl];
+            $photoUrls = array_filter($photoUrls); // Убираем пустые значения
             
-            foreach ($photoUrls as $url) {
-                if (!empty($url)) {
-                    // Добавляем прямой URL изображения в attachments
-                    $attachments[] = $url;
-                }
-            }
-            
-            // Прикрепляем все фото через их URL
-            if (!empty($attachments)) {
-                $params['attachments'] = implode(',', $attachments);
+            if (!empty($photoUrls)) {
+                // Передаем все URL через запятую
+                $params['attachments'] = implode(',', $photoUrls);
             }
         }
 
@@ -369,32 +360,19 @@ class VkApiHelper extends \yii\base\Component
     }
 
     /**
-     * Загрузка фото для поста
+     * Загрузка фото для поста на стене группы (работает с токеном группы)
      * @param int|string $groupId ID группы
      * @param string $photoUrl URL изображения
      * @return string|false ID загруженного фото в формате photo{owner_id}_{photo_id}
      */
-    private function uploadPhoto($groupId, $photoUrl)
+    private function uploadPhotoForGroup($groupId, $photoUrl)
     {
         try {
-            // Используем токен пользователя для загрузки фото, если он доступен
-            $useUserToken = !empty($this->userAccessToken);
-            $originalToken = $this->accessToken;
-            
-            if ($useUserToken) {
-                $this->accessToken = $this->userAccessToken;
-            }
-            
-            // Получаем адрес сервера для загрузки
+            // Используем photos.getWallUploadServer - должен работать с токеном группы при наличии прав wall и photos
             $uploadServer = $this->_sendRequest('photos.getWallUploadServer', [
                 'group_id' => abs($groupId),
                 'v' => $this->apiVersion,
             ]);
-            
-            // Восстанавливаем оригинальный токен
-            if ($useUserToken) {
-                $this->accessToken = $originalToken;
-            }
 
             if ($uploadServer === false) {
                 Yii::error("VK: Failed to get upload server - request failed", __METHOD__);
@@ -404,13 +382,7 @@ class VkApiHelper extends \yii\base\Component
             if (empty($uploadServer['response']['upload_url'])) {
                 $errorInfo = isset($uploadServer['error']) ? json_encode($uploadServer['error']) : 'Unknown error';
                 $errorCode = isset($uploadServer['error']['error_code']) ? $uploadServer['error']['error_code'] : null;
-                
-                // Если ошибка связана с токеном группы (код 27), это нормально - просто не загружаем фото
-                if ($errorCode == 27) {
-                    Yii::warning("VK: Cannot upload photo with group token (error 27). Post will be published without photos. Consider using vk_user_token setting.", __METHOD__);
-                } else {
-                    Yii::error("VK: Failed to get upload server. Response: " . json_encode($uploadServer) . ", Error: {$errorInfo}", __METHOD__);
-                }
+                Yii::error("VK: Failed to get upload server. Response: " . json_encode($uploadServer) . ", Error: {$errorInfo}", __METHOD__);
                 return false;
             }
 
@@ -452,15 +424,7 @@ class VkApiHelper extends \yii\base\Component
                 return false;
             }
 
-            // Используем токен пользователя для сохранения фото, если он доступен
-            $useUserToken = !empty($this->userAccessToken);
-            $originalToken = $this->accessToken;
-            
-            if ($useUserToken) {
-                $this->accessToken = $this->userAccessToken;
-            }
-            
-            // Сохраняем фото в альбом группы
+            // Сохраняем фото на стену группы (работает с токеном группы при наличии прав)
             $saveResult = $this->_sendRequest('photos.saveWallPhoto', [
                 'group_id' => abs($groupId),
                 'photo' => $uploadData['photo'],
@@ -468,11 +432,6 @@ class VkApiHelper extends \yii\base\Component
                 'hash' => $uploadData['hash'],
                 'v' => $this->apiVersion,
             ]);
-            
-            // Восстанавливаем оригинальный токен
-            if ($useUserToken) {
-                $this->accessToken = $originalToken;
-            }
 
             if (!empty($saveResult['response'][0]['id'])) {
                 $photo = $saveResult['response'][0];
