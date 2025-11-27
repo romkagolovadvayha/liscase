@@ -262,7 +262,7 @@ class VkApiHelper extends \yii\base\Component
     public function postToGroup($groupId, $message, $photoUrl = null)
     {
         $params = [
-            'owner_id' => $groupId,
+            'owner_id' => "-" . $groupId,
             'friends_only' => 0,
             'from_group' => 1, // Публикация от имени группы
             'v' => $this->apiVersion,
@@ -276,7 +276,7 @@ class VkApiHelper extends \yii\base\Component
             
             if (!empty($photoUrls)) {
                 // Берем только первое изображение
-                $params['attachments'] = [reset($photoUrls)];
+                $params['attachments'] = reset($photoUrls);
             }
         }
 
@@ -467,33 +467,36 @@ class VkApiHelper extends \yii\base\Component
         $params['access_token'] = $this->accessToken;
         $url = 'https://api.vk.com/method/' . $method;
 
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        try {
+            $response = Yii::$app->curl
+                ->setHeaders(['Content-Type' => 'application/json'])
+                ->setRawPostData(json_encode($params))
+                ->post($url);
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
+            if (empty($response)) {
+                Yii::error("VK API error: Empty response", __METHOD__);
+                return false;
+            }
 
-        if ($response === false || !empty($error)) {
-            Yii::error("VK API error: {$error}", __METHOD__);
+            $result = json_decode($response, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Yii::error("VK API error: Invalid JSON response: " . $response, __METHOD__);
+                return false;
+            }
+
+            if (!empty($result['error'])) {
+                $errorMsg = $result['error']['error_msg'] ?? 'Unknown error';
+                $errorCode = $result['error']['error_code'] ?? 'N/A';
+                Yii::error("VK API error: [{$errorCode}] {$errorMsg}, Full response: " . json_encode($result), __METHOD__);
+                return $result; // Возвращаем результат с ошибкой, чтобы можно было увидеть описание
+            }
+
+            return $result;
+        } catch (\Exception $e) {
+            Yii::error("VK API error: " . $e->getMessage(), __METHOD__);
             return false;
         }
-
-        $result = json_decode($response, true);
-
-        if (!empty($result['error'])) {
-            $errorMsg = $result['error']['error_msg'] ?? 'Unknown error';
-            $errorCode = $result['error']['error_code'] ?? 'N/A';
-            Yii::error("VK API error (HTTP {$httpCode}): [{$errorCode}] {$errorMsg}, Full response: " . json_encode($result), __METHOD__);
-            return $result; // Возвращаем результат с ошибкой, чтобы можно было увидеть описание
-        }
-
-        return $result;
     }
 }
 
