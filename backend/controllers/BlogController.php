@@ -357,7 +357,16 @@ class BlogController extends BackendController
             if ($result !== false && !empty($result['response']['post_id'])) {
                 Yii::$app->session->addFlash('success', 'Пост успешно опубликован в группу ВКонтакте!');
             } else {
-                $error = $result['error']['error_msg'] ?? 'Неизвестная ошибка';
+                $error = 'Неизвестная ошибка';
+                if (is_array($result) && isset($result['error'])) {
+                    $error = $result['error']['error_msg'] ?? 'Неизвестная ошибка';
+                    $errorCode = $result['error']['error_code'] ?? '';
+                    if ($errorCode) {
+                        $error = "[{$errorCode}] {$error}";
+                    }
+                } elseif ($result === false) {
+                    $error = 'Не удалось отправить запрос к VK API. Проверьте логи для деталей.';
+                }
                 Yii::$app->session->addFlash('danger', 'Ошибка при публикации в ВКонтакте: ' . $error);
             }
         } catch (\Exception $e) {

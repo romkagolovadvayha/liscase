@@ -267,13 +267,19 @@ class VkApiHelper extends \yii\base\Component
                     $photoId = $this->uploadPhoto($groupId, $url);
                     if ($photoId) {
                         $photoIds[] = $photoId;
+                    } else {
+                        // Логируем ошибку загрузки конкретного фото, но продолжаем
+                        Yii::warning("VK: Failed to upload photo from URL: {$url}", __METHOD__);
                     }
                 }
             }
             
-            // Прикрепляем все загруженные фото
+            // Прикрепляем все загруженные фото (если хотя бы одно загрузилось)
             if (!empty($photoIds)) {
                 $params['attachments'] = implode(',', $photoIds);
+            } else {
+                // Если ни одно фото не загрузилось, логируем предупреждение
+                Yii::warning("VK: All photos failed to upload, posting without photos", __METHOD__);
             }
         }
 
@@ -371,8 +377,14 @@ class VkApiHelper extends \yii\base\Component
                 'v' => $this->apiVersion,
             ]);
 
+            if ($uploadServer === false) {
+                Yii::error("VK: Failed to get upload server - request failed", __METHOD__);
+                return false;
+            }
+
             if (empty($uploadServer['response']['upload_url'])) {
-                Yii::error("VK: Failed to get upload server", __METHOD__);
+                $errorInfo = isset($uploadServer['error']) ? json_encode($uploadServer['error']) : 'Unknown error';
+                Yii::error("VK: Failed to get upload server. Response: " . json_encode($uploadServer) . ", Error: {$errorInfo}", __METHOD__);
                 return false;
             }
 
@@ -475,8 +487,10 @@ class VkApiHelper extends \yii\base\Component
         $result = json_decode($response, true);
 
         if (!empty($result['error'])) {
-            Yii::error("VK API error: " . json_encode($result['error']), __METHOD__);
-            return false;
+            $errorMsg = $result['error']['error_msg'] ?? 'Unknown error';
+            $errorCode = $result['error']['error_code'] ?? 'N/A';
+            Yii::error("VK API error (HTTP {$httpCode}): [{$errorCode}] {$errorMsg}, Full response: " . json_encode($result), __METHOD__);
+            return $result; // Возвращаем результат с ошибкой, чтобы можно было увидеть описание
         }
 
         return $result;
