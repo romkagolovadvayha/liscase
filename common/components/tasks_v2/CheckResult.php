@@ -19,18 +19,23 @@ class CheckResult
     /** @var int|null Максимальный прогресс (если применимо) */
     public $maxProgress;
 
+    /** @var string|null URL для редиректа (если нужен) */
+    public $redirectUrl;
+
     /**
      * @param bool $success
      * @param string $message
      * @param int|null $progress
      * @param int|null $maxProgress
+     * @param string|null $redirectUrl
      */
-    public function __construct($success, $message, $progress = null, $maxProgress = null)
+    public function __construct($success, $message, $progress = null, $maxProgress = null, $redirectUrl = null)
     {
         $this->success = $success;
         $this->message = $message;
         $this->progress = $progress;
         $this->maxProgress = $maxProgress;
+        $this->redirectUrl = $redirectUrl;
     }
 
     /**
@@ -38,11 +43,12 @@ class CheckResult
      * @param string $message
      * @param int|null $progress
      * @param int|null $maxProgress
+     * @param string|null $redirectUrl
      * @return CheckResult
      */
-    public static function success($message, $progress = null, $maxProgress = null)
+    public static function success($message, $progress = null, $maxProgress = null, $redirectUrl = null)
     {
-        return new self(true, $message, $progress, $maxProgress);
+        return new self(true, $message, $progress, $maxProgress, $redirectUrl);
     }
 
     /**
@@ -50,11 +56,12 @@ class CheckResult
      * @param string $message
      * @param int|null $progress
      * @param int|null $maxProgress
+     * @param string|null $redirectUrl
      * @return CheckResult
      */
-    public static function failure($message, $progress = null, $maxProgress = null)
+    public static function failure($message, $progress = null, $maxProgress = null, $redirectUrl = null)
     {
-        return new self(false, $message, $progress, $maxProgress);
+        return new self(false, $message, $progress, $maxProgress, $redirectUrl);
     }
 }
 

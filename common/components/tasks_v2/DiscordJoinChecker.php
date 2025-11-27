@@ -27,10 +27,13 @@ class DiscordJoinChecker implements TaskCheckerInterface
 
         // Проверяем, есть ли у пользователя Discord ID
         if (empty($user->discord_id)) {
-            $discordInviteLink = Yii::$app->settings->get('social_discord') ?? '';
+            // Редиректим на авторизацию Discord
+            $discordAuthUrl = \yii\helpers\Url::to(['/auth/discord'], true);
             return CheckResult::failure(
-                Yii::t('common', 'Для выполнения задания необходимо привязать Discord аккаунт. Перейдите в настройки профиля и привяжите Discord.') . 
-                (!empty($discordInviteLink) ? "\n\n" . Yii::t('common', 'Ссылка на Discord сервер: {link}', ['link' => $discordInviteLink]) : '')
+                Yii::t('common', 'Для выполнения задания необходимо привязать Discord аккаунт.'),
+                null,
+                null,
+                $discordAuthUrl
             );
         }
 

@@ -140,6 +140,12 @@
             // Ошибка или задание еще не выполнено
             showMessage(messageEl, data.message || 'Задание еще не выполнено', 'error');
             
+            // Если есть редирект, выполняем его
+            if (data.redirect) {
+                window.location.href = data.redirect;
+                return;
+            }
+            
             // Восстанавливаем кнопку
             button.disabled = false;
             button.classList.remove('is-loading');
