@@ -370,7 +370,7 @@ class VkApiHelper extends \yii\base\Component
     }
 
     /**
-     * Загрузка фото для поста на стене группы (работает с токеном группы)
+     * Загрузка фото для поста на стене группы (работает с токеном пользователя)
      * @param int|string $groupId ID группы
      * @param string $photoUrl URL изображения
      * @return string|false ID загруженного фото в формате photo{owner_id}_{photo_id}
@@ -378,8 +378,8 @@ class VkApiHelper extends \yii\base\Component
     private function uploadPhotoForGroup($groupId, $photoUrl)
     {
         try {
-            // Используем photos.getWallUploadServer - должен работать с токеном группы при наличии прав wall и photos
-            $uploadServer = $this->_sendRequest('photos.getWallUploadServer', [
+            // Используем photos.getUploadServer с group_id для загрузки в альбом группы
+            $uploadServer = $this->_sendRequest('photos.getUploadServer', [
                 'group_id' => abs($groupId),
                 'v' => $this->apiVersion,
             ]);
@@ -397,11 +397,21 @@ class VkApiHelper extends \yii\base\Component
             }
 
             $uploadUrl = $uploadServer['response']['upload_url'];
+            $albumId = $uploadServer['response']['album_id'] ?? null;
 
-            // Скачиваем изображение
-            $imageContent = file_get_contents($photoUrl);
-            if ($imageContent === false) {
-                Yii::error("VK: Failed to download image from {$photoUrl}", __METHOD__);
+            // Скачиваем изображение с увеличенным таймаутом
+            $ch = curl_init($photoUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+            $imageContent = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($imageContent === false || $httpCode !== 200 || !empty($curlError)) {
+                Yii::error("VK: Failed to download image from {$photoUrl}, HTTP code: {$httpCode}, Error: {$curlError}", __METHOD__);
                 return false;
             }
 
@@ -409,22 +419,25 @@ class VkApiHelper extends \yii\base\Component
             $tempFile = tempnam(sys_get_temp_dir(), 'vk_upload_');
             file_put_contents($tempFile, $imageContent);
 
-            // Загружаем на сервер VK
+            // Загружаем на сервер VK с увеличенным таймаутом
             $ch = curl_init($uploadUrl);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
             curl_setopt($ch, CURLOPT_POSTFIELDS, [
                 'photo' => new \CURLFile($tempFile, 'image/jpeg', 'photo.jpg')
             ]);
 
             $uploadResult = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
             curl_close($ch);
             unlink($tempFile);
 
-            if ($httpCode !== 200 || empty($uploadResult)) {
-                Yii::error("VK: Failed to upload photo, HTTP code: {$httpCode}", __METHOD__);
+            if ($httpCode !== 200 || empty($uploadResult) || !empty($curlError)) {
+                Yii::error("VK: Failed to upload photo, HTTP code: {$httpCode}, Error: {$curlError}, Response: {$uploadResult}", __METHOD__);
                 return false;
             }
 
@@ -434,14 +447,20 @@ class VkApiHelper extends \yii\base\Component
                 return false;
             }
 
-            // Сохраняем фото на стену группы (работает с токеном группы при наличии прав)
-            $saveResult = $this->_sendRequest('photos.saveWallPhoto', [
+            // Сохраняем фото в альбом группы
+            $saveParams = [
                 'group_id' => abs($groupId),
                 'photo' => $uploadData['photo'],
                 'server' => $uploadData['server'],
                 'hash' => $uploadData['hash'],
                 'v' => $this->apiVersion,
-            ]);
+            ];
+            
+            if (!empty($albumId)) {
+                $saveParams['album_id'] = $albumId;
+            }
+            
+            $saveResult = $this->_sendRequest('photos.save', $saveParams);
 
             if (!empty($saveResult['response'][0]['id'])) {
                 $photo = $saveResult['response'][0];
