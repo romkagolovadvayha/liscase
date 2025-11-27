@@ -9,7 +9,7 @@ class VkApiHelper extends \yii\base\Component
 {
     public string $accessToken;
     public string $userAccessToken; // Токен пользователя для загрузки фото
-    public string $apiVersion = '5.131';
+    public string $apiVersion = '5.199';
 
     /**
      * Установка access token
@@ -263,8 +263,8 @@ class VkApiHelper extends \yii\base\Component
     {
         $params = [
             'owner_id' => $groupId,
+            'friends_only' => 0,
             'from_group' => 1, // Публикация от имени группы
-            'message' => $message,
             'v' => $this->apiVersion,
         ];
 
@@ -276,9 +276,11 @@ class VkApiHelper extends \yii\base\Component
             
             if (!empty($photoUrls)) {
                 // Берем только первое изображение
-                $params['attachments'] = reset($photoUrls);
+                $params['attachments'] = [reset($photoUrls)];
             }
         }
+
+        $params['message'] = $message;
 
         return $this->_sendRequest('wall.post', $params);
     }
