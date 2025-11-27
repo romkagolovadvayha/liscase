@@ -96,24 +96,29 @@ class AuthController extends WebController
      */
     public function actionDiscord()
     {
+        // Детальное логирование для отладки
+        Yii::info("Discord OAuth actionDiscord called. isGuest=" . (Yii::$app->user->isGuest ? 'true' : 'false'), __METHOD__);
+        
         if (Yii::$app->user->isGuest) {
+            Yii::warning("Discord OAuth: User is guest, redirecting to home", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'Для привязки Discord необходимо быть авторизованным.'));
-            return $this->goHome();
+            return $this->redirect(['/']);
         }
 
         $clientId = Yii::$app->settings->get('discord_client_id');
         $redirectUri = Yii::$app->params['homePage'] . '/api/discord/callback';
+        $userId = Yii::$app->user->id;
 
-        Yii::info("Discord OAuth: clientId=" . ($clientId ? 'set' : 'empty') . ", redirectUri={$redirectUri}, userId=" . Yii::$app->user->id, __METHOD__);
+        Yii::info("Discord OAuth: clientId=" . ($clientId ? 'set (' . substr($clientId, 0, 10) . '...)' : 'empty') . ", redirectUri={$redirectUri}, userId={$userId}", __METHOD__);
 
         if (empty($clientId)) {
-            Yii::warning("Discord OAuth: client_id not configured", __METHOD__);
+            Yii::warning("Discord OAuth: client_id not configured. Redirecting to profile.", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'Discord OAuth не настроен. Обратитесь к администратору.'));
             return $this->redirect(['/user/profile']);
         }
 
         // Сохраняем user_id в сессии для последующей привязки
-        Yii::$app->session->set('discord_oauth_user_id', Yii::$app->user->id);
+        Yii::$app->session->set('discord_oauth_user_id', $userId);
 
         // Сохраняем состояние для защиты от CSRF
         $state = Yii::$app->security->generateRandomString(32);
@@ -129,7 +134,7 @@ class AuthController extends WebController
 
         $authUrl = 'https://discord.com/api/oauth2/authorize?' . http_build_query($params);
 
-        Yii::info("Discord OAuth: redirecting to {$authUrl}", __METHOD__);
+        Yii::info("Discord OAuth: redirecting to Discord. authUrl length=" . strlen($authUrl), __METHOD__);
 
         return $this->redirect($authUrl);
     }
