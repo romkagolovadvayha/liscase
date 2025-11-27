@@ -268,14 +268,14 @@ class VkApiHelper extends \yii\base\Component
             'v' => $this->apiVersion,
         ];
 
-        // Если есть фото, добавляем только первое изображение (VK API поддерживает только 1 прямую ссылку)
+        // Если есть фото, добавляем его как прямую ссылку
         if (!empty($photoUrl)) {
             // Поддерживаем как одно изображение, так и массив
             $photoUrls = is_array($photoUrl) ? $photoUrl : [$photoUrl];
             $photoUrls = array_filter($photoUrls); // Убираем пустые значения
             
             if (!empty($photoUrls)) {
-                // Берем только первое изображение
+                // Берем только первое изображение и отправляем как прямую ссылку
                 $params['attachments'] = reset($photoUrls);
             }
         }

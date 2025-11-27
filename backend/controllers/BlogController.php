@@ -252,7 +252,7 @@ class BlogController extends BackendController
         
         try {
             $vkHelper = new VkApiHelper();
-            $vkHelper->setAccessToken(Yii::$app->settings->get('vk_token'));
+            $vkHelper->setAccessToken(Yii::$app->settings->get('vk_user_token'));
             
             // Обрабатываем статью через OpenAI перед публикацией
             $postUrl = Yii::$app->params['baseUrl'] . $model->getUrl();
@@ -312,47 +312,15 @@ class BlogController extends BackendController
             }
             
             // Получаем изображения из HTML-контента статьи (теги <img>)
-            $photoUrls = [];
-            $content = $model->content ?? '';
-            
-            if (!empty($content)) {
-                // Извлекаем все URL изображений из тегов <img>
-                preg_match_all('/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', $content, $matches);
-                
-                if (!empty($matches[1])) {
-                    foreach ($matches[1] as $imgSrc) {
-                        // Формируем полный URL изображения
-                        if (strpos($imgSrc, 'http') === 0) {
-                            // Уже полный URL
-                            $photoUrls[] = $imgSrc;
-                        } elseif (strpos($imgSrc, '//') === 0) {
-                            // URL без протокола
-                            $photoUrls[] = 'https:' . $imgSrc;
-                        } elseif (strpos($imgSrc, '/') === 0) {
-                            // Относительный URL от корня
-                            $photoUrls[] = Yii::$app->params['baseUrl'] . $imgSrc;
-                        } else {
-                            // Относительный URL
-                            $photoUrls[] = Yii::$app->params['baseUrl'] . '/' . $imgSrc;
-                        }
-                    }
-                }
+            // Берем первое фото из blog_image
+            $photoUrl = null;
+            $firstBlogImage = $model->getBlogImages()->one();
+            if ($firstBlogImage && !empty($firstBlogImage->link)) {
+                $photoUrl = $firstBlogImage->getPublicUrl();
             }
             
-            // Если изображений в HTML нет, берем из blogImages
-            if (empty($photoUrls)) {
-                $blogImages = $model->getBlogImages()->all();
-                foreach ($blogImages as $blogImage) {
-                    // Используем метод getPublicUrl() для получения полного URL
-                    if (!empty($blogImage->link)) {
-                        $imageUrl = $blogImage->getPublicUrl();
-                        $photoUrls[] = $imageUrl;
-                    }
-                }
-            }
-            
-            // Публикуем в группу со всеми изображениями
-            $result = $vkHelper->postToGroup($vkGroupId, $message, $photoUrls);
+            // Публикуем в группу с первым изображением (если есть)
+            $result = $vkHelper->postToGroup($vkGroupId, $message, $photoUrl);
             
             if ($result !== false && !empty($result['response']['post_id'])) {
                 Yii::$app->session->addFlash('success', 'Пост успешно опубликован в группу ВКонтакте!');
