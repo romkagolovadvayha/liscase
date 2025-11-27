@@ -263,35 +263,29 @@ class VkApiHelper extends \yii\base\Component
     {
         $params = [
             'owner_id' => $groupId,
+            'from_group' => 1, // Публикация от имени группы
             'message' => $message,
             'v' => $this->apiVersion,
         ];
 
-        // Если есть фото, загружаем их
+        // Если есть фото, добавляем их URL напрямую в attachments
+        // VK API поддерживает прямые URL изображений в attachments для wall.post с токеном группы
         if (!empty($photoUrl)) {
-            $photoIds = [];
+            $attachments = [];
             
             // Поддерживаем как одно изображение, так и массив
             $photoUrls = is_array($photoUrl) ? $photoUrl : [$photoUrl];
             
             foreach ($photoUrls as $url) {
                 if (!empty($url)) {
-                    $photoId = $this->uploadPhoto($groupId, $url);
-                    if ($photoId) {
-                        $photoIds[] = $photoId;
-                    } else {
-                        // Логируем ошибку загрузки конкретного фото, но продолжаем
-                        Yii::warning("VK: Failed to upload photo from URL: {$url}", __METHOD__);
-                    }
+                    // Добавляем прямой URL изображения в attachments
+                    $attachments[] = $url;
                 }
             }
             
-            // Прикрепляем все загруженные фото (если хотя бы одно загрузилось)
-            if (!empty($photoIds)) {
-                $params['attachments'] = implode(',', $photoIds);
-            } else {
-                // Если ни одно фото не загрузилось, логируем предупреждение
-                Yii::warning("VK: All photos failed to upload, posting without photos", __METHOD__);
+            // Прикрепляем все фото через их URL
+            if (!empty($attachments)) {
+                $params['attachments'] = implode(',', $attachments);
             }
         }
 
