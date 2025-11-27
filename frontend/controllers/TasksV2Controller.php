@@ -241,12 +241,25 @@ class TasksV2Controller extends WebController
             $dailyRewardList = $task->getDailyRewardList($user);
         }
 
+        // Для VK задания генерируем код при открытии модалки
+        $vkCode = null;
+        $vkGroupId = null;
+        if ($task->check_type === TaskV2::CHECK_TYPE_VK_SUBSCRIBE_GROUP) {
+            $params = $task->check_params ?? [];
+            $vkGroupId = $params['group_id'] ?? null;
+            if ($vkGroupId) {
+                $vkCode = \common\models\user\UserConfirmCode::createTypeVkGroup($user->id);
+            }
+        }
+
         return $this->renderPartial('detail', [
             'task' => $task,
             'userStatus' => $userStatus,
             'progress' => $progress,
             'maxProgress' => $maxProgress,
             'dailyRewardList' => $dailyRewardList,
+            'vkCode' => $vkCode,
+            'vkGroupId' => $vkGroupId,
         ]);
     }
 

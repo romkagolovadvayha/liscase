@@ -8,6 +8,8 @@ use yii\helpers\Url;
 /** @var int|null $progress */
 /** @var int|null $maxProgress */
 /** @var array|null $dailyRewardList */
+/** @var \common\models\user\UserConfirmCode|null $vkCode */
+/** @var int|null $vkGroupId */
 
 $status = $userStatus['status'] ?? 'available';
 $canCheck = $status === 'available';
@@ -58,6 +60,32 @@ if ($task->type === \common\models\tasks_v2\TaskV2::TYPE_DAILY_REWARD && $task->
     <?php if ($task->full_description): ?>
         <div class="tasksV2__detail-description">
             <div class="tasksV2__detail-description-content"><?= trim(nl2br(Html::encode($task->full_description))) ?></div>
+        </div>
+    <?php endif; ?>
+    
+    <?php if ($task->check_type === \common\models\tasks_v2\TaskV2::CHECK_TYPE_VK_SUBSCRIBE_GROUP && $vkCode && $vkGroupId): ?>
+        <div class="tasksV2__detail-vk-instruction" style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 18px; font-weight: 600;">
+                <?= Yii::t('common', 'Инструкция по выполнению задания') ?>
+            </h3>
+            <ol style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                <li>
+                    <?= Yii::t('common', 'Перейдите в группу ВКонтакте:') ?>
+                    <a href="https://vk.com/club<?= $vkGroupId ?>" target="_blank" rel="nofollow noopener" style="color: var(--primary); text-decoration: underline;">
+                        https://vk.com/club<?= $vkGroupId ?>
+                    </a>
+                </li>
+                <li><?= Yii::t('common', 'Откройте личные сообщения группы') ?></li>
+                <li>
+                    <?= Yii::t('common', 'Отправьте следующий код:') ?>
+                    <div style="background: var(--bg-primary); padding: 12px; border-radius: 6px; margin-top: 8px; text-align: center;">
+                        <strong style="font-size: 20px; letter-spacing: 3px; font-family: monospace; color: var(--primary);">
+                            <?= Html::encode($vkCode->code) ?>
+                        </strong>
+                    </div>
+                </li>
+                <li><?= Yii::t('common', 'После отправки кода нажмите кнопку "Проверить" для подтверждения выполнения задания') ?></li>
+            </ol>
         </div>
     <?php endif; ?>
     

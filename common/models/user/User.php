@@ -34,6 +34,7 @@ use yii\web\JsExpression;
  * @property string          $email
  * @property string          $steam_id
  * @property int             $telegram_chat_id
+ * @property int|null        $vk_id
  * @property string          $username
  * @property string          $password_hash
  * @property string          $auth_key

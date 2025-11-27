@@ -27,6 +27,7 @@ class UserConfirmCode extends \common\components\base\ActiveRecord
     const TYPE_TELEGRAM_BOT      = 4;
     const TYPE_FINANCE_OPERATION = 5;
     const TYPE_CONFIRM_NFT_EYWA_WALLET  = 6;
+    const TYPE_VK_GROUP          = 7;
 
     /**
      * {@inheritdoc}
@@ -203,6 +204,43 @@ class UserConfirmCode extends \common\components\base\ActiveRecord
             ->andWhere(['type' => self::TYPE_TELEGRAM_BOT])
             ->andWhere(['code' => $code])
 //            ->andWhere(['status' => self::STATUS_ACTIVE])
+            ->one();
+
+        return $model ? $model->user : null;
+    }
+
+    /**
+     * @param int $userId
+     *
+     * @return self|false
+     */
+    public static function createTypeVkGroup($userId)
+    {
+        $type = self::TYPE_VK_GROUP;
+
+        /** @var self $model */
+        $model = self::_getQuery($userId, $type)->one();
+        if (!empty($model)) {
+            return $model;
+        }
+
+        $code = Yii::$app->security->generateRandomString(20);
+
+        return self::_createRecord($userId, $type, $code);
+    }
+
+    /**
+     * @param string $code
+     *
+     * @return User|null
+     */
+    public static function getUserByVkCode($code)
+    {
+        /** @var self $model */
+        $model = self::find()
+            ->andWhere(['type' => self::TYPE_VK_GROUP])
+            ->andWhere(['code' => $code])
+            ->andWhere(['status' => self::STATUS_ACTIVE])
             ->one();
 
         return $model ? $model->user : null;
