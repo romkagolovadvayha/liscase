@@ -91,6 +91,152 @@ class AuthController extends WebController
         return $this->redirect($steam->loginUrl());
     }
 
+    /**
+     * Discord OAuth авторизация
+     */
+    public function actionDiscord()
+    {
+        if (Yii::$app->user->isGuest) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Для привязки Discord необходимо быть авторизованным.'));
+            return $this->goHome();
+        }
+
+        $clientId = Yii::$app->settings->get('discord_client_id');
+        $redirectUri = Yii::$app->params['homePage'] . '/auth/discord-callback';
+
+        if (empty($clientId)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Discord OAuth не настроен. Обратитесь к администратору.'));
+            return $this->goBack();
+        }
+
+        // Сохраняем состояние для защиты от CSRF
+        $state = Yii::$app->security->generateRandomString(32);
+        Yii::$app->session->set('discord_oauth_state', $state);
+
+        $params = [
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'response_type' => 'code',
+            'scope' => 'identify',
+            'state' => $state,
+        ];
+
+        $authUrl = 'https://discord.com/api/oauth2/authorize?' . http_build_query($params);
+
+        return $this->redirect($authUrl);
+    }
+
+    /**
+     * Discord OAuth callback
+     */
+    public function actionDiscordCallback()
+    {
+        if (Yii::$app->user->isGuest) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Для привязки Discord необходимо быть авторизованным.'));
+            return $this->goHome();
+        }
+
+        $code = Yii::$app->request->get('code');
+        $state = Yii::$app->request->get('state');
+        $error = Yii::$app->request->get('error');
+
+        if (!empty($error)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при авторизации Discord: {error}', ['error' => $error]));
+            return $this->redirect(['/user/profile']);
+        }
+
+        // Проверяем state для защиты от CSRF
+        $savedState = Yii::$app->session->get('discord_oauth_state');
+        if (empty($state) || $state !== $savedState) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка безопасности при авторизации Discord.'));
+            return $this->redirect(['/user/profile']);
+        }
+        Yii::$app->session->remove('discord_oauth_state');
+
+        if (empty($code)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Код авторизации Discord не получен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $clientId = Yii::$app->settings->get('discord_client_id');
+        $clientSecret = Yii::$app->settings->get('discord_client_secret');
+        $redirectUri = Yii::$app->params['homePage'] . '/auth/discord-callback';
+
+        if (empty($clientId) || empty($clientSecret)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Discord OAuth не настроен. Обратитесь к администратору.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        // Обмениваем код на токен
+        $tokenUrl = 'https://discord.com/api/oauth2/token';
+        $tokenParams = [
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'grant_type' => 'authorization_code',
+            'code' => $code,
+            'redirect_uri' => $redirectUri,
+        ];
+
+        $ch = curl_init($tokenUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($tokenParams));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/x-www-form-urlencoded',
+        ]);
+
+        $tokenResponse = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            Yii::error("Discord OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}", __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении токена Discord.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $tokenData = json_decode($tokenResponse, true);
+        if (empty($tokenData['access_token'])) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Токен Discord не получен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        // Получаем информацию о пользователе Discord
+        $userUrl = 'https://discord.com/api/v10/users/@me';
+        $ch = curl_init($userUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $tokenData['access_token'],
+        ]);
+
+        $userResponse = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            Yii::error("Discord API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении данных пользователя Discord.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $discordUser = json_decode($userResponse, true);
+        if (empty($discordUser['id'])) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'ID пользователя Discord не получен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        // Сохраняем discord_id
+        $user = Yii::$app->user->identity;
+        $user->discord_id = $discordUser['id'];
+        if ($user->save(false)) {
+            Yii::$app->session->setFlash('success', Yii::t('common', 'Discord аккаунт успешно привязан!'));
+        } else {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при сохранении Discord ID.'));
+        }
+
+        return $this->redirect(['/user/profile']);
+    }
+
     public function init()
     {
         parent::init();
