@@ -30,22 +30,34 @@ class VkSubscribeGroupChecker implements TaskCheckerInterface
         $vkCode = UserConfirmCode::find()
             ->andWhere(['user_id' => $user->id])
             ->andWhere(['type' => UserConfirmCode::TYPE_VK_GROUP])
+            ->orderBy(['id' => SORT_DESC]) // Берем последний код
             ->one();
 
-        // Если кода нет или он неактивен, создаем новый
-        if (empty($vkCode) || $vkCode->status != UserConfirmCode::STATUS_ACTIVE) {
+        // Если кода нет, создаем новый
+        if (empty($vkCode)) {
             $vkCode = UserConfirmCode::createTypeVkGroup($user->id);
+            if (empty($vkCode)) {
+                return CheckResult::failure(
+                    Yii::t('common', 'Ошибка при создании кода для привязки VK. Попробуйте позже.')
+                );
+            }
         }
 
-        if (empty($vkCode)) {
-            return CheckResult::failure(
-                Yii::t('common', 'Ошибка при создании кода для привязки VK. Попробуйте позже.')
+        // Проверяем, был ли код использован (status = STATUS_DISABLED означает, что код был использован)
+        if ($vkCode->status == UserConfirmCode::STATUS_DISABLED) {
+            // Код был использован, задание выполнено
+            return CheckResult::success(
+                Yii::t('common', 'Вы успешно подписались на группу ВКонтакте!')
             );
         }
 
-        // Проверяем, был ли код использован (status = 0 означает, что код был использован)
-        if ($vkCode->status == UserConfirmCode::STATUS_DISABLED) {
-            // Код был использован, задание выполнено
+        // Если код активен, но не использован, проверяем, есть ли у пользователя vk_id
+        // Если vk_id есть, значит код был подтвержден, но статус не обновился
+        if ($vkCode->status == UserConfirmCode::STATUS_ACTIVE && !empty($user->vk_id)) {
+            // Помечаем код как использованный
+            $vkCode->status = UserConfirmCode::STATUS_DISABLED;
+            $vkCode->save(false);
+            
             return CheckResult::success(
                 Yii::t('common', 'Вы успешно подписались на группу ВКонтакте!')
             );
