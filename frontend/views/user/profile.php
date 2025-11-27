@@ -97,7 +97,7 @@ $this->title = Yii::t('common', "Профиль") . " - {$user->userProfile->nam
             <div class="flex gap-x-10 align-items-center flex-wrap">
                 <p class="p1 text-text-teritiary"><?=Yii::t('common', "Discord")?></p>
                 <?php if (!empty($model->user->discord_id)): ?>
-                    <span class="p1 text-text-secondary"><?=Yii::t('common', 'Привязан')?></span>
+                    <button type="submit" name="ProfileForm[discord_disabled]" value="1" class="button-secondary button-size__s h-36" style="padding-top: 6px; padding-bottom: 6px"><span class="button__text"><?=Yii::t('common', 'Отвязать аккаунт')?></span></button>
                 <?php else: ?>
                     <a href="<?=\yii\helpers\Url::to(['/auth/discord'])?>" class="button button-secondary button-size__s h-36" style="padding-top: 6px; padding-bottom: 6px"><span class="button__text"><?=Yii::t('common', 'Привязать аккаунт')?></span></a>
                 <?php endif; ?>

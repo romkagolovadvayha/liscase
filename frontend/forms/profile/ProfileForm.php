@@ -12,12 +12,13 @@ class ProfileForm extends UserProfile
     public $ban_notify;
     public $raid_notify;
     public $telegram_disabled;
+    public $discord_disabled;
 
     public function rules(): array
     {
         return [
             [['trade_link'], 'trim'],
-            [['raid_notify', 'ban_notify', 'telegram_disabled'], 'integer'],
+            [['raid_notify', 'ban_notify', 'telegram_disabled', 'discord_disabled'], 'integer'],
             [['trade_link'], 'string', 'max' => 255],
         ];
     }
@@ -59,6 +60,10 @@ class ProfileForm extends UserProfile
 
         if (!empty($this->telegram_disabled)) {
             $this->user->telegram_chat_id = null;
+        }
+
+        if (!empty($this->discord_disabled)) {
+            $this->user->discord_id = null;
         }
 
         $this->skindrops = 0;
