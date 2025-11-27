@@ -30,6 +30,7 @@ $config = [
         'assetManager' => [
             'class' => 'yii\web\AssetManager',
             'forceCopy' => YII_DEBUG,
+            'appendTimestamp' => true, // Автоматически добавляет timestamp к ассетам для инвалидации кэша
         ],
         'view' => [
             'class' => '\rmrevin\yii\minify\View',
@@ -48,6 +49,19 @@ $config = [
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => '5c4cf22fbe90065a4a8e4591cf2cea84',
+            'enableCsrfValidation' => !YII_ENV_DEV, // Отключаем CSRF валидацию в dev, включаем в prod
+            'csrfCookie' => array_merge([
+                'httpOnly' => true,
+                'secure'   => !YII_ENV_DEV, // Только для прода (HTTPS), для dev (HTTP) - false
+                'sameSite' => yii\web\Cookie::SAME_SITE_LAX,
+            ], !empty($params['cookieDomain']) ? ['domain' => $params['cookieDomain']] : []),
+        ],
+        'session' => [
+            'cookieParams' => array_merge([
+                'httpOnly' => true,
+                'secure'   => !YII_ENV_DEV, // Только для прода (HTTPS), для dev (HTTP) - false
+                'sameSite' => yii\web\Cookie::SAME_SITE_LAX,
+            ], !empty($params['cookieDomain']) ? ['domain' => $params['cookieDomain']] : []),
         ],
         'errorHandler' => [
             'errorAction' => 'site/error',
