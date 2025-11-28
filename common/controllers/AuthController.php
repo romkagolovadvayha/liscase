@@ -4,6 +4,7 @@ namespace common\controllers;
 
 use common\components\oauth\AuthAction;
 use common\components\oauth\Steam;
+use common\components\queue\process\DiscordRolesUserJob;
 use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\forms\user\LoginForm;
 use common\models\profit\Profit;
@@ -252,6 +253,11 @@ class AuthController extends WebController
             if ($user->save(false)) {
                 // Выдаем роль в Discord
                 $this->assignDiscordRole($discordUser['id']);
+                
+                // Добавляем задачу в очередь для проверки ролей
+                $checkRolesJob = new DiscordRolesUserJob();
+                $checkRolesJob->userId = $user->id;
+                Yii::$app->queueProcess->push($checkRolesJob);
                 
                 Yii::$app->session->setFlash('success', Yii::t('common', 'Discord аккаунт успешно привязан!'));
             } else {

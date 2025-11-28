@@ -117,7 +117,7 @@ class DiscordRolesJob extends BaseObject implements JobInterface
      * @param string $botToken
      * @param DiscordRoles $discordRoles
      */
-    protected function ensureRolesExist($guildId, $botToken, $discordRoles)
+    public function ensureRolesExist($guildId, $botToken, $discordRoles)
     {
         // Загружаем существующие роли
         $this->loadGuildRoles($guildId, $botToken);
@@ -172,7 +172,7 @@ class DiscordRolesJob extends BaseObject implements JobInterface
      * @param string $botToken
      * @param DiscordRoles $discordRoles
      */
-    protected function processUserRoles($user, $guildId, $botToken, $discordRoles)
+    public function processUserRoles($user, $guildId, $botToken, $discordRoles)
     {
         // Загружаем кэш ролей гильдии если еще не загружен
         if (!isset(self::$guildRolesCache[$guildId])) {
