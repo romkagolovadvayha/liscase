@@ -583,10 +583,10 @@ class AuthController extends WebController
     {
         $guildId = Yii::$app->settings->get('discord_guild_id');
         $botToken = Yii::$app->settings->get('discord_bot_token');
-        $roleId = '1443746892474482698'; // ID роли для удаления
+        $roleId = Yii::$app->settings->get('discord_role_confirm');
 
-        if (empty($guildId) || empty($botToken)) {
-            Yii::warning("Discord role removal: guild_id or bot_token not configured", __METHOD__);
+        if (empty($guildId) || empty($botToken) || empty($roleId)) {
+            Yii::warning("Discord role removal: guild_id, bot_token or role_id not configured", __METHOD__);
             return false;
         }
 
@@ -635,10 +635,10 @@ class AuthController extends WebController
     {
         $guildId = Yii::$app->settings->get('discord_guild_id');
         $botToken = Yii::$app->settings->get('discord_bot_token');
-        $roleId = '1443746892474482698'; // ID роли для выдачи
+        $roleId = Yii::$app->settings->get('discord_role_confirm');
 
-        if (empty($guildId) || empty($botToken)) {
-            Yii::warning("Discord role assignment: guild_id or bot_token not configured", __METHOD__);
+        if (empty($guildId) || empty($botToken) || empty($roleId)) {
+            Yii::warning("Discord role assignment: guild_id, bot_token or role_id not configured", __METHOD__);
             return false;
         }
 
