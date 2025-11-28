@@ -29,6 +29,7 @@ $usersBadge = \common\models\user\User::find()
 
 $moder = Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR);
 $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
+$support = Yii::$app->user->can(Role::ROLE_SUPPORT);
 ?>
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <a href="<?=Yii::$app->params['baseUrl']?>" class="brand-link" style="display: block; text-align: center">
@@ -70,7 +71,7 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'label' => 'Сервера',
                        'icon' => 'fas fa-gamepad',
                        'url' => [''],
-                       'visibility' => $admin,
+                       'visibility' => $moder,
                        'active' => _checkActive('/servers') || _checkActive('/map-list'),
                        'items' => [
                            [
@@ -83,6 +84,7 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                                'label' => 'Теги серверов',
                                'icon' => 'fas fa-tags',
                                'url' => ['/servers-tags/index'],
+                               'visibility' => $admin,
                                'active' => _checkActive('/servers-tags'),
                            ],
                            [
@@ -223,19 +225,21 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                        'label'  => Yii::t('common', 'Предметы'),
                        'url'    => '/drop/index',
                        'icon'   => 'fa-solid fa-table-cells',
+                       'visibility' => $admin,
                        'active' => _checkActive('/drop/'),
                    ],
                    [
                        'label'  => Yii::t('common', 'Категории'),
                        'url'    => '/category/index',
                        'icon'   => 'fa-solid fa-table-cells',
+                       'visibility' => $moder,
                        'active' => _checkActive('/category/'),
                    ],
                    [
                        'label'  => Yii::t('common', 'Блог'),
                        'icon'   => 'fa-regular fa-newspaper',
                        'url'    => '/blog',
-                       'visibility' => Yii::$app->settings->get('section_blog') && $admin,
+                       'visibility' => Yii::$app->settings->get('section_blog') && ($moder || $support),
                        'active' => _checkActive('/blog/'),
                    ],
                     [
@@ -248,28 +252,27 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                    [
                        'label' => 'Бонусы',
                        'icon' => 'fas fa-cog',
-                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'visibility' => $moder,
                        'active' => _checkActive('/payment-bonuses') || _checkActive('/promocode') || _checkActive('/tasks-v2') || _checkActive('/settings/index?category=referral'),
                        'items' => [
                            [
                                'label' => 'Промокоды',
                                'icon' => 'fa-solid fa-percent',
                                'url' => ['/promocode'],
-                               'visibility' => $admin,
                                'active' => _checkActive('/promocode'),
                            ],
                            [
                                'label'  => Yii::t('common', 'Задания'),
                                'icon'   => 'fa-solid fa-list-check',
                                'url'    => '/tasks-v2',
-                               'visibility' => Yii::$app->settings->get('section_tasks') && $admin,
+                               'visibility' => Yii::$app->settings->get('section_tasks'),
                                'active' => _checkActive('/tasks-v2'),
                            ],
                            [
                                'label'  => Yii::t('common', 'Реферальная система'),
                                'icon'   => 'fa-solid fa-users',
                                'url'    => '/settings/index?category=referral',
-                               'visibility' => Yii::$app->settings->get('referral_bonus') && $admin,
+                               'visibility' => Yii::$app->settings->get('referral_bonus'),
                                'active' => _checkActive('/settings/index?category=referral'),
                            ],
                            [
@@ -284,7 +287,7 @@ $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
                    [
                        'label' => 'Настройки',
                        'icon' => 'fas fa-cog',
-                       'visibility' => Yii::$app->user->can(Role::ROLE_ADMIN),
+                       'visibility' => $moder,
                        'active' => _checkActive('/settings'),
                        'items' => [
                            [

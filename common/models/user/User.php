@@ -577,6 +577,7 @@ class User extends ActiveRecord implements IdentityInterface
                                  [
                                      Role::ROLE_ADMIN,
                                      Role::ROLE_MODERATOR,
+                                     Role::ROLE_SUPPORT,
                                  ],
                              ])
                              ->exists();

@@ -20,7 +20,7 @@ class SiteController extends BackendController
                 'rules' => [
                     [
                         'allow' => true,
-                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
+                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT],
                     ],
                 ],
             ],
@@ -52,10 +52,14 @@ class SiteController extends BackendController
     /**
      * Displays homepage.
      *
-     * @return string
+     * @return string|Response
      */
     public function actionIndex()
     {
+        // Редирект для ROLE_SUPPORT на блог
+        if (Yii::$app->user->can(Role::ROLE_SUPPORT) && !Yii::$app->user->can(Role::ROLE_ADMIN) && !Yii::$app->user->can(Role::ROLE_MODERATOR)) {
+            return $this->redirect(['/blog']);
+        }
         return $this->render('index');
     }
 
@@ -67,11 +71,19 @@ class SiteController extends BackendController
     public function actionLogin()
     {
         if (!Yii::$app->user->isGuest) {
+            // Редирект для ROLE_SUPPORT на блог
+            if (Yii::$app->user->can(Role::ROLE_SUPPORT) && !Yii::$app->user->can(Role::ROLE_ADMIN) && !Yii::$app->user->can(Role::ROLE_MODERATOR)) {
+                return $this->redirect(['/blog']);
+            }
             return $this->goHome();
         }
 
         $model = new \backend\forms\LoginForm();
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
+            // Редирект для ROLE_SUPPORT на блог после логина
+            if (Yii::$app->user->can(Role::ROLE_SUPPORT) && !Yii::$app->user->can(Role::ROLE_ADMIN) && !Yii::$app->user->can(Role::ROLE_MODERATOR)) {
+                return $this->redirect(['/blog']);
+            }
             return $this->goBack();
         }
 

@@ -2,6 +2,7 @@
 
 namespace backend\controllers;
 
+use common\components\helpers\Role;
 use common\models\radio\RadioTrack;
 use common\models\radio\RadioStation;
 use backend\models\radio\RadioTrackSearch;
@@ -9,6 +10,7 @@ use Yii;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii\filters\AccessControl;
 
 /**
  * RadioController implements the CRUD and moderation actions for Radio models.
@@ -23,6 +25,15 @@ class RadioController extends Controller
         return array_merge(
             parent::behaviors(),
             [
+                'access' => [
+                    'class' => AccessControl::class,
+                    'rules' => [
+                        [
+                            'allow' => true,
+                            'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
+                        ],
+                    ],
+                ],
                 'verbs' => [
                     'class' => VerbFilter::className(),
                     'actions' => [

@@ -20,7 +20,7 @@ use yii\helpers\ArrayHelper;
     <div class="support_messages_header">
         <div class="support_messages_header_name"><?=Yii::t('common', 'Поддержка')?></div>
         <div class="support_messages_header_actions">
-            <?php if ($user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])): ?>
+            <?php if ($user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])): ?>
                 <div class="dropdown">
                     <a class="button button-secondary button-size__s h-36" type="button" id="chat_tools" data-bs-toggle="dropdown" aria-expanded="false">
                         <span class="button__text"><i class="fas fa-cog"></i> <?=Yii::t('common', 'Управление')?></span>
@@ -52,7 +52,7 @@ use yii\helpers\ArrayHelper;
                     <span class="button__text"><i class="fas fa-times"></i> <?=Yii::t('common', 'Закрыть тикет')?></span>
                 </a>
             <?php endif; ?>
-            <?php if ($model->status === Support::STATUS_CLOSED && $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])): ?>
+            <?php if ($model->status === Support::STATUS_CLOSED && $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])): ?>
                 <a href="<?=$model->getUrl('open')?>" class="button button-secondary button-size__s h-36">
                     <span class="button__text"><i class="fas fa-pen"></i> <?=Yii::t('common', 'Открыть тикет')?></span>
                 </a>
@@ -87,7 +87,7 @@ use yii\helpers\ArrayHelper;
                     <?php endforeach; ?>
                 </div>
             </div>
-            <?php if ($model->status === Support::STATUS_OPEN || $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])): ?>
+            <?php if ($model->status === Support::STATUS_OPEN || $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])): ?>
                 <div class="support_messages_form">
                     <?php if (strtotime($user->blocked_support_at) > time()): ?>
                         <span><?=Yii::t('common', 'Доступ в чат будет разблокирован')?> <span class="ticket_timer" data-time="<?=strtotime($user->blocked_support_at)?>"><?=$user->blocked_support_at?></span></span>

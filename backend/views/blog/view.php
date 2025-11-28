@@ -28,17 +28,6 @@ $actionGeneratePost = Yii::$app->cache->get('actionGenerate_Post_' . $model->id)
                         'method' => 'post',
                     ],
                 ]) ?>
-                <?php if (empty($actionGeneratePosts) && empty($actionGeneratePost)): ?>
-                    <?= Html::a('<i class="bi bi-magic"></i> Генерация контента', ['generate-post', 'postId' => $model->id], [
-                        'class' => 'ds-btn ds-btn--info',
-                        'data' => [
-                            'confirm' => 'Вы уверены, что хотите сгенерировать контент для этого поста?',
-                            'method' => 'post',
-                        ],
-                    ]) ?>
-                <?php else: ?>
-                    <?= Html::a('<i class="bi bi-hourglass-split"></i> Идет процесс генерации', [''], ['class' => 'ds-btn ds-btn--secondary', 'disabled' => true]) ?>
-                <?php endif; ?>
                 <?= Html::a('<i class="fab fa-vk"></i> Опубликовать в ВК', ['publish-to-vk', 'id' => $model->id], [
                     'class' => 'ds-btn ds-btn--warning',
                     'data' => [

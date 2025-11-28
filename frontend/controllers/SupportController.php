@@ -75,14 +75,14 @@ class SupportController extends WebController
 
         $ticketsQuery = SupportSearch::find();
         $activeTicket = null;
-        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
             $ticketsQuery->andWhere(['user_id' => Yii::$app->user->id]);
         }
 
         $ticketsQuery->orderBy(['status' => SORT_ASC, 'updated_at' => SORT_DESC]);
         /** @var Support[] $tickets */
         $tickets = $ticketsQuery->limit(20)->all();
-        if ($user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+        if ($user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
             $activeTicket = $tickets[0];
         } else {
             foreach ($tickets as $ticket) {
@@ -179,7 +179,7 @@ class SupportController extends WebController
 
     public function actionMute($support_id, $user_id, $blocked = true) {
         $user = \Yii::$app->user->identity;
-        if (!$user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+        if (!$user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])) {
             return $this->redirect(['ticket', 'id' => $support_id]);
         }
         $ticket = Support::findByNumber($support_id);
@@ -191,7 +191,7 @@ class SupportController extends WebController
         if (empty($player)) {
             return $this->redirect(['/support']);
         }
-        if ($player->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+        if ($player->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])) {
             return $this->redirect(['/support']);
         }
 
@@ -226,7 +226,7 @@ class SupportController extends WebController
 
     public function actionBlockedChat($support_id, $user_id, $blocked = true) {
         $user = \Yii::$app->user->identity;
-        if (!$user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+        if (!$user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])) {
             return $this->redirect(['ticket', 'id' => $support_id]);
         }
         $ticket = Support::findByNumber($support_id);
@@ -238,7 +238,7 @@ class SupportController extends WebController
         if (empty($player)) {
             return $this->redirect(['/support']);
         }
-        if ($player->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+        if ($player->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])) {
             return $this->redirect(['/support']);
         }
 
@@ -267,7 +267,7 @@ class SupportController extends WebController
 
     public function actionBlocked($support_id, $user_id, $blocked = true) {
         $user = \Yii::$app->user->identity;
-        if (!$user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+        if (!$user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])) {
             return $this->redirect(['ticket', 'id' => $support_id]);
         }
         $ticket = Support::findByNumber($support_id);
@@ -279,7 +279,7 @@ class SupportController extends WebController
         if (empty($player)) {
             return $this->redirect(['/support']);
         }
-        if ($player->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+        if ($player->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])) {
             return $this->redirect(['/support']);
         }
 
@@ -386,7 +386,7 @@ class SupportController extends WebController
             $mModel->save();
             $redirect = true;
         } else {
-            if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR]) && $chat->user_id !== $user->id) {
+            if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]) && $chat->user_id !== $user->id) {
                 return ['code' => 403, 'message' => Yii::t('common', "Доступ запрещен!")];
             }
             $chat->updated_at = date('Y-m-d H:i:s');
@@ -545,7 +545,7 @@ class SupportController extends WebController
         }
 
         $ticketsQuery = SupportSearch::find();
-        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
             $ticketsQuery->andWhere(['user_id' => Yii::$app->user->id]);
         }
         $ticketsQuery->orderBy(['status' => SORT_ASC, 'updated_at' => SORT_DESC]);
@@ -631,7 +631,7 @@ class SupportController extends WebController
     public function actionGetMessage($id)
     {
         $message = SupportMessage::findOne($id);
-        if (empty($message) || (!Yii::$app->user->identity->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR]) && $message->support->user->id !== Yii::$app->user->id)) {
+        if (empty($message) || (!Yii::$app->user->identity->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]) && $message->support->user->id !== Yii::$app->user->id)) {
             throw new ForbiddenHttpException(Yii::t('common', 'Ошибка доступа'));
         }
         return $this->renderAjax('_message', [
@@ -645,12 +645,12 @@ class SupportController extends WebController
         $model = $this->findModel($id);
         $user = Yii::$app->user->identity;
 
-        if (!empty($model->id) && (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR]) && $model->user->id !== $user->id)) {
+        if (!empty($model->id) && (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]) && $model->user->id !== $user->id)) {
             throw new ForbiddenHttpException(Yii::t('common', 'Ошибка доступа'));
         }
 
         $ticketsQuery = SupportSearch::find();
-        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
             $ticketsQuery->andWhere(['user_id' => Yii::$app->user->id]);
         }
         $ticketsQuery->orderBy(['status' => SORT_ASC, 'updated_at' => SORT_DESC]);

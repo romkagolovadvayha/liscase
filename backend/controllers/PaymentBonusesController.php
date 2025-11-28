@@ -2,11 +2,13 @@
 
 namespace backend\controllers;
 
+use common\components\helpers\Role;
 use common\models\invoice\PaymentBonuses;
 use backend\models\invoice\PaymentBonusesSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii\filters\AccessControl;
 
 /**
  * PaymentBonusesController implements the CRUD actions for PaymentBonuses model.
@@ -21,6 +23,15 @@ class PaymentBonusesController extends Controller
         return array_merge(
             parent::behaviors(),
             [
+                'access' => [
+                    'class' => AccessControl::class,
+                    'rules' => [
+                        [
+                            'allow' => true,
+                            'roles' => [Role::ROLE_ADMIN],
+                        ],
+                    ],
+                ],
                 'verbs' => [
                     'class' => VerbFilter::className(),
                     'actions' => [

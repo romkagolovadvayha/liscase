@@ -2,11 +2,13 @@
 
 namespace backend\controllers;
 
+use common\components\helpers\Role;
 use common\models\statistics\Statistics;
 use common\models\statistics\StatisticsSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii\filters\AccessControl;
 
 /**
  * StatisticsController implements the CRUD actions for Statistics model.
@@ -21,6 +23,15 @@ class StatisticsController extends Controller
         return array_merge(
             parent::behaviors(),
             [
+                'access' => [
+                    'class' => AccessControl::class,
+                    'rules' => [
+                        [
+                            'allow' => true,
+                            'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
+                        ],
+                    ],
+                ],
                 'verbs' => [
                     'class' => VerbFilter::className(),
                     'actions' => [

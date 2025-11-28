@@ -2,6 +2,7 @@
 
 namespace backend\controllers;
 
+use common\components\helpers\Role;
 use common\models\rcon\RconTasks;
 use common\models\serverskin\ServerSkin;
 use common\models\tasks\Task;
@@ -10,6 +11,7 @@ use Yii;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii\filters\AccessControl;
 
 /**
  * ServerSkinController implements the CRUD actions for ServerSkin model.
@@ -24,6 +26,15 @@ class ServerSkinController extends Controller
         return array_merge(
             parent::behaviors(),
             [
+                'access' => [
+                    'class' => AccessControl::class,
+                    'rules' => [
+                        [
+                            'allow' => true,
+                            'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
+                        ],
+                    ],
+                ],
                 'verbs' => [
                     'class' => VerbFilter::className(),
                     'actions' => [

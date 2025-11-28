@@ -31,7 +31,7 @@ class TasksV2Controller extends BackendController
                 'rules' => [
                     [
                         'allow' => true,
-                        'roles' => [Role::ROLE_ADMIN],
+                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
                     ],
                 ],
             ],

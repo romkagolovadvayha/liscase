@@ -10,16 +10,16 @@ use yii\helpers\Html;
 $this->title = Yii::t('common', 'Репорты');
 
 $checkingProvider = new \yii\data\ArrayDataProvider([
-    'allModels' => $users,
-    'totalCount' => count($users),
-    'sort' => [
-        'attributes' => ['count'],
-        'defaultOrder' => ['count' => SORT_DESC],
-    ],
-    'pagination' => [
-        'pageSize' => 30,
-    ],
-]);
+                                                        'allModels' => $users,
+                                                        'totalCount' => count($users),
+                                                        'sort' => [
+                                                            'attributes' => ['count'],
+                                                            'defaultOrder' => ['count' => SORT_DESC],
+                                                        ],
+                                                        'pagination' => [
+                                                            'pageSize' => 30,
+                                                        ],
+                                                    ]);
 
 // Подготовка данных для графиков
 $chartServerLabels = [];
@@ -49,7 +49,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
         <!-- Общая статистика -->
         <div class="ds-card mb-4">
             <h2 class="mb-4">Общая статистика</h2>
-            <div class="row">
+<div class="row">
                 <div class="col-md-3 mb-3">
                     <div class="ds-counter">
                         <div class="ds-counter__value"><?= number_format($totalReports, 0, '.', ' ') ?></div>
@@ -193,63 +193,63 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
                 <h5 class="ds-card__header-title">Все пользователи с репортами</h5>
             </div>
             <div class="ds-card__body">
-                <?= \kartik\grid\GridView::widget([
-                    'dataProvider' => $checkingProvider,
-                    'layout'       => "{items} {pager}",
-                    'columns'      => [
-                        [
-                            'attribute' => 'username',
-                            'label'     => Yii::t('common', "Имя"),
-                            'format'    => 'raw',
+            <?= \kartik\grid\GridView::widget([
+                                                  'dataProvider' => $checkingProvider,
+                                                  'layout'       => "{items} {pager}",
+                                                  'columns'      => [
+                                                      [
+                                                          'attribute' => 'username',
+                                                          'label'     => Yii::t('common', "Имя"),
+                                                          'format'    => 'raw',
                             'value'     => function ($model) {
                                 $url = \yii\helpers\Url::to(['/user/profile', 'userId' => $model['user_id']]);
                                 return Html::a(Html::encode($model['username']), $url, [
                                     'class' => 'ds-text--primary',
                                     'style' => 'text-decoration: none;'
                                 ]);
-                            },
-                        ],
-                        [
-                            'attribute' => 'steam_id',
-                            'label'     => Yii::t('common', "Steam ID"),
-                            'format'    => 'raw',
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'steam_id',
+                                                          'label'     => Yii::t('common', "Steam ID"),
+                                                          'format'    => 'raw',
                             'value'     => function ($model) {
                                 return Html::a(
                                     $model['steam_id'],
                                     'https://steamcommunity.com/profiles/' . $model['steam_id'],
                                     ['target' => '_blank', 'class' => 'ds-text--primary', 'style' => 'text-decoration: none;']
                                 );
-                            },
-                        ],
-                        [
-                            'attribute' => 'count',
-                            'label'     => Yii::t('common', "Кол-во репортов"),
-                            'format'    => 'raw',
-                            'options'   => ['width' => '150'],
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'count',
+                                                          'label'     => Yii::t('common', "Кол-во репортов"),
+                                                          'format'    => 'raw',
+                                                          'options'   => ['width' => '150'],
                             'value'     => function ($model) {
                                 $badgeClass = $model['count'] >= 10 
                                     ? 'ds-badge--danger' 
                                     : ($model['count'] >= 5 ? 'ds-badge--warning' : 'ds-badge--info');
                                 return Html::tag('span', $model['count'], ['class' => 'ds-badge ' . $badgeClass]);
-                            },
-                        ],
-                        [
-                            'attribute' => 'servers',
+                                                          },
+                                                      ],
+                                                      [
+                                                          'attribute' => 'servers',
                             'options'   => ['width' => '200'],
                             'label'     => Yii::t('common', "Серверы"),
-                            'format'    => 'raw',
+                                                          'format'    => 'raw',
                             'value'     => function ($model) {
                                 $badges = [];
-                                foreach ($model['servers'] as $server) {
+                                                                foreach ($model['servers'] as $server) {
                                     $badges[] = Html::tag('span', Html::encode($server), [
                                         'class' => 'ds-badge ds-badge--primary',
                                         'style' => 'margin-right: 0.25rem; margin-bottom: 0.25rem; display: inline-block;'
                                     ]);
-                                }
+                                                                }
                                 return implode('', $badges);
-                            },
-                        ],
-                    ],
+                                                          },
+                                                      ],
+                                                  ],
                 ]); ?>
             </div>
         </div>

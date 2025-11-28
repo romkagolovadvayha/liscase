@@ -438,6 +438,7 @@ class ChatServer extends WebSocketServer
                 if ($ticket) {
                     if ($client->user->canRoles([Role::ROLE_ADMIN]) || 
                         $client->user->canRoles([Role::ROLE_MODERATOR]) || 
+                        $client->user->canRoles([Role::ROLE_SUPPORT]) || 
                         $ticket->user_id == $client->user->id
                     ) {
                         $client->chat = $request['chat'];
@@ -539,7 +540,7 @@ class ChatServer extends WebSocketServer
               }
               Yii::$app->cache->set($cacheKey, $count + 1, 30);
 
-              if ($client->user->canRoles([Role::ROLE_ADMIN]) || $client->user->canRoles([Role::ROLE_MODERATOR]) || $model->user_id == $client->user->id) {
+              if ($client->user->canRoles([Role::ROLE_ADMIN]) || $client->user->canRoles([Role::ROLE_MODERATOR]) || $client->user->canRoles([Role::ROLE_SUPPORT]) || $model->user_id == $client->user->id) {
                   $model->status = UserDrop::STATUS_WAIT;
                   $model->save(false);
                   $isBlockedBuilding = $model->drop[0]->is_blocked_building ? 'true' : 'false';
@@ -674,7 +675,7 @@ class ChatServer extends WebSocketServer
                 if ($user->id == $request['user_id']) {
                     continue; // уже отправили выше
                 }
-                if ($user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+                if ($user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
                     try {
                         $chatClient->send($response);
                     } catch (\Exception $ex) {
@@ -1140,7 +1141,7 @@ class ChatServer extends WebSocketServer
         if ($user->canRoles([Role::ROLE_ADMIN])) {
             return 'admin';
         }
-        if ($user->canRoles([Role::ROLE_MODERATOR])) {
+        if ($user->canRoles([Role::ROLE_MODERATOR]) || $user->canRoles([Role::ROLE_SUPPORT])) {
             return 'moder';
         }
         return '';
@@ -1163,7 +1164,7 @@ class ChatServer extends WebSocketServer
                     $client->send(json_encode(['type' => 'error', 'error' => Yii::$app->cache->get($cacheKey)]));
                     return;
                 }
-                if (!$client->user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+                if (!$client->user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
                     Yii::$app->cache->set($cacheKey, Yii::t('common', "Нельзя отправлять сообщения слишком часто!", [], $client->user->current_language), 2);
                 }
                 /** @var User $user */
@@ -1226,7 +1227,7 @@ class ChatServer extends WebSocketServer
                     if (!empty($chatClient->user)) {
                         /** @var User $_user */
                         $_user = $chatClient->user;
-                        if ($_user->id === $chat->user_id || $_user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+                        if ($_user->id === $chat->user_id || $_user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
                             if ($user->id !== $_user->id) {
                                 $chatClient->send(json_encode([
                                                               'type' => 'support_notifications',

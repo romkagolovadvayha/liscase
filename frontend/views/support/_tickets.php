@@ -11,7 +11,7 @@ use yii\helpers\ArrayHelper;
 /** @var \common\models\user\User $user */
 /** @var array $unreadMessages */
 
-if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
     $openTicket = false;
     foreach ($tickets as $ticket) {
         if ($ticket->status === Support::STATUS_OPEN) {
@@ -40,7 +40,7 @@ if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
                 <div class="tickets_item_body">
                     <div class="tickets_item_body_name">
                         <?php if ($ticket->status === Support::STATUS_OPEN): ?>
-                            <?php if ($user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])): ?>
+                            <?php if ($user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])): ?>
                                 <?=$ticket->user->username?>
                             <?php else: ?>
                                 <?php if (!empty($ticket->id)): ?>

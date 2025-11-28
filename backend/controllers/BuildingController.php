@@ -3,11 +3,13 @@
 namespace backend\controllers;
 
 use backend\components\BackendController;
+use common\components\helpers\Role;
 use common\models\building\Building;
 use Yii;
 use backend\models\building\BuildingSearch;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii\filters\AccessControl;
 
 /**
  * BuildingController implements the CRUD actions for Building model.
@@ -22,6 +24,15 @@ class BuildingController extends BackendController
         return array_merge(
             parent::behaviors(),
             [
+                'access' => [
+                    'class' => AccessControl::class,
+                    'rules' => [
+                        [
+                            'allow' => true,
+                            'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
+                        ],
+                    ],
+                ],
                 'verbs' => [
                     'class' => VerbFilter::className(),
                     'actions' => [

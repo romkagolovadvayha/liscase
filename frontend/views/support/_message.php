@@ -10,7 +10,7 @@ use yii\helpers\Html;
 
 $usernameClass = '';
 $user = Yii::$app->user->identity;
-if (!empty($model->user) && $model->user->canRoles([Role::ROLE_MODERATOR])) {
+if (!empty($model->user) && ($model->user->canRoles([Role::ROLE_MODERATOR]) || $model->user->canRoles([Role::ROLE_SUPPORT]))) {
     $usernameClass = 'moder';
 }
 if (!empty($model->user) && $model->user->canRoles([Role::ROLE_ADMIN])) {
