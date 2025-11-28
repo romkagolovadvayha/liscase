@@ -71,7 +71,7 @@ class OpenAiTelegramPost extends \yii\base\Component
         $prompt .= "Напиши кратко статью для поста Telegram канала, используй смайлы. ";
         $prompt .= "Используй HTML теги для форматирования только этих тегов: <b>жирный</b>, <i>курсив</i>, <code>код</code>, <a href=\"url\">ссылка</a>. ";
         $prompt .= "Текст должен быть интересным и привлекательным для социальной сети.";
-        $prompt .= "Длина текста должна быть не более 1000 символов.";
+        $prompt .= "Длина текста должна быть не более 800 символов.";
         $prompt .= "Текст должен быть на русском языке.";
 
         // Сообщения для OpenAI
@@ -91,7 +91,7 @@ class OpenAiTelegramPost extends \yii\base\Component
                     'model' => Yii::$app->settings->get('openAi_model') ?: 'gpt-3.5-turbo',
                     'messages' => $messages,
                     'temperature' => $this->temperature,
-                    'max_tokens' => 1000,
+                    'max_tokens' => 800,
                 ],
                 'timeout' => 30,
             ]);

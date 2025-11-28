@@ -70,7 +70,8 @@ class OpenAiVkPost extends \yii\base\Component
               $prompt .= "Содержание статьи:\n{$cleanContent}\n\n";
               $prompt .= "Напиши кратко на тематику игры Rust статью для поста ВКонтакте без изображений, используй смайлы. ";
               $prompt .= "В конце добавь 3-5 релевантных хештегов, связанных с темой статьи.";
-              $prompt .= "Статья дожна быть не более 1000 символов.";
+              $prompt .= "Статья дожна быть не более 800 символов.";
+              $prompt .= "Не нужно делать текст выделенным жирным, курсивом, кодом и ссылками.";
 
         // Сообщения для OpenAI
               $messages = [
@@ -87,7 +88,7 @@ class OpenAiVkPost extends \yii\base\Component
                     'model' => Yii::$app->settings->get('openAi_model') ?: 'gpt-3.5-turbo',
                     'messages' => $messages,
                     'temperature' => $this->temperature,
-                    'max_tokens' => 1000,
+                    'max_tokens' => 800,
                 ],
                 'timeout' => 30,
             ]);
