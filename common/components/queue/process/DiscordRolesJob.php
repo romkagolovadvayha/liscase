@@ -16,51 +16,48 @@ use yii\queue\JobInterface;
  */
 class DiscordRolesJob extends BaseObject implements JobInterface
 {
-    // Роли по часам игры (playtime)
+    // Роли по часам игры (playtime) - название содержит критерий получения
     const ROLES_PLAYTIME = [
-        ['name' => 'Новобранец Пустошей', 'min' => 0, 'max' => 100],
-        ['name' => 'Опытный Выживший', 'min' => 100, 'max' => 500],
-        ['name' => 'Ветеран Ржавчины', 'min' => 500, 'max' => 1000],
-        ['name' => 'Легенда Пустошей', 'min' => 1000, 'max' => 5000],
-        ['name' => 'Мастер Выживания', 'min' => 5000, 'max' => 10000],
-        ['name' => 'Бессмертный Ржавчины', 'min' => 10000, 'max' => PHP_INT_MAX],
+        ['name' => 'Новичок (<100ч игры)', 'min' => 0, 'max' => 100],
+        ['name' => 'Опытный (100-500ч игры)', 'min' => 100, 'max' => 500],
+        ['name' => 'Ветеран (500-1000ч игры)', 'min' => 500, 'max' => 1000],
+        ['name' => 'Легенда (1000-5000ч игры)', 'min' => 1000, 'max' => 5000],
+        ['name' => 'Мастер (5000-10000ч игры)', 'min' => 5000, 'max' => 10000],
+        ['name' => 'Бессмертный (10000+ч игры)', 'min' => 10000, 'max' => PHP_INT_MAX],
     ];
 
-    // Роли по киллам
+    // Роли по киллам - название содержит критерий получения
     const ROLES_KILLS = [
-        ['name' => 'Стрелок', 'min' => 0, 'max' => 500],
-        ['name' => 'Охотник', 'min' => 500, 'max' => 1000],
-        ['name' => 'Хищник Пустошей', 'min' => 1000, 'max' => 3000],
-        ['name' => 'Гроза Новичков', 'min' => 3000, 'max' => 5000],
-        ['name' => 'Маньяк ПвП', 'min' => 5000, 'max' => 10000],
-        ['name' => 'Уничтожитель', 'min' => 10000, 'max' => PHP_INT_MAX],
+        ['name' => 'Стрелок (<500 киллов)', 'min' => 0, 'max' => 500],
+        ['name' => 'Охотник (500-1000 киллов)', 'min' => 500, 'max' => 1000],
+        ['name' => 'Хищник (1000-3000 киллов)', 'min' => 1000, 'max' => 3000],
+        ['name' => 'Гроза (3000-5000 киллов)', 'min' => 3000, 'max' => 5000],
+        ['name' => 'Маньяк (5000-10000 киллов)', 'min' => 5000, 'max' => 10000],
+        ['name' => 'Уничтожитель (10000+ киллов)', 'min' => 10000, 'max' => PHP_INT_MAX],
     ];
 
-    // Роли по вайпам
+    // Роли по вайпам - название содержит критерий получения
     const ROLES_WIPES = [
-        ['name' => 'Выживший Вайпа', 'min' => 1, 'max' => 10],
-        ['name' => 'Старожил Серверов', 'min' => 10, 'max' => 25],
-        ['name' => 'Ветеран Вайпов', 'min' => 25, 'max' => 50],
-        ['name' => 'Железный Нерф', 'min' => 50, 'max' => 100],
-        ['name' => 'Разрушитель Эпох', 'min' => 100, 'max' => 200],
-        ['name' => 'Архивариус Вайпов', 'min' => 200, 'max' => PHP_INT_MAX],
+        ['name' => 'Выживший (1-10 вайпов)', 'min' => 1, 'max' => 10],
+        ['name' => 'Старожил (10-25 вайпов)', 'min' => 10, 'max' => 25],
+        ['name' => 'Ветеран (25-50 вайпов)', 'min' => 25, 'max' => 50],
+        ['name' => 'Железный (50-100 вайпов)', 'min' => 50, 'max' => 100],
+        ['name' => 'Разрушитель (100-200 вайпов)', 'min' => 100, 'max' => 200],
+        ['name' => 'Архивариус (200+ вайпов)', 'min' => 200, 'max' => PHP_INT_MAX],
     ];
 
-    // Роли по фарму (можно получить несколько ролей одновременно, но ограничиваем 3)
-    // Примечание: проверяются все роли, но выдаются только те, которые соответствуют критериям
-
-    // Роли по поддержке
+    // Роли по поддержке - название содержит критерий получения (ироничный подход)
     const ROLES_SUPPORT = [
-        ['name' => 'Помощник', 'min' => 1, 'max' => 10],
-        ['name' => 'Активный Помощник', 'min' => 10, 'max' => 50],
-        ['name' => 'Защитник Сообщества', 'min' => 50, 'max' => PHP_INT_MAX],
+        ['name' => 'Любопытный (3-10 тикетов)', 'min' => 3, 'max' => 10],
+        ['name' => 'Вопрошающий (10-50 тикетов)', 'min' => 10, 'max' => 50],
+        ['name' => 'Незнайка (50+ тикетов)', 'min' => 50, 'max' => PHP_INT_MAX],
     ];
 
-    // Роли по репортам
+    // Роли по репортам - название содержит критерий получения
     const ROLES_REPORTS = [
-        ['name' => 'Информатор', 'min' => 1, 'max' => 10],
-        ['name' => 'Сыщик', 'min' => 10, 'max' => 50],
-        ['name' => 'Страж Порядка', 'min' => 50, 'max' => PHP_INT_MAX],
+        ['name' => 'Информатор (1-100 репортов)', 'min' => 1, 'max' => 100],
+        ['name' => 'Сыщик (100-500 репортов)', 'min' => 100, 'max' => 500],
+        ['name' => 'Жалоба (500+ репортов)', 'min' => 500, 'max' => PHP_INT_MAX],
     ];
 
     /**
@@ -134,17 +131,10 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         foreach (self::ROLES_KILLS as $role) {
             $allRoles[] = $role['name'];
         }
-        $allRoles[] = 'Хозяин Арены';
+        $allRoles[] = 'Чемпион (TOP-1 киллов)'; // TOP-1 киллов за вайп
         foreach (self::ROLES_WIPES as $role) {
             $allRoles[] = $role['name'];
         }
-        $allRoles[] = 'Лесоруб';
-        $allRoles[] = 'Шахтёр';
-        $allRoles[] = 'Фермер Руды';
-        $allRoles[] = 'Технарь';
-        $allRoles[] = 'Нефтяной Барон';
-        $allRoles[] = 'Торговец Пустошей';
-        $allRoles[] = 'Король Фермы';
         foreach (self::ROLES_SUPPORT as $role) {
             $allRoles[] = $role['name'];
         }
@@ -217,7 +207,7 @@ class DiscordRolesJob extends BaseObject implements JobInterface
             $shouldHaveRoles[] = $killsRole['name'];
         }
         
-        // Проверяем TOP-1 киллов за вайп (уникальная роль)
+        // Проверяем TOP-1 киллов за вайп (уникальная роль - Чемпион)
         $topKillsRole = $this->getTopKillsRole($user->steam_id);
         if ($topKillsRole) {
             $shouldHaveRoles[] = $topKillsRole;
@@ -229,10 +219,6 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         if ($wipesRole) {
             $shouldHaveRoles[] = $wipesRole['name'];
         }
-
-        // Роли по фарму
-        $farmRoles = $this->getUserFarmRoles($user->steam_id);
-        $shouldHaveRoles = array_merge($shouldHaveRoles, $farmRoles);
 
         // Роли по поддержке (до 3 ролей)
         $supportCount = $this->getUserSupportCount($user->id);
@@ -311,115 +297,6 @@ class DiscordRolesJob extends BaseObject implements JobInterface
     }
 
     /**
-     * Получить роли по фарму
-     * @param string $steamId
-     * @return array
-     */
-    protected function getUserFarmRoles($steamId)
-    {
-        $roles = [];
-        
-        // Получаем суммарные значения ресурсов за все время
-        $wood = (int)Statistics::find()
-            ->andWhere(['steam_id' => $steamId])
-            ->andWhere(['key' => 'wood'])
-            ->sum('value') ?: 0;
-            
-        $stones = (int)Statistics::find()
-            ->andWhere(['steam_id' => $steamId])
-            ->andWhere(['key' => 'stones'])
-            ->sum('value') ?: 0;
-            
-        $sulfur = (int)Statistics::find()
-            ->andWhere(['steam_id' => $steamId])
-            ->andWhere(['key' => 'sulfur.ore'])
-            ->sum('value') ?: 0;
-            
-        $metalHq = (int)Statistics::find()
-            ->andWhere(['steam_id' => $steamId])
-            ->andWhere(['key' => 'metal.hq.ore'])
-            ->sum('value') ?: 0;
-            
-        $fuel = (int)Statistics::find()
-            ->andWhere(['steam_id' => $steamId])
-            ->andWhere(['key' => 'lowgradefuel'])
-            ->sum('value') ?: 0;
-        $fuel += (int)Statistics::find()
-            ->andWhere(['steam_id' => $steamId])
-            ->andWhere(['key' => 'highgradefuel'])
-            ->sum('value') ?: 0;
-        
-        $totalResources = $wood + $stones + $sulfur + $metalHq + $fuel;
-        
-        // Собираем все возможные роли по фарму с приоритетами
-        $farmRolesWithPriority = [];
-        
-        if ($wood >= 100000) {
-            $farmRolesWithPriority[] = ['name' => 'Лесоруб', 'priority' => 1];
-        }
-        if ($stones >= 100000) {
-            $farmRolesWithPriority[] = ['name' => 'Шахтёр', 'priority' => 1];
-        }
-        if ($sulfur >= 100000) {
-            $farmRolesWithPriority[] = ['name' => 'Фермер Руды', 'priority' => 1];
-        }
-        if ($metalHq >= 10000) {
-            $farmRolesWithPriority[] = ['name' => 'Технарь', 'priority' => 2];
-        }
-        if ($fuel >= 1000000) {
-            $farmRolesWithPriority[] = ['name' => 'Нефтяной Барон', 'priority' => 3];
-        }
-        if ($totalResources >= 1000000) {
-            $farmRolesWithPriority[] = ['name' => 'Торговец Пустошей', 'priority' => 3];
-        }
-        
-        // Проверяем TOP-1 по ресурсам (высший приоритет)
-        $topResourceRole = $this->getTopResourceRole($steamId);
-        if ($topResourceRole) {
-            $farmRolesWithPriority[] = ['name' => $topResourceRole, 'priority' => 4];
-        }
-        
-        // Сортируем по приоритету и берем только 3 самые высокие
-        usort($farmRolesWithPriority, function($a, $b) {
-            return $b['priority'] - $a['priority'];
-        });
-        
-        $farmRolesWithPriority = array_slice($farmRolesWithPriority, 0, 3);
-        
-        foreach ($farmRolesWithPriority as $role) {
-            $roles[] = $role['name'];
-        }
-
-        return $roles;
-    }
-
-    /**
-     * Получить роль TOP-1 по ресурсам
-     * @param string $steamId
-     * @return string|null
-     */
-    protected function getTopResourceRole($steamId)
-    {
-        // Получаем топ игроков по суммарным ресурсам
-        $topUsers = Statistics::find()
-            ->select([
-                'steam_id',
-                'SUM(CASE WHEN `key` IN ("wood", "stones", "sulfur.ore", "metal.hq.ore", "lowgradefuel", "highgradefuel") THEN value ELSE 0 END) as total_resources'
-            ])
-            ->groupBy('steam_id')
-            ->orderBy(['total_resources' => SORT_DESC])
-            ->limit(1)
-            ->asArray()
-            ->one();
-
-        if (!empty($topUsers) && $topUsers['steam_id'] === $steamId) {
-            return 'Король Фермы';
-        }
-
-        return null;
-    }
-
-    /**
      * Получить роль TOP-1 киллов за вайп
      * @param string $steamId
      * @return string|null
@@ -452,7 +329,7 @@ class DiscordRolesJob extends BaseObject implements JobInterface
             ->one();
 
         if (!empty($topKills) && $topKills['steam_id'] === $steamId) {
-            return 'Хозяин Арены';
+            return 'Чемпион (TOP-1 киллов)';
         }
 
         return null;
@@ -505,21 +382,12 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         foreach (self::ROLES_KILLS as $role) {
             $categoryRoleNames[] = $role['name'];
         }
-        $categoryRoleNames[] = 'Хозяин Арены'; // TOP-1 киллов
+        $categoryRoleNames[] = 'Чемпион (TOP-1 киллов)'; // TOP-1 киллов за вайп
         
         // Роли по вайпам
         foreach (self::ROLES_WIPES as $role) {
             $categoryRoleNames[] = $role['name'];
         }
-        
-        // Роли по фарму
-        $categoryRoleNames[] = 'Лесоруб';
-        $categoryRoleNames[] = 'Шахтёр';
-        $categoryRoleNames[] = 'Фермер Руды';
-        $categoryRoleNames[] = 'Технарь';
-        $categoryRoleNames[] = 'Нефтяной Барон';
-        $categoryRoleNames[] = 'Торговец Пустошей';
-        $categoryRoleNames[] = 'Король Фермы'; // TOP-1 ресурсов
         
         // Роли по поддержке
         foreach (self::ROLES_SUPPORT as $role) {
