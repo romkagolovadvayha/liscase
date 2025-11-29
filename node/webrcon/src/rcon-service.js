@@ -261,9 +261,8 @@ async function processQueue(tag) {
 
     const app = express();
     app.use(bodyParser.json());
-    app.use(express.static(path.join(__dirname, '..', 'public'))); // Статические файлы для веб-интерфейса
 
-    // CORS для API
+    // CORS для API (должен быть ПЕРЕД всеми роутами)
     app.use((req, res, next) => {
         res.header('Access-Control-Allow-Origin', '*');
         res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -273,6 +272,9 @@ async function processQueue(tag) {
         }
         next();
     });
+    
+    // Статические файлы для веб-интерфейса (должны быть ПОСЛЕ API роутов, но мы их поставим в конце)
+    // Временно отключаем, чтобы не перехватывали запросы к API
 
     // Функция для получения данных сервера (FPS, онлайн и т.д.)
     updateServerInfo = async function(tag) {
@@ -1153,6 +1155,9 @@ async function processQueue(tag) {
         });
     });
 
+    // Статические файлы для веб-интерфейса (регистрируем ПОСЛЕ всех API роутов)
+    app.use(express.static(path.join(__dirname, '..', 'public')));
+    
     // Главная страница веб-интерфейса
     app.get('/', (req, res) => {
         res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
