@@ -41,7 +41,23 @@ class StoreController extends WebController
         if (!Yii::$app->user->isGuest && Yii::$app->user->identity->status === User::STATUS_BLOCKED) {
             throw new ForbiddenHttpException(Yii::t('common', 'Ваш аккаунт заблокирован!'));
         }
-        return $this->render('index');
+        
+        // Временно отключено - технические работы
+        $this->title = Yii::t('common', "Технические работы");
+        return $this->renderContent('
+            <div class="store_launcher" style="display: flex; align-items: center; justify-content: center; min-height: 60vh; text-align: center; padding: 40px 20px;">
+                <div style="max-width: 600px;">
+                    <div style="font-size: 64px; margin-bottom: 20px;">🔧</div>
+                    <h1 style="font-size: 32px; margin-bottom: 20px; color: #fff;">' . Yii::t('common', 'Технические работы') . '</h1>
+                    <p style="font-size: 18px; color: #ccc; line-height: 1.6;">
+                        ' . Yii::t('common', 'Магазин временно недоступен. Мы проводим технические работы. Пожалуйста, зайдите позже.') . '
+                    </p>
+                </div>
+            </div>
+        ');
+        
+        // Раскомментировать для восстановления работы:
+        // return $this->render('index');
     }
 
     /**
