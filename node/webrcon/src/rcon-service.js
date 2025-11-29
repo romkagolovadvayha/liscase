@@ -395,7 +395,7 @@ async function processQueue(tag) {
             }
             
             // LIMIT должен быть числом, не параметром
-            sql += ` ORDER BY \`created_at\` DESC LIMIT ${Math.max(1, Math.min(limit, 1000))}`;
+            sql += ` ORDER BY \`created_at\` DESC LIMIT ${Math.max(1, Math.min(limit, 50))}`;
             
             const [rows] = await db.execute(sql, params);
             res.json({ success: true, history: rows });
