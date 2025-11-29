@@ -5,6 +5,20 @@ const bodyParser = require('body-parser');
 const mysql = require('mysql2/promise');
 const path = require('path');
 
+// Принудительно выводим все логи в stdout для supervisor
+const originalLog = console.log;
+const originalError = console.error;
+
+console.log = function(...args) {
+    originalLog.apply(console, args);
+    process.stdout.write(args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ') + '\n');
+};
+
+console.error = function(...args) {
+    originalError.apply(console, args);
+    process.stderr.write(args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ') + '\n');
+};
+
 // Глобальный хендлинг ошибок
 process.on('unhandledRejection', err => {
     console.error('🚨 UnhandledRejection:', err);
@@ -211,6 +225,14 @@ async function processQueue(tag) {
 // Основной запуск
 // Основной запуск
 (async () => {
+    // Принудительный вывод в stdout для supervisor
+    process.stdout.write('\n\n========================================\n');
+    process.stdout.write('🚀 ЗАПУСК RCON СЕРВИСА\n');
+    process.stdout.write('========================================\n');
+    process.stdout.write(`Версия Node.js: ${process.version}\n`);
+    process.stdout.write(`Рабочая директория: ${__dirname}\n`);
+    process.stdout.write('========================================\n\n');
+    
     console.log('🚀 Запуск RCON сервиса...');
     console.log('📝 Версия Node.js:', process.version);
     console.log('📝 Рабочая директория:', __dirname);
@@ -371,6 +393,12 @@ async function processQueue(tag) {
         }
     }, 10000);
 
+    // Тестовый роут для проверки работы API
+    app.get('/api/test', (req, res) => {
+        res.json({ success: true, message: 'API работает!' });
+    });
+    console.log('✅ Тестовый роут GET /api/test зарегистрирован');
+    
     // API: Получить список серверов со статусом соединений
     app.get('/api/servers', (req, res) => {
         const serversWithStatus = Object.values(serversList).map(server => {
@@ -1225,18 +1253,22 @@ async function processQueue(tag) {
     });
     
     app.listen(PORT, '0.0.0.0', () => {
+        // Принудительно выводим в stdout для supervisor
+        process.stdout.write('\n\n========================================\n');
+        process.stdout.write('✅ RCON API ЗАПУЩЕН\n');
+        process.stdout.write('========================================\n');
+        process.stdout.write(`Порт: ${PORT}\n`);
+        process.stdout.write(`URL: http://0.0.0.0:${PORT}\n`);
+        process.stdout.write(`Веб-интерфейс: http://0.0.0.0:${PORT}/\n`);
+        process.stdout.write(`Всего роутов: ${routes.length}\n`);
+        process.stdout.write(`Роут /api/admins: ${routes.some(r => r.includes('/api/admins')) ? 'ЗАРЕГИСТРИРОВАН ✅' : 'НЕ НАЙДЕН ❌'}\n`);
+        process.stdout.write('========================================\n\n');
+        
         console.log(`🚀 RCON API работает: http://0.0.0.0:${PORT}`);
         console.log(`📊 Веб-интерфейс: http://0.0.0.0:${PORT}/`);
         console.log(`✅ Все роуты зарегистрированы, включая /api/admins`);
         console.log(`📋 Всего роутов: ${routes.length}`);
         console.log(`✅ Сервер запущен и готов принимать запросы`);
-        
-        // Принудительно выводим в stdout
-        process.stdout.write(`\n=== RCON SERVICE STARTED ===\n`);
-        process.stdout.write(`Port: ${PORT}\n`);
-        process.stdout.write(`Routes: ${routes.length}\n`);
-        process.stdout.write(`Admins route: ${routes.some(r => r.includes('/api/admins')) ? 'YES' : 'NO'}\n`);
-        process.stdout.write(`======================\n\n`);
     });
     
     // Обработка ошибок при запуске
