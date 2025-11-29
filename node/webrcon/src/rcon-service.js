@@ -217,10 +217,16 @@ async function processQueue(tag) {
         console.log("✅ Подключение к БД");
     } catch (err) {
         console.error('❌ Ошибка подключения к БД:', err.message);
-        process.exit(1); // можно также переподключаться с интервалом
+        console.error('⚠️ Продолжаем работу без БД (некоторые функции могут быть недоступны)');
+        // Не завершаем процесс, чтобы роуты были доступны
+        // db останется null, и функции, требующие БД, будут возвращать ошибки
     }
 
-    const servers = await getServersFromDB(db);
+    // Загружаем серверы только если БД доступна
+    let servers = [];
+    if (db) {
+        try {
+            servers = await getServersFromDB(db);
 
     for (const server of servers) {
         try {
@@ -229,22 +235,28 @@ async function processQueue(tag) {
         } catch (err) {
             console.error(`❌ Ошибка инициализации сервера "${server.tag || server.id}": ${err.message}`);
         }
-    }
+            }
 
-    // Сохраняем информацию о серверах
-    for (const server of servers) {
-        serversList[server.tag] = {
-            id: server.id,
-            name: server.name,
-            tag: server.tag,
-            ip: server.ip,
-            port: server.port,
-            rcon: server.rcon,
-            status: server.status,
-            players: server.players || 0, // Будет обновляться с сервера
-            max: server.max || 0, // Будет обновляться с сервера
-            fps: null // FPS будет обновляться периодически
-        };
+            // Сохраняем информацию о серверах
+            for (const server of servers) {
+                serversList[server.tag] = {
+                    id: server.id,
+                    name: server.name,
+                    tag: server.tag,
+                    ip: server.ip,
+                    port: server.port,
+                    rcon: server.rcon,
+                    status: server.status,
+                    players: server.players || 0, // Будет обновляться с сервера
+                    max: server.max || 0, // Будет обновляться с сервера
+                    fps: null // FPS будет обновляться периодически
+                };
+            }
+        } catch (err) {
+            console.error('❌ Ошибка загрузки серверов из БД:', err.message);
+        }
+    } else {
+        console.warn('⚠️ БД недоступна, серверы не загружены');
     }
 
     const app = express();
@@ -799,8 +811,12 @@ async function processQueue(tag) {
         }
     }
 
+    // Регистрируем роуты для админов
+    console.log('📝 Регистрация роутов API для админов...');
+    
     // API: Получить список админов сервера
     app.get('/api/admins', async (req, res) => {
+        console.log(`[API] GET /api/admins вызван, server=${req.query.server}`);
         const { server } = req.query;
         
         if (!server) {
@@ -1143,8 +1159,55 @@ async function processQueue(tag) {
     });
 
     const PORT = process.env.PORT || 3010;
+    
+    // Проверяем, что роуты зарегистрированы
+    console.log('🔍 Проверка зарегистрированных роутов...');
+    const routes = [];
+    try {
+        // Для Express 4.x и 5.x
+        if (app._router && app._router.stack) {
+            app._router.stack.forEach((middleware) => {
+                if (middleware.route) {
+                    const methods = Object.keys(middleware.route.methods).map(m => m.toUpperCase()).join(', ');
+                    routes.push(`${methods} ${middleware.route.path}`);
+                } else if (middleware.name === 'router') {
+                    // Для вложенных роутеров
+                    middleware.handle?.stack?.forEach((handler) => {
+                        if (handler.route) {
+                            const methods = Object.keys(handler.route.methods).map(m => m.toUpperCase()).join(', ');
+                            routes.push(`${methods} ${handler.route.path}`);
+                        }
+                    });
+                }
+            });
+        }
+        console.log('📋 Зарегистрированные роуты:', routes.length > 0 ? routes.join(', ') : 'не найдено');
+        console.log('📋 Всего роутов:', routes.length);
+        
+        // Проверяем наличие конкретного роута
+        const hasAdminsRoute = routes.some(r => r.includes('/api/admins'));
+        console.log('✅ Роут /api/admins зарегистрирован:', hasAdminsRoute ? 'ДА' : 'НЕТ');
+    } catch (err) {
+        console.error('❌ Ошибка при проверке роутов:', err.message);
+    }
+    
+    // Регистрируем обработчик ошибок для незарегистрированных роутов (должен быть ПОСЛЕ всех роутов)
+    app.use((req, res, next) => {
+        console.error(`❌ Роут не найден: ${req.method} ${req.path}`);
+        console.error(`📋 Доступные роуты:`, routes.join(', '));
+        res.status(404).json({ success: false, error: `Роут ${req.method} ${req.path} не найден` });
+    });
+    
+    // Обработчик ошибок
+    app.use((err, req, res, next) => {
+        console.error('❌ Ошибка обработки запроса:', err);
+        res.status(500).json({ success: false, error: err.message });
+    });
+    
     app.listen(PORT, () => {
         console.log(`🚀 RCON API работает: http://localhost:${PORT}`);
         console.log(`📊 Веб-интерфейс: http://localhost:${PORT}/`);
+        console.log(`✅ Все роуты зарегистрированы, включая /api/admins`);
+        console.log(`📋 Всего роутов: ${routes.length}`);
     });
 })();
