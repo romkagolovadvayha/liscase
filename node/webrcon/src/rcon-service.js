@@ -211,10 +211,14 @@ async function processQueue(tag) {
 // Основной запуск
 // Основной запуск
 (async () => {
+    console.log('🚀 Запуск RCON сервиса...');
+    console.log('📝 Версия Node.js:', process.version);
+    console.log('📝 Рабочая директория:', __dirname);
+    
     let db;
     try {
         db = await mysql.createConnection(dbConfig);
-        console.log("✅ Подключение к БД");
+        console.log("✅ Подключение к БД успешно");
     } catch (err) {
         console.error('❌ Ошибка подключения к БД:', err.message);
         console.error('⚠️ Продолжаем работу без БД (некоторые функции могут быть недоступны)');
@@ -259,8 +263,10 @@ async function processQueue(tag) {
         console.warn('⚠️ БД недоступна, серверы не загружены');
     }
 
+    console.log('📦 Создание Express приложения...');
     const app = express();
     app.use(bodyParser.json());
+    console.log('✅ Express приложение создано');
 
     // CORS для API (должен быть ПЕРЕД всеми роутами)
     app.use((req, res, next) => {
@@ -272,6 +278,7 @@ async function processQueue(tag) {
         }
         next();
     });
+    console.log('✅ CORS middleware зарегистрирован');
     
     // Статические файлы для веб-интерфейса (должны быть ПОСЛЕ API роутов, но мы их поставим в конце)
     // Временно отключаем, чтобы не перехватывали запросы к API
@@ -818,24 +825,28 @@ async function processQueue(tag) {
     
     // API: Получить список админов сервера
     app.get('/api/admins', async (req, res) => {
-        console.log(`[API] GET /api/admins вызван, server=${req.query.server}`);
+        console.log(`[API] GET /api/admins вызван, server=${req.query.server || 'не указан'}`);
         const { server } = req.query;
         
         if (!server) {
+            console.log('[API] Ошибка: параметр server не указан');
             return res.status(400).json({ success: false, error: 'Параметр server обязателен' });
         }
 
         const ws = connections[server];
         if (!ws || ws.readyState !== WebSocket.OPEN) {
+            console.log(`[API] Ошибка: нет соединения с сервером ${server}`);
             return res.status(400).json({ success: false, error: 'Нет активного соединения с сервером' });
         }
 
         try {
             // Используем команду oxide.show group admin для получения списка админов
             // Увеличиваем таймаут до 10 секунд, так как команда может выполняться долго
+            console.log(`[${server}] Отправка команды: oxide.show group admin`);
             const result = await enqueueCommand(server, () => sendCommand(ws, 'oxide.show group admin', 10000, true));
             console.log(`[${server}] oxide.show group admin результат:`, result);
             const admins = parseAdmins(result);
+            console.log(`[${server}] Распарсено админов:`, admins.length);
             
             res.json({ success: true, admins });
         } catch (err) {
@@ -843,9 +854,11 @@ async function processQueue(tag) {
             res.json({ success: false, error: err.message });
         }
     });
+    console.log('✅ Роут GET /api/admins зарегистрирован');
 
     // API: Добавить админа
     app.post('/api/admins/add', async (req, res) => {
+        console.log(`[API] POST /api/admins/add вызван, server=${req.body.server || 'не указан'}`);
         const { server, steamId } = req.body;
         
         if (!server || !steamId) {
@@ -915,6 +928,7 @@ async function processQueue(tag) {
 
     // API: Удалить админа
     app.post('/api/admins/remove', async (req, res) => {
+        console.log(`[API] POST /api/admins/remove вызван, server=${req.body.server || 'не указан'}`);
         const { server, steamId } = req.body;
         
         if (!server || !steamId) {
@@ -981,6 +995,7 @@ async function processQueue(tag) {
             res.json({ success: false, error: err.message });
         }
     });
+    console.log('✅ Роуты POST /api/admins/add и /api/admins/remove зарегистрированы');
 
     // API: Отправить команду
     app.post('/send', async (req, res) => {
@@ -1209,10 +1224,24 @@ async function processQueue(tag) {
         res.status(500).json({ success: false, error: err.message });
     });
     
-    app.listen(PORT, () => {
-        console.log(`🚀 RCON API работает: http://localhost:${PORT}`);
-        console.log(`📊 Веб-интерфейс: http://localhost:${PORT}/`);
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 RCON API работает: http://0.0.0.0:${PORT}`);
+        console.log(`📊 Веб-интерфейс: http://0.0.0.0:${PORT}/`);
         console.log(`✅ Все роуты зарегистрированы, включая /api/admins`);
         console.log(`📋 Всего роутов: ${routes.length}`);
+        console.log(`✅ Сервер запущен и готов принимать запросы`);
+        
+        // Принудительно выводим в stdout
+        process.stdout.write(`\n=== RCON SERVICE STARTED ===\n`);
+        process.stdout.write(`Port: ${PORT}\n`);
+        process.stdout.write(`Routes: ${routes.length}\n`);
+        process.stdout.write(`Admins route: ${routes.some(r => r.includes('/api/admins')) ? 'YES' : 'NO'}\n`);
+        process.stdout.write(`======================\n\n`);
+    });
+    
+    // Обработка ошибок при запуске
+    app.on('error', (err) => {
+        console.error('❌ Ошибка Express:', err);
+        process.stderr.write(`Express error: ${err.message}\n`);
     });
 })();
