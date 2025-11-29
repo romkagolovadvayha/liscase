@@ -6,6 +6,7 @@ let servers = [];
 let selectedServer = null; // Общий выбранный сервер
 let history = [];
 let plugins = [];
+let admins = []; // Список админов
 let consoleEventSource = null; // EventSource для консоли
 let lastConsoleCommand = null; // Последняя команда для предотвращения дублирования
 
@@ -14,12 +15,51 @@ document.addEventListener('DOMContentLoaded', () => {
     loadServers();
     loadHistory();
     setupEventListeners();
+    setupMobileMenu();
     
     // Автообновление каждые 5 секунд
     setInterval(() => {
         loadServers();
     }, 5000);
 });
+
+// Настройка мобильного меню
+function setupMobileMenu() {
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const closeSidebar = document.getElementById('closeSidebar');
+    
+    // Создаем overlay для закрытия сайдбара
+    const overlay = document.createElement('div');
+    overlay.className = 'sidebar-overlay';
+    overlay.id = 'sidebarOverlay';
+    document.body.appendChild(overlay);
+    
+    function openSidebar() {
+        sidebar.classList.add('open');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeSidebarFunc() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    
+    if (mobileMenuToggle) {
+        mobileMenuToggle.addEventListener('click', openSidebar);
+    }
+    
+    if (closeSidebar) {
+        closeSidebar.addEventListener('click', closeSidebarFunc);
+    }
+    
+    overlay.addEventListener('click', closeSidebarFunc);
+    
+    // Сохраняем функцию закрытия для использования в selectServer
+    window.closeMobileSidebar = closeSidebarFunc;
+}
 
 // Настройка обработчиков событий
 function setupEventListeners() {
@@ -42,6 +82,15 @@ function setupEventListeners() {
     
     // Плагины
     document.getElementById('loadPluginsBtn').addEventListener('click', loadPlugins);
+    
+    // Админы
+    document.getElementById('loadAdminsBtn').addEventListener('click', loadAdmins);
+    document.getElementById('addAdminBtn').addEventListener('click', addAdmin);
+    document.getElementById('addAdminSteamId').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            addAdmin();
+        }
+    });
     
     // Вкладки
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -80,6 +129,8 @@ function switchTab(tabName) {
         connectToConsole(selectedServer);
     } else if (tabName === 'plugins' && selectedServer) {
         loadPlugins();
+    } else if (tabName === 'admins' && selectedServer) {
+        loadAdmins();
     } else if (tabName === 'history') {
         loadHistory();
     }
@@ -112,10 +163,19 @@ function selectServer(tag) {
     // Подключаемся к консоли выбранного сервера
     connectToConsole(tag);
     
+    // Закрываем мобильное меню при выборе сервера
+    if (window.innerWidth <= 768 && window.closeMobileSidebar) {
+        window.closeMobileSidebar();
+    }
+    
     // Автоматически загружаем данные для активной вкладки
     const activeTab = document.querySelector('.tab-btn.active')?.getAttribute('data-tab');
-    if (selectedServer && activeTab === 'plugins') {
-        loadPlugins();
+    if (selectedServer) {
+        if (activeTab === 'plugins') {
+            loadPlugins();
+        } else if (activeTab === 'admins') {
+            loadAdmins();
+        }
     }
 }
 
@@ -384,23 +444,49 @@ async function sendCommand() {
 }
 
 // Загрузка истории команд
+let isLoadingHistory = false; // Флаг для предотвращения одновременных запросов
+
 async function loadHistory() {
+    // Предотвращаем одновременные запросы
+    if (isLoadingHistory) {
+        return;
+    }
+    
+    isLoadingHistory = true;
+    
     try {
         // Используем выбранный сервер для фильтрации истории
         const url = `${API_BASE}/api/history?limit=50${selectedServer ? `&server=${encodeURIComponent(selectedServer)}` : ''}`;
         
-        const response = await fetch(url);
+        // Добавляем таймаут для запроса (10 секунд)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
         
         if (data.success) {
             history = data.history;
             renderHistory();
         } else {
-            showError('Ошибка загрузки истории');
+            showError('Ошибка загрузки истории: ' + (data.error || 'Неизвестная ошибка'));
         }
     } catch (error) {
-        console.error('Ошибка загрузки истории:', error);
-        showError('Не удалось загрузить историю');
+        if (error.name === 'AbortError') {
+            console.error('Загрузка истории: таймаут запроса');
+            showError('Таймаут загрузки истории');
+        } else {
+            console.error('Ошибка загрузки истории:', error);
+            showError('Не удалось загрузить историю: ' + error.message);
+        }
+    } finally {
+        isLoadingHistory = false;
     }
 }
 
@@ -588,4 +674,164 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// Загрузка списка админов
+async function loadAdmins() {
+    const server = selectedServer;
+    
+    if (!server) {
+        const container = document.getElementById('adminsList');
+        container.innerHTML = '<div class="empty-state">Выберите сервер в сайдбаре для просмотра админов</div>';
+        return;
+    }
+    
+    const container = document.getElementById('adminsList');
+    const loadBtn = document.getElementById('loadAdminsBtn');
+    
+    loadBtn.disabled = true;
+    loadBtn.textContent = '⏳ Загрузка...';
+    container.innerHTML = '<div class="loading">Загрузка списка админов...</div>';
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/admins?server=${encodeURIComponent(server)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            admins = data.admins || [];
+            renderAdmins();
+        } else {
+            container.innerHTML = `<div class="result-error">Ошибка: ${escapeHtml(data.error || 'Неизвестная ошибка')}</div>`;
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки админов:', error);
+        container.innerHTML = `<div class="result-error">Ошибка: ${escapeHtml(error.message)}</div>`;
+    } finally {
+        loadBtn.disabled = false;
+        loadBtn.textContent = '🔄 Загрузить список';
+    }
+}
+
+// Отображение админов
+function renderAdmins() {
+    const container = document.getElementById('adminsList');
+    
+    if (admins.length === 0) {
+        container.innerHTML = '<div class="empty-state">Админы не найдены</div>';
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="admins-stats">
+            <span class="stat-item">Всего админов: <strong>${admins.length}</strong></span>
+        </div>
+        <div class="admins-grid">
+            ${admins.map(admin => `
+                <div class="admin-card">
+                    <div class="admin-header">
+                        <div class="admin-steamid" title="${escapeHtml(admin.steamId)}">${escapeHtml(admin.steamId)}</div>
+                    </div>
+                    ${admin.name ? `<div class="admin-info">👤 ${escapeHtml(admin.name)}</div>` : ''}
+                    <div class="admin-actions">
+                        <button class="btn btn-danger btn-sm" onclick="removeAdmin('${escapeHtml(admin.steamId).replace(/'/g, "\\'")}')">
+                            🗑️ Удалить
+                        </button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Добавление админа
+async function addAdmin() {
+    const server = selectedServer;
+    const steamId = document.getElementById('addAdminSteamId').value.trim();
+    
+    if (!server) {
+        showError('Выберите сервер в сайдбаре');
+        return;
+    }
+    
+    if (!steamId) {
+        showError('Введите Steam ID');
+        return;
+    }
+    
+    // Проверка формата Steam ID (должен быть 17 цифр)
+    if (!/^\d{17}$/.test(steamId)) {
+        showError('Неверный формат Steam ID. Должно быть 17 цифр (например: 76561198012345678)');
+        return;
+    }
+    
+    const addBtn = document.getElementById('addAdminBtn');
+    addBtn.disabled = true;
+    addBtn.textContent = '⏳ Добавление...';
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/admins/add`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ server, steamId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Очищаем поле ввода
+            document.getElementById('addAdminSteamId').value = '';
+            // Обновляем список админов
+            loadAdmins();
+            // Обновляем историю
+            loadHistory();
+        } else {
+            showError(`Ошибка: ${data.error || 'Неизвестная ошибка'}`);
+        }
+    } catch (error) {
+        console.error('Ошибка добавления админа:', error);
+        showError(`Ошибка: ${error.message}`);
+    } finally {
+        addBtn.disabled = false;
+        addBtn.textContent = '➕ Добавить';
+    }
+}
+
+// Удаление админа
+window.removeAdmin = async function(steamId) {
+    const server = selectedServer;
+    
+    if (!server) {
+        showError('Выберите сервер в сайдбаре');
+        return;
+    }
+    
+    if (!confirm(`Вы уверены, что хотите удалить админа ${steamId}?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/api/admins/remove`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ server, steamId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Обновляем список админов
+            loadAdmins();
+            // Обновляем историю
+            loadHistory();
+        } else {
+            showError(`Ошибка: ${data.error || 'Неизвестная ошибка'}`);
+        }
+    } catch (error) {
+        console.error('Ошибка удаления админа:', error);
+        showError(`Ошибка: ${error.message}`);
+    }
+};
 

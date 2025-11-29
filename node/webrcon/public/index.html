@@ -8,11 +8,15 @@
 </head>
 <body>
     <div class="app-layout">
+        <!-- Mobile Menu Toggle -->
+        <button id="mobileMenuToggle" class="mobile-menu-toggle">☰</button>
+        
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h2>🎮 RCON</h2>
                 <span class="status-indicator" id="statusIndicator">●</span>
+                <button id="closeSidebar" class="close-sidebar">✕</button>
             </div>
             
             <div class="sidebar-content">
@@ -40,6 +44,7 @@
                 <div class="tabs-header">
                     <button class="tab-btn active" data-tab="console">💻 Консоль</button>
                     <button class="tab-btn" data-tab="plugins">🔌 Плагины</button>
+                    <button class="tab-btn" data-tab="admins">👑 Админы</button>
                     <button class="tab-btn" data-tab="history">📜 История команд</button>
                 </div>
 
@@ -84,6 +89,28 @@
                         </div>
                         <div id="pluginsList" class="plugins-list">
                             <div class="empty-state">Выберите сервер в сайдбаре для просмотра плагинов</div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Tab Content: Админы -->
+                <div class="tab-content" id="tab-admins">
+                    <section class="admins-section">
+                        <div class="section-header">
+                            <h2>👑 Админы сервера</h2>
+                            <button id="loadAdminsBtn" class="btn btn-primary">🔄 Загрузить список</button>
+                        </div>
+                        
+                        <div class="admin-actions">
+                            <h3>Добавить админа</h3>
+                            <div class="admin-form">
+                                <input type="text" id="addAdminSteamId" class="form-control" placeholder="Steam ID (7656119...)">
+                                <button id="addAdminBtn" class="btn btn-success">➕ Добавить</button>
+                            </div>
+                        </div>
+                        
+                        <div id="adminsList" class="admins-list">
+                            <div class="empty-state">Выберите сервер в сайдбаре для просмотра админов</div>
                         </div>
                     </section>
                 </div>

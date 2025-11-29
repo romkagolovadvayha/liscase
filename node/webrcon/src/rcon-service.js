@@ -386,6 +386,8 @@ async function processQueue(tag) {
             const limit = parseInt(req.query.limit) || 50;
             const server = req.query.server || null;
             
+            console.log(`[API] Запрос истории: limit=${limit}, server=${server}`);
+            
             let sql = 'SELECT * FROM `rcon_tasks` WHERE 1=1';
             const params = [];
             
@@ -395,12 +397,19 @@ async function processQueue(tag) {
             }
             
             // LIMIT должен быть числом, не параметром
-            sql += ` ORDER BY \`created_at\` DESC LIMIT ${Math.max(1, Math.min(limit, 50))}`;
+            const limitValue = Math.max(1, Math.min(limit, 50));
+            sql += ` ORDER BY \`created_at\` DESC LIMIT ${limitValue}`;
             
+            console.log(`[API] SQL: ${sql}, params:`, params);
+            
+            // Выполняем запрос напрямую (без таймаута через Promise.race, так как это может вызвать проблемы)
             const [rows] = await db.execute(sql, params);
+            
+            console.log(`[API] История получена: ${rows.length} записей`);
             res.json({ success: true, history: rows });
         } catch (err) {
             console.error('Ошибка получения истории:', err.message);
+            console.error('Stack:', err.stack);
             res.status(500).json({ success: false, error: err.message });
         }
     });
@@ -685,6 +694,264 @@ async function processQueue(tag) {
                 const errorCommand = `o.${action} ${plugin}`;
                 const serverStr = String(server || '');
                 const commandStr = String(errorCommand || '');
+                await db.execute(
+                    'INSERT INTO `rcon_tasks` (`server_tag`, `command`, `result`, `status`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
+                    [serverStr, commandStr, errorMessage, 0]
+                );
+            } catch (dbErr) {
+                console.error('Ошибка сохранения в историю:', dbErr.message);
+            }
+            
+            res.json({ success: false, error: err.message });
+        }
+    });
+
+    // Функция парсинга списка админов из вывода команды ownerlist
+    function parseAdmins(output) {
+        const admins = [];
+        if (!output) return admins;
+        
+        const lines = output.split('\n');
+        let inPlayersSection = false;
+        let playersLine = '';
+        
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+            
+            // Определяем начало секции с игроками
+            if (trimmedLine.toLowerCase().includes("group 'admin' players:") || 
+                trimmedLine.toLowerCase().includes("group \"admin\" players:")) {
+                inPlayersSection = true;
+                // Извлекаем строку после "Group 'admin' players:"
+                const colonIndex = trimmedLine.indexOf(':');
+                if (colonIndex !== -1) {
+                    playersLine = trimmedLine.substring(colonIndex + 1).trim();
+                }
+                continue;
+            }
+            
+            // Определяем конец секции с игроками (начало секции с правами)
+            if (trimmedLine.toLowerCase().includes("group 'admin' permissions:") ||
+                trimmedLine.toLowerCase().includes("group \"admin\" permissions:")) {
+                // Парсим накопленную строку с игроками перед выходом из секции
+                if (playersLine) {
+                    parsePlayersLine(playersLine, admins);
+                    playersLine = '';
+                }
+                inPlayersSection = false;
+                continue;
+            }
+            
+            // Пропускаем пустые строки и служебные строки
+            if (!trimmedLine || 
+                trimmedLine.match(/^[=\-]+$/) ||
+                trimmedLine.toLowerCase().includes('no permissions') ||
+                trimmedLine.toLowerCase().includes('no players')) {
+                continue;
+            }
+            
+            // Парсим только в секции игроков
+            if (inPlayersSection) {
+                // Если строка не пустая, добавляем её к накопленной строке
+                // (на случай, если список админов разбит на несколько строк)
+                if (trimmedLine) {
+                    if (playersLine) {
+                        playersLine += ', ' + trimmedLine;
+                    } else {
+                        playersLine = trimmedLine;
+                    }
+                }
+            }
+        }
+        
+        // Если осталась накопленная строка, парсим её
+        if (playersLine && inPlayersSection) {
+            parsePlayersLine(playersLine, admins);
+        }
+        
+        return admins;
+    }
+    
+    // Вспомогательная функция для парсинга строки с игроками
+    function parsePlayersLine(playersLine, admins) {
+        if (!playersLine) return;
+        
+        // Разбиваем строку по запятым
+        // Формат: "76561198037069011 (Arty), 76561199615706587 (daaqq), ..."
+        const players = playersLine.split(',').map(p => p.trim()).filter(p => p);
+        
+        for (const player of players) {
+            // Формат: "76561199615706587 (daaqq)" или "76561199615706587"
+            // Ищем Steam ID (17 цифр) и опционально имя в скобках
+            const match = player.match(/^(\d{17})(?:\s+\((.+?)\))?/);
+            if (match) {
+                const steamId = match[1];
+                const name = match[2] ? match[2].trim() : null;
+                
+                // Проверяем, что это не дубликат
+                if (!admins.find(a => a.steamId === steamId)) {
+                    admins.push({
+                        steamId: steamId,
+                        name: name
+                    });
+                }
+            }
+        }
+    }
+
+    // API: Получить список админов сервера
+    app.get('/api/admins', async (req, res) => {
+        const { server } = req.query;
+        
+        if (!server) {
+            return res.status(400).json({ success: false, error: 'Параметр server обязателен' });
+        }
+
+        const ws = connections[server];
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            return res.status(400).json({ success: false, error: 'Нет активного соединения с сервером' });
+        }
+
+        try {
+            // Используем команду oxide.show group admin для получения списка админов
+            // Увеличиваем таймаут до 10 секунд, так как команда может выполняться долго
+            const result = await enqueueCommand(server, () => sendCommand(ws, 'oxide.show group admin', 10000, true));
+            console.log(`[${server}] oxide.show group admin результат:`, result);
+            const admins = parseAdmins(result);
+            
+            res.json({ success: true, admins });
+        } catch (err) {
+            console.error(`[${server}] Ошибка получения списка админов:`, err.message);
+            res.json({ success: false, error: err.message });
+        }
+    });
+
+    // API: Добавить админа
+    app.post('/api/admins/add', async (req, res) => {
+        const { server, steamId } = req.body;
+        
+        if (!server || !steamId) {
+            return res.status(400).json({ success: false, error: 'Поля server и steamId обязательны' });
+        }
+
+        // Проверка формата Steam ID
+        if (!/^\d{17}$/.test(steamId)) {
+            return res.status(400).json({ success: false, error: 'Неверный формат Steam ID. Должно быть 17 цифр' });
+        }
+
+        const ws = connections[server];
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            return res.status(400).json({ success: false, error: 'Нет активного соединения с сервером' });
+        }
+
+        try {
+            const command = `ownerid ${steamId}`;
+            const result = await enqueueCommand(server, () => sendCommand(ws, command));
+            
+            // Сохраняем в историю
+            try {
+                let resultStr = '';
+                if (result !== null && result !== undefined) {
+                    resultStr = typeof result === 'string' ? result : JSON.stringify(result);
+                    if (resultStr.length > 65535) {
+                        resultStr = resultStr.substring(0, 65535);
+                    }
+                }
+                const serverStr = String(server || '');
+                const commandStr = String(command || '');
+                await db.execute(
+                    'INSERT INTO `rcon_tasks` (`server_tag`, `command`, `result`, `status`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
+                    [serverStr, commandStr, resultStr, 1]
+                );
+            } catch (err) {
+                console.error('Ошибка сохранения в историю:', err.message);
+            }
+            
+            res.json({ success: true, result });
+        } catch (err) {
+            // Сохраняем ошибку в историю
+            try {
+                let errorMessage = '';
+                if (err && err.message) {
+                    errorMessage = String(err.message);
+                } else if (err) {
+                    errorMessage = String(err);
+                }
+                if (errorMessage.length > 65535) {
+                    errorMessage = errorMessage.substring(0, 65535);
+                }
+                const command = `ownerid ${steamId}`;
+                const serverStr = String(server || '');
+                const commandStr = String(command || '');
+                await db.execute(
+                    'INSERT INTO `rcon_tasks` (`server_tag`, `command`, `result`, `status`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
+                    [serverStr, commandStr, errorMessage, 0]
+                );
+            } catch (dbErr) {
+                console.error('Ошибка сохранения в историю:', dbErr.message);
+            }
+            
+            res.json({ success: false, error: err.message });
+        }
+    });
+
+    // API: Удалить админа
+    app.post('/api/admins/remove', async (req, res) => {
+        const { server, steamId } = req.body;
+        
+        if (!server || !steamId) {
+            return res.status(400).json({ success: false, error: 'Поля server и steamId обязательны' });
+        }
+
+        // Проверка формата Steam ID
+        if (!/^\d{17}$/.test(steamId)) {
+            return res.status(400).json({ success: false, error: 'Неверный формат Steam ID. Должно быть 17 цифр' });
+        }
+
+        const ws = connections[server];
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            return res.status(400).json({ success: false, error: 'Нет активного соединения с сервером' });
+        }
+
+        try {
+            const command = `removeowner ${steamId}`;
+            const result = await enqueueCommand(server, () => sendCommand(ws, command));
+            
+            // Сохраняем в историю
+            try {
+                let resultStr = '';
+                if (result !== null && result !== undefined) {
+                    resultStr = typeof result === 'string' ? result : JSON.stringify(result);
+                    if (resultStr.length > 65535) {
+                        resultStr = resultStr.substring(0, 65535);
+                    }
+                }
+                const serverStr = String(server || '');
+                const commandStr = String(command || '');
+                await db.execute(
+                    'INSERT INTO `rcon_tasks` (`server_tag`, `command`, `result`, `status`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
+                    [serverStr, commandStr, resultStr, 1]
+                );
+            } catch (err) {
+                console.error('Ошибка сохранения в историю:', err.message);
+            }
+            
+            res.json({ success: true, result });
+        } catch (err) {
+            // Сохраняем ошибку в историю
+            try {
+                let errorMessage = '';
+                if (err && err.message) {
+                    errorMessage = String(err.message);
+                } else if (err) {
+                    errorMessage = String(err);
+                }
+                if (errorMessage.length > 65535) {
+                    errorMessage = errorMessage.substring(0, 65535);
+                }
+                const command = `removeowner ${steamId}`;
+                const serverStr = String(server || '');
+                const commandStr = String(command || '');
                 await db.execute(
                     'INSERT INTO `rcon_tasks` (`server_tag`, `command`, `result`, `status`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
                     [serverStr, commandStr, errorMessage, 0]
