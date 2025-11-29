@@ -649,26 +649,44 @@ async function processQueue(tag) {
             
             // Сохраняем в историю
             try {
-                // Ограничиваем длину результата для базы данных
-                const truncatedResult = result && typeof result === 'string' && result.length > 65535 ? result.substring(0, 65535) : (result || '');
+                // Ограничиваем длину результата для базы данных и приводим к строке
+                let resultStr = '';
+                if (result !== null && result !== undefined) {
+                    resultStr = typeof result === 'string' ? result : JSON.stringify(result);
+                    if (resultStr.length > 65535) {
+                        resultStr = resultStr.substring(0, 65535);
+                    }
+                }
+                const serverStr = String(server || '');
+                const commandStr = String(command || '');
                 await db.execute(
                     'INSERT INTO `rcon_tasks` (`server_tag`, `command`, `result`, `status`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
-                    [String(server || ''), String(command || ''), String(truncatedResult), 1]
+                    [serverStr, commandStr, resultStr, 1]
                 );
             } catch (err) {
                 console.error('Ошибка сохранения в историю:', err.message);
+                console.error('Параметры:', { server, command, resultType: typeof result });
             }
             
             res.json({ success: true, result });
         } catch (err) {
             // Сохраняем ошибку в историю
             try {
-                const errorMessage = err.message || String(err);
-                const truncatedError = typeof errorMessage === 'string' && errorMessage.length > 65535 ? errorMessage.substring(0, 65535) : errorMessage;
+                let errorMessage = '';
+                if (err && err.message) {
+                    errorMessage = String(err.message);
+                } else if (err) {
+                    errorMessage = String(err);
+                }
+                if (errorMessage.length > 65535) {
+                    errorMessage = errorMessage.substring(0, 65535);
+                }
                 const errorCommand = `o.${action} ${plugin}`;
+                const serverStr = String(server || '');
+                const commandStr = String(errorCommand || '');
                 await db.execute(
                     'INSERT INTO `rcon_tasks` (`server_tag`, `command`, `result`, `status`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
-                    [String(server || ''), String(errorCommand || ''), String(truncatedError), 0]
+                    [serverStr, commandStr, errorMessage, 0]
                 );
             } catch (dbErr) {
                 console.error('Ошибка сохранения в историю:', dbErr.message);
@@ -743,11 +761,20 @@ async function processQueue(tag) {
             
             // Сохраняем ошибку в историю
             try {
-                const errorMessage = err.message || String(err);
-                const truncatedError = typeof errorMessage === 'string' && errorMessage.length > 65535 ? errorMessage.substring(0, 65535) : errorMessage;
+                let errorMessage = '';
+                if (err && err.message) {
+                    errorMessage = String(err.message);
+                } else if (err) {
+                    errorMessage = String(err);
+                }
+                if (errorMessage.length > 65535) {
+                    errorMessage = errorMessage.substring(0, 65535);
+                }
+                const serverStr = String(server || '');
+                const commandStr = String(command || '');
                 await db.execute(
                     'INSERT INTO `rcon_tasks` (`server_tag`, `command`, `result`, `status`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
-                    [String(server || ''), String(command || ''), String(truncatedError), 0]
+                    [serverStr, commandStr, errorMessage, 0]
                 );
             } catch (dbErr) {
                 console.error('Ошибка сохранения в историю:', dbErr.message);
