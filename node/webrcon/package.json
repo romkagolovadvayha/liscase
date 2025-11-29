@@ -1,12 +1,14 @@
 {
   "name": "webrcon",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "RCON панель управления серверами с веб-интерфейсом",
+  "main": "src/rcon-service.js",
   "scripts": {
+    "start": "node src/rcon-service.js",
+    "dev": "node src/rcon-service.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": ["rcon", "rust", "websocket", "server-management"],
   "author": "",
   "license": "ISC",
   "dependencies": {
