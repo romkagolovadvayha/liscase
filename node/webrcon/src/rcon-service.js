@@ -429,6 +429,7 @@ async function processQueue(tag) {
             // Важно: плагин загружен ТОЛЬКО если явно указано "Loaded"
             const statusMatch = line.match(/\b(Loaded|Unloaded)\b/i);
             const isLoaded = statusMatch ? statusMatch[1].toLowerCase() === 'loaded' : false;
+            const isUnloaded = statusMatch ? statusMatch[1].toLowerCase() === 'unloaded' : false;
             
             // Формат 1: "01 "PluginName" (1.0.12) by Author (0.00s / 492 KB) - FileName.cs"
             // Это загруженный плагин (если есть номер, кавычки, версия в скобках и by Author)
@@ -648,9 +649,11 @@ async function processQueue(tag) {
             
             // Сохраняем в историю
             try {
+                // Ограничиваем длину результата для базы данных
+                const truncatedResult = result && typeof result === 'string' && result.length > 65535 ? result.substring(0, 65535) : (result || '');
                 await db.execute(
                     'INSERT INTO `rcon_tasks` (`server_tag`, `command`, `result`, `status`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
-                    [server, command, result, 1]
+                    [String(server || ''), String(command || ''), String(truncatedResult), 1]
                 );
             } catch (err) {
                 console.error('Ошибка сохранения в историю:', err.message);
@@ -660,9 +663,12 @@ async function processQueue(tag) {
         } catch (err) {
             // Сохраняем ошибку в историю
             try {
+                const errorMessage = err.message || String(err);
+                const truncatedError = typeof errorMessage === 'string' && errorMessage.length > 65535 ? errorMessage.substring(0, 65535) : errorMessage;
+                const errorCommand = `o.${action} ${plugin}`;
                 await db.execute(
                     'INSERT INTO `rcon_tasks` (`server_tag`, `command`, `result`, `status`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
-                    [server, `o.${action} ${plugin}`, err.message, 0]
+                    [String(server || ''), String(errorCommand || ''), String(truncatedError), 0]
                 );
             } catch (dbErr) {
                 console.error('Ошибка сохранения в историю:', dbErr.message);
@@ -707,9 +713,11 @@ async function processQueue(tag) {
             
             // Сохраняем в историю
             try {
+                // Ограничиваем длину результата для базы данных и приводим к строке
+                const truncatedResult = result && typeof result === 'string' && result.length > 65535 ? result.substring(0, 65535) : (result || '');
                 await db.execute(
                     'INSERT INTO `rcon_tasks` (`server_tag`, `command`, `result`, `status`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
-                    [server, command, result, 1]
+                    [String(server || ''), String(command || ''), String(truncatedResult), 1]
                 );
             } catch (err) {
                 console.error('Ошибка сохранения в историю:', err.message);
@@ -735,9 +743,11 @@ async function processQueue(tag) {
             
             // Сохраняем ошибку в историю
             try {
+                const errorMessage = err.message || String(err);
+                const truncatedError = typeof errorMessage === 'string' && errorMessage.length > 65535 ? errorMessage.substring(0, 65535) : errorMessage;
                 await db.execute(
                     'INSERT INTO `rcon_tasks` (`server_tag`, `command`, `result`, `status`, `created_at`) VALUES (?, ?, ?, ?, NOW())',
-                    [server, command, err.message, 0]
+                    [String(server || ''), String(command || ''), String(truncatedError), 0]
                 );
             } catch (dbErr) {
                 console.error('Ошибка сохранения в историю:', dbErr.message);
