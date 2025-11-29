@@ -43,7 +43,7 @@ class StoreController extends WebController
         }
         
         // Временно отключено - технические работы
-        $this->title = Yii::t('common', "Технические работы");
+        $this->view->title = Yii::t('common', "Технические работы");
         return $this->renderContent('
             <div class="store_launcher" style="display: flex; align-items: center; justify-content: center; min-height: 60vh; text-align: center; padding: 40px 20px;">
                 <div style="max-width: 600px;">
