@@ -391,15 +391,16 @@ async function processQueue(tag) {
             
             if (server) {
                 sql += ' AND `server_tag` = ?';
-                params.push(server);
+                params.push(String(server));
             }
             
-            sql += ' ORDER BY `created_at` DESC LIMIT ?';
-            params.push(limit);
+            // LIMIT должен быть числом, не параметром
+            sql += ` ORDER BY \`created_at\` DESC LIMIT ${Math.max(1, Math.min(limit, 1000))}`;
             
             const [rows] = await db.execute(sql, params);
             res.json({ success: true, history: rows });
         } catch (err) {
+            console.error('Ошибка получения истории:', err.message);
             res.status(500).json({ success: false, error: err.message });
         }
     });
