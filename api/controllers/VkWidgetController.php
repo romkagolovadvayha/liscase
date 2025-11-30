@@ -101,6 +101,30 @@ class VkWidgetController extends Controller
                 throw new \Exception('Uploaded file not found');
             }
             
+            // Проверяем размер изображения (должно быть 24x24px для виджетов)
+            $imageInfo = getimagesize($filePath);
+            if ($imageInfo === false) {
+                throw new \Exception('Invalid image file - cannot read image dimensions');
+            }
+            
+            $width = $imageInfo[0];
+            $height = $imageInfo[1];
+            $mimeType = $imageInfo['mime'];
+            
+            // Логируем информацию об изображении
+            Yii::info("Image upload: {$fileName}, size: {$width}x{$height}, type: {$mimeType}, file size: " . filesize($filePath) . " bytes", 'vk-widget');
+            
+            // Для виджетов ВК требуется точный размер 24x24px
+            if ($width !== 24 || $height !== 24) {
+                Yii::$app->response->statusCode = 400;
+                return [
+                    'error_code' => 4601,
+                    'error_msg' => "Wrong image size: image must be exactly 24x24px, got {$width}x{$height}px",
+                    'image_width' => $width,
+                    'image_height' => $height
+                ];
+            }
+            
             // Подготавливаем файл для загрузки через CURL
             $cfile = new \CURLFile($filePath, $fileType, $fileName);
             
@@ -118,19 +142,29 @@ class VkWidgetController extends Controller
             if (curl_errno($ch)) {
                 $error = curl_error($ch);
                 curl_close($ch);
+                Yii::error("CURL error during image upload: {$error}", 'vk-widget');
                 throw new \Exception('CURL error: ' . $error);
             }
             
             curl_close($ch);
             
+            Yii::info("VK upload server response: HTTP {$httpCode}, response: " . substr($response, 0, 200), 'vk-widget');
+            
             if ($httpCode !== 200) {
+                Yii::error("VK upload failed with HTTP code: {$httpCode}, response: " . substr($response, 0, 500), 'vk-widget');
                 throw new \Exception('Upload failed with HTTP code: ' . $httpCode . '. Response: ' . substr($response, 0, 500));
             }
             
             $data = json_decode($response, true);
             
             if (!$data) {
+                Yii::error("Invalid JSON response from VK upload server: " . substr($response, 0, 500), 'vk-widget');
                 throw new \Exception('Invalid response from upload server: ' . substr($response, 0, 500));
+            }
+            
+            // Если ВК вернул ошибку, логируем её
+            if (isset($data['error_code']) || isset($data['error'])) {
+                Yii::error("VK upload error: " . json_encode($data), 'vk-widget');
             }
             
             return $data;

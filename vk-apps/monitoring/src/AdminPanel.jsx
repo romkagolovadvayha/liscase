@@ -443,11 +443,13 @@ function AdminPanel() {
                                 const objectUrl = URL.createObjectURL(file);
                                 img.onload = () => {
                                   URL.revokeObjectURL(objectUrl);
+                                  console.log('Image loaded, dimensions:', img.width, 'x', img.height);
                                   if (img.width !== 24 || img.height !== 24) {
-                                    alert(`Размер изображения должен быть 24x24px. Текущий размер: ${img.width}x${img.height}px`);
+                                    alert(`Размер изображения должен быть точно 24x24px. Текущий размер: ${img.width}x${img.height}px\n\nПожалуйста, измените размер изображения до 24x24px и попробуйте снова.`);
                                     e.target.value = ''; // Очищаем input
                                     return;
                                   }
+                                  console.log('Image size validated: 24x24px, proceeding with upload');
                                   handleUploadLogo(file);
                                 };
                                 img.onerror = () => {
