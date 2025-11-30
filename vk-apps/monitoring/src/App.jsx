@@ -15,6 +15,7 @@ import {
   Badge
 } from '@vkontakte/vkui';
 import { Icon16CopyOutline } from '@vkontakte/icons';
+import bridge from '@vkontakte/vk-bridge';
 
 // Получаем параметры из URL
 const getUrlParams = () => {
@@ -60,6 +61,13 @@ function App() {
 
   useEffect(() => {
     loadServers();
+    
+    // Автообновление каждые 30 секунд
+    const interval = setInterval(() => {
+      loadServers();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const getFillPercentage = (online, max) => {
@@ -77,6 +85,37 @@ function App() {
     if (!tagsString) return [];
     // Разделяем по запятой и очищаем от пробелов
     return tagsString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+  };
+
+  const copyToClipboardFallback = (text, index) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        setCopiedId(index);
+        setTimeout(() => setCopiedId(null), 2000);
+      }
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          setCopiedId(index);
+          setTimeout(() => setCopiedId(null), 2000);
+        }).catch(() => {
+          console.error('Clipboard API also failed');
+        });
+      }
+    } finally {
+      document.body.removeChild(textArea);
+    }
   };
 
   return (
@@ -177,37 +216,19 @@ function App() {
                               onClick={() => {
                                 const connectText = `connect ${server.text_ip || server.ip}`;
                                 
-                                // Используем fallback метод для копирования (работает в iframe)
-                                const textArea = document.createElement('textarea');
-                                textArea.value = connectText;
-                                textArea.style.position = 'fixed';
-                                textArea.style.left = '-999999px';
-                                textArea.style.top = '-999999px';
-                                document.body.appendChild(textArea);
-                                textArea.focus();
-                                textArea.select();
-                                
-                                try {
-                                  const successful = document.execCommand('copy');
-                                  if (successful) {
-                                    setCopiedId(index);
-                                    setTimeout(() => setCopiedId(null), 2000);
-                                  } else {
-                                    console.error('Copy command failed');
-                                  }
-                                } catch (err) {
-                                  console.error('Failed to copy:', err);
-                                  // Пробуем использовать Clipboard API как fallback
-                                  if (navigator.clipboard && navigator.clipboard.writeText) {
-                                    navigator.clipboard.writeText(connectText).then(() => {
+                                // Пробуем использовать VK Bridge для копирования
+                                if (bridge) {
+                                  bridge.send('VKWebAppCopyText', { text: connectText })
+                                    .then(() => {
                                       setCopiedId(index);
                                       setTimeout(() => setCopiedId(null), 2000);
-                                    }).catch(() => {
-                                      console.error('Clipboard API also failed');
+                                    })
+                                    .catch(() => {
+                                      // Fallback на обычное копирование
+                                      copyToClipboardFallback(connectText, index);
                                     });
-                                  }
-                                } finally {
-                                  document.body.removeChild(textArea);
+                                } else {
+                                  copyToClipboardFallback(connectText, index);
                                 }
                               }}
                               style={{ 
