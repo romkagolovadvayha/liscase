@@ -9,6 +9,24 @@ use yii\web\Response;
 
 class ServersController extends Controller
 {
+    public $enableCsrfValidation = false;
+
+    public function beforeAction($action)
+    {
+        // Устанавливаем CORS заголовки
+        Yii::$app->response->headers->set('Access-Control-Allow-Origin', '*');
+        Yii::$app->response->headers->set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        Yii::$app->response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        Yii::$app->response->headers->set('Access-Control-Max-Age', '3600');
+        
+        // Обработка preflight запросов
+        if (Yii::$app->request->method === 'OPTIONS') {
+            Yii::$app->response->statusCode = 200;
+            Yii::$app->end();
+        }
+        
+        return parent::beforeAction($action);
+    }
 
     public function actionIndex() {
         Yii::$app->response->statusCode = 200;
