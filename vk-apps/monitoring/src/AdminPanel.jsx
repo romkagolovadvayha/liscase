@@ -145,9 +145,16 @@ function AdminPanel() {
       const uploadData = await uploadResponse.json();
       console.log('Upload data:', uploadData);
 
-      if (!uploadData || uploadData.error) {
+      // Проверяем наличие ошибки в ответе (может быть error_code/error_msg или поле error)
+      if (uploadData.error_code || uploadData.error || (uploadData.error_msg && uploadData.error_code)) {
         console.error('Upload result error:', uploadData);
-        throw new Error(`Ошибка загрузки: ${uploadData.error || 'Неизвестная ошибка'}`);
+        const errorMsg = uploadData.error_msg || uploadData.error || 'Неизвестная ошибка';
+        throw new Error(`Ошибка загрузки изображения: ${errorMsg}${uploadData.error_code ? ' (код: ' + uploadData.error_code + ')' : ''}`);
+      }
+      
+      // Проверяем, что ответ содержит необходимые данные для сохранения
+      if (!uploadData || typeof uploadData !== 'object') {
+        throw new Error('Получен некорректный ответ от сервера загрузки');
       }
 
       // Шаг 3: Преобразуем ответ в Base64
@@ -405,7 +412,7 @@ function AdminPanel() {
                           />
                         )}
                         <Text style={{ marginBottom: '12px', display: 'block', color: 'var(--vkui--color_text_secondary)' }}>
-                          Шаг 2: Загрузите логотип для виджета (опционально, 24x24px)
+                          Шаг 2: Загрузите логотип для виджета (опционально, 32x32px)
                         </Text>
                         <div style={{ marginBottom: '16px' }}>
                           <input
@@ -431,7 +438,24 @@ function AdminPanel() {
                                   e.target.value = ''; // Очищаем input
                                   return;
                                 }
-                                handleUploadLogo(file);
+                                // Проверяем размер изображения (должно быть 24x24px)
+                                const img = new Image();
+                                const objectUrl = URL.createObjectURL(file);
+                                img.onload = () => {
+                                  URL.revokeObjectURL(objectUrl);
+                                  if (img.width !== 32 || img.height !== 32) {
+                                    alert(`Размер изображения должен быть 32x32px. Текущий размер: ${img.width}x${img.height}px`);
+                                    e.target.value = ''; // Очищаем input
+                                    return;
+                                  }
+                                  handleUploadLogo(file);
+                                };
+                                img.onerror = () => {
+                                  URL.revokeObjectURL(objectUrl);
+                                  alert('Не удалось загрузить изображение. Попробуйте другое изображение.');
+                                  e.target.value = ''; // Очищаем input
+                                };
+                                img.src = objectUrl;
                               } else {
                                 console.log('No file selected');
                               }

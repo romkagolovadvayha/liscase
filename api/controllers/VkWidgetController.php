@@ -50,7 +50,7 @@ class VkWidgetController extends Controller
         try {
             // Используем метод для коллекции приложения (работает с сервисным ключом)
             $url = "https://api.vk.com/method/appWidgets.getAppImageUploadServer?" .
-                   "image_type=24x24" .
+                   "image_type=32x32" .
                    "&access_token=" . urlencode($serviceToken) .
                    "&v=5.199";
             
