@@ -52,6 +52,16 @@ class ServersController extends Controller
                     $tags[] = $serverTag->name;
                 }
                 
+                // Определяем тип вайпа
+                $wipeTypeText = null;
+                if ($item->wipe_type === 7) {
+                    $wipeTypeText = 'Недельный';
+                } elseif ($item->wipe_type === 14) {
+                    $wipeTypeText = 'Двухнедельный';
+                } elseif ($item->wipe_type === 30) {
+                    $wipeTypeText = 'Месячный';
+                }
+                
                 $items[] = [
                     'name' => $item->monitoring_name,
                     'ip' => $item->ip,
@@ -63,11 +73,13 @@ class ServersController extends Controller
                     'joined' => (int)$item->joined, // Игроки в очереди
                     'max' => (int)$item->max, // Максимальный онлайн
                     'tags' => implode(', ', $tags), // Теги сервера через запятую (link_name)
+                    'wipe_type' => $item->wipe_type, // Тип вайпа: 7, 14 или 30
+                    'wipe_type_text' => $wipeTypeText, // Текст типа вайпа
                 ];
             }
             
             // Сохраняем в кэш на 3 минуты (180 секунд)
-            Yii::$app->cache->set($cacheKey, $items, 180);
+            Yii::$app->cache->set($cacheKey, $items, 60);
         }
 
         return $items;
