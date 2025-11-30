@@ -28,32 +28,55 @@ function AdminPanel() {
     setAdding(true);
 
     try {
-      // Получаем параметры из URL (используем параметры VK)
+      // Получаем параметры из URL
       const params = new URLSearchParams(window.location.search);
       const groupId = params.get('vk_group_id');
       
-      // Получаем URL виджета (текущая страница с параметром widget=1)
-      const widgetUrl = window.location.origin + window.location.pathname + '?widget=1';
-      const widgetCode = `<iframe src="${widgetUrl}" width="100%" height="600" frameborder="0" style="border: none;"></iframe>`;
+      if (!groupId) {
+        alert('Ошибка: не удалось определить ID сообщества.');
+        setAdding(false);
+        return;
+      }
+
+      // Получаем URL виджета
+      const widgetUrl = window.location.origin + window.location.pathname.replace(/\/$/, '') + '/widget.html?widget=1';
       
-      // Пробуем добавить виджет через VK Bridge
+      // Для плагинов сообществ используем VKWebAppShowCommunityWidgetPreviewBox
+      // Это встроенный метод VK для добавления виджетов в сообщество
       try {
-        await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
-          group_id: groupId ? parseInt(groupId) : undefined,
+        const result = await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
+          group_id: Math.abs(parseInt(groupId)),
           type: 'text',
-          code: widgetCode
+          code: `<iframe src="${widgetUrl}" width="100%" height="600" frameborder="0" style="border: none;"></iframe>`
         });
         
+        console.log('Widget preview result:', result);
+        // После открытия диалога VK обработает добавление виджета
         setAdded(true);
       } catch (error) {
         console.error('Error showing widget preview:', error);
-        // Если метод не поддерживается, показываем инструкцию
-        showInstructions(widgetUrl);
+        console.error('Error details:', error.error_data || error);
+        
+        // Если метод не работает, открываем страницу настроек сообщества
+        const groupIdAbs = Math.abs(parseInt(groupId));
+        const settingsUrl = `https://vk.com/club${groupIdAbs}?act=widgets`;
+        
+        // Пробуем открыть через VK Bridge
+        try {
+          await bridge.send('VKWebAppOpenURL', {
+            url: settingsUrl,
+            target: 'internal'
+          });
+        } catch (openError) {
+          // Если и это не работает, открываем напрямую
+          window.open(settingsUrl, '_blank');
+        }
+        
+        setAdded(true);
       }
     } catch (error) {
       console.error('Error adding widget:', error);
-      alert('Ошибка при добавлении виджета: ' + (error.error_data?.error_description || error.message || 'Неизвестная ошибка'));
-    } finally {
+      alert('Ошибка при добавлении виджета. Проверьте консоль браузера для подробностей.');
       setAdding(false);
     }
   };
@@ -72,11 +95,12 @@ function AdminPanel() {
               <Panel id="success">
                 <Group>
                   <Placeholder
-                    icon={<div style={{ fontSize: '64px', marginBottom: '16px' }}>✓</div>}
-                    header="Виджет успешно добавлен!"
+                    icon={<div style={{ fontSize: '64px', marginBottom: '16px' }}>ℹ️</div>}
+                    header="Откройте настройки виджетов"
                   >
-                    Виджет теперь отображается на главной странице вашего сообщества.
-                    Вы можете закрыть это окно.
+                    Откройте страницу настроек виджетов вашего сообщества.
+                    В разделе "Виджеты" добавьте встраиваемый виджет и укажите URL виджета.
+                    После этого виджет появится на главной странице сообщества.
                   </Placeholder>
                 </Group>
               </Panel>
