@@ -49,7 +49,7 @@ class ServersController extends Controller
                 // Получаем теги сервера через связь
                 $tags = [];
                 foreach ($item->serversTags as $serverTag) {
-                    $tags[] = $serverTag->title;
+                    $tags[] = $serverTag->name;
                 }
                 
                 $items[] = [
