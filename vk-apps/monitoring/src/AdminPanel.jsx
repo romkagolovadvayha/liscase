@@ -98,9 +98,12 @@ function AdminPanel() {
       const apiUrlFull = params.get('api_url') || 'https://api.prostoj.store/servers';
       const apiBaseUrl = apiUrlFull.replace('/servers', '').replace(/\/$/, '');
       
-      // Серверный прокси будет использовать сервисный ключ из настроек (vk_app_sever_key)
-      // Токен передавать не требуется, но можно передать для переопределения
-      const proxyUrl = `${apiBaseUrl}/vk-widget/get-upload-server?group_id=${Math.abs(parseInt(currentGroupId))}`;
+      // Используем коллекцию приложения (appWidgets.getAppImageUploadServer)
+      // Работает с сервисным ключом, не требует токен пользователя
+      console.log('Getting upload server for app image collection (using service key)...');
+      
+      // Вызываем прокси без параметров - сервер использует сервисный ключ из настроек
+      const proxyUrl = `${apiBaseUrl}/vk-widget/get-upload-server`;
       console.log('Calling proxy API:', proxyUrl);
       
       // Вызов через прокси
@@ -147,9 +150,8 @@ function AdminPanel() {
       const saveProxyUrl = `${apiBaseUrl}/vk-widget/save-image`;
       
       const saveFormData = new FormData();
-      saveFormData.append('group_id', Math.abs(parseInt(currentGroupId)).toString());
-      // Серверный прокси будет использовать сервисный ключ из настроек
-      // Токен передавать не требуется
+      // Для коллекции приложения group_id не требуется
+      // Сервер использует сервисный ключ из настроек
       saveFormData.append('image', base64Data);
       
       const saveResponse = await fetch(saveProxyUrl, {

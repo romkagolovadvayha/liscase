@@ -29,38 +29,29 @@ class VkWidgetController extends Controller
 
     /**
      * Прокси для получения URL сервера загрузки изображений виджета ВК
-     * Использует сервисный ключ доступа приложения или токен пользователя
+     * Использует appWidgets.getAppImageUploadServer для коллекции приложения
+     * Работает с сервисным ключом доступа приложения (vk_app_sever_key)
      */
     public function actionGetUploadServer()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
         
-        $groupId = Yii::$app->request->get('group_id');
-        
-        if (!$groupId) {
-            Yii::$app->response->statusCode = 400;
-            return [
-                'error' => 'group_id is required'
-            ];
-        }
-        
-        // Получаем токен доступа: переданный токен или сервисный ключ из настроек
-        $passedToken = Yii::$app->request->get('access_token');
+        // Для коллекции приложения group_id не требуется
+        // Используем сервисный ключ из настроек
         $serviceToken = Yii::$app->settings->get('vk_app_sever_key');
-        $accessToken = $passedToken ?: $serviceToken;
         
-        if (!$accessToken) {
+        if (!$serviceToken) {
             Yii::$app->response->statusCode = 400;
             return [
-                'error' => 'access_token is required. Provide access_token parameter or set vk_app_sever_key in settings.'
+                'error' => 'Service access token is required. Set vk_app_sever_key in settings.'
             ];
         }
         
         try {
-            $url = "https://api.vk.com/method/appWidgets.getGroupImageUploadServer?" .
-                   "group_id=" . urlencode($groupId) .
-                   "&image_type=24x24" .
-                   "&access_token=" . urlencode($accessToken) .
+            // Используем метод для коллекции приложения (работает с сервисным ключом)
+            $url = "https://api.vk.com/method/appWidgets.getAppImageUploadServer?" .
+                   "image_type=24x24" .
+                   "&access_token=" . urlencode($serviceToken) .
                    "&v=5.199";
             
             $response = file_get_contents($url);
@@ -77,38 +68,37 @@ class VkWidgetController extends Controller
 
     /**
      * Прокси для сохранения изображения виджета ВК
-     * Использует сервисный ключ доступа приложения или токен пользователя
+     * Использует appWidgets.saveAppImage для коллекции приложения
+     * Работает с сервисным ключом доступа приложения (vk_app_sever_key)
      */
     public function actionSaveImage()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
         
-        $groupId = Yii::$app->request->post('group_id');
         $image = Yii::$app->request->post('image');
         
-        if (!$groupId || !$image) {
+        if (!$image) {
             Yii::$app->response->statusCode = 400;
             return [
-                'error' => 'group_id and image are required'
+                'error' => 'image is required'
             ];
         }
         
-        // Получаем токен доступа: сервисный ключ из настроек или переданный токен
+        // Используем сервисный ключ из настроек
         $serviceToken = Yii::$app->settings->get('vk_app_sever_key');
-        $accessToken = Yii::$app->request->post('access_token') ?: $serviceToken;
         
-        if (!$accessToken) {
+        if (!$serviceToken) {
             Yii::$app->response->statusCode = 400;
             return [
-                'error' => 'access_token is required. Provide access_token parameter or set vk_app_sever_key in settings.'
+                'error' => 'Service access token is required. Set vk_app_sever_key in settings.'
             ];
         }
         
         try {
-            $url = "https://api.vk.com/method/appWidgets.saveGroupImage?" .
-                   "group_id=" . urlencode($groupId) .
-                   "&image=" . urlencode($image) .
-                   "&access_token=" . urlencode($accessToken) .
+            // Используем метод для коллекции приложения (работает с сервисным ключом)
+            $url = "https://api.vk.com/method/appWidgets.saveAppImage?" .
+                   "image=" . urlencode($image) .
+                   "&access_token=" . urlencode($serviceToken) .
                    "&v=5.199";
             
             $response = file_get_contents($url);
