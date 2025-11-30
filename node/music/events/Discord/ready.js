@@ -1,11 +1,21 @@
 const { Translate } = require('../../process_tools');
 const { useMainPlayer } = require('discord-player');
+const { ChannelType } = require('discord.js');
 
 module.exports = async (client) => {
     console.log(await Translate(`Logged to the client <${client.user.username}>.`));
     console.log(await Translate("Let's play some music !"));
     
     client.user.setActivity(client.config.app.playing);
+    
+    // Отладочная информация
+    console.log('🔍 Checking auto-radio configuration...');
+    console.log(`   autoRadio exists: ${!!client.config.autoRadio}`);
+    if (client.config.autoRadio) {
+        console.log(`   enabled: ${client.config.autoRadio.enabled}`);
+        console.log(`   channelId: ${client.config.autoRadio.channelId || 'not set'}`);
+        console.log(`   radioUrl: ${client.config.autoRadio.radioUrl || 'not set'}`);
+    }
     
     // Автоматическое подключение к радио
     if (client.config.autoRadio && client.config.autoRadio.enabled) {
@@ -22,25 +32,35 @@ module.exports = async (client) => {
             return;
         }
         
+        console.log('✅ Auto-radio is enabled, connecting in 3 seconds...');
+        
         // Небольшая задержка для полной инициализации бота
         setTimeout(async () => {
             await connectToRadio(client, channelId, radioUrl);
         }, 3000);
+    } else {
+        console.log('ℹ️  Auto-radio is disabled or not configured');
     }
 }
 
 async function connectToRadio(client, channelId, radioUrl) {
     try {
+        console.log(`🔍 Fetching channel ${channelId}...`);
         const player = useMainPlayer();
         const channel = await client.channels.fetch(channelId);
         
         if (!channel) {
             console.log(`❌ Channel with ID ${channelId} not found!`);
+            console.log(`   Make sure the bot has access to this channel and the ID is correct.`);
             return;
         }
         
-        if (channel.type !== 2) { // 2 = VoiceChannel
+        console.log(`✅ Channel found: ${channel.name} (Type: ${channel.type})`);
+        
+        // Проверяем тип канала (используем ChannelType enum для Discord.js v14)
+        if (channel.type !== ChannelType.GuildVoice) {
             console.log(`❌ Channel ${channelId} is not a voice channel!`);
+            console.log(`   Channel type: ${channel.type}, expected: ${ChannelType.GuildVoice}`);
             return;
         }
         
@@ -75,9 +95,10 @@ async function connectToRadio(client, channelId, radioUrl) {
             
         } catch (error) {
             console.error(`❌ Error starting radio: ${error.message}`);
+            console.error(error.stack);
             
             // Пытаемся переподключиться, если включено авто-переподключение
-            if (client.config.autoRadio.autoReconnect) {
+            if (client.config.autoRadio && client.config.autoRadio.autoReconnect) {
                 console.log(`🔄 Attempting to reconnect in ${client.config.autoRadio.reconnectDelay / 1000} seconds...`);
                 setTimeout(() => {
                     connectToRadio(client, channelId, radioUrl);
@@ -89,7 +110,7 @@ async function connectToRadio(client, channelId, radioUrl) {
         console.error(error.stack);
         
         // Пытаемся переподключиться
-        if (client.config.autoRadio.autoReconnect) {
+        if (client.config.autoRadio && client.config.autoRadio.autoReconnect) {
             console.log(`🔄 Attempting to reconnect in ${client.config.autoRadio.reconnectDelay / 1000} seconds...`);
             setTimeout(() => {
                 connectToRadio(client, channelId, radioUrl);
