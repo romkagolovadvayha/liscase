@@ -21,7 +21,7 @@ const getUrlParams = () => {
   const params = new URLSearchParams(window.location.search);
   return {
     apiUrl: params.get('api_url') || 'https://api.prostoj.store/servers',
-    logoUrl: params.get('logo_url') || 'src/server_logo.png'
+    logoUrl: params.get('logo_url') || '/server_logo.png'
   };
 };
 
