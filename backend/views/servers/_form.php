@@ -124,6 +124,9 @@ $selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
                 <div class="col-md-3">
                     <?= $form->field($model, 'ip')->textInput(['class' => 'form-control ds-input']) ?>
                 </div>
+                <div class="col-md-3">
+                    <?= $form->field($model, 'text_ip')->textInput(['class' => 'form-control ds-input', 'placeholder' => 'Например: prostoj.store']) ?>
+                </div>
                 <div class="col-md-2">
                     <?= $form->field($model, 'port')->textInput(['class' => 'form-control ds-input', 'type' => 'number']) ?>
                 </div>
@@ -133,6 +136,8 @@ $selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
                 <div class="col-md-2">
                     <?= $form->field($model, 'rcon')->textInput(['class' => 'form-control ds-input', 'type' => 'number']) ?>
                 </div>
+            </div>
+            <div class="row">
                 <div class="col-md-3">
                     <?= $form->field($model, 'rcon_password')->textInput(['maxlength' => true, 'class' => 'form-control ds-input', 'type' => 'password']) ?>
                 </div>

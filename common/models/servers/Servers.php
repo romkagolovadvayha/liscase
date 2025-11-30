@@ -26,6 +26,7 @@ use yii\helpers\ArrayHelper;
  * @property string $description
  * @property string $rules
  * @property string $ip
+ * @property string $text_ip
  * @property int    $port
  * @property int    $query
  * @property int    $rcon
@@ -108,6 +109,7 @@ class Servers extends \common\components\base\ActiveRecord
             'wipe_type'          => Yii::t('common', 'Глобальный вайп'),
             'sort'          => Yii::t('common', 'Сортировка'),
             'ip'          => Yii::t('common', 'IP адрес'),
+            'text_ip'     => Yii::t('common', 'Текстовый IP адрес'),
             'port'          => Yii::t('common', 'Порт'),
             'query'          => Yii::t('common', 'Query порт'),
             'rcon'          => Yii::t('common', 'Rcon порт'),
@@ -139,7 +141,7 @@ class Servers extends \common\components\base\ActiveRecord
     {
         return [
             [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description', 'min_map_size', 'max_map_size'], 'required'],
-            [['description', 'name', 'ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'secret_key'], 'string'],
+            [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'secret_key'], 'string'],
             [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id'], 'integer'],
             [['wipe', 'next_wipe', 'global_wipe', 'secret_map'], 'safe'],
         ];
