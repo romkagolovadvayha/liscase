@@ -76,9 +76,10 @@ function AdminPanel() {
       return;
     }
 
-    // Получаем groupId из параметров URL, если его нет в состоянии
+    // Получаем параметры из URL
     const params = new URLSearchParams(window.location.search);
     const currentGroupId = groupId || params.get('vk_group_id');
+    const accessToken = params.get('vk_access_token_settings') || params.get('access_token');
     
     if (!currentGroupId) {
       alert('Ошибка: не удалось определить ID сообщества. Убедитесь, что приложение установлено в сообщество.');
@@ -89,23 +90,43 @@ function AdminPanel() {
     console.log('Starting logo upload...');
 
     try {
-      // Шаг 1: Получаем адрес сервера для загрузки
+      // Шаг 1: Получаем адрес сервера для загрузки через прямой вызов API ВК
       console.log('Step 1: Getting upload server URL...');
-      const uploadServerResult = await bridge.send('VKWebAppCallAPIMethod', {
-        method: 'appWidgets.getGroupImageUploadServer',
-        params: {
-          image_type: '24x24' // Иконка для таблицы - 24x24
-        }
-      });
+      
+      // Используем прямой вызов API ВК
+      const apiUrl = `https://api.vk.com/method/appWidgets.getGroupImageUploadServer?group_id=${Math.abs(parseInt(currentGroupId))}&image_type=24x24&v=5.199`;
+      
+      let uploadServerUrl = apiUrl;
+      if (accessToken) {
+        uploadServerUrl += `&access_token=${accessToken}`;
+      }
+      
+      console.log('Calling API:', uploadServerUrl);
+      
+      // Пробуем получить через bridge сначала
+      let uploadServerResult;
+      try {
+        uploadServerResult = await bridge.send('VKWebAppGetAuthToken', {
+          app_id: parseInt(params.get('vk_app_id')),
+          scope: 'app_widgets'
+        });
+        console.log('Auth token result:', uploadServerResult);
+      } catch (e) {
+        console.log('Cannot get auth token via bridge, using direct API call');
+      }
+      
+      // Прямой вызов API
+      const uploadServerResponse = await fetch(uploadServerUrl);
+      const uploadServerData = await uploadServerResponse.json();
+      
+      console.log('Upload server response:', uploadServerData);
 
-      console.log('Upload server result:', uploadServerResult);
-
-      if (!uploadServerResult || !uploadServerResult.response || !uploadServerResult.response.upload_url) {
-        console.error('Upload server result error:', uploadServerResult);
-        throw new Error('Не удалось получить адрес сервера загрузки. Проверьте консоль для деталей.');
+      if (!uploadServerData || !uploadServerData.response || !uploadServerData.response.upload_url) {
+        console.error('Upload server result error:', uploadServerData);
+        throw new Error(`Не удалось получить адрес сервера загрузки: ${uploadServerData.error?.error_msg || 'Неизвестная ошибка'}`);
       }
 
-      const uploadUrl = uploadServerResult.response.upload_url;
+      const uploadUrl = uploadServerData.response.upload_url;
       console.log('Upload URL:', uploadUrl);
 
       // Шаг 2: Загружаем изображение на сервер ВК
@@ -135,18 +156,21 @@ function AdminPanel() {
 
       // Шаг 4: Сохраняем изображение через API ВК
       console.log('Step 3: Saving image via VK API...');
-      const saveResult = await bridge.send('VKWebAppCallAPIMethod', {
-        method: 'appWidgets.saveGroupImage',
-        params: {
-          image: base64Data
-        }
-      });
+      const saveApiUrl = `https://api.vk.com/method/appWidgets.saveGroupImage?group_id=${Math.abs(parseInt(currentGroupId))}&image=${encodeURIComponent(base64Data)}&v=5.199`;
+      
+      let saveUrl = saveApiUrl;
+      if (accessToken) {
+        saveUrl += `&access_token=${accessToken}`;
+      }
+      
+      const saveResponse = await fetch(saveUrl);
+      const saveResult = await saveResponse.json();
 
       console.log('Save result:', saveResult);
 
       if (!saveResult || !saveResult.response || !saveResult.response.id) {
         console.error('Save result error:', saveResult);
-        throw new Error('Не удалось сохранить изображение. Проверьте консоль для деталей.');
+        throw new Error(`Не удалось сохранить изображение: ${saveResult.error?.error_msg || 'Неизвестная ошибка'}`);
       }
 
       // Получаем icon_id (id из ответа)
@@ -158,7 +182,7 @@ function AdminPanel() {
     } catch (error) {
       console.error('Error uploading logo:', error);
       console.error('Error stack:', error.stack);
-      const errorMessage = error.error_data?.error_description || error.message || 'Неизвестная ошибка';
+      const errorMessage = error.error_data?.error_description || error.error?.error_msg || error.message || 'Неизвестная ошибка';
       alert('Ошибка при загрузке логотипа: ' + errorMessage + '\n\nПроверьте консоль для деталей.');
     } finally {
       setUploadingLogo(false);
