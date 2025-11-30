@@ -16,16 +16,55 @@ import {
 import bridge from '@vkontakte/vk-bridge';
 
 function AdminPanel() {
-  const [adding, setAdding] = useState(false);
-  const [added, setAdded] = useState(false);
+  const [addingApp, setAddingApp] = useState(false);
+  const [addingWidget, setAddingWidget] = useState(false);
+  const [appAdded, setAppAdded] = useState(false);
+  const [widgetAdded, setWidgetAdded] = useState(false);
 
-  const handleAddWidget = async () => {
+  // Шаг 1: Добавить приложение в сообщество
+  const handleAddToCommunity = async () => {
     if (!bridge) {
       alert('Ошибка: VK Bridge не инициализирован. Убедитесь, что вы открыли приложение в ВКонтакте.');
       return;
     }
 
-    setAdding(true);
+    setAddingApp(true);
+
+    try {
+      // Получаем параметры из URL
+      const params = new URLSearchParams(window.location.search);
+      const appId = params.get('vk_app_id');
+      
+      if (!appId) {
+        alert('Ошибка: не удалось определить ID приложения.');
+        setAddingApp(false);
+        return;
+      }
+
+      // Используем VKWebAppAddToCommunity для добавления приложения в сообщество
+      const result = await bridge.send('VKWebAppAddToCommunity', {
+        app_id: parseInt(appId)
+      });
+      
+      console.log('Add to community result:', result);
+      setAppAdded(true);
+    } catch (error) {
+      console.error('Error adding app to community:', error);
+      console.error('Error details:', error.error_data || error);
+      alert('Ошибка при добавлении приложения в сообщество: ' + (error.error_data?.error_description || error.message || 'Неизвестная ошибка'));
+    } finally {
+      setAddingApp(false);
+    }
+  };
+
+  // Шаг 2: Установить виджет
+  const handleInstallWidget = async () => {
+    if (!bridge) {
+      alert('Ошибка: VK Bridge не инициализирован. Убедитесь, что вы открыли приложение в ВКонтакте.');
+      return;
+    }
+
+    setAddingWidget(true);
 
     try {
       // Получаем параметры из URL
@@ -34,82 +73,32 @@ function AdminPanel() {
       
       if (!groupId) {
         alert('Ошибка: не удалось определить ID сообщества.');
-        setAdding(false);
+        setAddingWidget(false);
         return;
       }
 
       // Получаем URL виджета
       const widgetUrl = window.location.origin + window.location.pathname.replace(/\/$/, '') + '/widget.html?widget=1';
       
-      // Для плагинов сообществ используем VKWebAppShowCommunityWidgetPreviewBox
-      // Это встроенный метод VK для добавления виджетов в сообщество
-      try {
-        const result = await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
-          group_id: Math.abs(parseInt(groupId)),
-          type: 'text',
-          code: `<iframe src="${widgetUrl}" width="100%" height="600" frameborder="0" style="border: none;"></iframe>`
-        });
-        
-        console.log('Widget preview result:', result);
-        // После открытия диалога VK обработает добавление виджета
-        setAdded(true);
-      } catch (error) {
-        console.error('Error showing widget preview:', error);
-        console.error('Error details:', error.error_data || error);
-        
-        // Если метод не работает, открываем страницу настроек сообщества
-        const groupIdAbs = Math.abs(parseInt(groupId));
-        const settingsUrl = `https://vk.com/club${groupIdAbs}?act=widgets`;
-        
-        // Пробуем открыть через VK Bridge
-        try {
-          await bridge.send('VKWebAppOpenURL', {
-            url: settingsUrl,
-            target: 'internal'
-          });
-        } catch (openError) {
-          // Если и это не работает, открываем напрямую
-          window.open(settingsUrl, '_blank');
-        }
-        
-        setAdded(true);
-      }
+      // Используем VKWebAppShowCommunityWidgetPreviewBox для установки виджета
+      const result = await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
+        group_id: Math.abs(parseInt(groupId)),
+        type: 'text',
+        code: `<iframe src="${widgetUrl}" width="100%" height="600" frameborder="0" style="border: none;"></iframe>`
+      });
+      
+      console.log('Widget preview result:', result);
+      setWidgetAdded(true);
     } catch (error) {
-      console.error('Error adding widget:', error);
-      alert('Ошибка при добавлении виджета. Проверьте консоль браузера для подробностей.');
-      setAdding(false);
+      console.error('Error installing widget:', error);
+      console.error('Error details:', error.error_data || error);
+      alert('Ошибка при установке виджета: ' + (error.error_data?.error_description || error.message || 'Неизвестная ошибка'));
+    } finally {
+      setAddingWidget(false);
     }
   };
 
-  const showInstructions = (widgetUrl) => {
-    // Можно показать инструкцию или оставить как есть
-    console.log('Widget URL:', widgetUrl);
-  };
 
-  if (added) {
-    return (
-      <AppRoot>
-        <SplitLayout>
-          <SplitCol>
-            <View activePanel="success">
-              <Panel id="success">
-                <Group>
-                  <Placeholder
-                    icon={<div style={{ fontSize: '64px', marginBottom: '16px' }}>ℹ️</div>}
-                    header="Откройте настройки виджетов"
-                  >
-                    Откройте страницу настроек виджетов вашего сообщества.
-                    В разделе "Виджеты" добавьте встраиваемый виджет и укажите URL виджета.
-                    После этого виджет появится на главной странице сообщества.
-                  </Placeholder>
-                </Group>
-              </Panel>
-            </View>
-          </SplitCol>
-        </SplitLayout>
-      </AppRoot>
-    );
-  }
 
   return (
     <AppRoot>
@@ -130,19 +119,56 @@ function AdminPanel() {
                     <Banner
                       mode="info"
                       header="Что делает виджет?"
-                      subheader="Отображает список серверов с количеством игроков онлайн и возможностью копирования команды подключения. Данные обновляются автоматически каждые 30 секунд."
+                      subheader="Отображает список серверов с количеством игроков онлайн и возможностью копирования команды подключения."
                       style={{ marginBottom: '16px' }}
                     />
 
-                    <Button
-                      size="l"
-                      stretched
-                      onClick={handleAddWidget}
-                      loading={adding}
-                      disabled={!bridge}
-                    >
-                      {adding ? 'Добавление...' : 'Добавить виджет на главную страницу'}
-                    </Button>
+                    {!appAdded ? (
+                      <>
+                        <Text style={{ marginBottom: '12px', display: 'block', color: 'var(--vkui--color_text_secondary)' }}>
+                          Шаг 1: Сначала добавьте приложение в сообщество
+                        </Text>
+                        <Button
+                          size="l"
+                          stretched
+                          onClick={handleAddToCommunity}
+                          loading={addingApp}
+                          disabled={!bridge || addingApp}
+                          style={{ marginBottom: '16px' }}
+                        >
+                          {addingApp ? 'Добавление...' : 'Добавить приложение в сообщество'}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Banner
+                          mode="success"
+                          header="Приложение добавлено в сообщество!"
+                          style={{ marginBottom: '16px' }}
+                        />
+                        <Text style={{ marginBottom: '12px', display: 'block', color: 'var(--vkui--color_text_secondary)' }}>
+                          Шаг 2: Теперь установите виджет на главную страницу
+                        </Text>
+                        {!widgetAdded ? (
+                          <Button
+                            size="l"
+                            stretched
+                            onClick={handleInstallWidget}
+                            loading={addingWidget}
+                            disabled={!bridge || addingWidget}
+                            mode="primary"
+                          >
+                            {addingWidget ? 'Установка...' : 'Установить виджет на главную страницу'}
+                          </Button>
+                        ) : (
+                          <Banner
+                            mode="success"
+                            header="Виджет успешно установлен!"
+                            subheader="Виджет теперь отображается на главной странице вашего сообщества."
+                          />
+                        )}
+                      </>
+                    )}
 
                     {!bridge && (
                       <Banner
