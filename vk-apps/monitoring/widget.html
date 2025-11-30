@@ -254,32 +254,127 @@
             font-size: 11px;
             margin-left: 4px;
         }
+
+        /* Стили для админ-панели */
+        .admin-panel {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .admin-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .admin-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 8px;
+        }
+
+        .admin-description {
+            font-size: 14px;
+            color: #6d6f73;
+            line-height: 1.5;
+        }
+
+        .admin-content {
+            background: #fff;
+            border: 1px solid #e1e3e6;
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .admin-info {
+            margin-bottom: 24px;
+        }
+
+        .info-item {
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e1e3e6;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .info-label {
+            font-size: 13px;
+            color: #6d6f73;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 15px;
+            color: #000;
+            font-weight: 500;
+        }
+
+        .add-widget-btn {
+            width: 100%;
+            background: #4680c2;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            margin-top: 24px;
+        }
+
+        .add-widget-btn:hover {
+            background: #3d6fa5;
+        }
+
+        .add-widget-btn:active {
+            background: #356898;
+        }
+
+        .add-widget-btn:disabled {
+            background: #99a2ad;
+            cursor: not-allowed;
+        }
+
+        .admin-note {
+            margin-top: 16px;
+            padding: 12px;
+            background: #f7f8fa;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #6d6f73;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
-    <div class="widget-container">
-        <div class="widget-header">
-            <div class="widget-title">Мониторинг серверов</div>
-            <div class="widget-subtitle">Онлайн статус и подключение</div>
-        </div>
-
-        <div id="content">
-            <div class="loading">
-                <div class="spinner"></div>
-                <div>Загрузка данных...</div>
-            </div>
-        </div>
+    <div id="root">
+        <!-- Админ-панель или виджет будет загружен динамически -->
     </div>
 
     <script>
         // Инициализация VK Bridge для работы в контексте VK
         let vkBridge = null;
+        let appId = null;
+        
         if (typeof window.vkBridge !== 'undefined') {
             vkBridge = window.vkBridge;
             // Отправляем событие инициализации
             vkBridge.send('VKWebAppInit', {})
                 .then((data) => {
                     console.log('VK Bridge initialized:', data);
+                    // Получаем ID приложения из параметров URL или из данных
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const appIdParam = urlParams.get('app_id');
+                    if (appIdParam) {
+                        appId = parseInt(appIdParam);
+                    }
                 })
                 .catch((error) => {
                     console.log('VK Bridge not available (running outside VK):', error);
@@ -288,16 +383,43 @@
             console.log('VK Bridge not found - running in standalone mode');
         }
 
+        // Определение режима работы
+        function getMode() {
+            const params = new URLSearchParams(window.location.search);
+            const fromAdmin = params.get('from_admin') === '1';
+            const ref = params.get('ref');
+            const isWidget = params.get('widget') === '1';
+            const isCommunityInstalled = ref === 'community_installed_app_popup';
+            
+            // Если явно указан параметр widget=1 - это виджет
+            if (isWidget) {
+                return 'widget';
+            }
+            
+            // Если есть параметр from_admin или ref указывает на установку в сообщество - это админка
+            if (fromAdmin || isCommunityInstalled) {
+                return 'admin';
+            }
+            
+            // По умолчанию - виджет (когда уже установлен)
+            return 'widget';
+        }
+
         // Получение параметров из URL
         function getUrlParams() {
             const params = new URLSearchParams(window.location.search);
             return {
                 apiUrl: params.get('api_url') || 'https://api.prostoj.store/servers',
-                logoUrl: params.get('logo_url') || '/server_logo.png'
+                logoUrl: params.get('logo_url') || '/server_logo.png',
+                appId: params.get('app_id') || null
             };
         }
 
         const config = getUrlParams();
+        if (config.appId) {
+            appId = parseInt(config.appId);
+        }
+        const mode = getMode();
         let servers = [];
 
         // Загрузка серверов
@@ -492,9 +614,177 @@
             content.innerHTML = html;
         }
 
-        // Автообновление каждые 30 секунд
-        loadServers();
-        setInterval(loadServers, 30000);
+        // Рендеринг админ-панели
+        function renderAdminPanel() {
+            const root = document.getElementById('root');
+            root.innerHTML = `
+                <div class="admin-panel">
+                    <div class="admin-header">
+                        <div class="admin-title">Мониторинг серверов</div>
+                        <div class="admin-description">
+                            Добавьте виджет на главную страницу сообщества, чтобы ваши подписчики могли видеть статус серверов в реальном времени.
+                        </div>
+                    </div>
+                    <div class="admin-content">
+                        <div class="admin-info">
+                            <div class="info-item">
+                                <div class="info-label">Что делает виджет?</div>
+                                <div class="info-value">Отображает список серверов с количеством игроков онлайн и возможностью копирования команды подключения</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Автообновление</div>
+                                <div class="info-value">Данные обновляются автоматически каждые 30 секунд</div>
+                            </div>
+                        </div>
+                        <button id="addWidgetBtn" class="add-widget-btn" ${!vkBridge ? 'disabled' : ''}>
+                            ${!vkBridge ? 'Ожидание инициализации...' : 'Добавить виджет на главную страницу'}
+                        </button>
+                        ${!vkBridge ? `
+                            <div class="admin-note">
+                                ⚠️ VK Bridge не инициализирован. Убедитесь, что вы открыли приложение в ВКонтакте.
+                            </div>
+                        ` : ''}
+                        <div class="admin-note">
+                            После добавления виджет будет отображаться на главной странице сообщества и автоматически обновлять данные о серверах.
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const addBtn = document.getElementById('addWidgetBtn');
+            if (addBtn && !addBtn.disabled) {
+                addBtn.addEventListener('click', handleAddWidget);
+            }
+        }
+
+        // Обработка добавления виджета
+        function handleAddWidget() {
+            if (!vkBridge) {
+                alert('Ошибка: VK Bridge не инициализирован. Убедитесь, что вы открыли приложение в ВКонтакте.');
+                return;
+            }
+
+            const btn = document.getElementById('addWidgetBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Добавление...';
+            }
+
+            // Получаем URL виджета (текущая страница с параметром widget=1)
+            const widgetUrl = window.location.origin + window.location.pathname + '?widget=1';
+            
+            // Получаем ID сообщества из параметров URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const groupId = urlParams.get('mid');
+            
+            // Используем VKWebAppShowCommunityWidgetPreviewBox для предпросмотра и добавления виджета
+            const widgetCode = `<iframe src="${widgetUrl}" width="100%" height="600" frameborder="0" style="border: none;"></iframe>`;
+            
+            vkBridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
+                group_id: groupId ? Math.abs(parseInt(groupId)) : undefined,
+                type: 'text',
+                code: widgetCode
+            })
+                .then((data) => {
+                    console.log('Widget preview box shown:', data);
+                    // После показа диалога VK сам обработает добавление
+                    if (btn) {
+                        btn.textContent = 'Добавить виджет на главную страницу';
+                        btn.disabled = false;
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error showing widget preview:', error);
+                    
+                    // Если метод не поддерживается, показываем инструкцию
+                    if (error.error_code === 4 || error.error_type === 'api_error') {
+                        showWidgetInstructions(widgetUrl, widgetCode);
+                    } else {
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.textContent = 'Добавить виджет на главную страницу';
+                        }
+                        alert('Ошибка при добавлении виджета: ' + (error.error_data?.error_description || error.message || 'Неизвестная ошибка'));
+                    }
+                });
+        }
+
+        // Показать инструкцию по ручному добавлению виджета
+        function showWidgetInstructions(widgetUrl, widgetCode) {
+            const root = document.getElementById('root');
+            root.innerHTML = `
+                <div class="admin-panel">
+                    <div class="admin-content">
+                        <div class="admin-header">
+                            <div class="admin-title">Добавление виджета</div>
+                            <div class="admin-description">
+                                Добавьте виджет вручную через настройки сообщества
+                            </div>
+                        </div>
+                        <div class="admin-info">
+                            <div class="info-item">
+                                <div class="info-label">Инструкция:</div>
+                                <div class="info-value" style="font-weight: normal;">
+                                    1. Перейдите в настройки вашего сообщества<br>
+                                    2. Откройте раздел "Разделы" → "Виджеты"<br>
+                                    3. Нажмите "Добавить виджет" → "Встраиваемый виджет"<br>
+                                    4. Вставьте URL виджета:<br>
+                                    <code style="display: block; margin-top: 8px; padding: 8px; background: #f7f8fa; border-radius: 4px; word-break: break-all;">${widgetUrl}</code>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="add-widget-btn" onclick="location.reload()">
+                            Вернуться назад
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Инициализация приложения
+        function init() {
+            if (mode === 'admin') {
+                // Режим админки - показываем панель управления
+                renderAdminPanel();
+            } else {
+                // Режим виджета - показываем мониторинг серверов
+                const root = document.getElementById('root');
+                root.innerHTML = `
+                    <div class="widget-container">
+                        <div class="widget-header">
+                            <div class="widget-title">Мониторинг серверов</div>
+                            <div class="widget-subtitle">Онлайн статус и подключение</div>
+                        </div>
+                        <div id="content">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                <div>Загрузка данных...</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Загружаем серверы и запускаем автообновление
+                loadServers();
+                setInterval(loadServers, 30000);
+            }
+        }
+
+        // Запуск приложения после инициализации VK Bridge
+        if (vkBridge) {
+            vkBridge.send('VKWebAppInit', {})
+                .then((data) => {
+                    console.log('VK Bridge initialized:', data);
+                    init();
+                })
+                .catch((error) => {
+                    console.log('VK Bridge init error, continuing anyway:', error);
+                    init();
+                });
+        } else {
+            // Если VK Bridge недоступен, запускаем сразу
+            init();
+        }
     </script>
 </body>
 </html>
