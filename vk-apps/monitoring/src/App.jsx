@@ -61,13 +61,6 @@ function App() {
 
   useEffect(() => {
     loadServers();
-    
-    // Автообновление каждые 30 секунд
-    const interval = setInterval(() => {
-      loadServers();
-    }, 30000);
-    
-    return () => clearInterval(interval);
   }, []);
 
   const getFillPercentage = (online, max) => {

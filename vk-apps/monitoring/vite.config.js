@@ -4,15 +4,7 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 export default defineConfig({
   plugins: [
-    react(),
-    viteStaticCopy({
-      targets: [
-        {
-          src: 'widget.html',
-          dest: '.'
-        }
-      ]
-    })
+    react()
   ],
   publicDir: 'public',
   server: {
