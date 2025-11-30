@@ -75,13 +75,12 @@ class VkWidgetController extends Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
         
         $uploadUrl = Yii::$app->request->post('upload_url');
-        $file = Yii::$app->request->getBodyParam('file'); // Для файлов из FormData
         
         // Получаем файл из $_FILES
-        if (empty($_FILES['file'])) {
+        if (empty($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
             Yii::$app->response->statusCode = 400;
             return [
-                'error' => 'file is required'
+                'error' => 'file is required and must be uploaded successfully'
             ];
         }
         
@@ -95,9 +94,15 @@ class VkWidgetController extends Controller
         try {
             $filePath = $_FILES['file']['tmp_name'];
             $fileName = $_FILES['file']['name'];
+            $fileType = $_FILES['file']['type'] ?: 'image/png';
+            
+            // Проверяем, что файл существует
+            if (!file_exists($filePath)) {
+                throw new \Exception('Uploaded file not found');
+            }
             
             // Подготавливаем файл для загрузки через CURL
-            $cfile = new \CURLFile($filePath, $_FILES['file']['type'], $fileName);
+            $cfile = new \CURLFile($filePath, $fileType, $fileName);
             
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $uploadUrl);
@@ -105,6 +110,7 @@ class VkWidgetController extends Controller
             curl_setopt($ch, CURLOPT_POSTFIELDS, ['file' => $cfile]);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -118,13 +124,13 @@ class VkWidgetController extends Controller
             curl_close($ch);
             
             if ($httpCode !== 200) {
-                throw new \Exception('Upload failed with HTTP code: ' . $httpCode);
+                throw new \Exception('Upload failed with HTTP code: ' . $httpCode . '. Response: ' . substr($response, 0, 500));
             }
             
             $data = json_decode($response, true);
             
             if (!$data) {
-                throw new \Exception('Invalid response from upload server');
+                throw new \Exception('Invalid response from upload server: ' . substr($response, 0, 500));
             }
             
             return $data;
