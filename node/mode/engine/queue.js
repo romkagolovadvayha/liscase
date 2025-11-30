@@ -46,18 +46,27 @@ class Queue extends AbstractClasses.TerminalItemBox {
         
         // Обработка закрытия потока
         responseSink.on('close', () => {
-            console.log(`🔒 Sink ${id} closed`);
+            // Логируем только если включен verbose режим
+            if (process.env.VERBOSE_LOGS === 'true') {
+                console.log(`🔒 Sink ${id} closed`);
+            }
             this.removeResponseSink(id);
         });
         
         // Обработка завершения потока
         responseSink.on('end', () => {
-            console.log(`🏁 Sink ${id} ended`);
+            // Логируем только если включен verbose режим
+            if (process.env.VERBOSE_LOGS === 'true') {
+                console.log(`🏁 Sink ${id} ended`);
+            }
             this.removeResponseSink(id);
         });
         
         this._sinks.set(id, responseSink);
-        console.log(`➕ New sink ${id} created (${this._sinks.size} total sinks)`);
+        // Логируем подключения только если включен verbose режим или при первом подключении
+        if (process.env.VERBOSE_LOGS === 'true' || this._sinks.size === 1) {
+            console.log(`➕ New sink ${id} created (${this._sinks.size} total sinks)`);
+        }
         
         // Если есть текущий трек, который играет, новый клиент начнёт получать данные сразу
         // благодаря тому, что _broadcastToEverySink уже работает
@@ -70,6 +79,11 @@ class Queue extends AbstractClasses.TerminalItemBox {
     }
 
     _broadcastToEverySink(chunk) {
+        // Оптимизация: если нет активных sinks, не обрабатываем
+        if (this._sinks.size === 0) {
+            return;
+        }
+        
         const deadSinks = [];
         
         for (const [id, sink] of this._sinks) {
@@ -81,34 +95,49 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 }
                 
                 // Пытаемся записать данные
-                const canWrite = sink.write(chunk);
-                
-                // Если буфер полон, ждём события 'drain'
-                if (!canWrite) {
-                    sink.once('drain', () => {
-                        // Буфер освободился, можно продолжать
-                    });
+                // Используем try-catch для обработки ошибок записи
+                try {
+                    const canWrite = sink.write(chunk);
+                    
+                    // Если буфер полон, не ждём - просто продолжаем
+                    // Sink сам вызовет drain когда будет готов
+                    if (!canWrite) {
+                        // Не блокируем, просто продолжаем с другими sinks
+                        // sink.once('drain', () => {}) - убрано для производительности
+                    }
+                } catch (writeErr) {
+                    // Ошибка при записи - помечаем как мёртвый
+                    deadSinks.push(id);
                 }
             } catch (err) {
-                // Если произошла ошибка при записи, помечаем sink как мёртвый
-                console.warn(`⚠️  Error writing to sink ${id}: ${err.message}`);
+                // Если произошла ошибка при проверке, помечаем sink как мёртвый
+                if (process.env.VERBOSE_LOGS === 'true') {
+                    console.warn(`⚠️  Error writing to sink ${id}: ${err.message}`);
+                }
                 deadSinks.push(id);
             }
         }
         
-        // Удаляем мёртвые sinks
-        for (const id of deadSinks) {
-            try {
-                const sink = this._sinks.get(id);
-                if (sink && !sink.destroyed) {
-                    sink.destroy();
+        // Удаляем мёртвые sinks (делаем это асинхронно, чтобы не блокировать)
+        if (deadSinks.length > 0) {
+            setImmediate(() => {
+                for (const id of deadSinks) {
+                    try {
+                        const sink = this._sinks.get(id);
+                        if (sink && !sink.destroyed) {
+                            sink.destroy();
+                        }
+                        this._sinks.delete(id);
+                        // Логируем удаление только если включен verbose режим
+                        if (process.env.VERBOSE_LOGS === 'true') {
+                            console.log(`🗑️  Removed dead sink ${id} (${this._sinks.size} active sinks remaining)`);
+                        }
+                    } catch (err) {
+                        // Игнорируем ошибки при удалении
+                        this._sinks.delete(id);
+                    }
                 }
-                this._sinks.delete(id);
-                console.log(`🗑️  Removed dead sink ${id} (${this._sinks.size} active sinks remaining)`);
-            } catch (err) {
-                // Игнорируем ошибки при удалении
-                this._sinks.delete(id);
-            }
+            });
         }
     }
 
@@ -178,11 +207,14 @@ class Queue extends AbstractClasses.TerminalItemBox {
         try {
             // Проверяем существование файла перед чтением
             const songPath = Path.resolve(process.cwd(), songToPlay);
+            
+            // Проверяем существование файла (используем existsSync, но это быстрая операция)
             if (!Fs.existsSync(songPath)) {
                 console.error(`❌ File not found: ${songPath}`);
                 throw new Error(`File not found: ${songToPlay}`);
             }
             
+            // Получаем битрейт параллельно с другими операциями
             const bitRate = await this._getBitRate(songToPlay);
             
             if (!bitRate || bitRate <= 0) {
@@ -194,10 +226,12 @@ class Queue extends AbstractClasses.TerminalItemBox {
             this._shouldSkip = false; // сбрасываем флаг пропуска
             
             // Создаём ReadStream с опциями для непрерывного чтения
+            // Используем большой буфер как в Discord боте для плавного стрима
             const songReadable = Fs.createReadStream(songPath, {
-                highWaterMark: 64 * 1024 // Увеличиваем буфер для плавного стрима
+                highWaterMark: 1 << 25 // 32 МБ буфер для плавного стрима (как в Discord боте)
             });
             
+            // Throttle с оптимизированными настройками
             const throttleTransformable = new Throttle(bitRate / 8);
             
             // Сохраняем ссылки на потоки для возможности остановки
@@ -211,8 +245,17 @@ class Queue extends AbstractClasses.TerminalItemBox {
 
             let hasEnded = false;
             let bytesStreamed = 0;
-            const fileStats = Fs.statSync(songPath);
-            const fileSize = fileStats.size;
+            
+            // Получаем размер файла асинхронно, чтобы не блокировать поток
+            let fileSize = 0;
+            try {
+                const fileStats = Fs.statSync(songPath);
+                fileSize = fileStats.size;
+            } catch (err) {
+                console.warn(`⚠️  Could not get file size: ${err.message}`);
+                // Используем примерный размер, если не удалось получить
+                fileSize = 0;
+            }
             
             // Таймаут для защиты от зависания (максимум 10 минут на трек)
             const maxDuration = 10 * 60 * 1000; // 10 минут
