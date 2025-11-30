@@ -82,9 +82,12 @@ function AdminPanel() {
         return;
       }
 
-      // Получаем URL виджета и API
-      const widgetUrl = window.location.origin + window.location.pathname.replace(/\/$/, '') + '/widget.html?widget=1';
+      // Получаем параметры для формирования внутренней ссылки ВК
+      const appId = params.get('vk_app_id');
       const apiUrl = params.get('api_url') || 'https://api.prostoj.store/servers';
+      
+      // Формируем внутреннюю ссылку ВК на приложение (только vk.com, vk.me и т.д. разрешены)
+      // Убираем URL из виджета, так как внешние ссылки не разрешены
       
       // Загружаем данные о серверах для формирования виджета
       let serversData = [];
@@ -99,10 +102,11 @@ function AdminPanel() {
       }
       
       // Формируем тело таблицы из данных серверов (максимум 6 строк)
+      // Убираем все URL, так как внешние ссылки не разрешены в виджетах ВК
       const tableBody = serversData.slice(0, 6).map(server => [
         {
-          text: (server.name || 'Сервер').substring(0, 50),
-          url: widgetUrl
+          text: (server.name || 'Сервер').substring(0, 50)
+          // url убран - внешние ссылки не разрешены
         },
         {
           text: `${server.online || 0}/${server.max || 0}`,
@@ -118,24 +122,25 @@ function AdminPanel() {
       if (tableBody.length === 0) {
         tableBody.push([
           {
-            text: "Загрузка данных...",
-            url: widgetUrl
+            text: "Загрузка данных..."
+            // url убран
           },
           {
             text: "—",
             align: "center"
           },
           {
-            text: "Открыть",
-            url: widgetUrl
+            text: "—",
+            align: "center"
           }
         ]);
       }
       
       // Создаем объект виджета с данными
+      // Убираем все внешние URL, так как виджеты ВК поддерживают только внутренние ссылки
       const widgetObject = {
         title: "Мониторинг серверов",
-        title_url: widgetUrl,
+        // title_url убран - используем только внутренние ссылки vk.com или не используем вообще
         head: [
           {
             text: "Сервер"
@@ -149,9 +154,8 @@ function AdminPanel() {
             align: "center"
           }
         ],
-        body: tableBody,
-        more: "Открыть все серверы",
-        more_url: widgetUrl
+        body: tableBody
+        // more и more_url убраны, так как внешние ссылки не разрешены
       };
       
       // Формируем код виджета: return { ... };
