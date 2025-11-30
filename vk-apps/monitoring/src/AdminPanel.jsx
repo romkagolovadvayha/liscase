@@ -85,11 +85,14 @@ function AdminPanel() {
       // Получаем URL виджета
       const widgetUrl = window.location.origin + window.location.pathname.replace(/\/$/, '') + '/widget.html?widget=1';
       
+      // Формируем код виджета - экранируем HTML для VK
+      const widgetCode = '<iframe src="' + widgetUrl + '" width="100%" height="600" frameborder="0" style="border: none;"></iframe>';
+      
       // Используем VKWebAppShowCommunityWidgetPreviewBox для установки виджета
       const result = await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
         group_id: Math.abs(parseInt(groupId)),
         type: 'text',
-        code: `<iframe src="${widgetUrl}" width="100%" height="600" frameborder="0" style="border: none;"></iframe>`
+        code: widgetCode
       });
       
       console.log('Widget preview result:', result);
