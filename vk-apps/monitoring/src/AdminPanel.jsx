@@ -86,29 +86,40 @@ function AdminPanel() {
       const widgetUrl = window.location.origin + window.location.pathname.replace(/\/$/, '') + '/widget.html?widget=1';
       
       // Для плагинов сообществ используем VKWebAppShowCommunityWidgetPreviewBox
-      // Пробуем разные форматы - сначала iframe с url
+      // Пробуем разные форматы
+      let result;
+      let success = false;
+      
+      // Вариант 1: iframe с url
       try {
-        const result = await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
+        result = await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
           group_id: Math.abs(parseInt(groupId)),
           type: 'iframe',
           url: widgetUrl
         });
         console.log('Widget preview result (iframe):', result);
-        setWidgetAdded(true);
+        success = true;
       } catch (iframeError) {
-        console.log('Iframe type failed, trying text type...', iframeError);
-        // Если iframe не работает, пробуем text с простым текстом
-        const result = await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
-          group_id: Math.abs(parseInt(groupId)),
-          type: 'text',
-          code: widgetUrl
-        });
-        console.log('Widget preview result (text):', result);
-        setWidgetAdded(true);
+        console.log('Iframe type failed, trying text with URL...', iframeError);
+        
+        // Вариант 2: text с простым URL (без HTML)
+        try {
+          result = await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
+            group_id: Math.abs(parseInt(groupId)),
+            type: 'text',
+            code: widgetUrl
+          });
+          console.log('Widget preview result (text URL):', result);
+          success = true;
+        } catch (textError) {
+          console.error('Text type also failed:', textError);
+          throw textError; // Пробрасываем ошибку дальше
+        }
       }
       
-      console.log('Widget preview result:', result);
-      setWidgetAdded(true);
+      if (success) {
+        setWidgetAdded(true);
+      }
     } catch (error) {
       console.error('Error installing widget:', error);
       console.error('Error details:', error.error_data || error);
