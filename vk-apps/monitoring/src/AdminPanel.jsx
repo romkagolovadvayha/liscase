@@ -25,6 +25,8 @@ function AdminPanel() {
   const [addingWidget, setAddingWidget] = useState(false);
   const [appAdded, setAppAdded] = useState(isAppInstalled); // Устанавливаем true, если приложение уже установлено
   const [widgetAdded, setWidgetAdded] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoIconId, setLogoIconId] = useState(null);
 
   // Шаг 1: Добавить приложение в сообщество
   const handleAddToCommunity = async () => {
@@ -59,6 +61,74 @@ function AdminPanel() {
       alert('Ошибка при добавлении приложения в сообщество: ' + (error.error_data?.error_description || error.message || 'Неизвестная ошибка'));
     } finally {
       setAddingApp(false);
+    }
+  };
+
+  // Загрузка логотипа в ВК
+  const handleUploadLogo = async (file) => {
+    if (!bridge || !groupId) {
+      alert('Ошибка: VK Bridge не инициализирован или не определен ID сообщества.');
+      return;
+    }
+
+    setUploadingLogo(true);
+
+    try {
+      // Шаг 1: Получаем адрес сервера для загрузки
+      const uploadServerResult = await bridge.send('VKWebAppCallAPIMethod', {
+        method: 'appWidgets.getGroupImageUploadServer',
+        params: {
+          image_type: '24x24' // Иконка для таблицы - 24x24
+        }
+      });
+
+      if (!uploadServerResult.response) {
+        throw new Error('Не удалось получить адрес сервера загрузки');
+      }
+
+      const uploadUrl = uploadServerResult.response.upload_url;
+
+      // Шаг 2: Загружаем изображение на сервер ВК
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Ошибка загрузки изображения на сервер ВК');
+      }
+
+      const uploadData = await uploadResponse.json();
+
+      // Шаг 3: Преобразуем ответ в Base64
+      const base64Data = btoa(JSON.stringify(uploadData));
+
+      // Шаг 4: Сохраняем изображение через API ВК
+      const saveResult = await bridge.send('VKWebAppCallAPIMethod', {
+        method: 'appWidgets.saveGroupImage',
+        params: {
+          image: base64Data
+        }
+      });
+
+      if (!saveResult.response || !saveResult.response.id) {
+        throw new Error('Не удалось сохранить изображение');
+      }
+
+      // Получаем icon_id (id из ответа)
+      const iconId = saveResult.response.id;
+      setLogoIconId(iconId);
+      
+      console.log('Logo uploaded successfully, icon_id:', iconId);
+      alert('Логотип успешно загружен!');
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      alert('Ошибка при загрузке логотипа: ' + (error.message || 'Неизвестная ошибка'));
+    } finally {
+      setUploadingLogo(false);
     }
   };
 
@@ -101,30 +171,87 @@ function AdminPanel() {
         console.error('Error loading servers:', error);
       }
       
-      // Формируем тело таблицы из данных серверов (максимум 6 строк)
-      // Убираем все URL, так как внешние ссылки не разрешены в виджетах ВК
-      const tableBody = serversData.slice(0, 6).map(server => [
-        {
-          text: (server.name || 'Сервер').substring(0, 50)
-          // url убран - внешние ссылки не разрешены
-        },
-        {
-          text: `${server.online || 0}/${server.max || 0}`,
-          align: "center"
-        },
-        {
-          text: (server.online || 0) > 0 ? 'Онлайн' : 'Оффлайн',
-          align: "center"
+      // Функция для форматирования онлайн как прогресс-бар
+      const formatOnlineProgress = (online, max) => {
+        const onlineValue = online || 0;
+        const maxValue = max || 1;
+        const percentage = Math.round((onlineValue / maxValue) * 100);
+        
+        // Создаем прогресс-бар из 4 блоков
+        const totalBlocks = 4;
+        const filledBlocks = Math.round((percentage / 100) * totalBlocks);
+        
+        let progressBar = '';
+        for (let i = 0; i < totalBlocks; i++) {
+          if (i < filledBlocks) {
+            progressBar += '🟩';
+          } else {
+            progressBar += '⬜️';
+          }
         }
-      ]);
+        
+        // Формат: 🟩🟩⬜️⬜️ 👤 73/150 (49%)
+        return `${progressBar} 👤 ${onlineValue}/${maxValue} (${percentage}%)`;
+      };
+      
+      // Функция для форматирования названия сервера с типом вайпа
+      const formatServerName = (server) => {
+        let name = server.name || 'Сервер';
+        
+        // Добавляем тип вайпа к названию
+        if (server.wipe_type_text) {
+          name = `${name} ${server.wipe_type_text}`;
+        } else if (server.wipe_type) {
+          // Если wipe_type_text нет, но есть wipe_type, формируем вручную
+          if (server.wipe_type === 7) {
+            name = `${name} Недельный`;
+          } else if (server.wipe_type === 14) {
+            name = `${name} Двухнедельный`;
+          } else if (server.wipe_type === 30) {
+            name = `${name} Месячный`;
+          }
+        }
+        
+        return name.substring(0, 50);
+      };
+      
+      // Формируем тело таблицы из данных серверов (максимум 6 строк)
+      // Добавляем icon_id в первую колонку, если логотип загружен
+      // В третьей колонке показываем текстовый IP вместо статуса
+      const tableBody = serversData.slice(0, 6).map(server => {
+        const firstCell = {
+          text: formatServerName(server)
+        };
+        
+        // Добавляем icon_id, если логотип загружен (только для первой ячейки в строке)
+        if (logoIconId) {
+          firstCell.icon_id = logoIconId;
+        }
+        
+        return [
+          firstCell,
+          {
+            text: formatOnlineProgress(server.online, server.max),
+            align: "center"
+          },
+          {
+            text: (server.text_ip || server.ip || '—').substring(0, 50),
+            align: "center"
+          }
+        ];
+      });
       
       // Если нет данных, добавляем заглушку
       if (tableBody.length === 0) {
+        const placeholderFirstCell = {
+          text: "Загрузка данных..."
+        };
+        if (logoIconId) {
+          placeholderFirstCell.icon_id = logoIconId;
+        }
+        
         tableBody.push([
-          {
-            text: "Загрузка данных..."
-            // url убран
-          },
+          placeholderFirstCell,
           {
             text: "—",
             align: "center"
@@ -150,7 +277,7 @@ function AdminPanel() {
             align: "center"
           },
           {
-            text: "Статус",
+            text: "IP",
             align: "center"
           }
         ],
@@ -232,7 +359,52 @@ function AdminPanel() {
                           />
                         )}
                         <Text style={{ marginBottom: '12px', display: 'block', color: 'var(--vkui--color_text_secondary)' }}>
-                          {isAppInstalled ? 'Установите виджет на главную страницу сообщества' : 'Шаг 2: Теперь установите виджет на главную страницу'}
+                          Шаг 2: Загрузите логотип для виджета (опционально, 24x24px)
+                        </Text>
+                        <div style={{ marginBottom: '16px' }}>
+                          <input
+                            type="file"
+                            id="logoUpload"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                // Проверяем тип файла
+                                if (!file.type.startsWith('image/')) {
+                                  alert('Пожалуйста, выберите изображение');
+                                  return;
+                                }
+                                handleUploadLogo(file);
+                              }
+                            }}
+                            disabled={uploadingLogo || !isAppInstalled}
+                          />
+                          <label htmlFor="logoUpload">
+                            <Button
+                              size="m"
+                              stretched
+                              loading={uploadingLogo}
+                              disabled={!bridge || uploadingLogo || !isAppInstalled}
+                              mode="secondary"
+                              component="span"
+                            >
+                              {uploadingLogo ? 'Загрузка...' : logoIconId ? 'Логотип загружен ✓' : 'Загрузить логотип'}
+                            </Button>
+                          </label>
+                        </div>
+                        
+                        {logoIconId && (
+                          <Banner
+                            mode="success"
+                            header="Логотип загружен!"
+                            subheader={`ID: ${logoIconId}`}
+                            style={{ marginBottom: '16px' }}
+                          />
+                        )}
+                        
+                        <Text style={{ marginBottom: '12px', display: 'block', color: 'var(--vkui--color_text_secondary)' }}>
+                          {isAppInstalled ? 'Установите виджет на главную страницу сообщества' : 'Шаг 3: Теперь установите виджет на главную страницу'}
                         </Text>
                         {!widgetAdded ? (
                           <Button
