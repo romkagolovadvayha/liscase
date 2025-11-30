@@ -175,7 +175,7 @@ function AdminPanel() {
       const formatOnlineProgress = (online, max) => {
         const onlineValue = online || 0;
         const maxValue = max || 1;
-        const percentage = Math.round((onlineValue / maxValue) * 100);
+        const percentage = Math.round((onlineValue / maxValue - 30) * 100);
         
         // Создаем прогресс-бар из 4 блоков
         const totalBlocks = 4;
@@ -191,7 +191,7 @@ function AdminPanel() {
         }
         
         // Формат: 🟩🟩⬜️⬜️ 👤 73/150 (49%)
-        return `${progressBar} 👤 ${onlineValue}/${maxValue} (${percentage}%)`;
+        return `${progressBar} 👤 ${onlineValue}/${maxValue}`;
       };
       
       // Функция для форматирования названия сервера с типом вайпа
@@ -200,7 +200,7 @@ function AdminPanel() {
         
         // Добавляем тип вайпа к названию
         if (server.wipe_type_text) {
-          name = `${name} ${server.wipe_type_text}`;
+          name = `${name} (${server.wipe_type_text})`;
         } else if (server.wipe_type) {
           // Если wipe_type_text нет, но есть wipe_type, формируем вручную
           if (server.wipe_type === 7) {
@@ -232,11 +232,11 @@ function AdminPanel() {
           firstCell,
           {
             text: formatOnlineProgress(server.online, server.max),
-            align: "center"
+            align: "right"
           },
           {
             text: (server.text_ip || server.ip || '—').substring(0, 50),
-            align: "center"
+            align: "right"
           }
         ];
       });
@@ -267,20 +267,6 @@ function AdminPanel() {
       // Убираем все внешние URL, так как виджеты ВК поддерживают только внутренние ссылки
       const widgetObject = {
         title: "Мониторинг серверов",
-        // title_url убран - используем только внутренние ссылки vk.com или не используем вообще
-        head: [
-          {
-            text: "Сервер"
-          },
-          {
-            text: "Игроки",
-            align: "center"
-          },
-          {
-            text: "IP",
-            align: "center"
-          }
-        ],
         body: tableBody
         // more и more_url убраны, так как внешние ссылки не разрешены
       };
