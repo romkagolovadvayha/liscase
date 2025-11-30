@@ -86,40 +86,35 @@ function AdminPanel() {
       const widgetUrl = window.location.origin + window.location.pathname.replace(/\/$/, '') + '/widget.html?widget=1';
       
       // Для плагинов сообществ используем VKWebAppShowCommunityWidgetPreviewBox
-      // Пробуем разные форматы
-      let result;
-      let success = false;
+      // Формируем код виджета в формате VK Widget API
+      // Используем простой текст без HTML, VK сам создаст iframe
       
-      // Вариант 1: iframe с url
-      try {
-        result = await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
-          group_id: Math.abs(parseInt(groupId)),
-          type: 'iframe',
-          url: widgetUrl
-        });
-        console.log('Widget preview result (iframe):', result);
-        success = true;
-      } catch (iframeError) {
-        console.log('Iframe type failed, trying text with URL...', iframeError);
-        
-        // Вариант 2: text с простым URL (без HTML)
-        try {
-          result = await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
-            group_id: Math.abs(parseInt(groupId)),
-            type: 'text',
-            code: widgetUrl
-          });
-          console.log('Widget preview result (text URL):', result);
-          success = true;
-        } catch (textError) {
-          console.error('Text type also failed:', textError);
-          throw textError; // Пробрасываем ошибку дальше
-        }
-      }
+      // Экранируем URL для использования в строке
+      const escapedUrl = widgetUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
       
-      if (success) {
-        setWidgetAdded(true);
-      }
+      // Формируем простой код виджета - только текст с URL
+      // VK виджет API ожидает JavaScript код, который возвращает объект
+      const widgetCode = [
+        'return {',
+        '  title: "Мониторинг серверов",',
+        '  title_url: "' + escapedUrl + '",',
+        '  more: "Открыть",',
+        '  more_url: "' + escapedUrl + '",',
+        '  body: "Виджет показывает статус серверов в реальном времени. Для просмотра нажмите \\"Открыть\\"."',
+        '};'
+      ].join('\\n');
+      
+      console.log('Widget code to send:', widgetCode);
+      console.log('Decoded code:', widgetCode.replace(/\\n/g, '\n'));
+      
+      const result = await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
+        group_id: Math.abs(parseInt(groupId)),
+        type: 'text',
+        code: widgetCode
+      });
+      
+      console.log('Widget preview result:', result);
+      setWidgetAdded(true);
     } catch (error) {
       console.error('Error installing widget:', error);
       console.error('Error details:', error.error_data || error);
