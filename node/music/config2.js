@@ -40,5 +40,14 @@ module.exports = {
                 highWaterMark: 1 << 25
             }
         }
+    },
+    
+    // Автоматическое подключение к радио
+    autoRadio: {
+        enabled: process.env.AUTO_RADIO_ENABLED === 'true' || false,
+        channelId: process.env.AUTO_RADIO_CHANNEL_ID || null, // ID голосового канала
+        radioUrl: process.env.AUTO_RADIO_URL || 'http://localhost:8082/stream', // URL радио потока
+        reconnectDelay: 5000, // Задержка перед переподключением (мс)
+        autoReconnect: true // Автоматически переподключаться при отключении
     }
 };
