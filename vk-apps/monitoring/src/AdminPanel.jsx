@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   AppRoot,
   SplitLayout,
@@ -27,6 +27,7 @@ function AdminPanel() {
   const [widgetAdded, setWidgetAdded] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [logoIconId, setLogoIconId] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Шаг 1: Добавить приложение в сообщество
   const handleAddToCommunity = async () => {
@@ -381,6 +382,7 @@ function AdminPanel() {
                         </Text>
                         <div style={{ marginBottom: '16px' }}>
                           <input
+                            ref={fileInputRef}
                             type="file"
                             id="logoUpload"
                             accept="image/*"
@@ -393,11 +395,13 @@ function AdminPanel() {
                                 // Проверяем тип файла
                                 if (!file.type.startsWith('image/')) {
                                   alert('Пожалуйста, выберите изображение (PNG, JPG, GIF и т.д.)');
+                                  e.target.value = ''; // Очищаем input
                                   return;
                                 }
                                 // Проверяем размер файла (максимум 5MB)
                                 if (file.size > 5 * 1024 * 1024) {
                                   alert('Размер файла не должен превышать 5MB');
+                                  e.target.value = ''; // Очищаем input
                                   return;
                                 }
                                 handleUploadLogo(file);
@@ -405,20 +409,26 @@ function AdminPanel() {
                                 console.log('No file selected');
                               }
                             }}
-                            disabled={uploadingLogo || !isAppInstalled}
+                            disabled={uploadingLogo}
                           />
-                          <label htmlFor="logoUpload">
-                            <Button
-                              size="m"
-                              stretched
-                              loading={uploadingLogo}
-                              disabled={uploadingLogo}
-                              mode="secondary"
-                              component="span"
-                            >
-                              {uploadingLogo ? 'Загрузка...' : logoIconId ? 'Логотип загружен ✓' : 'Загрузить логотип'}
-                            </Button>
-                          </label>
+                          <Button
+                            size="m"
+                            stretched
+                            loading={uploadingLogo}
+                            disabled={uploadingLogo}
+                            mode="secondary"
+                            onClick={() => {
+                              console.log('Upload button clicked');
+                              if (fileInputRef.current) {
+                                console.log('Triggering file input click');
+                                fileInputRef.current.click();
+                              } else {
+                                console.error('File input ref is null');
+                              }
+                            }}
+                          >
+                            {uploadingLogo ? 'Загрузка...' : logoIconId ? 'Логотип загружен ✓' : 'Загрузить логотип'}
+                          </Button>
                         </div>
                         
                         {logoIconId && (
