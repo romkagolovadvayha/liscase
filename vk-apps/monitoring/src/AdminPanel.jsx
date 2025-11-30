@@ -412,7 +412,10 @@ function AdminPanel() {
                           />
                         )}
                         <Text style={{ marginBottom: '12px', display: 'block', color: 'var(--vkui--color_text_secondary)' }}>
-                          Шаг 2: Загрузите логотип для виджета (опционально, 24x24px)
+                          Шаг 2: Загрузите логотип для виджета (опционально, 72x72px)
+                        </Text>
+                        <Text style={{ marginBottom: '12px', display: 'block', color: 'var(--vkui--color_text_secondary)', fontSize: '14px' }}>
+                          ВК требует загружать изображения в утроенном размере: для виджета 24x24px нужно загрузить изображение 72x72px
                         </Text>
                         <div style={{ marginBottom: '16px' }}>
                           <input
@@ -438,18 +441,21 @@ function AdminPanel() {
                                   e.target.value = ''; // Очищаем input
                                   return;
                                 }
-                                // Проверяем размер изображения (должно быть 24x24px)
+                                // Проверяем размер изображения
+                                // ВК требует загружать изображения в утроенном размере:
+                                // для виджета 24x24px нужно загружать 72x72px (24 * 3 = 72)
                                 const img = new Image();
                                 const objectUrl = URL.createObjectURL(file);
+                                const requiredSize = 72;
                                 img.onload = () => {
                                   URL.revokeObjectURL(objectUrl);
                                   console.log('Image loaded, dimensions:', img.width, 'x', img.height);
-                                  if (img.width !== 24 || img.height !== 24) {
-                                    alert(`Размер изображения должен быть точно 24x24px. Текущий размер: ${img.width}x${img.height}px\n\nПожалуйста, измените размер изображения до 24x24px и попробуйте снова.`);
+                                  if (img.width !== requiredSize || img.height !== requiredSize) {
+                                    alert(`Размер изображения должен быть точно ${requiredSize}x${requiredSize}px (для виджета 24x24px).\nТекущий размер: ${img.width}x${img.height}px\n\nВК требует загружать изображения в утроенном размере. Пожалуйста, измените размер изображения до ${requiredSize}x${requiredSize}px и попробуйте снова.`);
                                     e.target.value = ''; // Очищаем input
                                     return;
                                   }
-                                  console.log('Image size validated: 24x24px, proceeding with upload');
+                                  console.log(`Image size validated: ${requiredSize}x${requiredSize}px, proceeding with upload`);
                                   handleUploadLogo(file);
                                 };
                                 img.onerror = () => {

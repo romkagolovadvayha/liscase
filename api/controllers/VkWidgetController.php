@@ -114,14 +114,17 @@ class VkWidgetController extends Controller
             // Логируем информацию об изображении
             Yii::info("Image upload: {$fileName}, size: {$width}x{$height}, type: {$mimeType}, file size: " . filesize($filePath) . " bytes", 'vk-widget');
             
-            // Для виджетов ВК требуется точный размер 24x24px
-            if ($width !== 24 || $height !== 24) {
+            // ВК требует загружать изображения в утроенном размере:
+            // для виджета 24x24px нужно загружать 72x72px (24 * 3 = 72)
+            $requiredSize = 72;
+            if ($width !== $requiredSize || $height !== $requiredSize) {
                 Yii::$app->response->statusCode = 400;
                 return [
                     'error_code' => 4601,
-                    'error_msg' => "Wrong image size: image must be exactly 24x24px, got {$width}x{$height}px",
+                    'error_msg' => "Wrong image size: image must be exactly {$requiredSize}x{$requiredSize}px (для виджета 24x24px), got {$width}x{$height}px",
                     'image_width' => $width,
-                    'image_height' => $height
+                    'image_height' => $height,
+                    'required_size' => $requiredSize
                 ];
             }
             
