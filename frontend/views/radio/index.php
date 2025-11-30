@@ -127,21 +127,53 @@ $(document).on("click", ".radio-listen-btn", function() {
                         <button id="pause-btn" class="player-btn" style="display:none;"><i class="fa fa-pause"></i></button>
                         <button id="close-player-btn" class="player-btn close-btn"><i class="fa fa-times"></i></button>
                     </div>
-                    <audio id="radio-audio" preload="none"></audio>
+                    <audio id="radio-audio" preload="auto" crossorigin="anonymous"></audio>
                 </div>
             </div>
         `;
         $("body").append(playerHtml);
     }
     
-    // Устанавливаем URL потока
-    $("#radio-audio").attr("src", streamUrl);
+    var audio = $("#radio-audio")[0];
     
-    // Показываем плеер и проигрываем
+    // Устанавливаем URL потока
+    audio.src = streamUrl;
+    
+    // Показываем плеер
     $("#radio-player").fadeIn();
     $("#play-btn").hide();
     $("#pause-btn").show();
-    $("#radio-audio")[0].play();
+    
+    // Принудительно загружаем поток
+    audio.load();
+    
+    // Пытаемся начать воспроизведение сразу
+    var playPromise = audio.play();
+    
+    // Обрабатываем ошибки воспроизведения
+    if (playPromise !== undefined) {
+        playPromise.catch(function(error) {
+            console.log("Auto-play prevented, waiting for user interaction or canplay event");
+        });
+    }
+    
+    // Начинаем воспроизведение как только будет достаточно данных
+    audio.addEventListener("canplay", function() {
+        if (audio.paused) {
+            audio.play().catch(function(error) {
+                console.log("Play error:", error);
+            });
+        }
+    }, { once: true });
+    
+    // Также пытаемся начать при canplaythrough (когда весь трек загружен)
+    audio.addEventListener("canplaythrough", function() {
+        if (audio.paused) {
+            audio.play().catch(function(error) {
+                console.log("Play error:", error);
+            });
+        }
+    }, { once: true });
 });
 
 // Обработчики для плеера

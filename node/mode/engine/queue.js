@@ -25,6 +25,8 @@ class Queue extends AbstractClasses.TerminalItemBox {
         this._sinks = new Map(); // map of active sinks/writables
         this._songs = []; // list of queued up songs
         this._currentSong = null;
+        this._currentStreams = null; // { readable, throttle } - текущие потоки для остановки
+        this._shouldSkip = false; // флаг для пропуска текущего трека
         this.stream = new EventEmitter();
     }
 
@@ -35,7 +37,31 @@ class Queue extends AbstractClasses.TerminalItemBox {
     makeResponseSink() {
         const id = Utils.generateRandomId();
         const responseSink = PassThrough();
+        
+        // Обработка ошибок в PassThrough потоке
+        responseSink.on('error', (err) => {
+            console.warn(`⚠️  Sink ${id} error: ${err.message}`);
+            this.removeResponseSink(id);
+        });
+        
+        // Обработка закрытия потока
+        responseSink.on('close', () => {
+            console.log(`🔒 Sink ${id} closed`);
+            this.removeResponseSink(id);
+        });
+        
+        // Обработка завершения потока
+        responseSink.on('end', () => {
+            console.log(`🏁 Sink ${id} ended`);
+            this.removeResponseSink(id);
+        });
+        
         this._sinks.set(id, responseSink);
+        console.log(`➕ New sink ${id} created (${this._sinks.size} total sinks)`);
+        
+        // Если есть текущий трек, который играет, новый клиент начнёт получать данные сразу
+        // благодаря тому, что _broadcastToEverySink уже работает
+        
         return { id, responseSink };
     }
 
@@ -44,8 +70,45 @@ class Queue extends AbstractClasses.TerminalItemBox {
     }
 
     _broadcastToEverySink(chunk) {
-        for (const [, sink] of this._sinks) {
-            sink.write(chunk);
+        const deadSinks = [];
+        
+        for (const [id, sink] of this._sinks) {
+            try {
+                // Проверяем, не закрыт ли поток
+                if (sink.destroyed || sink.writableEnded || !sink.writable) {
+                    deadSinks.push(id);
+                    continue;
+                }
+                
+                // Пытаемся записать данные
+                const canWrite = sink.write(chunk);
+                
+                // Если буфер полон, ждём события 'drain'
+                if (!canWrite) {
+                    sink.once('drain', () => {
+                        // Буфер освободился, можно продолжать
+                    });
+                }
+            } catch (err) {
+                // Если произошла ошибка при записи, помечаем sink как мёртвый
+                console.warn(`⚠️  Error writing to sink ${id}: ${err.message}`);
+                deadSinks.push(id);
+            }
+        }
+        
+        // Удаляем мёртвые sinks
+        for (const id of deadSinks) {
+            try {
+                const sink = this._sinks.get(id);
+                if (sink && !sink.destroyed) {
+                    sink.destroy();
+                }
+                this._sinks.delete(id);
+                console.log(`🗑️  Removed dead sink ${id} (${this._sinks.size} active sinks remaining)`);
+            } catch (err) {
+                // Игнорируем ошибки при удалении
+                this._sinks.delete(id);
+            }
         }
     }
 
@@ -113,6 +176,13 @@ class Queue extends AbstractClasses.TerminalItemBox {
         console.log(`📋 Queue length: ${this._songs.length}`);
 
         try {
+            // Проверяем существование файла перед чтением
+            const songPath = Path.resolve(process.cwd(), songToPlay);
+            if (!Fs.existsSync(songPath)) {
+                console.error(`❌ File not found: ${songPath}`);
+                throw new Error(`File not found: ${songToPlay}`);
+            }
+            
             const bitRate = await this._getBitRate(songToPlay);
             
             if (!bitRate || bitRate <= 0) {
@@ -121,26 +191,65 @@ class Queue extends AbstractClasses.TerminalItemBox {
             
             // ТЕПЕРЬ меняем currentSong - поток начал читать файл!
             this._currentSong = songToPlay;
+            this._shouldSkip = false; // сбрасываем флаг пропуска
             
-            const songReadable = Fs.createReadStream(songToPlay);
+            const songReadable = Fs.createReadStream(songPath);
             const throttleTransformable = new Throttle(bitRate / 8);
+            
+            // Сохраняем ссылки на потоки для возможности остановки
+            this._currentStreams = {
+                readable: songReadable,
+                throttle: throttleTransformable
+            };
 
             let hasEnded = false;
             let bytesStreamed = 0;
-            const fileStats = Fs.statSync(this._currentSong);
+            const fileStats = Fs.statSync(songPath);
             const fileSize = fileStats.size;
+            
+            // Таймаут для защиты от зависания (максимум 10 минут на трек)
+            const maxDuration = 10 * 60 * 1000; // 10 минут
+            const timeoutId = setTimeout(() => {
+                if (!hasEnded) {
+                    console.warn(`⏱️  Timeout reached for ${Path.basename(songToPlay)}, skipping...`);
+                    this._shouldSkip = true;
+                    if (this._currentStreams) {
+                        try {
+                            if (!songReadable.destroyed) {
+                                songReadable.destroy();
+                            }
+                            if (!throttleTransformable.destroyed) {
+                                throttleTransformable.destroy();
+                            }
+                        } catch (err) {
+                            // Игнорируем ошибки
+                        }
+                    }
+                }
+            }, maxDuration);
             
             console.log(`📊 File size: ${(fileSize / 1024 / 1024).toFixed(2)} MB`);
             console.log(`🎵 Streaming bitrate: ${bitRate / 1000} kbps`);
+            console.log(`👂 Active listeners: ${this._sinks.size}`);
             
             // Обработка данных
             throttleTransformable.on('data', (chunk) => {
+                // Проверяем, не нужно ли пропустить трек
+                if (this._shouldSkip) {
+                    return;
+                }
+                
                 bytesStreamed += chunk.length;
+                
+                // Стримим даже если нет активных слушателей (радио продолжает работать)
                 this._broadcastToEverySink(chunk);
             });
             
             // Когда трек ПОЛНОСТЬЮ закончился (когда ReadStream закончился)
             songReadable.once('end', () => {
+                if (this._shouldSkip) {
+                    return;
+                }
                 console.log(`📤 ReadStream ended: streamed ${bytesStreamed} bytes`);
                 // Ждём пока Throttle закончит передачу всех данных
             });
@@ -150,8 +259,18 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 if (hasEnded) return;
                 hasEnded = true;
                 
-                console.log(`✅ FINISHED: ${Path.basename(this._currentSong)}`);
-                console.log(`   Streamed: ${bytesStreamed} / ${fileSize} bytes`);
+                // Очищаем таймаут
+                clearTimeout(timeoutId);
+                
+                // Очищаем ссылки на потоки
+                this._currentStreams = null;
+                
+                if (this._shouldSkip) {
+                    console.log(`⏭️  Track skipped: ${Path.basename(this._currentSong)}`);
+                } else {
+                    console.log(`✅ FINISHED: ${Path.basename(this._currentSong)}`);
+                    console.log(`   Streamed: ${bytesStreamed} / ${fileSize} bytes`);
+                }
                 console.log(`   Queue: ${this._songs.length} tracks remaining\n`);
                 
                 // Закрываем streams явно
@@ -162,10 +281,10 @@ class Queue extends AbstractClasses.TerminalItemBox {
                     throttleTransformable.destroy();
                 }
                 
-                // Небольшая задержка перед следующим треком
+                // Минимальная задержка перед следующим треком для плавного перехода
                 setTimeout(() => {
                     this._playLoop();
-                }, 500);
+                }, 100);
             });
             
             // Обработка ошибок Throttle
@@ -173,9 +292,20 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 if (hasEnded) return;
                 hasEnded = true;
                 
+                clearTimeout(timeoutId);
+                this._currentStreams = null;
                 console.error(`❌ Throttle error: ${err.message}`);
-                songReadable.destroy();
-                throttleTransformable.destroy();
+                
+                try {
+                    if (!songReadable.destroyed) {
+                        songReadable.destroy();
+                    }
+                    if (!throttleTransformable.destroyed) {
+                        throttleTransformable.destroy();
+                    }
+                } catch (destroyErr) {
+                    // Игнорируем ошибки при уничтожении
+                }
                 
                 setTimeout(() => this._playLoop(), 500);
             });
@@ -185,15 +315,24 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 if (hasEnded) return;
                 hasEnded = true;
                 
+                clearTimeout(timeoutId);
+                this._currentStreams = null;
                 console.error(`❌ ReadStream error: ${err.message}`);
-                throttleTransformable.destroy();
+                
+                try {
+                    if (!throttleTransformable.destroyed) {
+                        throttleTransformable.destroy();
+                    }
+                } catch (destroyErr) {
+                    // Игнорируем ошибки при уничтожении
+                }
                 
                 setTimeout(() => this._playLoop(), 500);
             });
             
             // Закрытие потока (для информации)
             songReadable.once('close', () => {
-                if (!hasEnded) {
+                if (!hasEnded && !this._shouldSkip) {
                     console.log(`🔒 ReadStream closed (file not fully streamed!)`);
                 }
             });
@@ -203,7 +342,25 @@ class Queue extends AbstractClasses.TerminalItemBox {
             
         } catch (err) {
             console.error(`❌ Error playing song: ${err.message}`);
-            setTimeout(() => this._playLoop(), 500);
+            console.error(err.stack);
+            
+            // Очищаем ссылки на потоки при ошибке
+            this._currentStreams = null;
+            this._currentSong = null;
+            
+            // Продолжаем воспроизведение следующего трека
+            setTimeout(() => {
+                try {
+                    this._playLoop();
+                } catch (loopErr) {
+                    console.error(`❌ Critical error in playLoop: ${loopErr.message}`);
+                    // Если даже playLoop падает, пытаемся ещё раз через 5 секунд
+                    setTimeout(() => {
+                        console.log('🔄 Attempting to recover...');
+                        this._playLoop();
+                    }, 5000);
+                }
+            }, 1000);
         }
     }
 
@@ -368,8 +525,35 @@ class Queue extends AbstractClasses.TerminalItemBox {
      * Текущий трек не удаляется, остаётся в очереди
      */
     skipToNext() {
-        // Не нужно ничего делать - просто инициирует переход к следующему треку
-        // Текущий трек уже в конце очереди благодаря _playLoop
+        console.log('⏭️  Skipping to next track...');
+        
+        // Устанавливаем флаг для пропуска текущего трека
+        this._shouldSkip = true;
+        
+        // Останавливаем текущие потоки, если они есть
+        if (this._currentStreams) {
+            try {
+                const { readable, throttle } = this._currentStreams;
+                
+                // Уничтожаем потоки
+                if (readable && !readable.destroyed) {
+                    readable.destroy();
+                }
+                if (throttle && !throttle.destroyed) {
+                    throttle.destroy();
+                }
+                
+                console.log('🛑 Current streams stopped');
+            } catch (err) {
+                console.warn(`⚠️  Error stopping streams: ${err.message}`);
+            }
+        }
+        
+        // Добавляем текущий трек в конец очереди, если его там ещё нет
+        if (this._currentSong && !this._songs.includes(this._currentSong)) {
+            this._songs.push(this._currentSong);
+        }
+        
         return true;
     }
 

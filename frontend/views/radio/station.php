@@ -191,7 +191,7 @@ if ($station->currentTrack) {
             <i class="fa fa-radio"></i>
             <span class="player-station"><?= Html::encode($station->name) ?></span>
         </div>
-        <audio id="radio-audio" preload="none"></audio>
+        <audio id="radio-audio" preload="auto" crossorigin="anonymous"></audio>
         <div class="player-controls">
             <button class="player-btn play-btn" id="play-btn">
                 <i class="fa fa-play"></i>
@@ -215,10 +215,41 @@ $(document).on('click', '.radio-player-toggle', function() {
     
     player.show();
     audio.src = streamUrl;
+    
+    // Принудительно загружаем поток
     audio.load();
-    audio.play();
+    
+    // Показываем кнопки управления
     $('#play-btn').hide();
     $('#pause-btn').show();
+    
+    // Пытаемся начать воспроизведение сразу
+    var playPromise = audio.play();
+    
+    // Обрабатываем ошибки воспроизведения
+    if (playPromise !== undefined) {
+        playPromise.catch(function(error) {
+            console.log("Auto-play prevented, waiting for canplay event");
+        });
+    }
+    
+    // Начинаем воспроизведение как только будет достаточно данных
+    audio.addEventListener("canplay", function() {
+        if (audio.paused) {
+            audio.play().catch(function(error) {
+                console.log("Play error:", error);
+            });
+        }
+    }, { once: true });
+    
+    // Также пытаемся начать при canplaythrough
+    audio.addEventListener("canplaythrough", function() {
+        if (audio.paused) {
+            audio.play().catch(function(error) {
+                console.log("Play error:", error);
+            });
+        }
+    }, { once: true });
 });
 
 $(document).on('click', '#play-btn', function() {

@@ -27,15 +27,39 @@ const plugin = {
             handler: (request, h) => {
                 const { id, responseSink } = queue.makeResponseSink();
                 request.app.sinkId = id;
-                return h.response(responseSink).type('audio/mpeg');
+                
+                // Устанавливаем заголовки для стриминга
+                const response = h.response(responseSink)
+                    .type('audio/mpeg')
+                    .header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                    .header('Pragma', 'no-cache')
+                    .header('Expires', '0')
+                    .header('Connection', 'keep-alive')
+                    .header('Accept-Ranges', 'bytes')
+                    .header('Content-Transfer-Encoding', 'binary');
+                
+                // Начинаем отправку данных сразу (не ждём полной загрузки)
+                responseSink.resume();
+                
+                return response;
             },
             options: {
                 ext: {
                     onPreResponse: {
                         method: (request, h) => {
-                            request.events.once('disconnect', () => {
-                                queue.removeResponseSink(request.app.sinkId);
-                            });
+                            // Обработка отключения клиента
+                            const cleanup = () => {
+                                if (request.app.sinkId) {
+                                    queue.removeResponseSink(request.app.sinkId);
+                                    request.app.sinkId = null;
+                                }
+                            };
+                            
+                            // Обработка различных событий отключения
+                            request.events.once('disconnect', cleanup);
+                            request.raw.req.once('close', cleanup);
+                            request.raw.req.once('aborted', cleanup);
+                            
                             return h.continue;
                         }
                     }
