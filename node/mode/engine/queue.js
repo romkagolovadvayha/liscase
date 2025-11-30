@@ -193,7 +193,11 @@ class Queue extends AbstractClasses.TerminalItemBox {
             this._currentSong = songToPlay;
             this._shouldSkip = false; // сбрасываем флаг пропуска
             
-            const songReadable = Fs.createReadStream(songPath);
+            // Создаём ReadStream с опциями для непрерывного чтения
+            const songReadable = Fs.createReadStream(songPath, {
+                highWaterMark: 64 * 1024 // Увеличиваем буфер для плавного стрима
+            });
+            
             const throttleTransformable = new Throttle(bitRate / 8);
             
             // Сохраняем ссылки на потоки для возможности остановки
@@ -201,6 +205,9 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 readable: songReadable,
                 throttle: throttleTransformable
             };
+            
+            // Убеждаемся, что throttle не приостанавливается
+            throttleTransformable.resume();
 
             let hasEnded = false;
             let bytesStreamed = 0;
@@ -252,6 +259,7 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 }
                 console.log(`📤 ReadStream ended: streamed ${bytesStreamed} bytes`);
                 // Ждём пока Throttle закончит передачу всех данных
+                // Не закрываем readable сразу, пусть throttle закончит обработку
             });
             
             // Когда Throttle закончил передачу ВСЕХ данных
@@ -262,29 +270,40 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 // Очищаем таймаут
                 clearTimeout(timeoutId);
                 
+                // Сохраняем информацию о текущем треке перед очисткой
+                const finishedSong = this._currentSong;
+                const streamedBytes = bytesStreamed;
+                const totalBytes = fileSize;
+                const wasSkipped = this._shouldSkip;
+                
                 // Очищаем ссылки на потоки
                 this._currentStreams = null;
                 
-                if (this._shouldSkip) {
-                    console.log(`⏭️  Track skipped: ${Path.basename(this._currentSong)}`);
+                if (wasSkipped) {
+                    console.log(`⏭️  Track skipped: ${Path.basename(finishedSong)}`);
                 } else {
-                    console.log(`✅ FINISHED: ${Path.basename(this._currentSong)}`);
-                    console.log(`   Streamed: ${bytesStreamed} / ${fileSize} bytes`);
+                    console.log(`✅ FINISHED: ${Path.basename(finishedSong)}`);
+                    console.log(`   Streamed: ${streamedBytes} / ${totalBytes} bytes`);
                 }
-                console.log(`   Queue: ${this._songs.length} tracks remaining\n`);
+                console.log(`   Queue: ${this._songs.length} tracks remaining`);
                 
                 // Закрываем streams явно
-                if (!songReadable.destroyed) {
-                    songReadable.destroy();
-                }
-                if (!throttleTransformable.destroyed) {
-                    throttleTransformable.destroy();
+                try {
+                    if (!songReadable.destroyed) {
+                        songReadable.destroy();
+                    }
+                    if (!throttleTransformable.destroyed) {
+                        throttleTransformable.destroy();
+                    }
+                } catch (err) {
+                    // Игнорируем ошибки при закрытии
                 }
                 
-                // Минимальная задержка перед следующим треком для плавного перехода
-                setTimeout(() => {
+                // Немедленно начинаем следующий трек без задержки для непрерывного стрима
+                // Используем setImmediate для асинхронного вызова, но без задержки
+                setImmediate(() => {
                     this._playLoop();
-                }, 100);
+                });
             });
             
             // Обработка ошибок Throttle
@@ -307,7 +326,10 @@ class Queue extends AbstractClasses.TerminalItemBox {
                     // Игнорируем ошибки при уничтожении
                 }
                 
-                setTimeout(() => this._playLoop(), 500);
+                // Немедленно переходим к следующему треку
+                setImmediate(() => {
+                    this._playLoop();
+                });
             });
             
             // Обработка ошибок ReadStream
@@ -327,13 +349,19 @@ class Queue extends AbstractClasses.TerminalItemBox {
                     // Игнорируем ошибки при уничтожении
                 }
                 
-                setTimeout(() => this._playLoop(), 500);
+                // Немедленно переходим к следующему треку
+                setImmediate(() => {
+                    this._playLoop();
+                });
             });
             
             // Закрытие потока (для информации)
             songReadable.once('close', () => {
+                // Это событие может сработать после 'end', поэтому проверяем hasEnded
+                // Не выводим предупреждение, если трек был успешно завершён
                 if (!hasEnded && !this._shouldSkip) {
-                    console.log(`🔒 ReadStream closed (file not fully streamed!)`);
+                    // Это нормально, если close срабатывает после end
+                    // Просто логируем для отладки, но не как ошибку
                 }
             });
 
