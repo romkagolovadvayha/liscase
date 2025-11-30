@@ -82,34 +82,87 @@ function AdminPanel() {
         return;
       }
 
-      // Получаем URL виджета
+      // Получаем URL виджета и API
       const widgetUrl = window.location.origin + window.location.pathname.replace(/\/$/, '') + '/widget.html?widget=1';
+      const apiUrl = params.get('api_url') || 'https://api.prostoj.store/servers';
       
-      // Для плагинов сообществ используем VKWebAppShowCommunityWidgetPreviewBox
-      // Формируем код виджета в формате VK Widget API
-      // Используем простой текст без HTML, VK сам создаст iframe
+      // Загружаем данные о серверах для формирования виджета
+      let serversData = [];
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+        serversData = await response.json();
+      } catch (error) {
+        console.error('Error loading servers:', error);
+      }
       
-      // Экранируем URL для использования в строке
-      const escapedUrl = widgetUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      // Формируем тело таблицы из данных серверов (максимум 6 строк)
+      const tableBody = serversData.slice(0, 6).map(server => [
+        {
+          text: (server.name || 'Сервер').substring(0, 50),
+          url: widgetUrl
+        },
+        {
+          text: `${server.online || 0}/${server.max || 0}`,
+          align: "center"
+        },
+        {
+          text: (server.online || 0) > 0 ? 'Онлайн' : 'Оффлайн',
+          align: "center"
+        }
+      ]);
       
-      // Формируем простой код виджета - только текст с URL
-      // VK виджет API ожидает JavaScript код, который возвращает объект
-      const widgetCode = [
-        'return {',
-        '  title: "Мониторинг серверов",',
-        '  title_url: "' + escapedUrl + '",',
-        '  more: "Открыть",',
-        '  more_url: "' + escapedUrl + '",',
-        '  body: "Виджет показывает статус серверов в реальном времени. Для просмотра нажмите \\"Открыть\\"."',
-        '};'
-      ].join('\\n');
+      // Если нет данных, добавляем заглушку
+      if (tableBody.length === 0) {
+        tableBody.push([
+          {
+            text: "Загрузка данных...",
+            url: widgetUrl
+          },
+          {
+            text: "—",
+            align: "center"
+          },
+          {
+            text: "Открыть",
+            url: widgetUrl
+          }
+        ]);
+      }
+      
+      // Создаем объект виджета с данными
+      const widgetObject = {
+        title: "Мониторинг серверов",
+        title_url: widgetUrl,
+        head: [
+          {
+            text: "Сервер"
+          },
+          {
+            text: "Игроки",
+            align: "center"
+          },
+          {
+            text: "Статус",
+            align: "center"
+          }
+        ],
+        body: tableBody,
+        more: "Открыть все серверы",
+        more_url: widgetUrl
+      };
+      
+      // Формируем код виджета: return { ... };
+      const widgetCode = 'return ' + JSON.stringify(widgetObject) + ';';
       
       console.log('Widget code to send:', widgetCode);
-      console.log('Decoded code:', widgetCode.replace(/\\n/g, '\n'));
+      console.log('Widget object:', widgetObject);
       
       const result = await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
         group_id: Math.abs(parseInt(groupId)),
-        type: 'text',
+        type: 'table',
         code: widgetCode
       });
       
