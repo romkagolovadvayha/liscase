@@ -16,9 +16,14 @@ import {
 import bridge from '@vkontakte/vk-bridge';
 
 function AdminPanel() {
+  // Проверяем, установлено ли приложение в сообщество (есть vk_group_id)
+  const params = new URLSearchParams(window.location.search);
+  const groupId = params.get('vk_group_id');
+  const isAppInstalled = !!groupId; // Если есть vk_group_id, значит приложение уже установлено
+  
   const [addingApp, setAddingApp] = useState(false);
   const [addingWidget, setAddingWidget] = useState(false);
-  const [appAdded, setAppAdded] = useState(false);
+  const [appAdded, setAppAdded] = useState(isAppInstalled); // Устанавливаем true, если приложение уже установлено
   const [widgetAdded, setWidgetAdded] = useState(false);
 
   // Шаг 1: Добавить приложение в сообщество
@@ -141,13 +146,15 @@ function AdminPanel() {
                       </>
                     ) : (
                       <>
-                        <Banner
-                          mode="success"
-                          header="Приложение добавлено в сообщество!"
-                          style={{ marginBottom: '16px' }}
-                        />
+                        {!isAppInstalled && (
+                          <Banner
+                            mode="success"
+                            header="Приложение добавлено в сообщество!"
+                            style={{ marginBottom: '16px' }}
+                          />
+                        )}
                         <Text style={{ marginBottom: '12px', display: 'block', color: 'var(--vkui--color_text_secondary)' }}>
-                          Шаг 2: Теперь установите виджет на главную страницу
+                          {isAppInstalled ? 'Установите виджет на главную страницу сообщества' : 'Шаг 2: Теперь установите виджет на главную страницу'}
                         </Text>
                         {!widgetAdded ? (
                           <Button
