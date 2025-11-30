@@ -35,11 +35,36 @@ const plugin = {
                     .header('Pragma', 'no-cache')
                     .header('Expires', '0')
                     .header('Connection', 'keep-alive')
+                    .header('Keep-Alive', 'timeout=60, max=1000')
                     .header('Accept-Ranges', 'bytes')
-                    .header('Content-Transfer-Encoding', 'binary');
+                    .header('Content-Transfer-Encoding', 'binary')
+                    .header('Transfer-Encoding', 'chunked'); // Важно для стриминга
                 
                 // Начинаем отправку данных сразу (не ждём полной загрузки)
                 responseSink.resume();
+                
+                // Убеждаемся, что поток не приостанавливается (keep-alive механизм)
+                const keepAliveInterval = setInterval(() => {
+                    if (!responseSink.destroyed && responseSink.writable) {
+                        try {
+                            responseSink.resume();
+                        } catch (err) {
+                            // Игнорируем ошибки
+                            clearInterval(keepAliveInterval);
+                        }
+                    } else {
+                        clearInterval(keepAliveInterval);
+                    }
+                }, 5000); // Проверяем каждые 5 секунд
+                
+                // Очищаем интервал при закрытии соединения
+                responseSink.once('close', () => {
+                    clearInterval(keepAliveInterval);
+                });
+                
+                responseSink.once('end', () => {
+                    clearInterval(keepAliveInterval);
+                });
                 
                 return response;
             },

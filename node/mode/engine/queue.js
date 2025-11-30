@@ -36,12 +36,18 @@ class Queue extends AbstractClasses.TerminalItemBox {
 
     makeResponseSink() {
         const id = Utils.generateRandomId();
-        const responseSink = PassThrough();
+        const responseSink = PassThrough({
+            highWaterMark: 16 * 1024 * 1024, // 16 МБ буфер для плавного стрима
+            allowHalfOpen: false // Закрывать поток при ошибках
+        });
         
         // Обработка ошибок в PassThrough потоке
         responseSink.on('error', (err) => {
-            console.warn(`⚠️  Sink ${id} error: ${err.message}`);
-            this.removeResponseSink(id);
+            if (process.env.VERBOSE_LOGS === 'true') {
+                console.warn(`⚠️  Sink ${id} error: ${err.message}`);
+            }
+            // Не удаляем сразу, даём возможность восстановиться
+            // Удалим при следующей попытке записи
         });
         
         // Обработка закрытия потока
@@ -61,6 +67,17 @@ class Queue extends AbstractClasses.TerminalItemBox {
             }
             this.removeResponseSink(id);
         });
+        
+        // Обработка drain - когда буфер освободился
+        responseSink.on('drain', () => {
+            // Буфер освободился, можно продолжать запись
+            if (!responseSink.destroyed) {
+                responseSink.resume();
+            }
+        });
+        
+        // Убеждаемся, что поток не приостанавливается
+        responseSink.resume();
         
         this._sinks.set(id, responseSink);
         // Логируем подключения только если включен verbose режим или при первом подключении
@@ -228,7 +245,8 @@ class Queue extends AbstractClasses.TerminalItemBox {
             // Создаём ReadStream с опциями для непрерывного чтения
             // Используем большой буфер как в Discord боте для плавного стрима
             const songReadable = Fs.createReadStream(songPath, {
-                highWaterMark: 1 << 25 // 32 МБ буфер для плавного стрима (как в Discord боте)
+                highWaterMark: 1 << 25, // 32 МБ буфер для плавного стрима (как в Discord боте)
+                autoClose: false // Не закрывать файл автоматически
             });
             
             // Throttle с оптимизированными настройками
@@ -240,8 +258,18 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 throttle: throttleTransformable
             };
             
-            // Убеждаемся, что throttle не приостанавливается
+            // Убеждаемся, что потоки не приостанавливаются
+            songReadable.resume();
             throttleTransformable.resume();
+            
+            // Обработка ошибок ReadStream - продолжаем работу
+            songReadable.on('error', (err) => {
+                console.error(`❌ ReadStream error: ${err.message}`);
+                // Не останавливаем полностью, пытаемся продолжить
+                if (!songReadable.destroyed && !this._shouldSkip) {
+                    songReadable.resume();
+                }
+            });
 
             let hasEnded = false;
             let bytesStreamed = 0;
@@ -292,7 +320,35 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 bytesStreamed += chunk.length;
                 
                 // Стримим даже если нет активных слушателей (радио продолжает работать)
+                // Всегда отправляем данные для непрерывного стрима
                 this._broadcastToEverySink(chunk);
+            });
+            
+            // Убеждаемся, что throttle продолжает работать
+            throttleTransformable.on('drain', () => {
+                // Буфер освободился, можно продолжать
+                if (!throttleTransformable.destroyed && !this._shouldSkip) {
+                    throttleTransformable.resume();
+                }
+            });
+            
+            // Обработка паузы throttle (если буфер переполнен)
+            throttleTransformable.on('pause', () => {
+                // Автоматически возобновляем при паузе
+                setImmediate(() => {
+                    if (!throttleTransformable.destroyed && !this._shouldSkip) {
+                        throttleTransformable.resume();
+                    }
+                });
+            });
+            
+            // Обработка ошибок throttle в data handler - продолжаем работу
+            throttleTransformable.on('error', (err) => {
+                // Это не должно останавливать основной поток
+                // Основная обработка ошибок в once('error') ниже
+                if (process.env.VERBOSE_LOGS === 'true') {
+                    console.warn(`⚠️  Throttle warning in data handler: ${err.message}`);
+                }
             });
             
             // Когда трек ПОЛНОСТЬЮ закончился (когда ReadStream закончился)
@@ -332,11 +388,11 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 
                 // Закрываем streams явно
                 try {
-                    if (!songReadable.destroyed) {
-                        songReadable.destroy();
-                    }
-                    if (!throttleTransformable.destroyed) {
-                        throttleTransformable.destroy();
+                if (!songReadable.destroyed) {
+                    songReadable.destroy();
+                }
+                if (!throttleTransformable.destroyed) {
+                    throttleTransformable.destroy();
                     }
                 } catch (err) {
                     // Игнорируем ошибки при закрытии
@@ -360,10 +416,10 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 
                 try {
                     if (!songReadable.destroyed) {
-                        songReadable.destroy();
+                songReadable.destroy();
                     }
                     if (!throttleTransformable.destroyed) {
-                        throttleTransformable.destroy();
+                throttleTransformable.destroy();
                     }
                 } catch (destroyErr) {
                     // Игнорируем ошибки при уничтожении
@@ -386,7 +442,7 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 
                 try {
                     if (!throttleTransformable.destroyed) {
-                        throttleTransformable.destroy();
+                throttleTransformable.destroy();
                     }
                 } catch (destroyErr) {
                     // Игнорируем ошибки при уничтожении
