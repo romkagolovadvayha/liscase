@@ -93,30 +93,18 @@ function AdminPanel() {
       // Шаг 1: Получаем адрес сервера для загрузки через прямой вызов API ВК
       console.log('Step 1: Getting upload server URL...');
       
-      // Используем прямой вызов API ВК
-      const apiUrl = `https://api.vk.com/method/appWidgets.getGroupImageUploadServer?group_id=${Math.abs(parseInt(currentGroupId))}&image_type=24x24&v=5.199`;
+      // Используем серверный прокси для обхода CORS
+      // Используем тот же домен API, что и для серверов
+      const apiUrlFull = params.get('api_url') || 'https://api.prostoj.store/servers';
+      const apiBaseUrl = apiUrlFull.replace('/servers', '').replace(/\/$/, '');
       
-      let uploadServerUrl = apiUrl;
-      if (accessToken) {
-        uploadServerUrl += `&access_token=${accessToken}`;
-      }
+      // Серверный прокси будет использовать сервисный ключ из настроек (vk_app_sever_key)
+      // Токен передавать не требуется, но можно передать для переопределения
+      const proxyUrl = `${apiBaseUrl}/vk-widget/get-upload-server?group_id=${Math.abs(parseInt(currentGroupId))}`;
+      console.log('Calling proxy API:', proxyUrl);
       
-      console.log('Calling API:', uploadServerUrl);
-      
-      // Пробуем получить через bridge сначала
-      let uploadServerResult;
-      try {
-        uploadServerResult = await bridge.send('VKWebAppGetAuthToken', {
-          app_id: parseInt(params.get('vk_app_id')),
-          scope: 'app_widgets'
-        });
-        console.log('Auth token result:', uploadServerResult);
-      } catch (e) {
-        console.log('Cannot get auth token via bridge, using direct API call');
-      }
-      
-      // Прямой вызов API
-      const uploadServerResponse = await fetch(uploadServerUrl);
+      // Вызов через прокси
+      const uploadServerResponse = await fetch(proxyUrl);
       const uploadServerData = await uploadServerResponse.json();
       
       console.log('Upload server response:', uploadServerData);
@@ -154,16 +142,20 @@ function AdminPanel() {
       const base64Data = btoa(JSON.stringify(uploadData));
       console.log('Base64 data length:', base64Data.length);
 
-      // Шаг 4: Сохраняем изображение через API ВК
-      console.log('Step 3: Saving image via VK API...');
-      const saveApiUrl = `https://api.vk.com/method/appWidgets.saveGroupImage?group_id=${Math.abs(parseInt(currentGroupId))}&image=${encodeURIComponent(base64Data)}&v=5.199`;
+      // Шаг 4: Сохраняем изображение через серверный прокси
+      console.log('Step 3: Saving image via proxy...');
+      const saveProxyUrl = `${apiBaseUrl}/vk-widget/save-image`;
       
-      let saveUrl = saveApiUrl;
-      if (accessToken) {
-        saveUrl += `&access_token=${accessToken}`;
-      }
+      const saveFormData = new FormData();
+      saveFormData.append('group_id', Math.abs(parseInt(currentGroupId)).toString());
+      // Серверный прокси будет использовать сервисный ключ из настроек
+      // Токен передавать не требуется
+      saveFormData.append('image', base64Data);
       
-      const saveResponse = await fetch(saveUrl);
+      const saveResponse = await fetch(saveProxyUrl, {
+        method: 'POST',
+        body: saveFormData
+      });
       const saveResult = await saveResponse.json();
 
       console.log('Save result:', saveResult);
