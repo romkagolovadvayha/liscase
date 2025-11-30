@@ -412,7 +412,7 @@ function AdminPanel() {
                           />
                         )}
                         <Text style={{ marginBottom: '12px', display: 'block', color: 'var(--vkui--color_text_secondary)' }}>
-                          Шаг 2: Загрузите логотип для виджета (опционально, 32x32px)
+                          Шаг 2: Загрузите логотип для виджета (опционально, 24x24px)
                         </Text>
                         <div style={{ marginBottom: '16px' }}>
                           <input
@@ -443,8 +443,8 @@ function AdminPanel() {
                                 const objectUrl = URL.createObjectURL(file);
                                 img.onload = () => {
                                   URL.revokeObjectURL(objectUrl);
-                                  if (img.width !== 32 || img.height !== 32) {
-                                    alert(`Размер изображения должен быть 32x32px. Текущий размер: ${img.width}x${img.height}px`);
+                                  if (img.width !== 24 || img.height !== 24) {
+                                    alert(`Размер изображения должен быть 24x24px. Текущий размер: ${img.width}x${img.height}px`);
                                     e.target.value = ''; // Очищаем input
                                     return;
                                   }
