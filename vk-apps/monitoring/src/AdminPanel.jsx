@@ -120,14 +120,18 @@ function AdminPanel() {
       const uploadUrl = uploadServerData.response.upload_url;
       console.log('Upload URL:', uploadUrl);
 
-      // Шаг 2: Загружаем изображение на сервер ВК
-      console.log('Step 2: Uploading file to VK server...');
-      const formData = new FormData();
-      formData.append('file', file);
+      // Шаг 2: Загружаем изображение на сервер ВК через прокси (обход CORS)
+      console.log('Step 2: Uploading file to VK server via proxy...');
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+      uploadFormData.append('upload_url', uploadUrl);
 
-      const uploadResponse = await fetch(uploadUrl, {
+      const uploadProxyUrl = `${apiBaseUrl}/vk-widget/upload-image`;
+      console.log('Calling upload proxy:', uploadProxyUrl);
+      
+      const uploadResponse = await fetch(uploadProxyUrl, {
         method: 'POST',
-        body: formData
+        body: uploadFormData
       });
 
       console.log('Upload response status:', uploadResponse.status);
@@ -140,6 +144,11 @@ function AdminPanel() {
 
       const uploadData = await uploadResponse.json();
       console.log('Upload data:', uploadData);
+
+      if (!uploadData || uploadData.error) {
+        console.error('Upload result error:', uploadData);
+        throw new Error(`Ошибка загрузки: ${uploadData.error || 'Неизвестная ошибка'}`);
+      }
 
       // Шаг 3: Преобразуем ответ в Base64
       const base64Data = btoa(JSON.stringify(uploadData));

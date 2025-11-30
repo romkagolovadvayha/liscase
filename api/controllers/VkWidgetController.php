@@ -67,6 +67,76 @@ class VkWidgetController extends Controller
     }
 
     /**
+     * Прокси для загрузки файла на сервер ВК (обход CORS)
+     * Принимает файл и URL загрузки, загружает на сервер ВК и возвращает результат
+     */
+    public function actionUploadImage()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        $uploadUrl = Yii::$app->request->post('upload_url');
+        $file = Yii::$app->request->getBodyParam('file'); // Для файлов из FormData
+        
+        // Получаем файл из $_FILES
+        if (empty($_FILES['file'])) {
+            Yii::$app->response->statusCode = 400;
+            return [
+                'error' => 'file is required'
+            ];
+        }
+        
+        if (!$uploadUrl) {
+            Yii::$app->response->statusCode = 400;
+            return [
+                'error' => 'upload_url is required'
+            ];
+        }
+        
+        try {
+            $filePath = $_FILES['file']['tmp_name'];
+            $fileName = $_FILES['file']['name'];
+            
+            // Подготавливаем файл для загрузки через CURL
+            $cfile = new \CURLFile($filePath, $_FILES['file']['type'], $fileName);
+            
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $uploadUrl);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, ['file' => $cfile]);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            
+            if (curl_errno($ch)) {
+                $error = curl_error($ch);
+                curl_close($ch);
+                throw new \Exception('CURL error: ' . $error);
+            }
+            
+            curl_close($ch);
+            
+            if ($httpCode !== 200) {
+                throw new \Exception('Upload failed with HTTP code: ' . $httpCode);
+            }
+            
+            $data = json_decode($response, true);
+            
+            if (!$data) {
+                throw new \Exception('Invalid response from upload server');
+            }
+            
+            return $data;
+        } catch (\Exception $e) {
+            Yii::$app->response->statusCode = 500;
+            return [
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
      * Прокси для сохранения изображения виджета ВК
      * Использует appWidgets.saveAppImage для коллекции приложения
      * Работает с сервисным ключом доступа приложения (vk_app_sever_key)
