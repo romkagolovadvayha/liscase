@@ -16,6 +16,7 @@ class ServersController extends Controller
 
         /** @var Servers[] $list */
         $list = Servers::find()
+                       ->with('serversTags') // Загружаем теги вместе с серверами (eager loading)
                        ->cache(60)
                        ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
                        ->orderBy(['sort' => SORT_ASC])
@@ -23,12 +24,22 @@ class ServersController extends Controller
 
         $items = [];
         foreach ($list as $item) {
+            // Получаем теги сервера через связь
+            $tags = [];
+            foreach ($item->serversTags as $serverTag) {
+                $tags[] = $serverTag->link_name;
+            }
+            
             $items[] = [
                 'name' => $item->name,
                 'ip' => $item->ip,
                 'port' => $item->port,
                 'query' => $item->query,
                 'tag' => $item->tag,
+                'online' => (int)$item->players, // Текущий онлайн на сервере
+                'joined' => (int)$item->joined, // Игроки в очереди
+                'max' => (int)$item->max, // Максимальный онлайн
+                'tags' => implode(', ', $tags), // Теги сервера через запятую (link_name)
             ];
         }
 
