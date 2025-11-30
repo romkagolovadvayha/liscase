@@ -53,7 +53,7 @@ class ServersController extends Controller
                 }
                 
                 $items[] = [
-                    'name' => $item->name,
+                    'name' => $item->monitoring_name,
                     'ip' => $item->ip,
                     'text_ip' => $item->text_ip, // Текстовый IP адрес
                     'port' => $item->port,
