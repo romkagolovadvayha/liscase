@@ -66,15 +66,30 @@ function AdminPanel() {
 
   // Загрузка логотипа в ВК
   const handleUploadLogo = async (file) => {
-    if (!bridge || !groupId) {
-      alert('Ошибка: VK Bridge не инициализирован или не определен ID сообщества.');
+    console.log('handleUploadLogo called with file:', file);
+    console.log('bridge:', bridge);
+    console.log('groupId:', groupId);
+    
+    if (!bridge) {
+      alert('Ошибка: VK Bridge не инициализирован. Убедитесь, что вы открыли приложение в ВКонтакте.');
+      return;
+    }
+
+    // Получаем groupId из параметров URL, если его нет в состоянии
+    const params = new URLSearchParams(window.location.search);
+    const currentGroupId = groupId || params.get('vk_group_id');
+    
+    if (!currentGroupId) {
+      alert('Ошибка: не удалось определить ID сообщества. Убедитесь, что приложение установлено в сообщество.');
       return;
     }
 
     setUploadingLogo(true);
+    console.log('Starting logo upload...');
 
     try {
       // Шаг 1: Получаем адрес сервера для загрузки
+      console.log('Step 1: Getting upload server URL...');
       const uploadServerResult = await bridge.send('VKWebAppCallAPIMethod', {
         method: 'appWidgets.getGroupImageUploadServer',
         params: {
@@ -82,13 +97,18 @@ function AdminPanel() {
         }
       });
 
-      if (!uploadServerResult.response) {
-        throw new Error('Не удалось получить адрес сервера загрузки');
+      console.log('Upload server result:', uploadServerResult);
+
+      if (!uploadServerResult || !uploadServerResult.response || !uploadServerResult.response.upload_url) {
+        console.error('Upload server result error:', uploadServerResult);
+        throw new Error('Не удалось получить адрес сервера загрузки. Проверьте консоль для деталей.');
       }
 
       const uploadUrl = uploadServerResult.response.upload_url;
+      console.log('Upload URL:', uploadUrl);
 
       // Шаг 2: Загружаем изображение на сервер ВК
+      console.log('Step 2: Uploading file to VK server...');
       const formData = new FormData();
       formData.append('file', file);
 
@@ -97,16 +117,23 @@ function AdminPanel() {
         body: formData
       });
 
+      console.log('Upload response status:', uploadResponse.status);
+
       if (!uploadResponse.ok) {
-        throw new Error('Ошибка загрузки изображения на сервер ВК');
+        const errorText = await uploadResponse.text();
+        console.error('Upload error response:', errorText);
+        throw new Error(`Ошибка загрузки изображения на сервер ВК: ${uploadResponse.status}`);
       }
 
       const uploadData = await uploadResponse.json();
+      console.log('Upload data:', uploadData);
 
       // Шаг 3: Преобразуем ответ в Base64
       const base64Data = btoa(JSON.stringify(uploadData));
+      console.log('Base64 data length:', base64Data.length);
 
       // Шаг 4: Сохраняем изображение через API ВК
+      console.log('Step 3: Saving image via VK API...');
       const saveResult = await bridge.send('VKWebAppCallAPIMethod', {
         method: 'appWidgets.saveGroupImage',
         params: {
@@ -114,8 +141,11 @@ function AdminPanel() {
         }
       });
 
-      if (!saveResult.response || !saveResult.response.id) {
-        throw new Error('Не удалось сохранить изображение');
+      console.log('Save result:', saveResult);
+
+      if (!saveResult || !saveResult.response || !saveResult.response.id) {
+        console.error('Save result error:', saveResult);
+        throw new Error('Не удалось сохранить изображение. Проверьте консоль для деталей.');
       }
 
       // Получаем icon_id (id из ответа)
@@ -123,10 +153,12 @@ function AdminPanel() {
       setLogoIconId(iconId);
       
       console.log('Logo uploaded successfully, icon_id:', iconId);
-      alert('Логотип успешно загружен!');
+      alert('Логотип успешно загружен! ID: ' + iconId);
     } catch (error) {
       console.error('Error uploading logo:', error);
-      alert('Ошибка при загрузке логотипа: ' + (error.message || 'Неизвестная ошибка'));
+      console.error('Error stack:', error.stack);
+      const errorMessage = error.error_data?.error_description || error.message || 'Неизвестная ошибка';
+      alert('Ошибка при загрузке логотипа: ' + errorMessage + '\n\nПроверьте консоль для деталей.');
     } finally {
       setUploadingLogo(false);
     }
@@ -175,7 +207,7 @@ function AdminPanel() {
       const formatOnlineProgress = (online, max) => {
         const onlineValue = online || 0;
         const maxValue = max || 1;
-        const percentage = Math.round((onlineValue / maxValue - 30) * 100);
+        const percentage = Math.round((onlineValue / (maxValue - 30)) * 100);
         
         // Создаем прогресс-бар из 4 блоков
         const totalBlocks = 4;
@@ -354,14 +386,23 @@ function AdminPanel() {
                             accept="image/*"
                             style={{ display: 'none' }}
                             onChange={(e) => {
+                              console.log('File input changed:', e.target.files);
                               const file = e.target.files?.[0];
                               if (file) {
+                                console.log('Selected file:', file.name, file.type, file.size);
                                 // Проверяем тип файла
                                 if (!file.type.startsWith('image/')) {
-                                  alert('Пожалуйста, выберите изображение');
+                                  alert('Пожалуйста, выберите изображение (PNG, JPG, GIF и т.д.)');
+                                  return;
+                                }
+                                // Проверяем размер файла (максимум 5MB)
+                                if (file.size > 5 * 1024 * 1024) {
+                                  alert('Размер файла не должен превышать 5MB');
                                   return;
                                 }
                                 handleUploadLogo(file);
+                              } else {
+                                console.log('No file selected');
                               }
                             }}
                             disabled={uploadingLogo || !isAppInstalled}
@@ -371,7 +412,7 @@ function AdminPanel() {
                               size="m"
                               stretched
                               loading={uploadingLogo}
-                              disabled={!bridge || uploadingLogo || !isAppInstalled}
+                              disabled={uploadingLogo}
                               mode="secondary"
                               component="span"
                             >
