@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4680C2">
+    <title>Мониторинг серверов</title>
+    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: transparent;
+            color: #000;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .widget-container {
+            max-width: 100%;
+            padding: 8px;
+        }
+
+        .widget-header {
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e1e3e6;
+        }
+
+        .widget-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 4px;
+        }
+
+        .widget-subtitle {
+            font-size: 12px;
+            color: #6d6f73;
+        }
+
+        .server-item {
+            background: #fff;
+            border: 1px solid #e1e3e6;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .server-item:hover {
+            background: #f7f8fa;
+            border-color: #d0d1d3;
+        }
+
+        .server-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .server-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #000;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-dot.online {
+            background: #4bb34b;
+        }
+
+        .status-dot.offline {
+            background: #99a2ad;
+        }
+
+        .status-dot.warning {
+            background: #f29900;
+        }
+
+        .status-dot.critical {
+            background: #e64646;
+        }
+
+        .server-count {
+            font-size: 13px;
+            color: #000;
+            white-space: nowrap;
+        }
+
+        .server-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #6d6f73;
+            margin-bottom: 6px;
+        }
+
+        .server-connect {
+            font-family: 'Courier New', monospace;
+            background: #f7f8fa;
+            padding: 4px 8px;
+            border-radius: 4px;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .server-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .tag {
+            background: #e8f0fe;
+            color: #1976d2;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: #e1e3e6;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .progress-fill.low {
+            background: #4bb34b;
+        }
+
+        .progress-fill.medium {
+            background: #f29900;
+        }
+
+        .progress-fill.high {
+            background: #e64646;
+        }
+
+        .progress-text {
+            font-size: 11px;
+            color: #6d6f73;
+            margin-top: 4px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6d6f73;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e1e3e6;
+            border-top-color: #4680c2;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px;
+            color: #856404;
+            font-size: 13px;
+        }
+
+        .error-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .retry-btn {
+            margin-top: 8px;
+            background: #4680c2;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .retry-btn:hover {
+            background: #3d6fa5;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6d6f73;
+        }
+
+        .copy-icon {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            margin-left: 4px;
+            opacity: 0.5;
+            vertical-align: middle;
+        }
+
+        .copied {
+            color: #4bb34b;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="widget-container">
+        <div class="widget-header">
+            <div class="widget-title">Мониторинг серверов</div>
+            <div class="widget-subtitle">Онлайн статус и подключение</div>
+        </div>
+
+        <div id="content">
+            <div class="loading">
+                <div class="spinner"></div>
+                <div>Загрузка данных...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация VK Bridge для работы в контексте VK
+        let vkBridge = null;
+        if (typeof window.vkBridge !== 'undefined') {
+            vkBridge = window.vkBridge;
+            // Отправляем событие инициализации
+            vkBridge.send('VKWebAppInit', {})
+                .then((data) => {
+                    console.log('VK Bridge initialized:', data);
+                })
+                .catch((error) => {
+                    console.log('VK Bridge not available (running outside VK):', error);
+                });
+        } else {
+            console.log('VK Bridge not found - running in standalone mode');
+        }
+
+        // Получение параметров из URL
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                apiUrl: params.get('api_url') || 'https://api.prostoj.store/servers',
+                logoUrl: params.get('logo_url') || '/server_logo.png'
+            };
+        }
+
+        const config = getUrlParams();
+        let servers = [];
+
+        // Загрузка серверов
+        async function loadServers() {
+            const content = document.getElementById('content');
+            content.innerHTML = '<div class="loading"><div class="spinner"></div><div>Загрузка данных...</div></div>';
+
+            try {
+                const response = await fetch(config.apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                servers = await response.json();
+                renderServers();
+            } catch (error) {
+                console.error('Error loading servers:', error);
+                showError(error.message);
+            }
+        }
+
+        // Отображение ошибки
+        function showError(message) {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="error">
+                    <div class="error-title">Ошибка загрузки</div>
+                    <div>${message}</div>
+                    <button class="retry-btn" onclick="loadServers()">Повторить</button>
+                </div>
+            `;
+        }
+
+        // Вычисление процента заполненности
+        function getFillPercentage(online, max) {
+            if (!max || max === 0) return 0;
+            return Math.round((online / max) * 100);
+        }
+
+        // Получение цвета статуса
+        function getStatusClass(percentage) {
+            if (percentage >= 90) return 'critical';
+            if (percentage >= 70) return 'warning';
+            return 'low';
+        }
+
+        // Получение класса прогресс-бара
+        function getProgressClass(percentage) {
+            if (percentage >= 90) return 'high';
+            if (percentage >= 70) return 'medium';
+            return 'low';
+        }
+
+        // Парсинг тегов
+        function parseTags(tagsString) {
+            if (!tagsString) return [];
+            return tagsString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+        }
+
+        // Экранирование HTML для безопасности
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Экранирование для JavaScript строк
+        function escapeJs(text) {
+            return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+        }
+
+        // Копирование текста
+        function copyToClipboard(text, serverIndex) {
+            // Пробуем использовать VK Bridge для копирования (если доступен)
+            if (vkBridge) {
+                vkBridge.send('VKWebAppCopyText', { text: text })
+                    .then((data) => {
+                        console.log('Text copied via VK Bridge:', data);
+                        showCopiedIndicator(serverIndex);
+                    })
+                    .catch((error) => {
+                        console.log('VK Bridge copy failed, using fallback:', error);
+                        copyToClipboardFallback(text, serverIndex);
+                    });
+            } else {
+                copyToClipboardFallback(text, serverIndex);
+            }
+        }
+
+        // Fallback метод копирования (для работы вне VK)
+        function copyToClipboardFallback(text, serverIndex) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopiedIndicator(serverIndex);
+                }
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        showCopiedIndicator(serverIndex);
+                    });
+                }
+            } finally {
+                document.body.removeChild(textArea);
+            }
+        }
+
+        // Показать индикатор копирования
+        function showCopiedIndicator(serverIndex) {
+            const indicator = document.getElementById(`copied-${serverIndex}`);
+            if (indicator) {
+                indicator.style.display = 'inline';
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        // Рендеринг серверов
+        function renderServers() {
+            const content = document.getElementById('content');
+
+            if (servers.length === 0) {
+                content.innerHTML = '<div class="empty-state">Серверы не найдены</div>';
+                return;
+            }
+
+            let html = '';
+            servers.forEach((server, index) => {
+                const isOnline = server.online !== null && server.online !== undefined;
+                const onlineCount = server.online || 0;
+                const maxPlayers = server.max || 0;
+                const fillPercentage = getFillPercentage(onlineCount, maxPlayers);
+                const statusClass = getStatusClass(fillPercentage);
+                const progressClass = getProgressClass(fillPercentage);
+                const tags = parseTags(server.tags);
+                const connectText = `connect ${server.text_ip || server.ip}`;
+
+                // Экранируем данные для безопасности
+                const escapedName = escapeHtml(server.name);
+                const escapedConnectText = escapeJs(connectText);
+                
+                html += `
+                    <div class="server-item" onclick="copyToClipboard('${escapedConnectText}', ${index})">
+                        <div class="server-header">
+                            <div class="server-name" title="${escapedName}">${escapeHtml(server.name)}</div>
+                            <div class="server-status">
+                                <div class="server-count">${onlineCount} / ${maxPlayers}</div>
+                                <div class="status-dot ${isOnline ? statusClass : 'offline'}"></div>
+                            </div>
+                        </div>
+                        <div class="server-info">
+                            <div class="server-connect" title="${escapeHtml(connectText)}">
+                                ${escapeHtml(connectText)}
+                                <span id="copied-${index}" class="copied" style="display: none;">✓</span>
+                            </div>
+                        </div>
+                        ${isOnline && maxPlayers > 0 ? `
+                            <div class="progress-bar">
+                                <div class="progress-fill ${progressClass}" style="width: ${fillPercentage}%"></div>
+                            </div>
+                            <div class="progress-text">
+                                ${fillPercentage}% заполнено
+                                ${tags.length > 0 ? `<span style="float: right;">${tags.join(', ')}</span>` : ''}
+                            </div>
+                        ` : ''}
+                        ${tags.length > 0 && (!isOnline || maxPlayers === 0) ? `
+                            <div class="server-tags">
+                                ${tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            content.innerHTML = html;
+        }
+
+        // Автообновление каждые 30 секунд
+        loadServers();
+        setInterval(loadServers, 30000);
+    </script>
+</body>
+</html>
