@@ -42,19 +42,41 @@ class VkWidgetController extends Controller
             $this->stdout("Обновление виджета для группы {$widget->group_id}...\n");
             
             try {
-                // Используем рефлексию для вызова защищенного метода
+                // Проверяем наличие токена
+                $accessToken = $widget->decryptToken();
+                if (!$accessToken) {
+                    $accessToken = Yii::$app->settings->get('vk_app_sever_key');
+                }
+                
+                if (!$accessToken) {
+                    $this->stderr("✗ Ошибка: отсутствует токен доступа для группы {$widget->group_id}.\n");
+                    $this->stderr("   Убедитесь, что токен сохранен в БД или установлен vk_app_sever_key в настройках.\n");
+                    $errorCount++;
+                    continue;
+                }
+                
+                // Проверяем наличие API URL
+                $apiUrl = $widget->api_url ?: (Yii::$app->params['api_url'] ?? 'https://api.prostoj.store/servers');
+                $this->stdout("   API URL: {$apiUrl}\n");
+                
+                // Используем рефлексию для вызова защищенного метода с verbose режимом
                 $method = new ReflectionMethod($apiController, 'updateWidgetByModel');
                 $method->setAccessible(true);
                 
-                if ($method->invoke($apiController, $widget)) {
+                if ($method->invoke($apiController, $widget, true)) {
                     $this->stdout("✓ Виджет для группы {$widget->group_id} успешно обновлен.\n");
                     $successCount++;
                 } else {
                     $this->stderr("✗ Ошибка при обновлении виджета для группы {$widget->group_id}.\n");
+                    $this->stderr("   Проверьте логи приложения для деталей.\n");
                     $errorCount++;
                 }
             } catch (\Exception $e) {
-                $this->stderr("✗ Исключение при обновлении виджета для группы {$widget->group_id}: " . $e->getMessage() . "\n");
+                $this->stderr("✗ Исключение при обновлении виджета для группы {$widget->group_id}:\n");
+                $this->stderr("   " . $e->getMessage() . "\n");
+                if ($e->getTraceAsString()) {
+                    $this->stderr("   " . $e->getFile() . ":" . $e->getLine() . "\n");
+                }
                 $errorCount++;
             }
         }
@@ -86,11 +108,11 @@ class VkWidgetController extends Controller
         try {
             $apiController = new ApiVkWidgetController('vk-widget', Yii::$app);
             
-            // Используем рефлексию для вызова защищенного метода
+            // Используем рефлексию для вызова защищенного метода с verbose режимом
             $method = new ReflectionMethod($apiController, 'updateWidgetByModel');
             $method->setAccessible(true);
             
-            if ($method->invoke($apiController, $widget)) {
+            if ($method->invoke($apiController, $widget, true)) {
                 $this->stdout("✓ Виджет успешно обновлен.\n");
                 return ExitCode::OK;
             } else {
@@ -98,7 +120,9 @@ class VkWidgetController extends Controller
                 return ExitCode::UNSPECIFIED_ERROR;
             }
         } catch (\Exception $e) {
-            $this->stderr("✗ Исключение: " . $e->getMessage() . "\n");
+            $this->stderr("✗ Исключение при обновлении виджета:\n");
+            $this->stderr("   " . $e->getMessage() . "\n");
+            $this->stderr("   Файл: " . $e->getFile() . ":" . $e->getLine() . "\n");
             return ExitCode::UNSPECIFIED_ERROR;
         }
     }
