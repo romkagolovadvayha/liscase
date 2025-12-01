@@ -700,7 +700,7 @@ class VkWidgetController extends Controller
                 $progressBar .= $i < $filledBlocks ? '🟩' : '⬜️';
             }
             
-            return $onlineValue . '/' . $maxValue . ' 👤 ' . $progressBar;
+            return $onlineValue . '/' . $maxValue . ' ' . $progressBar;
         };
 
         // Форматирование названия сервера

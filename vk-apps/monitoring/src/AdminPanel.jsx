@@ -104,7 +104,7 @@ function AdminPanel() {
         }
       }
       
-      return `${onlineValue}/${maxValue} 👤 ${progressBar}`;
+      return `${onlineValue}/${maxValue} ${progressBar}`;
     };
     
     // Функция для форматирования названия сервера с типом вайпа
