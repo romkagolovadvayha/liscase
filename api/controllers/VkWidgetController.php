@@ -438,8 +438,47 @@ class VkWidgetController extends Controller
                    "&access_token=" . urlencode($accessToken) .
                    "&v=5.199";
             
-            $response = file_get_contents($url);
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 30,
+                    'ignore_errors' => true
+                ]
+            ]);
+            
+            $response = @file_get_contents($url, false, $context);
+            
+            if ($response === false) {
+                $error = error_get_last();
+                Yii::error("Failed to call VK API for widget group_id {$groupId}. Error: " . ($error['message'] ?? 'Unknown error'), 'vk-widget');
+                return [
+                    'error' => [
+                        'error_code' => -1,
+                        'error_msg' => 'Failed to call VK API: ' . ($error['message'] ?? 'Unknown error')
+                    ]
+                ];
+            }
+            
             $data = json_decode($response, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Yii::error("Failed to decode JSON response from VK API for widget group_id {$groupId}. JSON error: " . json_last_error_msg() . ". Response: " . substr($response, 0, 500), 'vk-widget');
+                return [
+                    'error' => [
+                        'error_code' => -2,
+                        'error_msg' => 'Invalid JSON response from VK API: ' . json_last_error_msg()
+                    ]
+                ];
+            }
+            
+            if ($data === null) {
+                Yii::error("Empty response from VK API for widget group_id {$groupId}. Raw response: " . substr($response, 0, 500), 'vk-widget');
+                return [
+                    'error' => [
+                        'error_code' => -3,
+                        'error_msg' => 'Empty response from VK API'
+                    ]
+                ];
+            }
             
             return $data;
         } catch (\Exception $e) {
@@ -452,21 +491,34 @@ class VkWidgetController extends Controller
      * Обновить виджет по модели
      * 
      * @param VkWidget $widget
+     * @param bool $verbose Если true, выводит детальную информацию об ошибках (для консоли)
      * @return bool
      */
-    protected function updateWidgetByModel(VkWidget $widget)
+    protected function updateWidgetByModel(VkWidget $widget, $verbose = false)
     {
         // Получаем данные о серверах
         $apiUrl = $widget->api_url ?: (Yii::$app->params['api_url'] ?? 'https://api.prostoj.store/servers');
         $serversData = $this->getServersData($apiUrl);
         
         if (empty($serversData)) {
-            Yii::warning("No servers data for widget group_id={$widget->group_id}", 'vk-widget');
+            $errorMsg = "No servers data for widget group_id={$widget->group_id}. API URL: {$apiUrl}";
+            Yii::warning($errorMsg, 'vk-widget');
+            if ($verbose) {
+                echo "   ERROR: Не удалось получить данные о серверах из API URL: {$apiUrl}\n";
+            }
             return false;
+        }
+
+        if ($verbose) {
+            echo "   Получено " . count($serversData) . " серверов\n";
         }
 
         // Создаем код виджета
         $widgetCode = $this->createWidgetCode($serversData, $widget->logo_icon_id);
+
+        if ($verbose) {
+            echo "   Код виджета сгенерирован, длина: " . mb_strlen($widgetCode) . " символов\n";
+        }
 
         // Получаем токен для обновления
         $accessToken = $widget->decryptToken();
@@ -474,15 +526,30 @@ class VkWidgetController extends Controller
         if (!$accessToken) {
             // Если токена нет, пытаемся использовать сервисный ключ (может не работать)
             $accessToken = Yii::$app->settings->get('vk_app_sever_key');
+            if ($verbose && $accessToken) {
+                echo "   Используется сервисный ключ из настроек\n";
+            }
+        } else {
+            if ($verbose) {
+                echo "   Токен получен из БД\n";
+            }
         }
 
         if (!$accessToken) {
-            Yii::error("No access token for widget group_id={$widget->group_id}", 'vk-widget');
+            $errorMsg = "No access token for widget group_id={$widget->group_id}";
+            Yii::error($errorMsg, 'vk-widget');
+            if ($verbose) {
+                echo "   ERROR: Отсутствует токен доступа. Проверьте, что токен сохранен в БД или установлен vk_app_sever_key в настройках.\n";
+            }
             return false;
         }
 
         // Обновляем виджет через API ВК
         try {
+            if ($verbose) {
+                echo "   Отправка запроса в VK API...\n";
+            }
+            
             $result = $this->updateWidgetByCode(
                 $widget->group_id,
                 $widgetCode,
@@ -491,14 +558,33 @@ class VkWidgetController extends Controller
             );
 
             if (isset($result['error'])) {
-                Yii::error("VK API error for widget group_id={$widget->group_id}: " . json_encode($result['error']), 'vk-widget');
+                $errorMsg = "VK API error for widget group_id={$widget->group_id}: " . json_encode($result['error']);
+                Yii::error($errorMsg, 'vk-widget');
+                if ($verbose) {
+                    $errorInfo = is_array($result['error']) ? json_encode($result['error'], JSON_UNESCAPED_UNICODE) : $result['error'];
+                    echo "   ERROR от VK API: " . $errorInfo . "\n";
+                    if (isset($result['error']['error_code'])) {
+                        echo "   Код ошибки: " . $result['error']['error_code'] . "\n";
+                    }
+                    if (isset($result['error']['error_msg'])) {
+                        echo "   Сообщение: " . $result['error']['error_msg'] . "\n";
+                    }
+                }
                 return false;
             }
 
             Yii::info("Widget updated successfully for group_id={$widget->group_id}", 'vk-widget');
+            if ($verbose) {
+                echo "   Виджет успешно обновлен в VK\n";
+            }
             return true;
         } catch (\Exception $e) {
-            Yii::error("Exception updating widget group_id={$widget->group_id}: " . $e->getMessage(), 'vk-widget');
+            $errorMsg = "Exception updating widget group_id={$widget->group_id}: " . $e->getMessage();
+            Yii::error($errorMsg, 'vk-widget');
+            if ($verbose) {
+                echo "   EXCEPTION: " . $e->getMessage() . "\n";
+                echo "   Файл: " . $e->getFile() . ":" . $e->getLine() . "\n";
+            }
             return false;
         }
     }
