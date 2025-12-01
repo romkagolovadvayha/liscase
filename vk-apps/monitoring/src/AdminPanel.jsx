@@ -371,18 +371,40 @@ function AdminPanel() {
         
         // Пытаемся получить ключ доступа сообщества для автоматического обновления
         // ВАЖНО: Для appWidgets.update нужен именно ключ доступа сообщества, а не токен пользователя!
+        // Согласно документации VK: https://dev.vk.com/ru/api/community-token/getting-started
         let communityToken = null;
         try {
-          const communityTokenResult = await bridge.send('VKWebAppGetCommunityToken', {
-            group_id: Math.abs(parseInt(groupId))
-          });
-          if (communityTokenResult && communityTokenResult.token) {
-            communityToken = communityTokenResult.token;
-            console.log('Community token obtained for auto-update');
+          const appId = parseInt(params.get('vk_app_id'));
+          const groupIdNum = Math.abs(parseInt(groupId));
+          
+          if (appId) {
+            const communityTokenResult = await bridge.send('VKWebAppGetCommunityToken', {
+              app_id: appId,
+              group_id: groupIdNum,
+              scope: 'app_widget' // Права доступа для работы с виджетами
+            });
+            
+            // Согласно документации, результат содержит access_token
+            if (communityTokenResult && communityTokenResult.access_token) {
+              communityToken = communityTokenResult.access_token;
+              console.log('Community token obtained for auto-update');
+            } else if (communityTokenResult && communityTokenResult.token) {
+              // Fallback на случай, если вернется token вместо access_token
+              communityToken = communityTokenResult.token;
+              console.log('Community token obtained for auto-update (fallback)');
+            }
+          } else {
+            console.warn('vk_app_id not found in URL parameters, cannot get community token');
           }
         } catch (e) {
           console.log('Cannot get community token for auto-update, widget will be saved without token:', e);
           console.log('You will need to manually update the widget or get the community token later');
+          if (e.error_data && e.error_data.error_code) {
+            console.warn('VK API error code:', e.error_data.error_code);
+            if (e.error_data.error_code === 15) {
+              console.warn('Access denied: user is not an admin of the community');
+            }
+          }
         }
         
         const saveFormData = new FormData();
@@ -457,19 +479,42 @@ function AdminPanel() {
       console.log('Available URL parameters:', Array.from(params.entries()));
       
       // Способ 1: Пытаемся получить через VKWebAppGetCommunityToken
+      // Согласно документации VK: https://dev.vk.com/ru/api/community-token/getting-started
       try {
         console.log('Trying VKWebAppGetCommunityToken...');
-        const communityTokenResult = await bridge.send('VKWebAppGetCommunityToken', {
-          group_id: Math.abs(parseInt(groupId))
-        });
-        console.log('VKWebAppGetCommunityToken result:', communityTokenResult);
-        if (communityTokenResult && (communityTokenResult.token || communityTokenResult.access_token)) {
-          communityToken = communityTokenResult.token || communityTokenResult.access_token;
-          console.log('Community token obtained via VKWebAppGetCommunityToken');
+        const appId = parseInt(params.get('vk_app_id'));
+        const groupIdNum = Math.abs(parseInt(groupId));
+        
+        if (!appId) {
+          console.warn('vk_app_id not found in URL parameters');
+        } else {
+          const communityTokenResult = await bridge.send('VKWebAppGetCommunityToken', {
+            app_id: appId,
+            group_id: groupIdNum,
+            scope: 'app_widget' // Права доступа для работы с виджетами
+          });
+          console.log('VKWebAppGetCommunityToken result:', communityTokenResult);
+          
+          // Согласно документации, результат содержит access_token
+          if (communityTokenResult && communityTokenResult.access_token) {
+            communityToken = communityTokenResult.access_token;
+            console.log('Community token obtained via VKWebAppGetCommunityToken');
+          } else if (communityTokenResult && communityTokenResult.token) {
+            // Fallback на случай, если вернется token вместо access_token
+            communityToken = communityTokenResult.token;
+            console.log('Community token obtained via VKWebAppGetCommunityToken (fallback)');
+          }
         }
       } catch (e) {
         console.warn('Cannot get community token via VKWebAppGetCommunityToken:', e);
         console.warn('Error details:', e.error_data || e.message);
+        // Если ошибка связана с правами доступа, выводим более понятное сообщение
+        if (e.error_data && e.error_data.error_code) {
+          console.warn('VK API error code:', e.error_data.error_code);
+          if (e.error_data.error_code === 15) {
+            console.warn('Access denied: user is not an admin of the community');
+          }
+        }
       }
       
       // Способ 2: Проверяем параметры URL (может быть передан напрямую)
