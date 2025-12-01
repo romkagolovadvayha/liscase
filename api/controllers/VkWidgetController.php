@@ -731,18 +731,43 @@ class VkWidgetController extends Controller
         $servers = array_slice($serversData, 0, 6);
         
         foreach ($servers as $server) {
+            $serverName = $formatServerName($server);
+            
+            // Ограничиваем длину названия сервера до 100 символов (требование VK API)
+            if (mb_strlen($serverName) > 100) {
+                $serverName = mb_substr($serverName, 0, 100);
+            }
+            
             $firstCell = [
-                'text' => $formatServerName($server)
+                'text' => $serverName
             ];
             
             if ($logoIconId) {
                 $firstCell['icon_id'] = $logoIconId;
             }
             
+            // Формируем текст второй колонки (онлайн + прогресс-бар + IP)
+            $progressText = $formatOnlineProgress($server['online'] ?? 0, $server['max'] ?? 1);
+            $ipText = mb_substr($server['text_ip'] ?? $server['ip'] ?? '—', 0, 50);
+            $secondCellText = $progressText . ' | ' . $ipText;
+            
+            // Ограничиваем общую длину до 100 символов (требование VK API)
+            if (mb_strlen($secondCellText) > 100) {
+                // Если превышает лимит, сокращаем IP адрес
+                $maxProgressLength = mb_strlen($progressText) + 3; // прогресс + " | "
+                $maxIpLength = max(10, 100 - $maxProgressLength); // минимум 10 символов для IP
+                $secondCellText = $progressText . ' | ' . mb_substr($ipText, 0, $maxIpLength);
+                
+                // Если всё ещё превышает, обрезаем весь текст до 100 символов
+                if (mb_strlen($secondCellText) > 100) {
+                    $secondCellText = mb_substr($secondCellText, 0, 100);
+                }
+            }
+            
             $tableBody[] = [
                 $firstCell,
                 [
-                    'text' => $formatOnlineProgress($server['online'] ?? 0, $server['max'] ?? 1) . ' | ' . mb_substr($server['text_ip'] ?? $server['ip'] ?? '—', 0, 50),
+                    'text' => $secondCellText,
                     'align' => 'right'
                 ]
             ];

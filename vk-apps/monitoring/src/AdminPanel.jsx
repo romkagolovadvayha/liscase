@@ -131,18 +131,43 @@ function AdminPanel() {
     
     // Формируем тело таблицы из данных серверов (максимум 6 строк)
     const tableBody = serversData.slice(0, 6).map(server => {
+      let serverName = formatServerName(server);
+      
+      // Ограничиваем длину названия сервера до 100 символов (требование VK API)
+      if (serverName.length > 100) {
+        serverName = serverName.substring(0, 100);
+      }
+      
       const firstCell = {
-        text: formatServerName(server)
+        text: serverName
       };
       
       if (logoIconIdValue) {
         firstCell.icon_id = logoIconIdValue;
       }
       
+      // Формируем текст второй колонки (онлайн + прогресс-бар + IP)
+      const progressText = formatOnlineProgress(server.online, server.max);
+      const ipText = (server.text_ip || server.ip || '—').substring(0, 50);
+      let secondCellText = progressText + " | " + ipText;
+      
+      // Ограничиваем общую длину до 100 символов (требование VK API)
+      if (secondCellText.length > 100) {
+        // Если превышает лимит, сокращаем IP адрес
+        const maxProgressLength = progressText.length + 3; // прогресс + " | "
+        const maxIpLength = Math.max(10, 100 - maxProgressLength); // минимум 10 символов для IP
+        secondCellText = progressText + " | " + ipText.substring(0, maxIpLength);
+        
+        // Если всё ещё превышает, обрезаем весь текст до 100 символов
+        if (secondCellText.length > 100) {
+          secondCellText = secondCellText.substring(0, 100);
+        }
+      }
+      
       return [
         firstCell,
         {
-          text: formatOnlineProgress(server.online, server.max) + " | " + (server.text_ip || server.ip || '—').substring(0, 50),
+          text: secondCellText,
           align: "right"
         }
       ];
