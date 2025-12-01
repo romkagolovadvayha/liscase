@@ -19,7 +19,32 @@ function AdminPanel() {
   // Проверяем, установлено ли приложение в сообщество (есть vk_group_id)
   const params = new URLSearchParams(window.location.search);
   const groupId = params.get('vk_group_id');
+  const vkViewerGroupRole = params.get('vk_viewer_group_role');
   const isAppInstalled = !!groupId; // Если есть vk_group_id, значит приложение уже установлено
+  
+  // Проверка прав доступа - админка только для администраторов сообщества
+  if (vkViewerGroupRole !== 'admin') {
+    return (
+      <AppRoot>
+        <SplitLayout>
+          <SplitCol>
+            <View activePanel="access-denied">
+              <Panel id="access-denied">
+                <Group>
+                  <Card style={{ margin: '16px' }}>
+                    <Placeholder
+                      header="Доступ запрещен"
+                      text="Доступ к админ-панели виджета имеют только администраторы сообщества."
+                    />
+                  </Card>
+                </Group>
+              </Panel>
+            </View>
+          </SplitCol>
+        </SplitLayout>
+      </AppRoot>
+    );
+  }
   
   const [addingApp, setAddingApp] = useState(false);
   const [addingWidget, setAddingWidget] = useState(false);
@@ -428,22 +453,49 @@ function AdminPanel() {
       // ВАЖНО: Для appWidgets.update нужен именно ключ доступа сообщества, а не токен пользователя!
       let communityToken = null;
       
-      // Сначала пытаемся получить через VKWebAppGetCommunityToken
+      console.log('Attempting to get community token for group_id:', groupId);
+      console.log('Available URL parameters:', Array.from(params.entries()));
+      
+      // Способ 1: Пытаемся получить через VKWebAppGetCommunityToken
       try {
+        console.log('Trying VKWebAppGetCommunityToken...');
         const communityTokenResult = await bridge.send('VKWebAppGetCommunityToken', {
           group_id: Math.abs(parseInt(groupId))
         });
-        if (communityTokenResult && communityTokenResult.token) {
-          communityToken = communityTokenResult.token;
-          console.log('Community token obtained for widget update');
+        console.log('VKWebAppGetCommunityToken result:', communityTokenResult);
+        if (communityTokenResult && (communityTokenResult.token || communityTokenResult.access_token)) {
+          communityToken = communityTokenResult.token || communityTokenResult.access_token;
+          console.log('Community token obtained via VKWebAppGetCommunityToken');
         }
       } catch (e) {
-        console.error('Cannot get community token via VKWebAppGetCommunityToken:', e);
+        console.warn('Cannot get community token via VKWebAppGetCommunityToken:', e);
+        console.warn('Error details:', e.error_data || e.message);
       }
       
-      // Если не удалось получить, пытаемся через токен пользователя (может не работать)
+      // Способ 2: Проверяем параметры URL (может быть передан напрямую)
       if (!communityToken) {
-        console.warn('Trying to get user token as fallback (may not work for appWidgets.update)');
+        console.log('Checking URL parameters for token...');
+        // Проверяем различные возможные параметры
+        const possibleTokenParams = [
+          'vk_group_token',
+          'vk_community_token',
+          'vk_access_token_settings',
+          'access_token'
+        ];
+        
+        for (const paramName of possibleTokenParams) {
+          const tokenValue = params.get(paramName);
+          if (tokenValue) {
+            console.log(`Found token in URL parameter: ${paramName}`);
+            communityToken = tokenValue;
+            break;
+          }
+        }
+      }
+      
+      // Способ 3: Пытаемся получить токен пользователя с правами app_widget (может не работать для appWidgets.update)
+      if (!communityToken) {
+        console.warn('Trying to get user token with app_widget scope as last resort...');
         let userToken = params.get('vk_access_token_settings') || params.get('access_token');
         if (!userToken) {
           try {
@@ -453,19 +505,50 @@ function AdminPanel() {
             });
             if (tokenResult && tokenResult.access_token) {
               userToken = tokenResult.access_token;
+              console.log('User token with app_widget scope obtained');
             }
           } catch (e) {
             console.error('Cannot get auth token:', e);
           }
         }
         if (userToken) {
-          communityToken = userToken; // Попытка использовать токен пользователя (может не работать)
+          console.warn('Using user token as fallback (may not work for appWidgets.update)');
+          communityToken = userToken;
         }
       }
       
       if (!communityToken) {
-        throw new Error('Не удалось получить ключ доступа сообщества. Для обновления виджета требуется ключ доступа сообщества с правами app_widget.');
+        // Формируем понятное сообщение об ошибке с инструкциями
+        const groupIdNum = Math.abs(parseInt(groupId));
+        const errorMessage = `⚠️ Не удалось получить ключ доступа сообщества для обновления виджета.
+
+📋 Для автоматического обновления через cron требуется ключ доступа сообщества.
+
+🔑 Как получить ключ доступа сообщества:
+
+1. Откройте настройки сообщества:
+   https://vk.com/club${groupIdNum}?act=settings
+
+2. Перейдите в раздел "Работа с API"
+
+3. Включите "Доступ к API сообщества" (если еще не включен)
+
+4. Скопируйте "Ключ доступа" сообщества
+
+5. Обратитесь к администратору для сохранения токена в БД через команду:
+   php yii vk-widget/save-token ${groupIdNum} <токен>
+
+Или администратор может сохранить токен в таблице vk_widgets в поле access_token (зашифрованный).
+
+После сохранения токена в БД автоматическое обновление через cron будет работать.
+
+Group ID: ${groupIdNum}`;
+        
+        alert(errorMessage);
+        throw new Error('Токен сообщества не получен. См. инструкции в сообщении выше.');
       }
+      
+      console.log('Using token for widget update (length:', communityToken.length, 'chars)');
 
       const apiUrl = params.get('api_url') || 'https://api.prostoj.store/servers';
       const apiBaseUrl = apiUrl.replace('/servers', '').replace(/\/$/, '');

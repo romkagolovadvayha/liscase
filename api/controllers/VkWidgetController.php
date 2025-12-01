@@ -360,6 +360,40 @@ class VkWidgetController extends Controller
     }
 
     /**
+     * Получить информацию о виджете (для проверки наличия токена)
+     * GET /vk-widget/get-widget-info?group_id=123456
+     */
+    public function actionGetWidgetInfo($group_id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        if (!$group_id) {
+            Yii::$app->response->statusCode = 400;
+            return [
+                'error' => 'group_id is required'
+            ];
+        }
+        
+        $widget = VkWidget::findOne(['group_id' => $group_id]);
+        
+        if (!$widget) {
+            return [
+                'exists' => false,
+                'has_token' => false
+            ];
+        }
+        
+        $hasToken = !empty($widget->access_token);
+        
+        return [
+            'exists' => true,
+            'has_token' => $hasToken,
+            'status' => $widget->status,
+            'logo_icon_id' => $widget->logo_icon_id
+        ];
+    }
+
+    /**
      * Сохранить информацию об установленном виджете в БД
      * для последующего автоматического обновления через cron
      */
