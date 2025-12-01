@@ -278,10 +278,15 @@ class ChatServer extends WebSocketServer
                                         // Отправляем всем клиентам в этом чате
                                         $chatClients = $this->getClientsByChat($client->chat);
                                         foreach ($chatClients as $chatClient) {
-                                            $this->processQueuedMessage($chatClient, [
+                                            $response = [
                                                 'type' => 'chat',
                                                 'messageId' => $chatData['messageId'] ?? null,
-                                            ]);
+                                            ];
+                                            // Добавляем tempId, если он был сохранен
+                                            if (!empty($chatData['tempId'])) {
+                                                $response['tempId'] = $chatData['tempId'];
+                                            }
+                                            $this->processQueuedMessage($chatClient, $response);
                                         }
                                         $chatData['sent'] = true;
                                         Yii::$app->cache->set($chatKey, $chatData, 5);
@@ -428,10 +433,13 @@ class ChatServer extends WebSocketServer
             $result = ['message' => ''];
 
             if (!empty($client->user) && !empty($request['chat'])) {
+                // Нормализуем chat ID (приводим к строке для единообразия)
+                $chatId = (string)$request['chat'];
+                
                 // Кешируем поиск тикета на 30 секунд
-                $cacheKey = 'ws_ticket_' . $request['chat'];
-                $ticket = Yii::$app->cache->getOrSet($cacheKey, function() use ($request) {
-                    return Support::findByNumber($request['chat']);
+                $cacheKey = 'ws_ticket_' . $chatId;
+                $ticket = Yii::$app->cache->getOrSet($cacheKey, function() use ($chatId) {
+                    return Support::findByNumber($chatId);
                 }, 30);
 
                 // Если тикет существует - проверяем права доступа
@@ -441,14 +449,14 @@ class ChatServer extends WebSocketServer
                         $client->user->canRoles([Role::ROLE_SUPPORT]) || 
                         $ticket->user_id == $client->user->id
                     ) {
-                        $client->chat = $request['chat'];
+                        $client->chat = $chatId;
                         
                         // Добавляем в индекс для быстрого поиска
                         $this->indexClientByChat($client);
                     }
                 } else {
                     // Если тикета нет - разрешаем подписку (тикет создастся при первом сообщении)
-                    $client->chat = $request['chat'];
+                    $client->chat = $chatId;
                     
                     // Добавляем в индекс для быстрого поиска
                     $this->indexClientByChat($client);
@@ -1153,15 +1161,33 @@ class ChatServer extends WebSocketServer
             $request = json_decode($msg, true);
             $result = ['message' => ''];
 
+            // Если client->chat не установлен, но есть chatId в запросе, устанавливаем его
+            if (empty($client->chat) && !empty($request['chatId'])) {
+                $client->chat = (string)$request['chatId'];
+                $this->indexClientByChat($client);
+            }
+            
             if (empty($client->chat)) {
-                $client->send(json_encode($result));
+                $errorResponse = ['type' => 'error', 'error' => 'Chat not subscribed'];
+                if (!empty($request['tempId'])) {
+                    $errorResponse['tempId'] = $request['tempId'];
+                }
+                $client->send(json_encode($errorResponse));
                 return;
             }
+            
+            // Нормализуем chatId из запроса для сравнения
+            $requestChatId = !empty($request['chatId']) ? (string)$request['chatId'] : (string)$client->chat;
 
             if (!empty($client->user) && !empty($request['message']) && $message = trim($request['message']) ) {
                 $cacheKey = 'commandChat_' . $client->user->id;
                 if (!empty(Yii::$app->cache->get($cacheKey))) {
-                    $client->send(json_encode(['type' => 'error', 'error' => Yii::$app->cache->get($cacheKey)]));
+                    $errorResponse = ['type' => 'error', 'error' => Yii::$app->cache->get($cacheKey)];
+                    // Добавляем tempId в ответ об ошибке, если он был передан
+                    if (!empty($request['tempId'])) {
+                        $errorResponse['tempId'] = $request['tempId'];
+                    }
+                    $client->send(json_encode($errorResponse));
                     return;
                 }
                 if (!$client->user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
@@ -1170,9 +1196,17 @@ class ChatServer extends WebSocketServer
                 /** @var User $user */
                 $user = $client->user;
                 if ($user->blocked_support || $user->status == User::STATUS_BLOCKED || strtotime($user->blocked_support_at) > time()) {
-                    $client->send(json_encode(['type' => 'error', 'error' => Yii::t('common', "Ваш чат заблокирован")]));
+                    $errorResponse = ['type' => 'error', 'error' => Yii::t('common', "Ваш чат заблокирован")];
+                    // Добавляем tempId в ответ об ошибке, если он был передан
+                    if (!empty($request['tempId'])) {
+                        $errorResponse['tempId'] = $request['tempId'];
+                    }
+                    $client->send(json_encode($errorResponse));
+                    return;
                 }
-                $chat = Support::findByNumber($client->chat);
+                // Используем нормализованный chatId
+                $chatNumber = (string)$client->chat;
+                $chat = Support::findByNumber($chatNumber);
                 if (empty($chat)) {
                     $chat = new Support();
                     $chat->user_id = $user->id;
@@ -1207,7 +1241,32 @@ class ChatServer extends WebSocketServer
                 $model->message = trim($message);
                 $model->support_id = $chat->id;
                 $model->created_at = date('Y-m-d H:i:s');
-                $model->save();
+                
+                // Убеждаемся, что id не установлен (должен быть AUTO_INCREMENT)
+                if (isset($model->id)) {
+                    unset($model->id);
+                }
+                
+                // Сохраняем сообщение с обработкой ошибок
+                try {
+                    if (!$model->save()) {
+                        $errorResponse = ['type' => 'error', 'error' => Yii::t('common', "Ошибка сохранения сообщения")];
+                        if (!empty($request['tempId'])) {
+                            $errorResponse['tempId'] = $request['tempId'];
+                        }
+                        $client->send(json_encode($errorResponse));
+                        $this->log("commandChat: Failed to save message. Errors: " . json_encode($model->errors));
+                        return;
+                    }
+                } catch (\Exception $e) {
+                    $errorResponse = ['type' => 'error', 'error' => Yii::t('common', "Ошибка сохранения сообщения")];
+                    if (!empty($request['tempId'])) {
+                        $errorResponse['tempId'] = $request['tempId'];
+                    }
+                    $client->send(json_encode($errorResponse));
+                    $this->log("commandChat: Exception saving message: " . $e->getMessage());
+                    return;
+                }
 
                 Yii::$app->queueProcess->push(new BeforeMessageJob([
                     'chatId' => $model->support_id,
@@ -1220,6 +1279,20 @@ class ChatServer extends WebSocketServer
                 SupportRead::createRecord($chat->user_id, $user->id, $model->id, $chat->id);
                 $this->commandTicketUpdate($client, json_encode(['user_id' => $chat->user_id]));
                 $hash = md5(time());
+                
+                // Получаем tempId из запроса, если он был передан
+                $tempId = !empty($request['tempId']) ? $request['tempId'] : null;
+                
+                // Формируем ответ с messageId и tempId (если был передан)
+                $chatResponse = [
+                    'type' => 'chat',
+                    'messageId' => $model->id,
+                ];
+                if ($tempId) {
+                    $chatResponse['tempId'] = $tempId;
+                }
+                $chatResponseJson = json_encode($chatResponse);
+                
                 foreach ($this->clients as $chatClient) {
                     if (empty($chatClient)) {
                         continue;
@@ -1241,14 +1314,22 @@ class ChatServer extends WebSocketServer
                     if (empty($chatClient->chat)) {
                         continue;
                     }
-                    if ($chatClient->chat != $request['chatId']) {
+                    // Сравниваем как строки, чтобы избежать проблем с типами
+                    if ((string)$chatClient->chat != $requestChatId) {
+                        continue;
+                    }
+                    // Проверяем, что у клиента есть пользователь
+                    if (empty($chatClient->user)) {
                         continue;
                     }
                     SupportRead::readedAll($model->support_id, $chatClient->user->id);
-                    $chatClient->send(json_encode([
-                                                      'type' => 'chat',
-                                                      'messageId' => $model->id,
-                                                  ]));
+                    
+                    // Отправляем ответ клиенту
+                    try {
+                        $chatClient->send($chatResponseJson);
+                    } catch (\Exception $ex) {
+                        $this->log("Error sending chat message to client: " . $ex->getMessage());
+                    }
                 }
             } else {
                 $result['message'] = 'Enter message';

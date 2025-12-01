@@ -1,5 +1,6 @@
 <?php
 
+use yii\helpers\Html;
 
 /** @var yii\web\View $this */
 /** @var \common\models\support\SupportFile $model */
@@ -8,9 +9,10 @@
 <div class="support_messages_item_message_files_item">
     <?php if (in_array($model->mimetype, ['image/png', 'image/jpeg', 'image/gif', 'image/webp'])): ?>
         <a href="<?=Yii::$app->params['s3Url']?>/support/<?=$model->file?>"
-           class="support_messages_item_message_files_item_preview"
+           class="support_messages_item_message_files_item_preview support-image-viewer"
            title="<?=$model->filename?>"
-           target="_blank">
+           data-image-url="<?=Yii::$app->params['s3Url']?>/support/<?=$model->file?>"
+           data-image-title="<?=Html::encode($model->filename)?>">
             <img src="<?=Yii::$app->params['s3Url']?>/support/<?=$model->file?>"/>
         </a>
     <?php elseif (strpos( $model->mimetype,'video') !== false): ?>

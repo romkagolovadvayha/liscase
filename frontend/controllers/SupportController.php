@@ -73,7 +73,8 @@ class SupportController extends WebController
                                      ->indexBy('support_id')
                                      ->all();
 
-        $ticketsQuery = SupportSearch::find();
+        $ticketsQuery = SupportSearch::find()
+            ->with(['user', 'user.userProfile']);
         $activeTicket = null;
         if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
             $ticketsQuery->andWhere(['user_id' => Yii::$app->user->id]);
@@ -538,13 +539,24 @@ class SupportController extends WebController
         $this->view->title = Yii::t('common', 'Тикет') . "  ID" . $id;
         $this->view->params['page'] = 'support';
         $model = $this->findModel($id);
+        
+        // Загружаем сообщения с eager loading через relation
+        if (!empty($model->id)) {
+            $supportMessages = \common\models\support\SupportMessage::find()
+                ->where(['support_id' => $model->id])
+                ->with(['user', 'user.userProfile', 'supportFiles'])
+                ->orderBy(['created_at' => SORT_ASC])
+                ->all();
+            $model->populateRelation('supportMessages', $supportMessages);
+        }
 
         if (!empty($unreadMessages[$model->id]) && $unreadMessages[$model->id]['cnt'] > 0) {
             SupportRead::readedAll($model->id, $user->id);
             $unreadMessages[$model->id]['cnt']  = 0;
         }
 
-        $ticketsQuery = SupportSearch::find();
+        $ticketsQuery = SupportSearch::find()
+            ->with(['user', 'user.userProfile']);
         if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
             $ticketsQuery->andWhere(['user_id' => Yii::$app->user->id]);
         }
@@ -630,12 +642,15 @@ class SupportController extends WebController
 
     public function actionGetMessage($id)
     {
-        $message = SupportMessage::findOne($id);
+        $message = SupportMessage::find()
+            ->where(['id' => $id])
+            ->with(['user', 'user.userProfile', 'supportFiles', 'support', 'support.user'])
+            ->one();
         if (empty($message) || (!Yii::$app->user->identity->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]) && $message->support->user->id !== Yii::$app->user->id)) {
             throw new ForbiddenHttpException(Yii::t('common', 'Ошибка доступа'));
         }
         return $this->renderAjax('_message', [
-            'model' => $message,
+'model' => $message,
             'classMessage' => 'animate__animated animate__bounceIn'
         ]);
     }
@@ -649,7 +664,8 @@ class SupportController extends WebController
             throw new ForbiddenHttpException(Yii::t('common', 'Ошибка доступа'));
         }
 
-        $ticketsQuery = SupportSearch::find();
+        $ticketsQuery = SupportSearch::find()
+            ->with(['user', 'user.userProfile']);
         if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
             $ticketsQuery->andWhere(['user_id' => Yii::$app->user->id]);
         }
@@ -676,6 +692,8 @@ class SupportController extends WebController
             return new Support();
         }
         if (($model = Support::findByNumber($number)) !== null) {
+            // Загружаем связанного пользователя
+            $model->user;
             return $model;
         }
 

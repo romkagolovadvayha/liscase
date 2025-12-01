@@ -35,6 +35,10 @@ function connectWs() {
         }
         if (response.type && response.type === 'error') {
             toastr.error('<i class=\'fas fa-exclamation-circle\'></i><div class=\'toast-message_text\'>' + response.error + '</div>', '', {'progressBar': true, 'positionClass': 'toast-top-right', 'escapeHtml': false,});
+            // Если есть tempId в ответе, обновляем статус соответствующего сообщения
+            if (response.tempId && typeof updateMessageStatus === 'function') {
+                updateMessageStatus(response.tempId, 'error');
+            }
         }
         if (response.type && response.type === 'redirect') {
             location.href = response.url;
@@ -69,6 +73,12 @@ function connectWs() {
     };
     chat.onerror = function(err) {
         console.error('WebSocket ошибка:', err);
+        // При ошибке WebSocket обновляем статус всех pending сообщений на ошибку
+        if (typeof pendingMessages !== 'undefined' && typeof updateMessageStatus === 'function') {
+            Object.keys(pendingMessages).forEach(tempId => {
+                updateMessageStatus(tempId, 'error');
+            });
+        }
     };
 
     chat.onclose = function(e) {
