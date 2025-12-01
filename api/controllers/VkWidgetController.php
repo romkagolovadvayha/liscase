@@ -521,27 +521,27 @@ class VkWidgetController extends Controller
         }
 
         // Получаем токен для обновления
+        // ВАЖНО: Для appWidgets.update требуется ключ доступа сообщества с правами app_widget
+        // Сервисный ключ НЕ подходит для этого метода!
         $accessToken = $widget->decryptToken();
         
         if (!$accessToken) {
-            // Если токена нет, пытаемся использовать сервисный ключ (может не работать)
-            $accessToken = Yii::$app->settings->get('vk_app_sever_key');
-            if ($verbose && $accessToken) {
-                echo "   Используется сервисный ключ из настроек\n";
+            if ($verbose) {
+                echo "   ERROR: Отсутствует ключ доступа сообщества в БД.\n";
+                echo "   Для обновления виджета требуется ключ доступа сообщества с правами app_widget.\n";
+                echo "   Сервисный ключ не может использоваться для appWidgets.update.\n\n";
+                echo "   Решение:\n";
+                echo "   1. Откройте админ-панель виджета в ВКонтакте\n";
+                echo "   2. Нажмите кнопку 'Обновить данные виджета' (это сохранит токен в БД)\n";
+                echo "   3. Или получите токен через VKWebAppGetCommunityToken и сохраните в БД\n\n";
             }
+            $errorMsg = "No community access token for widget group_id={$widget->group_id}. Service token cannot be used for appWidgets.update.";
+            Yii::error($errorMsg, 'vk-widget');
+            return false;
         } else {
             if ($verbose) {
-                echo "   Токен получен из БД\n";
+                echo "   Ключ доступа сообщества получен из БД\n";
             }
-        }
-
-        if (!$accessToken) {
-            $errorMsg = "No access token for widget group_id={$widget->group_id}";
-            Yii::error($errorMsg, 'vk-widget');
-            if ($verbose) {
-                echo "   ERROR: Отсутствует токен доступа. Проверьте, что токен сохранен в БД или установлен vk_app_sever_key в настройках.\n";
-            }
-            return false;
         }
 
         // Обновляем виджет через API ВК
@@ -568,6 +568,19 @@ class VkWidgetController extends Controller
                     }
                     if (isset($result['error']['error_msg'])) {
                         echo "   Сообщение: " . $result['error']['error_msg'] . "\n";
+                    }
+                    
+                    // Специальная обработка ошибки 28 - метод недоступен с сервисным ключом
+                    if (isset($result['error']['error_code']) && $result['error']['error_code'] == 28) {
+                        echo "\n   ⚠️  ВНИМАНИЕ: Для обновления виджета требуется ключ доступа сообщества с правами app_widget.\n";
+                        echo "   Сервисный ключ не может использоваться для appWidgets.update.\n\n";
+                        echo "   📋 Решение:\n";
+                        echo "   1. Откройте админ-панель приложения ВКонтакте\n";
+                        echo "   2. Откройте виджет 'Мониторинг серверов' для вашего сообщества\n";
+                        echo "   3. Нажмите кнопку 'Обновить данные виджета сейчас'\n";
+                        echo "   4. Это автоматически сохранит токен сообщества в БД для будущих обновлений через cron\n";
+                        echo "   5. После этого автоматическое обновление через cron будет работать\n\n";
+                        echo "   Текущий group_id: {$widget->group_id}\n\n";
                     }
                 }
                 return false;

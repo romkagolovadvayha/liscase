@@ -344,20 +344,20 @@ function AdminPanel() {
         const params = new URLSearchParams(window.location.search);
         const apiBaseUrl = apiUrl.replace('/servers', '').replace(/\/$/, '');
         
-        // Пытаемся получить токен для автоматического обновления
-        let userToken = params.get('vk_access_token_settings') || params.get('access_token');
-        if (!userToken) {
-          try {
-            const tokenResult = await bridge.send('VKWebAppGetAuthToken', {
-              app_id: parseInt(params.get('vk_app_id')),
-              scope: 'app_widget'
-            });
-            if (tokenResult && tokenResult.access_token) {
-              userToken = tokenResult.access_token;
-            }
-          } catch (e) {
-            console.log('Cannot get token for auto-update, widget will be saved without token');
+        // Пытаемся получить ключ доступа сообщества для автоматического обновления
+        // ВАЖНО: Для appWidgets.update нужен именно ключ доступа сообщества, а не токен пользователя!
+        let communityToken = null;
+        try {
+          const communityTokenResult = await bridge.send('VKWebAppGetCommunityToken', {
+            group_id: Math.abs(parseInt(groupId))
+          });
+          if (communityTokenResult && communityTokenResult.token) {
+            communityToken = communityTokenResult.token;
+            console.log('Community token obtained for auto-update');
           }
+        } catch (e) {
+          console.log('Cannot get community token for auto-update, widget will be saved without token:', e);
+          console.log('You will need to manually update the widget or get the community token later');
         }
         
         const saveFormData = new FormData();
@@ -367,8 +367,11 @@ function AdminPanel() {
           saveFormData.append('logo_icon_id', logoIconId);
         }
         saveFormData.append('api_url', apiUrl);
-        if (userToken) {
-          saveFormData.append('access_token', userToken);
+        if (communityToken) {
+          saveFormData.append('access_token', communityToken);
+          console.log('Saving community token to database for auto-update');
+        } else {
+          console.warn('Community token not obtained. Automatic updates via cron will not work until token is saved.');
         }
         
         const saveWidgetUrl = `${apiBaseUrl}/vk-widget/save`;
@@ -380,6 +383,10 @@ function AdminPanel() {
         const saveResult = await saveResponse.json();
         if (saveResult.success) {
           console.log('Widget info saved to database for auto-update:', saveResult);
+          if (!communityToken) {
+            console.warn('WARNING: Widget saved without community token. Automatic updates via cron will fail.');
+            console.warn('To enable automatic updates, update the widget manually once using the "Update now" button.');
+          }
         } else {
           console.warn('Failed to save widget info:', saveResult);
         }
@@ -417,25 +424,47 @@ function AdminPanel() {
         return;
       }
 
-      // Получаем токен пользователя для обновления виджета
-      let userToken = params.get('vk_access_token_settings') || params.get('access_token');
+      // Получаем ключ доступа сообщества для обновления виджета
+      // ВАЖНО: Для appWidgets.update нужен именно ключ доступа сообщества, а не токен пользователя!
+      let communityToken = null;
       
-      if (!userToken) {
-        try {
-          const tokenResult = await bridge.send('VKWebAppGetAuthToken', {
-            app_id: parseInt(params.get('vk_app_id')),
-            scope: 'app_widget'
-          });
-          if (tokenResult && tokenResult.access_token) {
-            userToken = tokenResult.access_token;
+      // Сначала пытаемся получить через VKWebAppGetCommunityToken
+      try {
+        const communityTokenResult = await bridge.send('VKWebAppGetCommunityToken', {
+          group_id: Math.abs(parseInt(groupId))
+        });
+        if (communityTokenResult && communityTokenResult.token) {
+          communityToken = communityTokenResult.token;
+          console.log('Community token obtained for widget update');
+        }
+      } catch (e) {
+        console.error('Cannot get community token via VKWebAppGetCommunityToken:', e);
+      }
+      
+      // Если не удалось получить, пытаемся через токен пользователя (может не работать)
+      if (!communityToken) {
+        console.warn('Trying to get user token as fallback (may not work for appWidgets.update)');
+        let userToken = params.get('vk_access_token_settings') || params.get('access_token');
+        if (!userToken) {
+          try {
+            const tokenResult = await bridge.send('VKWebAppGetAuthToken', {
+              app_id: parseInt(params.get('vk_app_id')),
+              scope: 'app_widget'
+            });
+            if (tokenResult && tokenResult.access_token) {
+              userToken = tokenResult.access_token;
+            }
+          } catch (e) {
+            console.error('Cannot get auth token:', e);
           }
-        } catch (e) {
-          console.error('Cannot get auth token:', e);
+        }
+        if (userToken) {
+          communityToken = userToken; // Попытка использовать токен пользователя (может не работать)
         }
       }
       
-      if (!userToken) {
-        throw new Error('Не удалось получить токен доступа. Для обновления виджета требуется токен пользователя с правами app_widget.');
+      if (!communityToken) {
+        throw new Error('Не удалось получить ключ доступа сообщества. Для обновления виджета требуется ключ доступа сообщества с правами app_widget.');
       }
 
       const apiUrl = params.get('api_url') || 'https://api.prostoj.store/servers';
@@ -462,7 +491,7 @@ function AdminPanel() {
       updateFormData.append('group_id', Math.abs(parseInt(groupId)).toString());
       updateFormData.append('code', widgetCode);
       updateFormData.append('type', 'table');
-      updateFormData.append('access_token', userToken);
+      updateFormData.append('access_token', communityToken);
       
       const updateProxyUrl = `${apiBaseUrl}/vk-widget/update`;
       const updateResponse = await fetch(updateProxyUrl, {
@@ -477,7 +506,36 @@ function AdminPanel() {
       }
       
       console.log('Widget updated successfully:', updateResult);
-      alert('Виджет успешно обновлен! Данные обновлены на главной странице сообщества.');
+      
+      // Сохраняем токен сообщества в БД для будущих автоматических обновлений через cron
+      try {
+        const saveFormData = new FormData();
+        saveFormData.append('group_id', Math.abs(parseInt(groupId)).toString());
+        saveFormData.append('app_id', params.get('vk_app_id') || '');
+        if (logoIconId) {
+          saveFormData.append('logo_icon_id', logoIconId);
+        }
+        saveFormData.append('api_url', apiUrl);
+        saveFormData.append('access_token', communityToken); // Сохраняем токен для cron
+        
+        const saveWidgetUrl = `${apiBaseUrl}/vk-widget/save`;
+        const saveResponse = await fetch(saveWidgetUrl, {
+          method: 'POST',
+          body: saveFormData
+        });
+        
+        const saveResult = await saveResponse.json();
+        if (saveResult.success) {
+          console.log('Community token saved to database for future auto-updates');
+        } else {
+          console.warn('Failed to save community token:', saveResult);
+        }
+      } catch (error) {
+        console.error('Error saving community token:', error);
+        // Не критично, но предупреждаем пользователя
+      }
+      
+      alert('Виджет успешно обновлен! Данные обновлены на главной странице сообщества. Токен сохранен для автоматического обновления через cron.');
     } catch (error) {
       console.error('Error updating widget:', error);
       alert('Ошибка при обновлении виджета: ' + (error.message || 'Неизвестная ошибка'));
