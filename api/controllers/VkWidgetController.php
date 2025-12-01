@@ -225,5 +225,114 @@ class VkWidgetController extends Controller
             ];
         }
     }
+
+    /**
+     * Прокси для обновления виджета ВК
+     * Использует appWidgets.update для обновления виджета сообщества
+     * Требует токен пользователя с правами app_widget
+     */
+    public function actionUpdate()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        $groupId = Yii::$app->request->post('group_id');
+        $code = Yii::$app->request->post('code');
+        $type = Yii::$app->request->post('type', 'table');
+        
+        if (!$groupId || !$code) {
+            Yii::$app->response->statusCode = 400;
+            return [
+                'error' => 'group_id and code are required'
+            ];
+        }
+        
+        // Для appWidgets.update требуется токен пользователя с правами app_widget
+        $accessToken = Yii::$app->request->post('access_token');
+        
+        if (!$accessToken) {
+            Yii::$app->response->statusCode = 400;
+            return [
+                'error' => 'access_token is required. appWidgets.update requires user access token with app_widget permissions.'
+            ];
+        }
+        
+        try {
+            $url = "https://api.vk.com/method/appWidgets.update?" .
+                   "code=" . urlencode($code) .
+                   "&type=" . urlencode($type) .
+                   "&access_token=" . urlencode($accessToken) .
+                   "&v=5.199";
+            
+            $response = file_get_contents($url);
+            $data = json_decode($response, true);
+            
+            return $data;
+        } catch (\Exception $e) {
+            Yii::$app->response->statusCode = 500;
+            return [
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Сохранить информацию об установленном виджете в БД
+     * для последующего автоматического обновления через cron
+     */
+    public function actionSave()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        $groupId = Yii::$app->request->post('group_id');
+        $appId = Yii::$app->request->post('app_id');
+        $logoIconId = Yii::$app->request->post('logo_icon_id');
+        $apiUrl = Yii::$app->request->post('api_url');
+        $accessToken = Yii::$app->request->post('access_token'); // Опционально, для автоматического обновления
+        
+        if (!$groupId || !$appId) {
+            Yii::$app->response->statusCode = 400;
+            return [
+                'error' => 'group_id and app_id are required'
+            ];
+        }
+        
+        try {
+            $widget = \common\models\vk\VkWidget::findOrCreate($groupId, $appId);
+            
+            if ($logoIconId) {
+                $widget->logo_icon_id = $logoIconId;
+            }
+            
+            if ($apiUrl) {
+                $widget->api_url = $apiUrl;
+            }
+            
+            // Сохраняем токен для автоматического обновления (если передан)
+            if ($accessToken) {
+                $widget->access_token = $widget->encryptToken($accessToken);
+            }
+            
+            $widget->status = \common\models\vk\VkWidget::STATUS_ACTIVE;
+            
+            if ($widget->save()) {
+                return [
+                    'success' => true,
+                    'message' => 'Widget saved successfully',
+                    'id' => $widget->id
+                ];
+            } else {
+                Yii::$app->response->statusCode = 400;
+                return [
+                    'error' => 'Failed to save widget',
+                    'errors' => $widget->errors
+                ];
+            }
+        } catch (\Exception $e) {
+            Yii::$app->response->statusCode = 500;
+            return [
+                'error' => $e->getMessage()
+            ];
+        }
+    }
 }
 

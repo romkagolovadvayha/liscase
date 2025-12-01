@@ -23,11 +23,106 @@ function AdminPanel() {
   
   const [addingApp, setAddingApp] = useState(false);
   const [addingWidget, setAddingWidget] = useState(false);
+  const [updatingWidget, setUpdatingWidget] = useState(false);
   const [appAdded, setAppAdded] = useState(isAppInstalled); // Устанавливаем true, если приложение уже установлено
   const [widgetAdded, setWidgetAdded] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [logoIconId, setLogoIconId] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Общая функция для создания кода виджета из данных серверов
+  const createWidgetCode = (serversData, logoIconIdValue) => {
+    // Функция для форматирования онлайн как прогресс-бар
+    const formatOnlineProgress = (online, max) => {
+      const onlineValue = online || 0;
+      const maxValue = max || 1;
+      const effectiveMaxValue = Math.max(maxValue, 30); 
+      const percentage = Math.round((onlineValue / effectiveMaxValue) * 100);
+      
+      const totalBlocks = 4;
+      const filledBlocks = Math.round((percentage / 100) * totalBlocks);
+      
+      let progressBar = '';
+      for (let i = 0; i < totalBlocks; i++) {
+        if (i < filledBlocks) {
+          progressBar += '🟩';
+        } else {
+          progressBar += '⬜️';
+        }
+      }
+      
+      return `${onlineValue}/${maxValue} 👤 ${progressBar}`;
+    };
+    
+    // Функция для форматирования названия сервера с типом вайпа
+    const formatServerName = (server) => {
+      let name = server.name || 'Сервер';
+      
+      if (server.wipe_type_text) {
+        name = `${name} (${server.wipe_type_text})`;
+      } else if (server.wipe_type) {
+        switch (server.wipe_type) {
+          case 7:
+            name = `${name} (Недельный)`;
+            break;
+          case 14:
+            name = `${name} (Двухнедельный)`;
+            break;
+          case 30:
+            name = `${name} (Месячный)`;
+            break;
+        }
+      }
+      return name.substring(0, 50);
+    };
+    
+    // Формируем тело таблицы из данных серверов (максимум 6 строк)
+    const tableBody = serversData.slice(0, 6).map(server => {
+      const firstCell = {
+        text: formatServerName(server)
+      };
+      
+      if (logoIconIdValue) {
+        firstCell.icon_id = logoIconIdValue;
+      }
+      
+      return [
+        firstCell,
+        {
+          text: formatOnlineProgress(server.online, server.max) + " | " + (server.text_ip || server.ip || '—').substring(0, 50),
+          align: "right"
+        }
+      ];
+    });
+    
+    if (tableBody.length === 0) {
+      const placeholderFirstCell = {
+        text: "Загрузка данных..."
+      };
+      if (logoIconIdValue) {
+        placeholderFirstCell.icon_id = logoIconIdValue;
+      }
+      
+      tableBody.push([
+        placeholderFirstCell,
+        {
+          text: "—",
+          align: "right"
+        }
+      ]);
+    }
+    
+    const widgetObject = {
+      title: "Мониторинг серверов",
+      "head": [
+        {"text": "Сервер"},
+        {"text": "Игроки | IP", "align": "right"}
+      ],
+      body: tableBody
+    };
+    
+    return 'return ' + JSON.stringify(widgetObject) + ';';
+  };
 
   // Шаг 1: Добавить приложение в сообщество
   const handleAddToCommunity = async () => {
@@ -209,7 +304,6 @@ function AdminPanel() {
     setAddingWidget(true);
 
     try {
-      // Получаем параметры из URL
       const params = new URLSearchParams(window.location.search);
       const groupId = params.get('vk_group_id');
       
@@ -219,14 +313,9 @@ function AdminPanel() {
         return;
       }
 
-      // Получаем параметры для формирования внутренней ссылки ВК
-      const appId = params.get('vk_app_id');
       const apiUrl = params.get('api_url') || 'https://api.prostoj.store/servers';
       
-      // Формируем внутреннюю ссылку ВК на приложение (только vk.com, vk.me и т.д. разрешены)
-      // Убираем URL из виджета, так как внешние ссылки не разрешены
-      
-      // Загружаем данные о серверах для формирования виджета
+      // Загружаем данные о серверах
       let serversData = [];
       try {
         const response = await fetch(apiUrl, {
@@ -238,111 +327,9 @@ function AdminPanel() {
         console.error('Error loading servers:', error);
       }
       
-      // Функция для форматирования онлайн как прогресс-бар
-      const formatOnlineProgress = (online, max) => {
-        const onlineValue = online || 0;
-        const maxValue = max || 1;
-        const percentage = Math.round((onlineValue / (maxValue - 30)) * 100);
-        
-        // Создаем прогресс-бар из 4 блоков
-        const totalBlocks = 4;
-        const filledBlocks = Math.round((percentage / 100) * totalBlocks);
-        
-        let progressBar = '';
-        for (let i = 0; i < totalBlocks; i++) {
-          if (i < filledBlocks) {
-            progressBar += '🟩';
-          } else {
-            progressBar += '⬜️';
-          }
-        }
-        
-        // Формат: 🟩🟩⬜️⬜️ 👤 73/150 (49%)
-        return `${progressBar} 👤 ${onlineValue}/${maxValue}`;
-      };
-      
-      // Функция для форматирования названия сервера с типом вайпа
-      const formatServerName = (server) => {
-        let name = server.name || 'Сервер';
-        
-        // Добавляем тип вайпа к названию
-        if (server.wipe_type_text) {
-          name = `${name} (${server.wipe_type_text})`;
-        } else if (server.wipe_type) {
-          // Если wipe_type_text нет, но есть wipe_type, формируем вручную
-          if (server.wipe_type === 7) {
-            name = `${name} Недельный`;
-          } else if (server.wipe_type === 14) {
-            name = `${name} Двухнедельный`;
-          } else if (server.wipe_type === 30) {
-            name = `${name} Месячный`;
-          }
-        }
-        
-        return name.substring(0, 50);
-      };
-      
-      // Формируем тело таблицы из данных серверов (максимум 6 строк)
-      // Добавляем icon_id в первую колонку, если логотип загружен
-      // В третьей колонке показываем текстовый IP вместо статуса
-      const tableBody = serversData.slice(0, 6).map(server => {
-        const firstCell = {
-          text: formatServerName(server)
-        };
-        
-        // Добавляем icon_id, если логотип загружен (только для первой ячейки в строке)
-        if (logoIconId) {
-          firstCell.icon_id = logoIconId;
-        }
-        
-        return [
-          firstCell,
-          {
-            text: formatOnlineProgress(server.online, server.max),
-            align: "right"
-          },
-          {
-            text: (server.text_ip || server.ip || '—').substring(0, 50),
-            align: "right"
-          }
-        ];
-      });
-      
-      // Если нет данных, добавляем заглушку
-      if (tableBody.length === 0) {
-        const placeholderFirstCell = {
-          text: "Загрузка данных..."
-        };
-        if (logoIconId) {
-          placeholderFirstCell.icon_id = logoIconId;
-        }
-        
-        tableBody.push([
-          placeholderFirstCell,
-          {
-            text: "—",
-            align: "center"
-          },
-          {
-            text: "—",
-            align: "center"
-          }
-        ]);
-      }
-      
-      // Создаем объект виджета с данными
-      // Убираем все внешние URL, так как виджеты ВК поддерживают только внутренние ссылки
-      const widgetObject = {
-        title: "Мониторинг серверов",
-        body: tableBody
-        // more и more_url убраны, так как внешние ссылки не разрешены
-      };
-      
-      // Формируем код виджета: return { ... };
-      const widgetCode = 'return ' + JSON.stringify(widgetObject) + ';';
+      const widgetCode = createWidgetCode(serversData, logoIconId);
       
       console.log('Widget code to send:', widgetCode);
-      console.log('Widget object:', widgetObject);
       
       const result = await bridge.send('VKWebAppShowCommunityWidgetPreviewBox', {
         group_id: Math.abs(parseInt(groupId)),
@@ -351,6 +338,56 @@ function AdminPanel() {
       });
       
       console.log('Widget preview result:', result);
+      
+      // Сохраняем информацию о виджете в БД для автоматического обновления через cron
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const apiBaseUrl = apiUrl.replace('/servers', '').replace(/\/$/, '');
+        
+        // Пытаемся получить токен для автоматического обновления
+        let userToken = params.get('vk_access_token_settings') || params.get('access_token');
+        if (!userToken) {
+          try {
+            const tokenResult = await bridge.send('VKWebAppGetAuthToken', {
+              app_id: parseInt(params.get('vk_app_id')),
+              scope: 'app_widget'
+            });
+            if (tokenResult && tokenResult.access_token) {
+              userToken = tokenResult.access_token;
+            }
+          } catch (e) {
+            console.log('Cannot get token for auto-update, widget will be saved without token');
+          }
+        }
+        
+        const saveFormData = new FormData();
+        saveFormData.append('group_id', Math.abs(parseInt(groupId)).toString());
+        saveFormData.append('app_id', params.get('vk_app_id') || '');
+        if (logoIconId) {
+          saveFormData.append('logo_icon_id', logoIconId);
+        }
+        saveFormData.append('api_url', apiUrl);
+        if (userToken) {
+          saveFormData.append('access_token', userToken);
+        }
+        
+        const saveWidgetUrl = `${apiBaseUrl}/vk-widget/save`;
+        const saveResponse = await fetch(saveWidgetUrl, {
+          method: 'POST',
+          body: saveFormData
+        });
+        
+        const saveResult = await saveResponse.json();
+        if (saveResult.success) {
+          console.log('Widget info saved to database for auto-update:', saveResult);
+        } else {
+          console.warn('Failed to save widget info:', saveResult);
+        }
+      } catch (error) {
+        console.error('Error saving widget info:', error);
+        // Не критично, продолжаем
+      }
+      
       setWidgetAdded(true);
     } catch (error) {
       console.error('Error installing widget:', error);
@@ -358,6 +395,94 @@ function AdminPanel() {
       alert('Ошибка при установке виджета: ' + (error.error_data?.error_description || error.message || 'Неизвестная ошибка'));
     } finally {
       setAddingWidget(false);
+    }
+  };
+
+  // Обновление виджета
+  const handleUpdateWidget = async () => {
+    if (!bridge) {
+      alert('Ошибка: VK Bridge не инициализирован. Убедитесь, что вы открыли приложение в ВКонтакте.');
+      return;
+    }
+
+    setUpdatingWidget(true);
+
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const groupId = params.get('vk_group_id');
+      
+      if (!groupId) {
+        alert('Ошибка: не удалось определить ID сообщества.');
+        setUpdatingWidget(false);
+        return;
+      }
+
+      // Получаем токен пользователя для обновления виджета
+      let userToken = params.get('vk_access_token_settings') || params.get('access_token');
+      
+      if (!userToken) {
+        try {
+          const tokenResult = await bridge.send('VKWebAppGetAuthToken', {
+            app_id: parseInt(params.get('vk_app_id')),
+            scope: 'app_widget'
+          });
+          if (tokenResult && tokenResult.access_token) {
+            userToken = tokenResult.access_token;
+          }
+        } catch (e) {
+          console.error('Cannot get auth token:', e);
+        }
+      }
+      
+      if (!userToken) {
+        throw new Error('Не удалось получить токен доступа. Для обновления виджета требуется токен пользователя с правами app_widget.');
+      }
+
+      const apiUrl = params.get('api_url') || 'https://api.prostoj.store/servers';
+      const apiBaseUrl = apiUrl.replace('/servers', '').replace(/\/$/, '');
+      
+      // Загружаем актуальные данные о серверах
+      let serversData = [];
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        });
+        serversData = await response.json();
+      } catch (error) {
+        console.error('Error loading servers:', error);
+      }
+      
+      const widgetCode = createWidgetCode(serversData, logoIconId);
+      
+      console.log('Updating widget with code:', widgetCode);
+      
+      // Обновляем виджет через прокси
+      const updateFormData = new FormData();
+      updateFormData.append('group_id', Math.abs(parseInt(groupId)).toString());
+      updateFormData.append('code', widgetCode);
+      updateFormData.append('type', 'table');
+      updateFormData.append('access_token', userToken);
+      
+      const updateProxyUrl = `${apiBaseUrl}/vk-widget/update`;
+      const updateResponse = await fetch(updateProxyUrl, {
+        method: 'POST',
+        body: updateFormData
+      });
+      
+      const updateResult = await updateResponse.json();
+      
+      if (updateResult.error || updateResult.error_code) {
+        throw new Error(updateResult.error_msg || updateResult.error || 'Ошибка обновления виджета');
+      }
+      
+      console.log('Widget updated successfully:', updateResult);
+      alert('Виджет успешно обновлен! Данные обновлены на главной странице сообщества.');
+    } catch (error) {
+      console.error('Error updating widget:', error);
+      alert('Ошибка при обновлении виджета: ' + (error.message || 'Неизвестная ошибка'));
+    } finally {
+      setUpdatingWidget(false);
     }
   };
 
@@ -514,11 +639,33 @@ function AdminPanel() {
                             {addingWidget ? 'Установка...' : 'Установить виджет на главную страницу'}
                           </Button>
                         ) : (
-                          <Banner
-                            mode="success"
-                            header="Виджет успешно установлен!"
-                            subheader="Виджет теперь отображается на главной странице вашего сообщества."
-                          />
+                          <>
+                            <Banner
+                              mode="success"
+                              header="Виджет успешно установлен!"
+                              subheader="Виджет теперь отображается на главной странице вашего сообщества."
+                              style={{ marginBottom: '16px' }}
+                            />
+                            <Banner
+                              mode="info"
+                              header="Автоматическое обновление"
+                              subheader="Данные виджета будут автоматически обновляться по расписанию (cron). Настройте cron-задачу: php yii vk-widget/update-all"
+                              style={{ marginBottom: '16px' }}
+                            />
+                            <Button
+                              size="l"
+                              stretched
+                              onClick={handleUpdateWidget}
+                              loading={updatingWidget}
+                              disabled={!bridge || updatingWidget}
+                              mode="secondary"
+                            >
+                              {updatingWidget ? 'Обновление...' : 'Обновить данные виджета сейчас'}
+                            </Button>
+                            <Text style={{ marginTop: '12px', display: 'block', color: 'var(--vkui--color_text_secondary)', fontSize: '14px' }}>
+                              Нажмите для немедленного обновления или дождитесь автоматического обновления по расписанию
+                            </Text>
+                          </>
                         )}
                       </>
                     )}
