@@ -2,6 +2,7 @@
 
 namespace api\controllers;
 
+use common\models\vk\VkWidget;
 use yii\web\Controller;
 use Yii;
 use yii\web\Response;
@@ -227,11 +228,11 @@ class VkWidgetController extends Controller
     }
 
     /**
-     * Прокси для обновления виджета ВК
+     * Прокси для обновления виджета ВК по переданному коду
      * Использует appWidgets.update для обновления виджета сообщества
      * Требует токен пользователя с правами app_widget
      */
-    public function actionUpdate()
+    public function actionUpdateByCode()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
         
@@ -256,23 +257,106 @@ class VkWidgetController extends Controller
             ];
         }
         
+        return $this->updateWidgetByCode($groupId, $code, $type, $accessToken);
+    }
+
+    /**
+     * Обновить все активные виджеты ВК
+     * GET /vk-widget/update-all
+     */
+    public function actionUpdateAll()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        $widgets = VkWidget::getActiveWidgets();
+        
+        if (empty($widgets)) {
+            return [
+                'success' => true,
+                'message' => 'No active widgets found',
+                'updated' => 0,
+                'failed' => 0
+            ];
+        }
+        
+        $successCount = 0;
+        $errorCount = 0;
+        $errors = [];
+        
+        foreach ($widgets as $widget) {
+            try {
+                if ($this->updateWidgetByModel($widget)) {
+                    $successCount++;
+                } else {
+                    $errorCount++;
+                    $errors[] = "Failed to update widget for group_id: {$widget->group_id}";
+                }
+            } catch (\Exception $e) {
+                $errorCount++;
+                $errors[] = "Exception for group_id {$widget->group_id}: " . $e->getMessage();
+            }
+        }
+        
+        return [
+            'success' => $errorCount === 0,
+            'message' => "Updated: {$successCount}, Failed: {$errorCount}",
+            'updated' => $successCount,
+            'failed' => $errorCount,
+            'errors' => $errors
+        ];
+    }
+
+    /**
+     * Обновить виджет по group_id
+     * GET /vk-widget/update-by-group-id?group_id=123456
+     */
+    public function actionUpdateByGroupId($group_id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        if (!$group_id) {
+            Yii::$app->response->statusCode = 400;
+            return [
+                'error' => 'group_id is required'
+            ];
+        }
+        
+        $widget = VkWidget::findOne(['group_id' => $group_id, 'status' => VkWidget::STATUS_ACTIVE]);
+        
+        if (!$widget) {
+            Yii::$app->response->statusCode = 404;
+            return [
+                'error' => "Widget for group_id {$group_id} not found or inactive"
+            ];
+        }
+        
         try {
-            $url = "https://api.vk.com/method/appWidgets.update?" .
-                   "code=" . urlencode($code) .
-                   "&type=" . urlencode($type) .
-                   "&access_token=" . urlencode($accessToken) .
-                   "&v=5.199";
-            
-            $response = file_get_contents($url);
-            $data = json_decode($response, true);
-            
-            return $data;
+            if ($this->updateWidgetByModel($widget)) {
+                return [
+                    'success' => true,
+                    'message' => "Widget for group_id {$group_id} updated successfully"
+                ];
+            } else {
+                Yii::$app->response->statusCode = 500;
+                return [
+                    'error' => "Failed to update widget for group_id {$group_id}"
+                ];
+            }
         } catch (\Exception $e) {
             Yii::$app->response->statusCode = 500;
             return [
                 'error' => $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Обновить виджет по переданному коду (для обратной совместимости)
+     * POST /vk-widget/update
+     */
+    public function actionUpdate()
+    {
+        return $this->actionUpdateByCode();
     }
 
     /**
@@ -333,6 +417,213 @@ class VkWidgetController extends Controller
                 'error' => $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Обновить виджет по переданному коду
+     * 
+     * @param int $groupId
+     * @param string $code
+     * @param string $type
+     * @param string $accessToken
+     * @return array
+     */
+    protected function updateWidgetByCode($groupId, $code, $type, $accessToken)
+    {
+        try {
+            $url = "https://api.vk.com/method/appWidgets.update?" .
+                   "code=" . urlencode($code) .
+                   "&type=" . urlencode($type) .
+                   "&group_id=" . urlencode($groupId) .
+                   "&access_token=" . urlencode($accessToken) .
+                   "&v=5.199";
+            
+            $response = file_get_contents($url);
+            $data = json_decode($response, true);
+            
+            return $data;
+        } catch (\Exception $e) {
+            Yii::error("Exception updating widget by code for group_id {$groupId}: " . $e->getMessage(), 'vk-widget');
+            throw $e;
+        }
+    }
+
+    /**
+     * Обновить виджет по модели
+     * 
+     * @param VkWidget $widget
+     * @return bool
+     */
+    protected function updateWidgetByModel(VkWidget $widget)
+    {
+        // Получаем данные о серверах
+        $apiUrl = $widget->api_url ?: (Yii::$app->params['api_url'] ?? 'https://api.prostoj.store/servers');
+        $serversData = $this->getServersData($apiUrl);
+        
+        if (empty($serversData)) {
+            Yii::warning("No servers data for widget group_id={$widget->group_id}", 'vk-widget');
+            return false;
+        }
+
+        // Создаем код виджета
+        $widgetCode = $this->createWidgetCode($serversData, $widget->logo_icon_id);
+
+        // Получаем токен для обновления
+        $accessToken = $widget->decryptToken();
+        
+        if (!$accessToken) {
+            // Если токена нет, пытаемся использовать сервисный ключ (может не работать)
+            $accessToken = Yii::$app->settings->get('vk_app_sever_key');
+        }
+
+        if (!$accessToken) {
+            Yii::error("No access token for widget group_id={$widget->group_id}", 'vk-widget');
+            return false;
+        }
+
+        // Обновляем виджет через API ВК
+        try {
+            $result = $this->updateWidgetByCode(
+                $widget->group_id,
+                $widgetCode,
+                'table',
+                $accessToken
+            );
+
+            if (isset($result['error'])) {
+                Yii::error("VK API error for widget group_id={$widget->group_id}: " . json_encode($result['error']), 'vk-widget');
+                return false;
+            }
+
+            Yii::info("Widget updated successfully for group_id={$widget->group_id}", 'vk-widget');
+            return true;
+        } catch (\Exception $e) {
+            Yii::error("Exception updating widget group_id={$widget->group_id}: " . $e->getMessage(), 'vk-widget');
+            return false;
+        }
+    }
+
+    /**
+     * Получить данные о серверах
+     * 
+     * @param string|null $apiUrl
+     * @return array
+     */
+    protected function getServersData($apiUrl = null)
+    {
+        if (!$apiUrl) {
+            $apiUrl = Yii::$app->params['api_url'] ?? 'https://api.prostoj.store/servers';
+        }
+
+        try {
+            $response = @file_get_contents($apiUrl);
+            
+            if ($response === false) {
+                return [];
+            }
+
+            $data = json_decode($response, true);
+            
+            return is_array($data) ? $data : [];
+        } catch (\Exception $e) {
+            Yii::error("Failed to get servers data: " . $e->getMessage(), 'vk-widget');
+            return [];
+        }
+    }
+
+    /**
+     * Создать код виджета из данных серверов
+     * 
+     * @param array $serversData
+     * @param string|null $logoIconId
+     * @return string
+     */
+    protected function createWidgetCode($serversData, $logoIconId = null)
+    {
+        // Форматирование прогресс-бара
+        $formatOnlineProgress = function($online, $max) {
+            $onlineValue = $online ?? 0;
+            $maxValue = max($max ?? 1, 30);
+            $percentage = round(($onlineValue / $maxValue) * 100);
+            
+            $totalBlocks = 4;
+            $filledBlocks = round(($percentage / 100) * $totalBlocks);
+            
+            $progressBar = '';
+            for ($i = 0; $i < $totalBlocks; $i++) {
+                $progressBar .= $i < $filledBlocks ? '🟩' : '⬜️';
+            }
+            
+            return $onlineValue . '/' . $maxValue . ' 👤 ' . $progressBar;
+        };
+
+        // Форматирование названия сервера
+        $formatServerName = function($server) {
+            $name = $server['name'] ?? 'Сервер';
+            
+            if (isset($server['wipe_type_text'])) {
+                $name = $name . ' (' . $server['wipe_type_text'] . ')';
+            } elseif (isset($server['wipe_type'])) {
+                switch ($server['wipe_type']) {
+                    case 7:
+                        $name = $name . ' (Недельный)';
+                        break;
+                    case 14:
+                        $name = $name . ' (Двухнедельный)';
+                        break;
+                    case 30:
+                        $name = $name . ' (Месячный)';
+                        break;
+                }
+            }
+            
+            return mb_substr($name, 0, 50);
+        };
+
+        // Формируем тело таблицы
+        $tableBody = [];
+        $servers = array_slice($serversData, 0, 6);
+        
+        foreach ($servers as $server) {
+            $firstCell = [
+                'text' => $formatServerName($server)
+            ];
+            
+            if ($logoIconId) {
+                $firstCell['icon_id'] = $logoIconId;
+            }
+            
+            $tableBody[] = [
+                $firstCell,
+                [
+                    'text' => $formatOnlineProgress($server['online'] ?? 0, $server['max'] ?? 1) . ' | ' . mb_substr($server['text_ip'] ?? $server['ip'] ?? '—', 0, 50),
+                    'align' => 'right'
+                ]
+            ];
+        }
+
+        if (empty($tableBody)) {
+            $placeholderFirstCell = ['text' => 'Загрузка данных...'];
+            if ($logoIconId) {
+                $placeholderFirstCell['icon_id'] = $logoIconId;
+            }
+            
+            $tableBody[] = [
+                $placeholderFirstCell,
+                ['text' => '—', 'align' => 'right']
+            ];
+        }
+
+        $widgetObject = [
+            'title' => 'Мониторинг серверов',
+            'head' => [
+                ['text' => 'Сервер'],
+                ['text' => 'Игроки | IP', 'align' => 'right']
+            ],
+            'body' => $tableBody
+        ];
+
+        return 'return ' . json_encode($widgetObject, JSON_UNESCAPED_UNICODE) . ';';
     }
 }
 
