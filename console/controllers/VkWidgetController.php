@@ -56,7 +56,7 @@ class VkWidgetController extends Controller
                 }
                 
                 // Проверяем наличие API URL
-                $apiUrl = $widget->api_url ?: (Yii::$app->params['api_url'] ?? 'https://api.prostoj.store/servers');
+                $apiUrl = $widget->api_url ?: (Yii::$app->params['api_url'] ?? 'https://api.' . Yii::$app->settings->get('site_domain') . '/servers');
                 $this->stdout("   API URL: {$apiUrl}\n");
                 
                 // Используем рефлексию для вызова защищенного метода с verbose режимом
@@ -123,6 +123,53 @@ class VkWidgetController extends Controller
             $this->stderr("✗ Исключение при обновлении виджета:\n");
             $this->stderr("   " . $e->getMessage() . "\n");
             $this->stderr("   Файл: " . $e->getFile() . ":" . $e->getLine() . "\n");
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+    }
+
+    /**
+     * Сохранить токен доступа сообщества для виджета
+     * 
+     * Пример: php yii vk-widget/save-token 12345678 "vk1.a.token_here"
+     * 
+     * @param int $groupId ID сообщества ВК
+     * @param string $token Ключ доступа сообщества
+     * @return int
+     */
+    public function actionSaveToken($groupId, $token)
+    {
+        if (empty($token)) {
+            $this->stderr("Ошибка: токен не указан.\n");
+            $this->stdout("Использование: php yii vk-widget/save-token <group_id> <token>\n");
+            $this->stdout("Пример: php yii vk-widget/save-token 12345678 \"vk1.a.token_here\"\n");
+            return ExitCode::DATAERR;
+        }
+
+        $widget = VkWidget::findOne(['group_id' => $groupId]);
+
+        if (!$widget) {
+            $this->stderr("Виджет для группы {$groupId} не найден в БД.\n");
+            $this->stdout("Создайте виджет сначала через админ-панель приложения.\n");
+            return ExitCode::DATAERR;
+        }
+
+        try {
+            // Шифруем и сохраняем токен
+            $widget->access_token = $widget->encryptToken($token);
+            
+            if ($widget->save()) {
+                $this->stdout("✓ Токен успешно сохранен для группы {$groupId}.\n");
+                $this->stdout("Теперь автоматическое обновление через cron будет работать.\n");
+                return ExitCode::OK;
+            } else {
+                $this->stderr("✗ Ошибка при сохранении токена:\n");
+                foreach ($widget->errors as $field => $errors) {
+                    $this->stderr("   {$field}: " . implode(', ', $errors) . "\n");
+                }
+                return ExitCode::DATAERR;
+            }
+        } catch (\Exception $e) {
+            $this->stderr("✗ Исключение: " . $e->getMessage() . "\n");
             return ExitCode::UNSPECIFIED_ERROR;
         }
     }

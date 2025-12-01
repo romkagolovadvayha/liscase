@@ -531,7 +531,7 @@ class VkWidgetController extends Controller
     protected function updateWidgetByModel(VkWidget $widget, $verbose = false)
     {
         // Получаем данные о серверах
-        $apiUrl = $widget->api_url ?: (Yii::$app->params['api_url'] ?? 'https://api.prostoj.store/servers');
+        $apiUrl = $widget->api_url ?: (Yii::$app->params['api_url'] ?? 'https://api.' . Yii::$app->settings->get('site_domain') . '/servers');
         $serversData = $this->getServersData($apiUrl);
         
         if (empty($serversData)) {
@@ -604,8 +604,21 @@ class VkWidgetController extends Controller
                         echo "   Сообщение: " . $result['error']['error_msg'] . "\n";
                     }
                     
+                    $errorCode = $result['error']['error_code'] ?? null;
+                    
+                    // Специальная обработка ошибки 9 - Flood control
+                    if ($errorCode == 9) {
+                        echo "\n   ⚠️  ВНИМАНИЕ: Превышен лимит запросов к API ВКонтакте (Flood Control).\n";
+                        echo "   VK ограничивает частоту обновлений виджета для предотвращения злоупотреблений.\n\n";
+                        echo "   📋 Рекомендации:\n";
+                        echo "   - Подождите несколько минут перед следующим обновлением\n";
+                        echo "   - Не обновляйте виджет слишком часто (рекомендуется не чаще 1 раза в 2-3 минуты)\n";
+                        echo "   - Для автоматических обновлений настройте cron с интервалом не менее 5 минут\n";
+                        echo "   - Если ошибка повторяется, увеличьте интервал между обновлениями\n\n";
+                    }
+                    
                     // Специальная обработка ошибки 28 - метод недоступен с сервисным ключом
-                    if (isset($result['error']['error_code']) && $result['error']['error_code'] == 28) {
+                    if ($errorCode == 28) {
                         echo "\n   ⚠️  ВНИМАНИЕ: Для обновления виджета требуется ключ доступа сообщества с правами app_widget.\n";
                         echo "   Сервисный ключ не может использоваться для appWidgets.update.\n\n";
                         echo "   📋 Решение:\n";
@@ -645,7 +658,7 @@ class VkWidgetController extends Controller
     protected function getServersData($apiUrl = null)
     {
         if (!$apiUrl) {
-            $apiUrl = Yii::$app->params['api_url'] ?? 'https://api.prostoj.store/servers';
+            $apiUrl = Yii::$app->params['api_url'] ?? 'https://api.' . Yii::$app->settings->get('site_domain') . '/servers';
         }
 
         try {

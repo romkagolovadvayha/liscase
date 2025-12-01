@@ -17,11 +17,32 @@ import {
 import { Icon16CopyOutline } from '@vkontakte/icons';
 import bridge from '@vkontakte/vk-bridge';
 
+// Функция для получения API URL из параметров URL
+const getApiUrl = (params) => {
+  // Вариант 1: Полный URL API (приоритет)
+  const apiUrl = params.get('api_url');
+  if (apiUrl) {
+    return apiUrl;
+  }
+  
+  // Вариант 2: Базовый URL сайта, из которого строится API URL
+  const apiBaseUrl = params.get('api_base_url') || params.get('site_url');
+  if (apiBaseUrl) {
+    // Убираем завершающий слэш, если есть
+    const baseUrl = apiBaseUrl.replace(/\/$/, '');
+    // Строим полный URL API
+    return `${baseUrl}/servers`;
+  }
+  
+  // Значение по умолчанию
+  return 'https://api.prostoj.store/servers';
+};
+
 // Получаем параметры из URL
 const getUrlParams = () => {
   const params = new URLSearchParams(window.location.search);
   return {
-    apiUrl: params.get('api_url') || 'https://api.prostoj.store/servers',
+    apiUrl: getApiUrl(params),
     logoUrl: params.get('logo_url') || '/server_logo.png'
   };
 };

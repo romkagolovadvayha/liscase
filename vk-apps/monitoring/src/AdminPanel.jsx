@@ -15,6 +15,34 @@ import {
 } from '@vkontakte/vkui';
 import bridge from '@vkontakte/vk-bridge';
 
+// Функция для получения API URL из параметров URL
+const getApiUrl = (params) => {
+  // Вариант 1: Полный URL API (приоритет)
+  const apiUrl = params.get('api_url');
+  if (apiUrl) {
+    return apiUrl;
+  }
+  
+  // Вариант 2: Базовый URL сайта, из которого строится API URL
+  const apiBaseUrl = params.get('api_base_url') || params.get('site_url');
+  if (apiBaseUrl) {
+    // Убираем завершающий слэш, если есть
+    const baseUrl = apiBaseUrl.replace(/\/$/, '');
+    // Строим полный URL API
+    return `${baseUrl}/servers`;
+  }
+  
+  // Значение по умолчанию
+  return 'https://api.prostoj.store/servers';
+};
+
+// Функция для получения базового URL API (без /servers)
+const getApiBaseUrl = (params) => {
+  const apiUrl = getApiUrl(params);
+  // Убираем /servers из конца, если есть, и завершающий слэш
+  return apiUrl.replace(/\/servers\/?$/, '').replace(/\/$/, '');
+};
+
 function AdminPanel() {
   // Проверяем, установлено ли приложение в сообщество (есть vk_group_id)
   const params = new URLSearchParams(window.location.search);
@@ -215,8 +243,7 @@ function AdminPanel() {
       
       // Используем серверный прокси для обхода CORS
       // Используем тот же домен API, что и для серверов
-      const apiUrlFull = params.get('api_url') || 'https://api.prostoj.store/servers';
-      const apiBaseUrl = apiUrlFull.replace('/servers', '').replace(/\/$/, '');
+      const apiBaseUrl = getApiBaseUrl(params);
       
       // Используем коллекцию приложения (appWidgets.getAppImageUploadServer)
       // Работает с сервисным ключом, не требует токен пользователя
@@ -338,7 +365,7 @@ function AdminPanel() {
         return;
       }
 
-      const apiUrl = params.get('api_url') || 'https://api.prostoj.store/servers';
+      const apiUrl = getApiUrl(params);
       
       // Загружаем данные о серверах
       let serversData = [];
@@ -367,7 +394,7 @@ function AdminPanel() {
       // Сохраняем информацию о виджете в БД для автоматического обновления через cron
       try {
         const params = new URLSearchParams(window.location.search);
-        const apiBaseUrl = apiUrl.replace('/servers', '').replace(/\/$/, '');
+        const apiBaseUrl = getApiBaseUrl(params);
         
         // Пытаемся получить ключ доступа сообщества для автоматического обновления
         // ВАЖНО: Для appWidgets.update нужен именно ключ доступа сообщества, а не токен пользователя!
@@ -595,8 +622,8 @@ Group ID: ${groupIdNum}`;
       
       console.log('Using token for widget update (length:', communityToken.length, 'chars)');
 
-      const apiUrl = params.get('api_url') || 'https://api.prostoj.store/servers';
-      const apiBaseUrl = apiUrl.replace('/servers', '').replace(/\/$/, '');
+      const apiUrl = getApiUrl(params);
+      const apiBaseUrl = getApiBaseUrl(params);
       
       // Загружаем актуальные данные о серверах
       let serversData = [];
@@ -630,7 +657,27 @@ Group ID: ${groupIdNum}`;
       const updateResult = await updateResponse.json();
       
       if (updateResult.error || updateResult.error_code) {
-        throw new Error(updateResult.error_msg || updateResult.error || 'Ошибка обновления виджета');
+        const errorCode = updateResult.error?.error_code || updateResult.error_code;
+        const errorMsg = updateResult.error?.error_msg || updateResult.error_msg || updateResult.error || 'Ошибка обновления виджета';
+        
+        // Специальная обработка ошибки flood control
+        if (errorCode === 9) {
+          const errorMessage = `⚠️ Превышен лимит запросов к API ВКонтакте (Flood Control).
+
+🕐 Попробуйте обновить виджет через несколько минут.
+
+VK ограничивает частоту обновлений виджета для предотвращения злоупотреблений.
+Рекомендуется обновлять виджет не чаще, чем раз в несколько минут.
+
+Для автоматического обновления используйте cron:
+php yii vk-widget/update-all
+
+Код ошибки: ${errorCode}`;
+          alert(errorMessage);
+          throw new Error('Превышен лимит запросов. Подождите несколько минут и попробуйте снова.');
+        }
+        
+        throw new Error(errorMsg);
       }
       
       console.log('Widget updated successfully:', updateResult);

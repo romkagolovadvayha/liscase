@@ -75,7 +75,41 @@ npm run build
 
 ## API
 
-Приложение использует API: `GET https://api.prostoj.store/servers`
+Приложение использует API для получения данных о серверах. URL API можно настроить через параметры URL.
+
+### Настройка API URL через параметры
+
+Вы можете передать адрес API через параметры URL в трех вариантах:
+
+1. **Полный URL API** (приоритет):
+   ```
+   ?api_url=https://api.example.com/servers
+   ```
+
+2. **Базовый URL сайта** (рекомендуется):
+   ```
+   ?api_base_url=https://api.example.com
+   ```
+   Или через параметр `site_url`:
+   ```
+   ?site_url=https://api.example.com
+   ```
+   В этом случае автоматически будет построен URL: `https://api.example.com/servers`
+
+3. **Значение по умолчанию** (если параметры не указаны):
+   ```
+   https://api.prostoj.store/servers
+   ```
+
+### Примеры URL с параметрами:
+
+```
+https://monitoring-apps.prostoj.store/widget.html?api_base_url=https://api.example.com&vk_app_id=123456
+```
+
+```
+https://monitoring-apps.prostoj.store/widget.html?api_url=https://api.example.com/servers&vk_app_id=123456
+```
 
 ### Формат ответа API
 

@@ -74,16 +74,45 @@ npm run build
 
 ## Шаг 5: Настройка параметров (опционально)
 
-Вы можете передать параметры через URL:
+Вы можете передать параметры через URL для настройки API и других параметров.
 
-```
-https://prostoj.store/vk-apps/monitoring/widget.html?api_url=https://your-api.com/servers&logo_url=https://your-site.com/logo.png
-```
+### Параметры API URL:
 
-### Параметры:
+Адрес API можно передать тремя способами:
 
-- `api_url` — URL API для получения данных о серверах (по умолчанию: `https://api.prostoj.store/servers`)
+1. **Полный URL API** (приоритет):
+   ```
+   ?api_url=https://api.example.com/servers
+   ```
+
+2. **Базовый URL сайта** (рекомендуется):
+   ```
+   ?api_base_url=https://api.example.com
+   ```
+   Или через параметр `site_url`:
+   ```
+   ?site_url=https://api.example.com
+   ```
+   В этом случае автоматически будет построен URL: `https://api.example.com/servers`
+
+3. **Значение по умолчанию** (если параметры не указаны):
+   ```
+   https://api.prostoj.store/servers
+   ```
+
+### Другие параметры:
+
 - `logo_url` — URL логотипа сервера (по умолчанию: `/server_logo.png`)
+
+### Примеры полных URL:
+
+```
+https://prostoj.store/vk-apps/monitoring/widget.html?api_base_url=https://api.example.com&logo_url=https://your-site.com/logo.png
+```
+
+```
+https://prostoj.store/vk-apps/monitoring/widget.html?api_url=https://api.example.com/servers
+```
 
 ## Модерация плагина
 
