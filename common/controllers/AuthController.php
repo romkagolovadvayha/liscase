@@ -117,9 +117,10 @@ class AuthController extends WebController
         // Сохраняем user_id в сессии для последующей привязки
         Yii::$app->session->set('discord_oauth_user_id', $userId);
 
-        // Сохраняем состояние для защиты от CSRF
+        // Сохраняем состояние для защиты от CSRF в cookie
+        // Используем cookie вместо сессии, чтобы state сохранялся при редиректе от Discord
         $state = Yii::$app->security->generateRandomString(32);
-        Yii::$app->session->set('discord_oauth_state', $state);
+        Cookie::add('discord_oauth_state', $state, true, 10); // 10 минут, с mainDomain для работы на всех поддоменах
 
         $params = [
             'client_id' => $clientId,
@@ -154,14 +155,15 @@ class AuthController extends WebController
             return $this->redirect(['/user/profile']);
         }
 
-        // Проверяем state для защиты от CSRF
-        $savedState = Yii::$app->session->get('discord_oauth_state');
+        // Проверяем state для защиты от CSRF (читаем из cookie)
+        $savedState = Cookie::getValue('discord_oauth_state');
         if (empty($state) || $state !== $savedState) {
             Yii::error("Discord OAuth state mismatch. State: {$state}, Saved: " . ($savedState ?? 'empty'), __METHOD__);
+            Cookie::remove('discord_oauth_state');
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка безопасности при авторизации Discord.'));
             return $this->redirect(['/user/profile']);
         }
-        Yii::$app->session->remove('discord_oauth_state');
+        Cookie::remove('discord_oauth_state');
 
         if (empty($code)) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Код авторизации Discord не получен.'));
@@ -550,20 +552,24 @@ class AuthController extends WebController
     public function actionSwitchIdentity($authKey, $parentUser = null)
     {
         $user = (new User())->findByAuthKey($authKey);
+        
+        if (!$user) {
+            Yii::$app->session->addFlash('error', Yii::t('common', 'Пользователь не найден'));
+            return $this->redirect(Yii::$app->getHomeUrl());
+        }
 
         if (Yii::$app->user->isGuest) {
             Yii::$app->user->login($user, 3600 * 24);
-
         } else {
             Yii::$app->user->logout();
-            Yii::$app->user->switchIdentity($user);
+            Yii::$app->user->switchIdentity($user, 3600 * 24);
         }
 
-        if (empty($redirectUrl)) {
-            $redirectUrl = Yii::$app->getHomeUrl();
+        $redirectUrl = Yii::$app->getHomeUrl();
+        
+        if (!empty($parentUser)) {
+            Cookie::add('fromSwitcherUserId', $parentUser, true);
         }
-
-        Cookie::add('fromSwitcherUserId', $parentUser, true);
 
         return $this->redirect($redirectUrl);
     }
