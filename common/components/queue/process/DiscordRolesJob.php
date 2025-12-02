@@ -266,7 +266,7 @@ class DiscordRolesJob extends BaseObject implements JobInterface
             ->andWhere(['key' => 'playtime'])
             ->sum('value') ?: 0;
 
-        return (int)($totalSeconds / 3600); // Конвертируем секунды в часы
+        return (int)($totalSeconds / 60); // Конвертируем секунды в часы
     }
 
     /**
