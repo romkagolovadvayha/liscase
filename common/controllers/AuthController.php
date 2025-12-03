@@ -678,7 +678,18 @@ class AuthController extends WebController
                 Yii::$app->telegramChats->sendMessage("Discord: Role {$roleId} assigned to user {$discordUserId}");
                 return true;
             } else {
-                // Ошибка при выдаче роли
+                // Парсим ответ для проверки кода ошибки
+                $errorData = json_decode($response, true);
+                $errorCode = $errorData['code'] ?? null;
+                
+                // Ошибка 10007 = "Unknown Member" - пользователь не является участником сервера
+                if ($errorCode === 10007) {
+                    // Это нормальная ситуация - пользователь привязал Discord, но не на сервере
+                    Yii::warning("Discord user {$discordUserId} is not a member of the server (code 10007). Role assignment skipped.", __METHOD__);
+                    return false;
+                }
+                
+                // Другие ошибки логируем как обычно
                 Yii::error("Discord API error assigning role: HTTP {$httpCode}, Response: {$response}, cURL Error: {$curlError}", __METHOD__);
                 Yii::$app->telegramChats->sendMessage("Discord: Failed to assign role {$roleId} to user {$discordUserId}. HTTP {$httpCode}, Response: {$response}");
                 return false;
