@@ -34,7 +34,20 @@ $languages = [
             <?php foreach ($languages as $language): ?>
             <?php  $language_id = $language['language_id']; ?>
             <div class="tg-preview_message" id="preview_message_<?=$language['language_id']?>">
-                <?= $form->field($model, "image_file[{$language['language_id']}]")->label(false)->widget(\kartik\file\FileInput::class, [
+                <?php
+                $imageLink = $model->getImageLink($language_id);
+                $isUrl = !empty($imageLink) && strpos($imageLink, '@') === 0;
+                $imageUrlValue = $isUrl ? substr($imageLink, 1) : ''; // Убираем @ для отображения
+                ?>
+                <div class="form-group">
+                    <label class="control-label">Ссылка на изображение (начинается с @, можно использовать {user_id}):</label>
+                    <?= Html::textInput("TelegramConstructorMessageForm[image_url][{$language_id}]", $imageUrlValue, [
+                        'class' => 'form-control',
+                        'placeholder' => '@https://prostoj.store/year-review/generate?userId={user_id}'
+                    ]) ?>
+                    <div class="help-block">Если указана ссылка, загрузка файла будет проигнорирована. Используйте {user_id} для подстановки ID пользователя.</div>
+                </div>
+                <?= $form->field($model, "image_file[{$language['language_id']}]")->label('Или загрузите файл:')->widget(\kartik\file\FileInput::class, [
                     'options'       => [
                         'accept' => 'image/*',
                     ],
@@ -45,7 +58,7 @@ $languages = [
                         'overwriteInitial'       => true,
                         'initialPreviewAsData'   => false,
                         'initialPreviewFileType' => 'image',
-                        'initialPreview'         => $model->getImageLink($language_id) ? [
+                        'initialPreview'         => !$isUrl && $imageLink ? [
                             "<img src=\"{$model->getPubUrl('', $language_id)}\" class=\"file-preview-image\" alt=\"Image\" title=\"Image\">"
                         ] : false,
                     ],

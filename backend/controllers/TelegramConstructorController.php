@@ -7,6 +7,7 @@ use backend\models\TelegramConstructor;
 use backend\models\TelegramConstructorSearch;
 use common\components\base\Model;
 use common\components\helpers\Role;
+use common\components\queue\telegram\TelegramConstructorSendJob;
 use common\components\queue\telegram\UpdateTelegramAudienceJob;
 use common\components\queue\vk\UpdateVkAudienceJob;
 use common\components\telegram\TelegramPersonalBot;
@@ -127,25 +128,30 @@ class TelegramConstructorController extends \backend\components\CrudController
     {
         $model = TelegramConstructor::findOne($id);
         if (empty($model)) {
+            Yii::$app->session->addFlash('error', 'Рассылка не найдена');
             return $this->redirect($this->getIndexUrl());
         }
 
-        $model->status = TelegramConstructor::STATUS_IN_PROGRESS;
-        $model->save();
+        // Проверяем, что рассылка не уже в процессе
+        if ($model->status === TelegramConstructor::STATUS_IN_PROGRESS) {
+            Yii::$app->session->addFlash('warning', 'Рассылка уже выполняется');
+            return $this->redirect($this->getIndexUrl());
+        }
 
         try {
-            if($model->send()) {
-                $model->status = TelegramConstructor::STATUS_SUCCESS;
-            } else {
-                $model->status = TelegramConstructor::STATUS_ERROR;
-            }
+            // Добавляем задачу в очередь
+            Yii::$app->queueTelegram->push(new TelegramConstructorSendJob([
+                'constructorId' => $id,
+            ]));
+            
+            Yii::$app->session->addFlash('success', 
+                'Рассылка добавлена в очередь. Статус будет обновлен после завершения.'
+            );
         } catch (\Exception $e) {
-            $model->status = TelegramConstructor::STATUS_ERROR;
-            \Yii::error("Send message error, id - $id, error message: " . $e->getMessage(), __METHOD__);
-            $model->save();
-            return $this->redirect($this->getIndexUrl());
+            Yii::$app->session->addFlash('error', 'Ошибка при добавлении рассылки в очередь: ' . $e->getMessage());
+            Yii::error("TelegramConstructor actionPlay error: " . $e->getMessage(), __METHOD__);
         }
-        $model->save();
+
         return $this->redirect($this->getIndexUrl());
     }
 

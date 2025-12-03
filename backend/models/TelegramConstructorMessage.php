@@ -107,14 +107,38 @@ class TelegramConstructorMessage extends \yii\db\ActiveRecord
     }
 
     /**
+     * Получение публичной URL изображения
+     * Если image_link начинается с @, то это ссылка (возможно с плейсхолдерами)
+     * @param string $baseUrl
+     * @param string $language
+     * @param int|null $userId ID пользователя для подстановки в ссылку
      * @return string
      */
-    public function getPubUrl($baseUrl = '', $language = 'ru-Ru'): string
+    public function getPubUrl($baseUrl = '', $language = 'ru-Ru', $userId = null): string
     {
+        $imageLink = $this->getImageLink($language);
+        
+        if (empty($imageLink)) {
+            return '';
+        }
+        
+        // Если ссылка начинается с @, это внешняя ссылка (возможно с плейсхолдерами)
+        if (strpos($imageLink, '@') === 0) {
+            $url = substr($imageLink, 1); // Убираем @
+            
+            // Подставляем {user_id} если указан userId
+            if ($userId !== null) {
+                $url = str_replace('{user_id}', $userId, $url);
+            }
+            
+            return $url;
+        }
+        
+        // Иначе это путь к файлу на сервере
         if(!$baseUrl) {
             $baseUrl = Yii::$app->params['baseUrl'];
         }
-        return $baseUrl . '/uploads/telegram' . str_replace(Yii::getAlias('@app/web/uploads') . '/telegram', '', $this->getImageLink($language));
+        return $baseUrl . '/uploads/telegram' . str_replace(Yii::getAlias('@app/web/uploads') . '/telegram', '', $imageLink);
     }
 
     public function updateLanguage($language, $message = null, $imageLink = null, $updateImageLink = true)

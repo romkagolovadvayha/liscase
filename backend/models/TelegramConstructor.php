@@ -192,9 +192,15 @@ class TelegramConstructor extends \yii\db\ActiveRecord
                 continue;
             }
             
+            // Для каждого пользователя нужна своя ссылка (с подстановкой user_id)
+            // Поэтому не кэшируем photo, если это ссылка с плейсхолдером
+            $imageLink = $this->telegramConstructorMessage->getImageLink($user->current_language);
+            $isDynamicLink = !empty($imageLink) && strpos($imageLink, '@') === 0 && strpos($imageLink, '{user_id}') !== false;
+            
             $cacheKey = "sendPersonalBot_{$this->telegramConstructorMessage->id}_{$user->current_language}";
             $cacheData = Yii::$app->cache->get($cacheKey);
-            if (!empty($cacheData)) {
+            
+            if (!empty($cacheData) && !$isDynamicLink) {
                 $message = $cacheData['message'];
                 $photo = $cacheData['photo'];
                 $buttons = $cacheData['buttons'];
@@ -202,14 +208,19 @@ class TelegramConstructor extends \yii\db\ActiveRecord
                 $buttons = $this->telegramConstructorMessage->getTelegramButtons($user->current_language);
                 $message = $this->telegramConstructorMessage->getTelegramMessage($user->current_language, !empty($buttons));
                 $photo = null;
-                if (!empty($this->telegramConstructorMessage->getImageLink($user->current_language))) {
-                    $photo = $this->telegramConstructorMessage->getPubUrl('', $user->current_language);
+                if (!empty($imageLink)) {
+                    // Передаем user_id для подстановки в ссылку
+                    $photo = $this->telegramConstructorMessage->getPubUrl('', $user->current_language, $user->id);
                 }
-                Yii::$app->cache->set($cacheKey, [
-                    'message' => $message,
-                    'photo' => $photo,
-                    'buttons' => $buttons
-                ], 60);
+                
+                // Кэшируем только если ссылка не динамическая
+                if (!$isDynamicLink) {
+                    Yii::$app->cache->set($cacheKey, [
+                        'message' => $message,
+                        'photo' => $photo,
+                        'buttons' => $buttons
+                    ], 60);
+                }
             }
             if (!empty($buttons) || empty($photo)) {
                 Yii::$app->queueTelegram->push(new SendMessageJob([
@@ -250,10 +261,8 @@ class TelegramConstructor extends \yii\db\ActiveRecord
         $message = $this->telegramConstructorMessage->getVkMessage($language);
         $imageLink = $this->telegramConstructorMessage->getImageLink($language);
         
-        $photo = null;
-        if (!empty($imageLink)) {
-            $photo = $this->telegramConstructorMessage->getPubUrl('', $language);
-        }
+        // Проверяем, является ли ссылка динамической (с плейсхолдером {user_id})
+        $isDynamicLink = !empty($imageLink) && strpos($imageLink, '@') === 0 && strpos($imageLink, '{user_id}') !== false;
 
         // Получаем список участников группы с учетом фильтрации по аудитории
         $recipients = self::getAudience($this->audience_id, self::VK_GROUP);
@@ -262,27 +271,21 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             return false;
         }
 
-        $vkApi = new VkApiHelper();
-
-        // Отправляем сообщения через очередь или напрямую
-        if (isset(Yii::$app->queueVk)) {
-            foreach ($recipients as $userId) {
-                Yii::$app->queueVk->push(new SendVkMessageJob([
-                    'user_id' => $userId,
-                    'message' => $message,
-                    'photo' => $photo,
-                ]));
+        // Отправляем сообщения через очередь VK
+        foreach ($recipients as $userId) {
+            $photo = null;
+            if (!empty($imageLink)) {
+                // Для динамических ссылок подставляем user_id для каждого получателя
+                // Для VK userId - это vk_user_id, а не user_id из базы
+                // Но так как мы работаем с vk_user_id, передаем его как userId
+                $photo = $this->telegramConstructorMessage->getPubUrl('', $language, $userId);
             }
-        } else {
-            // Если очередь не настроена, отправляем напрямую с задержками
-            foreach ($recipients as $userId) {
-                $result = $vkApi->sendMessage($userId, $message, $photo);
-                if ($result === false) {
-                    Yii::warning("VK: Failed to send message to user {$userId}", __METHOD__);
-                }
-                // Задержка для соблюдения rate limits VK API (не более 3 сообщений в секунду)
-                usleep(350000); // 0.35 секунды
-            }
+            
+            Yii::$app->queueVk->push(new SendVkMessageJob([
+                'user_id' => $userId,
+                'message' => $message,
+                'photo' => $photo,
+            ]));
         }
 
         return true;
