@@ -9,6 +9,7 @@ use common\models\statistics\Kills;
 use common\models\statistics\Reports;
 use common\models\statistics\Statistics;
 use common\models\user\User;
+use common\models\user\UserBox;
 use common\models\user\UserRaid;
 use Yii;
 use yii\web\NotFoundHttpException;
@@ -141,8 +142,18 @@ class YearReviewController extends WebController
         // Выиграно скинами (сумма real_price из таблицы skindrops)
         $skindropsWinnings = Skindrops::find()
             ->where(['steam_id' => $steamId])
-            ->sum('real_price') ?? 0;
+            ->sum('price') ?? 0;
         $skindropsWinnings = round($skindropsWinnings, 2);
+        
+        // Если выиграно скинами = 0, считаем количество ежедневных наград из user_box
+        $dailyRewardsCount = 0;
+        $useDailyRewards = false;
+        if ($skindropsWinnings == 0) {
+            $dailyRewardsCount = UserBox::find()
+                ->where(['user_id' => $user->id, 'auto' => 1])
+                ->count();
+            $useDailyRewards = true;
+        }
 
         // Зарейдил шкафов (количество рейдов типа 'cupboard')
         $cupboardsRaided = UserRaid::find()
@@ -172,6 +183,8 @@ class YearReviewController extends WebController
             'reports_created' => $reportsCreated,
             'bans_from_reports' => $bansFromReports,
             'skindrops_winnings' => $skindropsWinnings,
+            'daily_rewards_count' => $dailyRewardsCount,
+            'use_daily_rewards' => $useDailyRewards,
             'cupboards_raided' => $cupboardsRaided,
             'max_kill_distance' => $maxKillDistance,
         ];
@@ -403,7 +416,9 @@ class YearReviewController extends WebController
             
             // Третья колонка - дополнительные статистики
             [
-                'text' => number_format($stats['skindrops_winnings'], 0, '', ' ') . ' ₽',
+                'text' => $stats['use_daily_rewards'] 
+                    ? $formatNumber($stats['daily_rewards_count'])
+                    : number_format($stats['skindrops_winnings'], 0, '', ' ') . ' ₽',
                 'fontSize' => $statsNumberFontSize,
                 'color' => $statsNumberColor,
                 'fontWeight' => $statsNumberFontWeight,
@@ -411,7 +426,9 @@ class YearReviewController extends WebController
                 'y' => 350,
             ],
             [
-                'text' => 'Выгранно скинами',
+                'text' => $stats['use_daily_rewards'] 
+                    ? 'Получено ежедневных наград'
+                    : 'Выгранно скинами',
                 'fontSize' => $statsTextFontSize,
                 'color' => $statsTextColor,
                 'fontWeight' => $statsTextFontWeight,
