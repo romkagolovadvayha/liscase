@@ -34,7 +34,10 @@ void async function startApp() {
             compression: false, // Отключаем сжатие для потокового аудио
             routes: { 
                 files: { relativeTo: Path.join(__dirname, 'public') },
-                cors: true,  // Упрощённая настройка CORS
+                cors: {
+                    origin: ['https://prostoj.store', 'https://moscow77.store', 'http://localhost', 'http://127.0.0.1'],
+                    credentials: false
+                },
                 timeout: {
                     server: false, // Без таймаута сервера для потоков
                     socket: false  // Без таймаута сокета для потоков
