@@ -653,7 +653,25 @@ class Drop extends ActiveRecord
     }
 
     public function give($userId, $count, $parentId = null, $boxId = null, $setId = null) {
-        // VIP товары обрабатываются так же, как и другие товары - через user_drop
+        // Для VIP товаров на серверах без доната выдаем сразу в user_vip без user_drop и без команды
+        if ($this->drop_type === self::TYPE_VIP) {
+            // Получаем текущий сервер игрока
+            $user = \common\models\user\User::findOne($userId);
+            $currentServer = $user ? $user->getCurrentServer() : null;
+            
+            // Если у игрока есть текущий сервер и у него нет доната (is_store = 0), выдаем VIP сразу
+            if ($currentServer && $currentServer instanceof \common\models\servers\Servers && $currentServer->is_store == 0) {
+                $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+                UserVip::createOrExtend($userId, $expiresAt);
+                $command = str_replace('%STEAMID%', $user->steam_id, $this->command);
+                \common\models\rcon\RconTasks::execute($command);
+                return;
+            }
+            
+            // Если текущего сервера нет или у него есть донат, продолжаем стандартную логику через user_drop
+        }
+        
+        // VIP товары на серверах с магазином и другие товары обрабатываются через user_drop
         // Логика выдачи VIP будет в ShopController::methodGived()
         
         // Загружаем subDrops, если они не загружены

@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   container-type: inline-size;
+  align-items: start;
   @container (max-width: 1200px) {
     flex: 1 0;
     width: auto;
@@ -34,6 +35,31 @@
 
   &__description {
     @extend .mb-22, .text-text-main;
+  }
+
+  &__vip {
+    @extend .relative, .mb-22, .flex, .items-center, .gap-x-12, .z-1;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 193, 7, 0.1) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: var(--card-radius);
+  }
+
+  &__vip-icon {
+    font-size: 24px;
+    color: #FFD700;
+    text-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+    flex-shrink: 0;
+  }
+
+  &__vip-text {
+    @extend .p2, .text-text-main;
+    margin: 0;
+    
+    .server_timer {
+      font-weight: 600;
+      color: var(--primary-colors-main);
+    }
   }
 
   &__stats {
@@ -139,6 +165,24 @@
         @extend .p2, .flex, .text-text-secondary, .items-center, .gap-x-8;
       }
 
+      &__wrapper {
+        @extend .flex, .items-center, .gap-x-16, .flex-wrap;
+      }
+
+      &__stats {
+        @extend .p2, .text-text-secondary;
+        font-size: 13px;
+        white-space: nowrap;
+        margin: 0;
+        text-decoration: none;
+        transition: color 0.25s ease-in-out;
+        
+        &:hover {
+          color: var(--primary-colors-main);
+          text-decoration: underline;
+        }
+      }
+
       &__list {
         @extend .flex, .gap-x-2, .flex-wrap;
       }
@@ -147,6 +191,7 @@
         @extend .object-contain;
         width: 48px;
         height: 48px;
+        transition: opacity 0.25s ease-in-out, filter 0.25s ease-in-out;
       }
     }
   }

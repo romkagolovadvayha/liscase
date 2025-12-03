@@ -37,13 +37,35 @@ $this->registerJs(<<<JS
             var left = moment.unix(dateTime);
             $(blocked_products[i]).html(left.locale('{$locale}').fromNow());
         }
+        var server_timers = $('.server_timer');
+        for (var i = 0; i < server_timers.length; i++) {
+            var dateTime = $(server_timers[i]).attr('data-time');
+            var left;
+            // Если dateTime - это timestamp (число), используем moment.unix, иначе moment с форматом
+            if (/^\d+$/.test(dateTime)) {
+                left = moment.unix(dateTime);
+            } else {
+                // Пробуем распарсить дату в формате Y-m-d H:i:s
+                left = moment(dateTime, 'YYYY-MM-DD HH:mm:ss');
+                if (!left.isValid()) {
+                    // Если не получилось, пробуем стандартный формат
+                    left = moment(dateTime);
+                }
+            }
+            if (left.isValid()) {
+                $(server_timers[i]).html(left.locale('{$locale}').fromNow());
+            }
+        }
 JS
 );
 //$getNextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate();
 $userData = [];
 $awards = [];
+$awardsStats = ['completed' => 0, 'total' => 0];
 $projectStats = Statistics::projectStats();
 $userStats = null;
+$activeVip = null;
+$activeVipTimestamp = null;
 if (!Yii::$app->user->isGuest) {
     $user = Yii::$app->user->identity;
     $userData = [
@@ -59,7 +81,71 @@ if (!Yii::$app->user->isGuest) {
                                ->cache(60)
                                ->all();
     }
-    $awards = \common\models\tasks\Task::awards($user->id, false);
+    // Получаем все активные задания из tasks_v2
+    $tasksV2 = \common\models\tasks_v2\TaskV2::find()
+        ->where(['is_active' => 1])
+        ->orderBy(['sort' => SORT_ASC])
+        ->all();
+
+    // Получаем выполненные задания пользователя
+    $userCompletions = \common\models\tasks_v2\TaskV2UserCompletion::find()
+        ->where(['user_id' => $user->id])
+        ->indexBy('task_id')
+        ->all();
+
+    // Формируем массив заданий с информацией о выполнении
+    $awardsList = [];
+    $completedAwardsList = [];
+    
+    foreach ($tasksV2 as $task) {
+        $completed = isset($userCompletions[$task->id]) && $userCompletions[$task->id]->count_completed > 0;
+        
+        // Получаем изображение задания
+        if (!empty($task->image_path)) {
+            // Если путь не начинается с /, добавляем его
+            $image = strpos($task->image_path, '/') === 0 ? $task->image_path : '/' . $task->image_path;
+        } else {
+            $image = '/images/awards/default.png';
+        }
+        
+        $awardData = [
+            'id' => $task->id,
+            'name' => $task->title,
+            'image' => $image,
+            'completed' => $completed,
+        ];
+        
+        $awardsList[] = $awardData;
+        
+        // Если задание выполнено, добавляем в отдельный список
+        if ($completed) {
+            $completedAwardsList[] = $awardData;
+        }
+    }
+
+    // Берем только выполненные задания (не более 7)
+    $awards = array_slice($completedAwardsList, 0, 7);
+    
+    // Подсчитываем статистику
+    $totalTasks = count($awardsList);
+    $completedTasks = count($completedAwardsList);
+    
+    $awardsStats = [
+        'completed' => $completedTasks,
+        'total' => $totalTasks,
+    ];
+    // Получаем активный VIP
+    $activeVip = $user->getActiveVip();
+    // Если VIP найден, вычисляем timestamp для JavaScript
+    if ($activeVip && !empty($activeVip->expires_at)) {
+        // Конвертируем expires_at в timestamp для JavaScript
+        if (is_numeric($activeVip->expires_at)) {
+            $activeVipTimestamp = (int)$activeVip->expires_at;
+            $activeVip->expires_at = date('Y-m-d H:i:s', $activeVip->expires_at);
+        } else {
+            $activeVipTimestamp = strtotime($activeVip->expires_at);
+        }
+    }
 }
 
 $servers = Servers::find()
@@ -124,7 +210,10 @@ $this->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
         'USER_STATS' => $userStats,
         'STATS' => new Statistics(),
         'AWARDS' => $awards,
+        'AWARDS_STATS' => $awardsStats,
         'SETTINGS' => $SETTINGS,
+        'ACTIVE_VIP' => $activeVip,
+        'ACTIVE_VIP_TIMESTAMP' => $activeVipTimestamp,
     ]),
     'latestPosts' => $latestPosts ?? [],
     'SETTINGS' => $SETTINGS,

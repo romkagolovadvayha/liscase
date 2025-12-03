@@ -285,6 +285,106 @@ class UserController extends WebController
     }
 
     /**
+     * Форма модального окна для редактирования социальных ссылок
+     * 
+     * @return string
+     */
+    public function actionSocialLinksModal()
+    {
+        if (Yii::$app->user->isGuest) {
+            throw new ForbiddenHttpException(Yii::t('common', 'Доступ запрещен'));
+        }
+
+        $user = Yii::$app->user->identity;
+        $profile = $user->userProfile;
+        
+        if (!$profile) {
+            $profile = new UserProfile();
+            $profile->user_id = $user->id;
+        }
+
+        // Проверяем наличие VIP
+        $hasVip = $user->hasVip();
+        
+        // Ищем VIP товар для ссылки на покупку
+        $vipDrop = \common\models\box\Drop::find()
+            ->where(['drop_type' => \common\models\box\Drop::TYPE_VIP])
+            ->andWhere(['market_status' => \common\models\box\Drop::MARKET_STATUS_ACTIVE])
+            ->andWhere(['status' => \common\models\box\Drop::STATUS_ACTIVE])
+            ->orderBy(['sort' => SORT_ASC])
+            ->one();
+
+        return $this->renderAjax('_social_links_form', [
+            'profile' => $profile,
+            'hasVip' => $hasVip,
+            'vipDrop' => $vipDrop,
+        ]);
+    }
+
+    /**
+     * Сохранение социальных ссылок
+     * 
+     * @return \yii\web\Response
+     */
+    public function actionSocialLinks()
+    {
+        if (Yii::$app->user->isGuest) {
+            throw new ForbiddenHttpException(Yii::t('common', 'Доступ запрещен'));
+        }
+
+        $user = Yii::$app->user->identity;
+        $profile = $user->userProfile;
+        
+        if (!$profile) {
+            $profile = new UserProfile();
+            $profile->user_id = $user->id;
+        }
+
+        if (Yii::$app->request->isPost) {
+            $post = Yii::$app->request->post();
+            
+            $profile->youtube_link = !empty($post['youtube_link']) ? trim($post['youtube_link']) : null;
+            $profile->twitch_link = !empty($post['twitch_link']) ? trim($post['twitch_link']) : null;
+            $profile->vk_link = !empty($post['vk_link']) ? trim($post['vk_link']) : null;
+            $profile->telegram_link = !empty($post['telegram_link']) ? trim($post['telegram_link']) : null;
+            
+            // is_hide_online можно установить только если есть VIP
+            if ($user->hasVip()) {
+                $profile->is_hide_online = !empty($post['is_hide_online']) ? 1 : 0;
+            } else {
+                // Если нет VIP, сбрасываем флаг
+                $profile->is_hide_online = 0;
+            }
+            
+            // is_hide_team можно установить только если есть VIP
+            if ($user->hasVip()) {
+                $profile->is_hide_team = !empty($post['is_hide_team']) ? 1 : 0;
+            } else {
+                // Если нет VIP, сбрасываем флаг
+                $profile->is_hide_team = 0;
+            }
+
+            if ($profile->validate() && $profile->save()) {
+                if (Yii::$app->request->isAjax) {
+                    Yii::$app->response->format = Response::FORMAT_JSON;
+                    return ['success' => true, 'message' => Yii::t('common', 'Социальные ссылки успешно сохранены')];
+                }
+                Yii::$app->session->setFlash('success', Yii::t('common', 'Социальные ссылки успешно сохранены'));
+            } else {
+                $errors = $profile->getFirstErrors();
+                $errorMessage = !empty($errors) ? array_values($errors)[0] : Yii::t('common', 'Ошибка при сохранении');
+                if (Yii::$app->request->isAjax) {
+                    Yii::$app->response->format = Response::FORMAT_JSON;
+                    return ['success' => false, 'message' => $errorMessage];
+                }
+                Yii::$app->session->setFlash('danger', $errorMessage);
+            }
+        }
+
+        return $this->redirect(Yii::$app->request->referrer ?: '/user/profile');
+    }
+
+    /**
      *
      * @return \yii\web\Response | string
      * @throws NotFoundHttpException

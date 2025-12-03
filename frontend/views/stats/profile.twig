@@ -1,12 +1,51 @@
 <section class="page-stats__block profile w-50p">
+    {% if IS_OWNER %}
+    <!-- Кнопка редактирования -->
+    <div class="profile__edit-btn-wrapper">
+        <a href="#" 
+           class="profile__edit-btn show-modal-link" 
+           data-href="/user/social-links-modal"
+           data-title="{{ t('common', 'Редактировать социальные сети') }}"
+           data-size="modal"
+           data-toggl="modal"
+           data-target="modal-dialog"
+           title="{{ t('common', 'Редактировать социальные сети') }}">
+            <i class="fas fa-edit"></i>
+        </a>
+    </div>
+    {% endif %}
+    
     <!-- ОНЛАЙН -->
     <div class="profile__wrapper{{ WRAPPER_CLASS }}">
-        <div class="profile__image">
+        <div class="profile__image"{% if IS_HIDDEN %} title="{{ t('common', 'Статус онлайн/оффлайн скрыт') }}" data-bs-toggle="tooltip" data-bs-placement="top"{% endif %}>
             <img src="{{ USER.getAvatar() }}" alt="{{ USER.username }}" />
         </div>
         <div>
             <h2 class="text-primary-colors-main flex items-center gap-x-12">
-                {{ USER.username }} <a href="{{ USER.getLink('steam') }}" class="stats_player_card_body_name_steam" target="_blank" title="<?=Yii::t('common', 'Перейти в профиль Steam')?>"><span class="icons icons_24px icons_24px_steam"></span></a>
+                {{ USER.username }} 
+                <a href="{{ USER.getLink('steam') }}" class="stats_player_card_body_name_steam profile__social-link-steam" target="_blank" title="<?=Yii::t('common', 'Перейти в профиль Steam')?>"><i class="fab fa-steam"></i></a>
+                {% if YOUTUBE_LINK or TWITCH_LINK or VK_LINK or TELEGRAM_LINK %}
+                    {% if YOUTUBE_LINK %}
+                    <a href="{{ YOUTUBE_LINK }}" target="_blank" rel="noopener noreferrer" class="stats_player_card_body_name_steam profile__social-link-youtube" title="YouTube">
+                        <i class="fab fa-youtube"></i>
+                    </a>
+                    {% endif %}
+                    {% if TWITCH_LINK %}
+                    <a href="{{ TWITCH_LINK }}" target="_blank" rel="noopener noreferrer" class="stats_player_card_body_name_steam profile__social-link-twitch" title="Twitch">
+                        <i class="fab fa-twitch"></i>
+                    </a>
+                    {% endif %}
+                    {% if VK_LINK %}
+                    <a href="{{ VK_LINK }}" target="_blank" rel="noopener noreferrer" class="stats_player_card_body_name_steam profile__social-link-vk" title="VK">
+                        <i class="fab fa-vk"></i>
+                    </a>
+                    {% endif %}
+                    {% if TELEGRAM_LINK %}
+                    <a href="{{ TELEGRAM_LINK }}" target="_blank" rel="noopener noreferrer" class="stats_player_card_body_name_steam profile__social-link-telegram" title="Telegram">
+                        <i class="fab fa-telegram"></i>
+                    </a>
+                    {% endif %}
+                {% endif %}
             </h2>
             <p class="p1 text-text-main">
                 {% if STATS.PLAYTIME > 0 %}{{ t('common', 'Онлайн за вайп') }}: <span style="color: var(--online);">{{ STATS.ONLINE }}</span>{% else %}{{ t('common', 'Не заходил на сервер') }}{% endif %}

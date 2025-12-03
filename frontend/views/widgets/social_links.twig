@@ -1,0 +1,70 @@
+<!-- Социальные сети -->
+<section class="stats-aside__stat-block stat-block social-links-widget">
+    <div class="stat-block__header">
+        <h4 class="stat-block__title flex items-center gap-x-14">
+            {{ t('common', 'Социальные сети') }}
+            {% if IS_OWNER %}
+            <a href="#" 
+               class="social-links-widget__edit-btn show-modal-link" 
+               data-href="/user/social-links-modal"
+               data-title="{{ t('common', 'Редактировать социальные сети') }}"
+               data-size="modal"
+               data-toggl="modal"
+               data-target="modal-dialog">
+                <i class="fas fa-edit"></i>
+            </a>
+            {% endif %}
+        </h4>
+    </div>
+
+    <div class="social-links-list">
+        {% if YOUTUBE_LINK %}
+        <a href="{{ YOUTUBE_LINK }}" target="_blank" rel="noopener noreferrer" class="social-link social-link-youtube">
+            <i class="fab fa-youtube"></i>
+            <span>YouTube</span>
+        </a>
+        {% endif %}
+        
+        {% if TWITCH_LINK %}
+        <a href="{{ TWITCH_LINK }}" target="_blank" rel="noopener noreferrer" class="social-link social-link-twitch">
+            <i class="fab fa-twitch"></i>
+            <span>Twitch</span>
+        </a>
+        {% endif %}
+        
+        {% if VK_LINK %}
+        <a href="{{ VK_LINK }}" target="_blank" rel="noopener noreferrer" class="social-link social-link-vk">
+            <i class="fab fa-vk"></i>
+            <span>VK</span>
+        </a>
+        {% endif %}
+        
+        {% if TELEGRAM_LINK %}
+        <a href="{{ TELEGRAM_LINK }}" target="_blank" rel="noopener noreferrer" class="social-link social-link-telegram">
+            <i class="fab fa-telegram"></i>
+            <span>Telegram</span>
+        </a>
+        {% endif %}
+        
+        {% if not YOUTUBE_LINK and not TWITCH_LINK and not VK_LINK and not TELEGRAM_LINK %}
+        <div class="social-links-empty">
+            <p class="p1 text-text-teritiary">{{ t('common', 'Социальные сети не указаны') }}</p>
+            {% if IS_OWNER %}
+            <a href="#" 
+               class="button button-secondary w-full mt-12 show-modal-link" 
+               data-href="/user/social-links-modal"
+               data-title="{{ t('common', 'Редактировать социальные сети') }}"
+               data-size="modal"
+               data-toggl="modal"
+               data-target="modal-dialog">
+                <span class="button__text">
+                    <i class="fas fa-plus-circle"></i>
+                    {{ t('common', 'Добавить ссылки') }}
+                </span>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+

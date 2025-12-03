@@ -163,18 +163,23 @@ class ShopController extends Controller
         $drops = Drop::getDropListAll();
         $drop = $drops[$userDrop->drop_id] ?? null;
         if ($drop && $drop->drop_type === Drop::TYPE_VIP) {
-            // VIP всегда выдается на месяц (30 дней)
-            $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
-            \common\models\user\UserVip::createOrExtend($userDrop->user_id, $expiresAt);
-            
-            // Выполняем команду на сервере, если она указана
-            if (!empty($drop->command)) {
-                $user = $userDrop->user;
-                if ($user) {
-                    $command = str_replace('%STEAMID%', $user->steam_id, $drop->command);
-                    \common\models\rcon\RconTasks::execute($command);
+            // Проверяем, есть ли у сервера магазин (is_store = 1)
+            // Если сервер без доната, VIP уже выдан в методе give(), команда не выполняется
+            if ($server && $server->is_store == 1) {
+                // VIP всегда выдается на месяц (30 дней)
+                $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+                \common\models\user\UserVip::createOrExtend($userDrop->user_id, $expiresAt);
+                
+                // Выполняем команду на сервере, если она указана
+                if (!empty($drop->command)) {
+                    $user = $userDrop->user;
+                    if ($user) {
+                        $command = str_replace('%STEAMID%', $user->steam_id, $drop->command);
+                        \common\models\rcon\RconTasks::execute($command);
+                    }
                 }
             }
+            // Если сервер без доната (is_store = 0), ничего не делаем - VIP уже выдан в методе give()
         }
 
         \Yii::$app->queueProcess->push(new ActivatedDropJob(['userDrop'  => $userDrop]));

@@ -41,8 +41,131 @@
       flex-direction: column;
       gap: 24px;
       & .profile {
+        &__edit-btn-wrapper {
+          position: absolute;
+          top: 16px;
+          right: 16px;
+          z-index: 10;
+        }
+        
+        &__edit-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          background: var(--background-teritiary);
+          color: var(--text-secondary);
+          text-decoration: none;
+          transition: all 0.2s ease;
+          border: 1px solid transparent;
+          
+          &:hover {
+            background: var(--background-secondary);
+            color: var(--text-primary);
+            border-color: var(--border-color-default);
+            transform: scale(1.05);
+          }
+          
+          i {
+            font-size: 14px;
+          }
+        }
+        
+        // Стили для ссылок социальных сетей рядом со Steam
+        h2 {
+          .stats_player_card_body_name_steam {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-left: 4px;
+            
+            &:hover {
+              transform: translateY(-3px) scale(1.15);
+              filter: brightness(1.2);
+            }
+            
+            &:active {
+              transform: translateY(-1px) scale(1.1);
+            }
+          }
+        }
+        
+        &__social-link-steam,
+        &__social-link-youtube,
+        &__social-link-twitch,
+        &__social-link-vk,
+        &__social-link-telegram {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          font-size: 24px;
+          display: inline-block;
+          
+          &:hover {
+            transform: translateY(-3px) scale(1.15);
+            filter: brightness(1.2);
+          }
+          
+          &:active {
+            transform: translateY(-1px) scale(1.1);
+          }
+        }
+        
+        &__social-link-youtube {
+          color: #FF0000 !important;
+          
+          &:hover {
+            color: #FF0000 !important;
+            text-shadow: 0 4px 12px rgba(255, 0, 0, 0.4);
+          }
+        }
+        
+        &__social-link-twitch {
+          color: #9146FF !important;
+          
+          &:hover {
+            color: #9146FF !important;
+            text-shadow: 0 4px 12px rgba(145, 70, 255, 0.4);
+          }
+        }
+        
+        &__social-link-vk {
+          color: #0077FF !important;
+          
+          &:hover {
+            color: #0077FF !important;
+            text-shadow: 0 4px 12px rgba(0, 119, 255, 0.4);
+          }
+        }
+        
+        &__social-link-telegram {
+          color: #0088cc !important;
+          
+          &:hover {
+            color: #0088cc !important;
+            text-shadow: 0 4px 12px rgba(0, 136, 204, 0.4);
+          }
+        }
+        
         &__wrapper {
           @extend .flex, .items-center, .gap-x-20, .relative, .z-1;
+          // Стили для скрытого статуса
+          &.profile_hidden {
+            .profile__image {
+              &:after {
+                background-color: var(--text-secondary) !important;
+                border-color: var(--background-secondary) !important;
+                cursor: help;
+                display: block !important; // Убеждаемся, что индикатор виден
+              }
+            }
+          }
         }
         &__footer {
           flex: 1 0;
@@ -100,6 +223,14 @@
           }
         }
       }
+    }
+  }
+  
+  // Более специфичный селектор для переопределения .bg-online
+  &.profile.profile_hidden {
+    .profile__image:after {
+      background-color: var(--text-secondary) !important;
+      border-color: var(--background-secondary) !important;
     }
   }
   &__two-blocks {
@@ -472,6 +603,11 @@
         list-style-type: none;
         &__avatar {
           position: relative;
+          &_hidden {
+            &:after {
+              background-color: var(--text-secondary) !important;
+            }
+          }
           &:after {
             content: "";
             @extend .absolute,
@@ -512,6 +648,18 @@
               &:after {
                 content: "";
                 @extend .none;
+              }
+            }
+          }
+          &_hidden {
+            & .the-best__list__avatar {
+              & img {
+                @extend .border-icon-main;
+              }
+              &:after {
+                content: "";
+                @extend .block;
+                background-color: var(--text-secondary) !important;
               }
             }
           }
@@ -1004,6 +1152,43 @@
       transform: rotate(180deg) !important;
     }
   }
+  
+  .weapons-show-more-icon--rotated,
+  .reider-show-more-icon--rotated,
+  .ferm-show-more-icon--rotated,
+  .food-show-more-icon--rotated,
+  .awards-show-more-icon--rotated {
+    transform: rotate(180deg) !important;
+  }
+  
+  &__hidden-message {
+    @extend .flex, .flex-column, .items-center, .justify-center;
+    padding: 32px 16px;
+    text-align: center;
+    min-height: 120px;
+  }
+  
+  &__hidden-icon {
+    @extend .mb-12;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--background-teritiary);
+    color: var(--text-secondary);
+    
+    i {
+      font-size: 24px;
+    }
+  }
+  
+  &__hidden-text {
+    @extend .p2, .text-text-secondary;
+    margin: 0;
+    line-height: 1.5;
+  }
 }
 
 .team-member {
@@ -1051,6 +1236,14 @@
       img {
         border-color: var(--border-color-default);
         opacity: 0.7;
+      }
+    }
+    
+    &--hidden {
+      img {
+        border-color: var(--text-secondary);
+        opacity: 0.5;
+        filter: grayscale(50%);
       }
     }
   }
@@ -1179,5 +1372,18 @@
   .team-widget__show-more {
     font-size: 12px;
     padding: 8px 12px;
+  }
+  
+  // Стили для ссылки статистики в заголовке наград
+  .awards__stats-link {
+    font-size: 13px;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: color 0.25s ease-in-out;
+    
+    &:hover {
+      color: var(--primary-colors-main);
+      text-decoration: underline;
+    }
   }
 }

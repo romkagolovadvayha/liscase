@@ -53,9 +53,14 @@ foreach ($items as $item) {
     $reider[] = $itemData;
 }
 
+$totalReider = count($reider);
+$visibleReider = array_slice($reider, 0, 6);
+$hiddenReider = array_slice($reider, 6);
+$hasMore = count($hiddenReider) > 0;
+
 ?>
 <!-- Взрывные устройства -->
-<section class="page-stats__block-without-hover">
+<section class="page-stats__block w-50p">
     <header class="flex items-center justify-space-between mb-24 transition-all">
         <h3 class="flex items-center gap-x-12">
             <?=Yii::t('common', 'Взрывные устройства')?><span
@@ -65,19 +70,10 @@ foreach ($items as $item) {
                     data-bs-title="<?=Yii::t('common', 'Количество использованных взрывчатых предметов игроком.')?>"
             ></span>
         </h3>
-
-<!--        <label class="page-stats__show-statistics-block">-->
-<!--            <p class="p1 text-text-teritiary">--><?//=Yii::t('common', 'Показывать')?><!--</p>-->
-<!--            <input checked type="checkbox" class="show-statistics-block__switch none" />-->
-<!--            <span>-->
-<!--                    <span class="icons icons_switch icons_switch_on"></span>-->
-<!--                    <span class="icons icons_switch icons_switch_off"></span>-->
-<!--                  </span>-->
-<!--        </label>-->
     </header>
 
     <div class="page-stats__categories">
-        <?php foreach ($reider as $item): ?>
+        <?php foreach ($visibleReider as $item): ?>
             <div class="page-stats__category category">
                 <h5 class="category__count-and-img">
                     <span>
@@ -91,5 +87,67 @@ foreach ($items as $item) {
                 <p class="category__title"><?= Yii::t('database', $item['name']) ?></p>
             </div>
         <?php endforeach; ?>
+        <?php if ($hasMore): ?>
+            <?php foreach ($hiddenReider as $item): ?>
+                <div class="page-stats__category category reider-item-hidden" style="display: none;">
+                    <h5 class="category__count-and-img">
+                        <span>
+                            <?= $item['desc'] ?><?php if (!empty($item['score'])): ?><span class="category__x"
+                                      data-bs-toggle="tooltip"
+                                      data-bs-placement="bottom"
+                                      data-bs-title="<?=Yii::t('common', 'Множитель для рейтинга игроков') . " x" . $item['score']?>">x<?= $item['score'] ?></span><?php endif; ?>
+                        </span>
+                        <img src="<?= $item['image'] ?>" alt="" class="w-64 h-64 object-contain" />
+                    </h5>
+                    <p class="category__title"><?= Yii::t('database', $item['name']) ?></p>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
+    
+    <?php if ($hasMore): ?>
+        <button type="button" class="reider-show-more-btn button button-secondary w-full mt-16" data-text-more="<?= Yii::t('common', 'Показать еще {count}') ?>" data-text-less="<?= Yii::t('common', 'Скрыть') ?>">
+            <span class="reider-show-more-text"><?= Yii::t('common', 'Показать еще {count}', ['count' => count($hiddenReider)]) ?></span>
+            <i class="fas fa-chevron-down"></i>
+        </button>
+    <?php endif; ?>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const showMoreBtn = document.querySelector('.reider-show-more-btn');
+    if (!showMoreBtn) return;
+    
+    const hiddenItems = document.querySelectorAll('.reider-item-hidden');
+    if (hiddenItems.length === 0) return;
+    
+    const textElement = showMoreBtn.querySelector('.reider-show-more-text');
+    const iconElement = showMoreBtn.querySelector('i');
+    
+    if (!textElement) return;
+    
+    let isExpanded = false;
+    
+    showMoreBtn.addEventListener('click', function() {
+        isExpanded = !isExpanded;
+        
+        if (isExpanded) {
+            hiddenItems.forEach(item => {
+                item.style.display = '';
+            });
+            textElement.textContent = showMoreBtn.dataset.textLess;
+            if (iconElement) {
+                iconElement.classList.add('reider-show-more-icon--rotated');
+            }
+        } else {
+            hiddenItems.forEach(item => {
+                item.style.display = 'none';
+            });
+            textElement.textContent = showMoreBtn.dataset.textMore.replace('{count}', hiddenItems.length);
+            if (iconElement) {
+                iconElement.classList.remove('reider-show-more-icon--rotated');
+            }
+        }
+    });
+});
+</script>

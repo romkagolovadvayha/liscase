@@ -41,6 +41,14 @@
         <!-- С АВТОРИЗАЦИЕЙ -->
         <section class="user">
             <h1 class="user__title">{{ USER.username }}</h1>
+            {% if ACTIVE_VIP %}
+            <div class="user__vip">
+                <i class="fas fa-crown user__vip-icon"></i>
+                <p class="user__vip-text">
+                    {{ t('common', 'Осталось до окончания') }}: <span class="server_timer" data-time="{{ ACTIVE_VIP_TIMESTAMP }}">{{ ACTIVE_VIP.expires_at }}</span>
+                </p>
+            </div>
+            {% endif %}
             <div class="user__stats-wrapper">
                 <div class="user__stats stats">
                     <div class="stats__item">
@@ -91,21 +99,28 @@
                                 data-bs-title="{{ t('common', 'Выполни все задания, чтобы получить награду') }}"
                         ></span>
                     </p>
-                    {% if AWARDS %}
-                    <div class="awards__list">
-                        {% for AWARD in AWARDS %}
-                            <img src="{{ AWARD.image }}"
-                             alt="award"
-                             class="awards__image"
-                             data-bs-toggle="tooltip"
-                             data-bs-placement="right"
-                             data-bs-title="{{ t('database', AWARD.name) }}" />
-                        {% endfor %}
-                    </div>
+                    {% if AWARDS and AWARDS|length > 0 %}
+                        <div class="awards__wrapper">
+                            <div class="awards__list">
+                                {% for AWARD in AWARDS %}
+                                    <img src="{{ AWARD.image }}"
+                                     alt="award"
+                                     class="awards__image"
+                                     data-bs-toggle="tooltip"
+                                     data-bs-placement="right"
+                                     data-bs-title="{{ AWARD.name }}" />
+                                {% endfor %}
+                            </div>
+                            {% if AWARDS_STATS %}
+                            <a href="/tasks-v2" class="awards__stats">
+                                {{ t('common', 'выполнено {completed} из {total} заданий', {'completed': AWARDS_STATS.completed, 'total': AWARDS_STATS.total}) }}
+                            </a>
+                            {% endif %}
+                        </div>
                     {% else %}
                         <p class="daily-reward__description">
                             <span>
-                                {{ t('common', 'Выполняй задания и <a href="/user/tasks" class="p0">получай награды</a>.')|raw }}
+                                {{ t('common', 'Выполняй задания и <a href="/tasks-v2" class="p0">получай награды</a>.')|raw }}
                             </span>
                         </p>
                     {% endif %}
