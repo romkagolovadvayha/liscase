@@ -37,12 +37,16 @@ class UpdateVkAudienceJob extends BaseObject implements JobInterface
             $stats = $vkApi->updateAudience($this->groupId);
 
             try {
-                Yii::$app->telegramChats->sendMessage(
-                    "Аудитория ВКонтакте обновлена!\n" .
-                    "Всего участников: {$stats['total']}\n" .
-                    "С разрешением на сообщения: {$stats['with_permission']}\n" .
-                    "Сохранено в базу: {$stats['saved']}"
-                );
+                $message = "Аудитория ВКонтакте обновлена!\n" .
+                    "С диалогом: {$stats['with_conversation']}\n" .
+                    "Сохранено в базу: {$stats['saved']}";
+                if (isset($stats['deleted']) && $stats['deleted'] > 0) {
+                    $message .= "\nУдалено старых: {$stats['deleted']}";
+                }
+                if (isset($stats['total']) && $stats['total'] > 0) {
+                    $message .= "\nВсего обработано: {$stats['total']}";
+                }
+                Yii::$app->telegramChats->sendMessage($message);
             } catch (\Exception $e) {
                 // Игнорируем ошибки отправки в Telegram
             }

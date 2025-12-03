@@ -3,7 +3,7 @@
                                        [
                                            'label'   => '<i class="far fa-calendar-check"></i> ' . Yii::t('common', "Задания на вайп"),
                                            'encode' => false,
-                                           'url'     => '/user/tasks',
+                                           'url'     => '/tasks-v2',
                                            'active' => (bool)strstr(Yii::$app->request->url, 'user/tasks'),
                                        ],
                                        [

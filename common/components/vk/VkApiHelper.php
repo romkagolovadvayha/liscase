@@ -115,9 +115,9 @@ class VkApiHelper extends \yii\base\Component
     }
 
     /**
-     * Получение информации о пользователях с проверкой разрешений на отправку сообщений
+     * Получение информации о пользователях
      * @param array $userIds Массив ID пользователей
-     * @return array|false Массив с данными пользователей, включая can_write_private_message
+     * @return array|false Массив с данными пользователей
      */
     public function getUsersInfo($userIds)
     {
@@ -134,7 +134,7 @@ class VkApiHelper extends \yii\base\Component
             $chunkIndex++;
             $params = [
                 'user_ids' => implode(',', $chunk),
-                'fields' => 'can_write_private_message,screen_name',
+                'fields' => 'screen_name', // Получаем только screen_name, разрешение не проверяем
                 'v' => $this->apiVersion,
             ];
 
@@ -156,32 +156,129 @@ class VkApiHelper extends \yii\base\Component
     }
 
     /**
-     * Обновление аудитории ВКонтакте - получение всех участников группы и сохранение тех, кто разрешил отправку сообщений
+     * Получение списка всех бесед сообщества (с кем был диалог)
      * @param int|string $groupId ID группы
-     * @return array Статистика: ['total' => int, 'with_permission' => int, 'saved' => int]
+     * @return array Массив ID пользователей, с которыми были беседы
+     */
+    public function getConversationsUserIds($groupId)
+    {
+        $allUserIds = [];
+        $offset = 0;
+        $count = 200; // Максимум для messages.getConversations
+        $iteration = 0;
+        $maxIterations = 1000; // Защита от бесконечного цикла
+
+        do {
+            $iteration++;
+            if ($iteration > $maxIterations) {
+                try {
+                    Yii::$app->telegramChats->sendMessage("VK: Max iterations reached for conversations ({$maxIterations}). Stopping.");
+                } catch (\Exception $e) {}
+                break;
+            }
+
+            $params = [
+                'filter' => 'all', // Все беседы
+                'count' => $count,
+                'offset' => $offset,
+                'v' => $this->apiVersion,
+            ];
+
+            $result = $this->_sendRequest('messages.getConversations', $params);
+            
+            // Проверяем на ошибку доступа (сообщения отключены)
+            if ($result !== false && !empty($result['error'])) {
+                $errorCode = $result['error']['error_code'] ?? 0;
+                $errorMsg = $result['error']['error_msg'] ?? '';
+                
+                if ($errorCode == 15) { // Access denied: group messages are disabled
+                    throw new \Exception("VK: Сообщения группы отключены. Включите сообщения в настройках группы ВКонтакте (Управление сообществом → Сообщения → Сообщения сообщества), чтобы получать список пользователей с диалогами. Ошибка: {$errorMsg}");
+                }
+                
+                // Для других ошибок тоже выбрасываем исключение
+                throw new \Exception("VK API error: [{$errorCode}] {$errorMsg}");
+            }
+            
+            if ($result === false || empty($result['response']) || empty($result['response']['items'])) {
+                break;
+            }
+
+            // Извлекаем ID пользователей из бесед
+            foreach ($result['response']['items'] as $item) {
+                if (isset($item['conversation']['peer']['id'])) {
+                    $peerId = $item['conversation']['peer']['id'];
+                    // Для личных сообщений peer.id будет положительным числом (ID пользователя)
+                    // Для групповых бесед - отрицательным (ID группы/чата)
+                    if ($peerId > 0) {
+                        $allUserIds[] = $peerId;
+                    }
+                }
+            }
+
+            $totalCount = $result['response']['count'] ?? 0;
+            $itemsCount = count($result['response']['items']);
+            $offset += $itemsCount;
+            
+            // Проверяем, нужно ли продолжать
+            $shouldContinue = ($offset < $totalCount && $itemsCount === $count);
+            
+            // Задержка для соблюдения rate limits VK API
+            if ($shouldContinue) {
+                usleep(350000); // 0.35 секунды между запросами
+            }
+        } while ($shouldContinue);
+
+        // Убираем дубликаты
+        return array_unique($allUserIds);
+    }
+
+    /**
+     * Обновление аудитории ВКонтакте - получение участников группы, с которыми был диалог
+     * Если есть диалог, значит есть разрешение на отправку сообщений
+     * @param int|string $groupId ID группы
+     * @return array Статистика: ['total' => int, 'saved' => int, 'with_conversation' => int, 'deleted' => int]
      */
     public function updateAudience($groupId)
     {
         $stats = [
             'total' => 0,
-            'with_permission' => 0,
             'saved' => 0,
+            'with_conversation' => 0,
+            'deleted' => 0,
         ];
 
-        // Получаем всех участников группы
-        $members = $this->getAllGroupMembers($groupId);
-        if (empty($members)) {
+        // Получаем список пользователей, с которыми был диалог
+        try {
+            $conversationUserIds = $this->getConversationsUserIds($groupId);
+        } catch (\Exception $e) {
+            // Если сообщения отключены, отправляем сообщение и возвращаем пустую статистику
             try {
-                Yii::$app->telegramChats->sendMessage("VK: No members found for group {$groupId}");
+                Yii::$app->telegramChats->sendMessage("VK: Ошибка при получении бесед: " . $e->getMessage());
+            } catch (\Exception $ex) {}
+            Yii::error("VK: Error getting conversations: " . $e->getMessage(), __METHOD__);
+            return $stats;
+        }
+        
+        if (empty($conversationUserIds)) {
+            try {
+                Yii::$app->telegramChats->sendMessage("VK: No conversations found for group {$groupId}");
             } catch (\Exception $e) {}
+            // Если нет бесед, удаляем всех пользователей из базы
+            $deletedCount = \common\models\vk\VkUser::deleteAll();
+            $stats['deleted'] = $deletedCount;
             return $stats;
         }
 
-        $stats['total'] = count($members);
+        $stats['with_conversation'] = count($conversationUserIds);
+        $stats['total'] = count($conversationUserIds);
 
-        // Получаем информацию о пользователях с проверкой разрешений
+        // Удаляем пользователей, которых нет в новом списке бесед
+        $deletedCount = \common\models\vk\VkUser::deleteAll(['NOT IN', 'vk_user_id', $conversationUserIds]);
+        $stats['deleted'] = $deletedCount;
+
+        // Получаем информацию о пользователях
         // Обрабатываем по частям, чтобы не превысить лимиты API
-        $chunks = array_chunk($members, 1000);
+        $chunks = array_chunk($conversationUserIds, 100);
         
         $chunkIndex = 0;
         foreach ($chunks as $chunk) {
@@ -198,13 +295,10 @@ class VkApiHelper extends \yii\base\Component
                     continue;
                 }
 
-                $canSendMessage = !empty($userData['can_write_private_message']) && $userData['can_write_private_message'] == 1;
+                // Если есть диалог, значит есть разрешение на отправку сообщений
+                $canSendMessage = true;
                 
-                if ($canSendMessage) {
-                    $stats['with_permission']++;
-                }
-                
-                // Сохраняем в базу данных (и с разрешением, и без - чтобы знать всех проверенных пользователей)
+                // Сохраняем в базу данных всех, с кем был диалог
                 try {
                     \common\models\vk\VkUser::createOrUpdate($vkUserId, $userData, $canSendMessage);
                     $stats['saved']++;
@@ -220,7 +314,7 @@ class VkApiHelper extends \yii\base\Component
         }
 
         try {
-            Yii::$app->telegramChats->sendMessage("VK: Finished updating audience. Total: {$stats['total']}, Saved: {$stats['saved']}, With permission: {$stats['with_permission']}");
+            Yii::$app->telegramChats->sendMessage("VK: Finished updating audience. Total conversations: {$stats['with_conversation']}, Saved: {$stats['saved']}, Deleted: {$stats['deleted']}");
         } catch (\Exception $e) {}
         return $stats;
     }
