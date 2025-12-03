@@ -147,6 +147,58 @@ class RadioController extends Controller
                 $model->audioFile = UploadedFile::getInstance($model, 'audioFile');
                 
                 if ($model->audioFile && $model->validate(['title', 'artist', 'audioFile'])) {
+                    // Проверяем, не загружал ли пользователь уже такой же трек
+                    $existingTrack = RadioTrack::find()
+                        ->where([
+                            'user_id' => Yii::$app->user->id,
+                            'radio_station_id' => $stationId,
+                            'title' => $model->title,
+                        ])
+                        ->andWhere(['artist' => $model->artist ?: null])
+                        ->andWhere(['IN', 'status', [RadioTrack::STATUS_WAIT, RadioTrack::STATUS_ACTIVE]])
+                        ->one();
+                    
+                    if ($existingTrack) {
+                        Yii::$app->session->setFlash('error', Yii::t('common', 'Вы уже отправили этот трек на модерацию или он уже одобрен.'));
+                        
+                        if (Yii::$app->request->isAjax) {
+                            return $this->renderAjax('create', [
+                                'model' => $model,
+                                'station' => $station,
+                            ]);
+                        }
+                        
+                        return $this->render('create', [
+                            'model' => $model,
+                            'station' => $station,
+                        ]);
+                    }
+                    
+                    // Проверяем rate limiting - не более 1 трека за 10 секунд
+                    $recentTrack = RadioTrack::find()
+                        ->where([
+                            'user_id' => Yii::$app->user->id,
+                            'radio_station_id' => $stationId,
+                        ])
+                        ->andWhere(['>=', 'created_at', date('Y-m-d H:i:s', time() - 10)])
+                        ->exists();
+                    
+                    if ($recentTrack) {
+                        Yii::$app->session->setFlash('error', Yii::t('common', 'Слишком частые загрузки. Пожалуйста, подождите несколько секунд.'));
+                        
+                        if (Yii::$app->request->isAjax) {
+                            return $this->renderAjax('create', [
+                                'model' => $model,
+                                'station' => $station,
+                            ]);
+                        }
+                        
+                        return $this->render('create', [
+                            'model' => $model,
+                            'station' => $station,
+                        ]);
+                    }
+                    
                     // Generate unique filename
                     $filename = Yii::$app->security->generateRandomString(16) . '.mp3';
                     $uploadPath = $station->getFolderPath();
