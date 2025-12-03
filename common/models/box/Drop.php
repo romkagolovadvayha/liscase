@@ -653,29 +653,34 @@ class Drop extends ActiveRecord
     }
 
     public function give($userId, $count, $parentId = null, $boxId = null, $setId = null) {
-        // Обработка VIP товара
-        if ($this->drop_type === self::TYPE_VIP) {
-            // VIP всегда выдается на месяц (30 дней)
-            $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
-            UserVip::createOrExtend($userId, $expiresAt);
-            return;
+        // VIP товары обрабатываются так же, как и другие товары - через user_drop
+        // Логика выдачи VIP будет в ShopController::methodGived()
+        
+        // Загружаем subDrops, если они не загружены
+        $subDrops = $this->subDrops;
+        if ($subDrops === null) {
+            $subDrops = $this->getSubDrops()->all();
         }
         
-        if (empty($this->subDrops) || (in_array($this->drop_type, [Drop::TYPE_SET]) && $this->full_only)) {
+        // Для VIP товаров и других товаров без subDrops создаем запись в user_drop
+        if (empty($subDrops) || (in_array($this->drop_type, [Drop::TYPE_SET]) && $this->full_only)) {
+            // Устанавливаем boxId по умолчанию, если не указан
+            if (empty($parentId) && empty($setId) && empty($boxId)) {
+                $boxId = 14;
+            }
+            
             if (in_array($this->rust_id, ['-2139580305'])) {
                 for ($i = 0; $i < $count; $i++) {
-                    if (empty($parentId) && empty($setId) && empty($boxId)) {
-                        $boxId = 14;
-                    }
-                    $userDrop = UserDrop::createRecord($userId, $this->id, $boxId, $setId,UserDrop::STATUS_ACTIVE, false, 1, null, $parentId);
+                    $userDrop = UserDrop::createRecord($userId, $this->id, $boxId, $setId, UserDrop::STATUS_ACTIVE, false, 1, null, $parentId);
                     \Yii::$app->queueProcess->push(new BuyDropJob(['userDrop'  => $userDrop]));
                 }
             } else {
-                $userDrop = UserDrop::createRecord($userId, $this->id, $boxId, $setId,UserDrop::STATUS_ACTIVE, false, $count, null, $parentId);
+                $userDrop = UserDrop::createRecord($userId, $this->id, $boxId, $setId, UserDrop::STATUS_ACTIVE, false, $count, null, $parentId);
                 \Yii::$app->queueProcess->push(new BuyDropJob(['userDrop'  => $userDrop]));
             }
         } else {
-            foreach ($this->subDrops as $subDrop) {
+            // Если есть subDrops, обрабатываем их рекурсивно
+            foreach ($subDrops as $subDrop) {
                 $subDrop->drop->give($userId, $subDrop->count, $this->id, $boxId, $setId);
             }
         }

@@ -65,8 +65,9 @@ JS
 </div>
 
 <?= $form->field($model, 'drop_type')->dropDownList(Drop::getDropTypesList(), []) ?>
-<?php if ($model->drop_type == Drop::TYPE_COMMAND): ?>
-    <?= $form->field($model, 'command')->textarea(); ?>
+<?php if (in_array($model->drop_type, [Drop::TYPE_COMMAND, Drop::TYPE_VIP])): ?>
+    <?= $form->field($model, 'command')->textarea()
+        ->hint($model->drop_type == Drop::TYPE_VIP ? 'Команда будет выполнена на сервере при выдаче VIP. Используйте %STEAMID% для подстановки Steam ID пользователя.' : ''); ?>
 <?php endif; ?>
 <?php if (in_array($model->drop_type, [Drop::TYPE_SET])): ?>
     <div>

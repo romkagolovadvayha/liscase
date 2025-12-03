@@ -140,15 +140,15 @@ class UserDrop extends ActiveRecord
         $model->parent_drop_id = $parentDropId;
         $model->auto = $auto;
         $model->count = $count;
-        $model->status = UserDrop::STATUS_ACTIVE;
-        if (!empty($status)) {
-            $model->status = $status;
+        $model->status = $status ?? UserDrop::STATUS_ACTIVE;
+        $model->created_at = $createdAt ?? date('Y-m-d H:i:s');
+        
+        if (!$model->save(false)) {
+            $errors = $model->getErrors();
+            Yii::error('Ошибка при создании UserDrop: ' . json_encode($errors) . ' | userId: ' . $userId . ' | dropId: ' . $dropId, __METHOD__);
+            throw new \Exception('Не удалось создать запись UserDrop: ' . json_encode($errors));
         }
-        $model->created_at = date('Y-m-d H:i:s');
-        if (!empty($createdAt)) {
-            $model->created_at = $createdAt;
-        }
-        $model->save(false);
+        
         return $model;
     }
 }
