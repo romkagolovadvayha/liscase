@@ -196,6 +196,35 @@ class TelegramConstructorController extends \backend\components\CrudController
     }
 
     /**
+     * Получение количества получателей для рассылки (AJAX)
+     * @return Response
+     */
+    public function actionGetAudienceCount()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        
+        $botId = (int)Yii::$app->request->get('bot_id');
+        $audienceId = (int)Yii::$app->request->get('audience_id');
+        $onlyWithUser = (bool)Yii::$app->request->get('only_with_user', false);
+        
+        if (empty($botId) || empty($audienceId)) {
+            return ['success' => false, 'count' => 0, 'message' => 'Не указаны параметры'];
+        }
+        
+        // Применяем фильтр only_with_user только для VK группы
+        $onlyWithUser = ($botId == TelegramConstructor::VK_GROUP) && $onlyWithUser;
+        
+        $userIds = TelegramConstructor::getAudience($audienceId, $botId, $onlyWithUser);
+        $count = count($userIds);
+        
+        return [
+            'success' => true,
+            'count' => $count,
+            'formatted' => number_format($count, 0, ',', ' ')
+        ];
+    }
+
+    /**
      * Предпросмотр аудитории перед созданием рассылки
      * @return string
      */

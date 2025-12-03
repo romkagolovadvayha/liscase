@@ -23,6 +23,7 @@ $this->registerJs('
     function updateAudienceCount() {
         var botId = $("#telegramconstructor-bot_id").val();
         var audienceId = $("#telegramconstructor-audience_id").val();
+        var onlyWithUser = $("#telegramconstructor-only_with_user").is(":checked");
         
         if (!botId || !audienceId) {
             $("#audience-count-info").html("").hide();
@@ -30,28 +31,46 @@ $this->registerJs('
             return;
         }
         
-        var counts = {
-            "1_1": ' . $telegramTestCount . ',
-            "1_2": ' . $telegramAllCount . ',
-            "1_3": ' . $telegramWinnerCount . ',
-            "2_1": ' . $vkTestCount . ',
-            "2_2": ' . $vkAllCount . ',
-            "2_3": ' . $vkWinnerCount . '
-        };
+        // Показываем индикатор загрузки
+        $("#audience-count-info").html("<div class=\'ds-alert ds-alert--info mb-3\'><i class=\'bi bi-hourglass-split\'></i> <strong>Подсчет получателей...</strong></div>").show();
         
-        var key = botId + "_" + audienceId;
-        var count = counts[key] || 0;
-        
-        if (count > 0) {
-            $("#audience-count-info").html("<div class=\'ds-alert ds-alert--info mb-3\'><i class=\'bi bi-people\'></i> <strong>Получателей:</strong> " + count.toLocaleString("ru-RU") + "</div>").show();
-            
-            // Добавляем ссылку на просмотр аудитории
-            var previewUrl = "/telegram-constructor/preview-audience?bot_id=" + botId + "&audience_id=" + audienceId;
-            $("#audience-link-info").html("<div class=\'text-center\'><a href=\'" + previewUrl + "\' target=\'_blank\' class=\'ds-btn ds-btn--info ds-btn--sm\'><i class=\'bi bi-list-ul\'></i> Просмотреть список получателей</a></div>").show();
-        } else {
-            $("#audience-count-info").html("<div class=\'ds-alert ds-alert--warning mb-3\'><i class=\'bi bi-exclamation-triangle\'></i> <strong>Внимание:</strong> Нет получателей для выбранной комбинации</div>").show();
-            $("#audience-link-info").html("").hide();
-        }
+        // Делаем AJAX запрос для получения реального количества получателей
+        $.ajax({
+            url: "/telegram-constructor/get-audience-count",
+            method: "GET",
+            data: {
+                bot_id: botId,
+                audience_id: audienceId,
+                only_with_user: onlyWithUser ? 1 : 0
+            },
+            success: function(response) {
+                if (response.success) {
+                    var count = response.count;
+                    var formatted = response.formatted || count.toLocaleString("ru-RU");
+                    
+                    if (count > 0) {
+                        $("#audience-count-info").html("<div class=\'ds-alert ds-alert--info mb-3\'><i class=\'bi bi-people\'></i> <strong>Получателей:</strong> " + formatted + "</div>").show();
+                        
+                        // Добавляем ссылку на просмотр аудитории
+                        var previewUrl = "/telegram-constructor/preview-audience?bot_id=" + botId + "&audience_id=" + audienceId;
+                        if (onlyWithUser && botId == "<?= TelegramConstructor::VK_GROUP ?>") {
+                            previewUrl += "&only_with_user=1";
+                        }
+                        $("#audience-link-info").html("<div class=\'text-center\'><a href=\'" + previewUrl + "\' target=\'_blank\' class=\'ds-btn ds-btn--info ds-btn--sm\'><i class=\'bi bi-list-ul\'></i> Просмотреть список получателей</a></div>").show();
+                    } else {
+                        $("#audience-count-info").html("<div class=\'ds-alert ds-alert--warning mb-3\'><i class=\'bi bi-exclamation-triangle\'></i> <strong>Внимание:</strong> Нет получателей для выбранной комбинации</div>").show();
+                        $("#audience-link-info").html("").hide();
+                    }
+                } else {
+                    $("#audience-count-info").html("<div class=\'ds-alert ds-alert--danger mb-3\'><i class=\'bi bi-exclamation-triangle\'></i> <strong>Ошибка:</strong> " + (response.message || "Не удалось получить количество получателей") + "</div>").show();
+                    $("#audience-link-info").html("").hide();
+                }
+            },
+            error: function() {
+                $("#audience-count-info").html("<div class=\'ds-alert ds-alert--danger mb-3\'><i class=\'bi bi-exclamation-triangle\'></i> <strong>Ошибка:</strong> Не удалось получить количество получателей</div>").show();
+                $("#audience-link-info").html("").hide();
+            }
+        });
     }
     
     function updateMessagePreview() {
