@@ -86,6 +86,7 @@ use yii\web\JsExpression;
  * @property Deposit[]       $deposits
  * @property UserPromocode[] $userPromocodes
  * @property UserTask        $userTasks
+ * @property UserVip[]       $userVip
  * @property string          $currency
  * @property Auth            $auth
  * @property UserTree        $userTree
@@ -482,6 +483,79 @@ class User extends ActiveRecord implements IdentityInterface
     {
         return $this->hasMany(UserDrop::class, ['user_id' => 'id']);
     }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUserVip()
+    {
+        return $this->hasMany(UserVip::class, ['user_id' => 'id']);
+    }
+
+    /**
+     * Получает активный VIP пользователя
+     *
+     * @return UserVip|null
+     */
+    public function getActiveVip()
+    {
+        return UserVip::getActiveVip($this->id);
+    }
+
+    /**
+     * Проверяет, есть ли у пользователя активный VIP
+     *
+     * @return bool
+     */
+    public function hasVip(): bool
+    {
+        return UserVip::find()
+            ->where(['user_id' => $this->id])
+            ->andWhere(['>', 'expires_at', date('Y-m-d H:i:s')])
+            ->exists();
+    }
+
+    /**
+     * Проверяет, скрыт ли статус онлайн/оффлайн
+     * Возвращает true только если у пользователя есть активный VIP и установлен флаг is_hide_online
+     *
+     * @return bool
+     */
+    public function hasHideOnline(): bool
+    {
+        // Если нет активного VIP, всегда возвращаем false
+        if (!$this->hasVip()) {
+            return false;
+        }
+        
+        // Проверяем флаг в профиле
+        if (empty($this->userProfile)) {
+            return false;
+        }
+        
+        return !empty($this->userProfile->is_hide_online);
+    }
+
+    /**
+     * Проверяет, скрыт ли список команды
+     * Возвращает true только если у пользователя есть активный VIP и установлен флаг is_hide_team
+     *
+     * @return bool
+     */
+    public function hasHideTeam(): bool
+    {
+        // Если нет активного VIP, всегда возвращаем false
+        if (!$this->hasVip()) {
+            return false;
+        }
+        
+        // Проверяем флаг в профиле
+        if (empty($this->userProfile)) {
+            return false;
+        }
+        
+        return !empty($this->userProfile->is_hide_team);
+    }
     /**
      * @return \yii\db\ActiveQuery
      */
@@ -706,6 +780,19 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
+     * Получает статус для отображения с учетом скрытия
+     * Возвращает null, если статус скрыт, иначе true/false
+     *
+     * @return bool|null
+     */
+    public function getDisplayStatus() {
+        if ($this->hasHideOnline()) {
+            return null; // Статус скрыт
+        }
+        return $this->getStatus();
+    }
+
+    /**
      * @param string $jwt
      *
      * @return User|null
@@ -842,6 +929,13 @@ class User extends ActiveRecord implements IdentityInterface
         if (!empty($this->server)) {
             return $this->server;
         }
+        
+        // Используем статический кэш для результата, чтобы не делать запрос каждый раз
+        static $cachedServer = null;
+        if ($cachedServer !== null) {
+            return $cachedServer;
+        }
+        
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->cache(30)
@@ -849,7 +943,8 @@ class User extends ActiveRecord implements IdentityInterface
                           ->orderBy(['sort' => SORT_ASC])
                           ->all();
 
-        return $servers[0];
+        $cachedServer = !empty($servers[0]) ? $servers[0] : null;
+        return $cachedServer;
     }
 
     public function getLink($key) {

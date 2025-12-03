@@ -341,6 +341,7 @@ ORDER BY server_id, `key`, value DESC;
                         $user = $item->user;
                         $color = UserTop::getColor($position);
                         $amount = UserTop::getAmount($position);
+                        $displayStatus = $user->getDisplayStatus();
                         $items[$key]['items'][] = [
                             'position' => $position,
                             'color' => $color,
@@ -350,7 +351,8 @@ ORDER BY server_id, `key`, value DESC;
                             'link' => "/servers/{$server->tag}/{$user->steam_id}",
                             'username' => $user->username,
                             'avatar' => $user->getAvatar(),
-                            'status' => $user->getStatus(),
+                            'status' => $displayStatus === null ? null : ($displayStatus ? true : false),
+                            'is_hidden' => $displayStatus === null,
                         ];
                     }
                 } else {
@@ -366,6 +368,7 @@ ORDER BY server_id, `key`, value DESC;
                         $color = UserTop::getColor($position);
                         $amount = UserTop::getAmount($position);
                         $user = $item->user;
+                        $displayStatus = $user->getDisplayStatus();
                         $items[$key]['items'][] = [
                             'position' => $position,
                             'color' => $color,
@@ -375,7 +378,8 @@ ORDER BY server_id, `key`, value DESC;
                             'link' => "/servers/{$server->tag}/{$user->steam_id}",
                             'username' => $user->username,
                             'avatar' => $user->getAvatar(),
-                            'status' => $user->getStatus(),
+                            'status' => $displayStatus === null ? null : ($displayStatus ? true : false),
+                            'is_hidden' => $displayStatus === null,
                         ];
                     }
                 }

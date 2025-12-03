@@ -89,6 +89,20 @@ class TasksV2Controller extends BackendController
         $model->button_text = 'Проверить';
 
         if ($model->load(Yii::$app->request->post())) {
+            // Обработка available_from (конвертация из datetime-local в формат БД)
+            $postData = Yii::$app->request->post('TaskV2', []);
+            if (isset($postData['available_from']) && !empty(trim($postData['available_from']))) {
+                $availableFromValue = trim($postData['available_from']);
+                // Конвертируем из формата datetime-local (Y-m-d\TH:i) в формат БД (Y-m-d H:i:s)
+                if (strpos($availableFromValue, 'T') !== false) {
+                    $model->available_from = date('Y-m-d H:i:s', strtotime($availableFromValue));
+                } else {
+                    $model->available_from = date('Y-m-d H:i:s', strtotime($availableFromValue));
+                }
+            } else {
+                $model->available_from = null;
+            }
+            
             // Обработка загрузки изображения
             $imageFile = UploadedFile::getInstance($model, 'imageFile');
             if ($imageFile && !empty($imageFile->tempName)) {
@@ -186,6 +200,20 @@ class TasksV2Controller extends BackendController
         $model = $this->findModel($id);
 
         if ($model->load(Yii::$app->request->post())) {
+            // Обработка available_from (конвертация из datetime-local в формат БД)
+            $postData = Yii::$app->request->post('TaskV2', []);
+            if (isset($postData['available_from']) && !empty(trim($postData['available_from']))) {
+                $availableFromValue = trim($postData['available_from']);
+                // Конвертируем из формата datetime-local (Y-m-d\TH:i) в формат БД (Y-m-d H:i:s)
+                if (strpos($availableFromValue, 'T') !== false) {
+                    $model->available_from = date('Y-m-d H:i:s', strtotime($availableFromValue));
+                } else {
+                    $model->available_from = date('Y-m-d H:i:s', strtotime($availableFromValue));
+                }
+            } else {
+                $model->available_from = null;
+            }
+            
             // Обработка загрузки изображения
             $imageFile = UploadedFile::getInstance($model, 'imageFile');
             if ($imageFile && !empty($imageFile->tempName)) {

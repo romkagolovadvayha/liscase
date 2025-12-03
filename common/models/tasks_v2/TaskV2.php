@@ -31,6 +31,8 @@ use yii\helpers\Json;
  * @property string|null $extra_buttons
  * @property int $is_active
  * @property int $is_visible_for_guests
+ * @property int $is_vip_only
+ * @property string|null $available_from
  * @property int $sort
  * @property string|null $created_at
  * @property string|null $updated_at
@@ -83,10 +85,10 @@ class TaskV2 extends ActiveRecord
             [['short_description', 'full_description'], 'string'],
             [['type'], 'in', 'range' => [self::TYPE_ONE_TIME, self::TYPE_REPEATABLE, self::TYPE_DAILY_REWARD]],
             [['reward_type'], 'in', 'range' => [self::REWARD_TYPE_ITEM, self::REWARD_TYPE_CURRENCY]],
-            [['reward_item_id', 'per_user_limit', 'global_limit', 'global_completed', 'max_progress', 'is_active', 'is_visible_for_guests', 'sort'], 'integer'],
+            [['reward_item_id', 'per_user_limit', 'global_limit', 'global_completed', 'max_progress', 'is_active', 'is_visible_for_guests', 'is_vip_only', 'sort'], 'integer'],
             [['reward_amount'], 'number'],
             [['check_params', 'extra_buttons'], 'safe'],
-            [['created_at', 'updated_at'], 'safe'],
+            [['created_at', 'updated_at', 'available_from'], 'safe'],
             [['title'], 'string', 'max' => 255],
             [['check_type'], 'string', 'max' => 100],
             [['reward_currency'], 'string', 'max' => 50],
@@ -122,6 +124,8 @@ class TaskV2 extends ActiveRecord
             'extra_buttons' => Yii::t('common', 'Дополнительные кнопки'),
             'is_active' => Yii::t('common', 'Активно'),
             'is_visible_for_guests' => Yii::t('common', 'Видимо для гостей'),
+            'is_vip_only' => Yii::t('common', 'Только для VIP'),
+            'available_from' => Yii::t('common', 'Доступно с'),
             'sort' => Yii::t('common', 'Сортировка'),
             'created_at' => Yii::t('common', 'Дата создания'),
             'updated_at' => Yii::t('common', 'Дата обновления'),
@@ -139,6 +143,22 @@ class TaskV2 extends ActiveRecord
                 $this->created_at = date('Y-m-d H:i:s');
             }
             $this->updated_at = date('Y-m-d H:i:s');
+            
+            // Обработка available_from (конвертация из datetime-local в формат БД)
+            if (!empty($this->available_from)) {
+                // Если значение в формате datetime-local (Y-m-d\TH:i), конвертируем
+                if (strpos($this->available_from, 'T') !== false) {
+                    $this->available_from = date('Y-m-d H:i:s', strtotime($this->available_from));
+                } elseif (strlen($this->available_from) === 16 && strpos($this->available_from, ' ') !== false) {
+                    // Если формат Y-m-d H:i, добавляем секунды
+                    $this->available_from = $this->available_from . ':00';
+                } elseif (strtotime($this->available_from) !== false) {
+                    // Если это валидная дата, форматируем
+                    $this->available_from = date('Y-m-d H:i:s', strtotime($this->available_from));
+                }
+            } else {
+                $this->available_from = null;
+            }
             
             // Преобразуем массивы в JSON для сохранения только если они массивы
             if (is_array($this->check_params)) {
@@ -230,6 +250,33 @@ class TaskV2 extends ActiveRecord
                 'status' => 'hidden',
                 'message' => '',
             ];
+        }
+
+        // Проверка даты доступности
+        if ($this->available_from) {
+            $availableFrom = strtotime($this->available_from);
+            $now = time();
+            if ($availableFrom > $now) {
+                $availableFromDate = new \DateTime($this->available_from);
+                return [
+                    'status' => 'unavailable',
+                    'message' => Yii::t('common', 'Доступно с {date}', [
+                        'date' => $availableFromDate->format('d.m.Y H:i')
+                    ]),
+                    'available_from' => $this->available_from,
+                ];
+            }
+        }
+
+        // Проверка VIP статуса
+        if ($this->is_vip_only) {
+            $activeVip = \common\models\user\UserVip::getActiveVip($user->id);
+            if (!$activeVip) {
+                return [
+                    'status' => 'unavailable',
+                    'message' => Yii::t('common', 'Требуется VIP статус'),
+                ];
+            }
         }
 
         // Отключаем кэш для тестирования

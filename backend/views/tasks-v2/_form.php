@@ -188,6 +188,15 @@ $dropFormat = new JsExpression("
                     <?= $form->field($model, 'is_visible_for_guests')->checkbox()
                         ->hint(Yii::t('common', 'Отображать задание для неавторизованных пользователей (не смогут выполнить)')) ?>
                     
+                    <?= $form->field($model, 'is_vip_only')->checkbox()
+                        ->hint(Yii::t('common', 'Задание доступно только для пользователей со статусом VIP')) ?>
+                    
+                    <?= $form->field($model, 'available_from')->textInput([
+                            'type' => 'datetime-local',
+                            'value' => $model->available_from ? date('Y-m-d\TH:i', strtotime($model->available_from)) : ''
+                        ])
+                        ->hint(Yii::t('common', 'Дата и время, когда задание станет доступно. Оставьте пустым, если задание доступно сразу.')) ?>
+                    
                     <?= $form->field($model, 'is_active')->checkbox() ?>
                     
                     <?= $form->field($model, 'sort')->textInput(['type' => 'number'])

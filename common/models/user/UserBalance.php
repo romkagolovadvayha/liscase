@@ -133,7 +133,18 @@ class UserBalance extends \common\components\base\ActiveRecord
      */
     public static function getBalance($userId, $type)
     {
-        return self::findOne(['user_id' => $userId, 'type' => $type]);
+        // Используем статический кэш для результата, чтобы не делать запрос каждый раз
+        static $cache = [];
+        $cacheKey = $userId . '_' . $type;
+        
+        if (isset($cache[$cacheKey])) {
+            return $cache[$cacheKey];
+        }
+        
+        $result = self::findOne(['user_id' => $userId, 'type' => $type]);
+        $cache[$cacheKey] = $result;
+        
+        return $result;
     }
 
     public function getBalanceCeil() {

@@ -8,6 +8,7 @@ use common\components\queue\process\BuyDropJob;
 use common\models\invoice\Invoice;
 use common\models\statistics\Statistics;
 use common\models\user\UserDrop;
+use common\models\user\UserVip;
 use Yii;
 use yii\base\BaseObject;
 use yii\web\JsExpression;
@@ -66,6 +67,7 @@ class Drop extends ActiveRecord
     const TYPE_COMMAND = 1;
     const TYPE_SET     = 2;
     const TYPE_SELECT  = 3;
+    const TYPE_VIP     = 4;
 
     /**
      * @return array
@@ -77,6 +79,7 @@ class Drop extends ActiveRecord
             self::TYPE_COMMAND       => Yii::t('common', 'Команда'),
             self::TYPE_SET       => Yii::t('common', 'Набор предметов'),
             self::TYPE_SELECT       => Yii::t('common', 'Товар с выбором'),
+            self::TYPE_VIP       => Yii::t('common', 'Вип'),
         ];
     }
     /**
@@ -571,6 +574,7 @@ class Drop extends ActiveRecord
 
         /** @var Drop[] $drops */
         $drops = Drop::find()
+                     ->with('dropImages')
                      ->all();
 
         foreach ($drops as $item) {
@@ -596,6 +600,7 @@ class Drop extends ActiveRecord
 
         /** @var Drop[] $drops */
         $drops = Drop::find()
+                     ->with('dropImages')
                      ->all();
 
         foreach ($drops as $item) {
@@ -648,6 +653,14 @@ class Drop extends ActiveRecord
     }
 
     public function give($userId, $count, $parentId = null, $boxId = null, $setId = null) {
+        // Обработка VIP товара
+        if ($this->drop_type === self::TYPE_VIP) {
+            // VIP всегда выдается на месяц (30 дней)
+            $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+            UserVip::createOrExtend($userId, $expiresAt);
+            return;
+        }
+        
         if (empty($this->subDrops) || (in_array($this->drop_type, [Drop::TYPE_SET]) && $this->full_only)) {
             if (in_array($this->rust_id, ['-2139580305'])) {
                 for ($i = 0; $i < $count; $i++) {
