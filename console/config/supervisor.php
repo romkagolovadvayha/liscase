@@ -185,7 +185,7 @@ return [
         // ===== Radio / Music =====
         'prostoj.node.radio1' => [
             'directory'       => '@project',
-            'command'         => 'node node/mode/app.js 8081 "../../frontend/web/uploads/radio/1',
+            'command'         => 'node node/mode/app.js 8081 "../../frontend/web/uploads/radio/1"',
             'environment'     => ['HOST' => '0.0.0.0'],
             'autostart'       => true,
             'autorestart'     => true,
@@ -219,7 +219,7 @@ return [
         ],
         'prostoj.node.radio2' => [
             'directory'       => '@project',
-            'command'         => 'node node/mode/app.js 3045 "../../frontend/web/uploads/radio/3',
+            'command'         => 'node node/mode/app.js 3045 "../../frontend/web/uploads/radio/3"',
             'environment'     => ['HOST' => '0.0.0.0'],
             'autostart'       => true,
             'autorestart'     => true,
@@ -231,7 +231,7 @@ return [
         ],
         'prostoj.node.radio3' => [
             'directory'       => '@project',
-            'command'         => 'node node/mode/app.js 3046 "../../frontend/web/uploads/radio/4',
+            'command'         => 'node node/mode/app.js 3046 "../../frontend/web/uploads/radio/4"',
             'environment'     => ['HOST' => '0.0.0.0'],
             'autostart'       => true,
             'autorestart'     => true,
