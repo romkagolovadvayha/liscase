@@ -71,3 +71,12 @@ class KillBotsCountChecker implements TaskCheckerInterface
 
 
 
+
+
+
+
+
+
+
+
+

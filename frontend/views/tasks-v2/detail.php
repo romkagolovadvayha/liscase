@@ -55,7 +55,41 @@ if ($task->type === \common\models\tasks_v2\TaskV2::TYPE_DAILY_REWARD && $task->
             <img src="<?= Html::encode($imageUrl) ?>" alt="<?= Html::encode($task->title) ?>">
         </div>
         <h2 class="tasksV2__detail-title"><?= Html::encode($task->title) ?></h2>
+        <?php if ($task->is_vip_only): ?>
+            <div class="tasksV2__detail-vip-badge" style="margin-top: 12px;">
+                <span class="tasksV2__card-badge tasksV2__card-badge--vip" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-crown"></i> 
+                    <span><?= Yii::t('common', 'Доступно только для VIP') ?></span>
+                </span>
+            </div>
+        <?php endif; ?>
     </div>
+    
+    <?php if ($task->is_vip_only && $status === 'unavailable' && $userStatus['message'] === Yii::t('common', 'Требуется VIP статус')): ?>
+        <div class="tasksV2__detail-vip-message" style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid var(--primary);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <i class="fas fa-crown" style="color: var(--primary); font-size: 24px;"></i>
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--primary);">
+                    <?= Yii::t('common', 'Требуется VIP статус') ?>
+                </h3>
+            </div>
+            <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">
+                <?= Yii::t('common', 'Это задание доступно только для пользователей со статусом VIP. Получите VIP статус, чтобы получить доступ к эксклюзивным заданиям и наградам.') ?>
+            </p>
+        </div>
+    <?php elseif (!empty($userStatus['available_from']) && $status === 'unavailable'): ?>
+        <div class="tasksV2__detail-available-from-message" style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid var(--warning, #ffc107);">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                <i class="fas fa-clock" style="color: var(--warning, #ffc107); font-size: 24px;"></i>
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--warning, #ffc107);">
+                    <?= Yii::t('common', 'Задание станет доступно') ?>
+                </h3>
+            </div>
+            <p style="margin: 0; color: var(--text-secondary); line-height: 1.6;">
+                <?= Html::encode($userStatus['message']) ?>
+            </p>
+        </div>
+    <?php endif; ?>
     
     <?php if ($task->full_description): ?>
         <div class="tasksV2__detail-description">

@@ -290,6 +290,10 @@ document.addEventListener('DOMContentLoaded', function() {
             '<?= TaskV2::CHECK_TYPE_VK_SUBSCRIBE_GROUP ?>': [
                 {name: 'group_id', label: '<?= Html::encode(Yii::t('common', 'ID группы VK')) ?>', type: 'number'}
             ],
+            '<?= TaskV2::CHECK_TYPE_TELEGRAM_CHANNEL_SUBSCRIBE ?>': [
+                {name: 'chat_id', label: '<?= Html::encode(Yii::t('common', 'ID канала Telegram (например: -1001234567890)')) ?>', type: 'text'},
+                {name: 'channel_username', label: '<?= Html::encode(Yii::t('common', 'Username канала (например: @channelname, опционально)')) ?>', type: 'text'}
+            ],
             '<?= TaskV2::CHECK_TYPE_KILL_BOTS_COUNT ?>': [
                 {name: 'count', label: '<?= Html::encode(Yii::t('common', 'Требуемое количество')) ?>', type: 'number'}
             ],

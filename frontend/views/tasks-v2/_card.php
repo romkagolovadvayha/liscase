@@ -23,6 +23,8 @@ if ($task->type === \common\models\tasks_v2\TaskV2::TYPE_DAILY_REWARD && $task->
 $status = $userStatus['status'] ?? 'available';
 $statusMessage = $userStatus['message'] ?? '';
 $isCompleted = $status === 'completed';
+$isUnavailable = $status === 'unavailable';
+$isVipOnlyUnavailable = $task->is_vip_only && $isUnavailable && $statusMessage === Yii::t('common', 'Требуется VIP статус');
 
 // Определяем классы для карточки в зависимости от статуса
 $cardClasses = ['tasksV2__card'];
@@ -74,12 +76,12 @@ $isDailyReward = $task->type === \common\models\tasks_v2\TaskV2::TYPE_DAILY_REWA
 $modalSize = $isDailyReward ? 'modal-lg' : 'modal';
 
     ?>
-    <article class="<?= implode(' ', $cardClasses) ?><?= !$isCompleted ? ' show-modal-link' : '' ?>" 
+    <article class="<?= implode(' ', $cardClasses) ?><?= !$isCompleted && !$isUnavailable ? ' show-modal-link' : '' ?>" 
              data-task-id="<?= $task->id ?>"
              data-top-class="active"
              data-content-overflow="unset"
              data-top-image="<?= Html::encode($imageUrl) ?>"
-             <?php if (!$isCompleted): ?>
+             <?php if (!$isCompleted && !$isUnavailable): ?>
              data-href="<?= Url::to(['tasks-v2/detail', 'id' => $task->id]) ?>"
              data-target="modal-dialog"
              data-size="<?= $modalSize ?>"
@@ -90,6 +92,11 @@ $modalSize = $isDailyReward ? 'modal-lg' : 'modal';
     <div class="tasksV2__card-content">
         <div class="tasksV2__card-image-wrapper">
             <div class="tasksV2__card-badges">
+                <?php if ($task->is_vip_only): ?>
+                    <span class="tasksV2__card-badge tasksV2__card-badge--vip" title="<?= Yii::t('common', 'Доступно только для VIP') ?>">
+                        <i class="fas fa-crown"></i> <?= Yii::t('common', 'VIP') ?>
+                    </span>
+                <?php endif; ?>
                 <?php if ($task->type === \common\models\tasks_v2\TaskV2::TYPE_REPEATABLE): ?>
                     <span class="tasksV2__card-badge tasksV2__card-badge--type" title="<?= Yii::t('common', 'Многоразовое') ?>">
                         <i class="fas fa-redo"></i>
@@ -120,7 +127,14 @@ $modalSize = $isDailyReward ? 'modal-lg' : 'modal';
                     </span>
                 <?php elseif ($status === 'unavailable'): ?>
                     <span class="tasksV2__card-badge tasksV2__card-badge--status is-unavailable">
-                        <i class="fas fa-lock"></i> <?= Yii::t('common', 'Недоступно') ?>
+                        <i class="fas fa-lock"></i> 
+                        <?php if ($task->is_vip_only && $userStatus['message'] === Yii::t('common', 'Требуется VIP статус')): ?>
+                            <?= Yii::t('common', 'Доступно только для VIP') ?>
+                        <?php elseif (!empty($userStatus['available_from'])): ?>
+                            <?= Html::encode($userStatus['message']) ?>
+                        <?php else: ?>
+                            <?= Yii::t('common', 'Недоступно') ?>
+                        <?php endif; ?>
                     </span>
                 <?php endif; ?>
             </div>

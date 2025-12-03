@@ -44,6 +44,7 @@ class TaskCheckerFactory
         $classes = [
             TaskV2::CHECK_TYPE_VK_SUBSCRIBE_GROUP => VkSubscribeGroupChecker::class,
             TaskV2::CHECK_TYPE_TELEGRAM_CONNECTED => TelegramConnectedChecker::class,
+            TaskV2::CHECK_TYPE_TELEGRAM_CHANNEL_SUBSCRIBE => TelegramChannelSubscribeChecker::class,
             TaskV2::CHECK_TYPE_DISCORD_JOIN => DiscordJoinChecker::class,
             TaskV2::CHECK_TYPE_KILL_BOTS_COUNT => KillBotsCountChecker::class,
             TaskV2::CHECK_TYPE_INVITE_FRIEND => InviteFriendChecker::class,

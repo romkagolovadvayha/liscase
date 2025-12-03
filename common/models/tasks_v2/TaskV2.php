@@ -51,6 +51,7 @@ class TaskV2 extends ActiveRecord
 
     const CHECK_TYPE_VK_SUBSCRIBE_GROUP = 'vk_subscribe_group';
     const CHECK_TYPE_TELEGRAM_CONNECTED = 'telegram_connected';
+    const CHECK_TYPE_TELEGRAM_CHANNEL_SUBSCRIBE = 'telegram_channel_subscribe';
     const CHECK_TYPE_DISCORD_JOIN = 'discord_join';
     const CHECK_TYPE_KILL_BOTS_COUNT = 'kill_bots_count';
     const CHECK_TYPE_INVITE_FRIEND = 'invite_friend';
@@ -357,6 +358,7 @@ class TaskV2 extends ActiveRecord
         return [
             self::CHECK_TYPE_VK_SUBSCRIBE_GROUP => Yii::t('common', 'Подписка на группу VK'),
             self::CHECK_TYPE_TELEGRAM_CONNECTED => Yii::t('common', 'Подключение Telegram-бота'),
+            self::CHECK_TYPE_TELEGRAM_CHANNEL_SUBSCRIBE => Yii::t('common', 'Подписка на Telegram канал'),
             self::CHECK_TYPE_DISCORD_JOIN => Yii::t('common', 'Вступление в Discord'),
             self::CHECK_TYPE_KILL_BOTS_COUNT => Yii::t('common', 'Убийство ботов (количество)'),
             self::CHECK_TYPE_INVITE_FRIEND => Yii::t('common', 'Приглашение друга'),
