@@ -29,7 +29,8 @@ class SendPhotoJob extends BaseObject implements JobInterface
     public function execute($queue)
     {
         try {
-            Yii::$app->personalBotTelegram->sendPhoto($this->telegram_chat_id, $this->photo, $this->message);
+            $result = Yii::$app->personalBotTelegram->sendPhoto($this->telegram_chat_id, $this->photo, $this->message);
+            Yii::$app->telegramChats->sendMessage("Photo sent to " . json_encode($result));
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage("SendPhotoJob: " . $e->getMessage());
 
