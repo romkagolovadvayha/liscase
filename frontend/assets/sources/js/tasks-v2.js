@@ -53,7 +53,7 @@
         if (messageEl) {
             messageEl.style.display = 'none';
             messageEl.className = 'tasksV2__detail-message';
-            messageEl.textContent = '';
+            messageEl.innerHTML = '';
         }
 
         // Показываем индикатор загрузки
@@ -170,7 +170,9 @@
     function showMessage(messageEl, message, type) {
         if (!messageEl) return;
         
-        messageEl.textContent = message;
+        // Используем innerHTML для поддержки HTML разметки (например, <strong> для выделения кода)
+        // HTML генерируется на сервере, поэтому безопасен
+        messageEl.innerHTML = message;
         messageEl.className = 'tasksV2__detail-message is-' + type;
         messageEl.style.display = 'block';
         
