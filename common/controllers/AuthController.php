@@ -150,8 +150,15 @@ class AuthController extends WebController
         $error = Yii::$app->request->get('error');
 
         if (!empty($error)) {
-            Yii::error("Discord OAuth error: {$error}", __METHOD__);
-            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при авторизации Discord: {error}', ['error' => $error]));
+            // access_denied - это нормальная ситуация, когда пользователь отменяет авторизацию
+            if ($error === 'access_denied') {
+                Yii::info("Discord OAuth: User cancelled authorization", __METHOD__);
+                Yii::$app->session->setFlash('info', Yii::t('common', 'Авторизация Discord отменена. Вы можете привязать Discord аккаунт позже.'));
+            } else {
+                Yii::warning("Discord OAuth error: {$error}", __METHOD__);
+                $errorDescription = Yii::$app->request->get('error_description', $error);
+                Yii::$app->session->setFlash('warning', Yii::t('common', 'Ошибка при авторизации Discord: {error}', ['error' => $errorDescription]));
+            }
             return $this->redirect(['/user/profile']);
         }
 
