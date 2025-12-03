@@ -150,7 +150,7 @@ class YearReviewController extends WebController
         $useDailyRewards = false;
         if ($skindropsWinnings == 0) {
             $dailyRewardsCount = UserBox::find()
-                ->where(['user_id' => $user->id, 'auto' => 1])
+                ->where(['user_id' => $user->id])
                 ->count();
             $useDailyRewards = true;
         }
