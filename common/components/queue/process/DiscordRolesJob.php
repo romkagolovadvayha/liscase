@@ -51,7 +51,8 @@ class DiscordRolesJob extends BaseObject implements JobInterface
     const ROLES_SUPPORT = [
         ['name' => 'Любопытный (3-10 тикетов)', 'min' => 3, 'max' => 10],
         ['name' => 'Вопрошающий (10-50 тикетов)', 'min' => 10, 'max' => 50],
-        ['name' => 'Незнайка (50+ тикетов)', 'min' => 50, 'max' => PHP_INT_MAX],
+        ['name' => 'Незнайка (50-100 тикетов)', 'min' => 50, 'max' => 100],
+        ['name' => 'Вопрошающий (100+ тикетов)', 'min' => 100, 'max' => PHP_INT_MAX],
     ];
 
     // Роли по репортам - название содержит критерий получения
@@ -157,7 +158,8 @@ class DiscordRolesJob extends BaseObject implements JobInterface
             ->all();
         
         foreach ($servers as $server) {
-            $allRoles[] = 'Сервер: ' . $server->monitoring_name;
+            $wipeTypeSuffix = $this->getWipeTypeSuffix($server->wipe_type);
+            $allRoles[] = 'Сервер: ' . $server->monitoring_name . $wipeTypeSuffix;
         }
         
         // Убираем дубликаты
@@ -389,9 +391,28 @@ class DiscordRolesJob extends BaseObject implements JobInterface
     }
 
     /**
+     * Получить короткое название типа вайпа
+     * @param int $wipeType
+     * @return string|null
+     */
+    protected function getWipeTypeSuffix($wipeType)
+    {
+        if ($wipeType === 7) {
+            return ' (недельный)';
+        }
+        if ($wipeType === 14) {
+            return ' (двухнедельный)';
+        }
+        if ($wipeType === 30) {
+            return ' (месячный)';
+        }
+        return '';
+    }
+
+    /**
      * Получить роль текущего сервера пользователя
      * @param User $user
-     * @return string|null Название роли в формате "Сервер: {monitoring_name}" или null
+     * @return string|null Название роли в формате "Сервер: {monitoring_name} (тип вайпа)" или null
      */
     protected function getUserCurrentServerRole($user)
     {
@@ -412,7 +433,8 @@ class DiscordRolesJob extends BaseObject implements JobInterface
             return null;
         }
 
-        return 'Сервер: ' . $server->monitoring_name;
+        $wipeTypeSuffix = $this->getWipeTypeSuffix($server->wipe_type);
+        return 'Сервер: ' . $server->monitoring_name . $wipeTypeSuffix;
     }
 
     /**
@@ -466,7 +488,8 @@ class DiscordRolesJob extends BaseObject implements JobInterface
             ->all();
         
         foreach ($servers as $server) {
-            $categoryRoleNames[] = 'Сервер: ' . $server->monitoring_name;
+            $wipeTypeSuffix = $this->getWipeTypeSuffix($server->wipe_type);
+            $categoryRoleNames[] = 'Сервер: ' . $server->monitoring_name . $wipeTypeSuffix;
         }
 
         // Создаем обратный индекс: roleName => roleId из кэша
