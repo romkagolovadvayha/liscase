@@ -34,6 +34,17 @@ return [
             'redirect_stderr' => true,
             'stdout_logfile'  => '@app/runtime/supervisor/queue-vk.queue.log',
         ],
+        'prostoj.queue-telegram' => [
+            'directory'       => '@project',
+            'command'         => 'php yii queue-telegram/listen --verbose=1 --color=0',
+            'autostart'       => true,
+            'autorestart'     => true,
+            'startretries'    => 10,
+            'stopsignal'      => 'KILL',
+            'numprocs'        => 1,
+            'redirect_stderr' => true,
+            'stdout_logfile'  => '@app/runtime/supervisor/queue-telegram.queue.log',
+        ],
         'prostoj.queue-report' => [
             'directory'       => '@project',
             'command'         => 'php yii queue-report/listen --verbose=1 --color=0',
@@ -148,17 +159,17 @@ return [
         ],
 
         // ===== Node services =====
-        'prostoj.node.ftp' => [
-            'directory'       => '@project/node/ftp',
-            'command'         => 'node src/server.js',
-            'autostart'       => true,
-            'autorestart'     => true,
-            'startretries'    => 10,
-            'stopsignal'      => 'KILL',
-            'numprocs'        => 1,
-            'redirect_stderr' => true,
-            'stdout_logfile'  => '@app/runtime/supervisor/node.ftp.queue.log',
-        ],
+        // 'prostoj.node.ftp' => [
+        //     'directory'       => '@project/node/ftp',
+        //     'command'         => 'node src/server.js',
+        //     'autostart'       => true,
+        //     'autorestart'     => true,
+        //     'startretries'    => 10,
+        //     'stopsignal'      => 'KILL',
+        //     'numprocs'        => 1,
+        //     'redirect_stderr' => true,
+        //     'stdout_logfile'  => '@app/runtime/supervisor/node.ftp.queue.log',
+        // ],
         'prostoj.node.rconservice' => [
             'directory'       => '@project/node/webrcon',
             'command'         => 'node src/rcon-service.js',
@@ -173,9 +184,9 @@ return [
 
         // ===== Radio / Music =====
         'prostoj.node.radio1' => [
-            'directory'       => '@project/node/mode/sounds/1',
-            'command'         => 'node ../../app.js',
-            'environment'     => ['PORT' => '3007', 'HOST' => '0.0.0.0'],
+            'directory'       => '@project',
+            'command'         => 'node node/mode/app.js 8081 "../../frontend/web/uploads/radio/1',
+            'environment'     => ['HOST' => '0.0.0.0'],
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -186,7 +197,7 @@ return [
         ],
         'prostoj.node.music' => [
             'directory'       => '@project/node/music',
-            'command'         => 'node main.js',
+            'command'         => 'node main.js 1246915749004709949 "https://ws.prostoj.store/station-2/stream"',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -197,7 +208,7 @@ return [
         ],
         'prostoj.node.music2' => [
             'directory'       => '@project/node/music',
-            'command'         => 'node main2.js',
+            'command'         => 'node main2.js 1288616430970998875 "https://ws.prostoj.store/station-1/stream"',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -207,9 +218,9 @@ return [
             'stdout_logfile'  => '@app/runtime/supervisor/node.music2.log',
         ],
         'prostoj.node.radio2' => [
-            'directory'       => '@project/node/mode/sounds/2',
-            'command'         => 'node ../../app.js',
-            'environment'     => ['PORT' => '3008', 'HOST' => '0.0.0.0'],
+            'directory'       => '@project',
+            'command'         => 'node node/mode/app.js 3045 "../../frontend/web/uploads/radio/3',
+            'environment'     => ['HOST' => '0.0.0.0'],
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -218,7 +229,18 @@ return [
             'redirect_stderr' => true,
             'stdout_logfile'  => '@app/runtime/supervisor/node.radio2.log',
         ],
-
+        'prostoj.node.radio3' => [
+            'directory'       => '@project',
+            'command'         => 'node node/mode/app.js 3046 "../../frontend/web/uploads/radio/4',
+            'environment'     => ['HOST' => '0.0.0.0'],
+            'autostart'       => true,
+            'autorestart'     => true,
+            'startretries'    => 10,
+            'stopsignal'      => 'KILL',
+            'numprocs'        => 1,
+            'redirect_stderr' => true,
+            'stdout_logfile'  => '@app/runtime/supervisor/node.radio3.log',
+        ],
         'prostoj.node.discord.roles' => [
             'directory'       => '@project/node/discord-roles/src',
             'command'         => 'node check.js',
