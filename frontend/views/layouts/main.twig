@@ -147,7 +147,7 @@ $policyUrl = Url::to(['/site/privacy']); // поменяй на свою стр�
     {# PWA Service Worker Registration #}
     <script>
         const PWA_DEBUG = {{ constant('YII_ENV_DEV') ? 'true' : 'false' }};
-        const swFile = PWA_DEBUG ? '/sw-debug.js' : '/sw.js';
+        const swFile = PWA_DEBUG ? '/sw-debug.js' : '/sw.js?v={{ v }}';
         const pwaLog = (...args) => { if (PWA_DEBUG) { console.log('[PWA]', ...args); } };
         const pwaError = (...args) => console.error('[PWA]', ...args);
 
