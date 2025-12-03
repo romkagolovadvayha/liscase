@@ -3,6 +3,7 @@
 namespace common\components\queue\process;
 
 use common\components\discord\DiscordRoles;
+use common\models\servers\Servers;
 use common\models\statistics\Reports;
 use common\models\statistics\Statistics;
 use common\models\support\Support;
@@ -59,6 +60,9 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         ['name' => 'Сыщик (100-500 репортов)', 'min' => 100, 'max' => 500],
         ['name' => 'Жалоба (500+ репортов)', 'min' => 500, 'max' => PHP_INT_MAX],
     ];
+
+    // Специальные роли (не зависят от статистики)
+    const ROLE_VIP = 'VIP';
 
     /**
      * @param \yii\queue\Queue $queue
@@ -140,6 +144,20 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         }
         foreach (self::ROLES_REPORTS as $role) {
             $allRoles[] = $role['name'];
+        }
+        
+        // Специальные роли
+        $allRoles[] = self::ROLE_VIP;
+        
+        // Роли по серверам (создаем для всех активных серверов)
+        $servers = Servers::find()
+            ->andWhere(['status' => Servers::STATUS_ACTIVE])
+            ->andWhere(['IS NOT', 'monitoring_name', null])
+            ->andWhere(['<>', 'monitoring_name', ''])
+            ->all();
+        
+        foreach ($servers as $server) {
+            $allRoles[] = 'Сервер: ' . $server->monitoring_name;
         }
         
         // Убираем дубликаты
@@ -233,6 +251,15 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         if ($reportsRole) {
             $shouldHaveRoles[] = $reportsRole['name'];
         }
+
+        // Роль VIP (если у пользователя есть активный VIP на сайте)
+        if ($user->hasVip()) {
+            $shouldHaveRoles[] = self::ROLE_VIP;
+        }
+
+        // Роли по серверам (на которых играет пользователь)
+        $userServerRoles = $this->getUserServerRoles($user->steam_id);
+        $shouldHaveRoles = array_merge($shouldHaveRoles, $userServerRoles);
 
         // Удаляем старые роли категории и выдаем новые
         $this->updateUserRoles($user, $guildId, $botToken, $discordRoles, $currentRoleNames, $shouldHaveRoles);
@@ -360,6 +387,42 @@ class DiscordRolesJob extends BaseObject implements JobInterface
     }
 
     /**
+     * Получить роли серверов для пользователя
+     * @param string $steamId
+     * @return array Массив названий ролей в формате "Сервер: {monitoring_name}"
+     */
+    protected function getUserServerRoles($steamId)
+    {
+        // Получаем уникальные server_tag из статистики пользователя
+        $serverTags = Statistics::find()
+            ->select('server_tag')
+            ->andWhere(['steam_id' => $steamId])
+            ->andWhere(['IS NOT', 'server_tag', null])
+            ->andWhere(['<>', 'server_tag', ''])
+            ->distinct()
+            ->column();
+
+        if (empty($serverTags)) {
+            return [];
+        }
+
+        // Получаем серверы по их тегам
+        $servers = Servers::find()
+            ->andWhere(['IN', 'tag', $serverTags])
+            ->andWhere(['status' => Servers::STATUS_ACTIVE])
+            ->andWhere(['IS NOT', 'monitoring_name', null])
+            ->andWhere(['<>', 'monitoring_name', ''])
+            ->all();
+
+        $serverRoles = [];
+        foreach ($servers as $server) {
+            $serverRoles[] = 'Сервер: ' . $server->monitoring_name;
+        }
+
+        return $serverRoles;
+    }
+
+    /**
      * Обновить роли пользователя
      * @param User $user
      * @param string $guildId
@@ -397,6 +460,20 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         // Роли по репортам
         foreach (self::ROLES_REPORTS as $role) {
             $categoryRoleNames[] = $role['name'];
+        }
+        
+        // Специальные роли
+        $categoryRoleNames[] = self::ROLE_VIP;
+        
+        // Роли по серверам (добавляем все возможные роли серверов)
+        $servers = Servers::find()
+            ->andWhere(['status' => Servers::STATUS_ACTIVE])
+            ->andWhere(['IS NOT', 'monitoring_name', null])
+            ->andWhere(['<>', 'monitoring_name', ''])
+            ->all();
+        
+        foreach ($servers as $server) {
+            $categoryRoleNames[] = 'Сервер: ' . $server->monitoring_name;
         }
 
         // Создаем обратный индекс: roleName => roleId из кэша
