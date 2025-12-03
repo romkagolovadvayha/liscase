@@ -272,17 +272,31 @@ class TelegramConstructor extends \yii\db\ActiveRecord
         }
 
         // Отправляем сообщения через очередь VK
-        foreach ($recipients as $userId) {
+        foreach ($recipients as $vkUserId) {
             $photo = null;
             if (!empty($imageLink)) {
-                // Для динамических ссылок подставляем user_id для каждого получателя
-                // Для VK userId - это vk_user_id, а не user_id из базы
-                // Но так как мы работаем с vk_user_id, передаем его как userId
-                $photo = $this->telegramConstructorMessage->getPubUrl('', $language, $userId);
+                // Для динамических ссылок нужно подставить user_id из базы данных, а не vk_user_id
+                // Ищем пользователя по vk_id
+                $user = User::find()
+                    ->where(['vk_id' => $vkUserId])
+                    ->one();
+                
+                // Если пользователь найден, используем его user_id, иначе используем vk_user_id
+                $userIdForUrl = $user ? $user->id : $vkUserId;
+                
+                if (!$user) {
+                    Yii::warning("VK: User not found for vk_id {$vkUserId}, using vk_user_id for URL", __METHOD__);
+                }
+                
+                $photo = $this->telegramConstructorMessage->getPubUrl('', $language, $userIdForUrl);
+                
+                if (empty($photo)) {
+                    Yii::warning("VK: Empty photo URL for vk_user_id {$vkUserId}, user_id {$userIdForUrl}", __METHOD__);
+                }
             }
             
             Yii::$app->queueVk->push(new SendVkMessageJob([
-                'user_id' => $userId,
+                'user_id' => $vkUserId,
                 'message' => $message,
                 'photo' => $photo,
             ]));
