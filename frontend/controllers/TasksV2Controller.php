@@ -53,7 +53,7 @@ class TasksV2Controller extends WebController
         }
 
         $this->view->params['_profile'] = true;
-        $this->view->params['page'] = 'tasks-v2';
+        $this->view->params['page'] = 'user-task';
 
         TasksV2Asset::register($this->view);
 
