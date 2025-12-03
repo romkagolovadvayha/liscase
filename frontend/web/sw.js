@@ -23,6 +23,14 @@ const EXCLUDE_FILES = [
   'websocket'
 ];
 
+// Пути, которые Service Worker не должен перехватывать (потоковые запросы)
+const EXCLUDE_PATHS = [
+  '/station-1/stream',
+  '/station-2/stream',
+  '/station-3/stream',
+  '/ws/', // WebSocket
+];
+
 /**
  * Установка Service Worker
  */
@@ -90,8 +98,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Пропускаем исключенные файлы
+  // Пропускаем исключенные файлы и пути (потоковые запросы, WebSocket)
   if (shouldExcludeFile(request.url)) {
+    return;
+  }
+  
+  // Пропускаем потоковые запросы к радиостанциям и WebSocket
+  if (shouldExcludePath(request.url)) {
     return;
   }
   
@@ -143,6 +156,13 @@ async function handleRequest(request) {
  */
 function shouldExcludeFile(url) {
   return EXCLUDE_FILES.some(pattern => url.includes(pattern));
+}
+
+/**
+ * Проверка, нужно ли исключить путь из перехвата (потоковые запросы)
+ */
+function shouldExcludePath(url) {
+  return EXCLUDE_PATHS.some(path => url.includes(path));
 }
 
 /**
