@@ -17,8 +17,6 @@ use yii\widgets\ListView;
 /** @var int $totalRewards */
 
 $this->title = Yii::t('common', 'Задания');
-$this->params['_profile'] = true;
-$this->params['page'] = 'tasks-v2';
 
 ?>
 <div class="tasksV2" id="tasksV2Root">
