@@ -149,7 +149,7 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         // Специальные роли
         $allRoles[] = self::ROLE_VIP;
         
-        // Роли по серверам (создаем для всех активных серверов)
+        // Роли по серверам (создаем для всех активных серверов, чтобы они существовали в Discord)
         $servers = Servers::find()
             ->andWhere(['status' => Servers::STATUS_ACTIVE])
             ->andWhere(['IS NOT', 'monitoring_name', null])
@@ -257,9 +257,11 @@ class DiscordRolesJob extends BaseObject implements JobInterface
             $shouldHaveRoles[] = self::ROLE_VIP;
         }
 
-        // Роли по серверам (на которых играет пользователь)
-        $userServerRoles = $this->getUserServerRoles($user->steam_id);
-        $shouldHaveRoles = array_merge($shouldHaveRoles, $userServerRoles);
+        // Роль текущего сервера (на котором сейчас играет пользователь)
+        $currentServerRole = $this->getUserCurrentServerRole($user);
+        if ($currentServerRole) {
+            $shouldHaveRoles[] = $currentServerRole;
+        }
 
         // Удаляем старые роли категории и выдаем новые
         $this->updateUserRoles($user, $guildId, $botToken, $discordRoles, $currentRoleNames, $shouldHaveRoles);
@@ -387,39 +389,30 @@ class DiscordRolesJob extends BaseObject implements JobInterface
     }
 
     /**
-     * Получить роли серверов для пользователя
-     * @param string $steamId
-     * @return array Массив названий ролей в формате "Сервер: {monitoring_name}"
+     * Получить роль текущего сервера пользователя
+     * @param User $user
+     * @return string|null Название роли в формате "Сервер: {monitoring_name}" или null
      */
-    protected function getUserServerRoles($steamId)
+    protected function getUserCurrentServerRole($user)
     {
-        // Получаем уникальные server_tag из статистики пользователя
-        $serverTags = Statistics::find()
-            ->select('server_tag')
-            ->andWhere(['steam_id' => $steamId])
-            ->andWhere(['IS NOT', 'server_tag', null])
-            ->andWhere(['<>', 'server_tag', ''])
-            ->distinct()
-            ->column();
-
-        if (empty($serverTags)) {
-            return [];
+        // Проверяем, есть ли у пользователя текущий сервер
+        if (empty($user->server_id)) {
+            return null;
         }
 
-        // Получаем серверы по их тегам
-        $servers = Servers::find()
-            ->andWhere(['IN', 'tag', $serverTags])
-            ->andWhere(['status' => Servers::STATUS_ACTIVE])
-            ->andWhere(['IS NOT', 'monitoring_name', null])
-            ->andWhere(['<>', 'monitoring_name', ''])
-            ->all();
-
-        $serverRoles = [];
-        foreach ($servers as $server) {
-            $serverRoles[] = 'Сервер: ' . $server->monitoring_name;
+        // Получаем сервер по ID
+        $server = Servers::findOne($user->server_id);
+        
+        if (empty($server) || $server->status !== Servers::STATUS_ACTIVE) {
+            return null;
         }
 
-        return $serverRoles;
+        // Проверяем, что у сервера есть monitoring_name
+        if (empty($server->monitoring_name)) {
+            return null;
+        }
+
+        return 'Сервер: ' . $server->monitoring_name;
     }
 
     /**
