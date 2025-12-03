@@ -35,6 +35,7 @@ use yii\web\UploadedFile;
  * @property int $bot_id
  * @property int $telegram_constructor_message_id
  * @property int $status
+ * @property bool $only_with_user Отправлять только пользователям с привязанным user (для VK)
  * @property string|null $created_at
  *
  * @property TelegramConstructorMessage $telegramConstructorMessage
@@ -71,6 +72,7 @@ class TelegramConstructor extends \yii\db\ActiveRecord
         return [
             [['bot_id', 'telegram_constructor_message_id', 'title', 'audience_id'], 'required'],
             [['bot_id', 'status', 'telegram_constructor_message_id', 'audience_id'], 'integer'],
+            [['only_with_user'], 'boolean'],
             [['created_at', 'status'], 'safe'],
         ];
     }
@@ -87,6 +89,7 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             'bot_id' => 'Платформа',
             'status' => 'Статус',
             'telegram_constructor_message_id' => 'Сообщение',
+            'only_with_user' => 'Только для пользователей с привязанным user',
             'created_at' => 'Дата создания',
         ];
     }
@@ -265,9 +268,9 @@ class TelegramConstructor extends \yii\db\ActiveRecord
         $isDynamicLink = !empty($imageLink) && strpos($imageLink, '@') === 0 && strpos($imageLink, '{user_id}') !== false;
 
         // Получаем список участников группы с учетом фильтрации по аудитории
-        $recipients = self::getAudience($this->audience_id, self::VK_GROUP);
+        $recipients = self::getAudience($this->audience_id, self::VK_GROUP, !empty($this->only_with_user));
         if (empty($recipients)) {
-            Yii::error("VK: No recipients found for audience {$this->audience_id}", __METHOD__);
+            Yii::error("VK: No recipients found for audience {$this->audience_id}, only_with_user: " . ($this->only_with_user ? 'true' : 'false'), __METHOD__);
             return false;
         }
 
@@ -309,15 +312,17 @@ class TelegramConstructor extends \yii\db\ActiveRecord
      * Получение аудитории для рассылки
      * @param int $audienceId ID аудитории
      * @param int|null $botId ID бота/платформы (для фильтрации)
+     * @param bool $onlyWithUser Отправлять только пользователям с привязанным user (только для VK)
      * @return array
      */
-    public static function getAudience($audienceId, $botId = null) {
+    public static function getAudience($audienceId, $botId = null, $onlyWithUser = false) {
         // Приводим к int для корректного сравнения
         $audienceId = (int)$audienceId;
         $botId = $botId !== null ? (int)$botId : null;
         
         // Фильтрация по платформе
         if ($botId === self::PERSONAL_BOT) {
+            // Для Telegram параметр onlyWithUser игнорируется
             $query = User::find()
                 ->select('DISTINCT(u.id)')
                 ->alias('u')
@@ -342,6 +347,21 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             
             if (empty($vkUsers)) {
                 return [];
+            }
+            
+            // Фильтруем по наличию привязанного user, если указано
+            if ($onlyWithUser) {
+                // Оставляем только тех, у кого есть привязанный user в базе данных
+                $vkUsersWithUser = [];
+                foreach ($vkUsers as $vkUserId) {
+                    $user = User::find()
+                        ->where(['vk_id' => $vkUserId])
+                        ->exists();
+                    if ($user) {
+                        $vkUsersWithUser[] = $vkUserId;
+                    }
+                }
+                $vkUsers = $vkUsersWithUser;
             }
             
             // Применяем фильтрацию по аудитории

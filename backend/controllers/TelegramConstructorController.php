@@ -181,7 +181,9 @@ class TelegramConstructorController extends \backend\components\CrudController
         }
 
         $searchModel = new AudienceSearch();
-        $userIds = TelegramConstructor::getAudience($model->audience_id, $model->bot_id);
+        // Передаем only_with_user только для VK группы
+        $onlyWithUser = ($model->bot_id == TelegramConstructor::VK_GROUP) && !empty($model->only_with_user);
+        $userIds = TelegramConstructor::getAudience($model->audience_id, $model->bot_id, $onlyWithUser);
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams, null, $userIds);
 
         return $this->render('audience', [
@@ -214,7 +216,10 @@ class TelegramConstructorController extends \backend\components\CrudController
         }
 
         $searchModel = new AudienceSearch();
-        $userIds = TelegramConstructor::getAudience($audienceId, $botId);
+        
+        // Для предпросмотра аудитории нужно получить only_with_user из запроса (только для VK)
+        $onlyWithUser = ($botId == TelegramConstructor::VK_GROUP) && (bool)Yii::$app->request->get('only_with_user', false);
+        $userIds = TelegramConstructor::getAudience($audienceId, $botId, $onlyWithUser);
         
         // Для VK группы получаем User IDs из VK user IDs
         if ($botId == TelegramConstructor::VK_GROUP) {

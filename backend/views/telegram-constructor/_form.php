@@ -72,7 +72,7 @@ $this->registerJs('
         }
     }
     
-    $(document).on("change", "#telegramconstructor-bot_id, #telegramconstructor-audience_id", function () {
+    $(document).on("change", "#telegramconstructor-bot_id, #telegramconstructor-audience_id, #telegramconstructor-only_with_user", function () {
         updateAudienceCount();
     });
     
@@ -80,8 +80,23 @@ $this->registerJs('
         updateMessagePreview();
     });
     
+    // Показываем/скрываем поле only_with_user в зависимости от выбранной платформы
+    function toggleOnlyWithUserField() {
+        var botId = $("#telegramconstructor-bot_id").val();
+        if (botId == "<?= TelegramConstructor::VK_GROUP ?>") {
+            $("#telegramconstructor-only_with_user").closest(".form-group").show();
+        } else {
+            $("#telegramconstructor-only_with_user").closest(".form-group").hide();
+        }
+    }
+    
+    $(document).on("change", "#telegramconstructor-bot_id", function () {
+        toggleOnlyWithUserField();
+    });
+    
     // Обновляем при загрузке страницы, если уже выбраны значения
     $(document).ready(function() {
+        toggleOnlyWithUserField();
         updateAudienceCount();
         updateMessagePreview();
     });
@@ -139,6 +154,12 @@ $this->registerJs('
                         'class' => 'form-control ds-input',
                     ]
                 )->label('Сообщение <span class="text-danger">*</span>'); ?>
+
+                <?php if ($model->bot_id == TelegramConstructor::VK_GROUP || empty($model->bot_id)): ?>
+                    <?= $form->field($model, 'only_with_user')->checkbox([
+                        'class' => 'form-check-input'
+                    ])->hint('Если отмечено, рассылка будет отправлена только тем VK пользователям, у которых есть привязанный аккаунт в системе (поле vk_id в таблице user).') ?>
+                <?php endif; ?>
 
                 <div class="form-group mt-4">
                     <div class="ds-flex ds-items-center ds-gap-md">
