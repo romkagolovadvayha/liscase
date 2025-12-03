@@ -23,16 +23,16 @@ return [
             'redirect_stderr' => true,
             'stdout_logfile'  => '@app/runtime/supervisor/queue-stats.queue.log',
         ],
-        'prostoj.queue-telegram' => [
+        'prostoj.queue-vk' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-telegram/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-vk/listen --verbose=1 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
             'stopsignal'      => 'KILL',
             'numprocs'        => 1,
             'redirect_stderr' => true,
-            'stdout_logfile'  => '@app/runtime/supervisor/queue-telegram.queue.log',
+            'stdout_logfile'  => '@app/runtime/supervisor/queue-vk.queue.log',
         ],
         'prostoj.queue-report' => [
             'directory'       => '@project',
