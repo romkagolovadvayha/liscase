@@ -38,10 +38,11 @@ class SendMessageJob extends BaseObject implements JobInterface
                 $errorMessage = isset($result['description']) ? $result['description'] : 'Unknown error';
                 $errorCode = isset($result['error_code']) ? $result['error_code'] : 'N/A';
                 
-                // Проверяем, заблокирован ли бот пользователем
+                // Проверяем, заблокирован ли бот пользователем или деактивирован ли пользователь
                 $isBlocked = stripos($errorMessage, 'bot was blocked by the user') !== false 
                     || stripos($errorMessage, 'bot was blocked') !== false
-                    || stripos($errorMessage, 'chat not found') !== false;
+                    || stripos($errorMessage, 'chat not found') !== false
+                    || stripos($errorMessage, 'user is deactivated') !== false;
                 
                 if ($isBlocked) {
                     // Устанавливаем флаг is_telegram_blocked для пользователя
