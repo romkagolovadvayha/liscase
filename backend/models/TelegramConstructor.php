@@ -9,6 +9,7 @@ use common\components\queue\telegram\TelegramMassJob;
 use common\components\queue\vk\SendVkMessageJob;
 use common\components\telegram\TelegramPersonalBot;
 use common\components\vk\VkApiHelper;
+use common\components\helpers\Role;
 use common\models\vk\VkUser;
 use common\models\country\Country;
 use common\models\country\CountryPromo;
@@ -55,6 +56,7 @@ class TelegramConstructor extends \yii\db\ActiveRecord
     public const AUDIENCE_TEST = 1;
     public const AUDIENCE_ALL = 2;
     public const AUDIENCE_WINNER = 3;
+    public const AUDIENCE_MODERATORS = 4;
 
     /**
      * {@inheritdoc}
@@ -141,6 +143,7 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             self::AUDIENCE_TEST => 'Тестовая аудитория',
             self::AUDIENCE_ALL => 'Все пользователи',
             self::AUDIENCE_WINNER => 'Победители',
+            self::AUDIENCE_MODERATORS => 'Модераторы и админы',
         ];
     }
 
@@ -336,6 +339,18 @@ class TelegramConstructor extends \yii\db\ActiveRecord
                 // Без дополнительных фильтров
             } elseif ($audienceId == self::AUDIENCE_WINNER) {
                 $query->andWhere(['IN', 'steam_id', [76561198161653962]]);
+            } elseif ($audienceId == self::AUDIENCE_MODERATORS) {
+                // Для Telegram: получаем ID пользователей с ролями ADMIN или MODERATOR
+                $adminUserIds = Yii::$app->authManager->getUserIdsByRole(Role::ROLE_ADMIN);
+                $moderatorUserIds = Yii::$app->authManager->getUserIdsByRole(Role::ROLE_MODERATOR);
+                $moderatorUserIds = array_merge($adminUserIds, $moderatorUserIds);
+                $moderatorUserIds = array_unique($moderatorUserIds);
+                
+                if (empty($moderatorUserIds)) {
+                    return [];
+                }
+                
+                $query->andWhere(['IN', 'u.id', $moderatorUserIds]);
             } else {
                 return [];
             }
@@ -374,6 +389,32 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             } elseif ($audienceId == self::AUDIENCE_WINNER) {
                 // Для победителей пока возвращаем всех (можно добавить фильтрацию позже)
                 return $vkUsers;
+            } elseif ($audienceId == self::AUDIENCE_MODERATORS) {
+                // Для VK: получаем ID пользователей с ролями ADMIN или MODERATOR
+                $adminUserIds = Yii::$app->authManager->getUserIdsByRole(Role::ROLE_ADMIN);
+                $moderatorUserIds = Yii::$app->authManager->getUserIdsByRole(Role::ROLE_MODERATOR);
+                $moderatorUserIds = array_merge($adminUserIds, $moderatorUserIds);
+                $moderatorUserIds = array_unique($moderatorUserIds);
+                
+                if (empty($moderatorUserIds)) {
+                    return [];
+                }
+                
+                // Получаем VK ID модераторов и админов (только тех, у кого есть привязанный VK аккаунт)
+                $moderatorVkIds = User::find()
+                    ->select('vk_id')
+                    ->where(['IN', 'id', $moderatorUserIds])
+                    ->andWhere(['IS NOT', 'vk_id', null])
+                    ->column();
+                
+                if (empty($moderatorVkIds)) {
+                    return [];
+                }
+                
+                // Фильтруем VK пользователей, оставляя только тех, у кого есть привязанный user с ролью модератора/админа
+                $filteredVkUsers = array_intersect($vkUsers, $moderatorVkIds);
+                
+                return array_values($filteredVkUsers);
             }
             
             return [];

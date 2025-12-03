@@ -11,10 +11,12 @@ use yii\helpers\Html;
 $telegramTestCount = count(TelegramConstructor::getAudience(TelegramConstructor::AUDIENCE_TEST, TelegramConstructor::PERSONAL_BOT));
 $telegramAllCount = User::find()->andWhere('telegram_chat_id IS NOT NULL')->andWhere(['is_telegram_blocked' => 0])->count();
 $telegramWinnerCount = count(TelegramConstructor::getAudience(TelegramConstructor::AUDIENCE_WINNER, TelegramConstructor::PERSONAL_BOT));
+$telegramModeratorsCount = count(TelegramConstructor::getAudience(TelegramConstructor::AUDIENCE_MODERATORS, TelegramConstructor::PERSONAL_BOT));
 
 $vkTestCount = count(TelegramConstructor::getAudience(TelegramConstructor::AUDIENCE_TEST, TelegramConstructor::VK_GROUP));
 $vkAllCount = VkUser::find()->where(['can_send_message' => true])->count();
 $vkWinnerCount = count(TelegramConstructor::getAudience(TelegramConstructor::AUDIENCE_WINNER, TelegramConstructor::VK_GROUP));
+$vkModeratorsCount = count(TelegramConstructor::getAudience(TelegramConstructor::AUDIENCE_MODERATORS, TelegramConstructor::VK_GROUP));
 
 $audienceLabels = TelegramConstructor::getAudienceList();
 $botLabels = TelegramConstructor::getBotList();
@@ -227,6 +229,9 @@ $this->registerJs('
                     </li>
                     <li class="mt-2"><strong>Победители</strong><br>
                         <small class="text-muted">Специальная аудитория победителей</small>
+                    </li>
+                    <li class="mt-2"><strong>Модераторы и админы</strong><br>
+                        <small class="text-muted">Пользователи с ролями модератора или администратора</small>
                     </li>
                 </ul>
             </div>
