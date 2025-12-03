@@ -19,6 +19,8 @@ class SendPhotoJob extends BaseObject implements JobInterface
     public $telegram_chat_id;
     public $photo;
     public $message;
+    public $attempt = 1; // Номер попытки отправки
+    public const MAX_ATTEMPTS = 3; // Максимальное количество попыток
 
     /**
      * @param \yii\queue\Queue $queue
@@ -30,10 +32,52 @@ class SendPhotoJob extends BaseObject implements JobInterface
     {
         try {
             $result = Yii::$app->personalBotTelegram->sendPhoto($this->telegram_chat_id, $this->photo, $this->message);
-            Yii::$app->telegramChats->sendMessage("Photo sent to " . json_encode($result));
+            
+            // Проверяем успешность отправки
+            if ($result === false || (isset($result['ok']) && !$result['ok'])) {
+                $errorMessage = isset($result['description']) ? $result['description'] : 'Unknown error';
+                $errorCode = isset($result['error_code']) ? $result['error_code'] : 'N/A';
+                
+                // Если не превышен лимит попыток, отправляем в очередь повторно
+                if ($this->attempt < self::MAX_ATTEMPTS) {
+                    $this->attempt++;
+                    $delay = $this->attempt * 60; // Увеличиваем задержку с каждой попыткой: 5, 10, 15 секунд
+                    
+                    Yii::warning("SendPhotoJob: Failed to send photo to chat_id {$this->telegram_chat_id} (attempt {$this->attempt}/" . self::MAX_ATTEMPTS . "). Retrying in {$delay}s. Error: {$errorMessage}", __METHOD__);
+                    
+                    sleep($delay);
+                    // Отправляем в очередь повторно с задержкой
+                    Yii::$app->queueTelegram->delay($delay)->push($this);
+                    return false;
+                }
+                
+                // Превышен лимит попыток - логируем ошибку
+                Yii::error("SendPhotoJob: Failed to send photo to chat_id {$this->telegram_chat_id} after " . self::MAX_ATTEMPTS . " attempts. Error code: {$errorCode}, Message: {$errorMessage}", __METHOD__);
+                Yii::$app->telegramChats->sendMessage("SendPhotoJob: Failed to send photo to chat_id {$this->telegram_chat_id} after " . self::MAX_ATTEMPTS . " attempts. Error: {$errorMessage}");
+                return false;
+            }
+            
+            // Успешная отправка
+            if ($this->attempt > 1) {
+                Yii::info("SendPhotoJob: Successfully sent photo to chat_id {$this->telegram_chat_id} on attempt {$this->attempt}", __METHOD__);
+            }
+            return true;
         } catch (\Exception $e) {
-            Yii::$app->telegramChats->sendMessage("SendPhotoJob: " . $e->getMessage());
-
+            // Если не превышен лимит попыток, отправляем в очередь повторно
+            if ($this->attempt < self::MAX_ATTEMPTS) {
+                $this->attempt++;
+                $delay = $this->attempt * 5;
+                
+                Yii::warning("SendPhotoJob: Exception on attempt {$this->attempt}/" . self::MAX_ATTEMPTS . ". Retrying in {$delay}s. Error: " . $e->getMessage(), __METHOD__);
+                
+                Yii::$app->queueTelegram->delay($delay)->push($this);
+                return false;
+            }
+            
+            // Превышен лимит попыток
+            Yii::error("SendPhotoJob: Exception after " . self::MAX_ATTEMPTS . " attempts - " . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
+            Yii::$app->telegramChats->sendMessage("SendPhotoJob: Exception after " . self::MAX_ATTEMPTS . " attempts - " . $e->getMessage());
+            return false;
         }
     }
 }
