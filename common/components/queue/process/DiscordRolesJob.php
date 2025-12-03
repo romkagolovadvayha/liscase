@@ -159,7 +159,7 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         
         foreach ($servers as $server) {
             $wipeTypeSuffix = $this->getWipeTypeSuffix($server->wipe_type);
-            $allRoles[] = 'Сервер: ' . $server->monitoring_name . $wipeTypeSuffix;
+            $allRoles[] = $server->monitoring_name . $wipeTypeSuffix;
         }
         
         // Убираем дубликаты
@@ -434,7 +434,7 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         }
 
         $wipeTypeSuffix = $this->getWipeTypeSuffix($server->wipe_type);
-        return 'Сервер: ' . $server->monitoring_name . $wipeTypeSuffix;
+        return $server->monitoring_name . $wipeTypeSuffix;
     }
 
     /**
@@ -489,7 +489,7 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         
         foreach ($servers as $server) {
             $wipeTypeSuffix = $this->getWipeTypeSuffix($server->wipe_type);
-            $categoryRoleNames[] = 'Сервер: ' . $server->monitoring_name . $wipeTypeSuffix;
+            $categoryRoleNames[] = $server->monitoring_name . $wipeTypeSuffix;
         }
 
         // Создаем обратный индекс: roleName => roleId из кэша
