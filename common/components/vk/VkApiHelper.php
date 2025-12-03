@@ -340,6 +340,9 @@ class VkApiHelper extends \yii\base\Component
             $photoId = $this->uploadMessagePhoto($photoUrl);
             if ($photoId) {
                 $params['attachment'] = $photoId;
+            } else {
+                // Если загрузка фото не удалась, логируем предупреждение, но отправляем сообщение без фото
+                Yii::warning("VK: Failed to upload photo for user {$userId}, sending message without photo. Photo URL: {$photoUrl}", __METHOD__);
             }
         }
 
@@ -407,10 +410,21 @@ class VkApiHelper extends \yii\base\Component
 
             $uploadUrl = $uploadServer['response']['upload_url'];
 
-            // Скачиваем изображение
-            $imageContent = file_get_contents($photoUrl);
-            if ($imageContent === false) {
-                Yii::error("VK: Failed to download image from {$photoUrl}", __METHOD__);
+            // Скачиваем изображение с использованием curl (более надежно, чем file_get_contents)
+            $ch = curl_init($photoUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
+            $imageContent = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($imageContent === false || $httpCode !== 200 || !empty($curlError)) {
+                Yii::error("VK: Failed to download image from {$photoUrl}, HTTP code: {$httpCode}, Error: {$curlError}", __METHOD__);
                 return false;
             }
 
