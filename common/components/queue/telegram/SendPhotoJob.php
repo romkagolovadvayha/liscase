@@ -38,14 +38,36 @@ class SendPhotoJob extends BaseObject implements JobInterface
                 $errorMessage = isset($result['description']) ? $result['description'] : 'Unknown error';
                 $errorCode = isset($result['error_code']) ? $result['error_code'] : 'N/A';
                 
+                // Проверяем, заблокирован ли бот пользователем
+                $isBlocked = stripos($errorMessage, 'bot was blocked by the user') !== false 
+                    || stripos($errorMessage, 'bot was blocked') !== false
+                    || stripos($errorMessage, 'chat not found') !== false;
+                
+                if ($isBlocked) {
+                    // Устанавливаем флаг is_telegram_blocked для пользователя
+                    $user = User::find()
+                        ->where(['telegram_chat_id' => $this->telegram_chat_id])
+                        ->one();
+                    
+                    if ($user) {
+                        $user->is_telegram_blocked = 1;
+                        $user->save(false);
+                        Yii::info("SendPhotoJob: User {$user->id} (chat_id {$this->telegram_chat_id}) blocked the bot. Flag is_telegram_blocked set to 1.", __METHOD__);
+                    } else {
+                        Yii::warning("SendPhotoJob: User with chat_id {$this->telegram_chat_id} not found. Cannot set is_telegram_blocked flag.", __METHOD__);
+                    }
+                    
+                    // Не повторяем попытки для заблокированных пользователей
+                    return false;
+                }
+                
                 // Если не превышен лимит попыток, отправляем в очередь повторно
                 if ($this->attempt < self::MAX_ATTEMPTS) {
                     $this->attempt++;
-                    $delay = $this->attempt * 60; // Увеличиваем задержку с каждой попыткой: 5, 10, 15 секунд
+                    $delay = $this->attempt * 5; // Увеличиваем задержку с каждой попыткой: 5, 10, 15 секунд
                     
                     Yii::warning("SendPhotoJob: Failed to send photo to chat_id {$this->telegram_chat_id} (attempt {$this->attempt}/" . self::MAX_ATTEMPTS . "). Retrying in {$delay}s. Error: {$errorMessage}", __METHOD__);
                     
-                    sleep($delay);
                     // Отправляем в очередь повторно с задержкой
                     Yii::$app->queueTelegram->delay($delay)->push($this);
                     return false;
