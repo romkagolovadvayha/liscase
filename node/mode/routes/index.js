@@ -28,43 +28,16 @@ const plugin = {
                 const { id, responseSink } = queue.makeResponseSink();
                 request.app.sinkId = id;
                 
-                // Устанавливаем заголовки для стриминга
+                // КРИТИЧЕСКИ ВАЖНО: Правильные заголовки для непрерывного потокового аудио
                 const response = h.response(responseSink)
                     .type('audio/mpeg')
                     .header('Cache-Control', 'no-cache, no-store, must-revalidate')
                     .header('Pragma', 'no-cache')
                     .header('Expires', '0')
                     .header('Connection', 'keep-alive')
-                    .header('Keep-Alive', 'timeout=60, max=1000')
-                    .header('Accept-Ranges', 'bytes')
-                    .header('Content-Transfer-Encoding', 'binary')
-                    .header('Transfer-Encoding', 'chunked'); // Важно для стриминга
-                
-                // Начинаем отправку данных сразу (не ждём полной загрузки)
-                responseSink.resume();
-                
-                // Убеждаемся, что поток не приостанавливается (keep-alive механизм)
-                const keepAliveInterval = setInterval(() => {
-                    if (!responseSink.destroyed && responseSink.writable) {
-                        try {
-                            responseSink.resume();
-                        } catch (err) {
-                            // Игнорируем ошибки
-                            clearInterval(keepAliveInterval);
-                        }
-                    } else {
-                        clearInterval(keepAliveInterval);
-                    }
-                }, 5000); // Проверяем каждые 5 секунд
-                
-                // Очищаем интервал при закрытии соединения
-                responseSink.once('close', () => {
-                    clearInterval(keepAliveInterval);
-                });
-                
-                responseSink.once('end', () => {
-                    clearInterval(keepAliveInterval);
-                });
+                    .header('Transfer-Encoding', 'chunked')
+                    .header('X-Accel-Buffering', 'no') // Отключаем буферизацию в nginx
+                    .code(200);
                 
                 return response;
             },
@@ -72,22 +45,19 @@ const plugin = {
                 ext: {
                     onPreResponse: {
                         method: (request, h) => {
-                            // Обработка отключения клиента
-                            const cleanup = () => {
+                            request.events.once('disconnect', () => {
                                 if (request.app.sinkId) {
                                     queue.removeResponseSink(request.app.sinkId);
-                                    request.app.sinkId = null;
                                 }
-                            };
-                            
-                            // Обработка различных событий отключения
-                            request.events.once('disconnect', cleanup);
-                            request.raw.req.once('close', cleanup);
-                            request.raw.req.once('aborted', cleanup);
-                            
+                            });
                             return h.continue;
                         }
                     }
+                },
+                // Отключаем таймауты для потокового контента
+                timeout: {
+                    server: false, // Без таймаута сервера
+                    socket: false  // Без таймаута сокета
                 }
             }
         });

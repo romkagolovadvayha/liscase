@@ -201,38 +201,38 @@ class Queue extends AbstractClasses.TerminalItemBox {
         this._isPlaying = true;
         
         try {
-            // Если очередь пуста, перезагружаем плейлист в очередь (loop)
-            if (this._songs.length === 0) {
-                const Utils = require('../utils');
-                const allSongs = Utils.readSongs();
-                
-                if (allSongs.length > 0) {
-                    console.log('🔄 Queue empty, reloading playlist...');
-                    this._songs = [...allSongs]; // Копируем все треки снова
-                } else {
-                    console.log('⚠️ No songs available');
+        // Если очередь пуста, перезагружаем плейлист в очередь (loop)
+        if (this._songs.length === 0) {
+            const Utils = require('../utils');
+            const allSongs = Utils.readSongs();
+            
+            if (allSongs.length > 0) {
+                console.log('🔄 Queue empty, reloading playlist...');
+                this._songs = [...allSongs]; // Копируем все треки снова
+            } else {
+                console.log('⚠️ No songs available');
                     this._isPlaying = false;
-                    return;
-                }
-            }
-            
-            // Берём первый трек из очереди
-            const nextSong = this._songs.shift();
-            
-            if (!nextSong) {
-                console.log('⚠️ No songs in queue');
-                this._isPlaying = false;
                 return;
             }
-            
-            // Добавляем трек в конец очереди (loop)
-            this._songs.push(nextSong);
-            
-            // НЕ меняем this._currentSong пока не начали стримить!
-            const songToPlay = nextSong;
+        }
+        
+        // Берём первый трек из очереди
+        const nextSong = this._songs.shift();
+        
+        if (!nextSong) {
+            console.log('⚠️ No songs in queue');
+                this._isPlaying = false;
+            return;
+        }
+        
+        // Добавляем трек в конец очереди (loop)
+        this._songs.push(nextSong);
+        
+        // НЕ меняем this._currentSong пока не начали стримить!
+        const songToPlay = nextSong;
 
-            console.log(`\n▶️  Now playing: ${Path.basename(songToPlay)}`);
-            console.log(`📋 Queue length: ${this._songs.length}`);
+        console.log(`\n▶️  Now playing: ${Path.basename(songToPlay)}`);
+        console.log(`📋 Queue length: ${this._songs.length}`);
 
             // Проверяем существование файла перед чтением
             const songPath = Path.resolve(process.cwd(), songToPlay);
@@ -280,10 +280,15 @@ class Queue extends AbstractClasses.TerminalItemBox {
             const throttleKeepAlive = setInterval(() => {
                 if (!throttleTransformable.destroyed && !this._shouldSkip) {
                     try {
-                        throttleTransformable.resume();
+                        // Убеждаемся, что throttle не приостановлен
+                        if (throttleTransformable.isPaused && throttleTransformable.isPaused()) {
+                            throttleTransformable.resume();
+                        }
                         // Также убеждаемся, что readable активен
                         if (songReadable && !songReadable.destroyed) {
-                            songReadable.resume();
+                            if (songReadable.isPaused && songReadable.isPaused()) {
+                                songReadable.resume();
+                            }
                         }
                     } catch (err) {
                         // Игнорируем ошибки
@@ -292,7 +297,7 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 } else {
                     clearInterval(throttleKeepAlive);
                 }
-            }, 200); // Проверяем каждые 200мс для максимальной надежности
+            }, 100); // Проверяем каждые 100мс для максимальной надежности
             
             // Очищаем интервал при завершении
             throttleTransformable.once('end', () => {
@@ -364,7 +369,7 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 // Всегда отправляем данные для непрерывного стрима
                 // КРИТИЧЕСКИ ВАЖНО: отправляем данные немедленно, не блокируя
                 try {
-                    this._broadcastToEverySink(chunk);
+                this._broadcastToEverySink(chunk);
                 } catch (err) {
                     // Ошибка при отправке не должна останавливать поток
                     if (process.env.VERBOSE_LOGS === 'true') {
@@ -406,8 +411,10 @@ class Queue extends AbstractClasses.TerminalItemBox {
                     return;
                 }
                 console.log(`📤 ReadStream ended: streamed ${bytesStreamed} bytes`);
-                // Ждём пока Throttle закончит передачу всех данных
-                // Не закрываем readable сразу, пусть throttle закончит обработку
+                // КРИТИЧЕСКИ ВАЖНО: Не закрываем readable сразу!
+                // Throttle должен закончить передачу всех данных
+                // ReadStream автоматически закроется после того, как все данные будут прочитаны
+                // Это обеспечивает непрерывность потока между треками
             });
             
             // Когда Throttle закончил передачу ВСЕХ данных
@@ -437,20 +444,21 @@ class Queue extends AbstractClasses.TerminalItemBox {
                 
                 // Закрываем streams явно
                 try {
-                    if (!songReadable.destroyed) {
-                        songReadable.destroy();
-                    }
-                    if (!throttleTransformable.destroyed) {
-                        throttleTransformable.destroy();
+                if (!songReadable.destroyed) {
+                    songReadable.destroy();
+                }
+                if (!throttleTransformable.destroyed) {
+                    throttleTransformable.destroy();
                     }
                 } catch (err) {
                     // Игнорируем ошибки при закрытии
                 }
                 
                 // КРИТИЧЕСКИ ВАЖНО: Немедленно начинаем следующий трек без задержки
-                // Используем process.nextTick для максимально быстрого перехода
+                // Используем setImmediate для максимально быстрого перехода
                 // Это гарантирует, что следующий трек начнется до того, как клиент заметит паузу
-                process.nextTick(() => {
+                // НЕ используем setTimeout - это создаст задержку!
+                setImmediate(() => {
                     // Дополнительная проверка, что мы не в процессе остановки
                     if (!this._shouldSkip) {
                         // Сбрасываем флаг перед следующим треком

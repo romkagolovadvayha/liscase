@@ -31,10 +31,14 @@ void async function startApp() {
         const server = Hapi.server({
             port: process.env.PORT || 8080,
             host: process.env.HOST || 'localhost',
-            compression: false,
+            compression: false, // Отключаем сжатие для потокового аудио
             routes: { 
                 files: { relativeTo: Path.join(__dirname, 'public') },
-                cors: true  // Упрощённая настройка CORS
+                cors: true,  // Упрощённая настройка CORS
+                timeout: {
+                    server: false, // Без таймаута сервера для потоков
+                    socket: false  // Без таймаута сокета для потоков
+                }
             }
         });
         await server.register(StaticFilePlugin);
