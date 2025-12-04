@@ -108,6 +108,45 @@ class VkController extends Controller
                 $vkHelper->setAccessToken(Yii::$app->settings->get('vk_token'));
                 $botSystem = new VkBotSystem();
 
+                // ВАЖНО: Сначала проверяем код подтверждения, чтобы он не обрабатывался как текст кнопки
+                // Коды имеют длину 20 символов и генерируются случайно
+                // Проверяем, является ли текст кодом подтверждения (длина 20 символов)
+                if (strlen($text) === 20) {
+                    $user = UserConfirmCode::getUserByVkCode($text);
+                    
+                    if ($user) {
+                        // Код найден, привязываем пользователя
+                        $user->vk_id = $fromId;
+                        if ($user->save(false)) {
+                            // Отмечаем код как использованный
+                            $vkCode = UserConfirmCode::find()
+                                ->andWhere(['user_id' => $user->id])
+                                ->andWhere(['type' => UserConfirmCode::TYPE_VK_GROUP])
+                                ->andWhere(['code' => $text])
+                                ->andWhere(['status' => UserConfirmCode::STATUS_ACTIVE])
+                                ->one();
+                            
+                            if ($vkCode) {
+                                $vkCode->status = UserConfirmCode::STATUS_DISABLED;
+                                $vkCode->save(false);
+                            }
+
+                            // Отправляем ответ пользователю с приветствием
+                            $responseMessage = "✅ Код успешно подтвержден! Теперь перейдите на сайт и нажмите кнопку \"Проверить\" для завершения задания.";
+                            $vkHelper->sendMessage($fromId, $responseMessage);
+                            
+                            // Отправляем приветственное сообщение
+                            $greetingData = $botSystem->getNodeMessage(VkBotSystem::NODE_GREETING, $fromId);
+                            $vkHelper->sendMessage($fromId, $greetingData['message'], null, $greetingData['keyboard'] ?? null);
+                            
+                            Yii::info("VK Webhook: User {$user->id} successfully linked with VK ID {$fromId}", __METHOD__);
+                        } else {
+                            Yii::error("VK Webhook: Failed to save vk_id for user {$user->id}", __METHOD__);
+                        }
+                        return ['ok' => true];
+                    }
+                }
+
                 // Обработка нажатия на кнопку (если есть payload)
                 // В VK payload может быть строкой JSON, нужно распарсить
                 if (!empty($payload)) {
@@ -128,41 +167,6 @@ class VkController extends Controller
                     } catch (\Exception $e) {
                         Yii::error("VK Webhook: Error handling button click: " . $e->getMessage() . "\nPayload: " . var_export($payload, true), __METHOD__);
                     }
-                }
-
-                // Проверяем, является ли текст кодом подтверждения (быстрая проверка)
-                $user = UserConfirmCode::getUserByVkCode($text);
-                
-                if ($user) {
-                    // Код найден, привязываем пользователя
-                    $user->vk_id = $fromId;
-                    if ($user->save(false)) {
-                        // Отмечаем код как использованный
-                        $vkCode = UserConfirmCode::find()
-                            ->andWhere(['user_id' => $user->id])
-                            ->andWhere(['type' => UserConfirmCode::TYPE_VK_GROUP])
-                            ->andWhere(['code' => $text])
-                            ->andWhere(['status' => UserConfirmCode::STATUS_ACTIVE])
-                            ->one();
-                        
-                        if ($vkCode) {
-                            $vkCode->status = UserConfirmCode::STATUS_DISABLED;
-                            $vkCode->save(false);
-                        }
-
-                        // Отправляем ответ пользователю с приветствием
-                        $responseMessage = "✅ Код успешно подтвержден! Теперь перейдите на сайт и нажмите кнопку \"Проверить\" для завершения задания.";
-                        $vkHelper->sendMessage($fromId, $responseMessage);
-                        
-                        // Отправляем приветственное сообщение
-                        $greetingData = $botSystem->getNodeMessage(VkBotSystem::NODE_GREETING, $fromId);
-                        $vkHelper->sendMessage($fromId, $greetingData['message'], null, $greetingData['keyboard'] ?? null);
-                        
-                        Yii::info("VK Webhook: User {$user->id} successfully linked with VK ID {$fromId}", __METHOD__);
-                    } else {
-                        Yii::error("VK Webhook: Failed to save vk_id for user {$user->id}", __METHOD__);
-                    }
-                    return ['ok' => true];
                 }
 
                 // Обрабатываем обычное текстовое сообщение через бота (включая текст кнопок)
