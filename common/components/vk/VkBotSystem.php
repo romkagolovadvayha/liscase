@@ -64,9 +64,11 @@ class VkBotSystem extends BaseObject
      */
     private function getGreetingMessage($username = '')
     {
-        $message = "Здравствуйте, {$username}!" . PHP_EOL
-            . "Выберите нужное действие ниже" . PHP_EOL
-            . "Если хотите пожаловаться на игрока, нажмите F7 прямо в игре или напишите в поддержку...";
+        $greeting = !empty($username) ? "Здравствуйте, {$username}!" : "Здравствуйте!";
+        
+        $message = "👋 {$greeting}" . PHP_EOL . PHP_EOL
+            . "Добро пожаловать в наш сервис! Выберите нужное действие ниже:" . PHP_EOL . PHP_EOL
+            . "💡 Если хотите пожаловаться на игрока, нажмите F7 прямо в игре или напишите в поддержку.";
 
         $keyboard = [
             [
@@ -116,10 +118,12 @@ class VkBotSystem extends BaseObject
      */
     private function getPromocodeMessage()
     {
-        $message = "Ваши промокоды:" . PHP_EOL
-            . "START - для новых игроков" . PHP_EOL
-            . "WIPE - к свежему вайпу" . PHP_EOL
-            . "Активируйте их на " . Yii::$app->settings->get('site_domain') . " и получите бонус перед стартом!";
+        $siteDomain = Yii::$app->settings->get('site_domain');
+        
+        $message = "🎁 Ваши промокоды:" . PHP_EOL . PHP_EOL
+            . "🆕 <b>START</b> — для новых игроков" . PHP_EOL
+            . "🔄 <b>WIPE</b> — к свежему вайпу" . PHP_EOL . PHP_EOL
+            . "✨ Активируйте их на сайте " . $siteDomain . " и получите бонус перед стартом!";
 
         $keyboard = [
             [
@@ -159,10 +163,11 @@ class VkBotSystem extends BaseObject
      */
     private function getTelegramMessage()
     {
-        $message = "Хочешь получать ежедневные бонусы?" . PHP_EOL
-            . "Авторизуйся в нашем Telegram-боте и забирай награды каждый день!" . PHP_EOL
-            . PHP_EOL
-            . Yii::$app->settings->get('social_telegram');
+        $telegramLink = Yii::$app->settings->get('social_telegram');
+        
+        $message = "🤖 Хочешь получать ежедневные бонусы?" . PHP_EOL . PHP_EOL
+            . "📱 Авторизуйся в нашем Telegram-боте и забирай награды каждый день!" . PHP_EOL . PHP_EOL
+            . "🔗 " . $telegramLink;
 
         $keyboard = [
             [
@@ -202,7 +207,13 @@ class VkBotSystem extends BaseObject
      */
     private function getSupportMessage()
     {
-        $message = "Чтобы пожаловаться на игрока, нажмите F7 прямо в игре или напишите в поддержку на сайте: " . Yii::$app->settings->get('site_domain') . "/support";
+        $siteDomain = Yii::$app->settings->get('site_domain');
+        
+        $message = "🛟 Поддержка" . PHP_EOL . PHP_EOL
+            . "📝 Чтобы пожаловаться на игрока:" . PHP_EOL
+            . "   • Нажмите <b>F7</b> прямо в игре" . PHP_EOL
+            . "   • Или напишите в поддержку на сайте" . PHP_EOL . PHP_EOL
+            . "🔗 " . $siteDomain . "/support";
 
         $keyboard = [
             [
