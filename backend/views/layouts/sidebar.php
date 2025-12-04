@@ -94,6 +94,13 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                                'active' => _checkActive('/servers/sort'),
                            ],
                            [
+                               'label' => 'RCON команды',
+                               'icon' => 'fas fa-terminal',
+                               'url' => ['/rcon/index'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/rcon'),
+                           ],
+                           [
                                'label' => 'Карты',
                                'icon' => 'fas fa-map',
                                'url' => ['/map-list/index'],
