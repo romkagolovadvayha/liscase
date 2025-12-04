@@ -65,4 +65,53 @@ class RconTasks extends \common\components\base\ActiveRecord
         }
     }
 
+    /**
+     * Выполняет команду на всех активных серверах и возвращает результаты
+     * @param string $command Команда для выполнения
+     * @param array $serversCommand Массив тегов серверов для фильтрации (пустой = все серверы)
+     * @return array Массив результатов: ['server_tag' => ['server' => Server, 'result' => string, 'error' => string|null]]
+     */
+    public static function executeWithResults($command, $serversCommand = [])
+    {
+        $results = [];
+        /** @var Servers[] $servers */
+        $servers = Servers::find()->cache(30)->andWhere(['status' => Servers::STATUS_ACTIVE])->all();
+        
+        foreach ($servers as $server) {
+            if (!empty($serversCommand) && !in_array($server->tag, $serversCommand)) {
+                continue;
+            }
+            
+            $result = [
+                'server' => $server,
+                'result' => null,
+                'error' => null,
+            ];
+            
+            try {
+                $response = (Yii::$app->curl)
+                    ->setHeaders(['Content-Type' => 'application/json'])
+                    ->setRawPostData(json_encode(['server' => $server->tag, 'command' => $command]))
+                    ->post(Yii::$app->settings->get('site_rconUrl') . '/send');
+                
+                // Сохраняем в БД
+                $rconTask = new RconTasks();
+                $rconTask->status = RconTasks::STATUS_DONE;
+                $rconTask->command = $command;
+                $rconTask->result = $response;
+                $rconTask->server_tag = $server->tag;
+                $rconTask->created_at = date('Y-m-d H:i:s');
+                $rconTask->save();
+                
+                $result['result'] = $response;
+            } catch (\Exception $e) {
+                $result['error'] = $e->getMessage();
+            }
+            
+            $results[$server->tag] = $result;
+        }
+        
+        return $results;
+    }
+
 }
