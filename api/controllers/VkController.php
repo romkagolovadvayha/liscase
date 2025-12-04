@@ -103,24 +103,34 @@ class VkController extends Controller
                     return ['ok' => true];
                 }
 
+                // Инициализируем компоненты один раз
                 $vkHelper = new VkApiHelper();
                 $vkHelper->setAccessToken(Yii::$app->settings->get('vk_token'));
                 $botSystem = new VkBotSystem();
 
                 // Обработка нажатия на кнопку (если есть payload)
+                // В VK payload может быть строкой JSON, нужно распарсить
                 if (!empty($payload)) {
                     try {
+                        // Если payload - строка, пытаемся распарсить
+                        if (is_string($payload)) {
+                            $payloadData = json_decode($payload, true);
+                            if (json_last_error() === JSON_ERROR_NONE && !empty($payloadData)) {
+                                $payload = json_encode($payloadData);
+                            }
+                        }
+                        
                         $nodeData = $botSystem->handleButtonClick($payload, $fromId);
                         if ($nodeData) {
                             $vkHelper->sendMessage($fromId, $nodeData['message'], null, $nodeData['keyboard'] ?? null);
                             return ['ok' => true];
                         }
                     } catch (\Exception $e) {
-                        Yii::error("VK Webhook: Error handling button click: " . $e->getMessage(), __METHOD__);
+                        Yii::error("VK Webhook: Error handling button click: " . $e->getMessage() . "\nPayload: " . var_export($payload, true), __METHOD__);
                     }
                 }
 
-                // Проверяем, является ли текст кодом подтверждения
+                // Проверяем, является ли текст кодом подтверждения (быстрая проверка)
                 $user = UserConfirmCode::getUserByVkCode($text);
                 
                 if ($user) {
@@ -152,16 +162,18 @@ class VkController extends Controller
                     } else {
                         Yii::error("VK Webhook: Failed to save vk_id for user {$user->id}", __METHOD__);
                     }
-                } else {
-                    // Обрабатываем обычное текстовое сообщение через бота
-                    try {
-                        $nodeData = $botSystem->handleTextMessage($text, $fromId);
-                        if ($nodeData) {
-                            $vkHelper->sendMessage($fromId, $nodeData['message'], null, $nodeData['keyboard'] ?? null);
-                        }
-                    } catch (\Exception $e) {
-                        Yii::error("VK Webhook: Error handling text message: " . $e->getMessage(), __METHOD__);
+                    return ['ok' => true];
+                }
+
+                // Обрабатываем обычное текстовое сообщение через бота (включая текст кнопок)
+                // В VK при нажатии на кнопку текст кнопки отправляется как сообщение
+                try {
+                    $nodeData = $botSystem->handleTextMessage($text, $fromId);
+                    if ($nodeData) {
+                        $vkHelper->sendMessage($fromId, $nodeData['message'], null, $nodeData['keyboard'] ?? null);
                     }
+                } catch (\Exception $e) {
+                    Yii::error("VK Webhook: Error handling text message: " . $e->getMessage() . "\nText: " . $text, __METHOD__);
                 }
 
                 return ['ok' => true];

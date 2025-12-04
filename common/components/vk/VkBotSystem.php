@@ -35,9 +35,12 @@ class VkBotSystem extends BaseObject
      * @param int|null $userId ID пользователя VK
      * @return array ['message' => string, 'keyboard' => array|null]
      */
-    public function getNodeMessage($nodeId, $userId = null)
+    public function getNodeMessage($nodeId, $userId = null, $skipUsername = false)
     {
-        $username = $this->getUsername($userId);
+        $username = '';
+        if (!$skipUsername) {
+            $username = $this->getUsername($userId);
+        }
         
         switch ($nodeId) {
             case self::NODE_GREETING:
@@ -337,7 +340,8 @@ class VkBotSystem extends BaseObject
 
         // Обработка узлов
         if (!empty($data['node'])) {
-            return $this->getNodeMessage($data['node'], $userId);
+            // Пропускаем получение username для ускорения ответа
+            return $this->getNodeMessage($data['node'], $userId, true);
         }
 
         return null;
@@ -357,6 +361,50 @@ class VkBotSystem extends BaseObject
         // Если сообщение начинается с команды /start или пустое - показываем приветствие
         if (empty($text) || strpos($text, '/start') === 0 || strpos($text, 'start') === 0) {
             return $this->getNodeMessage(self::NODE_GREETING, $userId);
+        }
+
+        // Обработка текста кнопок (когда пользователь нажимает кнопку, VK отправляет текст кнопки)
+        // Убираем эмодзи для сравнения
+        $textWithoutEmoji = preg_replace('/[\x{1F300}-\x{1F9FF}]/u', '', $text);
+        $textWithoutEmoji = trim($textWithoutEmoji);
+        $textWithoutEmojiLower = mb_strtolower($textWithoutEmoji, 'UTF-8');
+        
+        // Проверяем текст кнопок
+        if (mb_stripos($textWithoutEmojiLower, 'главное меню') !== false || mb_stripos($text, '🏠') !== false) {
+            return $this->getNodeMessage(self::NODE_GREETING, $userId);
+        }
+        
+        if (mb_stripos($textWithoutEmojiLower, 'промокод') !== false || mb_stripos($text, '🎁') !== false) {
+            return $this->getNodeMessage(self::NODE_PROMOCODE, $userId);
+        }
+        
+        if (mb_stripos($textWithoutEmojiLower, 'telegram') !== false || mb_stripos($textWithoutEmojiLower, 'телеграм') !== false || mb_stripos($text, '🤖') !== false) {
+            return $this->getNodeMessage(self::NODE_TELEGRAM, $userId);
+        }
+        
+        if (mb_stripos($textWithoutEmojiLower, 'поддержка') !== false || mb_stripos($text, '🛟') !== false) {
+            return $this->getNodeMessage(self::NODE_SUPPORT, $userId);
+        }
+        
+        if (mb_stripos($textWithoutEmojiLower, 'вайп') !== false || mb_stripos($text, '📅') !== false) {
+            return [
+                'message' => $this->getWipe(),
+                'keyboard' => null
+            ];
+        }
+        
+        if (mb_stripos($textWithoutEmojiLower, 'онлайн') !== false || mb_stripos($text, '👥') !== false) {
+            return [
+                'message' => $this->getOnline(),
+                'keyboard' => null
+            ];
+        }
+        
+        if (mb_stripos($textWithoutEmojiLower, 'ip') !== false || mb_stripos($text, '🔗') !== false) {
+            return [
+                'message' => $this->getIp(),
+                'keyboard' => null
+            ];
         }
 
         // Обработка команд
