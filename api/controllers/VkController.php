@@ -3,6 +3,7 @@
 namespace api\controllers;
 
 use common\components\vk\VkApiHelper;
+use common\components\vk\VkBotSystem;
 use common\models\user\User;
 use common\models\user\UserConfirmCode;
 use Yii;
@@ -79,10 +80,11 @@ class VkController extends Controller
                 $fromId = $message['from_id'] ?? null;
                 $peerId = $message['peer_id'] ?? null;
                 $out = $message['out'] ?? 1; // 0 - входящее, 1 - исходящее
+                $payload = $message['payload'] ?? null; // Payload кнопки, если сообщение пришло от нажатия кнопки
 
                 // Проверяем, что сообщение пришло в личные сообщения группы
                 // Для личных сообщений группы: from_id положительный (ID пользователя), out = 0 (входящее)
-                if (empty($text) || empty($fromId) || $fromId <= 0) {
+                if (empty($fromId) || $fromId <= 0) {
                     return ['ok' => true];
                 }
 
@@ -101,7 +103,24 @@ class VkController extends Controller
                     return ['ok' => true];
                 }
 
-                // Проверяем, является ли текст кодом
+                $vkHelper = new VkApiHelper();
+                $vkHelper->setAccessToken(Yii::$app->settings->get('vk_token'));
+                $botSystem = new VkBotSystem();
+
+                // Обработка нажатия на кнопку (если есть payload)
+                if (!empty($payload)) {
+                    try {
+                        $nodeData = $botSystem->handleButtonClick($payload, $fromId);
+                        if ($nodeData) {
+                            $vkHelper->sendMessage($fromId, $nodeData['message'], null, $nodeData['keyboard'] ?? null);
+                            return ['ok' => true];
+                        }
+                    } catch (\Exception $e) {
+                        Yii::error("VK Webhook: Error handling button click: " . $e->getMessage(), __METHOD__);
+                    }
+                }
+
+                // Проверяем, является ли текст кодом подтверждения
                 $user = UserConfirmCode::getUserByVkCode($text);
                 
                 if ($user) {
@@ -121,20 +140,28 @@ class VkController extends Controller
                             $vkCode->save(false);
                         }
 
-                        // Отправляем ответ пользователю
-                        $vkHelper = new VkApiHelper();
-                        $vkHelper->setAccessToken(Yii::$app->settings->get('vk_token'));
-                        
+                        // Отправляем ответ пользователю с приветствием
                         $responseMessage = "✅ Код успешно подтвержден! Теперь перейдите на сайт и нажмите кнопку \"Проверить\" для завершения задания.";
                         $vkHelper->sendMessage($fromId, $responseMessage);
+                        
+                        // Отправляем приветственное сообщение
+                        $greetingData = $botSystem->getNodeMessage(VkBotSystem::NODE_GREETING, $fromId);
+                        $vkHelper->sendMessage($fromId, $greetingData['message'], null, $greetingData['keyboard'] ?? null);
                         
                         Yii::info("VK Webhook: User {$user->id} successfully linked with VK ID {$fromId}", __METHOD__);
                     } else {
                         Yii::error("VK Webhook: Failed to save vk_id for user {$user->id}", __METHOD__);
                     }
                 } else {
-                    // Код не найден, но это нормально - может быть обычное сообщение
-                    Yii::info("VK Webhook: Code not found for text: {$text}", __METHOD__);
+                    // Обрабатываем обычное текстовое сообщение через бота
+                    try {
+                        $nodeData = $botSystem->handleTextMessage($text, $fromId);
+                        if ($nodeData) {
+                            $vkHelper->sendMessage($fromId, $nodeData['message'], null, $nodeData['keyboard'] ?? null);
+                        }
+                    } catch (\Exception $e) {
+                        Yii::error("VK Webhook: Error handling text message: " . $e->getMessage(), __METHOD__);
+                    }
                 }
 
                 return ['ok' => true];

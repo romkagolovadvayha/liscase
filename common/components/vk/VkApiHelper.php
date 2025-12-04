@@ -324,9 +324,10 @@ class VkApiHelper extends \yii\base\Component
      * @param int $userId ID пользователя
      * @param string $message Текст сообщения
      * @param string|null $photoUrl URL изображения (опционально)
+     * @param array|null $keyboard Клавиатура (опционально)
      * @return array|false
      */
-    public function sendMessage($userId, $message, $photoUrl = null)
+    public function sendMessage($userId, $message, $photoUrl = null, $keyboard = null)
     {
         $params = [
             'user_id' => $userId,
@@ -344,6 +345,11 @@ class VkApiHelper extends \yii\base\Component
                 // Если загрузка фото не удалась, логируем предупреждение, но отправляем сообщение без фото
                 Yii::warning("VK: Failed to upload photo for user {$userId}, sending message without photo. Photo URL: {$photoUrl}", __METHOD__);
             }
+        }
+
+        // Если есть клавиатура, добавляем её
+        if (!empty($keyboard)) {
+            $params['keyboard'] = json_encode($keyboard);
         }
 
         return $this->_sendRequest('messages.send', $params);
