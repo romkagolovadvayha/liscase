@@ -107,12 +107,12 @@ class TelegramConstructorMessage extends \yii\db\ActiveRecord
     }
 
     /**
-     * Получение пути к файлу (не URL) для прямой отправки в Telegram
-     * Если image_link начинается с @, то это внешняя ссылка (возможно с плейсхолдерами)
-     * @param string $baseUrl Не используется, оставлен для совместимости
+     * Получение публичной URL изображения
+     * Если image_link начинается с @, то это ссылка (возможно с плейсхолдерами)
+     * @param string $baseUrl
      * @param string $language
      * @param int|null $userId ID пользователя для подстановки в ссылку
-     * @return string Путь к файлу или URL (если это внешняя ссылка)
+     * @return string
      */
     public function getPubUrl($baseUrl = '', $language = 'ru-Ru', $userId = null): string
     {
@@ -134,81 +134,67 @@ class TelegramConstructorMessage extends \yii\db\ActiveRecord
             return $url;
         }
         
-        // Проверяем, является ли это полным путем к файлу
-        if (file_exists($imageLink) && is_file($imageLink)) {
-            // Это полный путь к файлу - возвращаем как есть (будет отправлен напрямую)
+        // Иначе это путь к файлу на сервере
+        if(!$baseUrl) {
+            $baseUrl = Yii::$app->params['baseUrl'];
+        }
+        
+        // Если imageLink уже является URL, возвращаем как есть
+        if (preg_match('#^https?://#i', $imageLink)) {
             return $imageLink;
         }
         
-        // Проверяем, является ли это полным путем, но файл не существует (возможно, на другом сервере)
-        // Извлекаем относительный путь для формирования URL
-        $uploadDirs = [
+        // Пытаемся извлечь относительный путь из полного пути к файлу
+        $possiblePaths = [
             Yii::getAlias('@app/web/uploads/telegram'),
-            Yii::getAlias('@backend/web/uploads/telegram'),
             Yii::getAlias('@frontend/web/uploads/telegram'),
+            Yii::getAlias('@backend/web/uploads/telegram'),
         ];
         
-        foreach ($uploadDirs as $uploadDir) {
-            // Если путь содержит этот каталог, извлекаем относительный путь
-            if (strpos($imageLink, $uploadDir) !== false) {
-                $relativePath = str_replace($uploadDir, '', $imageLink);
-                $relativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
-                
-                // Формируем URL только если нужен URL, иначе возвращаем путь к файлу
-                // Но для Telegram лучше вернуть путь к файлу, если он существует
-                $possiblePaths = [
-                    Yii::getAlias('@frontend/web/uploads/telegram') . '/' . $relativePath,
-                    Yii::getAlias('@backend/web/uploads/telegram') . '/' . $relativePath,
-                    Yii::getAlias('@app/web/uploads/telegram') . '/' . $relativePath,
-                ];
-                
-                foreach ($possiblePaths as $filePath) {
-                    if (file_exists($filePath) && is_file($filePath)) {
-                        return $filePath;
-                    }
-                }
-                
-                // Если файл не найден, формируем URL
-                if(!$baseUrl) {
-                    $baseUrl = Yii::$app->params['baseUrl'] ?? '';
-                }
-                
-                if (!empty($baseUrl)) {
-                    return rtrim($baseUrl, '/') . '/uploads/telegram/' . $relativePath;
-                }
+        $relativePath = null;
+        foreach ($possiblePaths as $basePath) {
+            if (strpos($imageLink, $basePath) === 0) {
+                // Нашли совпадение, извлекаем относительный путь
+                $relativePath = substr($imageLink, strlen($basePath));
+                // Убираем начальный слэш, если есть
+                $relativePath = ltrim($relativePath, '/');
+                break;
             }
         }
         
-        // Если путь начинается с /uploads/telegram, это уже относительный путь
-        if (preg_match('#[/\\\\]uploads[/\\\\]telegram[/\\\\](.+)$#', $imageLink, $matches)) {
-            $relativePath = $matches[1];
-            $relativePath = str_replace('\\', '/', $relativePath);
-            
-            // Проверяем существование файла
-            $possiblePaths = [
-                Yii::getAlias('@frontend/web/uploads/telegram') . '/' . $relativePath,
-                Yii::getAlias('@backend/web/uploads/telegram') . '/' . $relativePath,
-                Yii::getAlias('@app/web/uploads/telegram') . '/' . $relativePath,
-            ];
-            
-            foreach ($possiblePaths as $filePath) {
-                if (file_exists($filePath) && is_file($filePath)) {
-                    return $filePath;
-                }
-            }
-            
-            // Если файл не найден, формируем URL
-            if(!$baseUrl) {
-                $baseUrl = Yii::$app->params['baseUrl'] ?? '';
-            }
-            
-            if (!empty($baseUrl)) {
-                return rtrim($baseUrl, '/') . '/uploads/telegram/' . $relativePath;
+        // Если не удалось извлечь относительный путь, пытаемся извлечь только имя файла
+        if ($relativePath === null) {
+            // Проверяем, содержит ли путь /uploads/telegram/
+            // Используем более точное регулярное выражение, чтобы избежать дублирования
+            if (preg_match('#/uploads/telegram/([^/]+\.(jpg|jpeg|png|gif|webp))$#i', $imageLink, $matches)) {
+                // Извлекаем только имя файла (последняя часть после /uploads/telegram/)
+                $relativePath = $matches[1];
+            } elseif (preg_match('#/uploads/telegram/(.+)$#', $imageLink, $matches)) {
+                // Если есть путь после /uploads/telegram/, но он может содержать дублирование
+                $pathAfterUploads = $matches[1];
+                // Убираем все, что идет до последнего вхождения /uploads/telegram/
+                $pathParts = explode('/uploads/telegram/', $pathAfterUploads);
+                $relativePath = end($pathParts);
+            } else {
+                // Просто берем имя файла
+                $relativePath = basename($imageLink);
             }
         }
         
-        // Если ничего не подошло, возвращаем как есть (возможно, это уже URL или file_id)
-        return $imageLink;
+        // Убираем все лишние слэши и пути, оставляем только имя файла или относительный путь
+        // Если в relativePath есть полный путь, извлекаем только имя файла
+        if (strpos($relativePath, '/uploads/telegram/') !== false) {
+            $parts = explode('/uploads/telegram/', $relativePath);
+            $relativePath = end($parts);
+        }
+        // Убираем все, что идет до последнего слэша, если это не просто имя файла
+        if (strpos($relativePath, '/') !== false && strpos($relativePath, '/') !== strrpos($relativePath, '/')) {
+            // Если есть несколько слэшей, берем только последнюю часть
+            $relativePath = basename($relativePath);
+        }
+        
+        // Формируем публичный URL
+        return rtrim($baseUrl, '/') . '/uploads/telegram/' . $relativePath;
     }
 
     public function updateLanguage($language, $message = null, $imageLink = null, $updateImageLink = true)
