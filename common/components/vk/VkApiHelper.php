@@ -516,17 +516,28 @@ class VkApiHelper extends \yii\base\Component
             $ch = curl_init($photoUrl);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
             curl_setopt($ch, CURLOPT_TIMEOUT, 60);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
             $imageContent = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
+            $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
             curl_close($ch);
 
             if ($imageContent === false || $httpCode !== 200 || !empty($curlError)) {
-                Yii::error("VK: Failed to download image from {$photoUrl}, HTTP code: {$httpCode}, Error: {$curlError}", __METHOD__);
+                Yii::error("VK: Failed to download image from {$photoUrl}, HTTP code: {$httpCode}, Error: {$curlError}, Content-Type: {$contentType}", __METHOD__);
                 return false;
             }
+            
+            // Проверяем, что действительно получили изображение
+            if (empty($imageContent) || strlen($imageContent) < 100) {
+                Yii::error("VK: Downloaded image is too small or empty from {$photoUrl}, Size: " . strlen($imageContent), __METHOD__);
+                return false;
+            }
+            
+            Yii::info("VK: Image downloaded successfully from {$photoUrl}, Size: " . strlen($imageContent) . " bytes, Content-Type: {$contentType}", __METHOD__);
 
             // Сохраняем во временный файл
             $tempFile = tempnam(sys_get_temp_dir(), 'vk_upload_');
@@ -547,18 +558,40 @@ class VkApiHelper extends \yii\base\Component
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
             curl_close($ch);
-            unlink($tempFile);
+            
+            // Удаляем временный файл только после успешной загрузки
+            if (file_exists($tempFile)) {
+                unlink($tempFile);
+            }
 
             if ($httpCode !== 200 || empty($uploadResult) || !empty($curlError)) {
                 Yii::error("VK: Failed to upload photo, HTTP code: {$httpCode}, Error: {$curlError}, Response: {$uploadResult}", __METHOD__);
                 return false;
             }
 
+            // VK API может возвращать ответ как строку JSON или как строку с данными
+            // Пытаемся распарсить как JSON
             $uploadData = json_decode($uploadResult, true);
+            
+            // Если не JSON, возможно это строка с данными (старый формат VK API)
+            if (empty($uploadData) && !empty($uploadResult)) {
+                // Пытаемся распарсить как строку формата "photo=xxx&server=xxx&hash=xxx"
+                parse_str($uploadResult, $uploadData);
+            }
+            
             if (empty($uploadData)) {
-                Yii::error("VK: Invalid upload response: {$uploadResult}", __METHOD__);
+                Yii::error("VK: Invalid upload response (not JSON and not parseable): {$uploadResult}", __METHOD__);
                 return false;
             }
+
+            // Проверяем наличие всех необходимых полей в ответе
+            if (empty($uploadData['photo']) || empty($uploadData['server']) || empty($uploadData['hash'])) {
+                Yii::error("VK: Missing required fields in upload response. Response: " . json_encode($uploadData) . ", Raw: {$uploadResult}", __METHOD__);
+                return false;
+            }
+            
+            // Логируем успешную загрузку для отладки
+            Yii::info("VK: Photo uploaded successfully. Server: {$uploadData['server']}, Hash: {$uploadData['hash']}", __METHOD__);
 
             // Сохраняем фото на стену группы
             $saveResult = $this->_sendRequest('photos.saveWallPhoto', [
