@@ -120,6 +120,11 @@ $config['modules']['crontask'] = [
             'command' => 'skin-drops/get-approved',
             'hour'     => '6',
         ],
+        'discordRolesCheckExpiredVip'       => [
+            'command' => 'discord-roles/check-expired-vip',
+            'hour'     => '3',
+            'min'     => '0',
+        ],
     ]
 ];
 $config['controllerMap']['supervisortask'] = [
