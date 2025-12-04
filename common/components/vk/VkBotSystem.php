@@ -3,6 +3,7 @@
 namespace common\components\vk;
 
 use common\models\user\User;
+use common\models\servers\Servers;
 use Yii;
 use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
@@ -68,6 +69,11 @@ class VkBotSystem extends BaseObject
         
         $message = "👋 {$greeting}" . PHP_EOL . PHP_EOL
             . "Добро пожаловать в наш сервис! Выберите нужное действие ниже:" . PHP_EOL . PHP_EOL
+            . "📋 Что умеет бот:" . PHP_EOL
+            . "   • /pop — Онлайн на серверах" . PHP_EOL
+            . "   • /wipe — Календарь вайпов" . PHP_EOL
+            . "   • /ip — IP-адреса серверов" . PHP_EOL
+            . "   • /help — Список всех команд" . PHP_EOL . PHP_EOL
             . "💡 Если хотите пожаловаться на игрока, нажмите F7 прямо в игре или напишите в поддержку.";
 
         $keyboard = [
@@ -75,30 +81,54 @@ class VkBotSystem extends BaseObject
                 [
                     'action' => [
                         'type' => 'text',
-                        'label' => 'Промокод',
+                        'label' => '📅 Вайпы',
+                        'payload' => json_encode(['action' => 'wipe', 'command' => '/wipe'])
+                    ],
+                    'color' => 'primary'
+                ],
+                [
+                    'action' => [
+                        'type' => 'text',
+                        'label' => '👥 Онлайн',
+                        'payload' => json_encode(['action' => 'pop', 'command' => '/pop'])
+                    ],
+                    'color' => 'primary'
+                ]
+            ],
+            [
+                [
+                    'action' => [
+                        'type' => 'text',
+                        'label' => '🔗 IP серверов',
+                        'payload' => json_encode(['action' => 'ip', 'command' => '/ip'])
+                    ],
+                    'color' => 'primary'
+                ],
+                [
+                    'action' => [
+                        'type' => 'text',
+                        'label' => '🎁 Промокод',
                         'payload' => json_encode(['action' => self::ACTION_PROMOCODE, 'node' => self::NODE_PROMOCODE])
                     ],
-                    'color' => 'positive' // Зеленая кнопка
+                    'color' => 'positive'
                 ]
             ],
             [
                 [
                     'action' => [
                         'type' => 'text',
-                        'label' => 'Бонус в телеграм',
+                        'label' => '🤖 Telegram бот',
                         'payload' => json_encode(['action' => self::ACTION_TELEGRAM, 'node' => self::NODE_TELEGRAM])
                     ],
-                    'color' => 'primary' // Синяя кнопка
-                ]
-            ],
-            [
+                    'color' => 'primary'
+                ],
                 [
                     'action' => [
                         'type' => 'text',
-                        'label' => 'Написать в поддержку',
+                        'label' => '🛟 Поддержка',
                         'payload' => json_encode(['action' => self::ACTION_SUPPORT, 'node' => self::NODE_SUPPORT])
                     ],
-                    'color' => 'negative' // Красная кнопка
+                    'color' => 'negative'
                 ]
             ]
         ];
@@ -121,8 +151,8 @@ class VkBotSystem extends BaseObject
         $siteDomain = Yii::$app->settings->get('site_domain');
         
         $message = "🎁 Ваши промокоды:" . PHP_EOL . PHP_EOL
-            . "🆕 <b>START</b> — для новых игроков" . PHP_EOL
-            . "🔄 <b>WIPE</b> — к свежему вайпу" . PHP_EOL . PHP_EOL
+            . "🆕 START — для новых игроков" . PHP_EOL
+            . "🔄 WIPE — к свежему вайпу" . PHP_EOL . PHP_EOL
             . "✨ Активируйте их на сайте " . $siteDomain . " и получите бонус перед стартом!";
 
         $keyboard = [
@@ -130,20 +160,28 @@ class VkBotSystem extends BaseObject
                 [
                     'action' => [
                         'type' => 'text',
-                        'label' => 'Бонус в телеграм',
+                        'label' => '🤖 Telegram бот',
                         'payload' => json_encode(['action' => self::ACTION_TELEGRAM, 'node' => self::NODE_TELEGRAM])
                     ],
-                    'color' => 'primary' // Синяя кнопка
+                    'color' => 'primary'
+                ],
+                [
+                    'action' => [
+                        'type' => 'text',
+                        'label' => '🛟 Поддержка',
+                        'payload' => json_encode(['action' => self::ACTION_SUPPORT, 'node' => self::NODE_SUPPORT])
+                    ],
+                    'color' => 'negative'
                 ]
             ],
             [
                 [
                     'action' => [
                         'type' => 'text',
-                        'label' => 'Написать в поддержку',
-                        'payload' => json_encode(['action' => self::ACTION_SUPPORT, 'node' => self::NODE_SUPPORT])
+                        'label' => '🏠 Главное меню',
+                        'payload' => json_encode(['action' => 'greeting', 'node' => self::NODE_GREETING])
                     ],
-                    'color' => 'negative' // Красная кнопка
+                    'color' => 'secondary'
                 ]
             ]
         ];
@@ -174,20 +212,28 @@ class VkBotSystem extends BaseObject
                 [
                     'action' => [
                         'type' => 'text',
-                        'label' => 'Промокод',
+                        'label' => '🎁 Промокод',
                         'payload' => json_encode(['action' => self::ACTION_PROMOCODE, 'node' => self::NODE_PROMOCODE])
                     ],
-                    'color' => 'positive' // Зеленая кнопка
+                    'color' => 'positive'
+                ],
+                [
+                    'action' => [
+                        'type' => 'text',
+                        'label' => '🛟 Поддержка',
+                        'payload' => json_encode(['action' => self::ACTION_SUPPORT, 'node' => self::NODE_SUPPORT])
+                    ],
+                    'color' => 'negative'
                 ]
             ],
             [
                 [
                     'action' => [
                         'type' => 'text',
-                        'label' => 'Написать в поддержку',
-                        'payload' => json_encode(['action' => self::ACTION_SUPPORT, 'node' => self::NODE_SUPPORT])
+                        'label' => '🏠 Главное меню',
+                        'payload' => json_encode(['action' => 'greeting', 'node' => self::NODE_GREETING])
                     ],
-                    'color' => 'negative' // Красная кнопка
+                    'color' => 'secondary'
                 ]
             ]
         ];
@@ -211,7 +257,7 @@ class VkBotSystem extends BaseObject
         
         $message = "🛟 Поддержка" . PHP_EOL . PHP_EOL
             . "📝 Чтобы пожаловаться на игрока:" . PHP_EOL
-            . "   • Нажмите <b>F7</b> прямо в игре" . PHP_EOL
+            . "   • Нажмите F7 прямо в игре" . PHP_EOL
             . "   • Или напишите в поддержку на сайте" . PHP_EOL . PHP_EOL
             . "🔗 " . $siteDomain . "/support";
 
@@ -220,20 +266,28 @@ class VkBotSystem extends BaseObject
                 [
                     'action' => [
                         'type' => 'text',
-                        'label' => 'Промокод',
+                        'label' => '🎁 Промокод',
                         'payload' => json_encode(['action' => self::ACTION_PROMOCODE, 'node' => self::NODE_PROMOCODE])
                     ],
-                    'color' => 'positive' // Зеленая кнопка
+                    'color' => 'positive'
+                ],
+                [
+                    'action' => [
+                        'type' => 'text',
+                        'label' => '🤖 Telegram бот',
+                        'payload' => json_encode(['action' => self::ACTION_TELEGRAM, 'node' => self::NODE_TELEGRAM])
+                    ],
+                    'color' => 'primary'
                 ]
             ],
             [
                 [
                     'action' => [
                         'type' => 'text',
-                        'label' => 'Бонус в телеграм',
-                        'payload' => json_encode(['action' => self::ACTION_TELEGRAM, 'node' => self::NODE_TELEGRAM])
+                        'label' => '🏠 Главное меню',
+                        'payload' => json_encode(['action' => 'greeting', 'node' => self::NODE_GREETING])
                     ],
-                    'color' => 'primary' // Синяя кнопка
+                    'color' => 'secondary'
                 ]
             ]
         ];
@@ -256,11 +310,37 @@ class VkBotSystem extends BaseObject
     public function handleButtonClick($payload, $userId = null)
     {
         $data = json_decode($payload, true);
-        if (empty($data) || empty($data['node'])) {
+        if (empty($data)) {
             return null;
         }
 
-        return $this->getNodeMessage($data['node'], $userId);
+        // Обработка команд через кнопки
+        if (!empty($data['command'])) {
+            switch ($data['command']) {
+                case '/wipe':
+                    return [
+                        'message' => $this->getWipe(),
+                        'keyboard' => null
+                    ];
+                case '/pop':
+                    return [
+                        'message' => $this->getOnline(),
+                        'keyboard' => null
+                    ];
+                case '/ip':
+                    return [
+                        'message' => $this->getIp(),
+                        'keyboard' => null
+                    ];
+            }
+        }
+
+        // Обработка узлов
+        if (!empty($data['node'])) {
+            return $this->getNodeMessage($data['node'], $userId);
+        }
+
+        return null;
     }
 
     /**
@@ -272,10 +352,50 @@ class VkBotSystem extends BaseObject
     public function handleTextMessage($text, $userId = null)
     {
         $text = trim($text);
+        $textLower = mb_strtolower($text, 'UTF-8');
         
         // Если сообщение начинается с команды /start или пустое - показываем приветствие
         if (empty($text) || strpos($text, '/start') === 0 || strpos($text, 'start') === 0) {
             return $this->getNodeMessage(self::NODE_GREETING, $userId);
+        }
+
+        // Обработка команд
+        switch ($text) {
+            case '/help':
+            case 'help':
+                return [
+                    'message' => $this->getHelp(),
+                    'keyboard' => null
+                ];
+            
+            case '/wipe':
+            case 'wipe':
+                return [
+                    'message' => $this->getWipe(),
+                    'keyboard' => null
+                ];
+            
+            case '/pop':
+            case 'pop':
+                return [
+                    'message' => $this->getOnline(),
+                    'keyboard' => null
+                ];
+            
+            case '/ip':
+            case 'ip':
+                return [
+                    'message' => $this->getIp(),
+                    'keyboard' => null
+                ];
+        }
+
+        // Проверяем, есть ли в сообщении слово "вайп"
+        if (mb_stripos($textLower, 'вайп') !== false) {
+            return [
+                'message' => $this->getWipe(),
+                'keyboard' => null
+            ];
         }
 
         // Проверяем, является ли текст кодом подтверждения
@@ -326,6 +446,162 @@ class VkBotSystem extends BaseObject
         }
 
         return '';
+    }
+
+    /**
+     * Получение списка доступных команд
+     * @return string
+     */
+    private function getHelp()
+    {
+        $message = "📋 Доступные команды:" . PHP_EOL . PHP_EOL
+            . "👥 /pop — Онлайн на серверах" . PHP_EOL
+            . "📅 /wipe — Календарь вайпов" . PHP_EOL
+            . "🔗 /ip — IP-адреса серверов" . PHP_EOL
+            . "🎁 Промокод — Ваши промокоды" . PHP_EOL
+            . "🤖 Бонус в телеграм — Информация о Telegram-боте" . PHP_EOL
+            . "🛟 Написать в поддержку — Связаться с поддержкой" . PHP_EOL . PHP_EOL
+            . "💡 Используйте кнопки ниже для быстрого доступа к функциям.";
+
+        return $message;
+    }
+
+    /**
+     * Получение календаря вайпов
+     * @return string
+     */
+    private function getWipe()
+    {
+        $cacheKey = 'VkBotSystem_getWipe';
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $text = "📅 Календарь вайпов" . PHP_EOL;
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->andWhere(['status' => Servers::STATUS_ACTIVE])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        foreach ($servers as $k => $server) {
+            $date0 = new \DateTime($server->wipe);
+            $date = new \DateTime($server->next_wipe);
+            $date2 = new \DateTime($server->global_wipe);
+            
+            if ($k > 0) {
+                $text .= PHP_EOL;
+            }
+            
+            $name = $this->getServerName($server);
+            $text .= PHP_EOL . "🖥️ {$name}";
+            $text .= PHP_EOL . "   ⏮️ Последний: {$date0->format('d.m.Y в H:i')} МСК";
+            $text .= PHP_EOL . "   ⏭️ Следующий: {$date->format('d.m.Y в H:i')} МСК";
+            $text .= PHP_EOL . "   🌍 Глобал: {$date2->format('d.m.Y в H:i')} МСК";
+        }
+
+        Yii::$app->cache->set($cacheKey, $text, 60);
+        return $text;
+    }
+
+    /**
+     * Получение информации об онлайне на серверах
+     * @return string
+     */
+    private function getOnline()
+    {
+        $cacheKey = 'VkBotSystem_getOnline';
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $text = "👥 Онлайн на серверах" . PHP_EOL;
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->andWhere(['status' => Servers::STATUS_ACTIVE])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        foreach ($servers as $k => $server) {
+            $lineSize = 10;
+            $pl = $server->players + $server->joined;
+            $lineGreen = ceil($lineSize / $server->max * (ceil($pl / 10) * 10));
+            if ($lineGreen > $lineSize) {
+                $lineGreen = $lineSize;
+            }
+            $lineSize -= $lineGreen;
+            
+            if ($k > 0) {
+                $text .= PHP_EOL;
+            }
+            
+            $name = $this->getServerName($server);
+            $text .= PHP_EOL . "🖥️ {$name}";
+            $text .= PHP_EOL;
+            
+            for ($i = 0; $i < $lineGreen; $i++) {
+                $text .= "🟩";
+            }
+            for ($i = 0; $i < $lineSize; $i++) {
+                $text .= "⬜";
+            }
+            
+            $percentage = round(($pl / $server->max) * 100);
+            $text .= PHP_EOL . "   👤 {$pl}/{$server->max} ({$percentage}%)";
+        }
+
+        Yii::$app->cache->set($cacheKey, $text, 60);
+        return $text;
+    }
+
+    /**
+     * Получение IP-адресов серверов
+     * @return string
+     */
+    private function getIp()
+    {
+        $cacheKey = 'VkBotSystem_getIp';
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $text = "🔗 IP-адреса серверов" . PHP_EOL;
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->andWhere(['status' => Servers::STATUS_ACTIVE])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        foreach ($servers as $k => $server) {
+            if ($k > 0) {
+                $text .= PHP_EOL;
+            }
+            
+            $name = $this->getServerName($server);
+            $text .= PHP_EOL . "🖥️ {$name}";
+            $text .= PHP_EOL . "   📍 connect {$server->ip}:{$server->port}";
+        }
+
+        Yii::$app->cache->set($cacheKey, $text, 60);
+        return $text;
+    }
+
+    /**
+     * Получение названия сервера с типом вайпа
+     * @param Servers $server
+     * @return string
+     */
+    private function getServerName($server)
+    {
+        $wipeTypeLabel = '';
+        if ($server->wipe_type === 7) {
+            $wipeTypeLabel = 'Недельный';
+        } elseif ($server->wipe_type === 14) {
+            $wipeTypeLabel = 'Двухнедельный';
+        } elseif ($server->wipe_type === 30) {
+            $wipeTypeLabel = 'Месячный';
+        }
+        return '[' . Yii::t('database', $server->monitoring_name) . '] | ' . $wipeTypeLabel;
     }
 }
 
