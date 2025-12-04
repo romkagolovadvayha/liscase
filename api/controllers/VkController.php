@@ -36,7 +36,7 @@ class VkController extends Controller
                 Yii::$app->response->format = Response::FORMAT_RAW;
                 return 'ok';
             }
-echo "a5fc94ca";exit;
+
             $type = $data['type'] ?? null;
             $groupId = $data['group_id'] ?? null;
             $secret = $data['secret'] ?? null;
