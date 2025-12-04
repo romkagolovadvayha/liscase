@@ -342,12 +342,41 @@ namespace Oxide.Plugins
 
         private static string GetGrid(Vector3 pos)
         {
-            var letter = 'A';
-            var x = Mathf.Floor((pos.x + Server.worldsize / 2f) / 146.3f) % 26;
-            var z = Mathf.Floor(Server.worldsize / 146.3f) -
-                    Mathf.Floor((pos.z + Server.worldsize / 2f) / 146.3f);
-            letter = (char)(letter + x);
-            return $"{letter}{z}";
+            // Размер одного блока на карте
+            const float block = 146f;
+            
+            // Размер карты
+            float size = Server.worldsize;
+            
+            // Смещение для перевода координат в систему с началом в углу карты
+            float offset = size / 2f;
+            
+            // Перевод координат в систему с началом в углу карты
+            float xpos = pos.x + offset;
+            float zpos = pos.z + offset;
+            
+            // Максимальное количество блоков по одной оси
+            int maxgrid = (int)(size / block);
+            
+            // Расчет координат в сетке
+            int xcoord = Mathf.Clamp((int)Mathf.Floor(xpos / block), 0, maxgrid - 1);
+            int zcoord = Mathf.Clamp(maxgrid - (int)Mathf.Floor(zpos / block), 1, maxgrid);
+            
+            // Преобразование x координаты в букву (A-Z, затем AA, AB и т.д.)
+            string letter;
+            if (xcoord < 26)
+            {
+                letter = ((char)('A' + xcoord)).ToString();
+            }
+            else
+            {
+                // Для координат больше 26 используем две буквы (AA, AB, ...)
+                int firstLetter = xcoord / 26 - 1;
+                int secondLetter = xcoord % 26;
+                letter = ((char)('A' + firstLetter)).ToString() + ((char)('A' + secondLetter)).ToString();
+            }
+            
+            return $"{letter}{zcoord}";
         }
 
         #endregion

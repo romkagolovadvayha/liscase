@@ -3,6 +3,7 @@
 namespace common\models\user;
 
 use common\components\base\ActiveRecord;
+use common\components\queue\process\DiscordRolesUserJob;
 use Yii;
 
 /**
@@ -137,6 +138,10 @@ class UserVip extends ActiveRecord
             }
             $vip->updated_at = date('Y-m-d H:i:s');
             $vip->save(false);
+            
+            // Обновляем Discord роли для пользователя (выдача VIP роли)
+            static::updateDiscordRoles($userId);
+            
             return $vip;
         } else {
             // Создаем новую запись
@@ -146,7 +151,38 @@ class UserVip extends ActiveRecord
             $vip->created_at = date('Y-m-d H:i:s');
             $vip->updated_at = date('Y-m-d H:i:s');
             $vip->save(false);
+            
+            // Обновляем Discord роли для пользователя (выдача VIP роли)
+            static::updateDiscordRoles($userId);
+            
             return $vip;
+        }
+    }
+
+    /**
+     * Обновляет Discord роли для пользователя после выдачи VIP
+     * 
+     * @param int $userId
+     * @return void
+     */
+    protected static function updateDiscordRoles($userId)
+    {
+        try {
+            // Проверяем, что у пользователя есть привязанный Discord аккаунт
+            $user = User::findOne($userId);
+            if (!$user || empty($user->discord_id)) {
+                // Пользователь не привязал Discord, ничего не делаем
+                return;
+            }
+
+            // Добавляем job в очередь для обновления Discord ролей
+            if (Yii::$app->has('queueProcess')) {
+                Yii::$app->queueProcess->push(new DiscordRolesUserJob(['userId' => $userId]));
+                Yii::info("Discord roles update job queued for user {$userId} after VIP assignment", __METHOD__);
+            }
+        } catch (\Exception $e) {
+            // Логируем ошибку, но не прерываем процесс выдачи VIP
+            Yii::error("Failed to queue Discord roles update for user {$userId}: " . $e->getMessage(), __METHOD__);
         }
     }
 

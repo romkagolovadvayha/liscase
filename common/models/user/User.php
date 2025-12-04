@@ -5,6 +5,7 @@ namespace common\models\user;
 use common\components\helpers\DateHelper;
 use common\components\helpers\Role;
 use common\components\oauth\Steam;
+use common\components\queue\process\DiscordRolesUserJob;
 use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\components\queue\telegram\SendMessageJob;
 use common\components\web\Cookie;
@@ -1477,6 +1478,47 @@ class User extends ActiveRecord implements IdentityInterface
         } catch (\Exception $e) {
             Yii::error("Failed to send raid notify promo message to user {$this->id}: " . $e->getMessage(), __METHOD__);
             return false;
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     * Проверяет изменение server_id и обновляет Discord роли при необходимости
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+
+        // Проверяем, изменился ли server_id
+        if (!$insert && isset($changedAttributes['server_id']) && $this->server_id != $changedAttributes['server_id']) {
+            $oldServerId = $changedAttributes['server_id'];
+            $this->updateDiscordRolesOnServerChange($oldServerId);
+        }
+    }
+
+    /**
+     * Обновляет Discord роли при изменении server_id
+     * 
+     * @param int|null $oldServerId Старый server_id
+     * @return void
+     */
+    protected function updateDiscordRolesOnServerChange($oldServerId = null)
+    {
+        try {
+            // Проверяем, что у пользователя есть привязанный Discord аккаунт
+            if (empty($this->discord_id)) {
+                return;
+            }
+
+            // Добавляем job в очередь для обновления Discord ролей
+            if (Yii::$app->has('queueProcess')) {
+                Yii::$app->queueProcess->push(new DiscordRolesUserJob(['userId' => $this->id]));
+                $oldServerIdStr = $oldServerId !== null ? (string)$oldServerId : 'null';
+                Yii::info("Discord roles update job queued for user {$this->id} after server_id change (old: {$oldServerIdStr}, new: {$this->server_id})", __METHOD__);
+            }
+        } catch (\Exception $e) {
+            // Логируем ошибку, но не прерываем процесс сохранения
+            Yii::error("Failed to queue Discord roles update for user {$this->id} after server_id change: " . $e->getMessage(), __METHOD__);
         }
     }
 
