@@ -33,8 +33,8 @@ class VkController extends Controller
             
             if (empty($data)) {
                 Yii::error("VK Webhook: Empty request body", __METHOD__);
-                Yii::$app->response->format = Response::FORMAT_JSON;
-                return ['ok' => false];
+                Yii::$app->response->format = Response::FORMAT_RAW;
+                return 'ok';
             }
 
             $type = $data['type'] ?? null;
@@ -60,12 +60,12 @@ class VkController extends Controller
             $webhookSecret = Yii::$app->settings->get('vk_webhook_secret');
             if (!empty($webhookSecret) && $secret !== $webhookSecret) {
                 Yii::error("VK Webhook: Invalid secret key", __METHOD__);
-                Yii::$app->response->format = Response::FORMAT_JSON;
-                return ['ok' => false];
+                Yii::$app->response->format = Response::FORMAT_RAW;
+                return 'ok';
             }
 
-            // Для остальных типов событий используем JSON формат
-            Yii::$app->response->format = Response::FORMAT_JSON;
+            // Для остальных типов событий возвращаем строку "ok"
+            Yii::$app->response->format = Response::FORMAT_RAW;
 
             // Обработка нового сообщения
             if ($type === 'message_new') {
@@ -73,7 +73,7 @@ class VkController extends Controller
                 
                 if (empty($message)) {
                     Yii::error("VK Webhook: Empty message object", __METHOD__);
-                    return ['ok' => false];
+                    return 'ok';
                 }
 
                 $text = trim($message['text'] ?? '');
@@ -85,12 +85,12 @@ class VkController extends Controller
                 // Проверяем, что сообщение пришло в личные сообщения группы
                 // Для личных сообщений группы: from_id положительный (ID пользователя), out = 0 (входящее)
                 if (empty($fromId) || $fromId <= 0) {
-                    return ['ok' => true];
+                    return 'ok';
                 }
 
                 // Пропускаем исходящие сообщения (от группы пользователю)
                 if ($out === 1) {
-                    return ['ok' => true];
+                    return 'ok';
                 }
 
                 // Проверяем, что это входящее сообщение (от пользователя группе)
@@ -100,7 +100,7 @@ class VkController extends Controller
                     // Это сообщение в личные сообщения группы - обрабатываем
                 } else {
                     // Не подходит под наши критерии - пропускаем
-                    return ['ok' => true];
+                    return 'ok';
                 }
 
                 // Инициализируем компоненты один раз
@@ -143,7 +143,7 @@ class VkController extends Controller
                         } else {
                             Yii::error("VK Webhook: Failed to save vk_id for user {$user->id}", __METHOD__);
                         }
-                        return ['ok' => true];
+                        return 'ok';
                     }
                 }
 
@@ -162,7 +162,7 @@ class VkController extends Controller
                         $nodeData = $botSystem->handleButtonClick($payload, $fromId);
                         if ($nodeData) {
                             $vkHelper->sendMessage($fromId, $nodeData['message'], null, $nodeData['keyboard'] ?? null);
-                            return ['ok' => true];
+                            return 'ok';
                         }
                     } catch (\Exception $e) {
                         Yii::error("VK Webhook: Error handling button click: " . $e->getMessage() . "\nPayload: " . var_export($payload, true), __METHOD__);
@@ -180,15 +180,15 @@ class VkController extends Controller
                     Yii::error("VK Webhook: Error handling text message: " . $e->getMessage() . "\nText: " . $text, __METHOD__);
                 }
 
-                return ['ok' => true];
+                return 'ok';
             }
 
             // Для других типов событий просто подтверждаем получение
-            return ['ok' => true];
+            return 'ok';
 
         } catch (\Exception $e) {
             Yii::error("VK Webhook error: " . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
-            return ['ok' => false];
+            return 'ok';
         }
     }
 }
