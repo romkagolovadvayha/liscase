@@ -312,8 +312,14 @@ class VkBotSystem extends BaseObject
      */
     public function handleButtonClick($payload, $userId = null)
     {
-        $data = json_decode($payload, true);
-        if (empty($data)) {
+        // Если payload уже является массивом, используем его напрямую
+        if (is_array($payload)) {
+            $data = $payload;
+        } else {
+            $data = json_decode($payload, true);
+        }
+        
+        if (empty($data) || !is_array($data)) {
             return null;
         }
 
@@ -323,25 +329,46 @@ class VkBotSystem extends BaseObject
                 case '/wipe':
                     return [
                         'message' => $this->getWipe(),
-                        'keyboard' => null
+                        'keyboard' => $this->getGreetingMessage(null)['keyboard']
                     ];
                 case '/pop':
                     return [
                         'message' => $this->getOnline(),
-                        'keyboard' => null
+                        'keyboard' => $this->getGreetingMessage(null)['keyboard']
                     ];
                 case '/ip':
                     return [
                         'message' => $this->getIp(),
-                        'keyboard' => null
+                        'keyboard' => $this->getGreetingMessage(null)['keyboard']
                     ];
             }
         }
 
-        // Обработка узлов
+        // Обработка узлов через action или node
+        $nodeId = null;
         if (!empty($data['node'])) {
+            $nodeId = $data['node'];
+        } elseif (!empty($data['action'])) {
+            // Если есть action, определяем node по action
+            switch ($data['action']) {
+                case self::ACTION_PROMOCODE:
+                    $nodeId = self::NODE_PROMOCODE;
+                    break;
+                case self::ACTION_TELEGRAM:
+                    $nodeId = self::NODE_TELEGRAM;
+                    break;
+                case self::ACTION_SUPPORT:
+                    $nodeId = self::NODE_SUPPORT;
+                    break;
+                case 'greeting':
+                    $nodeId = self::NODE_GREETING;
+                    break;
+            }
+        }
+        
+        if ($nodeId) {
             // Пропускаем получение username для ускорения ответа
-            return $this->getNodeMessage($data['node'], $userId, true);
+            return $this->getNodeMessage($nodeId, $userId, true);
         }
 
         return null;
@@ -378,8 +405,15 @@ class VkBotSystem extends BaseObject
             return $this->getNodeMessage(self::NODE_PROMOCODE, $userId);
         }
         
-        if (mb_stripos($textWithoutEmojiLower, 'telegram') !== false || mb_stripos($textWithoutEmojiLower, 'телеграм') !== false || mb_stripos($text, '🤖') !== false) {
-            return $this->getNodeMessage(self::NODE_TELEGRAM, $userId);
+        // Проверка для Telegram бота (текст кнопки: "🤖 Telegram бот")
+        if (mb_stripos($textWithoutEmojiLower, 'telegram') !== false || 
+            mb_stripos($textWithoutEmojiLower, 'телеграм') !== false || 
+            mb_stripos($text, '🤖') !== false ||
+            (mb_stripos($textWithoutEmojiLower, 'бот') !== false && mb_stripos($textWithoutEmojiLower, 'telegram') !== false) ||
+            (mb_stripos($textWithoutEmojiLower, 'бот') !== false && mb_stripos($textWithoutEmojiLower, 'телеграм') !== false) ||
+            $textWithoutEmojiLower === 'telegram бот' ||
+            $textWithoutEmojiLower === 'telegram bot') {
+            return $this->getNodeMessage(self::NODE_TELEGRAM, $userId, true);
         }
         
         if (mb_stripos($textWithoutEmojiLower, 'поддержка') !== false || mb_stripos($text, '🛟') !== false) {

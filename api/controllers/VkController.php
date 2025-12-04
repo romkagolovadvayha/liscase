@@ -152,17 +152,15 @@ class VkController extends Controller
                 if (!empty($payload)) {
                     try {
                         // Если payload - строка, пытаемся распарсить
-                        if (is_string($payload)) {
-                            $payloadData = json_decode($payload, true);
-                            if (json_last_error() === JSON_ERROR_NONE && !empty($payloadData)) {
-                                $payload = json_encode($payloadData);
-                            }
-                        }
+                        $payloadString = is_string($payload) ? $payload : json_encode($payload);
+                        $payloadData = json_decode($payloadString, true);
                         
-                        $nodeData = $botSystem->handleButtonClick($payload, $fromId);
-                        if ($nodeData) {
-                            $vkHelper->sendMessage($fromId, $nodeData['message'], null, $nodeData['keyboard'] ?? null);
-                            return 'ok';
+                        if (json_last_error() === JSON_ERROR_NONE && !empty($payloadData)) {
+                            $nodeData = $botSystem->handleButtonClick($payloadString, $fromId);
+                            if ($nodeData) {
+                                $vkHelper->sendMessage($fromId, $nodeData['message'], null, $nodeData['keyboard'] ?? null);
+                                return 'ok';
+                            }
                         }
                     } catch (\Exception $e) {
                         Yii::error("VK Webhook: Error handling button click: " . $e->getMessage() . "\nPayload: " . var_export($payload, true), __METHOD__);
