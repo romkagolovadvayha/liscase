@@ -31,12 +31,29 @@ class SendPhotoJob extends BaseObject implements JobInterface
     public function execute($queue)
     {
         try {
+            // Логируем информацию о фото для диагностики
+            $photoInfo = is_string($this->photo) ? $this->photo : gettype($this->photo);
+            $photoLength = is_string($this->photo) ? strlen($this->photo) : 0;
+            $isUrl = is_string($this->photo) && preg_match('#^https?://#i', $this->photo);
+            $isFile = is_string($this->photo) && file_exists($this->photo) && is_file($this->photo);
+            
+            Yii::info("SendPhotoJob: Attempting to send photo to chat_id {$this->telegram_chat_id}. " .
+                "Photo type: " . gettype($this->photo) . ", " .
+                "Is URL: " . ($isUrl ? 'yes' : 'no') . ", " .
+                "Is file: " . ($isFile ? 'yes' : 'no') . ", " .
+                "Length: {$photoLength}, " .
+                "Preview: " . (is_string($this->photo) ? substr($this->photo, 0, 100) : 'N/A'), 
+                __METHOD__);
+            
             $result = Yii::$app->personalBotTelegram->sendPhoto($this->telegram_chat_id, $this->photo, $this->message);
             
             // Проверяем успешность отправки
             if ($result === false || (isset($result['ok']) && !$result['ok'])) {
                 $errorMessage = isset($result['description']) ? $result['description'] : 'Unknown error';
                 $errorCode = isset($result['error_code']) ? $result['error_code'] : 'N/A';
+                
+                // Дополнительное логирование при ошибке
+                Yii::error("SendPhotoJob: Error details - Photo: {$photoInfo}, Error: {$errorMessage} (code: {$errorCode})", __METHOD__);
                 
                 // Проверяем, заблокирован ли бот пользователем или деактивирован ли пользователь
                 $isBlocked = stripos($errorMessage, 'bot was blocked by the user') !== false 

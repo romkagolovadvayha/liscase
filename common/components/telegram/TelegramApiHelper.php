@@ -306,12 +306,107 @@ class TelegramApiHelper extends \yii\base\Component
      */
     public function sendPhoto($chatId, $photo, $caption = '')
     {
+        // Если это публичный URL локального файла, преобразуем в путь к файлу на сервере
+        $photo = $this->_convertLocalUrlToPath($photo);
+        
         return $this->_sendRequest('sendPhoto', [
             'chat_id' => $chatId,
             'photo'   => $photo,
             'caption' => $caption,
             'parse_mode'   => 'Html',
         ]);
+    }
+    
+    /**
+     * Преобразует публичный URL локального файла в путь к файлу на сервере
+     * @param string $url
+     * @return string
+     */
+    private function _convertLocalUrlToPath($url)
+    {
+        if (empty($url)) {
+            return $url;
+        }
+        
+        // Если это не URL, проверяем, является ли это путем к файлу
+        if (!preg_match('#^https?://#i', $url)) {
+            // Если это уже путь к файлу и он существует, возвращаем как есть
+            if (file_exists($url) && is_file($url)) {
+                return $url;
+            }
+            // Если это относительный путь, пытаемся найти файл
+            $possiblePaths = [
+                Yii::getAlias('@frontend/web') . $url,
+                Yii::getAlias('@app/web') . $url,
+                $url,
+            ];
+            foreach ($possiblePaths as $path) {
+                if (file_exists($path) && is_file($path)) {
+                    Yii::info("TelegramApiHelper: Found file at path: {$path} (from: {$url})", __METHOD__);
+                    return $path;
+                }
+            }
+            return $url; // Возвращаем как есть, возможно это file_id
+        }
+        
+        // Пытаемся определить, является ли это локальным URL
+        $baseUrl = Yii::$app->params['baseUrl'] ?? '';
+        if (empty($baseUrl)) {
+            // Пытаемся получить из настроек
+            $baseUrl = Yii::$app->settings->get('site_domain') ?? '';
+            if (!empty($baseUrl) && strpos($baseUrl, 'http') !== 0) {
+                $baseUrl = 'https://' . $baseUrl;
+            }
+        }
+        
+        if (empty($baseUrl)) {
+            Yii::warning("TelegramApiHelper: Cannot determine base URL, sending as remote URL: {$url}", __METHOD__);
+            return $url; // Не можем определить, возвращаем как есть
+        }
+        
+        // Проверяем, начинается ли URL с нашего домена
+        $urlHost = parse_url($url, PHP_URL_HOST) ?? '';
+        $urlPath = parse_url($url, PHP_URL_PATH) ?? '';
+        $baseUrlHost = parse_url($baseUrl, PHP_URL_HOST) ?? '';
+        
+        if ($urlHost === $baseUrlHost && !empty($urlPath)) {
+            // Это локальный URL, преобразуем в путь к файлу
+            // Убираем /uploads/telegram из начала пути
+            if (strpos($urlPath, '/uploads/telegram') === 0) {
+                $relativePath = substr($urlPath, strlen('/uploads/telegram'));
+                $possiblePaths = [
+                    Yii::getAlias('@frontend/web/uploads/telegram') . $relativePath,
+                    Yii::getAlias('@app/web/uploads/telegram') . $relativePath,
+                ];
+                
+                foreach ($possiblePaths as $filePath) {
+                    if (file_exists($filePath) && is_file($filePath)) {
+                        Yii::info("TelegramApiHelper: Converted local URL {$url} to file path {$filePath}", __METHOD__);
+                        return $filePath;
+                    }
+                }
+                
+                Yii::warning("TelegramApiHelper: Local file not found for URL: {$url}. Tried paths: " . implode(', ', $possiblePaths), __METHOD__);
+            } else {
+                // Другие пути к файлам
+                $possiblePaths = [
+                    Yii::getAlias('@frontend/web') . $urlPath,
+                    Yii::getAlias('@app/web') . $urlPath,
+                ];
+                
+                foreach ($possiblePaths as $filePath) {
+                    if (file_exists($filePath) && is_file($filePath)) {
+                        Yii::info("TelegramApiHelper: Converted local URL {$url} to file path {$filePath}", __METHOD__);
+                        return $filePath;
+                    }
+                }
+            }
+        }
+        
+        // Если не удалось преобразовать, возвращаем исходный URL
+        // Telegram попытается скачать его сам
+        Yii::info("TelegramApiHelper: Sending as remote URL: {$url}", __METHOD__);
+        return $url;
     }
 
     /**
