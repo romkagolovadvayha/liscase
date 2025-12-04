@@ -41,20 +41,20 @@ class VkController extends Controller
             $groupId = $data['group_id'] ?? null;
             $secret = $data['secret'] ?? null;
 
-            // Обработка подтверждения вебхука - возвращаем строку, а не JSON
-            if ($type === 'confirmation') {
-                $confirmationToken = Yii::$app->settings->get('vk_webhook_confirmation_token');
-                // Если токен не задан в настройках, используем значение по умолчанию из сообщения VK
-                if (empty($confirmationToken) || trim($confirmationToken) === '') {
-                    $confirmationToken = 'bf3d02ef';
+                // Обработка подтверждения вебхука - возвращаем строку, а не JSON
+                if ($type === 'confirmation') {
+                    $confirmationToken = Yii::$app->settings->get('vk_webhook_confirmation_token');
+                    // Если токен не задан в настройках, используем значение по умолчанию
+                    if (empty($confirmationToken) || trim($confirmationToken) === '') {
+                        $confirmationToken = 'a5fc94ca';
+                    }
+                    
+                    // VK ожидает просто строку, без JSON
+                    Yii::$app->response->format = Response::FORMAT_RAW;
+                    Yii::$app->response->data = $confirmationToken;
+                    Yii::$app->response->headers->set('Content-Type', 'text/plain; charset=UTF-8');
+                    return $confirmationToken;
                 }
-                
-                // VK ожидает просто строку, без JSON
-                Yii::$app->response->format = Response::FORMAT_RAW;
-                Yii::$app->response->data = $confirmationToken;
-                Yii::$app->response->headers->set('Content-Type', 'text/plain; charset=UTF-8');
-                return $confirmationToken;
-            }
 
             // Проверка секретного ключа (если задан в настройках)
             $webhookSecret = Yii::$app->settings->get('vk_webhook_secret');
