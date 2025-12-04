@@ -5,6 +5,7 @@ namespace backend\controllers;
 use backend\components\BackendController;
 use common\components\helpers\Role;
 use common\models\rcon\RconTasks;
+use common\models\servers\Servers;
 use Yii;
 use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
@@ -42,15 +43,32 @@ class RconController extends BackendController
     public function actionIndex()
     {
         $command = Yii::$app->request->post('command', '');
+        $selectedServers = Yii::$app->request->post('servers', []);
         $results = [];
 
-        if (!empty($command) && Yii::$app->request->isPost) {
-            $results = RconTasks::executeWithResults($command);
+        // Получаем список всех активных серверов
+        /** @var Servers[] $allServers */
+        $allServers = Servers::find()
+            ->andWhere(['status' => Servers::STATUS_ACTIVE])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        // Если серверы не выбраны, выбираем все по умолчанию
+        if (empty($selectedServers) && !empty($allServers)) {
+            $selectedServers = array_map(function($server) {
+                return $server->tag;
+            }, $allServers);
+        }
+
+        if (!empty($command) && Yii::$app->request->isPost && !empty($selectedServers)) {
+            $results = RconTasks::executeWithResults($command, $selectedServers);
         }
 
         return $this->render('index', [
             'command' => $command,
             'results' => $results,
+            'allServers' => $allServers,
+            'selectedServers' => $selectedServers,
         ]);
     }
 
@@ -63,6 +81,7 @@ class RconController extends BackendController
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
         $command = Yii::$app->request->post('command', '');
+        $selectedServers = Yii::$app->request->post('servers', []);
         
         if (empty($command)) {
             return [
@@ -71,7 +90,17 @@ class RconController extends BackendController
             ];
         }
 
-        $results = RconTasks::executeWithResults($command);
+        // Если серверы не выбраны, выбираем все активные
+        if (empty($selectedServers)) {
+            $allServers = Servers::find()
+                ->andWhere(['status' => Servers::STATUS_ACTIVE])
+                ->all();
+            $selectedServers = array_map(function($server) {
+                return $server->tag;
+            }, $allServers);
+        }
+
+        $results = RconTasks::executeWithResults($command, $selectedServers);
         
         // Форматируем результаты для JSON ответа
         $formattedResults = [];
