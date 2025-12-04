@@ -74,11 +74,16 @@ $this->params['breadcrumbs'][] = $this->title;
                             // Проверяем, является ли результат JSON
                             $isJson = false;
                             $jsonData = null;
+                            $hasResultField = false;
                             if ($serverResult !== null && !empty($serverResult)) {
                                 $decoded = json_decode($serverResult, true);
                                 if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                                     $isJson = true;
                                     $jsonData = $decoded;
+                                    // Проверяем, есть ли поле result с текстом
+                                    if (isset($jsonData['result']) && is_string($jsonData['result'])) {
+                                        $hasResultField = true;
+                                    }
                                 }
                             }
                             ?>
@@ -97,13 +102,27 @@ $this->params['breadcrumbs'][] = $this->title;
                                         <strong>Ошибка:</strong> <?= Html::encode($error) ?>
                                     </div>
                                 <?php elseif ($serverResult !== null): ?>
-                                    <?php if ($isJson): ?>
+                                    <?php if ($isJson && $hasResultField): ?>
+                                        <?php
+                                        // Если JSON содержит поле result с текстом, выводим только его содержимое
+                                        $resultText = $jsonData['result'];
+                                        // Заменяем \n на реальные переносы строк
+                                        $resultText = str_replace("\\n", "\n", $resultText);
+                                        ?>
+                                        <div class="rcon-result-content">
+                                            <pre><?= Html::encode($resultText) ?></pre>
+                                        </div>
+                                    <?php elseif ($isJson): ?>
                                         <div class="rcon-result-json">
                                             <pre><code><?= Html::encode(json_encode($jsonData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?></code></pre>
                                         </div>
                                     <?php else: ?>
+                                        <?php
+                                        // Обрабатываем переносы строк в обычном тексте
+                                        $formattedResult = str_replace("\\n", "\n", $serverResult);
+                                        ?>
                                         <div class="rcon-result-content">
-                                            <pre><?= Html::encode($serverResult) ?></pre>
+                                            <pre><?= Html::encode($formattedResult) ?></pre>
                                         </div>
                                     <?php endif; ?>
                                 <?php else: ?>
@@ -201,6 +220,7 @@ $this->params['breadcrumbs'][] = $this->title;
     color: #c9d1d9;
     display: block;
 }
+
 
 /* JSON Syntax Highlighting */
 .rcon-result-json pre code {
