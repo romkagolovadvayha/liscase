@@ -107,12 +107,12 @@ class TelegramConstructorMessage extends \yii\db\ActiveRecord
     }
 
     /**
-     * Получение публичной URL изображения
-     * Если image_link начинается с @, то это ссылка (возможно с плейсхолдерами)
-     * @param string $baseUrl
+     * Получение пути к файлу (не URL) для прямой отправки в Telegram
+     * Если image_link начинается с @, то это внешняя ссылка (возможно с плейсхолдерами)
+     * @param string $baseUrl Не используется, оставлен для совместимости
      * @param string $language
      * @param int|null $userId ID пользователя для подстановки в ссылку
-     * @return string
+     * @return string Путь к файлу или URL (если это внешняя ссылка)
      */
     public function getPubUrl($baseUrl = '', $language = 'ru-Ru', $userId = null): string
     {
@@ -134,11 +134,81 @@ class TelegramConstructorMessage extends \yii\db\ActiveRecord
             return $url;
         }
         
-        // Иначе это путь к файлу на сервере
-        if(!$baseUrl) {
-            $baseUrl = Yii::$app->params['baseUrl'];
+        // Проверяем, является ли это полным путем к файлу
+        if (file_exists($imageLink) && is_file($imageLink)) {
+            // Это полный путь к файлу - возвращаем как есть (будет отправлен напрямую)
+            return $imageLink;
         }
-        return $baseUrl . '/uploads/telegram' . str_replace(Yii::getAlias('@app/web/uploads') . '/telegram', '', $imageLink);
+        
+        // Проверяем, является ли это полным путем, но файл не существует (возможно, на другом сервере)
+        // Извлекаем относительный путь для формирования URL
+        $uploadDirs = [
+            Yii::getAlias('@app/web/uploads/telegram'),
+            Yii::getAlias('@backend/web/uploads/telegram'),
+            Yii::getAlias('@frontend/web/uploads/telegram'),
+        ];
+        
+        foreach ($uploadDirs as $uploadDir) {
+            // Если путь содержит этот каталог, извлекаем относительный путь
+            if (strpos($imageLink, $uploadDir) !== false) {
+                $relativePath = str_replace($uploadDir, '', $imageLink);
+                $relativePath = ltrim(str_replace('\\', '/', $relativePath), '/');
+                
+                // Формируем URL только если нужен URL, иначе возвращаем путь к файлу
+                // Но для Telegram лучше вернуть путь к файлу, если он существует
+                $possiblePaths = [
+                    Yii::getAlias('@frontend/web/uploads/telegram') . '/' . $relativePath,
+                    Yii::getAlias('@backend/web/uploads/telegram') . '/' . $relativePath,
+                    Yii::getAlias('@app/web/uploads/telegram') . '/' . $relativePath,
+                ];
+                
+                foreach ($possiblePaths as $filePath) {
+                    if (file_exists($filePath) && is_file($filePath)) {
+                        return $filePath;
+                    }
+                }
+                
+                // Если файл не найден, формируем URL
+                if(!$baseUrl) {
+                    $baseUrl = Yii::$app->params['baseUrl'] ?? '';
+                }
+                
+                if (!empty($baseUrl)) {
+                    return rtrim($baseUrl, '/') . '/uploads/telegram/' . $relativePath;
+                }
+            }
+        }
+        
+        // Если путь начинается с /uploads/telegram, это уже относительный путь
+        if (preg_match('#[/\\\\]uploads[/\\\\]telegram[/\\\\](.+)$#', $imageLink, $matches)) {
+            $relativePath = $matches[1];
+            $relativePath = str_replace('\\', '/', $relativePath);
+            
+            // Проверяем существование файла
+            $possiblePaths = [
+                Yii::getAlias('@frontend/web/uploads/telegram') . '/' . $relativePath,
+                Yii::getAlias('@backend/web/uploads/telegram') . '/' . $relativePath,
+                Yii::getAlias('@app/web/uploads/telegram') . '/' . $relativePath,
+            ];
+            
+            foreach ($possiblePaths as $filePath) {
+                if (file_exists($filePath) && is_file($filePath)) {
+                    return $filePath;
+                }
+            }
+            
+            // Если файл не найден, формируем URL
+            if(!$baseUrl) {
+                $baseUrl = Yii::$app->params['baseUrl'] ?? '';
+            }
+            
+            if (!empty($baseUrl)) {
+                return rtrim($baseUrl, '/') . '/uploads/telegram/' . $relativePath;
+            }
+        }
+        
+        // Если ничего не подошло, возвращаем как есть (возможно, это уже URL или file_id)
+        return $imageLink;
     }
 
     public function updateLanguage($language, $message = null, $imageLink = null, $updateImageLink = true)
