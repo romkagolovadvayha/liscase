@@ -44,14 +44,27 @@ class TelegramApiHelper extends \yii\base\Component
 
         if (!empty($params)) {
 
-            $attachments = ['sticker', 'audio', 'document', 'video'];
+            $attachments = ['photo', 'sticker', 'audio', 'document', 'video'];
             $hasFile = false;
 
             foreach ($attachments as $attachment) {
                 if (isset($params[$attachment])) {
-                    $params[$attachment] = $this->curlFile($params[$attachment]);
-                    $hasFile = true;
-                    break;
+                    $value = $params[$attachment];
+                    
+                    // Если это удалённый URL или Telegram file_id — отправляем как текст
+                    if (is_string($value) && preg_match('#^https?://#i', $value)) {
+                        continue; // URL отправляется как строка, не как файл
+                    }
+                    if (is_array($value) && isset($value['file_id'])) {
+                        continue; // file_id отправляется как есть
+                    }
+                    
+                    $file = $this->curlFile($value);
+                    if ($file instanceof \CURLFile || (is_string($file) && isset($file[0]) && $file[0] === '@')) {
+                        $params[$attachment] = $file;
+                        $hasFile = true;
+                        break;
+                    }
                 }
             }
 
@@ -113,13 +126,50 @@ class TelegramApiHelper extends \yii\base\Component
     private function curlFile($path)
     {
         if (is_array($path)) {
-            return $path['file_id'];
+            if (isset($path['file_id'])) {
+                return $path['file_id'];
+            }
+            if (isset($path['path'])) {
+                $path = $path['path'];
+            }
         }
 
-        $realPath = realpath($path);
+        // Если это URL, возвращаем как есть (Telegram сам скачает)
+        if (is_string($path) && preg_match('#^https?://#i', $path)) {
+            return $path;
+        }
+
+        // Проверяем, существует ли файл
+        $realPath = is_string($path) ? realpath($path) : false;
+        if ($realPath === false || !is_file($realPath)) {
+            Yii::error('TelegramApiHelper: file not found for upload: ' . print_r($path, true), __METHOD__);
+            return $path; // Возвращаем исходный путь, возможно это file_id или URL
+        }
+
+        // Определяем MIME-тип для фото
+        $mimeType = null;
+        if (function_exists('mime_content_type')) {
+            $mimeType = mime_content_type($realPath);
+        } elseif (class_exists('finfo')) {
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->file($realPath);
+        }
+
+        // Если MIME-тип не определен, пытаемся определить по расширению
+        if (empty($mimeType)) {
+            $extension = strtolower(pathinfo($realPath, PATHINFO_EXTENSION));
+            $mimeTypes = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+            ];
+            $mimeType = isset($mimeTypes[$extension]) ? $mimeTypes[$extension] : 'image/jpeg';
+        }
 
         if (class_exists('CURLFile')) {
-            return new \CURLFile($realPath);
+            return new \CURLFile($realPath, $mimeType, basename($realPath));
         }
 
         return '@' . $realPath;

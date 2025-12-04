@@ -539,20 +539,107 @@ class VkApiHelper extends \yii\base\Component
             
             Yii::info("VK: Image downloaded successfully from {$photoUrl}, Size: " . strlen($imageContent) . " bytes, Content-Type: {$contentType}", __METHOD__);
 
-            // Сохраняем во временный файл
-            $tempFile = tempnam(sys_get_temp_dir(), 'vk_upload_');
+            // Определяем MIME-тип и расширение файла
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->buffer($imageContent);
+            
+            // Определяем расширение на основе MIME-типа
+            $extension = 'jpg';
+            $allowedMimes = [
+                'image/jpeg' => 'jpg',
+                'image/jpg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'image/webp' => 'webp',
+            ];
+            
+            if (isset($allowedMimes[$mimeType])) {
+                $extension = $allowedMimes[$mimeType];
+            } else {
+                // Если MIME-тип не распознан, пытаемся определить по сигнатуре файла
+                if (substr($imageContent, 0, 3) === "\xFF\xD8\xFF") {
+                    $mimeType = 'image/jpeg';
+                    $extension = 'jpg';
+                } elseif (substr($imageContent, 0, 8) === "\x89PNG\r\n\x1a\n") {
+                    $mimeType = 'image/png';
+                    $extension = 'png';
+                } elseif (substr($imageContent, 0, 6) === "GIF87a" || substr($imageContent, 0, 6) === "GIF89a") {
+                    $mimeType = 'image/gif';
+                    $extension = 'gif';
+                } else {
+                    Yii::warning("VK: Unknown image format, using JPEG as default. MIME: {$mimeType}", __METHOD__);
+                    $mimeType = 'image/jpeg';
+                    $extension = 'jpg';
+                }
+            }
+            
+            // Сохраняем во временный файл с правильным расширением
+            $tempFile = tempnam(sys_get_temp_dir(), 'vk_upload_') . '.' . $extension;
             file_put_contents($tempFile, $imageContent);
-
+            
+            // Конвертируем изображение в JPEG для лучшей совместимости с VK API
+            // VK API лучше работает с JPEG форматом
+            $jpegFile = null;
+            try {
+                if (function_exists('imagecreatefromstring') && $extension !== 'jpg' && $extension !== 'jpeg') {
+                    // Пытаемся конвертировать в JPEG используя GD
+                    $sourceImage = imagecreatefromstring($imageContent);
+                    if ($sourceImage !== false) {
+                        $jpegFile = tempnam(sys_get_temp_dir(), 'vk_upload_') . '.jpg';
+                        // Конвертируем в JPEG с качеством 85%
+                        if (imagejpeg($sourceImage, $jpegFile, 85)) {
+                            imagedestroy($sourceImage);
+                            // Удаляем оригинальный файл и используем JPEG
+                            if (file_exists($tempFile)) {
+                                unlink($tempFile);
+                            }
+                            $tempFile = $jpegFile;
+                            $mimeType = 'image/jpeg';
+                            $extension = 'jpg';
+                            Yii::info("VK: Image converted to JPEG format", __METHOD__);
+                        } else {
+                            imagedestroy($sourceImage);
+                            Yii::warning("VK: Failed to convert image to JPEG, using original format", __METHOD__);
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Yii::warning("VK: Error converting image to JPEG: " . $e->getMessage() . ", using original format", __METHOD__);
+            }
+            
+            // Проверяем размер файла (VK имеет ограничения - максимум 50 MB)
+            $fileSize = filesize($tempFile);
+            if ($fileSize > 50 * 1024 * 1024) { // 50 MB
+                Yii::error("VK: Image file too large: {$fileSize} bytes", __METHOD__);
+                if (file_exists($tempFile)) {
+                    unlink($tempFile);
+                }
+                return false;
+            }
+            
+            // VK API рекомендует размер не более 10 MB для лучшей производительности
+            if ($fileSize > 10 * 1024 * 1024) { // 10 MB
+                Yii::warning("VK: Image file is large: {$fileSize} bytes (recommended max: 10 MB)", __METHOD__);
+            }
+            
+            Yii::info("VK: Uploading image. Size: {$fileSize} bytes, MIME: {$mimeType}, Extension: {$extension}", __METHOD__);
+            
             // Загружаем на сервер VK с увеличенным таймаутом
+            // VK API требует отправку файла с именем поля 'file', а не 'photo'
             $ch = curl_init($uploadUrl);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_TIMEOUT, 120);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+            
+            // VK API для wall upload требует поле 'file', а не 'photo'
+            $cfile = new \CURLFile($tempFile, $mimeType, 'photo.' . $extension);
             curl_setopt($ch, CURLOPT_POSTFIELDS, [
-                'photo' => new \CURLFile($tempFile, 'image/jpeg', 'photo.jpg')
+                'file' => $cfile
             ]);
+            
+            Yii::info("VK: Uploading file: {$tempFile}, MIME: {$mimeType}, Size: {$fileSize}", __METHOD__);
 
             $uploadResult = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
