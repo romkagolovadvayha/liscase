@@ -28,6 +28,9 @@ class StatisticsParamChecker implements TaskCheckerInterface
         }
 
         $statKey = $params['stat_key'];
+        // Поддержка нескольких ключей через запятую
+        $statKeys = array_map('trim', explode(',', $statKey));
+        
         $requiredValue = (int)($params['required_value'] ?? 0);
         $serverId = (int)($params['server_id'] ?? 0);
         $sumAllServers = !empty($params['sum_all_servers']) && $params['sum_all_servers'] === true;
@@ -38,18 +41,20 @@ class StatisticsParamChecker implements TaskCheckerInterface
             );
         }
 
+        // Дата начала отсчета: 04.12.2025 22:00
+        $startDate = '2025-12-04';
+        
         $currentValue = 0;
 
         if ($sumAllServers) {
-            // Суммируем статистику по всем серверам
+            // Суммируем статистику по всем серверам начиная с указанной даты
             $servers = Servers::find()->where(['is_active' => 1])->all();
             foreach ($servers as $server) {
-                $wipe = $server->currentWipe();
-                $playerStats = Statistics::getPlayerStats($server, $user->steam_id, $wipe);
-                $currentValue += Statistics::getParam($playerStats, $statKey);
+                $playerStats = $this->getPlayerStatsSinceDate($server, $user->steam_id, $startDate);
+                $currentValue += $this->getStatsSum($playerStats, $statKeys);
             }
         } else {
-            // Статистика по конкретному серверу
+            // Статистика по конкретному серверу начиная с указанной даты
             if ($serverId > 0) {
                 $server = Servers::findOne($serverId);
                 if (!$server) {
@@ -67,9 +72,8 @@ class StatisticsParamChecker implements TaskCheckerInterface
                 }
             }
 
-            $wipe = $server->currentWipe();
-            $playerStats = Statistics::getPlayerStats($server, $user->steam_id, $wipe);
-            $currentValue = Statistics::getParam($playerStats, $statKey);
+            $playerStats = $this->getPlayerStatsSinceDate($server, $user->steam_id, $startDate);
+            $currentValue = $this->getStatsSum($playerStats, $statKeys);
         }
 
         if ($currentValue >= $requiredValue) {
@@ -94,7 +98,56 @@ class StatisticsParamChecker implements TaskCheckerInterface
             $requiredValue
         );
     }
+
+    /**
+     * Получить статистику игрока начиная с указанной даты
+     * Суммирует значения по всем вайпам, начиная с указанной даты
+     * 
+     * @param Servers $server
+     * @param string $steamId
+     * @param string $startDate Дата в формате Y-m-d
+     * @return array Массив статистики с ключами и суммированными значениями
+     */
+    private function getPlayerStatsSinceDate(Servers $server, string $steamId, string $startDate): array
+    {
+        // Получаем все записи статистики для игрока на сервере, где начало вайпа >= указанной даты
+        // Поле wipe хранится в формате "Y-m-d/Y-m-d", извлекаем первую часть (дату начала вайпа)
+        $statistics = Statistics::find()
+            ->select(['key', 'SUM(value) as value'])
+            ->andWhere(['steam_id' => $steamId])
+            ->andWhere(['server_tag' => $server->tag])
+            ->andWhere("SUBSTRING_INDEX(wipe, '/', 1) >= :startDate", [':startDate' => $startDate])
+            ->groupBy('key')
+            ->indexBy('key')
+            ->asArray()
+            ->all();
+
+        // Преобразуем результат: SUM возвращает строку, нужно преобразовать в int
+        $result = [];
+        foreach ($statistics as $key => $item) {
+            $result[$key] = (int)$item['value'];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Получить сумму значений статистики по указанным ключам
+     * 
+     * @param array $playerStats Массив статистики игрока
+     * @param array $statKeys Массив ключей статистики
+     * @return int Сумма значений по всем указанным ключам
+     */
+    private function getStatsSum(array $playerStats, array $statKeys): int
+    {
+        $sum = 0;
+        foreach ($statKeys as $key) {
+            $sum += Statistics::getParam($playerStats, trim($key));
+        }
+        return $sum;
+    }
 }
+
 
 
 
