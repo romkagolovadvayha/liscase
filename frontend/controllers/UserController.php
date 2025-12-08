@@ -315,7 +315,8 @@ class UserController extends WebController
             }
             
             // Логируем данные перед сохранением для отладки
-            Yii::info('ProfileForm data before save: ' . json_encode([
+            Yii::info('ProfileForm POST data: ' . json_encode($post));
+            Yii::info('ProfileForm model data before save: ' . json_encode([
                 'youtube_link' => $model->youtube_link,
                 'twitch_link' => $model->twitch_link,
                 'vk_link' => $model->vk_link,
@@ -326,6 +327,12 @@ class UserController extends WebController
             
             if ($model->saveRecord()) {
                 Yii::$app->session->setFlash('success', Yii::t('common', 'Настройки успешно сохранены'));
+                // Редирект для обновления PJAX контейнера
+                if (Yii::$app->request->isPjax) {
+                    return $this->refresh();
+                } else {
+                    return $this->redirect(['profile']);
+                }
             } else {
                 $errors = $model->getErrors();
                 Yii::error('ProfileForm save failed with errors: ' . json_encode($errors));

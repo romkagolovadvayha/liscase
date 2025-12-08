@@ -141,16 +141,30 @@ class ProfileForm extends UserProfile
             $this->skindrops_error = null;
         }
 
+        // Логируем данные перед сохранением
+        Yii::info('Saving UserProfile with data: ' . json_encode([
+            'youtube_link' => $this->youtube_link,
+            'twitch_link' => $this->twitch_link,
+            'vk_link' => $this->vk_link,
+            'telegram_link' => $this->telegram_link,
+            'is_hide_online' => $this->is_hide_online,
+            'is_hide_team' => $this->is_hide_team,
+        ]));
+        
         if (!$this->save()) {
             Yii::error('Failed to save UserProfile: ' . json_encode($this->getErrors()));
+            Yii::error('UserProfile attributes: ' . json_encode($this->attributes));
             throw new \Exception('UserProfile not saved: ' . json_encode($this->getErrors()));
         }
+        
+        Yii::info('UserProfile saved successfully');
         
         if (!$this->user->save()) {
             Yii::error('Failed to save User: ' . json_encode($this->user->getErrors()));
             throw new \Exception('User not saved: ' . json_encode($this->user->getErrors()));
         }
 
+        Yii::info('User saved successfully');
         return true;
     }
 
