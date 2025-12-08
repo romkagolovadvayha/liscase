@@ -70,7 +70,10 @@ $this->title = Yii::t('common', 'Задания');
             <?= ListView::widget([
                 'dataProvider' => $dataProvider,
                 'itemView' => '_card',
-                'viewParams' => ['user' => $user],
+                'viewParams' => [
+                    'user' => $user,
+                    'tasksProgress' => $tasksProgress ?? [],
+                ],
                 'options' => ['class' => 'tasksV2__cards'],
                 'summary' => false,
                 'layout' => '{items}{pager}',

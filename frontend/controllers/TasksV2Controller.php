@@ -167,6 +167,62 @@ class TasksV2Controller extends WebController
         
         $completionPercent = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
 
+        // Получаем прогресс для всех заданий, которые его поддерживают (оптимизация - один запрос для статистики)
+        $tasksProgress = [];
+        
+        // Разделяем задания на группы
+        $statisticsTasks = [];
+        $otherTasks = [];
+        
+        foreach ($allModels as $task) {
+            $isRepeatable = $task->type === TaskV2::TYPE_REPEATABLE;
+            $isOneTimeWithStats = $task->type === TaskV2::TYPE_ONE_TIME && 
+                                  $task->check_type === TaskV2::CHECK_TYPE_STATISTICS_PARAM;
+            
+            if ($isRepeatable || $isOneTimeWithStats) {
+                if ($task->check_type === TaskV2::CHECK_TYPE_STATISTICS_PARAM) {
+                    $statisticsTasks[] = $task;
+                } else {
+                    $otherTasks[] = $task;
+                }
+            }
+        }
+        
+        // Получаем всю статистику один раз для заданий со статистикой
+        $allStatsData = [];
+        if (!empty($statisticsTasks)) {
+            $allStatsData = $this->getAllStatisticsForTasks($statisticsTasks, $user);
+        }
+        
+        // Вычисляем прогресс для заданий со статистикой
+        foreach ($statisticsTasks as $task) {
+            try {
+                $checkResult = $this->checkTaskWithPreloadedStats($task, $user, $allStatsData);
+                if ($checkResult) {
+                    $tasksProgress[$task->id] = [
+                        'progress' => $checkResult->progress,
+                        'maxProgress' => $task->max_progress ?? $checkResult->maxProgress,
+                    ];
+                }
+            } catch (\Exception $e) {
+                Yii::error('Failed to get progress for task ' . $task->id . ': ' . $e->getMessage());
+            }
+        }
+        
+        // Вычисляем прогресс для остальных заданий
+        foreach ($otherTasks as $task) {
+            try {
+                $checker = TaskCheckerFactory::create($task);
+                $checkResult = $checker->check($task, $user);
+                $tasksProgress[$task->id] = [
+                    'progress' => $checkResult->progress,
+                    'maxProgress' => $task->max_progress ?? $checkResult->maxProgress,
+                ];
+            } catch (\Exception $e) {
+                Yii::error('Failed to get progress for task ' . $task->id . ': ' . $e->getMessage());
+            }
+        }
+
         // Создаем ArrayDataProvider с отсортированными данными
         $dataProvider = new \yii\data\ArrayDataProvider([
             'allModels' => $allModels,
@@ -188,6 +244,7 @@ class TasksV2Controller extends WebController
             'totalRewards' => $totalRewards,
             'totalPotentialCoins' => $totalPotentialCoins,
             'totalPotentialRewards' => $totalPotentialRewards,
+            'tasksProgress' => $tasksProgress,
         ]);
     }
 
@@ -595,6 +652,179 @@ class TasksV2Controller extends WebController
         } else {
             throw new \Exception('Неверный формат награды');
         }
+    }
+
+    /**
+     * Получить всю статистику для заданий со статистикой (оптимизация)
+     * @param TaskV2[] $tasks
+     * @param User $user
+     * @return array Массив статистики по серверам
+     */
+    protected function getAllStatisticsForTasks(array $tasks, User $user): array
+    {
+        $startDate = '2025-12-04';
+        $steamId = $user->steam_id;
+        
+        // Собираем все уникальные серверы из заданий
+        $serverIds = [];
+        $sumAllServersTasks = [];
+        
+        foreach ($tasks as $task) {
+            $params = is_array($task->check_params) ? $task->check_params : json_decode($task->check_params, true);
+            if (empty($params)) {
+                continue;
+            }
+            
+            $sumAllServers = !empty($params['sum_all_servers']) && $params['sum_all_servers'] === true;
+            $serverId = (int)($params['server_id'] ?? 0);
+            
+            if ($sumAllServers) {
+                $sumAllServersTasks[] = $task;
+            } elseif ($serverId > 0) {
+                $serverIds[$serverId] = true;
+            }
+        }
+        
+        // Получаем все нужные серверы
+        $servers = [];
+        if (!empty($serverIds)) {
+            $servers = \common\models\servers\Servers::find()
+                ->where(['id' => array_keys($serverIds)])
+                ->all();
+        }
+        
+        // Если есть задания с sum_all_servers, добавляем все активные серверы
+        if (!empty($sumAllServersTasks)) {
+            $allActiveServers = \common\models\servers\Servers::find()
+                ->where(['is_active' => 1])
+                ->all();
+            foreach ($allActiveServers as $server) {
+                $servers[$server->id] = $server;
+            }
+        }
+        
+        // Если нет указанных серверов, используем сервер пользователя
+        if (empty($servers)) {
+            $userServer = $user->server ?? \common\models\servers\Servers::find()
+                ->where(['is_active' => 1])
+                ->orderBy(['sort' => SORT_ASC])
+                ->one();
+            if ($userServer) {
+                $servers[$userServer->id] = $userServer;
+            }
+        }
+        
+        // Получаем статистику для всех серверов одним запросом
+        $allStats = [];
+        foreach ($servers as $server) {
+            $statistics = \common\models\statistics\Statistics::find()
+                ->select(['key', 'SUM(value) as value'])
+                ->andWhere(['steam_id' => $steamId])
+                ->andWhere(['server_tag' => $server->tag])
+                ->andWhere("SUBSTRING_INDEX(wipe, '/', 1) >= :startDate", [':startDate' => $startDate])
+                ->groupBy('key')
+                ->indexBy('key')
+                ->asArray()
+                ->all();
+            
+            $stats = [];
+            foreach ($statistics as $key => $item) {
+                $stats[$key] = (int)$item['value'];
+            }
+            
+            $allStats[$server->id] = $stats;
+        }
+        
+        return $allStats;
+    }
+
+    /**
+     * Проверить задание с предзагруженной статистикой
+     * @param TaskV2 $task
+     * @param User $user
+     * @param array $allStatsData
+     * @return CheckResult|null
+     */
+    protected function checkTaskWithPreloadedStats(TaskV2 $task, User $user, array $allStatsData): ?CheckResult
+    {
+        $params = is_array($task->check_params) ? $task->check_params : json_decode($task->check_params, true);
+        
+        if (empty($params['stat_key'])) {
+            return null;
+        }
+
+        $statKey = $params['stat_key'];
+        $statKeys = array_map('trim', explode(',', $statKey));
+        $requiredValue = (int)($params['required_value'] ?? 0);
+        $serverId = (int)($params['server_id'] ?? 0);
+        $sumAllServers = !empty($params['sum_all_servers']) && $params['sum_all_servers'] === true;
+
+        if ($requiredValue <= 0) {
+            return null;
+        }
+
+        $currentValue = 0;
+
+        if ($sumAllServers) {
+            // Суммируем статистику по всем серверам
+            foreach ($allStatsData as $stats) {
+                $currentValue += $this->getStatsSum($stats, $statKeys);
+            }
+        } else {
+            // Статистика по конкретному серверу
+            if ($serverId > 0) {
+                $stats = $allStatsData[$serverId] ?? [];
+            } else {
+                // Используем текущий сервер пользователя
+                $server = $user->server ?? \common\models\servers\Servers::find()
+                    ->where(['is_active' => 1])
+                    ->orderBy(['sort' => SORT_ASC])
+                    ->one();
+                if ($server) {
+                    $stats = $allStatsData[$server->id] ?? [];
+                } else {
+                    $stats = [];
+                }
+            }
+            $currentValue = $this->getStatsSum($stats, $statKeys);
+        }
+
+        if ($currentValue >= $requiredValue) {
+            return CheckResult::success(
+                Yii::t('common', 'Задание выполнено! Текущее значение: {current} из {required}', [
+                    'current' => number_format($currentValue, 0, '.', ' '),
+                    'required' => number_format($requiredValue, 0, '.', ' '),
+                ]),
+                $currentValue,
+                $requiredValue
+            );
+        }
+
+        $remaining = $requiredValue - $currentValue;
+        return CheckResult::failure(
+            Yii::t('common', 'Прогресс: {current} из {required}. Осталось: {remaining}', [
+                'current' => number_format($currentValue, 0, '.', ' '),
+                'required' => number_format($requiredValue, 0, '.', ' '),
+                'remaining' => number_format($remaining, 0, '.', ' '),
+            ]),
+            $currentValue,
+            $requiredValue
+        );
+    }
+
+    /**
+     * Получить сумму значений статистики по указанным ключам
+     * @param array $playerStats
+     * @param array $statKeys
+     * @return int
+     */
+    protected function getStatsSum(array $playerStats, array $statKeys): int
+    {
+        $sum = 0;
+        foreach ($statKeys as $key) {
+            $sum += \common\models\statistics\Statistics::getParam($playerStats, trim($key));
+        }
+        return $sum;
     }
 }
 

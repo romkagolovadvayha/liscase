@@ -1,0 +1,513 @@
+// Комментарии - простой современный стиль как на изображении
+// Переопределяем старые стили из page/blog.scss
+.blog-comments-section {
+  .comment-wrapper {
+    background-color: transparent !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin-top: 2rem;
+    margin-bottom: 0;
+  }
+}
+
+.comments {
+  margin: 0 !important;
+  
+  // Переопределяем старый title-block
+  .title-block {
+    display: none !important;
+  }
+  
+      &-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color-default);
+      }
+
+      &-title {
+        @extend .p1, .text-text-main;
+        margin: 0;
+        font-weight: 500;
+        font-size: 18px;
+        color: var(--text-secondary);
+      }
+
+  &-list {
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 0 1.5rem 0 !important;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  // Переопределяем старые стили для .comment
+  .comment {
+    margin-bottom: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: block !important;
+    width: 100% !important;
+    
+    .comment-content {
+      background: transparent !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      border: none !important;
+      display: flex !important;
+      flex-direction: row !important;
+      gap: 0.75rem !important;
+      width: 100% !important;
+      
+      &:hover {
+        box-shadow: none !important;
+        border: none !important;
+      }
+    }
+    
+    .comment-author-avatar {
+      display: none !important;
+    }
+    
+    .comment-details {
+      display: none !important;
+    }
+  }
+  
+  // Переопределяем старые стили для .children
+  .children {
+    list-style: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+// Форма комментария - формат как на изображении
+// Переопределяем стили из page/media.scss, которые делают форму горизонтальной
+.blog-comments-section {
+  .comment-form,
+  .comment-reply-form {
+    display: block !important; // Убираем flex, чтобы форма была вертикальной
+    gap: 0 !important;
+    margin-bottom: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+.comment-form-container {
+  margin-bottom: 0 !important;
+  margin-top: 1.5rem !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  border: none !important;
+  
+  .comment-form-label {
+    @extend .p2, .text-text-main;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+    display: block;
+  }
+  
+  .comment-form-field-wrapper {
+    width: 100%;
+  }
+  
+  // Переопределяем старые стили
+  .comment-box {
+    margin: 0 !important;
+    
+    .form-group {
+      margin-bottom: 0 !important;
+      position: relative;
+    }
+    
+    textarea {
+      width: 100% !important;
+      min-height: 120px !important;
+      padding: 1rem !important;
+      border: 1px solid var(--border-color-default) !important;
+      border-radius: var(--card-radius) !important;
+      background: var(--background-secondary) !important;
+      color: var(--text-main) !important;
+      font-size: 14px !important;
+      line-height: 1.6 !important;
+      resize: vertical !important;
+      font-family: inherit !important;
+      transition: border-color 0.2s !important;
+      box-sizing: border-box !important;
+      
+      &:focus {
+        outline: none !important;
+        border-color: var(--border-color-hover) !important;
+        box-shadow: none !important;
+      }
+      
+      &::placeholder {
+        color: var(--text-secondary) !important;
+        opacity: 0.7;
+      }
+    }
+    
+    .help-block {
+      display: none !important;
+    }
+  }
+  
+  .comment-box-partial {
+    margin-top: 0 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    margin-top: 0.5rem !important;
+    
+    .button-container {
+      display: none !important;
+    }
+  }
+  
+}
+
+.comment-form {
+  &-field {
+    margin-bottom: 0.75rem;
+  }
+
+  &-textarea {
+    @extend .p2, .text-text-main, .bg-background-main;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color-default);
+    border-radius: var(--card-radius);
+    resize: vertical;
+    min-height: 100px;
+    outline: none;
+    transition: border-color 0.2s;
+
+    &:focus {
+      border-color: var(--border-color-hover);
+    }
+
+    &::placeholder {
+      color: var(--text-secondary);
+    }
+  }
+
+  &-char-count {
+    @extend .p3, .text-text-secondary;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+
+    &.error {
+      color: var(--primary-colors-main);
+    }
+
+    .char-count {
+      font-weight: 600;
+    }
+  }
+
+  &-actions {
+    display: flex;
+    align-items: center;
+    margin-top: 0.5rem;
+  }
+
+  &-cancel-btn {
+    @extend .p3, .text-text-secondary;
+    text-decoration: none;
+    transition: color 0.2s;
+    display: none;
+    
+    &.show {
+      display: inline-block;
+    }
+
+    &:hover {
+      color: var(--text-main);
+    }
+  }
+  
+  &-submit-wrapper {
+    margin-top: 0.75rem;
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  &-submit-btn {
+    @extend .p2, .text-text-main;
+    padding: 0.625rem 1.5rem;
+    background: var(--primary-colors-main);
+    border: none;
+    border-radius: var(--button-radius);
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+    font-weight: 500;
+
+    &:hover:not(:disabled) {
+      background: var(--primary-colors-secondary);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Элемент комментария - формат как на изображении
+.comment-item {
+  display: block !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 0 0.5rem 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  clear: both;
+  overflow: hidden;
+
+  .comment-content {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 0.75rem;
+    flex: 1;
+    width: 100%;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .comment-avatar {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: block;
+
+    &-img {
+      width: 40px !important;
+      height: 40px !important;
+      border-radius: 50% !important;
+      object-fit: cover;
+      border: none !important;
+      display: block !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: transparent !important;
+    }
+  }
+
+  .comment-body-wrapper {
+    flex: 1;
+    min-width: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem;
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .comment-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+    width: 100%;
+  }
+
+  .comment-author {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+
+    &-name {
+      @extend .p2, .text-text-main;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+  }
+
+  .comment-date {
+    @extend .p3, .text-text-secondary;
+    color: var(--text-secondary);
+    font-size: 13px;
+
+    a {
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.2s;
+
+      &:hover {
+        color: var(--text-teritiary);
+      }
+    }
+  }
+
+  .comment-text {
+    @extend .p2, .text-text-main;
+    line-height: 1.5;
+    word-wrap: break-word;
+    word-break: break-word;
+    margin-bottom: 0.5rem;
+    color: var(--text-main);
+    font-size: 14px;
+    width: 100%;
+    display: block;
+
+    p {
+      margin: 0 0 0.5rem 0;
+      display: block;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+  
+
+  // Вложенные комментарии (ответы)
+  .comment-replies {
+    margin-top: 1rem;
+    margin-left: 2.5rem;
+    padding-left: 1rem;
+    border-left: 2px solid var(--border-color-default);
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5rem;
+    width: 100%;
+
+    .comment-item {
+      margin: 0 0 0.5rem 0 !important;
+      width: 100% !important;
+    }
+  }
+  
+  // Форма ответа, которая вставляется через JavaScript yii2mod/comments
+  .comment-form-container {
+    margin-top: 1rem;
+    margin-left: 2.5rem;
+    padding-left: 1rem;
+    border-left: 2px solid var(--border-color-default);
+  }
+}
+
+// Форма вверху и внизу
+.comment-form-top {
+  margin-bottom: 2rem;
+}
+
+.comment-form-bottom {
+  margin-top: 2rem;
+}
+
+// Адаптивность
+@media (max-width: 768px) {
+  .comment-item {
+    .comment-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .comment-replies {
+      margin-left: 1.5rem;
+      padding-left: 0.75rem;
+    }
+  }
+
+  .comment-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+
+    .comment-form-cancel-btn {
+      order: 2;
+    }
+
+    .comment-form-submit-btn {
+      order: 1;
+      width: 100%;
+    }
+  }
+}
+
+// Пустое состояние
+.comments-list:empty::before {
+  content: attr(data-empty-text);
+  @extend .p2, .text-text-secondary;
+  display: block;
+  text-align: center;
+  padding: 2rem;
+}
+
+// Пагинация комментариев
+.comments-pager {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 0;
+  list-style: none;
+  
+  li {
+    margin: 0 0.25rem;
+    
+    a.comments-pager-link {
+      @extend .p2, .text-text-main;
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: var(--background-secondary);
+      border: 1px solid var(--border-color-default);
+      border-radius: var(--button-radius);
+      text-decoration: none;
+      color: var(--text-main);
+      transition: all 0.2s;
+      
+      &:hover {
+        background: var(--background-teritiary);
+        border-color: var(--border-color-hover);
+      }
+    }
+    
+    &.comments-pager-active {
+      a.comments-pager-link {
+        background: var(--primary-colors-main);
+        border-color: var(--primary-colors-main);
+        color: white;
+        cursor: default;
+        
+        &:hover {
+          background: var(--primary-colors-main);
+          border-color: var(--primary-colors-main);
+        }
+      }
+    }
+    
+    &.comments-pager-disabled {
+      a.comments-pager-link {
+        opacity: 0.5;
+        cursor: not-allowed;
+        
+        &:hover {
+          background: var(--background-secondary);
+          border-color: var(--border-color-default);
+        }
+      }
+    }
+  }
+}
+

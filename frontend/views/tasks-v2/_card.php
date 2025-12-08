@@ -5,6 +5,7 @@ use yii\helpers\Url;
 
 /** @var \common\models\tasks_v2\TaskV2 $model */
 /** @var \common\models\user\User $user */
+/** @var array $tasksProgress */
 
 // ListView передает модель как $model
 $task = $model ?? $task ?? null;
@@ -102,6 +103,12 @@ $modalSize = $isDailyReward ? 'modal-lg' : 'modal';
                         <i class="fas fa-redo"></i>
                     </span>
                 <?php endif; ?>
+                <?php if ($task->check_type === \common\models\tasks_v2\TaskV2::CHECK_TYPE_STATISTICS_PARAM): ?>
+                    <span class="tasksV2__card-badge tasksV2__card-badge--type" 
+                          title="<?= Html::encode(Yii::t('common', 'Задание учитывает статистику за все время, а не только за текущий вайп')) ?>">
+                        <i class="fas fa-question-circle"></i>
+                    </span>
+                <?php endif; ?>
                 <?php 
                 // Таймер для ежедневных наград (показываем только если не available)
                 if ($isDailyReward && $status !== 'available'): 
@@ -151,6 +158,32 @@ $modalSize = $isDailyReward ? 'modal-lg' : 'modal';
             <?php if ($task->short_description): ?>
                 <div class="tasksV2__card-description">
                     <p><?= Html::encode($task->short_description) ?></p>
+                </div>
+            <?php endif; ?>
+            
+            <?php 
+            // Показываем прогресс для многоразовых заданий или одноразовых с типом проверки "параметр статистики"
+            $isRepeatable = $task->type === \common\models\tasks_v2\TaskV2::TYPE_REPEATABLE;
+            $isOneTimeWithStats = $task->type === \common\models\tasks_v2\TaskV2::TYPE_ONE_TIME && 
+                                  $task->check_type === 'statistics_param';
+            $taskProgress = $tasksProgress[$task->id] ?? null;
+            $progress = $taskProgress['progress'] ?? null;
+            $maxProgressValue = $task->max_progress ?? ($taskProgress['maxProgress'] ?? null);
+            $hasProgress = ($isRepeatable || $isOneTimeWithStats) && 
+                           $progress !== null && $maxProgressValue !== null && $maxProgressValue > 0;
+            if ($hasProgress): ?>
+                <div class="tasksV2__card-progress">
+                    <div class="tasksV2__card-progress-header">
+                        <span class="tasksV2__card-progress-label"><?= Yii::t('common', 'Выполнено') ?></span>
+                        <span class="tasksV2__card-progress-text">
+                            <?= $progress ?> / <?= $maxProgressValue ?>
+                        </span>
+                    </div>
+                    <?php if ($maxProgressValue > 0): ?>
+                        <div class="tasksV2__card-progress-bar">
+                            <div class="tasksV2__card-progress-bar-fill" style="width: <?= min(100, ($progress / $maxProgressValue) * 100) ?>%"></div>
+                        </div>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
             

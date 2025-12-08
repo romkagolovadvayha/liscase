@@ -192,6 +192,7 @@ $modal-dialog-margin-y-sm-up: 0;
 @import "page/achievements";
 @import "page/referral";
 @import "page/blog";
+@import "_comments"; // Импортируем после page/blog чтобы переопределить старые стили
 @import "page/custom-skins";
 @import "page/raid-table";
 @import "page/media";
