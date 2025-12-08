@@ -22,18 +22,11 @@ class ProfileForm extends UserProfile
             [['trade_link', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'trim'],
             [['raid_notify', 'ban_notify', 'telegram_disabled', 'discord_disabled', 'is_hide_online', 'is_hide_team'], 'integer'],
             [['trade_link', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'string', 'max' => 255],
-            [['youtube_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'when' => function($model) {
-                return !empty($model->youtube_link);
-            }],
-            [['twitch_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'when' => function($model) {
-                return !empty($model->twitch_link);
-            }],
-            [['vk_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'when' => function($model) {
-                return !empty($model->vk_link);
-            }],
-            [['telegram_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'when' => function($model) {
-                return !empty($model->telegram_link);
-            }],
+            // Валидация URL только для непустых значений
+            [['youtube_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
+            [['twitch_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
+            [['vk_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
+            [['telegram_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
         ];
     }
 
@@ -51,8 +44,30 @@ class ProfileForm extends UserProfile
      */
     public function saveRecord(): bool
     {
+        // Обрабатываем пустые строки для URL полей перед валидацией
+        if ($this->youtube_link === '') {
+            $this->youtube_link = null;
+        }
+        if ($this->twitch_link === '') {
+            $this->twitch_link = null;
+        }
+        if ($this->vk_link === '') {
+            $this->vk_link = null;
+        }
+        if ($this->telegram_link === '') {
+            $this->telegram_link = null;
+        }
+        
         if (!$this->validate()) {
             Yii::error('ProfileForm validation failed: ' . json_encode($this->getErrors()));
+            Yii::error('ProfileForm data: ' . json_encode([
+                'youtube_link' => $this->youtube_link,
+                'twitch_link' => $this->twitch_link,
+                'vk_link' => $this->vk_link,
+                'telegram_link' => $this->telegram_link,
+                'is_hide_online' => $this->is_hide_online,
+                'is_hide_team' => $this->is_hide_team,
+            ]));
             return false;
         }
 
@@ -126,8 +141,14 @@ class ProfileForm extends UserProfile
             $this->skindrops_error = null;
         }
 
-        if (!$this->save() || !$this->user->save()) {
-            throw new \Exception('User not saved');
+        if (!$this->save()) {
+            Yii::error('Failed to save UserProfile: ' . json_encode($this->getErrors()));
+            throw new \Exception('UserProfile not saved: ' . json_encode($this->getErrors()));
+        }
+        
+        if (!$this->user->save()) {
+            Yii::error('Failed to save User: ' . json_encode($this->user->getErrors()));
+            throw new \Exception('User not saved: ' . json_encode($this->user->getErrors()));
         }
 
         return true;

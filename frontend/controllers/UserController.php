@@ -289,18 +289,46 @@ class UserController extends WebController
                 if (isset($post['telegram_link'])) {
                     $model->telegram_link = $post['telegram_link'];
                 }
+                // Для чекбоксов: если значение есть в POST, берем его (может быть массивом [0, 1])
                 if (isset($post['is_hide_online'])) {
-                    $model->is_hide_online = (int)$post['is_hide_online'];
+                    $value = $post['is_hide_online'];
+                    // Если это массив, берем последнее значение (1 если отмечен)
+                    if (is_array($value)) {
+                        $model->is_hide_online = (int)end($value);
+                    } else {
+                        $model->is_hide_online = (int)$value;
+                    }
+                } else {
+                    $model->is_hide_online = 0;
                 }
                 if (isset($post['is_hide_team'])) {
-                    $model->is_hide_team = (int)$post['is_hide_team'];
+                    $value = $post['is_hide_team'];
+                    // Если это массив, берем последнее значение (1 если отмечен)
+                    if (is_array($value)) {
+                        $model->is_hide_team = (int)end($value);
+                    } else {
+                        $model->is_hide_team = (int)$value;
+                    }
+                } else {
+                    $model->is_hide_team = 0;
                 }
             }
+            
+            // Логируем данные перед сохранением для отладки
+            Yii::info('ProfileForm data before save: ' . json_encode([
+                'youtube_link' => $model->youtube_link,
+                'twitch_link' => $model->twitch_link,
+                'vk_link' => $model->vk_link,
+                'telegram_link' => $model->telegram_link,
+                'is_hide_online' => $model->is_hide_online,
+                'is_hide_team' => $model->is_hide_team,
+            ]));
             
             if ($model->saveRecord()) {
                 Yii::$app->session->setFlash('success', Yii::t('common', 'Настройки успешно сохранены'));
             } else {
                 $errors = $model->getErrors();
+                Yii::error('ProfileForm save failed with errors: ' . json_encode($errors));
                 if (!empty($errors['global'])) {
                     Yii::$app->session->setFlash('danger', $errors['global'][0]);
                 } else {
