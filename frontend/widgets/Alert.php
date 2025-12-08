@@ -80,12 +80,6 @@ class Alert extends \yii\bootstrap5\Widget
                                                   ]
                                               ]);
                 }
-                
-                // Восстанавливаем сообщение для других виджетов на этой странице
-                // Это нужно, если на странице несколько Alert::widget() (например, в разных PJAX контейнерах)
-                if (!empty($flash)) {
-                    $session->setFlash($type, $flash);
-                }
             }
         }
     }
