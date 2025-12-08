@@ -60,25 +60,33 @@ class Alert extends \yii\bootstrap5\Widget
         $session = Yii::$app->session;
 
         foreach (array_keys($this->alertTypes) as $type) {
-            $flash = $session->getFlash($type);
+            // Проверяем наличие flash-сообщения
+            if ($session->hasFlash($type)) {
+                // Получаем flash-сообщение (getFlash автоматически удаляет его)
+                $flash = $session->getFlash($type);
 
-            foreach ((array) $flash as $i => $message) {
-                $text = "<i class='{$this->alertIcons[$this->alertTypes[$type]]}'></i><div class='toast-message_text'>$message</div>";
-                if ($type === 'success-box') {
-                    $text = "<div class='toast-message_text'>$message</div>";
+                foreach ((array) $flash as $i => $message) {
+                    $text = "<i class='{$this->alertIcons[$this->alertTypes[$type]]}'></i><div class='toast-message_text'>$message</div>";
+                    if ($type === 'success-box') {
+                        $text = "<div class='toast-message_text'>$message</div>";
+                    }
+                    echo Notification::widget([
+                                                  'type' => $this->alertTypes[$type],
+                                                  'message' => $text,
+                                                  'options' => [
+                                                      "progressBar" => true,
+                                                      "positionClass" => Notification::POSITION_TOP_RIGHT,
+                                                      "escapeHtml " => false,
+                                                  ]
+                                              ]);
                 }
-                echo Notification::widget([
-                                              'type' => $this->alertTypes[$type],
-                                              'message' => $text,
-                                              'options' => [
-                                                  "progressBar" => true,
-                                                  "positionClass" => Notification::POSITION_TOP_RIGHT,
-                                                  "escapeHtml " => false,
-                                              ]
-                                          ]);
+                
+                // Восстанавливаем сообщение для других виджетов на этой странице
+                // Это нужно, если на странице несколько Alert::widget() (например, в разных PJAX контейнерах)
+                if (!empty($flash)) {
+                    $session->setFlash($type, $flash);
+                }
             }
-
-            $session->removeFlash($type);
         }
     }
 }
