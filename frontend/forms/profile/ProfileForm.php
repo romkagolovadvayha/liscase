@@ -60,15 +60,6 @@ class ProfileForm extends UserProfile
         }
         
         if (!$this->validate()) {
-            Yii::error('ProfileForm validation failed: ' . json_encode($this->getErrors()));
-            Yii::error('ProfileForm data: ' . json_encode([
-                'youtube_link' => $this->youtube_link,
-                'twitch_link' => $this->twitch_link,
-                'vk_link' => $this->vk_link,
-                'telegram_link' => $this->telegram_link,
-                'is_hide_online' => $this->is_hide_online,
-                'is_hide_team' => $this->is_hide_team,
-            ]));
             return false;
         }
 
@@ -150,7 +141,7 @@ class ProfileForm extends UserProfile
             throw new \Exception('UserProfile not saved: ' . json_encode($this->getErrors()));
         }
         
-        Yii::info('UserProfile saved successfully');
+        Yii::error('UserProfile saved successfully');
         
         if (!$this->user->save()) {
             Yii::error('Failed to save User: ' . json_encode($this->user->getErrors()));

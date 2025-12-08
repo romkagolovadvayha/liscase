@@ -319,17 +319,6 @@ class UserController extends WebController
                 }
             }
             
-            // Логируем данные перед сохранением для отладки
-            Yii::info('ProfileForm POST data: ' . json_encode($post));
-            Yii::info('ProfileForm model data before save: ' . json_encode([
-                'youtube_link' => $model->youtube_link,
-                'twitch_link' => $model->twitch_link,
-                'vk_link' => $model->vk_link,
-                'telegram_link' => $model->telegram_link,
-                'is_hide_online' => $model->is_hide_online,
-                'is_hide_team' => $model->is_hide_team,
-            ]));
-            
             if ($model->saveRecord()) {
                 Yii::$app->session->setFlash('success', Yii::t('common', 'Настройки успешно сохранены'));
                 // Перезагружаем модель, чтобы отобразить сохраненные данные
