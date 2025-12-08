@@ -51,29 +51,6 @@ class ProfileForm extends UserProfile
      */
     public function saveRecord(): bool
     {
-        // Загружаем данные из POST, если они есть
-        $post = Yii::$app->request->post('ProfileForm', []);
-        if (!empty($post)) {
-            if (isset($post['youtube_link'])) {
-                $this->youtube_link = $post['youtube_link'];
-            }
-            if (isset($post['twitch_link'])) {
-                $this->twitch_link = $post['twitch_link'];
-            }
-            if (isset($post['vk_link'])) {
-                $this->vk_link = $post['vk_link'];
-            }
-            if (isset($post['telegram_link'])) {
-                $this->telegram_link = $post['telegram_link'];
-            }
-            if (isset($post['is_hide_online'])) {
-                $this->is_hide_online = $post['is_hide_online'];
-            }
-            if (isset($post['is_hide_team'])) {
-                $this->is_hide_team = $post['is_hide_team'];
-            }
-        }
-        
         if (!$this->validate()) {
             Yii::error('ProfileForm validation failed: ' . json_encode($this->getErrors()));
             return false;
