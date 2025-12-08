@@ -72,7 +72,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                        'icon' => 'fas fa-gamepad',
                        'url' => [''],
                        'visibility' => $moder,
-                       'active' => _checkActive('/servers') || _checkActive('/map-list'),
+                       'active' => _checkActive('/servers') || _checkActive('/map-list') || _checkActive('/rust-plugin-config'),
                        'items' => [
                            [
                                'label' => 'Список серверов',
@@ -105,6 +105,13 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                                'icon' => 'fas fa-map',
                                'url' => ['/map-list/index'],
                                'active' => _checkActive('/map-list'),
+                           ],
+                           [
+                               'label' => 'Конфиги',
+                               'icon' => 'fas fa-cog',
+                               'url' => ['/rust-plugin-config/index'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/rust-plugin-config'),
                            ],
                        ],
                    ],
