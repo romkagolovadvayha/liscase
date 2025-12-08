@@ -13,8 +13,6 @@ class ProfileForm extends UserProfile
     public $raid_notify;
     public $telegram_disabled;
     public $discord_disabled;
-    public $is_hide_online;
-    public $is_hide_team;
 
     public function rules(): array
     {
@@ -108,12 +106,6 @@ class ProfileForm extends UserProfile
             }
         }
 
-        // Сохранение социальных ссылок
-        $this->youtube_link = !empty($this->youtube_link) ? trim($this->youtube_link) : null;
-        $this->twitch_link = !empty($this->twitch_link) ? trim($this->twitch_link) : null;
-        $this->vk_link = !empty($this->vk_link) ? trim($this->vk_link) : null;
-        $this->telegram_link = !empty($this->telegram_link) ? trim($this->telegram_link) : null;
-
         // Настройки приватности (только для VIP)
         // Значения уже должны быть установлены из POST, просто проверяем VIP
         if (!$this->user->hasVip()) {
@@ -146,16 +138,11 @@ class ProfileForm extends UserProfile
             $this->skindrops_error = null;
         }
 
-        // Логируем данные перед сохранением
-        Yii::info('Saving UserProfile with data: ' . json_encode([
-            'youtube_link' => $this->youtube_link,
-            'twitch_link' => $this->twitch_link,
-            'vk_link' => $this->vk_link,
-            'telegram_link' => $this->telegram_link,
-            'is_hide_online' => $this->is_hide_online,
-            'is_hide_team' => $this->is_hide_team,
-            'hasVip' => $this->user->hasVip(),
-        ]));
+        // Сохранение социальных ссылок (так же, как trade_link)
+        $this->youtube_link = !empty($this->youtube_link) ? trim($this->youtube_link) : null;
+        $this->twitch_link = !empty($this->twitch_link) ? trim($this->twitch_link) : null;
+        $this->vk_link = !empty($this->vk_link) ? trim($this->vk_link) : null;
+        $this->telegram_link = !empty($this->telegram_link) ? trim($this->telegram_link) : null;
         
         if (!$this->save()) {
             Yii::error('Failed to save UserProfile: ' . json_encode($this->getErrors()));
