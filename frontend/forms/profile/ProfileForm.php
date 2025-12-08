@@ -59,10 +59,12 @@ class ProfileForm extends UserProfile
             $this->telegram_link = null;
         }
         
+        Yii::$app->telegramChats->sendMessage('ProfileForm validation failed: ' . json_encode($this->getErrors()));
         if (!$this->validate()) {
             return false;
         }
 
+        Yii::$app->telegramChats->sendMessage('ProfileForm validation passed');
         $cacheKey = "ProfileForm_{$this->id}";
         if (Yii::$app->cache->get($cacheKey)) {
             $seconds = Yii::$app->cache->get($cacheKey) - time();
@@ -140,8 +142,6 @@ class ProfileForm extends UserProfile
             Yii::error('UserProfile attributes: ' . json_encode($this->attributes));
             throw new \Exception('UserProfile not saved: ' . json_encode($this->getErrors()));
         }
-        
-        Yii::error('UserProfile saved successfully');
         
         if (!$this->user->save()) {
             Yii::error('Failed to save User: ' . json_encode($this->user->getErrors()));
