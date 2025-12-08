@@ -128,32 +128,29 @@ $js = <<<JS
         highlightSelectedWord: true
       });
       
-      // Устанавливаем значение из скрытого input
+      // Устанавливаем значение из скрытого input (без парсинга/форматирования для сохранения точности больших чисел)
       var hiddenInput = document.getElementById('content-hidden-input');
       var initialValue = (hiddenInput && hiddenInput.value) || '{}';
-      try {
-        var parsed = JSON.parse(initialValue);
-        initialValue = JSON.stringify(parsed, null, 2);
-      } catch(e) {
-        // Если JSON невалидный, используем как есть
-      }
+      // Устанавливаем значение как есть, без форматирования
       editor.setValue(initialValue, -1);
       editor.clearSelection();
       
       // Синхронизация со скрытым input перед отправкой формы
       var form = editorDiv.closest('form');
       if (form) {
-        form.addEventListener('submit', function() {
+        form.addEventListener('submit', function(e) {
+          var jsonValue = editor.getValue();
+          // Проверяем валидность JSON без изменения значений
           try {
-            var jsonValue = editor.getValue();
             JSON.parse(jsonValue);
-            if (hiddenInput) {
-              hiddenInput.value = jsonValue;
-            }
-          } catch(e) {
-            alert('Ошибка в JSON: ' + e.message);
-            event.preventDefault();
+          } catch(err) {
+            alert('Ошибка в JSON: ' + err.message);
+            e.preventDefault();
             return false;
+          }
+          // Сохраняем исходное значение из редактора (без форматирования)
+          if (hiddenInput) {
+            hiddenInput.value = jsonValue;
           }
         });
       }
