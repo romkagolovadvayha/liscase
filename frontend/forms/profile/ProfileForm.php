@@ -20,13 +20,16 @@ class ProfileForm extends UserProfile
     {
         return [
             [['trade_link', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'trim'],
-            [['raid_notify', 'ban_notify', 'telegram_disabled', 'discord_disabled', 'is_hide_online', 'is_hide_team'], 'integer'],
+            [['raid_notify', 'ban_notify', 'telegram_disabled', 'discord_disabled'], 'integer'],
+            [['is_hide_online', 'is_hide_team'], 'boolean'],
             [['trade_link', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'string', 'max' => 255],
             // Валидация URL только для непустых значений
             [['youtube_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
             [['twitch_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
             [['vk_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
             [['telegram_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
+            // Помечаем поля как safe для массового присваивания
+            [['is_hide_online', 'is_hide_team'], 'safe'],
         ];
     }
 
@@ -112,13 +115,15 @@ class ProfileForm extends UserProfile
         $this->telegram_link = !empty($this->telegram_link) ? trim($this->telegram_link) : null;
 
         // Настройки приватности (только для VIP)
-        if ($this->user->hasVip()) {
-            $this->is_hide_online = !empty($this->is_hide_online) ? 1 : 0;
-            $this->is_hide_team = !empty($this->is_hide_team) ? 1 : 0;
-        } else {
+        // Значения уже должны быть установлены из POST, просто проверяем VIP
+        if (!$this->user->hasVip()) {
             // Если нет VIP, сбрасываем флаги
-            $this->is_hide_online = 0;
-            $this->is_hide_team = 0;
+            $this->is_hide_online = false;
+            $this->is_hide_team = false;
+        } else {
+            // Для VIP пользователей просто убеждаемся, что значения корректны (boolean)
+            $this->is_hide_online = (bool)$this->is_hide_online;
+            $this->is_hide_team = (bool)$this->is_hide_team;
         }
 
         $this->skindrops = 0;
@@ -149,6 +154,7 @@ class ProfileForm extends UserProfile
             'telegram_link' => $this->telegram_link,
             'is_hide_online' => $this->is_hide_online,
             'is_hide_team' => $this->is_hide_team,
+            'hasVip' => $this->user->hasVip(),
         ]));
         
         if (!$this->save()) {

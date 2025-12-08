@@ -299,23 +299,23 @@ class UserController extends WebController
                     $value = $post['is_hide_online'];
                     // Если это массив, берем последнее значение (1 если отмечен)
                     if (is_array($value)) {
-                        $model->is_hide_online = (int)end($value);
+                        $model->is_hide_online = (bool)end($value);
                     } else {
-                        $model->is_hide_online = (int)$value;
+                        $model->is_hide_online = (bool)$value;
                     }
                 } else {
-                    $model->is_hide_online = 0;
+                    $model->is_hide_online = false;
                 }
                 if (isset($post['is_hide_team'])) {
                     $value = $post['is_hide_team'];
                     // Если это массив, берем последнее значение (1 если отмечен)
                     if (is_array($value)) {
-                        $model->is_hide_team = (int)end($value);
+                        $model->is_hide_team = (bool)end($value);
                     } else {
-                        $model->is_hide_team = (int)$value;
+                        $model->is_hide_team = (bool)$value;
                     }
                 } else {
-                    $model->is_hide_team = 0;
+                    $model->is_hide_team = false;
                 }
             }
             
