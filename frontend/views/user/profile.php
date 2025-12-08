@@ -270,21 +270,37 @@ $this->title = Yii::t('common', "Профиль") . " - {$user->userProfile->nam
 </section>
 
 <script>
-$(document).ready(function() {
-    // Обработка клика на disabled переключатель (только для VIP функций)
-    $('label[data-vip-required="true"]').on('click', function(e) {
-        var checkbox = $(this).find('input[type="checkbox"]');
-        if (checkbox.prop('disabled')) {
-            e.preventDefault();
-            e.stopPropagation();
-            var message = "<?= Yii::t('common', 'Для использования этой функции необходимо приобрести VIP') ?>";
-            if (typeof toastr !== 'undefined') {
-                toastr.info("<i class='fas fa-info-circle'></i><div class='toast-message_text'>" + message + "</div>", '', { progressBar: true, positionClass: 'toast-top-right', escapeHtml: false });
-            } else {
-                alert(message);
-            }
-            return false;
-        }
-    });
-});
+(function() {
+    // Ждем загрузки DOM
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+    
+    function init() {
+        // Обработка клика на disabled переключатель (только для VIP функций)
+        var vipLabels = document.querySelectorAll('label[data-vip-required="true"]');
+        vipLabels.forEach(function(label) {
+            label.addEventListener('click', function(e) {
+                var checkbox = this.querySelector('input[type="checkbox"]');
+                if (checkbox && checkbox.disabled) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var message = "<?= Yii::t('common', 'Для использования этой функции необходимо приобрести VIP') ?>";
+                    
+                    // Проверяем наличие toastr
+                    if (typeof toastr !== 'undefined' && typeof jQuery !== 'undefined') {
+                        jQuery(function($) {
+                            toastr.info("<i class='fas fa-info-circle'></i><div class='toast-message_text'>" + message + "</div>", '', { progressBar: true, positionClass: 'toast-top-right', escapeHtml: false });
+                        });
+                    } else {
+                        alert(message);
+                    }
+                    return false;
+                }
+            });
+        });
+    }
+})();
 </script>
