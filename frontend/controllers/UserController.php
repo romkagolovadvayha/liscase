@@ -270,12 +270,47 @@ class UserController extends WebController
         }
 
         $model = ProfileForm::findOne($user->userProfile->id);
-        if (Yii::$app->request->isPost && $model->load(Yii::$app->request->post())) {
+        if (Yii::$app->request->isPost) {
+            // Загружаем данные из POST
+            $post = Yii::$app->request->post('ProfileForm', []);
+            if (!empty($post)) {
+                $model->load(Yii::$app->request->post());
+                
+                // Дополнительно загружаем поля, которые могут не загрузиться через load()
+                if (isset($post['youtube_link'])) {
+                    $model->youtube_link = $post['youtube_link'];
+                }
+                if (isset($post['twitch_link'])) {
+                    $model->twitch_link = $post['twitch_link'];
+                }
+                if (isset($post['vk_link'])) {
+                    $model->vk_link = $post['vk_link'];
+                }
+                if (isset($post['telegram_link'])) {
+                    $model->telegram_link = $post['telegram_link'];
+                }
+                if (isset($post['is_hide_online'])) {
+                    $model->is_hide_online = (int)$post['is_hide_online'];
+                }
+                if (isset($post['is_hide_team'])) {
+                    $model->is_hide_team = (int)$post['is_hide_team'];
+                }
+            }
+            
             if ($model->saveRecord()) {
-                Yii::$app->session->addFlash('success', 'Настройки успешно сохранены');
+                Yii::$app->session->setFlash('success', Yii::t('common', 'Настройки успешно сохранены'));
             } else {
-                if (!empty($model->getFirstError('global'))) {
-                    Yii::$app->session->addFlash('danger', $model->getFirstError('global'));
+                $errors = $model->getErrors();
+                if (!empty($errors['global'])) {
+                    Yii::$app->session->setFlash('danger', $errors['global'][0]);
+                } else {
+                    // Показываем первую ошибку валидации
+                    $firstError = reset($errors);
+                    if (!empty($firstError[0])) {
+                        Yii::$app->session->setFlash('danger', $firstError[0]);
+                    } else {
+                        Yii::$app->session->setFlash('danger', Yii::t('common', 'Ошибка при сохранении настроек'));
+                    }
                 }
             }
         }

@@ -72,8 +72,8 @@ class UserProfile extends \common\components\base\ActiveRecord
             ],
             [['name', 'surname', 'trade_link', 'full_name', 'avatar'], 'string', 'max' => 255],
             [['youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'string', 'max' => 500],
-            [['youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'url', 'defaultScheme' => 'https'],
-            [['birthday'], 'safe'],
+            [['youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true],
+            [['birthday', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link', 'is_hide_online', 'is_hide_team'], 'safe'],
             [['is_hide_online', 'is_hide_team'], 'boolean'],
             [['user_id'], 'unique'],
         ];
