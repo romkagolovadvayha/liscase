@@ -175,6 +175,15 @@ if (empty($this->params['_blog_similar_block'])) {
         'SETTINGS' => $SETTINGS,
         'USER_GUEST' => Yii::$app->user->isGuest,
     ]),
+    'MOBILE_MENU' => Yii::$app->view->render('menu.twig', [
+        'MENU_HIDDEN' => false,
+        'MOBILE' => true,
+        'USER' => $userData,
+        'NOTIFICATIONS' => $notifications,
+        'PAGE' => $page,
+        'SETTINGS' => $SETTINGS,
+        'USER_GUEST' => Yii::$app->user->isGuest,
+    ]),
     'MODAL' => Yii::$app->view->render('modal.twig', [
         'SETTINGS' => $SETTINGS,
     ]),

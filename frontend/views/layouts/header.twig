@@ -109,13 +109,10 @@
                 </ul>
             </div>
 
-            <button class="button-primary show-modal-link button-size__s h-36 w-36 tablet_hide desktop_hide"
-                    data-href="/site/menu?page={{ PAGE }}"
-                    data-size="modal-sm"
-                    data-toggl="modal"
-                    data-target="modal-dialog"
-                    data-title="{{ t('common', 'Меню') }}"
-                    style="padding: 0; padding-top: 3px; z-index: 2">
+            <button class="button-primary button-size__s h-36 w-36 tablet_hide desktop_hide mobile-menu-toggle"
+                    type="button"
+                    style="padding: 0; padding-top: 3px; z-index: 2"
+                    aria-label="{{ t('common', 'Меню') }}">
                 <i class="fas fa-bars"></i>
             </button>
         {% endif %}

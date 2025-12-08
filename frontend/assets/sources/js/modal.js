@@ -106,3 +106,55 @@ function openModal(modalId, size, title, href, topImage, contentOverflow, topCla
     //     });
     // }, 500);
 }
+
+// Мобильное меню
+$(document).ready(function () {
+    const mobileMenuModal = document.getElementById('mobile-menu-modal');
+    const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+    const mobileMenuClose = document.querySelector('.mobile-menu-modal__close');
+    const mobileMenuOverlay = document.querySelector('.mobile-menu-modal__overlay');
+    
+    if (mobileMenuModal && mobileMenuToggle) {
+        // Открытие меню
+        mobileMenuToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            mobileMenuModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        });
+        
+        // Закрытие меню
+        function closeMobileMenu() {
+            mobileMenuModal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        
+        if (mobileMenuClose) {
+            mobileMenuClose.addEventListener('click', closeMobileMenu);
+        }
+        
+        if (mobileMenuOverlay) {
+            mobileMenuOverlay.addEventListener('click', closeMobileMenu);
+        }
+        
+        // Закрытие по ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && mobileMenuModal.style.display === 'flex') {
+                closeMobileMenu();
+            }
+        });
+        
+        // Закрытие при клике на ссылку в меню (кроме dropdown)
+        mobileMenuModal.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            if (link && !link.hasAttribute('data-bs-toggle') && link.getAttribute('href') !== '#') {
+                closeMobileMenu();
+            }
+        });
+        
+        // Инициализация Bootstrap dropdown в мобильном меню
+        const dropdownToggleList = mobileMenuModal.querySelectorAll('[data-bs-toggle="dropdown"]');
+        dropdownToggleList.forEach(function(dropdownToggleEl) {
+            new bootstrap.Dropdown(dropdownToggleEl);
+        });
+    }
+});

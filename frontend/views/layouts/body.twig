@@ -32,4 +32,19 @@
 
 {{ FOOTER|raw }}
 {{ MODAL|raw }}
+<!-- Мобильное меню -->
+<div id="mobile-menu-modal" class="mobile-menu-modal" style="display: none;">
+    <div class="mobile-menu-modal__overlay"></div>
+    <div class="mobile-menu-modal__content">
+        <div class="mobile-menu-modal__header">
+            <h2>{{ t('common', 'Меню') }}</h2>
+            <button class="mobile-menu-modal__close" type="button" aria-label="{{ t('common', 'Закрыть') }}">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="mobile-menu-modal__body">
+            {{ MOBILE_MENU|raw }}
+        </div>
+    </div>
+</div>
 <div class="loader" id="loader"></div>

@@ -209,7 +209,7 @@
                 'class': CLASS,
             },
             'spanClass': CLASS_ITEM_SPAN_TEXT,
-            'options': {'class': "#{CLASS_ITEM} menu__item_hide menu__item_mobile"},
+            'options': {'class': "#{CLASS_ITEM} menu__item_mobile"},
             'items': [
                 {
                     'label': t('common', 'Профиль'),
@@ -242,6 +242,14 @@
                     'activeClass': 'active',
                     'spanClass': 'stat-block-profile-menu__item-text',
                     'linkOptions': {'class': "#{CLASS_ITEM} menu__item_mobile"},
+                },
+                {
+                    'label': t('common', 'Выйти'),
+                    'url': "/user/logout",
+                    'iconClass': "icons icons_32px fas fa-sign-out-alt #{CLASS_ICON}",
+                    'activeClass': 'active',
+                    'spanClass': 'stat-block-profile-menu__item-text',
+                    'linkOptions': {'class': "#{CLASS_ITEM} menu__item_mobile menu__item_logout"},
                 },
             ],
         },
