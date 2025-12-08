@@ -165,19 +165,8 @@ $js = <<<JS
         }
       });
       
-      // Автоформатирование JSON при потере фокуса
-      editor.on('blur', function() {
-        try {
-          var jsonValue = editor.getValue();
-          var parsed = JSON.parse(jsonValue);
-          var formatted = JSON.stringify(parsed, null, 2);
-          if (formatted !== jsonValue) {
-            editor.setValue(formatted, -1);
-          }
-        } catch(e) {
-          // Игнорируем ошибки при форматировании
-        }
-      });
+      // Автоформатирование JSON при потере фокуса (отключено для предотвращения потери точности больших чисел)
+      // Форматирование происходит только при отправке формы
     }
   }
 
