@@ -23,7 +23,7 @@
         <div>
             <h2 class="text-primary-colors-main flex items-center gap-x-12">
                 {{ USER.username }} 
-                <a href="{{ USER.getLink('steam') }}" class="stats_player_card_body_name_steam profile__social-link-steam" target="_blank" title="<?=Yii::t('common', 'Перейти в профиль Steam')?>"><i class="fab fa-steam"></i></a>
+                <a href="{{ USER.getLink('steam') }}" class="stats_player_card_body_name_steam profile__social-link-steam" target="_blank" title="Перейти в профиль Steam"><i class="fab fa-steam"></i></a>
                 {% if YOUTUBE_LINK or TWITCH_LINK or VK_LINK or TELEGRAM_LINK %}
                     {% if YOUTUBE_LINK %}
                     <a href="{{ YOUTUBE_LINK }}" target="_blank" rel="noopener noreferrer" class="stats_player_card_body_name_steam profile__social-link-youtube" title="YouTube">
