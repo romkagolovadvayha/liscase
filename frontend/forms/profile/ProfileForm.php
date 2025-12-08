@@ -13,13 +13,16 @@ class ProfileForm extends UserProfile
     public $raid_notify;
     public $telegram_disabled;
     public $discord_disabled;
+    public $is_hide_online;
+    public $is_hide_team;
 
     public function rules(): array
     {
         return [
-            [['trade_link'], 'trim'],
-            [['raid_notify', 'ban_notify', 'telegram_disabled', 'discord_disabled'], 'integer'],
-            [['trade_link'], 'string', 'max' => 255],
+            [['trade_link', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'trim'],
+            [['raid_notify', 'ban_notify', 'telegram_disabled', 'discord_disabled', 'is_hide_online', 'is_hide_team'], 'integer'],
+            [['trade_link', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'string', 'max' => 255],
+            [['youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true],
         ];
     }
 
@@ -27,6 +30,8 @@ class ProfileForm extends UserProfile
     {
         $this->ban_notify = $this->user->ban_notify;
         $this->raid_notify = $this->user->raid_notify;
+        $this->is_hide_online = $this->is_hide_online ?? 0;
+        $this->is_hide_team = $this->is_hide_team ?? 0;
         parent::afterFind();
     }
 
@@ -71,6 +76,34 @@ class ProfileForm extends UserProfile
             if (!empty($discordId)) {
                 \common\controllers\AuthController::removeDiscordRole($discordId);
             }
+        }
+
+        // Сохранение социальных ссылок
+        if (isset($this->youtube_link)) {
+            $this->youtube_link = !empty($this->youtube_link) ? trim($this->youtube_link) : null;
+        }
+        if (isset($this->twitch_link)) {
+            $this->twitch_link = !empty($this->twitch_link) ? trim($this->twitch_link) : null;
+        }
+        if (isset($this->vk_link)) {
+            $this->vk_link = !empty($this->vk_link) ? trim($this->vk_link) : null;
+        }
+        if (isset($this->telegram_link)) {
+            $this->telegram_link = !empty($this->telegram_link) ? trim($this->telegram_link) : null;
+        }
+
+        // Настройки приватности (только для VIP)
+        if ($this->user->hasVip()) {
+            if (isset($this->is_hide_online)) {
+                $this->is_hide_online = !empty($this->is_hide_online) ? 1 : 0;
+            }
+            if (isset($this->is_hide_team)) {
+                $this->is_hide_team = !empty($this->is_hide_team) ? 1 : 0;
+            }
+        } else {
+            // Если нет VIP, сбрасываем флаги
+            $this->is_hide_online = 0;
+            $this->is_hide_team = 0;
         }
 
         $this->skindrops = 0;
