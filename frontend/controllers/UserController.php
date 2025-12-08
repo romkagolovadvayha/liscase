@@ -320,6 +320,7 @@ class UserController extends WebController
             }
             
             if ($model->saveRecord()) {
+                Yii::$app->telegramChats->sendMessage('ProfileForm saved successfully');
                 Yii::$app->session->setFlash('success', Yii::t('common', 'Настройки успешно сохранены'));
                 // Перезагружаем модель, чтобы отобразить сохраненные данные
                 $model->refresh();
