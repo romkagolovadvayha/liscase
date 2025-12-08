@@ -73,18 +73,17 @@ $this->title = Yii::t('common', "Профиль") . " - {$user->userProfile->nam
         <h4 class="flex items-center gap-x-12 mb-24">
             <?=Yii::t('common', "Социальные сети")?>
         </h4>
-
-        <?php Pjax::begin(['id' => 'social-form-pjax']); ?>
-        <?php $form = ActiveForm::begin([
-                                            'method' => 'POST',
-                                            'id' => 'social-form',
-                                            'options'                => [
-                                                'data-pjax' => 1,
-                                            ],
-                                        ]); ?>
-        <?= Alert::widget() ?>
-        
-        <div class="mb-12">
+        <div>
+            <?php Pjax::begin(['id' => 'social-form-pjax']); ?>
+            <?php $form = ActiveForm::begin([
+                                                'method' => 'POST',
+                                                'id' => 'social-form',
+                                                'options'                => [
+                                                    'data-pjax' => 1,
+                                                ],
+                                            ]); ?>
+            <?= Alert::widget() ?>
+            <div class="mb-12">
             <div class="flex gap-x-10 align-items-center flex-wrap">
                 <p class="p1 text-text-teritiary"><?=Yii::t('common', "Персональный телеграм бот")?></p>
                 <?php if (!empty($model->user->telegram_chat_id)): ?>
@@ -104,9 +103,9 @@ $this->title = Yii::t('common', "Профиль") . " - {$user->userProfile->nam
                     <a href="<?=\yii\helpers\Url::to(['/auth/discord'])?>" class="button button-secondary button-size__s h-36" style="padding-top: 6px; padding-bottom: 6px"><span class="button__text"><?=Yii::t('common', 'Привязать аккаунт')?></span></a>
                 <?php endif; ?>
             </div>
-        </div>
-        
-        <div class="mb-24" style="border-top: 1px solid var(--border-color-default); padding-top: 24px; margin-top: 24px;">
+            </div>
+            
+            <div class="mb-24" style="border-top: 1px solid var(--border-color-default); padding-top: 24px; margin-top: 24px;">
             <p class="p1 text-text-secondary mb-16" style="font-size: 13px;">
                 <?=Yii::t('common', "Укажите ссылки на ваши профили в социальных сетях. Они будут отображаться на вашей странице статистики, чтобы другие игроки могли найти вас.")?>
             </p>
@@ -166,19 +165,19 @@ $this->title = Yii::t('common', "Профиль") . " - {$user->userProfile->nam
                     ])->label(false)->textInput(['placeholder' => 'https://t.me/username']); ?>
                 </div>
             </div>
-        </div>
-        
-        <?php 
-        $hasVip = $model->user->hasVip();
-        $vipDrop = \common\models\box\Drop::find()
-            ->where(['drop_type' => \common\models\box\Drop::TYPE_VIP])
-            ->andWhere(['market_status' => \common\models\box\Drop::MARKET_STATUS_ACTIVE])
-            ->andWhere(['status' => \common\models\box\Drop::STATUS_ACTIVE])
-            ->orderBy(['sort' => SORT_ASC])
-            ->one();
-        ?>
-        
-        <div class="mb-24" style="border-top: 1px solid var(--border-color-default); padding-top: 24px; margin-top: 24px;">
+            </div>
+            
+            <?php 
+            $hasVip = $model->user->hasVip();
+            $vipDrop = \common\models\box\Drop::find()
+                ->where(['drop_type' => \common\models\box\Drop::TYPE_VIP])
+                ->andWhere(['market_status' => \common\models\box\Drop::MARKET_STATUS_ACTIVE])
+                ->andWhere(['status' => \common\models\box\Drop::STATUS_ACTIVE])
+                ->orderBy(['sort' => SORT_ASC])
+                ->one();
+            ?>
+            
+            <div class="mb-24" style="border-top: 1px solid var(--border-color-default); padding-top: 24px; margin-top: 24px;">
             <h5 class="p1 text-text-main mb-16" style="font-weight: 600;">
                 <?=Yii::t('common', "Настройки приватности")?>
             </h5>
@@ -261,11 +260,12 @@ $this->title = Yii::t('common', "Профиль") . " - {$user->userProfile->nam
                     </div>
                 <?php endif; ?>
             </div>
+            </div>
+            
+            <button type="submit" class="button-secondary"><?=Yii::t('common', 'Сохранить')?></button>
+            <?php ActiveForm::end(); ?>
+            <?php Pjax::end(); ?>
         </div>
-        
-        <button type="submit" class="button-secondary"><?=Yii::t('common', 'Сохранить')?></button>
-        <?php ActiveForm::end(); ?>
-        <?php Pjax::end(); ?>
     </section>
 </section>
 
