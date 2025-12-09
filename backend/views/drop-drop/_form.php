@@ -13,7 +13,18 @@ $searchJS = \common\models\box\Drop::searchJS();
 ?>
 
 <div class="blog-image-form">
-    <?php $form = ActiveForm::begin(['options' => ['id' => 'ajaxCrudModal', 'enctype' => 'multipart/form-data']]); ?>
+    <?php $form = ActiveForm::begin([
+        'options' => [
+            'id' => 'ajaxCrudModal', 
+            'enctype' => 'multipart/form-data',
+            'data-pjax' => true
+        ]
+    ]); ?>
+    <?php \yii\widgets\Pjax::begin([
+        'id' => 'drop-drop-form-pjax',
+        'enablePushState' => false,
+        'timeout' => 5000
+    ]); ?>
     <?= $form->field($model, 'drop_id')->widget(\kartik\select2\Select2::class, [
         'data'    => \common\models\box\Drop::getDropList(),
         'options' => [
@@ -43,5 +54,6 @@ $searchJS = \common\models\box\Drop::searchJS();
     <div class="form-group">
         <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
     </div>
+    <?php \yii\widgets\Pjax::end(); ?>
     <?php ActiveForm::end(); ?>
 </div>

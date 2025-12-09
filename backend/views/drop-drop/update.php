@@ -11,8 +11,7 @@ $this->params['breadcrumbs'][] = ['label' => $model->id, 'url' => ['view', 'id' 
 $this->params['breadcrumbs'][] = 'Update';
 ?>
 <div class="blog-image-update" style="padding: 20px">
-    <?= $this->render('_form', [
+    <?= $this->renderAjax('_form', [
         'model' => $model,
     ]) ?>
-
 </div>

@@ -13,50 +13,24 @@ $this->registerJs(<<<JS
         $('#drop-form-is-submit-button').val(1);
     });
     
-    // Обработка формы добавления предмета в модалке
-    $(document).on('submit', '#ajaxCrudModal form', function(e) {
-        e.preventDefault();
-        var form = $(this);
-        var formData = new FormData(form[0]);
-        var submitBtn = form.find('button[type="submit"]');
-        var originalText = submitBtn.html();
-        
-        submitBtn.prop('disabled', true).html('Сохранение...');
-        
-        $.ajax({
-            url: form.attr('action'),
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    // Закрываем модалку
-                    $('#modal-dialog').modal('hide');
-                    $('.modal-backdrop').remove();
-                    
-                    // Обновляем только список предметов через AJAX
-                    $.get('/drop/items-list?id=' + response.dropId, function(html) {
-                        $('#drop-items-list').replaceWith(html);
-                    });
-                } else {
-                    alert(response.message || 'Ошибка при сохранении');
-                    submitBtn.prop('disabled', false).html(originalText);
-                }
-            },
-            error: function(xhr) {
-                // Если ответ не JSON, значит это HTML форма с ошибками
-                if (xhr.responseText) {
-                    $('#modal-dialog .modal-body-js').html(xhr.responseText);
-                } else {
-                    alert('Ошибка при сохранении');
-                }
-                submitBtn.prop('disabled', false).html(originalText);
+    // Обработка успешного сохранения в модалке (после pjax обновления)
+    $(document).on('pjax:success', '#drop-drop-form-pjax', function(event, data, status, xhr) {
+        try {
+            // Если ответ JSON с success, значит форма успешно сохранена
+            var response = typeof data === 'string' ? JSON.parse(data) : data;
+            if (response && response.success && response.dropId) {
+                // Закрываем модалку
+                $('#modal-dialog').modal('hide');
+                $('.modal-backdrop').remove();
+                
+                // Обновляем только список предметов
+                $.get('/drop/items-list?id=' + response.dropId, function(html) {
+                    $('#drop-items-list').replaceWith(html);
+                });
             }
-        });
-        
-        return false;
+        } catch(e) {
+            // Если не JSON, значит это HTML форма (ошибки валидации) - ничего не делаем
+        }
     });
     
     // Обработка удаления предмета
@@ -64,6 +38,7 @@ $this->registerJs(<<<JS
         e.preventDefault();
         var link = $(this);
         var itemId = link.data('id');
+        var dropId = link.attr('href').match(/dropId=(\d+)/) ? RegExp.$1 : null;
         
         if (!confirm('Вы уверены, что хотите удалить этот предмет?')) {
             return false;
@@ -160,10 +135,12 @@ JS
 <?php endif; ?>
 <?php if (in_array($model->drop_type, [Drop::TYPE_SET, Drop::TYPE_SELECT])): ?>
     <div class="form-group">
-        <a href="/drop-drop/create?dropId=<?=$model->id?>" class="btn btn-primary show-modal-link"
+        <a href="/drop-drop/create?dropId=<?=$model->id?>" 
+           class="btn btn-primary show-modal-link"
            data-toggl="modal"
            data-target="modal-dialog"
-           data-title="Добавить предмет">Добавить предмет</a>
+           data-title="Добавить предмет"
+           data-pjax="0">Добавить предмет</a>
     </div>
     <div id="drop-items-container">
         <?= $this->render('_items_list', ['model' => $model]) ?>

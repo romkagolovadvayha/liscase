@@ -51,14 +51,10 @@ class DropDropController extends Controller
 
         if ($this->request->isPost) {
             if ($model->load($this->request->post()) && $model->save()) {
-                // Если это AJAX запрос, возвращаем JSON для закрытия модалки
-                if ($this->request->isAjax) {
+                // Если это pjax запрос, возвращаем пустой ответ (модалка закроется через JS)
+                if ($this->request->isPjax) {
                     \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-                    return [
-                        'success' => true,
-                        'message' => 'Предмет успешно добавлен',
-                        'dropId' => $dropId
-                    ];
+                    return ['success' => true, 'dropId' => $dropId];
                 }
                 return $this->redirect(['/drop/update?id=' . $dropId]);
             }
@@ -83,14 +79,10 @@ class DropDropController extends Controller
         $model = $this->findModel($id);
 
         if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            // Если это AJAX запрос, возвращаем JSON для закрытия модалки
-            if ($this->request->isAjax) {
+            // Если это pjax запрос, возвращаем пустой ответ (модалка закроется через JS)
+            if ($this->request->isPjax) {
                 \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-                return [
-                    'success' => true,
-                    'message' => 'Предмет успешно обновлен',
-                    'dropId' => $model->parent_drop_id
-                ];
+                return ['success' => true, 'dropId' => $model->parent_drop_id];
             }
             return $this->redirect(['/drop/update?id=' . $model->parent_drop_id]);
         }
