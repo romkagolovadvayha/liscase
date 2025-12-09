@@ -12,6 +12,87 @@ $this->registerJs(<<<JS
     $(document).on('click', '#drop-form-submit',  function() {
         $('#drop-form-is-submit-button').val(1);
     });
+    
+    // Обработка формы добавления предмета в модалке
+    $(document).on('submit', '#ajaxCrudModal form', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var formData = new FormData(form[0]);
+        var submitBtn = form.find('button[type="submit"]');
+        var originalText = submitBtn.html();
+        
+        submitBtn.prop('disabled', true).html('Сохранение...');
+        
+        $.ajax({
+            url: form.attr('action'),
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    // Закрываем модалку
+                    $('#modal-dialog').modal('hide');
+                    $('.modal-backdrop').remove();
+                    
+                    // Обновляем только список предметов через AJAX
+                    $.get('/drop/items-list?id=' + response.dropId, function(html) {
+                        $('#drop-items-container').html(html);
+                    });
+                } else {
+                    alert(response.message || 'Ошибка при сохранении');
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            },
+            error: function(xhr) {
+                // Если ответ не JSON, значит это HTML форма с ошибками
+                if (xhr.responseText) {
+                    $('#modal-dialog .modal-body-js').html(xhr.responseText);
+                } else {
+                    alert('Ошибка при сохранении');
+                }
+                submitBtn.prop('disabled', false).html(originalText);
+            }
+        });
+        
+        return false;
+    });
+    
+    // Обработка удаления предмета
+    $(document).on('click', '.delete-drop-item', function(e) {
+        e.preventDefault();
+        var link = $(this);
+        var itemId = link.data('id');
+        
+        if (!confirm('Вы уверены, что хотите удалить этот предмет?')) {
+            return false;
+        }
+        
+        $.ajax({
+            url: link.attr('href'),
+            type: 'POST',
+            data: {
+                _csrf: yii.getCsrfToken()
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    // Обновляем только список предметов через AJAX
+                    $.get('/drop/items-list?id=' + response.dropId, function(html) {
+                        $('#drop-items-container').html(html);
+                    });
+                } else {
+                    alert(response.message || 'Ошибка при удалении');
+                }
+            },
+            error: function() {
+                alert('Ошибка при удалении');
+            }
+        });
+        
+        return false;
+    });
 JS
 );
 ?>
@@ -78,23 +159,8 @@ JS
     </div>
 <?php endif; ?>
 <?php if (in_array($model->drop_type, [Drop::TYPE_SET, Drop::TYPE_SELECT])): ?>
-    <div class="form-group">
-        <a href="/drop-drop/create?dropId=<?=$model->id?>" class="btn btn-primary show-modal-link"
-           data-toggl="modal"
-           data-target="modal-dialog"
-           data-title="Добавить предмет">Добавить предмет</a>
-    </div>
-    <div style="display: flex; flex-direction: column; gap: 5px;margin-top: 10px;">
-        <?php foreach ($model->subDrops as $subDrop): ?>
-            <div style="display: flex; gap: 10px;align-items: center;padding: 10px;border-radius: 8px;background: hsl(0, 0%, 11.8%);justify-content: space-between">
-                <div style="display: flex; gap: 10px;align-items: center;">
-                    <img src="<?=$subDrop->drop->image()?>" width="32px"/> <?=$subDrop->drop->name?> (x<?=$subDrop->count?>)
-                </div>
-                <div style="display: flex; gap: 10px;align-items: center;">
-                    <a href="" style="color: red">Убрать</a>
-                </div>
-            </div>
-        <?php endforeach; ?>
+    <div id="drop-items-container">
+        <?= $this->render('_items_list', ['model' => $model]) ?>
     </div>
 <?php endif; ?>
 

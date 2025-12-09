@@ -51,6 +51,15 @@ class DropDropController extends Controller
 
         if ($this->request->isPost) {
             if ($model->load($this->request->post()) && $model->save()) {
+                // Если это AJAX запрос, возвращаем JSON для закрытия модалки
+                if ($this->request->isAjax) {
+                    \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+                    return [
+                        'success' => true,
+                        'message' => 'Предмет успешно добавлен',
+                        'dropId' => $dropId
+                    ];
+                }
                 return $this->redirect(['/drop/update?id=' . $dropId]);
             }
         } else {
@@ -74,10 +83,19 @@ class DropDropController extends Controller
         $model = $this->findModel($id);
 
         if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
+            // Если это AJAX запрос, возвращаем JSON для закрытия модалки
+            if ($this->request->isAjax) {
+                \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+                return [
+                    'success' => true,
+                    'message' => 'Предмет успешно обновлен',
+                    'dropId' => $model->parent_drop_id
+                ];
+            }
             return $this->redirect(['/drop/update?id=' . $model->parent_drop_id]);
         }
 
-        return $this->render('update', [
+        return $this->renderAjax('update', [
             'model' => $model,
         ]);
     }
@@ -94,6 +112,16 @@ class DropDropController extends Controller
         $model = $this->findModel($id);
         $dropId = $model->parent_drop_id;
         $model->delete();
+
+        // Если это AJAX запрос, возвращаем JSON
+        if ($this->request->isAjax) {
+            \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+            return [
+                'success' => true,
+                'message' => 'Предмет успешно удален',
+                'dropId' => $dropId
+            ];
+        }
 
         return $this->redirect(['/drop/update?id=' . $dropId]);
     }

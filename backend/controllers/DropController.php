@@ -129,6 +129,18 @@ class DropController extends \backend\components\CrudController
         ]);
     }
 
+    /**
+     * Обновление списка предметов в наборе (для pjax)
+     */
+    public function actionItemsList($id)
+    {
+        $model = $this->findModel($id);
+        
+        return $this->renderPartial('_items_list', [
+            'model' => $model,
+        ]);
+    }
+
     public function actionSearchDrop($q = null) {
         \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
