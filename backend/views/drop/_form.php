@@ -38,7 +38,7 @@ $this->registerJs(<<<JS
                     
                     // Обновляем только список предметов через AJAX
                     $.get('/drop/items-list?id=' + response.dropId, function(html) {
-                        $('#drop-items-container').html(html);
+                        $('#drop-items-list').replaceWith(html);
                     });
                 } else {
                     alert(response.message || 'Ошибка при сохранении');
@@ -80,7 +80,7 @@ $this->registerJs(<<<JS
                 if (response.success) {
                     // Обновляем только список предметов через AJAX
                     $.get('/drop/items-list?id=' + response.dropId, function(html) {
-                        $('#drop-items-container').html(html);
+                        $('#drop-items-list').replaceWith(html);
                     });
                 } else {
                     alert(response.message || 'Ошибка при удалении');
@@ -159,6 +159,12 @@ JS
     </div>
 <?php endif; ?>
 <?php if (in_array($model->drop_type, [Drop::TYPE_SET, Drop::TYPE_SELECT])): ?>
+    <div class="form-group">
+        <a href="/drop-drop/create?dropId=<?=$model->id?>" class="btn btn-primary show-modal-link"
+           data-toggl="modal"
+           data-target="modal-dialog"
+           data-title="Добавить предмет">Добавить предмет</a>
+    </div>
     <div id="drop-items-container">
         <?= $this->render('_items_list', ['model' => $model]) ?>
     </div>
