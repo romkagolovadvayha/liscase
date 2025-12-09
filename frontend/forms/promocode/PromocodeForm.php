@@ -37,8 +37,13 @@ class PromocodeForm extends Promocode
         if (empty($model)) {
             $user = Yii::$app->user->identity;
             /** @var User $userCode */
+            // Используем явное приведение collation для избежания ошибки смешивания collations
+            // BINARY заставляет MySQL сравнивать строки как бинарные данные, игнорируя collation
+            // Параметризованный запрос защищает от SQL инъекций - значение $this->code автоматически экранируется
             $userCode = User::find()
-                         ->andWhere(['promocode' => $this->code])
+                         ->andWhere('BINARY `promocode` = :code', [':code' => $this->code])
+                         ->andWhere(['IS NOT', 'promocode', null])
+                         ->andWhere(['!=', 'promocode', ''])
                          ->one();
 
             if (empty($userCode)) {

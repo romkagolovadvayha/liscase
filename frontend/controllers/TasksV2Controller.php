@@ -696,7 +696,7 @@ class TasksV2Controller extends WebController
         // Если есть задания с sum_all_servers, добавляем все активные серверы
         if (!empty($sumAllServersTasks)) {
             $allActiveServers = \common\models\servers\Servers::find()
-                ->where(['is_active' => 1])
+                ->where(['status' => \common\models\servers\Servers::STATUS_ACTIVE])
                 ->all();
             foreach ($allActiveServers as $server) {
                 $servers[$server->id] = $server;
@@ -706,7 +706,7 @@ class TasksV2Controller extends WebController
         // Если нет указанных серверов, используем сервер пользователя
         if (empty($servers)) {
             $userServer = $user->server ?? \common\models\servers\Servers::find()
-                ->where(['is_active' => 1])
+                ->where(['status' => \common\models\servers\Servers::STATUS_ACTIVE])
                 ->orderBy(['sort' => SORT_ASC])
                 ->one();
             if ($userServer) {
@@ -777,7 +777,7 @@ class TasksV2Controller extends WebController
             } else {
                 // Используем текущий сервер пользователя
                 $server = $user->server ?? \common\models\servers\Servers::find()
-                    ->where(['is_active' => 1])
+                    ->where(['status' => \common\models\servers\Servers::STATUS_ACTIVE])
                     ->orderBy(['sort' => SORT_ASC])
                     ->one();
                 if ($server) {
