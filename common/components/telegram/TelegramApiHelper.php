@@ -176,6 +176,32 @@ class TelegramApiHelper extends \yii\base\Component
     }
 
     /**
+     * Нормализация структуры inline клавиатуры для Telegram API
+     * @param array $inlineKeyboard
+     * @return array
+     */
+    private function _normalizeInlineKeyboard($inlineKeyboard)
+    {
+        if (empty($inlineKeyboard)) {
+            return [];
+        }
+        
+        // Проверяем, является ли это уже массивом массивов (многострочная клавиатура)
+        // Если первый элемент - массив и содержит объекты с 'text', значит это уже правильная структура
+        if (is_array($inlineKeyboard) && !empty($inlineKeyboard) && 
+            is_array($inlineKeyboard[0]) && 
+            isset($inlineKeyboard[0][0]) && 
+            is_array($inlineKeyboard[0][0]) && 
+            isset($inlineKeyboard[0][0]['text'])) {
+            // Это уже массив массивов кнопок - используем как есть
+            return $inlineKeyboard;
+        } else {
+            // Это массив кнопок (одна строка) - оборачиваем
+            return [$inlineKeyboard];
+        }
+    }
+
+    /**
      * @param int    $chatId
      * @param string $messageText
      * @param array  $inlineKeyboard
@@ -195,8 +221,9 @@ class TelegramApiHelper extends \yii\base\Component
         ];
 
         if (!empty($inlineKeyboard)) {
+            $normalizedKeyboard = $this->_normalizeInlineKeyboard($inlineKeyboard);
             $params['reply_markup'] = json_encode([
-                'inline_keyboard' => [$inlineKeyboard]
+                'inline_keyboard' => $normalizedKeyboard
             ]);
         }
 
@@ -218,9 +245,10 @@ class TelegramApiHelper extends \yii\base\Component
         ];
 
         if (!empty($inlineKeyboard)) {
+            $normalizedKeyboard = $this->_normalizeInlineKeyboard($inlineKeyboard);
             $params['reply_markup'] = json_encode([
-                                                      'inline_keyboard' => [$inlineKeyboard]
-                                                  ]);
+                'inline_keyboard' => $normalizedKeyboard
+            ]);
         }
         $this->_sendRequest("editMessageReplyMarkup", $params);
     }
@@ -446,8 +474,9 @@ class TelegramApiHelper extends \yii\base\Component
         ];
         
         if (!empty($inlineKeyboard)) {
+            $normalizedKeyboard = $this->_normalizeInlineKeyboard($inlineKeyboard);
             $params['reply_markup'] = json_encode([
-                'inline_keyboard' => [$inlineKeyboard]
+                'inline_keyboard' => $normalizedKeyboard
             ]);
         }
         

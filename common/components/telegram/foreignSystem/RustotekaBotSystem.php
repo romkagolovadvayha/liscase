@@ -524,7 +524,7 @@ class RustotekaBotSystem extends AbstractSystemBots
     private function getMainMenuButtons()
     {
         // TelegramApiHelper делает 'inline_keyboard' => [$inlineKeyboard]
-        // Поэтому передаем массив массивов кнопок, где каждый внутренний массив - строка кнопок
+        // Поэтому передаем массив массивов кнопок (каждая строка - массив кнопок)
         // После обёртки получится правильная структура inline_keyboard
         return [
             [
@@ -550,8 +550,8 @@ class RustotekaBotSystem extends AbstractSystemBots
     private function getCheckButtons($steamId)
     {
         // TelegramApiHelper делает 'inline_keyboard' => [$inlineKeyboard]
-        // Поэтому передаем массив массивов кнопок, где каждый внутренний массив - строка кнопок
-        // После обёртки получится правильная структура inline_keyboard
+        // Поэтому передаем массив массивов кнопок (каждая строка - массив кнопок)
+        // Первые две кнопки в одной строке, третья - в отдельной
         return [
             [
                 [
