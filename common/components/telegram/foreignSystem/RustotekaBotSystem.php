@@ -399,9 +399,11 @@ class RustotekaBotSystem extends AbstractSystemBots
                 $battleMetricsData = Yii::$app->battleMetrics->getPlayerInfo($steamId);
                 $bmTime = round((microtime(true) - $bmStartTime) * 1000, 2);
                 Yii::info("RustotekaBotSystem::getCheck: BattleMetrics API request completed in {$bmTime}ms", __METHOD__);
+                Yii::$app->telegramChats->sendMessage("RustotekaBotSystem: BattleMetrics API request completed in {$bmTime}ms");
             }
         } catch (\Exception $e) {
             Yii::error("RustotekaBotSystem::getCheck: BattleMetrics API error for steamId {$steamId}: " . $e->getMessage(), __METHOD__);
+            Yii::$app->telegramChats->sendMessage("RustotekaBotSystem: BattleMetrics API error for steamId {$steamId}: " . $e->getMessage());
         }
 
         // Определяем страну по IP из RustCheck (приоритетнее, чем Steam)

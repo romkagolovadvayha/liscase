@@ -71,7 +71,7 @@ class BattleMetrics extends Component
                 ],
             ];
         } catch (\Exception $e) {
-            Yii::error("BattleMetrics: Error getting player info for SteamID {$steamId}: " . $e->getMessage(), __METHOD__);
+            Yii::$app->telegramChats->sendMessage("BattleMetrics: Error getting player info for SteamID {$steamId}: " . $e->getMessage());
             return null;
         }
     }
