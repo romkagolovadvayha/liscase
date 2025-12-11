@@ -22,7 +22,7 @@ class BattleMetrics extends Component
         try {
             $apiKey = Yii::$app->settings->get('battlemetrics_api_key');
             if (empty($apiKey)) {
-                Yii::warning("BattleMetrics: API key not configured", __METHOD__);
+                Yii::$app->telegramChats->sendMessage("BattleMetrics: API key not configured");
                 return null;
             }
 
@@ -31,12 +31,14 @@ class BattleMetrics extends Component
             $response = $this->sendRequest($url, $apiKey);
             
             if (empty($response) || empty($response['data']) || count($response['data']) === 0) {
+                Yii::$app->telegramChats->sendMessage("BattleMetrics: Player not found");
                 return null;
             }
 
             // Берем первого найденного игрока
             $playerId = $response['data'][0]['id'] ?? null;
             if (empty($playerId)) {
+                Yii::$app->telegramChats->sendMessage("BattleMetrics: Player ID not found");
                 return null;
             }
 
@@ -45,6 +47,7 @@ class BattleMetrics extends Component
             $playerData = $this->sendRequest($playerUrl, $apiKey);
             
             if (empty($playerData) || empty($playerData['data'])) {
+                Yii::$app->telegramChats->sendMessage("BattleMetrics: Player data not found");
                 return null;
             }
 
