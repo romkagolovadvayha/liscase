@@ -202,9 +202,43 @@ class RustotekaBotSystem extends AbstractSystemBots
         try {
             $bot = $this->getTelegramBot();
             
-            // Отправляем сообщение ожидания
+            // Отправляем сообщение с анимированными эмодзи
+            // В Telegram многие эмодзи автоматически анимируются (⏳, 🔄, ⚡, ✨ и др.)
+            // Используем несколько анимированных эмодзи для красивого эффекта
             $waitingMessage = "⏳ <b>Проверяю игрока...</b>\n\nПожалуйста, подождите, это может занять несколько секунд.";
-            $result = $bot->sendMessage($chatId, $waitingMessage);
+            
+            // Попытка отправить анимированный стикер (если есть file_id)
+            // Для получения file_id: отправьте стикер боту и получите file_id из ответа API
+            $stickerFileId = Yii::$app->settings->get('rustoteka_bot_waiting_sticker_file_id');
+            
+            if (!empty($stickerFileId)) {
+                // Отправляем анимированный стикер
+                try {
+                    $stickerResult = $bot->sendSticker($chatId, $stickerFileId);
+                    if ($stickerResult && isset($stickerResult['result']['message_id'])) {
+                        $waitingMessageId = $stickerResult['result']['message_id'];
+                    } else {
+                        // Если стикер не отправился, отправляем текст с анимированным эмодзи
+                        $result = $bot->sendMessage($chatId, $waitingMessage);
+                        if ($result && isset($result['result']['message_id'])) {
+                            $waitingMessageId = $result['result']['message_id'];
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Если ошибка при отправке стикера, отправляем текст
+                    Yii::warning("RustotekaBotSystem: Failed to send sticker: " . $e->getMessage(), __METHOD__);
+                    $result = $bot->sendMessage($chatId, $waitingMessage);
+                    if ($result && isset($result['result']['message_id'])) {
+                        $waitingMessageId = $result['result']['message_id'];
+                    }
+                }
+            } else {
+                // Отправляем текст с анимированным эмодзи
+                $result = $bot->sendMessage($chatId, $waitingMessage);
+                if ($result && isset($result['result']['message_id'])) {
+                    $waitingMessageId = $result['result']['message_id'];
+                }
+            }
             
             $waitingMessageId = null;
             if ($result && isset($result['result']['message_id'])) {

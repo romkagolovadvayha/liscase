@@ -284,6 +284,20 @@ class TelegramApiHelper extends \yii\base\Component
     }
 
     /**
+     * Отправка стикера
+     * @param int $chatId
+     * @param string $sticker file_id стикера или путь к файлу
+     * @return mixed
+     */
+    public function sendSticker($chatId, $sticker)
+    {
+        return $this->_sendRequest('sendSticker', [
+            'chat_id' => $chatId,
+            'sticker' => $sticker,
+        ]);
+    }
+
+    /**
      * @param int    $chatId
      * @param string $messageId
      *
