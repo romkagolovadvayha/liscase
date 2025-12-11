@@ -376,7 +376,7 @@ class RustotekaBotSystem extends AbstractSystemBots
             Yii::$app->telegramReports->sendMessage("RustotekaBotSystem:" . $e->getLine() . ":" . $e->getMessage());
         }
 
-        $message .= "🆔 <b>SteamID:</b> <a href=\"https://steamcommunity.com/profiles/{$steamId}\">{$steamId}</a>\n";
+        $message .= "🆔 <b>SteamID:</b> <code>{$steamId}</code>\n";
 
         // Запрос к RustCheck API (выполняется в очереди)
         $rustCheckData = null;
@@ -436,19 +436,11 @@ class RustotekaBotSystem extends AbstractSystemBots
                 $checkCount = count($rustCheckData['last_check']);
                 if ($checkCount > 0) {
                     $message .= "\n📋 <b>Последние проверки ({$checkCount}):</b>\n";
-                    // Показываем максимум 3 последние проверки
-                    $recentChecks = array_slice($rustCheckData['last_check'], 0, 3);
-                    foreach ($recentChecks as $index => $check) {
+                    // Показываем все проверки
+                    foreach ($rustCheckData['last_check'] as $index => $check) {
                         $checkTime = isset($check['time']) ? date('d.m.Y H:i', (int)$check['time']) : 'Неизвестно';
                         $serverName = $check['serverName'] ?? 'Неизвестный сервер';
-                        $message .= "   " . ($index + 1) . ". 🖥️ <b>{$serverName}</b>\n";
-                        $message .= "      📅 {$checkTime}\n";
-                        if ($index < count($recentChecks) - 1) {
-                            $message .= "\n";
-                        }
-                    }
-                    if ($checkCount > 3) {
-                        $message .= "\n   ... и еще " . ($checkCount - 3) . " проверок";
+                        $message .= "   " . ($index + 1) . ". 🖥️ {$serverName} 📅 {$checkTime}\n";
                     }
                 }
             }
@@ -473,9 +465,8 @@ class RustotekaBotSystem extends AbstractSystemBots
                 }
                 $message .= "\n\n";
 
-                // Показываем максимум 5 последних банов
-                $recentBans = array_slice($rustCheckBans, 0, 5);
-                foreach ($recentBans as $index => $ban) {
+                // Показываем все баны
+                foreach ($rustCheckBans as $index => $ban) {
                     $banDate = isset($ban['banDate']) ? date('d.m.Y H:i', (int)$ban['banDate']) : 'Неизвестно';
                     $unbanDate = isset($ban['unbanDate']) ? (int)$ban['unbanDate'] : 0;
                     $unbanDateStr = ($unbanDate === 0) ? 'Никогда' : date('d.m.Y H:i', $unbanDate);
@@ -483,21 +474,15 @@ class RustotekaBotSystem extends AbstractSystemBots
                     $serverName = $ban['serverName'] ?? 'Неизвестный сервер';
                     $isActive = ($unbanDate === 0 || $unbanDate > time());
                     $statusIcon = $isActive ? "🔴" : "🟢";
-                    $label = $isActive ? "" : " <i>(Бан снят)</i>";
 
-                    $message .= "{$statusIcon} <b>Бан #" . ($index + 1) . "</b>{$label}\n";
-                    $message .= "   🖥️ <b>Сервер:</b> {$serverName}\n";
-                    $message .= "   📅 <b>Дата бана:</b> {$banDate}\n";
-                    $message .= "   🔓 <b>Дата разбана:</b> {$unbanDateStr}\n";
-                    $message .= "   📝 <b>Причина:</b> {$reason}\n";
+                    $message .= "{$statusIcon} <b>Бан #" . ($index + 1) . "</b> 🖥️ {$serverName}\n";
+                    $message .= "   📅 Дата бана: {$banDate}\n";
+                    $message .= "   🔓 Дата разбана: {$unbanDateStr}\n";
+                    $message .= "   📝 Причина: {$reason}\n";
                     
-                    if ($index < count($recentBans) - 1) {
+                    if ($index < count($rustCheckBans) - 1) {
                         $message .= "\n";
                     }
-                }
-                
-                if ($rustCheckBanCount > 5) {
-                    $message .= "\n   ... и еще " . ($rustCheckBanCount - 5) . " банов";
                 }
             } else {
                 // Если банов нет, показываем сообщение
