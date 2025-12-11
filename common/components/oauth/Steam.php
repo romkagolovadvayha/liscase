@@ -190,6 +190,60 @@ class Steam extends OpenId
         return $response['response']['games'];
     }
 
+    /**
+     * Получение информации о банах Steam (VAC, Game bans)
+     * @param string|array $steamIds SteamID или массив SteamID
+     * @return array|null
+     */
+    public static function getPlayerBans($steamIds) {
+        try {
+            $key = Yii::$app->settings->get('steam_apiKey');
+            if (is_array($steamIds)) {
+                $steamIds = implode(',', $steamIds);
+            }
+            $apiUrl = "https://api.steampowered.com/ISteamUser/GetPlayerBans/v1/?key={$key}&steamids={$steamIds}";
+            $response = (clone Yii::$app->curl)->get($apiUrl);
+            $data = json_decode($response, 1);
+            if (empty($data) || empty($data['players'])) {
+                return [];
+            }
+            return $data['players'];
+        } catch (\Exception $e) {
+            Yii::error("Steam::getPlayerBans error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Получение времени в игре Rust
+     * @param string $steamId
+     * @return array|null ['hours' => int, 'minutes' => int, 'total_minutes' => int]
+     */
+    public static function getRustPlayTime($steamId) {
+        try {
+            $games = self::getGameInfo($steamId);
+            if (empty($games)) {
+                return null;
+            }
+            
+            // Rust appid = 252490
+            foreach ($games as $game) {
+                if (isset($game['appid']) && $game['appid'] == 252490) {
+                    $minutes = isset($game['playtime_forever']) ? (int)$game['playtime_forever'] : 0;
+                    return [
+                        'hours' => floor($minutes / 60),
+                        'minutes' => $minutes % 60,
+                        'total_minutes' => $minutes,
+                    ];
+                }
+            }
+            return null;
+        } catch (\Exception $e) {
+            Yii::error("Steam::getRustPlayTime error: " . $e->getMessage());
+            return null;
+        }
+    }
+
     public static function getBansGGRust($steamId) {
         $bans = [];
         $server = Steam::getGGRustStats('russian_banlist');

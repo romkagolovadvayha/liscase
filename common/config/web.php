@@ -185,9 +185,6 @@ $config = [
         'rustCheck'   => [
             'class' => \common\components\rustcheck\RustCheck::class,
         ],
-        'battleMetrics'   => [
-            'class' => \common\components\battlemetrics\BattleMetrics::class,
-        ],
         'discord'   => [
             'class' => \common\components\discord\Discord::class,
         ],
