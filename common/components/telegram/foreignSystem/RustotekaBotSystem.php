@@ -68,8 +68,10 @@ class RustotekaBotSystem extends AbstractSystemBots
         Yii::$app->cache->set($cacheKey, time() + 10, 10);
 
         // Проверка SteamID (17 цифр)
-        if (strlen($messageText) === 17 && strlen(preg_replace('/[^0-9]/', "", $messageText)) === 17) {
-            return $this->processCheckRequest($chatId, $messageText);
+        // Убираем все пробелы и проверяем, что это 17 цифр
+        $cleanText = preg_replace('/\s+/', '', $messageText);
+        if (strlen($cleanText) === 17 && preg_match('/^\d{17}$/', $cleanText)) {
+            return $this->processCheckRequest($chatId, $cleanText);
         }
         
         // Проверка ссылки на профиль Steam
@@ -240,11 +242,6 @@ class RustotekaBotSystem extends AbstractSystemBots
                 }
             }
             
-            $waitingMessageId = null;
-            if ($result && isset($result['result']['message_id'])) {
-                $waitingMessageId = $result['result']['message_id'];
-            }
-            
             // Ставим задачу в очередь
             $job = new CheckPlayerJob([
                 'chatId' => $chatId,
@@ -254,8 +251,9 @@ class RustotekaBotSystem extends AbstractSystemBots
             
             Yii::$app->queueRustotekaBot->push($job);
             
-            // Не возвращаем сообщение, так как оно уже отправлено
-            return null;
+            // Возвращаем специальное значение, чтобы не показывать сообщение "команда не найдена"
+            // Сообщение ожидания уже отправлено
+            return false;
             
         } catch (\Exception $e) {
             Yii::error("RustotekaBotSystem: Error processing check request for steamId {$steamId}: " . $e->getMessage(), __METHOD__);
@@ -308,6 +306,142 @@ class RustotekaBotSystem extends AbstractSystemBots
 
         $message .= "🆔 <b>SteamID:</b> <a href=\"https://steamcommunity.com/profiles/{$steamId}\">{$steamId}</a>\n";
 
+        // Получаем информацию из RustCheck
+        $rustCheckData = null;
+        try {
+            if (Yii::$app->has('rustCheck')) {
+                $rustCheckData = Yii::$app->rustCheck->getInfo($steamId);
+            }
+        } catch (\Exception $e) {
+            Yii::warning("RustotekaBotSystem: Failed to get RustCheck data: " . $e->getMessage(), __METHOD__);
+        }
+
+        // Добавляем информацию из RustCheck
+        if (!empty($rustCheckData) && isset($rustCheckData['status']) && $rustCheckData['status'] === 'success') {
+            $message .= "\n━━━━━━━━━━━━━━━━━━━━\n";
+            $message .= "🔎 <b>RustCheck информация</b>\n\n";
+
+            // Последний ник из RustCheck
+            if (!empty($rustCheckData['last_nick'])) {
+                $message .= "👤 <b>Последний ник (RustCheck):</b> {$rustCheckData['last_nick']}\n";
+            }
+
+            // Количество проверок
+            if (isset($rustCheckData['rcc_checks'])) {
+                $checksCount = (int)$rustCheckData['rcc_checks'];
+                $message .= "🔍 <b>Проверок в системе:</b> {$checksCount}\n";
+            }
+
+            // Последние IP адреса
+            if (!empty($rustCheckData['last_ip']) && is_array($rustCheckData['last_ip'])) {
+                $ipList = array_unique($rustCheckData['last_ip']);
+                if (count($ipList) > 0) {
+                    $ipCount = count($ipList);
+                    $ipDisplay = implode(', ', array_slice($ipList, 0, 5)); // Показываем максимум 5 IP
+                    if ($ipCount > 5) {
+                        $ipDisplay .= " (+" . ($ipCount - 5) . " еще)";
+                    }
+                    $message .= "🌐 <b>IP адреса:</b> {$ipDisplay}\n";
+                }
+            }
+
+            // История проверок
+            if (!empty($rustCheckData['last_check']) && is_array($rustCheckData['last_check'])) {
+                $checkCount = count($rustCheckData['last_check']);
+                if ($checkCount > 0) {
+                    $message .= "\n📋 <b>Последние проверки ({$checkCount}):</b>\n";
+                    // Показываем максимум 3 последние проверки
+                    $recentChecks = array_slice($rustCheckData['last_check'], 0, 3);
+                    foreach ($recentChecks as $index => $check) {
+                        $checkTime = isset($check['time']) ? date('d.m.Y H:i', (int)$check['time']) : 'Неизвестно';
+                        $serverName = $check['serverName'] ?? 'Неизвестный сервер';
+                        $moderSteamId = $check['moderSteamID'] ?? '';
+                        $message .= "   " . ($index + 1) . ". 🖥️ <b>{$serverName}</b>\n";
+                        $message .= "      📅 {$checkTime}\n";
+                        if (!empty($moderSteamId)) {
+                            $message .= "      👮 Модератор: <a href=\"https://steamcommunity.com/profiles/{$moderSteamId}\">{$moderSteamId}</a>\n";
+                        }
+                        if ($index < count($recentChecks) - 1) {
+                            $message .= "\n";
+                        }
+                    }
+                    if ($checkCount > 3) {
+                        $message .= "\n   ... и еще " . ($checkCount - 3) . " проверок";
+                    }
+                }
+            }
+
+            // Баны из RustCheck
+            if (!empty($rustCheckData['bans']) && is_array($rustCheckData['bans'])) {
+                $rustCheckBans = $rustCheckData['bans'];
+                $rustCheckBanCount = count($rustCheckBans);
+                $activeRustCheckBans = 0;
+                
+                foreach ($rustCheckBans as $ban) {
+                    $unbanDate = isset($ban['unbanDate']) ? (int)$ban['unbanDate'] : 0;
+                    if ($unbanDate === 0 || $unbanDate > time()) {
+                        $activeRustCheckBans++;
+                    }
+                }
+
+                if ($rustCheckBanCount > 0) {
+                    $message .= "\n\n⚠️ <b>Баны RustCheck: {$rustCheckBanCount}</b>";
+                    if ($activeRustCheckBans > 0) {
+                        $message .= " (Активных: {$activeRustCheckBans})";
+                    }
+                    $message .= "\n\n";
+
+                    // Показываем максимум 5 последних банов
+                    $recentBans = array_slice($rustCheckBans, 0, 5);
+                    foreach ($recentBans as $index => $ban) {
+                        $banDate = isset($ban['banDate']) ? date('d.m.Y H:i', (int)$ban['banDate']) : 'Неизвестно';
+                        $unbanDate = isset($ban['unbanDate']) ? (int)$ban['unbanDate'] : 0;
+                        $unbanDateStr = ($unbanDate === 0) ? 'Никогда' : date('d.m.Y H:i', $unbanDate);
+                        $reason = $ban['reason'] ?? 'Не указана';
+                        $serverName = $ban['serverName'] ?? 'Неизвестный сервер';
+                        $isActive = ($unbanDate === 0 || $unbanDate > time());
+                        $statusIcon = $isActive ? "🔴" : "🟢";
+                        $label = $isActive ? "" : " <i>(Бан снят)</i>";
+
+                        $message .= "{$statusIcon} <b>Бан RustCheck #" . ($index + 1) . "</b>{$label}\n";
+                        $message .= "   🖥️ <b>Сервер:</b> {$serverName}\n";
+                        $message .= "   📅 <b>Дата бана:</b> {$banDate}\n";
+                        $message .= "   🔓 <b>Дата разбана:</b> {$unbanDateStr}\n";
+                        $message .= "   📝 <b>Причина:</b> {$reason}\n";
+                        
+                        if ($index < count($recentBans) - 1) {
+                            $message .= "\n";
+                        }
+                    }
+                    
+                    if ($rustCheckBanCount > 5) {
+                        $message .= "\n   ... и еще " . ($rustCheckBanCount - 5) . " банов";
+                    }
+                }
+            }
+
+            // Доказательства
+            if (!empty($rustCheckData['proofs']) && is_array($rustCheckData['proofs'])) {
+                $proofs = array_filter($rustCheckData['proofs']); // Убираем пустые значения
+                $proofsCount = count($proofs);
+                if ($proofsCount > 0) {
+                    $message .= "\n\n📸 <b>Доказательства ({$proofsCount}):</b>\n";
+                    // Показываем максимум 3 ссылки
+                    $displayProofs = array_slice($proofs, 0, 3);
+                    foreach ($displayProofs as $proof) {
+                        $message .= "   🔗 <a href=\"{$proof}\">Просмотр доказательства</a>\n";
+                    }
+                    if ($proofsCount > 3) {
+                        $message .= "   ... и еще " . ($proofsCount - 3) . " доказательств";
+                    }
+                }
+            }
+
+            $message .= "\n━━━━━━━━━━━━━━━━━━━━\n";
+        }
+
+        // Баны из локальной базы данных
+        $message .= "\n<b>Баны на проекте:</b>\n";
         /** @var BanList[] $banList */
         $banList = BanList::find()
             ->andWhere(['steam_id' => $steamId])
@@ -315,7 +449,7 @@ class RustotekaBotSystem extends AbstractSystemBots
             ->all();
 
         if (empty($banList)) {
-            $message .= "\n✅ <b>Аккаунт чист!</b>\nНи одного бана игрока не найдено.";
+            $message .= "✅ <b>Аккаунт чист!</b>\nНи одного бана игрока не найдено.";
         } else {
             $banCount = count($banList);
             $activeBans = 0;
@@ -325,14 +459,16 @@ class RustotekaBotSystem extends AbstractSystemBots
                 }
             }
             
-            $message .= "\n\n⚠️ <b>Найдено банов: {$banCount}</b>";
+            $message .= "⚠️ <b>Найдено банов: {$banCount}</b>";
             if ($activeBans > 0) {
                 $message .= " (Активных: {$activeBans})";
             }
             $message .= "\n\n";
             
+            // Показываем максимум 5 последних банов
+            $recentBans = array_slice($banList, 0, 5);
             $banNum = 1;
-            foreach ($banList as $item) {
+            foreach ($recentBans as $item) {
                 $bannedAt = new \DateTime($item->banned_at);
                 $unBannedAt = "Никогда";
                 $label = "";
@@ -359,10 +495,14 @@ class RustotekaBotSystem extends AbstractSystemBots
                 $message .= "   🔓 <b>Дата разбана:</b> {$unBannedAt}\n";
                 $message .= "   📝 <b>Причина:</b> {$item->reason}\n";
                 
-                if ($banNum < count($banList)) {
+                if ($banNum < count($recentBans)) {
                     $message .= "\n";
                 }
                 $banNum++;
+            }
+            
+            if ($banCount > 5) {
+                $message .= "\n   ... и еще " . ($banCount - 5) . " банов";
             }
         }
 
@@ -422,6 +562,11 @@ class RustotekaBotSystem extends AbstractSystemBots
             ];
         }
 
+        // Если false, значит сообщение уже отправлено (например, сообщение ожидания)
+        if ($answerMessage === false) {
+            return false;
+        }
+        
         if (empty($answerMessage)) {
             return [
                 'message' => '❓ Введенная команда не найдена 😏',
