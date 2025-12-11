@@ -546,7 +546,6 @@ class RustotekaBotSystem extends AbstractSystemBots
             if (!empty($rustCheckData['last_check']) && is_array($rustCheckData['last_check'])) {
                 $checkCount = count($rustCheckData['last_check']);
                 if ($checkCount > 0) {
-                    $message .= "\n📋 <b>Последние проверки ({$checkCount}):</b>\n";
                     // Показываем все проверки
                     foreach ($rustCheckData['last_check'] as $index => $check) {
                         $checkTime = isset($check['time']) ? date('d.m.Y H:i', (int)$check['time']) : 'Неизвестно';
