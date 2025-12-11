@@ -43,50 +43,57 @@ class RustotekaBotSystem extends AbstractSystemBots
     /**
      * @param array $message
      *
-     * @return null|string
+     * @return null|string|array
      */
     public function executeInnerCommand($message)
     {
         $messageText = $this->_getMessageText($message);
         $chatId = ArrayHelper::getValue($message, 'chat.id');
 
+        // Обработка команды /help
+        if ($messageText === '/help' || $messageText === 'help') {
+            return $this->getHelpMessage();
+        }
+
         $cacheKey = "request_kd_{$chatId}";
         if (Yii::$app->cache->get($cacheKey)) {
             $seconds = Yii::$app->cache->get($cacheKey) - time();
             $secondsWord = $this->numDecline($seconds, 'секунда, секунды, секунд', false);
-            return "⛔ Вы делаете запросы слишком часто, попробуйте через <b>{$seconds}</b> {$secondsWord}.";
+            return [
+                'message' => "⛔ Вы делаете запросы слишком часто, попробуйте через <b>{$seconds}</b> {$secondsWord}.",
+                'buttons' => $this->getMainMenuButtons()
+            ];
         }
         Yii::$app->cache->set($cacheKey, time() + 10, 10);
 
+        // Проверка SteamID (17 цифр)
         if (strlen($messageText) === 17 && strlen(preg_replace('/[^0-9]/', "", $messageText)) === 17) {
             return $this->getCheck($messageText);
         }
+        
+        // Проверка ссылки на профиль Steam
         if (Steam::hasLinkProfile($messageText)) {
             $steamId = Steam::getSteamId($messageText);
             if (empty($steamId)) {
-                return "⛔ Произошла ошибка, вы неверно указали ссылку на профиль или SteamId.";
+                return [
+                    'message' => "⛔ Произошла ошибка, вы неверно указали ссылку на профиль или SteamID.",
+                    'buttons' => $this->getMainMenuButtons()
+                ];
             }
             return $this->getCheck($steamId);
         }
 
         TelegramMessage::createModel($chatId, $messageText);
-//        switch ($messageText) {
-//            case '/help':
-//                return "<b>/pop</b> - Онлайн на серверах"
-//                    . PHP_EOL . "<b>/wipe</b> - Календарь вайпов"
-//                    . PHP_EOL . "<b>/bonus</b> - Получить ежедневный бонус"
-//                    . PHP_EOL . "<b>/ip</b> - IP серверов";
-//            case '/pop':
-//                return $this->getOnline();
-//            case '/wipe':
-//                return $this->getWipe();
-//            case '/ip':
-//                return $this->getIp();
-//            case '/bonus':
-//                return $this->getBonus($message);
-//        }
 
-        return null;
+        // Для нераспознанных сообщений показываем подсказку
+        return [
+            'message' => "❓ Не понимаю эту команду.\n\n" .
+                        "📝 <b>Как проверить игрока:</b>\n" .
+                        "• Отправьте SteamID (17 цифр)\n" .
+                        "• Или ссылку на профиль Steam\n\n" .
+                        "💡 Используйте /help для получения справки.",
+            'buttons' => $this->getMainMenuButtons()
+        ];
     }
 
     private function numDecline( $number, $titles, $show_number = true ) {
@@ -183,14 +190,19 @@ class RustotekaBotSystem extends AbstractSystemBots
         return $list[$code];
     }
 
+    /**
+     * Получение информации о игроке с кнопками
+     * @param string $steamId
+     * @return array
+     */
     public function getCheck($steamId) {
-        $message = "<b>Информация о игроке</b>";
+        $message = "🔍 <b>Информация о игроке</b>\n\n";
 
         try {
             $userInfo = Steam::getInfoUser($steamId);
             if (!empty($userInfo) && !empty($userInfo[0])) {
                 if (!empty($userInfo[0]['personaname'])) {
-                    $message .=  PHP_EOL . "Ник: {$userInfo[0]['personaname']}";
+                    $message .= "👤 <b>Ник:</b> {$userInfo[0]['personaname']}\n";
                 }
                 if (!empty($userInfo[0]['loccountrycode'])) {
                     $countryName = "";
@@ -204,9 +216,13 @@ class RustotekaBotSystem extends AbstractSystemBots
                         $language = Language::find()
                                             ->andWhere(['country' => mb_strtolower($userInfo[0]['loccountrycode'])])
                                             ->one();
-                        $message .=  PHP_EOL . "Страна: {$language->name_ascii}";
+                        if ($language) {
+                            $message .= "🌍 <b>Страна:</b> {$language->name_ascii}\n";
+                        } else {
+                            $message .= "🌍 <b>Страна:</b> {$countryName}\n";
+                        }
                     } else {
-                        $message .=  PHP_EOL . "Страна: {$countryName}";
+                        $message .= "🌍 <b>Страна:</b> {$countryName}\n";
                     }
                 }
             }
@@ -214,7 +230,7 @@ class RustotekaBotSystem extends AbstractSystemBots
             Yii::$app->telegramReports->sendMessage("RustotekaBotSystem:" . $e->getLine() . ":" . $e->getMessage());
         }
 
-        $message .=  PHP_EOL . "SteamId: <a href=\"https://steamcommunity.com/profiles/{$steamId}\">{$steamId}</a>";
+        $message .= "🆔 <b>SteamID:</b> <a href=\"https://steamcommunity.com/profiles/{$steamId}\">{$steamId}</a>\n";
 
         /** @var BanList[] $banList */
         $banList = BanList::find()
@@ -222,35 +238,122 @@ class RustotekaBotSystem extends AbstractSystemBots
             ->orderBy(['banned_at' => SORT_DESC])
             ->all();
 
-
         if (empty($banList)) {
-            $message .=  PHP_EOL . PHP_EOL . "Аккаунт чист, ни одного бана игрока не найдено!";
+            $message .= "\n✅ <b>Аккаунт чист!</b>\nНи одного бана игрока не найдено.";
         } else {
-            $message .=  PHP_EOL . PHP_EOL . "<b>Баны игрока:</b>";
-        }
-
-        foreach ($banList as $item) {
-            $bannedAt = new \DateTime($item->banned_at);
-            $unBannedAt = "Никогда";
-            $label = "";
-            if (!empty($item->unbanned_at)) {
-                $date = new \DateTime($item->unbanned_at);
-                $unBannedAt = $date->format('d.m.Y H:i:s');
-                if ($date->getTimestamp() < time()) {
-                    $label = " <i>(Бан снят)</i>";
+            $banCount = count($banList);
+            $activeBans = 0;
+            foreach ($banList as $ban) {
+                if (empty($ban->unbanned_at) || (new \DateTime($ban->unbanned_at))->getTimestamp() >= time()) {
+                    $activeBans++;
                 }
             }
-            $serverName = $item->server_name;
-            if (empty($serverName)) {
-                $serverName = "Бан на всех серверах проекта.";
+            
+            $message .= "\n\n⚠️ <b>Найдено банов: {$banCount}</b>";
+            if ($activeBans > 0) {
+                $message .= " (Активных: {$activeBans})";
             }
-            $message .= PHP_EOL . PHP_EOL . "Сервер: <b>{$item->project_name}</b> - {$serverName}" . $label;
-            $message .= PHP_EOL . "Дата бана: {$bannedAt->format('d.m.Y H:i:s')}";
-            $message .= PHP_EOL . "Дата разбана: {$unBannedAt}";
-            $message .= PHP_EOL . "Причина: {$item->reason}";
+            $message .= "\n\n";
+            
+            $banNum = 1;
+            foreach ($banList as $item) {
+                $bannedAt = new \DateTime($item->banned_at);
+                $unBannedAt = "Никогда";
+                $label = "";
+                $isActive = true;
+                
+                if (!empty($item->unbanned_at)) {
+                    $date = new \DateTime($item->unbanned_at);
+                    $unBannedAt = $date->format('d.m.Y H:i:s');
+                    if ($date->getTimestamp() < time()) {
+                        $label = " <i>(Бан снят)</i>";
+                        $isActive = false;
+                    }
+                }
+                
+                $serverName = $item->server_name;
+                if (empty($serverName)) {
+                    $serverName = "Бан на всех серверах проекта.";
+                }
+                
+                $statusIcon = $isActive ? "🔴" : "🟢";
+                $message .= "{$statusIcon} <b>Бан #{$banNum}</b>{$label}\n";
+                $message .= "   🖥️ <b>Сервер:</b> {$item->project_name} - {$serverName}\n";
+                $message .= "   📅 <b>Дата бана:</b> {$bannedAt->format('d.m.Y H:i:s')}\n";
+                $message .= "   🔓 <b>Дата разбана:</b> {$unBannedAt}\n";
+                $message .= "   📝 <b>Причина:</b> {$item->reason}\n";
+                
+                if ($banNum < count($banList)) {
+                    $message .= "\n";
+                }
+                $banNum++;
+            }
         }
 
-        return $message;
+        return [
+            'message' => $message,
+            'buttons' => $this->getCheckButtons($steamId)
+        ];
+    }
+
+    /**
+     * Переопределяем executeCommand для добавления кнопок к /start
+     * @param array $message
+     * @return string|array
+     */
+    public function executeCommand($message)
+    {
+        try {
+            $messageText = $this->_getMessageText($message);
+
+            $answerMessage = null;
+            switch (true) {
+                case strpos($messageText, '/start') === 0 :
+                    $chat = ArrayHelper::getValue($message, 'chat');
+
+                    $name = '';
+                    $lastName  = ArrayHelper::getValue($chat, 'last_name');
+                    $firstName = ArrayHelper::getValue($chat, 'first_name');
+                    if (!empty($firstName) && !empty($lastName)) {
+                        $name = ', ' . trim($lastName . ' ' . $firstName);
+                    } elseif (!empty($firstName)) {
+                        $name = ', ' . $firstName;
+                    } elseif (!empty($lastName)) {
+                        $name = ', ' . $lastName;
+                    }
+
+                    $this->loginUser($message);
+                    $startText = $this->_getStartMessageText($name);
+                    
+                    return [
+                        'message' => $startText,
+                        'buttons' => $this->getMainMenuButtons()
+                    ];
+
+                default :
+                    $answerMessage = $this->executeInnerCommand($message);
+                    break;
+            }
+
+        } catch (\Exception $e) {
+            $error = "File: " . $e->getFile()
+                . PHP_EOL . "Line: " . $e->getLine()
+                . PHP_EOL . "Error:" . $e->getMessage();
+            Yii::$app->telegramChats->sendMessage($error);
+            $answerMessage = [
+                'message' => '❌ Что-то пошло не так!😱 Обратитесь в тех.поддержку.',
+                'buttons' => $this->getMainMenuButtons()
+            ];
+        }
+
+        if (empty($answerMessage)) {
+            return [
+                'message' => '❓ Введенная команда не найдена 😏',
+                'buttons' => $this->getMainMenuButtons()
+            ];
+        }
+
+        return $answerMessage;
     }
 
     /**
@@ -260,8 +363,15 @@ class RustotekaBotSystem extends AbstractSystemBots
      */
     protected function _getStartMessageText($name)
     {
-        return "Приветствую{$name}!
-Чтобы проверить игрока, просто укажите ссылку на профиль или SteamID.";
+        return "👋 Приветствую{$name}!\n\n" .
+               "🤖 <b>Бот для проверки игроков Rust</b>\n\n" .
+               "📋 <b>Что умеет бот:</b>\n" .
+               "• Проверка игроков по SteamID\n" .
+               "• Проверка по ссылке на профиль Steam\n" .
+               "• Просмотр истории банов\n" .
+               "• Информация о стране игрока\n\n" .
+               "💡 <b>Как использовать:</b>\n" .
+               "Отправьте SteamID (17 цифр) или ссылку на профиль Steam для проверки игрока.";
     }
 
     /**
@@ -289,17 +399,137 @@ class RustotekaBotSystem extends AbstractSystemBots
      */
     public function executeCallBack($chatId, $buttonValue)
     {
-        /*if (!empty($buttonValue) && strpos($buttonValue, 'messageId') !== false) {
-            $data = json_decode($buttonValue, 1);
-            $response = $this->getMessage($data['messageId'], $data['current_language']);
-            if (!empty($response) && !empty($response['message'])) {
+        // Парсим данные кнопки
+        $data = json_decode($buttonValue, true);
+        if (empty($data) || !is_array($data)) {
+            return '⛔ Команда не найдена, попробуйте другую';
+        }
+
+        $action = $data['action'] ?? null;
+
+        switch ($action) {
+            case 'check_again':
+                $steamId = $data['steam_id'] ?? null;
+                if ($steamId) {
+                    return $this->getCheck($steamId);
+                }
+                break;
+                
+            case 'main_menu':
+                $chat = ['id' => $chatId];
+                $name = '';
                 return [
-                    'message' => $response['message'],
-                    'buttons' => $response['buttons'],
+                    'message' => $this->_getStartMessageText($name),
+                    'buttons' => $this->getMainMenuButtons()
                 ];
-            }
-        }*/
+                
+            case 'help':
+                return $this->getHelpMessage();
+                
+            case 'steam_profile':
+                $steamId = $data['steam_id'] ?? null;
+                if ($steamId) {
+                    // Просто возвращаем текст, кнопка уже открывает ссылку
+                    return null;
+                }
+                break;
+        }
+
         return '⛔ Команда не найдена, попробуйте другую';
+    }
+
+    /**
+     * Получение кнопок главного меню
+     * @return array
+     */
+    private function getMainMenuButtons()
+    {
+        // TelegramApiHelper оборачивает в [$inlineKeyboard], поэтому передаем массив массивов
+        // где каждый внутренний массив - это строка кнопок
+        return [
+            [
+                [
+                    'text' => '📖 Справка',
+                    'callback_data' => json_encode(['action' => 'help'])
+                ]
+            ],
+            [
+                [
+                    'text' => '💡 Как проверить игрока?',
+                    'callback_data' => json_encode(['action' => 'help'])
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Получение кнопок для результата проверки
+     * @param string $steamId
+     * @return array
+     */
+    private function getCheckButtons($steamId)
+    {
+        // TelegramApiHelper оборачивает в [$inlineKeyboard], поэтому передаем массив кнопок
+        // Первые две кнопки в одной строке, третья - в отдельной
+        // Но так как TelegramApiHelper оборачивает весь массив, нужно передать массив массивов
+        // где каждый внутренний массив - это строка кнопок
+        return [
+            [
+                [
+                    'text' => '🔄 Проверить снова',
+                    'callback_data' => json_encode(['action' => 'check_again', 'steam_id' => $steamId])
+                ],
+                [
+                    'text' => '🔗 Профиль Steam',
+                    'url' => "https://steamcommunity.com/profiles/{$steamId}"
+                ]
+            ],
+            [
+                [
+                    'text' => '🏠 Главное меню',
+                    'callback_data' => json_encode(['action' => 'main_menu'])
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Получение сообщения со справкой
+     * @return array
+     */
+    private function getHelpMessage()
+    {
+        $message = "📖 <b>Справка по использованию бота</b>\n\n" .
+                   "🔍 <b>Как проверить игрока:</b>\n" .
+                   "1️⃣ Отправьте SteamID (17 цифр)\n" .
+                   "   Пример: <code>76561198012345678</code>\n\n" .
+                   "2️⃣ Или отправьте ссылку на профиль Steam\n" .
+                   "   Пример: <code>https://steamcommunity.com/profiles/76561198012345678</code>\n" .
+                   "   Или: <code>https://steamcommunity.com/id/username</code>\n\n" .
+                   "📋 <b>Что показывает бот:</b>\n" .
+                   "• 👤 Ник игрока\n" .
+                   "• 🌍 Страна игрока\n" .
+                   "• 🆔 SteamID с ссылкой на профиль\n" .
+                   "• ⚠️ История банов (если есть)\n" .
+                   "• 📅 Даты банов и разбанов\n" .
+                   "• 📝 Причины банов\n\n" .
+                   "💡 <b>Полезные команды:</b>\n" .
+                   "/start - Главное меню\n" .
+                   "/help - Эта справка\n\n" .
+                   "⚡ <b>Ограничения:</b>\n" .
+                   "Не более 1 запроса в 10 секунд";
+
+        return [
+            'message' => $message,
+            'buttons' => [
+                [
+                    [
+                        'text' => '🏠 Главное меню',
+                        'callback_data' => json_encode(['action' => 'main_menu'])
+                    ]
+                ]
+            ]
+        ];
     }
 
     /**
