@@ -14,6 +14,16 @@ class CheckPlayerJob extends BaseObject implements JobInterface
     public $waitingMessageId; // ID сообщения ожидания, которое нужно удалить
 
     /**
+     * Выполнение задачи проверки игрока в очереди
+     * 
+     * ВНИМАНИЕ: Все запросы к внешним сервисам и базам данных выполняются здесь, в очереди:
+     * - Запрос к Steam API (Steam::getInfoUser)
+     * - Запрос к RustCheck API (rustCheck->getInfo)
+     * - Запрос к GeoIP для определения страны по IP
+     * - Запрос к локальной базе данных (BanList::find)
+     * 
+     * Это позволяет не блокировать основной поток обработки сообщений бота.
+     * 
      * @param \yii\queue\Queue $queue
      *
      * @return mixed|void
@@ -28,9 +38,9 @@ class CheckPlayerJob extends BaseObject implements JobInterface
             $botSystem = new RustotekaBotSystem();
             $bot = $botSystem->getTelegramBot();
             
-            Yii::info("CheckPlayerJob: Starting check for steamId {$this->steamId}, chatId {$this->chatId}", __METHOD__);
+            Yii::info("CheckPlayerJob: Starting check for steamId {$this->steamId}, chatId {$this->chatId} (executing in queue)", __METHOD__);
             
-            // Получаем результат проверки
+            // Получаем результат проверки (все запросы к сервисам и БД выполняются внутри этого метода в очереди)
             $result = $botSystem->getCheck($this->steamId);
             
             Yii::info("CheckPlayerJob: Got result, is_array: " . (is_array($result) ? 'yes' : 'no') . ", has message: " . (is_array($result) && !empty($result['message']) ? 'yes' : 'no'), __METHOD__);

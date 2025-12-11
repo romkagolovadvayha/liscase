@@ -56,16 +56,11 @@ class RustotekaBotSystem extends AbstractSystemBots
             return $this->getHelpMessage();
         }
 
-        $cacheKey = "request_kd_{$chatId}";
-        if (Yii::$app->cache->get($cacheKey)) {
-            $seconds = Yii::$app->cache->get($cacheKey) - time();
-            $secondsWord = $this->numDecline($seconds, 'секунда, секунды, секунд', false);
-            return [
-                'message' => "⛔ Вы делаете запросы слишком часто, попробуйте через <b>{$seconds}</b> {$secondsWord}.",
-                'buttons' => $this->getMainMenuButtons()
-            ];
+        // Проверка кулдауна
+        $cooldownCheck = $this->checkCooldown($chatId);
+        if ($cooldownCheck !== null) {
+            return $cooldownCheck;
         }
-        Yii::$app->cache->set($cacheKey, time() + 10, 10);
 
         // Проверка SteamID (17 цифр)
         // Убираем все пробелы и проверяем, что это 17 цифр
@@ -118,6 +113,30 @@ class RustotekaBotSystem extends AbstractSystemBots
             : $cases[ min( $intnum % 10, 5 ) ];
 
         return ( $show_number ? "$number " : '' ) . $titles[ $title_index ];
+    }
+
+    /**
+     * Проверка кулдауна для запросов проверки игрока
+     * @param int $chatId ID чата
+     * @return array|null Возвращает массив с сообщением об ошибке, если КД активен, иначе null
+     */
+    private function checkCooldown($chatId)
+    {
+        $cacheKey = "request_kd_{$chatId}";
+        $cooldownEndTime = Yii::$app->cache->get($cacheKey);
+        
+        if ($cooldownEndTime && $cooldownEndTime > time()) {
+            $seconds = $cooldownEndTime - time();
+            $secondsWord = $this->numDecline($seconds, 'секунда, секунды, секунд', false);
+            return [
+                'message' => "⛔ Вы делаете запросы слишком часто, попробуйте через <b>{$seconds}</b> {$secondsWord}.",
+                'buttons' => $this->getMainMenuButtons()
+            ];
+        }
+        
+        // Устанавливаем КД на 10 секунд
+        Yii::$app->cache->set($cacheKey, time() + 10, 10);
+        return null;
     }
 
     private function country($code) {
@@ -269,61 +288,141 @@ class RustotekaBotSystem extends AbstractSystemBots
      * @param string $steamId
      * @return array
      */
+    /**
+     * Получение страны по IP адресу (выполняется в очереди)
+     * @param string $ip
+     * @return string|null Код страны (например, 'RU', 'US')
+     */
+    private function getCountryByIp($ip)
+    {
+        try {
+            if (Yii::$app->has('geoip') && !empty($ip)) {
+                $geoipStartTime = microtime(true);
+                $location = Yii::$app->geoip->lookupLocation($ip);
+                $geoipTime = round((microtime(true) - $geoipStartTime) * 1000, 2);
+                Yii::info("RustotekaBotSystem::getCountryByIp: GeoIP lookup for IP {$ip} completed in {$geoipTime}ms", __METHOD__);
+                
+                if (!empty($location) && !empty($location->countryCode)) {
+                    return strtoupper($location->countryCode);
+                }
+            }
+        } catch (\Exception $e) {
+            Yii::error("RustotekaBotSystem::getCountryByIp: Failed to get country by IP {$ip}: " . $e->getMessage(), __METHOD__);
+        }
+        return null;
+    }
+
+    /**
+     * Форматирование страны с флагом
+     * @param string $countryCode Код страны (например, 'RU', 'US')
+     * @return string Отформатированная строка со страной и флагом
+     */
+    private function formatCountry($countryCode)
+    {
+        if (empty($countryCode)) {
+            return '';
+        }
+        
+        $flagItem = $this->country(strtolower($countryCode));
+        if (!empty($flagItem)) {
+            return "{$flagItem['icon']} {$flagItem['name']}";
+        }
+        
+        // Если флага нет в списке, пытаемся найти через Language
+        $language = Language::find()
+            ->andWhere(['country' => mb_strtolower($countryCode)])
+            ->one();
+        if ($language) {
+            return $language->name_ascii;
+        }
+        
+        return $countryCode;
+    }
+
+    /**
+     * Получение информации о игроке с кнопками
+     * ВНИМАНИЕ: Этот метод должен вызываться только из очереди (CheckPlayerJob)
+     * Все запросы к внешним сервисам и базам данных выполняются асинхронно в очереди
+     * 
+     * @param string $steamId
+     * @return array
+     */
     public function getCheck($steamId) {
+        $startTime = microtime(true);
+        Yii::info("RustotekaBotSystem::getCheck: Starting check for steamId {$steamId} (executed in queue)", __METHOD__);
+        
         $message = "🔍 <b>Информация о игроке</b>\n\n";
 
+        $countryCode = null;
+        $steamCountryCode = null;
+
+        // Запрос к Steam API (выполняется в очереди)
         try {
+            $steamStartTime = microtime(true);
             $userInfo = Steam::getInfoUser($steamId);
+            $steamTime = round((microtime(true) - $steamStartTime) * 1000, 2);
+            Yii::info("RustotekaBotSystem::getCheck: Steam API request completed in {$steamTime}ms", __METHOD__);
+            
             if (!empty($userInfo) && !empty($userInfo[0])) {
                 if (!empty($userInfo[0]['personaname'])) {
                     $message .= "👤 <b>Ник:</b> {$userInfo[0]['personaname']}\n";
                 }
                 if (!empty($userInfo[0]['loccountrycode'])) {
-                    $countryName = "";
-                    $flagItem = $this->country(strtolower($userInfo[0]['loccountrycode']));
-                    if (!empty($flagItem)) {
-                        $countryName = "{$flagItem['icon']} {$flagItem['name']}";
-                    } else {
-                        $countryName = $userInfo[0]['loccountrycode'];
-                    }
-                    if (empty($flagItem)) {
-                        $language = Language::find()
-                                            ->andWhere(['country' => mb_strtolower($userInfo[0]['loccountrycode'])])
-                                            ->one();
-                        if ($language) {
-                            $message .= "🌍 <b>Страна:</b> {$language->name_ascii}\n";
-                        } else {
-                            $message .= "🌍 <b>Страна:</b> {$countryName}\n";
-                        }
-                    } else {
-                        $message .= "🌍 <b>Страна:</b> {$countryName}\n";
-                    }
+                    $steamCountryCode = strtoupper($userInfo[0]['loccountrycode']);
                 }
             }
         } catch (\Exception $e) {
+            Yii::error("RustotekaBotSystem::getCheck: Steam API error for steamId {$steamId}: " . $e->getMessage(), __METHOD__);
             Yii::$app->telegramReports->sendMessage("RustotekaBotSystem:" . $e->getLine() . ":" . $e->getMessage());
         }
 
         $message .= "🆔 <b>SteamID:</b> <a href=\"https://steamcommunity.com/profiles/{$steamId}\">{$steamId}</a>\n";
 
-        // Получаем информацию из RustCheck
+        // Запрос к RustCheck API (выполняется в очереди)
         $rustCheckData = null;
         try {
             if (Yii::$app->has('rustCheck')) {
+                $rustCheckStartTime = microtime(true);
                 $rustCheckData = Yii::$app->rustCheck->getInfo($steamId);
+                $rustCheckTime = round((microtime(true) - $rustCheckStartTime) * 1000, 2);
+                Yii::info("RustotekaBotSystem::getCheck: RustCheck API request completed in {$rustCheckTime}ms", __METHOD__);
             }
         } catch (\Exception $e) {
-            Yii::warning("RustotekaBotSystem: Failed to get RustCheck data: " . $e->getMessage(), __METHOD__);
+            Yii::error("RustotekaBotSystem::getCheck: RustCheck API error for steamId {$steamId}: " . $e->getMessage(), __METHOD__);
+        }
+
+        // Определяем страну по IP из RustCheck (приоритетнее, чем Steam)
+        if (!empty($rustCheckData) && isset($rustCheckData['status']) && $rustCheckData['status'] === 'success') {
+            if (!empty($rustCheckData['last_ip']) && is_array($rustCheckData['last_ip'])) {
+                $ipList = array_unique($rustCheckData['last_ip']);
+                // Берем первый IP для определения страны
+                if (count($ipList) > 0) {
+                    $firstIp = reset($ipList);
+                    $countryCode = $this->getCountryByIp($firstIp);
+                }
+            }
+        }
+
+        // Если не удалось определить по IP, используем страну из Steam
+        if (empty($countryCode) && !empty($steamCountryCode)) {
+            $countryCode = $steamCountryCode;
+        }
+
+        // Отображаем страну с флагом
+        if (!empty($countryCode)) {
+            $countryDisplay = $this->formatCountry($countryCode);
+            if (!empty($countryDisplay)) {
+                $message .= "🌍 <b>Страна:</b> {$countryDisplay}\n";
+            }
         }
 
         // Добавляем информацию из RustCheck
         if (!empty($rustCheckData) && isset($rustCheckData['status']) && $rustCheckData['status'] === 'success') {
-            $message .= "\n━━━━━━━━━━━━━━━━━━━━\n";
-            $message .= "🔎 <b>RustCheck информация</b>\n\n";
+            $message .= "\n";
 
             // Последний ник из RustCheck
             if (!empty($rustCheckData['last_nick'])) {
-                $message .= "👤 <b>Последний ник (RustCheck):</b> {$rustCheckData['last_nick']}\n";
+                $message .= "👤 <b>Последний ник:</b> {$rustCheckData['last_nick']}\n";
             }
 
             // Количество проверок
@@ -385,7 +484,7 @@ class RustotekaBotSystem extends AbstractSystemBots
                 }
 
                 if ($rustCheckBanCount > 0) {
-                    $message .= "\n\n⚠️ <b>Баны RustCheck: {$rustCheckBanCount}</b>";
+                    $message .= "\n\n⚠️ <b>Баны: {$rustCheckBanCount}</b>";
                     if ($activeRustCheckBans > 0) {
                         $message .= " (Активных: {$activeRustCheckBans})";
                     }
@@ -403,7 +502,7 @@ class RustotekaBotSystem extends AbstractSystemBots
                         $statusIcon = $isActive ? "🔴" : "🟢";
                         $label = $isActive ? "" : " <i>(Бан снят)</i>";
 
-                        $message .= "{$statusIcon} <b>Бан RustCheck #" . ($index + 1) . "</b>{$label}\n";
+                        $message .= "{$statusIcon} <b>Бан #" . ($index + 1) . "</b>{$label}\n";
                         $message .= "   🖥️ <b>Сервер:</b> {$serverName}\n";
                         $message .= "   📅 <b>Дата бана:</b> {$banDate}\n";
                         $message .= "   🔓 <b>Дата разбана:</b> {$unbanDateStr}\n";
@@ -420,33 +519,23 @@ class RustotekaBotSystem extends AbstractSystemBots
                 }
             }
 
-            // Доказательства
-            if (!empty($rustCheckData['proofs']) && is_array($rustCheckData['proofs'])) {
-                $proofs = array_filter($rustCheckData['proofs']); // Убираем пустые значения
-                $proofsCount = count($proofs);
-                if ($proofsCount > 0) {
-                    $message .= "\n\n📸 <b>Доказательства ({$proofsCount}):</b>\n";
-                    // Показываем максимум 3 ссылки
-                    $displayProofs = array_slice($proofs, 0, 3);
-                    foreach ($displayProofs as $proof) {
-                        $message .= "   🔗 <a href=\"{$proof}\">Просмотр доказательства</a>\n";
-                    }
-                    if ($proofsCount > 3) {
-                        $message .= "   ... и еще " . ($proofsCount - 3) . " доказательств";
-                    }
-                }
-            }
-
-            $message .= "\n━━━━━━━━━━━━━━━━━━━━\n";
         }
 
-        // Баны из локальной базы данных
+        // Запрос к локальной базе данных (выполняется в очереди)
         $message .= "\n<b>Баны на проекте:</b>\n";
         /** @var BanList[] $banList */
-        $banList = BanList::find()
-            ->andWhere(['steam_id' => $steamId])
-            ->orderBy(['banned_at' => SORT_DESC])
-            ->all();
+        try {
+            $dbStartTime = microtime(true);
+            $banList = BanList::find()
+                ->andWhere(['steam_id' => $steamId])
+                ->orderBy(['banned_at' => SORT_DESC])
+                ->all();
+            $dbTime = round((microtime(true) - $dbStartTime) * 1000, 2);
+            Yii::info("RustotekaBotSystem::getCheck: Database query for bans completed in {$dbTime}ms, found " . count($banList) . " bans", __METHOD__);
+        } catch (\Exception $e) {
+            Yii::error("RustotekaBotSystem::getCheck: Database error for steamId {$steamId}: " . $e->getMessage(), __METHOD__);
+            $banList = [];
+        }
 
         if (empty($banList)) {
             $message .= "✅ <b>Аккаунт чист!</b>\nНи одного бана игрока не найдено.";
@@ -469,24 +558,24 @@ class RustotekaBotSystem extends AbstractSystemBots
             $recentBans = array_slice($banList, 0, 5);
             $banNum = 1;
             foreach ($recentBans as $item) {
-                $bannedAt = new \DateTime($item->banned_at);
-                $unBannedAt = "Никогда";
-                $label = "";
+            $bannedAt = new \DateTime($item->banned_at);
+            $unBannedAt = "Никогда";
+            $label = "";
                 $isActive = true;
                 
-                if (!empty($item->unbanned_at)) {
-                    $date = new \DateTime($item->unbanned_at);
-                    $unBannedAt = $date->format('d.m.Y H:i:s');
-                    if ($date->getTimestamp() < time()) {
-                        $label = " <i>(Бан снят)</i>";
+            if (!empty($item->unbanned_at)) {
+                $date = new \DateTime($item->unbanned_at);
+                $unBannedAt = $date->format('d.m.Y H:i:s');
+                if ($date->getTimestamp() < time()) {
+                    $label = " <i>(Бан снят)</i>";
                         $isActive = false;
                     }
                 }
                 
-                $serverName = $item->server_name;
-                if (empty($serverName)) {
-                    $serverName = "Бан на всех серверах проекта.";
-                }
+            $serverName = $item->server_name;
+            if (empty($serverName)) {
+                $serverName = "Бан на всех серверах проекта.";
+            }
                 
                 $statusIcon = $isActive ? "🔴" : "🟢";
                 $message .= "{$statusIcon} <b>Бан #{$banNum}</b>{$label}\n";
@@ -505,6 +594,10 @@ class RustotekaBotSystem extends AbstractSystemBots
                 $message .= "\n   ... и еще " . ($banCount - 5) . " банов";
             }
         }
+
+        // Логируем общее время выполнения (все запросы выполнялись в очереди)
+        $totalTime = round((microtime(true) - $startTime) * 1000, 2);
+        Yii::info("RustotekaBotSystem::getCheck: Completed check for steamId {$steamId} in {$totalTime}ms (all requests executed in queue)", __METHOD__);
 
         return [
             'message' => $message,
@@ -632,6 +725,12 @@ class RustotekaBotSystem extends AbstractSystemBots
             case 'check_again':
                 $steamId = $data['steam_id'] ?? null;
                 if ($steamId) {
+                    // Проверка кулдауна для повторной проверки
+                    $cooldownCheck = $this->checkCooldown($chatId);
+                    if ($cooldownCheck !== null) {
+                        return $cooldownCheck;
+                    }
+                    
                     // Используем очередь для повторной проверки
                     $this->processCheckRequest($chatId, $steamId);
                     // Возвращаем null, так как сообщение ожидания уже отправлено
