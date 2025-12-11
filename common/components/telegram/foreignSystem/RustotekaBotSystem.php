@@ -394,13 +394,11 @@ class RustotekaBotSystem extends AbstractSystemBots
         // Запрос к BattleMetrics API (выполняется в очереди)
         $battleMetricsData = null;
         try {
-            if (Yii::$app->has('battleMetrics')) {
-                $bmStartTime = microtime(true);
-                $battleMetricsData = Yii::$app->battleMetrics->getPlayerInfo($steamId);
-                $bmTime = round((microtime(true) - $bmStartTime) * 1000, 2);
-                Yii::info("RustotekaBotSystem::getCheck: BattleMetrics API request completed in {$bmTime}ms", __METHOD__);
-                Yii::$app->telegramChats->sendMessage("RustotekaBotSystem: BattleMetrics API request completed in {$bmTime}ms");
-            }
+            $bmStartTime = microtime(true);
+            $battleMetricsData = Yii::$app->battleMetrics->getPlayerInfo($steamId);
+            $bmTime = round((microtime(true) - $bmStartTime) * 1000, 2);
+            Yii::info("RustotekaBotSystem::getCheck: BattleMetrics API request completed in {$bmTime}ms", __METHOD__);
+            Yii::$app->telegramChats->sendMessage("RustotekaBotSystem: BattleMetrics API request completed in {$bmTime}ms");
         } catch (\Exception $e) {
             Yii::error("RustotekaBotSystem::getCheck: BattleMetrics API error for steamId {$steamId}: " . $e->getMessage(), __METHOD__);
             Yii::$app->telegramChats->sendMessage("RustotekaBotSystem: BattleMetrics API error for steamId {$steamId}: " . $e->getMessage());
