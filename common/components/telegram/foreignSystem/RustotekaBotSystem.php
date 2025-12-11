@@ -391,6 +391,19 @@ class RustotekaBotSystem extends AbstractSystemBots
             Yii::error("RustotekaBotSystem::getCheck: RustCheck API error for steamId {$steamId}: " . $e->getMessage(), __METHOD__);
         }
 
+        // Запрос к BattleMetrics API (выполняется в очереди)
+        $battleMetricsData = null;
+        try {
+            if (Yii::$app->has('battleMetrics')) {
+                $bmStartTime = microtime(true);
+                $battleMetricsData = Yii::$app->battleMetrics->getPlayerInfo($steamId);
+                $bmTime = round((microtime(true) - $bmStartTime) * 1000, 2);
+                Yii::info("RustotekaBotSystem::getCheck: BattleMetrics API request completed in {$bmTime}ms", __METHOD__);
+            }
+        } catch (\Exception $e) {
+            Yii::error("RustotekaBotSystem::getCheck: BattleMetrics API error for steamId {$steamId}: " . $e->getMessage(), __METHOD__);
+        }
+
         // Определяем страну по IP из RustCheck (приоритетнее, чем Steam)
         if (!empty($rustCheckData) && isset($rustCheckData['status']) && $rustCheckData['status'] === 'success') {
             if (!empty($rustCheckData['last_ip']) && is_array($rustCheckData['last_ip'])) {
@@ -440,7 +453,7 @@ class RustotekaBotSystem extends AbstractSystemBots
                     foreach ($rustCheckData['last_check'] as $index => $check) {
                         $checkTime = isset($check['time']) ? date('d.m.Y H:i', (int)$check['time']) : 'Неизвестно';
                         $serverName = $check['serverName'] ?? 'Неизвестный сервер';
-                        $message .= "   " . ($index + 1) . ". 🖥️ {$serverName} 📅 {$checkTime}\n";
+                        $message .= "   " . ($index + 1) . ". 📅 {$checkTime} 🖥️ {$serverName}\n";
                     }
                 }
             }
@@ -492,6 +505,183 @@ class RustotekaBotSystem extends AbstractSystemBots
         } else {
             // Если данных из RustCheck нет, показываем сообщение
             $message .= "\n\n✅ <b>Аккаунт чист!</b>\nНи одного бана игрока не найдено.";
+        }
+
+        // Добавляем информацию из BattleMetrics
+        if (!empty($battleMetricsData) && !empty($battleMetricsData['player'])) {
+            $player = $battleMetricsData['player'];
+            $sessions = $battleMetricsData['sessions'] ?? [];
+            $bans = $battleMetricsData['bans'] ?? [];
+            
+            $message .= "\n\n━━━━━━━━━━━━━━━━━━━━\n";
+            $message .= "🎮 <b>BattleMetrics</b>\n\n";
+
+            // Статистика игры
+            if (!empty($player['attributes'])) {
+                $attrs = $player['attributes'];
+                
+                // Общее время игры
+                if (!empty($attrs['totalPlaytime'])) {
+                    $playtimeHours = round($attrs['totalPlaytime'] / 3600, 1);
+                    $message .= "⏱️ <b>Время игры:</b> {$playtimeHours} часов\n";
+                }
+                
+                // Последний вход
+                if (!empty($attrs['lastSeen'])) {
+                    $lastSeen = date('d.m.Y H:i', strtotime($attrs['lastSeen']));
+                    $message .= "🕐 <b>Последний вход:</b> {$lastSeen}\n";
+                }
+            }
+
+            // Последние серверы (из сессий)
+            if (!empty($sessions) && is_array($sessions)) {
+                $uniqueServers = [];
+                foreach ($sessions as $session) {
+                    if (!empty($session['relationships']['server']['data']['id'])) {
+                        $serverId = $session['relationships']['server']['data']['id'];
+                        if (!isset($uniqueServers[$serverId])) {
+                            // Ищем название сервера в included
+                            $serverName = 'Неизвестный сервер';
+                            if (!empty($battleMetricsData['included']['servers'])) {
+                                foreach ($battleMetricsData['included']['servers'] as $server) {
+                                    if ($server['id'] == $serverId && !empty($server['attributes']['name'])) {
+                                        $serverName = $server['attributes']['name'];
+                                        break;
+                                    }
+                                }
+                            }
+                            $uniqueServers[$serverId] = [
+                                'name' => $serverName,
+                                'lastSession' => !empty($session['attributes']['start']) ? strtotime($session['attributes']['start']) : 0,
+                            ];
+                        }
+                    }
+                }
+                
+                // Сортируем по последней сессии
+                uasort($uniqueServers, function($a, $b) {
+                    return $b['lastSession'] - $a['lastSession'];
+                });
+                
+                if (count($uniqueServers) > 0) {
+                    $message .= "\n🖥️ <b>Последние серверы:</b>\n";
+                    $serverCount = 0;
+                    foreach (array_slice($uniqueServers, 0, 5, true) as $server) {
+                        $serverCount++;
+                        $lastDate = $server['lastSession'] > 0 ? date('d.m.Y H:i', $server['lastSession']) : 'Неизвестно';
+                        $message .= "   {$serverCount}. {$server['name']} ({$lastDate})\n";
+                    }
+                }
+            }
+
+            // Баны из BattleMetrics
+            if (!empty($bans) && is_array($bans)) {
+                $activeBMBans = 0;
+                foreach ($bans as $ban) {
+                    if (!empty($ban['attributes']['expires']) && strtotime($ban['attributes']['expires']) > time()) {
+                        $activeBMBans++;
+                    } elseif (empty($ban['attributes']['expires'])) {
+                        $activeBMBans++; // Перманентный бан
+                    }
+                }
+                
+                if (count($bans) > 0) {
+                    $message .= "\n⚠️ <b>Баны BattleMetrics: " . count($bans) . "</b>";
+                    if ($activeBMBans > 0) {
+                        $message .= " (Активных: {$activeBMBans})";
+                    }
+                }
+            }
+        }
+
+        // Добавляем информацию из BattleMetrics
+        if (!empty($battleMetricsData) && !empty($battleMetricsData['player'])) {
+            $player = $battleMetricsData['player'];
+            $sessions = $battleMetricsData['sessions'] ?? [];
+            $bans = $battleMetricsData['bans'] ?? [];
+            
+            $message .= "\n\n━━━━━━━━━━━━━━━━━━━━\n";
+            $message .= "🎮 <b>BattleMetrics</b>\n\n";
+
+            // Статистика игры
+            if (!empty($player['attributes'])) {
+                $attrs = $player['attributes'];
+                
+                // Общее время игры
+                if (!empty($attrs['totalPlaytime'])) {
+                    $playtimeHours = round($attrs['totalPlaytime'] / 3600, 1);
+                    $message .= "⏱️ <b>Время игры:</b> {$playtimeHours} часов\n";
+                }
+                
+                // Последний вход
+                if (!empty($attrs['lastSeen'])) {
+                    $lastSeen = date('d.m.Y H:i', strtotime($attrs['lastSeen']));
+                    $message .= "🕐 <b>Последний вход:</b> {$lastSeen}\n";
+                }
+            }
+
+            // Последние серверы (из сессий)
+            if (!empty($sessions) && is_array($sessions)) {
+                $uniqueServers = [];
+                $serversMap = [];
+                
+                // Создаем карту серверов из included
+                if (!empty($battleMetricsData['included']['servers'])) {
+                    foreach ($battleMetricsData['included']['servers'] as $server) {
+                        if (!empty($server['id']) && !empty($server['attributes']['name'])) {
+                            $serversMap[$server['id']] = $server['attributes']['name'];
+                        }
+                    }
+                }
+                
+                foreach ($sessions as $session) {
+                    if (!empty($session['relationships']['server']['data']['id'])) {
+                        $serverId = $session['relationships']['server']['data']['id'];
+                        if (!isset($uniqueServers[$serverId])) {
+                            $serverName = $serversMap[$serverId] ?? 'Неизвестный сервер';
+                            $sessionStart = !empty($session['attributes']['start']) ? strtotime($session['attributes']['start']) : 0;
+                            $uniqueServers[$serverId] = [
+                                'name' => $serverName,
+                                'lastSession' => $sessionStart,
+                            ];
+                        }
+                    }
+                }
+                
+                // Сортируем по последней сессии
+                uasort($uniqueServers, function($a, $b) {
+                    return $b['lastSession'] - $a['lastSession'];
+                });
+                
+                if (count($uniqueServers) > 0) {
+                    $message .= "\n🖥️ <b>Последние серверы:</b>\n";
+                    $serverCount = 0;
+                    foreach (array_slice($uniqueServers, 0, 5, true) as $server) {
+                        $serverCount++;
+                        $lastDate = $server['lastSession'] > 0 ? date('d.m.Y H:i', $server['lastSession']) : 'Неизвестно';
+                        $message .= "   {$serverCount}. {$server['name']} ({$lastDate})\n";
+                    }
+                }
+            }
+
+            // Баны из BattleMetrics
+            if (!empty($bans) && is_array($bans)) {
+                $activeBMBans = 0;
+                foreach ($bans as $ban) {
+                    if (!empty($ban['attributes']['expires']) && strtotime($ban['attributes']['expires']) > time()) {
+                        $activeBMBans++;
+                    } elseif (empty($ban['attributes']['expires'])) {
+                        $activeBMBans++; // Перманентный бан
+                    }
+                }
+                
+                if (count($bans) > 0) {
+                    $message .= "\n⚠️ <b>Баны BattleMetrics: " . count($bans) . "</b>";
+                    if ($activeBMBans > 0) {
+                        $message .= " (Активных: {$activeBMBans})";
+                    }
+                }
+            }
         }
 
         // Логируем общее время выполнения (все запросы выполнялись в очереди)
