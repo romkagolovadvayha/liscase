@@ -431,19 +431,6 @@ class RustotekaBotSystem extends AbstractSystemBots
                 $message .= "🔍 <b>Проверок в системе:</b> {$checksCount}\n";
             }
 
-            // Последние IP адреса
-            if (!empty($rustCheckData['last_ip']) && is_array($rustCheckData['last_ip'])) {
-                $ipList = array_unique($rustCheckData['last_ip']);
-                if (count($ipList) > 0) {
-                    $ipCount = count($ipList);
-                    $ipDisplay = implode(', ', array_slice($ipList, 0, 5)); // Показываем максимум 5 IP
-                    if ($ipCount > 5) {
-                        $ipDisplay .= " (+" . ($ipCount - 5) . " еще)";
-                    }
-                    $message .= "🌐 <b>IP адреса:</b> {$ipDisplay}\n";
-                }
-            }
-
             // История проверок
             if (!empty($rustCheckData['last_check']) && is_array($rustCheckData['last_check'])) {
                 $checkCount = count($rustCheckData['last_check']);
@@ -454,12 +441,8 @@ class RustotekaBotSystem extends AbstractSystemBots
                     foreach ($recentChecks as $index => $check) {
                         $checkTime = isset($check['time']) ? date('d.m.Y H:i', (int)$check['time']) : 'Неизвестно';
                         $serverName = $check['serverName'] ?? 'Неизвестный сервер';
-                        $moderSteamId = $check['moderSteamID'] ?? '';
                         $message .= "   " . ($index + 1) . ". 🖥️ <b>{$serverName}</b>\n";
                         $message .= "      📅 {$checkTime}\n";
-                        if (!empty($moderSteamId)) {
-                            $message .= "      👮 Модератор: <a href=\"https://steamcommunity.com/profiles/{$moderSteamId}\">{$moderSteamId}</a>\n";
-                        }
                         if ($index < count($recentChecks) - 1) {
                             $message .= "\n";
                         }
@@ -471,9 +454,10 @@ class RustotekaBotSystem extends AbstractSystemBots
             }
 
             // Баны из RustCheck
-            if (!empty($rustCheckData['bans']) && is_array($rustCheckData['bans'])) {
-                $rustCheckBans = $rustCheckData['bans'];
-                $rustCheckBanCount = count($rustCheckBans);
+            $rustCheckBans = !empty($rustCheckData['bans']) && is_array($rustCheckData['bans']) ? $rustCheckData['bans'] : [];
+            $rustCheckBanCount = count($rustCheckBans);
+            
+            if ($rustCheckBanCount > 0) {
                 $activeRustCheckBans = 0;
                 
                 foreach ($rustCheckBans as $ban) {
@@ -483,116 +467,46 @@ class RustotekaBotSystem extends AbstractSystemBots
                     }
                 }
 
-                if ($rustCheckBanCount > 0) {
-                    $message .= "\n\n⚠️ <b>Баны: {$rustCheckBanCount}</b>";
-                    if ($activeRustCheckBans > 0) {
-                        $message .= " (Активных: {$activeRustCheckBans})";
-                    }
-                    $message .= "\n\n";
+                $message .= "\n\n⚠️ <b>Баны: {$rustCheckBanCount}</b>";
+                if ($activeRustCheckBans > 0) {
+                    $message .= " (Активных: {$activeRustCheckBans})";
+                }
+                $message .= "\n\n";
 
-                    // Показываем максимум 5 последних банов
-                    $recentBans = array_slice($rustCheckBans, 0, 5);
-                    foreach ($recentBans as $index => $ban) {
-                        $banDate = isset($ban['banDate']) ? date('d.m.Y H:i', (int)$ban['banDate']) : 'Неизвестно';
-                        $unbanDate = isset($ban['unbanDate']) ? (int)$ban['unbanDate'] : 0;
-                        $unbanDateStr = ($unbanDate === 0) ? 'Никогда' : date('d.m.Y H:i', $unbanDate);
-                        $reason = $ban['reason'] ?? 'Не указана';
-                        $serverName = $ban['serverName'] ?? 'Неизвестный сервер';
-                        $isActive = ($unbanDate === 0 || $unbanDate > time());
-                        $statusIcon = $isActive ? "🔴" : "🟢";
-                        $label = $isActive ? "" : " <i>(Бан снят)</i>";
+                // Показываем максимум 5 последних банов
+                $recentBans = array_slice($rustCheckBans, 0, 5);
+                foreach ($recentBans as $index => $ban) {
+                    $banDate = isset($ban['banDate']) ? date('d.m.Y H:i', (int)$ban['banDate']) : 'Неизвестно';
+                    $unbanDate = isset($ban['unbanDate']) ? (int)$ban['unbanDate'] : 0;
+                    $unbanDateStr = ($unbanDate === 0) ? 'Никогда' : date('d.m.Y H:i', $unbanDate);
+                    $reason = $ban['reason'] ?? 'Не указана';
+                    $serverName = $ban['serverName'] ?? 'Неизвестный сервер';
+                    $isActive = ($unbanDate === 0 || $unbanDate > time());
+                    $statusIcon = $isActive ? "🔴" : "🟢";
+                    $label = $isActive ? "" : " <i>(Бан снят)</i>";
 
-                        $message .= "{$statusIcon} <b>Бан #" . ($index + 1) . "</b>{$label}\n";
-                        $message .= "   🖥️ <b>Сервер:</b> {$serverName}\n";
-                        $message .= "   📅 <b>Дата бана:</b> {$banDate}\n";
-                        $message .= "   🔓 <b>Дата разбана:</b> {$unbanDateStr}\n";
-                        $message .= "   📝 <b>Причина:</b> {$reason}\n";
-                        
-                        if ($index < count($recentBans) - 1) {
-                            $message .= "\n";
-                        }
-                    }
+                    $message .= "{$statusIcon} <b>Бан #" . ($index + 1) . "</b>{$label}\n";
+                    $message .= "   🖥️ <b>Сервер:</b> {$serverName}\n";
+                    $message .= "   📅 <b>Дата бана:</b> {$banDate}\n";
+                    $message .= "   🔓 <b>Дата разбана:</b> {$unbanDateStr}\n";
+                    $message .= "   📝 <b>Причина:</b> {$reason}\n";
                     
-                    if ($rustCheckBanCount > 5) {
-                        $message .= "\n   ... и еще " . ($rustCheckBanCount - 5) . " банов";
+                    if ($index < count($recentBans) - 1) {
+                        $message .= "\n";
                     }
                 }
+                
+                if ($rustCheckBanCount > 5) {
+                    $message .= "\n   ... и еще " . ($rustCheckBanCount - 5) . " банов";
+                }
+            } else {
+                // Если банов нет, показываем сообщение
+                $message .= "\n\n✅ <b>Аккаунт чист!</b>\nНи одного бана игрока не найдено.";
             }
 
-        }
-
-        // Запрос к локальной базе данных (выполняется в очереди)
-        $message .= "\n<b>Баны на проекте:</b>\n";
-        /** @var BanList[] $banList */
-        try {
-            $dbStartTime = microtime(true);
-            $banList = BanList::find()
-                ->andWhere(['steam_id' => $steamId])
-                ->orderBy(['banned_at' => SORT_DESC])
-                ->all();
-            $dbTime = round((microtime(true) - $dbStartTime) * 1000, 2);
-            Yii::info("RustotekaBotSystem::getCheck: Database query for bans completed in {$dbTime}ms, found " . count($banList) . " bans", __METHOD__);
-        } catch (\Exception $e) {
-            Yii::error("RustotekaBotSystem::getCheck: Database error for steamId {$steamId}: " . $e->getMessage(), __METHOD__);
-            $banList = [];
-        }
-
-        if (empty($banList)) {
-            $message .= "✅ <b>Аккаунт чист!</b>\nНи одного бана игрока не найдено.";
         } else {
-            $banCount = count($banList);
-            $activeBans = 0;
-            foreach ($banList as $ban) {
-                if (empty($ban->unbanned_at) || (new \DateTime($ban->unbanned_at))->getTimestamp() >= time()) {
-                    $activeBans++;
-                }
-            }
-            
-            $message .= "⚠️ <b>Найдено банов: {$banCount}</b>";
-            if ($activeBans > 0) {
-                $message .= " (Активных: {$activeBans})";
-            }
-            $message .= "\n\n";
-            
-            // Показываем максимум 5 последних банов
-            $recentBans = array_slice($banList, 0, 5);
-            $banNum = 1;
-            foreach ($recentBans as $item) {
-            $bannedAt = new \DateTime($item->banned_at);
-            $unBannedAt = "Никогда";
-            $label = "";
-                $isActive = true;
-                
-            if (!empty($item->unbanned_at)) {
-                $date = new \DateTime($item->unbanned_at);
-                $unBannedAt = $date->format('d.m.Y H:i:s');
-                if ($date->getTimestamp() < time()) {
-                    $label = " <i>(Бан снят)</i>";
-                        $isActive = false;
-                    }
-                }
-                
-            $serverName = $item->server_name;
-            if (empty($serverName)) {
-                $serverName = "Бан на всех серверах проекта.";
-            }
-                
-                $statusIcon = $isActive ? "🔴" : "🟢";
-                $message .= "{$statusIcon} <b>Бан #{$banNum}</b>{$label}\n";
-                $message .= "   🖥️ <b>Сервер:</b> {$item->project_name} - {$serverName}\n";
-                $message .= "   📅 <b>Дата бана:</b> {$bannedAt->format('d.m.Y H:i:s')}\n";
-                $message .= "   🔓 <b>Дата разбана:</b> {$unBannedAt}\n";
-                $message .= "   📝 <b>Причина:</b> {$item->reason}\n";
-                
-                if ($banNum < count($recentBans)) {
-                    $message .= "\n";
-                }
-                $banNum++;
-            }
-            
-            if ($banCount > 5) {
-                $message .= "\n   ... и еще " . ($banCount - 5) . " банов";
-            }
+            // Если данных из RustCheck нет, показываем сообщение
+            $message .= "\n\n✅ <b>Аккаунт чист!</b>\nНи одного бана игрока не найдено.";
         }
 
         // Логируем общее время выполнения (все запросы выполнялись в очереди)
