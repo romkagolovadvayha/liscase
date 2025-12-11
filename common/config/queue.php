@@ -14,6 +14,7 @@ return [
         'queueVk',
         'queueProcess',
         'queueSupport',
+        'queueRustotekaBot',
 //        'queueOpenAi',
 //        'queueMidjourney',
     ],
@@ -88,6 +89,12 @@ return [
             'class'   => 'yii\queue\redis\Queue',
             'redis'   => 'redis',
             'channel' => 'queue-support',
+            'ttr' => 1200,
+        ],
+        'queueRustotekaBot'                => [
+            'class'   => 'yii\queue\redis\Queue',
+            'redis'   => 'redis',
+            'channel' => 'queue-rustoteka-bot',
             'ttr' => 1200,
         ],
 //        'queueOpenAi'                => [

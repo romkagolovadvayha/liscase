@@ -4,6 +4,7 @@ namespace common\components\telegram\foreignSystem;
 
 use backend\models\TelegramConstructorMessage;
 use common\components\oauth\Steam;
+use common\components\queue\rustoteka\CheckPlayerJob;
 use common\components\telegram\TelegramApiHelper;
 use common\models\bansystem\BanList;
 use common\models\box\Box;
@@ -68,7 +69,7 @@ class RustotekaBotSystem extends AbstractSystemBots
 
         // Проверка SteamID (17 цифр)
         if (strlen($messageText) === 17 && strlen(preg_replace('/[^0-9]/', "", $messageText)) === 17) {
-            return $this->getCheck($messageText);
+            return $this->processCheckRequest($chatId, $messageText);
         }
         
         // Проверка ссылки на профиль Steam
@@ -80,7 +81,7 @@ class RustotekaBotSystem extends AbstractSystemBots
                     'buttons' => $this->getMainMenuButtons()
                 ];
             }
-            return $this->getCheck($steamId);
+            return $this->processCheckRequest($chatId, $steamId);
         }
 
         TelegramMessage::createModel($chatId, $messageText);
@@ -188,6 +189,47 @@ class RustotekaBotSystem extends AbstractSystemBots
             return null;
         }
         return $list[$code];
+    }
+
+    /**
+     * Обработка запроса на проверку игрока через очередь
+     * @param int $chatId
+     * @param string $steamId
+     * @return array|null
+     */
+    private function processCheckRequest($chatId, $steamId)
+    {
+        try {
+            $bot = $this->getTelegramBot();
+            
+            // Отправляем сообщение ожидания
+            $waitingMessage = "⏳ <b>Проверяю игрока...</b>\n\nПожалуйста, подождите, это может занять несколько секунд.";
+            $result = $bot->sendMessage($chatId, $waitingMessage);
+            
+            $waitingMessageId = null;
+            if ($result && isset($result['result']['message_id'])) {
+                $waitingMessageId = $result['result']['message_id'];
+            }
+            
+            // Ставим задачу в очередь
+            $job = new CheckPlayerJob([
+                'chatId' => $chatId,
+                'steamId' => $steamId,
+                'waitingMessageId' => $waitingMessageId,
+            ]);
+            
+            Yii::$app->queueRustotekaBot->push($job);
+            
+            // Не возвращаем сообщение, так как оно уже отправлено
+            return null;
+            
+        } catch (\Exception $e) {
+            Yii::error("RustotekaBotSystem: Error processing check request for steamId {$steamId}: " . $e->getMessage(), __METHOD__);
+            return [
+                'message' => "❌ Произошла ошибка при обработке запроса. Попробуйте позже.",
+                'buttons' => $this->getMainMenuButtons()
+            ];
+        }
     }
 
     /**
@@ -411,7 +453,10 @@ class RustotekaBotSystem extends AbstractSystemBots
             case 'check_again':
                 $steamId = $data['steam_id'] ?? null;
                 if ($steamId) {
-                    return $this->getCheck($steamId);
+                    // Используем очередь для повторной проверки
+                    $this->processCheckRequest($chatId, $steamId);
+                    // Возвращаем null, так как сообщение ожидания уже отправлено
+                    return null;
                 }
                 break;
                 
@@ -444,8 +489,9 @@ class RustotekaBotSystem extends AbstractSystemBots
      */
     private function getMainMenuButtons()
     {
-        // TelegramApiHelper оборачивает в [$inlineKeyboard], поэтому передаем массив массивов
-        // где каждый внутренний массив - это строка кнопок
+        // TelegramApiHelper делает 'inline_keyboard' => [$inlineKeyboard]
+        // Поэтому передаем массив массивов кнопок, где каждый внутренний массив - строка кнопок
+        // После обёртки получится правильная структура inline_keyboard
         return [
             [
                 [
@@ -469,10 +515,9 @@ class RustotekaBotSystem extends AbstractSystemBots
      */
     private function getCheckButtons($steamId)
     {
-        // TelegramApiHelper оборачивает в [$inlineKeyboard], поэтому передаем массив кнопок
-        // Первые две кнопки в одной строке, третья - в отдельной
-        // Но так как TelegramApiHelper оборачивает весь массив, нужно передать массив массивов
-        // где каждый внутренний массив - это строка кнопок
+        // TelegramApiHelper делает 'inline_keyboard' => [$inlineKeyboard]
+        // Поэтому передаем массив массивов кнопок, где каждый внутренний массив - строка кнопок
+        // После обёртки получится правильная структура inline_keyboard
         return [
             [
                 [
