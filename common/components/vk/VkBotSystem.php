@@ -488,8 +488,9 @@ class VkBotSystem extends BaseObject
             return $this->getNodeMessage(self::NODE_GREETING, $userId);
         }
 
-        // Для всех остальных сообщений показываем приветствие
-        return $this->getNodeMessage(self::NODE_GREETING, $userId);
+        // Для всех остальных нераспознанных сообщений не отвечаем
+        // Приветствие отправляется только при /start или пустом сообщении
+        return null;
     }
 
     /**
