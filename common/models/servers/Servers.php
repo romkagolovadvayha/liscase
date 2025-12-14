@@ -626,9 +626,15 @@ class Servers extends \common\components\base\ActiveRecord
     public function getServerMetrics(bool $forceUpdate = false): array
     {
         $metrics = [];
+        
+        // Обертка для передачи $forceUpdate в getCachedMetric
+        $server = $this;
+        $getCached = function($key, $callback) use ($forceUpdate, $server) {
+            return $server->getCachedMetric($key, $callback, $forceUpdate);
+        };
 
         // 1. Кто больше всего отправлял репортов
-        $metrics['top_reporters'] = $this->getCachedMetric('top_reporters', function() {
+        $metrics['top_reporters'] = $getCached('top_reporters', function() {
             $topReporters = Reports::find()
                 ->select(['steam_id', 'COUNT(*) as count'])
                 ->where(['server_tag' => $this->tag])
@@ -641,7 +647,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 2. На кого больше всего отправляли репортов
-        $metrics['top_reported'] = $this->getCachedMetric('top_reported', function() {
+        $metrics['top_reported'] = $getCached('top_reported', function() {
             $topReported = Reports::find()
                 ->select(['recepient_steam_id as steam_id', 'COUNT(*) as count'])
                 ->where(['server_tag' => $this->tag])
@@ -655,7 +661,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 3. Кто больше всех взорвал ракет (сумма всех типов ракет)
-        $metrics['top_rockets'] = $this->getCachedMetric('top_rockets', function() {
+        $metrics['top_rockets'] = $getCached('top_rockets', function() {
             $rocketKeys = ['rocket_basic', 'rocket_basic_rpg', 'rocket_hv', 'rocket_hv_rpg', 'rocket_fire', 'rocket_fire_rpg'];
             $topRockets = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
@@ -670,7 +676,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 4. Кто больше всех убил игроков
-        $metrics['top_killers'] = $this->getCachedMetric('top_killers', function() {
+        $metrics['top_killers'] = $getCached('top_killers', function() {
             $topKillers = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'kills'])
@@ -683,7 +689,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 5. Кто больше всех добыл серы
-        $metrics['top_sulfur'] = $this->getCachedMetric('top_sulfur', function() {
+        $metrics['top_sulfur'] = $getCached('top_sulfur', function() {
             $topSulfur = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'sulfur.ore'])
@@ -696,7 +702,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 6. Кто больше всех провел времени на сервере
-        $metrics['top_playtime'] = $this->getCachedMetric('top_playtime', function() {
+        $metrics['top_playtime'] = $getCached('top_playtime', function() {
             $topPlaytime = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'playtime'])
@@ -716,7 +722,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 7. Кто больше всех открыл ящиков
-        $metrics['top_boxes'] = $this->getCachedMetric('top_boxes', function() {
+        $metrics['top_boxes'] = $getCached('top_boxes', function() {
             $topBoxes = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'crate_open'])
@@ -729,7 +735,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 8. Кто больше всех разбил бочек
-        $metrics['top_barrels'] = $this->getCachedMetric('top_barrels', function() {
+        $metrics['top_barrels'] = $getCached('top_barrels', function() {
             $topBarrels = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'barrel'])
@@ -742,7 +748,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 9. Кто больше всех добыл дерева
-        $metrics['top_wood'] = $this->getCachedMetric('top_wood', function() {
+        $metrics['top_wood'] = $getCached('top_wood', function() {
             $topWood = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'wood'])
@@ -755,7 +761,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 10. Кто больше всех добыл металла
-        $metrics['top_metal'] = $this->getCachedMetric('top_metal', function() {
+        $metrics['top_metal'] = $getCached('top_metal', function() {
             $topMetal = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'metal.ore'])
@@ -768,7 +774,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 11. Кто больше всех добыл камня
-        $metrics['top_stone'] = $this->getCachedMetric('top_stone', function() {
+        $metrics['top_stone'] = $getCached('top_stone', function() {
             $topStone = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'stones'])
@@ -781,7 +787,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 12. Кто больше всех погиб (deaths)
-        $metrics['top_deaths'] = $this->getCachedMetric('top_deaths', function() {
+        $metrics['top_deaths'] = $getCached('top_deaths', function() {
             $topDeaths = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'deaths'])
@@ -794,7 +800,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 13. Кто больше всех убил ученых
-        $metrics['top_scientists'] = $this->getCachedMetric('top_scientists', function() {
+        $metrics['top_scientists'] = $getCached('top_scientists', function() {
             $topScientists = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'scientists'])
@@ -807,7 +813,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 14. Кто больше всех взорвал C4
-        $metrics['top_c4'] = $this->getCachedMetric('top_c4', function() {
+        $metrics['top_c4'] = $getCached('top_c4', function() {
             $topC4 = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'c4thrown'])
@@ -820,7 +826,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 15. Кто больше всех взорвал сатчелей
-        $metrics['top_satchels'] = $this->getCachedMetric('top_satchels', function() {
+        $metrics['top_satchels'] = $getCached('top_satchels', function() {
             $topSatchels = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'satchelsthrown'])
@@ -833,7 +839,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 16. Кто больше всех использовал гранат F1
-        $metrics['top_grenades_f1'] = $this->getCachedMetric('top_grenades_f1', function() {
+        $metrics['top_grenades_f1'] = $getCached('top_grenades_f1', function() {
             $topGrenadesF1 = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'grenade.f1.deployed'])
@@ -846,7 +852,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 17. Кто больше всех использовал коктейли Молотова
-        $metrics['top_molotov'] = $this->getCachedMetric('top_molotov', function() {
+        $metrics['top_molotov'] = $getCached('top_molotov', function() {
             $topMolotov = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'grenade.molotov.deployed'])
@@ -859,7 +865,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 18. Кто больше всех убил животных (сумма всех типов)
-        $metrics['top_animals'] = $this->getCachedMetric('top_animals', function() {
+        $metrics['top_animals'] = $getCached('top_animals', function() {
             $animalKeys = ['chicken', 'bear', 'boar', 'polarbear', 'deer', 'horse', 'wolf2', 'wolf'];
             $topAnimals = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
@@ -874,7 +880,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 19. Кто больше всех поймал рыбы
-        $metrics['top_fish'] = $this->getCachedMetric('top_fish', function() {
+        $metrics['top_fish'] = $getCached('top_fish', function() {
             $fishKeys = [
                 'f_fish.anchovy', 'f_fish.catfish', 'f_fish.herring', 'f_fish.orangeroughy',
                 'f_fish.salmon', 'f_fish.sardine', 'f_fish.smallshark', 'f_fish.troutsmall',
@@ -893,7 +899,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 20. Кто больше всех собрал ягод (сумма всех типов)
-        $metrics['top_berries'] = $this->getCachedMetric('top_berries', function() {
+        $metrics['top_berries'] = $getCached('top_berries', function() {
             $berryKeys = [
                 'gathered_green.berry', 'gathered_blue.berry', 'gathered_yellow.berry',
                 'gathered_red.berry', 'gathered_white.berry'
@@ -911,7 +917,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 21. Кто больше всех собрал ткани
-        $metrics['top_cloth'] = $this->getCachedMetric('top_cloth', function() {
+        $metrics['top_cloth'] = $getCached('top_cloth', function() {
             $topCloth = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'gathered_cloth'])
@@ -924,7 +930,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 22. Кто больше всех добыл скрапа
-        $metrics['top_scrap'] = $this->getCachedMetric('top_scrap', function() {
+        $metrics['top_scrap'] = $getCached('top_scrap', function() {
             $topScrap = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'scrap'])
@@ -937,7 +943,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 23. Кто больше всех добыл животного жира
-        $metrics['top_fat'] = $this->getCachedMetric('top_fat', function() {
+        $metrics['top_fat'] = $getCached('top_fat', function() {
             $topFat = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'fat.animal'])
@@ -950,7 +956,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 24. Кто больше всех собрал тыкв
-        $metrics['top_pumpkin'] = $this->getCachedMetric('top_pumpkin', function() {
+        $metrics['top_pumpkin'] = $getCached('top_pumpkin', function() {
             $topPumpkin = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'gathered_pumpkin'])
@@ -963,7 +969,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 23. Кто больше всех собрал кукурузы
-        $metrics['top_corn'] = $this->getCachedMetric('top_corn', function() {
+        $metrics['top_corn'] = $getCached('top_corn', function() {
             $topCorn = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'gathered_corn'])
@@ -976,7 +982,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 24. Кто больше всех собрал картофеля
-        $metrics['top_potato'] = $this->getCachedMetric('top_potato', function() {
+        $metrics['top_potato'] = $getCached('top_potato', function() {
             $topPotato = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'gathered_potato'])
@@ -989,7 +995,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 25. Кто больше всех убил медведей
-        $metrics['top_bears'] = $this->getCachedMetric('top_bears', function() {
+        $metrics['top_bears'] = $getCached('top_bears', function() {
             $topBears = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'bear'])
@@ -1002,7 +1008,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 26. Кто больше всех убил кабанов
-        $metrics['top_boars'] = $this->getCachedMetric('top_boars', function() {
+        $metrics['top_boars'] = $getCached('top_boars', function() {
             $topBoars = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'boar'])
@@ -1015,7 +1021,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 27. Кто больше всех убил оленей
-        $metrics['top_deer'] = $this->getCachedMetric('top_deer', function() {
+        $metrics['top_deer'] = $getCached('top_deer', function() {
             $topDeer = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'deer'])
@@ -1028,7 +1034,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 28. Кто больше всех убил волков
-        $metrics['top_wolves'] = $this->getCachedMetric('top_wolves', function() {
+        $metrics['top_wolves'] = $getCached('top_wolves', function() {
             $wolfKeys = ['wolf', 'wolf2'];
             $topWolves = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
@@ -1043,7 +1049,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 29. Кто больше всех рейдил шкафов
-        $metrics['top_cupboard_raids'] = $this->getCachedMetric('top_cupboard_raids', function() {
+        $metrics['top_cupboard_raids'] = $getCached('top_cupboard_raids', function() {
             $topCupboardRaids = UserRaid::find()
                 ->select(['user_id', 'COUNT(*) as total'])
                 ->where(['server_id' => $this->id, 'type' => 'cupboard'])
@@ -1080,7 +1086,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 30. Максимальная дистанция убийства (топ-3)
-        $metrics['top_kill_distance'] = $this->getCachedMetric('top_kill_distance', function() {
+        $metrics['top_kill_distance'] = $getCached('top_kill_distance', function() {
             $topKillDistance = Kills::find()
                 ->select(['steam_id', 'MAX(CAST(distance AS DECIMAL(10,2))) as total'])
                 ->where(['server_tag' => $this->tag])
@@ -1102,7 +1108,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 31. Кто больше всех убил через Kills таблицу (точное количество)
-        $metrics['top_kills_exact'] = $this->getCachedMetric('top_kills_exact', function() {
+        $metrics['top_kills_exact'] = $getCached('top_kills_exact', function() {
             $topKillsExact = Kills::find()
                 ->select(['steam_id', 'COUNT(*) as total'])
                 ->where(['server_tag' => $this->tag, 'type' => 'kill'])
@@ -1115,7 +1121,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 32. Кто больше всех убил ученых через Kills таблицу
-        $metrics['top_scientists_kills'] = $this->getCachedMetric('top_scientists_kills', function() {
+        $metrics['top_scientists_kills'] = $getCached('top_scientists_kills', function() {
             $topScientistsKills = Kills::find()
                 ->select(['steam_id', 'COUNT(*) as total'])
                 ->where(['server_tag' => $this->tag, 'type' => 'scientists'])
@@ -1128,7 +1134,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 33. Кто больше всех использовал взрывчатых боеприпасов
-        $metrics['top_explosive_ammo'] = $this->getCachedMetric('top_explosive_ammo', function() {
+        $metrics['top_explosive_ammo'] = $getCached('top_explosive_ammo', function() {
             $topExplosiveAmmo = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'ammo_explosive'])
@@ -1141,7 +1147,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 34. Кто больше всех провел вайпов
-        $metrics['top_wipes'] = $this->getCachedMetric('top_wipes', function() {
+        $metrics['top_wipes'] = $getCached('top_wipes', function() {
             $topWipes = Statistics::find()
                 ->select(['steam_id', 'COUNT(DISTINCT wipe) as total'])
                 ->where(['server_tag' => $this->tag])
@@ -1156,7 +1162,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 35. Кто больше всех использовал красные карты (card_level_3)
-        $metrics['top_red_cards'] = $this->getCachedMetric('top_red_cards', function() {
+        $metrics['top_red_cards'] = $getCached('top_red_cards', function() {
             $topRedCards = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'card_level_3'])
@@ -1169,7 +1175,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 36. Кто больше всех использовал зеленые карты (card_level_2)
-        $metrics['top_green_cards'] = $this->getCachedMetric('top_green_cards', function() {
+        $metrics['top_green_cards'] = $getCached('top_green_cards', function() {
             $topGreenCards = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'card_level_2'])
@@ -1182,7 +1188,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 37. Кто больше всех использовал синие карты (card_level_1)
-        $metrics['top_blue_cards'] = $this->getCachedMetric('top_blue_cards', function() {
+        $metrics['top_blue_cards'] = $getCached('top_blue_cards', function() {
             $topBlueCards = Statistics::find()
                 ->select(['steam_id', 'SUM(value) as total'])
                 ->where(['server_tag' => $this->tag, 'key' => 'card_level_1'])
@@ -1195,7 +1201,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // 38. Кто больше всех создал табличек
-        $metrics['top_signs'] = $this->getCachedMetric('top_signs', function() {
+        $metrics['top_signs'] = $getCached('top_signs', function() {
             $topSigns = Signs::find()
                 ->select(['user_id', 'COUNT(*) as total'])
                 ->where(['server_id' => $this->id])
@@ -1232,7 +1238,7 @@ class Servers extends \common\components\base\ActiveRecord
         });
 
         // Общее количество выданных банов
-        $metrics['total_bans'] = $this->getCachedMetric('total_bans', function() {
+        $metrics['total_bans'] = $getCached('total_bans', function() {
             return Bans::find()
                 ->count();
         });
