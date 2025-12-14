@@ -122,6 +122,18 @@ if (empty($this->params['_blog_similar_block'])) {
     $topBlock = $this->render('@frontend/views/widgets/_top', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS, 'PAGE' => $page]);
     $liveBlock = $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS, 'PAGE' => $page]);
 }
+
+// Виджет кнопки "ИТОГИ ГОДА"
+$yearReviewButton = '';
+$serverId = null;
+if (!empty($user) && !empty($user->server_id)) {
+    $serverId = $user->server_id;
+} elseif (!empty($servers) && count($servers) > 0) {
+    $serverId = $servers[0]->id;
+}
+if ($serverId) {
+    $yearReviewButton = \frontend\widgets\YearReviewButton::widget(['serverId' => $serverId]);
+}
 ?>
 
 <?php $this->beginBody() ?>
@@ -197,7 +209,8 @@ if (empty($this->params['_blog_similar_block'])) {
         'USER_GUEST' => Yii::$app->user->isGuest,
     ]),
     'SETTINGS' => $SETTINGS,
-    'PAGE' => $page
+    'PAGE' => $page,
+    'YEAR_REVIEW_BUTTON' => $yearReviewButton,
 ]);?>
 
 <?=Yii::$app->view->render('metrics.twig')?>

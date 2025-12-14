@@ -64,6 +64,7 @@ $config = [
                 'tasks-v2' => 'tasks-v2/index',
                 'tasks-v2/check/<id:\d+>' => 'tasks-v2/check',
                 'tasks-v2/detail/<id:\d+>' => 'tasks-v2/detail',
+                'year-review/generate/<userId:\d+>' => 'year-review/generate',
                 '/maps/vote' => '/maps/vote',
                 '/maps/get-likes' => '/maps/get-likes',
                 '/maps/<serverTag:[a-z0-9_-]+>/' => '/maps',
@@ -84,18 +85,13 @@ $config = [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => '5c4cf22fbe90065a4a8e4591cf2cea84',
             'enableCsrfValidation' => !YII_ENV_DEV, // Отключаем CSRF валидацию в dev, включаем в prod
-            'csrfCookie' => array_merge([
-                'httpOnly' => true,
-                'secure'   => !YII_ENV_DEV, // Только для прода (HTTPS), для dev (HTTP) - false
-                'sameSite' => yii\web\Cookie::SAME_SITE_LAX,
-            ], !empty($params['cookieDomain']) ? ['domain' => $params['cookieDomain']] : []),
         ],
         'session' => [
             'cookieParams' => array_merge([
-                'httpOnly' => true,
-                'secure'   => !YII_ENV_DEV, // Только для прода (HTTPS), для dev (HTTP) - false
-                'sameSite' => yii\web\Cookie::SAME_SITE_LAX,
-            ], !empty($params['cookieDomain']) ? ['domain' => $params['cookieDomain']] : []),
+                                              'httpOnly' => true,
+                                              'secure'   => !YII_ENV_DEV, // Только для прода (HTTPS), для dev (HTTP) - false
+                                              'sameSite' => yii\web\Cookie::SAME_SITE_LAX,
+                                          ], !empty($params['cookieDomain']) ? ['domain' => $params['cookieDomain']] : []),
         ],
 //        'languagepicker'       => [
 //            'class'      => 'common\components\web\LanguagePicker',

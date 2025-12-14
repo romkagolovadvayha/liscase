@@ -10,6 +10,7 @@ use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\components\queue\telegram\SendMessageJob;
 use common\components\web\Cookie;
 use common\models\auth\AuthAssignment;
+use common\models\bans\Bans;
 use common\models\box\Drop;
 use common\models\invoice\Invoice;
 use common\models\invoice\Deposit;
@@ -17,6 +18,8 @@ use common\models\profit\Profit;
 use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
 use common\models\skindrops\Skindrops;
+use common\models\statistics\Kills;
+use common\models\statistics\Reports;
 use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
 use GeoIp2\Database\Reader;
@@ -1520,6 +1523,128 @@ class User extends ActiveRecord implements IdentityInterface
             // Логируем ошибку, но не прерываем процесс сохранения
             Yii::error("Failed to queue Discord roles update for user {$this->id} after server_id change: " . $e->getMessage(), __METHOD__);
         }
+    }
+
+    /**
+     * Метрики за все время
+     * @return array
+     */
+    public function getMetrikiZaVseVremya(): array
+    {
+        $steamId = $this->steam_id;
+
+        // Оптимизация: получаем все статистики одним запросом
+        $statisticsKeys = [
+            'playtime', 'kills', 'deaths', 'sulfur.ore', 'wood', 'metal.ore', 
+            'stones', 'crate_open', 'barrel'
+        ];
+        
+        $statsData = Statistics::find()
+            ->select(['key', 'SUM(value) as total'])
+            ->where(['steam_id' => $steamId])
+            ->andWhere(['IN', 'key', $statisticsKeys])
+            ->groupBy('key')
+            ->asArray()
+            ->all();
+        
+        // Инициализируем значения по умолчанию
+        $stats = array_fill_keys($statisticsKeys, 0);
+        $wipes = 0;
+        
+        // Обрабатываем результаты
+        foreach ($statsData as $row) {
+            $key = $row['key'];
+            $stats[$key] = (int)$row['total'];
+        }
+        
+        // Количество отыгранных вайпов (отдельный запрос для точности)
+        $wipes = Statistics::find()
+            ->select('COUNT(DISTINCT `wipe`)')
+            ->where(['steam_id' => $steamId])
+            ->scalar() ?? 0;
+
+        // Часы на серверах (конвертируем секунды в часы)
+        $hours = round($stats['playtime'] / 60);
+        
+        // Извлекаем значения
+        $kills = $stats['kills'];
+        $deaths = $stats['deaths'];
+        $sulfur = $stats['sulfur.ore'];
+        $wood = $stats['wood'];
+        $metal = $stats['metal.ore'];
+        $stone = $stats['stones'];
+        $boxesOpened = $stats['crate_open'];
+        $barrelsBroken = $stats['barrel'];
+
+        // Репорты (количество репортов, созданных пользователем)
+        $reportsCreated = Reports::find()
+            ->where(['steam_id' => $steamId])
+            ->count();
+
+        // Забанено благодаря репортам
+        // Считаем количество уникальных пользователей, на которых был создан репорт и которые были забанены
+        $bansFromReports = 0;
+        $reportedSteamIds = Reports::find()
+            ->select('recepient_steam_id')
+            ->distinct()
+            ->where(['steam_id' => $steamId])
+            ->column();
+        
+        if (!empty($reportedSteamIds)) {
+            $bansFromReports = Bans::find()
+                ->where(['IN', 'steam_id', $reportedSteamIds])
+                ->count();
+        }
+
+        // Выиграно скинами (сумма price из таблицы skindrops)
+        $skindropsWinnings = Skindrops::find()
+            ->where(['steam_id' => $steamId])
+            ->sum('price') ?? 0;
+        $skindropsWinnings = round($skindropsWinnings, 2);
+        
+        // Если выиграно скинами = 0, считаем количество ежедневных наград из user_box
+        $dailyRewardsCount = 0;
+        $useDailyRewards = false;
+        if ($skindropsWinnings == 0) {
+            $dailyRewardsCount = UserBox::find()
+                ->where(['user_id' => $this->id])
+                ->count();
+            $useDailyRewards = true;
+        }
+
+        // Зарейдил шкафов (количество рейдов типа 'cupboard')
+        $cupboardsRaided = UserRaid::find()
+            ->where(['user_id' => $this->id, 'type' => 'cupboard'])
+            ->count();
+
+        // Максимальная дистанция убийства (из таблицы kills)
+        $maxKillDistance = Kills::find()
+            ->where(['steam_id' => $steamId])
+            ->andWhere(['!=', 'distance', ''])
+            ->andWhere(['IS NOT', 'distance', null])
+            ->andWhere(['type' => 'kill']) // Только убийства игроков
+            ->max('CAST(distance AS DECIMAL(10,2))') ?? 0;
+        $maxKillDistance = round($maxKillDistance);
+
+        return [
+            'wipes' => $wipes,
+            'hours' => $hours,
+            'kills' => $kills,
+            'deaths' => $deaths,
+            'sulfur' => $sulfur,
+            'wood' => $wood,
+            'metal' => $metal,
+            'stone' => $stone,
+            'boxes_opened' => $boxesOpened,
+            'barrels_broken' => $barrelsBroken,
+            'reports_created' => $reportsCreated,
+            'bans_from_reports' => $bansFromReports,
+            'skindrops_winnings' => $skindropsWinnings,
+            'daily_rewards_count' => $dailyRewardsCount,
+            'use_daily_rewards' => $useDailyRewards,
+            'cupboards_raided' => $cupboardsRaided,
+            'max_kill_distance' => $maxKillDistance,
+        ];
     }
 
 }
