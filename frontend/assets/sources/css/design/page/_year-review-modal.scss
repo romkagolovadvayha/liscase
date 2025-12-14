@@ -24,6 +24,11 @@
   image-rendering: crisp-edges;
   transition: all 0.1s ease;
   
+  // Скрываем кнопку на мобильных устройствах
+  @media (max-width: 768px) {
+    display: none;
+  }
+  
   &:hover {
     transform: translate(2px, 2px);
     box-shadow: 
