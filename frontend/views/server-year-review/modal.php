@@ -12,10 +12,11 @@ use yii\helpers\Html;
 use yii\helpers\Url;
 use common\models\statistics\Statistics;
 
-// Группируем метрики по категориям с единицами измерения, ключами для картинок и иконками Font Awesome
+// Группируем метрики по категориям с единицами измерения, ключами для картинок, иконками Font Awesome и цветами
 $metricGroups = [
     'combat' => [
         'label' => Yii::t('common', 'Боевые метрики'),
+        'color' => '#ff6b6b', // Красный неон
         'metrics' => [
             'top_killers' => ['label' => Yii::t('common', 'Топ убийц'), 'unit' => 'убийств', 'image_key' => 'kills', 'icon' => 'fa-crosshairs'],
             'top_deaths' => ['label' => Yii::t('common', 'Топ смертей'), 'unit' => 'смертей', 'image_key' => 'deaths', 'icon' => 'fa-skull'],
@@ -24,6 +25,7 @@ $metricGroups = [
     ],
     'resources' => [
         'label' => Yii::t('common', 'Ресурсы'),
+        'color' => '#ffd700', // Золотой
         'metrics' => [
             'top_sulfur' => ['label' => Yii::t('common', 'Добыча серы'), 'unit' => 'ед.', 'image_key' => 'sulfur.ore', 'icon' => 'fa-mountain'],
             'top_wood' => ['label' => Yii::t('common', 'Добыча дерева'), 'unit' => 'ед.', 'image_key' => 'wood', 'icon' => 'fa-tree'],
@@ -35,6 +37,7 @@ $metricGroups = [
     ],
     'explosives' => [
         'label' => Yii::t('common', 'Взрывчатка'),
+        'color' => '#ff6b35', // Оранжевый
         'metrics' => [
             'top_rockets' => ['label' => Yii::t('common', 'Взорвано ракет'), 'unit' => 'ракет', 'image_key' => 'rocket_basic', 'icon' => 'fa-rocket'],
             'top_c4' => ['label' => Yii::t('common', 'Взорвано C4'), 'unit' => 'шт.', 'image_key' => 'c4thrown', 'icon' => 'fa-bomb'],
@@ -43,6 +46,7 @@ $metricGroups = [
     ],
     'activities' => [
         'label' => Yii::t('common', 'Активности'),
+        'color' => '#00d4ff', // Бирюзовый
         'metrics' => [
             'top_playtime' => ['label' => Yii::t('common', 'Время на сервере'), 'unit' => 'минут', 'image_key' => 'playtime', 'icon' => 'fa-clock'],
             'top_wipes' => ['label' => Yii::t('common', 'Проведено вайпов'), 'unit' => 'вайпов', 'image_key' => null, 'icon' => 'fa-calendar-alt'],
@@ -53,8 +57,9 @@ $metricGroups = [
     ],
     'collecting' => [
         'label' => Yii::t('common', 'Собирательство'),
+        'color' => '#a855f7', // Фиолетовый
         'metrics' => [
-            'top_animals' => ['label' => Yii::t('common', 'Убито животных'), 'unit' => 'животных', 'image_key' => 'animals', 'icon' => 'fa-paw'],
+            'top_animals' => ['label' => Yii::t('common', 'Убито животных'), 'unit' => 'шт.', 'image_key' => 'animals', 'icon' => 'fa-paw'],
             'top_fish' => ['label' => Yii::t('common', 'Поймано рыбы'), 'unit' => 'рыб', 'image_key' => 'fish', 'icon' => 'fa-fish'],
             'top_berries' => ['label' => Yii::t('common', 'Собрано ягод'), 'unit' => 'шт.', 'image_key' => 'blue_berry', 'icon' => 'fa-apple-alt'],
             'top_cloth' => ['label' => Yii::t('common', 'Собрано ткани'), 'unit' => 'ед.', 'image_key' => 'gathered_cloth', 'icon' => 'fa-tshirt'],
@@ -62,6 +67,7 @@ $metricGroups = [
     ],
     'cards' => [
         'label' => Yii::t('common', 'Карты'),
+        'color' => '#ff00ff', // Магента
         'metrics' => [
             'top_red_cards' => ['label' => Yii::t('common', 'Красные карты'), 'unit' => 'карт', 'image_key' => 'card_level_3', 'icon' => 'fa-id-card'],
             'top_green_cards' => ['label' => Yii::t('common', 'Зеленые карты'), 'unit' => 'карт', 'image_key' => 'card_level_2', 'icon' => 'fa-id-card'],
@@ -70,16 +76,18 @@ $metricGroups = [
     ],
     'reports' => [
         'label' => Yii::t('common', 'Репорты'),
+        'color' => '#ff1744', // Ярко-красный
         'metrics' => [
-            'top_reporters' => ['label' => Yii::t('common', 'Отправлено репортов'), 'unit' => 'репортов', 'image_key' => null, 'icon' => 'fa-flag'],
-            'top_reported' => ['label' => Yii::t('common', 'Получено репортов'), 'unit' => 'репортов', 'image_key' => null, 'icon' => 'fa-exclamation-triangle'],
+            'top_reporters' => ['label' => Yii::t('common', 'Кто отправил'), 'unit' => 'репортов', 'image_key' => null, 'icon' => 'fa-flag'],
+            'top_reported' => ['label' => Yii::t('common', 'На кого отправили'), 'unit' => 'репортов', 'image_key' => null, 'icon' => 'fa-exclamation-triangle'],
         ]
     ],
     'creative' => [
         'label' => Yii::t('common', 'Творчество'),
+        'color' => '#00ff88', // Неоновый зеленый
         'metrics' => [
             'top_kill_distance' => ['label' => Yii::t('common', 'Максимальная дистанция убийства'), 'unit' => 'м', 'image_key' => 'kills', 'icon' => 'fa-bullseye'],
-            'top_signs' => ['label' => Yii::t('common', 'Создано табличек'), 'unit' => 'табличек', 'image_key' => null, 'icon' => 'fa-sign'],
+            'top_signs' => ['label' => Yii::t('common', 'Создано рисунков'), 'unit' => 'табличек', 'image_key' => null, 'icon' => 'fa-sign'],
         ]
     ],
 ];
@@ -94,6 +102,9 @@ $formatNumber = function($number) {
 <div class="year-review-modal" id="year-review-modal">
     <div class="year-review-modal__overlay"></div>
     <div class="year-review-modal__content">
+        <!-- Wireframe декоративные элементы -->
+        <div class="year-review-wireframe year-review-wireframe--top-left"></div>
+        <div class="year-review-wireframe year-review-wireframe--bottom-right"></div>
         <button type="button" class="year-review-modal__close" aria-label="<?= Yii::t('common', 'Закрыть') ?>">
             ✕
         </button>
@@ -121,8 +132,10 @@ $formatNumber = function($number) {
                     continue;
                 }
             ?>
-                <div class="year-review-screen" data-screen="<?= $screenIndex ?>" <?= $screenIndex > 0 ? 'style="display: none;"' : '' ?>>
-                    <div class="year-review-screen__title"><?= Html::encode($group['label']) ?></div>
+                <div class="year-review-screen" data-screen="<?= $screenIndex ?>" data-color="<?= Html::encode($group['color'] ?? '#00ff88') ?>" <?= $screenIndex > 0 ? 'style="display: none;"' : '' ?>>
+                    <div class="year-review-screen__title" style="color: <?= Html::encode($group['color'] ?? '#00ff88') ?>; text-shadow: 0 0 10px <?= Html::encode($group['color'] ?? '#00ff88') ?>, 0 0 20px <?= Html::encode($group['color'] ?? '#00ff88') ?>;">
+                        <?= Html::encode($group['label']) ?>
+                    </div>
                     
                     <div class="year-review-metrics">
                         <?php foreach ($screenMetrics as $metricKey => $metric): ?>
@@ -143,7 +156,7 @@ $formatNumber = function($number) {
                                 }
                             }
                             ?>
-                            <div class="year-review-metric">
+                            <div class="year-review-metric" data-color="<?= Html::encode($group['color'] ?? '#00ff88') ?>">
                                 <div class="year-review-metric__title">
                                     <?php if ($hasImage): ?>
                                         <img src="<?= Html::encode($metricImage) ?>" alt="" class="year-review-metric__icon" />

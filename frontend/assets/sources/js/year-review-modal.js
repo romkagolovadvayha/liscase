@@ -150,7 +150,19 @@
                         this.screens = this.modal.querySelectorAll('.year-review-screen');
                         this.totalScreens = this.screens.length;
                         if (this.totalScreens > 0) {
-                            this.showScreen(0);
+                            // Показываем первый экран без анимации слайда, но с анимацией чисел
+                            this.screens.forEach((screen, i) => {
+                                screen.style.display = i === 0 ? 'block' : 'none';
+                                // Применяем цвета к метрикам
+                                if (i === 0) {
+                                    this.applyColorsToScreen(screen);
+                                }
+                            });
+                            this.updateNavigation(0);
+                            // Запускаем анимацию чисел для первого экрана
+                            setTimeout(() => {
+                                this.animateNumbers(this.screens[0]);
+                            }, 300);
                         }
                     }
                 })
@@ -240,16 +252,39 @@
                 return;
             }
 
-            // Скрываем все экраны
-            this.screens.forEach(screen => {
-                screen.style.display = 'none';
+            const prevIndex = this.currentScreen;
+            const direction = index > prevIndex ? 'right' : 'left';
+
+            // Скрываем все экраны с анимацией
+            this.screens.forEach((screen, i) => {
+                if (i === prevIndex && i !== index) {
+                    screen.classList.remove('slide-in-right', 'slide-in-left');
+                    screen.style.display = 'none';
+                }
             });
 
-            // Показываем нужный экран
+            // Показываем нужный экран с анимацией
             if (this.screens[index]) {
                 this.screens[index].style.display = 'block';
+                // Применяем цвета к метрикам
+                this.applyColorsToScreen(this.screens[index]);
+                // Добавляем класс анимации
+                this.screens[index].classList.remove('slide-in-right', 'slide-in-left');
+                // Принудительный reflow для анимации
+                void this.screens[index].offsetWidth;
+                this.screens[index].classList.add(direction === 'right' ? 'slide-in-right' : 'slide-in-left');
+                
+                // Анимация чисел
+                this.animateNumbers(this.screens[index]);
             }
 
+            // Обновляем навигацию
+            this.updateNavigation(index);
+
+            this.currentScreen = index;
+        },
+
+        updateNavigation: function(index) {
             // Обновляем кнопки навигации
             if (this.prevBtn) {
                 this.prevBtn.disabled = index === 0;
@@ -266,8 +301,102 @@
                     indicator.classList.remove('active');
                 }
             });
+        },
 
-            this.currentScreen = index;
+        animateNumbers: function(screen) {
+            // Анимация чисел в значениях метрик
+            const valueElements = screen.querySelectorAll('.year-review-metric__value');
+            valueElements.forEach((el, index) => {
+                const originalText = el.textContent;
+                const numberMatch = originalText.match(/[\d\s]+/);
+                if (numberMatch) {
+                    const number = parseInt(numberMatch[0].replace(/\s/g, ''));
+                    if (!isNaN(number) && number > 0) {
+                        const unit = originalText.replace(/[\d\s]+/, '').trim();
+                        el.style.opacity = '0';
+                        el.style.transform = 'scale(0.5)';
+                        
+                        setTimeout(() => {
+                            el.style.transition = 'all 0.8s ease-out';
+                            el.style.opacity = '1';
+                            el.style.transform = 'scale(1)';
+                            
+                            // Анимация счетчика от 0 до числа
+                            this.animateCounter(el, 0, number, unit, 800);
+                        }, index * 100);
+                    } else {
+                        // Если число 0 или не найдено, просто показываем с анимацией
+                        el.style.opacity = '0';
+                        el.style.transform = 'scale(0.5)';
+                        setTimeout(() => {
+                            el.style.transition = 'all 0.8s ease-out';
+                            el.style.opacity = '1';
+                            el.style.transform = 'scale(1)';
+                        }, index * 100);
+                    }
+                } else {
+                    // Если числа нет, просто показываем с анимацией
+                    el.style.opacity = '0';
+                    el.style.transform = 'scale(0.5)';
+                    setTimeout(() => {
+                        el.style.transition = 'all 0.8s ease-out';
+                        el.style.opacity = '1';
+                        el.style.transform = 'scale(1)';
+                    }, index * 100);
+                }
+            });
+            
+            // Анимация итогового значения
+            const totalValue = screen.querySelector('.year-review-total__value');
+            if (totalValue) {
+                const originalText = totalValue.textContent;
+                const number = parseInt(originalText.replace(/\s/g, ''));
+                if (!isNaN(number) && number > 0) {
+                    totalValue.style.opacity = '0';
+                    totalValue.style.transform = 'scale(0.5)';
+                    setTimeout(() => {
+                        totalValue.style.transition = 'all 1s ease-out';
+                        totalValue.style.opacity = '1';
+                        totalValue.style.transform = 'scale(1)';
+                        this.animateCounter(totalValue, 0, number, '', 1000);
+                    }, 200);
+                } else {
+                    totalValue.style.opacity = '0';
+                    totalValue.style.transform = 'scale(0.5)';
+                    setTimeout(() => {
+                        totalValue.style.transition = 'all 1s ease-out';
+                        totalValue.style.opacity = '1';
+                        totalValue.style.transform = 'scale(1)';
+                    }, 200);
+                }
+            }
+        },
+
+        animateCounter: function(element, start, end, unit, duration) {
+            const startTime = performance.now();
+            const formatNumber = (num) => {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+            };
+            
+            const animate = (currentTime) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Используем easing функцию для плавности
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+                const current = Math.floor(start + (end - start) * easeOutQuart);
+                
+                element.textContent = formatNumber(current) + (unit ? ' ' + unit : '');
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Убеждаемся, что финальное значение установлено
+                    element.textContent = formatNumber(end) + (unit ? ' ' + unit : '');
+                }
+            };
+            
+            requestAnimationFrame(animate);
         },
 
         prevScreen: function() {
@@ -284,6 +413,74 @@
 
         goToScreen: function(index) {
             this.showScreen(index);
+        },
+
+        applyColorsToScreen: function(screen) {
+            const screenColor = screen.getAttribute('data-color') || '#00ff88';
+            const metrics = screen.querySelectorAll('.year-review-metric');
+            
+            metrics.forEach(metric => {
+                const metricColor = metric.getAttribute('data-color') || screenColor;
+                // Применяем цвет к границе и тени
+                metric.style.setProperty('--metric-color', metricColor);
+                metric.style.borderColor = metricColor;
+                metric.style.boxShadow = `
+                    0 0 20px ${this.hexToRgba(metricColor, 0.3)},
+                    inset 0 0 20px ${this.hexToRgba(metricColor, 0.1)}
+                `;
+                
+                // Применяем цвет к заголовку
+                const title = metric.querySelector('.year-review-metric__title');
+                if (title) {
+                    title.style.color = metricColor;
+                    title.style.textShadow = `0 0 10px ${metricColor}`;
+                }
+                
+                // Применяем цвет к иконке
+                const icon = metric.querySelector('.year-review-metric__icon');
+                if (icon) {
+                    if (icon.classList.contains('year-review-metric__icon--fa')) {
+                        icon.style.color = metricColor;
+                        icon.style.textShadow = `0 0 10px ${metricColor}`;
+                    } else {
+                        icon.style.filter = `drop-shadow(0 0 5px ${metricColor})`;
+                    }
+                }
+                
+                // Применяем цвет к значениям
+                const value = metric.querySelector('.year-review-metric__value');
+                if (value) {
+                    value.style.color = metricColor;
+                    value.style.textShadow = `0 0 10px ${metricColor}`;
+                }
+                
+                // Применяем цвет к элементам списка
+                const items = metric.querySelectorAll('.year-review-metric__item');
+                items.forEach(item => {
+                    if (!item.classList.contains('year-review-metric__item--gold') &&
+                        !item.classList.contains('year-review-metric__item--silver') &&
+                        !item.classList.contains('year-review-metric__item--bronze')) {
+                        item.style.borderColor = this.hexToRgba(metricColor, 0.3);
+                        item.addEventListener('mouseenter', function() {
+                            this.style.borderColor = metricColor;
+                            this.style.background = this.hexToRgba(metricColor, 0.1);
+                            this.style.boxShadow = `0 0 15px ${this.hexToRgba(metricColor, 0.3)}`;
+                        }.bind(this));
+                        item.addEventListener('mouseleave', function() {
+                            this.style.borderColor = this.hexToRgba(metricColor, 0.3);
+                            this.style.background = 'rgba(0, 0, 0, 0.4)';
+                            this.style.boxShadow = 'none';
+                        }.bind(this));
+                    }
+                });
+            });
+        },
+
+        hexToRgba: function(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
     };
 
