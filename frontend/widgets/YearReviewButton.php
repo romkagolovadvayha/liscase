@@ -23,13 +23,18 @@ class YearReviewButton extends Widget
 
     public function run()
     {
-        // Показываем кнопку только админам и модераторам
+        // Показываем кнопку только админам и модераторам, а также пользователю с определенным steam_id
         if (Yii::$app->user->isGuest) {
             return '';
         }
 
         $user = Yii::$app->user->identity;
-        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+        $allowedSteamId = '76561199687342283';
+        
+        // Проверяем роль или steam_id
+        $hasPermission = $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR]) || $user->steam_id === $allowedSteamId;
+        
+        if (!$hasPermission) {
             return '';
         }
 
