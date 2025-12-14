@@ -583,7 +583,7 @@ class Servers extends \common\components\base\ActiveRecord
             }
         }
 
-        Yii::$app->cache->set($cacheKey, $result, 24*60*60);
+        Yii::$app->cache->set($cacheKey, $result, 30*24*60*60); // 30 дней
         return $result;
     }
 
@@ -591,24 +591,39 @@ class Servers extends \common\components\base\ActiveRecord
      * Получение метрики из кэша или вычисление с последующим кэшированием
      * @param string $metricKey Ключ метрики
      * @param callable $callback Функция для вычисления метрики
+     * @param bool $forceUpdate Принудительное обновление кэша
      * @return mixed
      */
-    private function getCachedMetric(string $metricKey, callable $callback)
+    private function getCachedMetric(string $metricKey, callable $callback, bool $forceUpdate = false)
     {
         $cacheKey = 'Servers_metric_' . $metricKey . '_' . $this->id;
-        $cached = Yii::$app->cache->get($cacheKey);
+        $cached = false;
+        if (!$forceUpdate) {
+            $cached = Yii::$app->cache->get($cacheKey);
+        }
         if ($cached === false) {
             $cached = $callback();
-            Yii::$app->cache->set($cacheKey, $cached, 24 * 60 * 60);
+            Yii::$app->cache->set($cacheKey, $cached, 30 * 24 * 60 * 60); // 30 дней
         }
         return $cached;
     }
 
     /**
+     * Обновление кэша всех метрик сервера
+     * @return int Количество обновленных метрик
+     */
+    public function refreshMetricsCache(): int
+    {
+        $metrics = $this->getServerMetrics(true);
+        return count($metrics);
+    }
+
+    /**
      * Получение метрик сервера (топ-3 по различным показателям)
+     * @param bool $forceUpdate Принудительное обновление кэша
      * @return array
      */
-    public function getServerMetrics(): array
+    public function getServerMetrics(bool $forceUpdate = false): array
     {
         $metrics = [];
 
