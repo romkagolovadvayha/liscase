@@ -10,7 +10,7 @@
   padding: 16px 24px;
   background-color: var(--primary-colors-main);
   border: 4px solid var(--primary-colors-white);
-  color: var(--primary-colors-white);
+  color: var(--text-main);
   font-family: 'Courier New', 'Courier', monospace;
   font-size: 16px;
   font-weight: bold;
@@ -89,7 +89,7 @@
     height: 48px;
     background-color: var(--primary-colors-main);
     border: 4px solid var(--primary-colors-white);
-    color: var(--primary-colors-white);
+    color: var(--text-main);
     font-family: 'Courier New', 'Courier', monospace;
     font-size: 24px;
     font-weight: bold;
@@ -120,7 +120,7 @@
     font-family: 'Courier New', 'Courier', monospace;
     font-size: 48px;
     font-weight: bold;
-    color: var(--primary-colors-white);
+    color: var(--text-main);
     text-transform: uppercase;
     text-shadow: 4px 4px 0 var(--background-main);
     letter-spacing: 4px;
@@ -131,7 +131,7 @@
   &__server {
     font-family: 'Courier New', 'Courier', monospace;
     font-size: 24px;
-    color: var(--primary-colors-white);
+    color: var(--text-main);
     text-shadow: 2px 2px 0 var(--background-main);
   }
   
@@ -162,7 +162,7 @@
     font-family: 'Courier New', 'Courier', monospace;
     font-size: 36px;
     font-weight: bold;
-    color: var(--primary-colors-white);
+    color: var(--text-main);
     text-transform: uppercase;
     text-align: center;
     margin-bottom: 32px;
@@ -206,7 +206,7 @@
     font-family: 'Courier New', 'Courier', monospace;
     font-size: 20px;
     font-weight: bold;
-    color: var(--primary-colors-white);
+    color: var(--text-main);
     text-align: center;
     margin-bottom: 16px;
     text-transform: uppercase;
@@ -233,7 +233,7 @@
       justify-content: center;
       width: 32px;
       height: 32px;
-      color: var(--primary-colors-white);
+      color: var(--text-main);
       text-shadow: 2px 2px 0 var(--background-main);
     }
   }
@@ -352,7 +352,7 @@
     font-family: 'Courier New', 'Courier', monospace;
     font-size: 24px;
     font-weight: bold;
-    color: var(--primary-colors-white);
+    color: var(--text-main);
     margin-bottom: 24px;
     text-transform: uppercase;
     text-shadow: 2px 2px 0 var(--background-main);
@@ -384,7 +384,7 @@
     font-family: 'Courier New', 'Courier', monospace;
     font-size: 24px;
     font-weight: bold;
-    color: var(--primary-colors-white);
+    color: var(--text-main);
     margin-bottom: 24px;
     text-transform: uppercase;
     text-shadow: 2px 2px 0 var(--background-main);
@@ -408,7 +408,7 @@
     
     &--primary {
       background-color: var(--primary-colors-main);
-      color: var(--primary-colors-white);
+      color: var(--text-main);
       text-shadow: 2px 2px 0 var(--background-main);
     }
     
@@ -444,7 +444,7 @@
   padding: 16px 24px;
   background-color: var(--background-teritiary);
   border: 4px solid var(--primary-colors-white);
-  color: var(--primary-colors-white);
+  color: var(--text-main);
   text-transform: uppercase;
   cursor: pointer;
   box-shadow: 
@@ -478,7 +478,7 @@
   padding: 12px 24px;
   background-color: var(--primary-colors-main);
   border: 4px solid var(--primary-colors-white);
-  color: var(--primary-colors-white);
+  color: var(--text-main);
   cursor: pointer;
   text-transform: uppercase;
   box-shadow: 
