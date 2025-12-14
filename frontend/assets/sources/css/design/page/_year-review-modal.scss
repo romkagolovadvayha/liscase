@@ -1,50 +1,75 @@
 // Стиль Discord CHECKPOINT - темный фон с точечным паттерном, неоновые цвета, wireframe графики
 
-// Кнопка в правом нижнем углу
+// Кнопка в правом нижнем углу в стиле Discord CHECKPOINT
 .year-review-button {
-  position: fixed;
+  position: fixed !important;
   bottom: 24px;
   right: 24px;
   z-index: 1000;
-  padding: 16px 24px;
-  background-color: var(--primary-colors-main);
-  border: 4px solid var(--primary-colors-white);
-  color: var(--text-main);
+  padding: 16px 32px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #00ff88;
+  color: #00ff88;
   font-family: 'Courier New', 'Courier', monospace;
   font-size: 16px;
   font-weight: bold;
   text-transform: uppercase;
   cursor: pointer;
+  letter-spacing: 2px;
   box-shadow: 
-    0 0 0 2px var(--background-main),
-    4px 4px 0 0 var(--background-main);
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-  transition: all 0.1s ease;
+    0 0 20px rgba(0, 255, 136, 0.4),
+    inset 0 0 20px rgba(0, 255, 136, 0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  
+  // Wireframe эффект на фоне
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      linear-gradient(90deg, transparent 0%, rgba(0, 255, 136, 0.1) 50%, transparent 100%),
+      linear-gradient(0deg, transparent 0%, rgba(0, 255, 136, 0.1) 50%, transparent 100%);
+    background-size: 20px 20px;
+    opacity: 0.3;
+    pointer-events: none;
+  }
   
   // Скрываем кнопку на мобильных устройствах
   @media (max-width: 768px) {
     display: none;
   }
   
+  &__text {
+    position: relative;
+    z-index: 2;
+    text-shadow: 
+      0 0 10px #00ff88,
+      0 0 20px #00ff88;
+    animation: glowPulse 2s ease-in-out infinite;
+  }
+  
   &:hover {
-    transform: translate(2px, 2px);
+    background: rgba(0, 255, 136, 0.2);
     box-shadow: 
-      0 0 0 2px var(--background-main),
-      2px 2px 0 0 var(--background-main);
+      0 0 30px rgba(0, 255, 136, 0.6),
+      inset 0 0 30px rgba(0, 255, 136, 0.2);
+    transform: translateY(-2px);
+    border-color: #00ff88;
+    
+    &::before {
+      opacity: 0.5;
+    }
   }
   
   &:active {
-    transform: translate(4px, 4px);
+    transform: translateY(0);
     box-shadow: 
-      0 0 0 2px var(--background-main),
-      0 0 0 0 var(--background-main);
-  }
-  
-  &__text {
-    text-shadow: 2px 2px 0 var(--background-main);
-    letter-spacing: 2px;
+      0 0 15px rgba(0, 255, 136, 0.4),
+      inset 0 0 15px rgba(0, 255, 136, 0.1);
   }
 }
 
@@ -150,6 +175,14 @@
     padding: 48px 32px;
     position: relative;
     z-index: 5;
+    
+    // Скрываем полосы прокрутки
+    scrollbar-width: none; // Firefox
+    -ms-overflow-style: none; // IE и Edge
+    
+    &::-webkit-scrollbar {
+      display: none; // Chrome, Safari, Opera
+    }
   }
   
   &__footer {
