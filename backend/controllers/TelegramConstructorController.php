@@ -91,7 +91,7 @@ class TelegramConstructorController extends \backend\components\CrudController
                 Yii::$app->response->format = Response::FORMAT_JSON;
                 return \yii\bootstrap5\ActiveForm::validate($formModel);
             }
-            
+
             // Валидация модели
             if (!$formModel->validate()) {
                 Yii::$app->session->addFlash('error', 'Ошибка валидации: ' . json_encode($formModel->errors, JSON_UNESCAPED_UNICODE));
@@ -140,11 +140,17 @@ class TelegramConstructorController extends \backend\components\CrudController
 
         try {
             // Добавляем задачу в очередь
-            Yii::$app->queueTelegram->push(new TelegramConstructorSendJob([
-                'constructorId' => $id,
-            ]));
-            
-            Yii::$app->session->addFlash('success', 
+            if ($model->bot_id == TelegramConstructor::PERSONAL_BOT) {
+                Yii::$app->queueTelegram->push(new TelegramConstructorSendJob([
+                                                                                  'constructorId' => $id,
+                                                                              ]));
+            } else {
+                Yii::$app->queueVk->push(new TelegramConstructorSendJob([
+                                                                                  'constructorId' => $id,
+                                                                              ]));
+            }
+
+            Yii::$app->session->addFlash('success',
                 'Рассылка добавлена в очередь. Статус будет обновлен после завершения.'
             );
         } catch (\Exception $e) {
@@ -202,21 +208,21 @@ class TelegramConstructorController extends \backend\components\CrudController
     public function actionGetAudienceCount()
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
-        
+
         $botId = (int)Yii::$app->request->get('bot_id');
         $audienceId = (int)Yii::$app->request->get('audience_id');
         $onlyWithUser = (bool)Yii::$app->request->get('only_with_user', false);
-        
+
         if (empty($botId) || empty($audienceId)) {
             return ['success' => false, 'count' => 0, 'message' => 'Не указаны параметры'];
         }
-        
+
         // Применяем фильтр only_with_user только для VK группы
         $onlyWithUser = ($botId == TelegramConstructor::VK_GROUP) && $onlyWithUser;
-        
+
         $userIds = TelegramConstructor::getAudience($audienceId, $botId, $onlyWithUser);
         $count = count($userIds);
-        
+
         return [
             'success' => true,
             'count' => $count,
@@ -245,11 +251,11 @@ class TelegramConstructorController extends \backend\components\CrudController
         }
 
         $searchModel = new AudienceSearch();
-        
+
         // Для предпросмотра аудитории нужно получить only_with_user из запроса (только для VK)
         $onlyWithUser = ($botId == TelegramConstructor::VK_GROUP) && (bool)Yii::$app->request->get('only_with_user', false);
         $userIds = TelegramConstructor::getAudience($audienceId, $botId, $onlyWithUser);
-        
+
         // Для VK группы получаем User IDs из VK user IDs
         if ($botId == TelegramConstructor::VK_GROUP) {
             if (empty($userIds)) {
@@ -259,20 +265,20 @@ class TelegramConstructorController extends \backend\components\CrudController
                     'vkUsers' => [],
                 ]);
             }
-            
+
             // VK user IDs нужно преобразовать в User IDs
             // Но так как VK пользователи не связаны напрямую с User, показываем VK пользователей отдельно
             $vkUsers = VkUser::find()
                 ->where(['IN', 'vk_user_id', $userIds])
                 ->all();
-            
+
             return $this->render('audience-vk', [
                 'audienceId' => $audienceId,
                 'audienceCount' => count($userIds),
                 'vkUsers' => $vkUsers,
             ]);
         }
-        
+
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams, null, $userIds);
 
         return $this->render('audience', [
@@ -301,8 +307,8 @@ class TelegramConstructorController extends \backend\components\CrudController
             Yii::$app->queueProcess->push(new UpdateVkAudienceJob([
                 'groupId' => $groupId,
             ]));
-            
-            Yii::$app->session->addFlash('success', 
+
+            Yii::$app->session->addFlash('success',
                 'Задача обновления аудитории ВКонтакте добавлена в очередь. Результат будет отправлен в Telegram.'
             );
         } catch (\Exception $e) {
@@ -321,8 +327,8 @@ class TelegramConstructorController extends \backend\components\CrudController
     {
         try {
             Yii::$app->queueTelegram->push(new UpdateTelegramAudienceJob());
-            
-            Yii::$app->session->addFlash('success', 
+
+            Yii::$app->session->addFlash('success',
                 'Задача проверки Telegram аудитории добавлена в очередь. Результат будет отправлен в Telegram.'
             );
         } catch (\Exception $e) {
