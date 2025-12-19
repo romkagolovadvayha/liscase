@@ -166,4 +166,139 @@ class ServersController extends BackendController
             'items' => $models
         ]);
     }
+
+    /**
+     * Страница для массового редактирования дат вайпа серверов
+     */
+    public function actionMassEditWipe()
+    {
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->cache(30)
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        return $this->render('mass-edit-wipe', [
+            'servers' => $servers,
+        ]);
+    }
+
+    /**
+     * AJAX endpoint для сохранения массовых изменений дат вайпа
+     */
+    public function actionSaveMassWipe()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        $serverIds = Yii::$app->request->post('server_ids', []);
+        // Если пришел не массив, преобразуем
+        if (!is_array($serverIds)) {
+            $serverIds = [$serverIds];
+        }
+
+        $wipe = Yii::$app->request->post('wipe', '');
+        $nextWipe = Yii::$app->request->post('next_wipe', '');
+        $globalWipe = Yii::$app->request->post('global_wipe', '');
+
+        if (empty($serverIds)) {
+            return [
+                'success' => false,
+                'message' => 'Не выбраны серверы для редактирования',
+            ];
+        }
+
+        // Проверяем, что хотя бы одно поле заполнено
+        if (empty($wipe) && empty($nextWipe) && empty($globalWipe)) {
+            return [
+                'success' => false,
+                'message' => 'Необходимо заполнить хотя бы одно поле',
+            ];
+        }
+
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->andWhere(['id' => $serverIds])
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->all();
+
+        if (empty($servers)) {
+            return [
+                'success' => false,
+                'message' => 'Серверы не найдены',
+            ];
+        }
+
+        $results = [];
+        $successCount = 0;
+        $errorCount = 0;
+
+        foreach ($servers as $server) {
+            try {
+                $updated = false;
+
+                // Обновляем только заполненные поля
+                if (!empty($wipe)) {
+                    // Валидация формата даты
+                    $date = \DateTime::createFromFormat('Y-m-d H:i:s', $wipe);
+                    if ($date === false) {
+                        throw new \Exception("Неверный формат даты для 'Последний вайп': {$wipe}. Ожидается формат: YYYY-MM-DD HH:MM:SS");
+                    }
+                    $server->wipe = $wipe;
+                    $updated = true;
+                }
+
+                if (!empty($nextWipe)) {
+                    $date = \DateTime::createFromFormat('Y-m-d H:i:s', $nextWipe);
+                    if ($date === false) {
+                        throw new \Exception("Неверный формат даты для 'Следующий вайп': {$nextWipe}. Ожидается формат: YYYY-MM-DD HH:MM:SS");
+                    }
+                    $server->next_wipe = $nextWipe;
+                    $updated = true;
+                }
+
+                if (!empty($globalWipe)) {
+                    $date = \DateTime::createFromFormat('Y-m-d H:i:s', $globalWipe);
+                    if ($date === false) {
+                        throw new \Exception("Неверный формат даты для 'Глобал вайп': {$globalWipe}. Ожидается формат: YYYY-MM-DD HH:MM:SS");
+                    }
+                    $server->global_wipe = $globalWipe;
+                    $updated = true;
+                }
+
+                if ($updated && $server->save(false)) {
+                    $results[$server->id] = [
+                        'success' => true,
+                        'message' => 'Сервер успешно обновлен',
+                        'server_name' => $server->name,
+                    ];
+                    $successCount++;
+                } else {
+                    $errors = $server->getFirstErrors();
+                    $errorMessage = !empty($errors) ? implode(', ', $errors) : 'Ошибка сохранения';
+                    $results[$server->id] = [
+                        'success' => false,
+                        'message' => $errorMessage,
+                        'server_name' => $server->name,
+                    ];
+                    $errorCount++;
+                }
+            } catch (\Exception $e) {
+                $results[$server->id] = [
+                    'success' => false,
+                    'message' => 'Ошибка: ' . $e->getMessage(),
+                    'server_name' => $server->name,
+                ];
+                $errorCount++;
+            }
+        }
+
+        return [
+            'success' => $errorCount === 0,
+            'message' => "Обновлено серверов: {$successCount}" . ($errorCount > 0 ? ", ошибок: {$errorCount}" : ''),
+            'results' => $results,
+            'success_count' => $successCount,
+            'error_count' => $errorCount,
+        ];
+    }
 }

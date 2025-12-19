@@ -20,6 +20,7 @@ $this->params['breadcrumbs'][] = $this->title;
             <h1><?= Html::encode($this->title) ?></h1>
             <div class="ds-flex ds-flex--gap-md">
                 <?= Html::a('<i class="fas fa-plus"></i> Новый сервер', ['create'], ['class' => 'ds-btn ds-btn--success']) ?>
+                <?= Html::a('<i class="bi bi-calendar-event"></i> ' . Yii::t('common', 'Массовое редактирование вайпов'), ['mass-edit-wipe'], ['class' => 'ds-btn ds-btn--info']) ?>
                 <?= Html::a('<i class="fas fa-sort"></i> ' . Yii::t('common', 'Сортировать'), ['sort'], ['class' => 'ds-btn ds-btn--primary']) ?>
             </div>
         </div>

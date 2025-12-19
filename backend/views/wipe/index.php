@@ -20,6 +20,34 @@ $this->title = Yii::t('common', 'Вайп');
 <div class="content">
     <?= \frontend\widgets\Alert::widget() ?>
 
+    <!-- Комплексный вайп серверов -->
+    <div class="ds-card mb-4" style="border: 2px solid #198754;">
+        <div class="ds-card__header" style="background: #198754; color: white;">
+            <h5 class="ds-card__header-title" style="color: white;">
+                <i class="bi bi-lightning-charge"></i> <?= Yii::t('common', 'Комплексный вайп серверов') ?>
+            </h5>
+        </div>
+        <div class="ds-card__body">
+            <p class="mb-3">
+                <strong>Новый раздел для комплексного вайпа!</strong> Выберите серверы и выполните все этапы вайпа одним нажатием:
+            </p>
+            <ul class="mb-3">
+                <li>Блокировка предметов в магазине</li>
+                <li>Начисление наград за топы</li>
+                <li>Фиксация карты</li>
+                <li>Обнуление промокода WIPE</li>
+                <li>Выполнение RCON команды</li>
+            </ul>
+            <?= Html::a(
+                '<i class="bi bi-rocket-takeoff"></i> Перейти к комплексному вайпу',
+                '/wipe/wipe-servers',
+                [
+                    'class' => 'ds-btn ds-btn--success',
+                ]
+            ) ?>
+        </div>
+    </div>
+
     <?php
     /** @var Servers[] $servers */
     $servers = Servers::find()

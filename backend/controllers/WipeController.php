@@ -11,6 +11,7 @@ use common\models\map\Map;
 use common\models\map\MapList;
 use common\models\profit\Profit;
 use common\models\promocode\Promocode;
+use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
@@ -213,6 +214,340 @@ class WipeController extends Controller
 
         Yii::$app->session->addFlash('success', 'Кэш очищен!');
         return $this->redirect('index');
+    }
+
+    /**
+     * Страница для комплексного вайпа серверов
+     */
+    public function actionWipeServers()
+    {
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->cache(30)
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        return $this->render('wipe-servers', [
+            'servers' => $servers,
+        ]);
+    }
+
+    /**
+     * AJAX endpoint для выполнения комплексного вайпа
+     * Выполняет этапы последовательно и возвращает результаты в реальном времени
+     */
+    public function actionExecuteWipe()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        $serverIds = Yii::$app->request->post('server_ids', []);
+        // Если пришел не массив, преобразуем
+        if (!is_array($serverIds)) {
+            $serverIds = [$serverIds];
+        }
+        $rconCommand = Yii::$app->request->post('rcon_command', '');
+
+        if (empty($serverIds)) {
+            return [
+                'success' => false,
+                'message' => 'Не выбраны серверы для вайпа',
+            ];
+        }
+
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->andWhere(['id' => $serverIds])
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->all();
+
+        if (empty($servers)) {
+            return [
+                'success' => false,
+                'message' => 'Серверы не найдены',
+            ];
+        }
+
+        $results = [];
+        $overallSuccess = true;
+
+        // Этап 1: Блокировка предметов в магазине
+        $results['step1_block_items'] = [];
+        foreach ($servers as $server) {
+            try {
+                $cacheKey = "WIPE_actionBlock4_{$server->id}";
+                if (Yii::$app->cache->get($cacheKey)) {
+                    $results['step1_block_items'][$server->id] = [
+                        'success' => false,
+                        'message' => 'Блокировка уже выполнена недавно (кэш активен)',
+                    ];
+                    $overallSuccess = false;
+                    continue;
+                }
+
+                /** @var Drop[] $drops */
+                $drops = Drop::find()->all();
+                DropBlocked::unBlocked($server->id);
+                
+                foreach ($drops as $drop) {
+                    if (!empty($drop->blocked_hour)) {
+                        $date = new \DateTime();
+                        $date->modify("+{$drop->blocked_hour} hour");
+                        DropBlocked::createRecord($drop->id, $server->id, $date->format('Y-m-d H:i:s'));
+                    }
+                }
+                
+                Yii::$app->cache->set($cacheKey, 1, 1*60);
+                $cacheKeyGetBlocked = "DropBlocked_getBlocked_" . $server->id;
+                Yii::$app->cache->delete($cacheKeyGetBlocked);
+                
+                \console\controllers\ChatServer::broadcastLauncherUpdate();
+                
+                $results['step1_block_items'][$server->id] = [
+                    'success' => true,
+                    'message' => 'Предметы успешно заблокированы',
+                ];
+            } catch (\Exception $e) {
+                $results['step1_block_items'][$server->id] = [
+                    'success' => false,
+                    'message' => 'Ошибка: ' . $e->getMessage(),
+                ];
+                $overallSuccess = false;
+            }
+        }
+
+        // Если этап 1 не прошел, останавливаемся
+        if (!$overallSuccess) {
+            return [
+                'success' => false,
+                'message' => 'Ошибка на этапе 1: Блокировка предметов',
+                'results' => $results,
+            ];
+        }
+
+        // Этап 2: Начисление наград за топы
+        $results['step2_top_rewards'] = [];
+        foreach ($servers as $server) {
+            try {
+                $cacheKey = "WIPE_actionTop4_{$server->tag}";
+                if (Yii::$app->cache->get($cacheKey)) {
+                    $results['step2_top_rewards'][$server->id] = [
+                        'success' => false,
+                        'message' => 'Награды уже начислены недавно (кэш активен)',
+                    ];
+                    $overallSuccess = false;
+                    continue;
+                }
+
+                Yii::$app->cache->set($cacheKey, 1, 1*60);
+                ini_set('memory_limit', '512M');
+
+                $wipe = $server->currentWipe();
+                $tops = UserTop::getUserTops($server, $wipe);
+                $tgMessage = [];
+
+                foreach ($tops as $top) {
+                    $value = $top['label'];
+                    foreach ($top['items'] as $i => $item) {
+                        $user = User::findBySteamId($item['steam_id'], false, 'top');
+                        
+                        // Проверяем, что пользователь найден
+                        if (empty($user)) {
+                            Yii::warning("User not found for steam_id: {$item['steam_id']} in top rewards", __METHOD__);
+                            continue;
+                        }
+                        
+                        // Получаем или создаем баланс пользователя
+                        $personalBalance = $user->getPersonalBalance();
+                        if (empty($personalBalance) || empty($personalBalance->id)) {
+                            Yii::warning("Personal balance not found for user ID: {$user->id}, steam_id: {$item['steam_id']}", __METHOD__);
+                            continue;
+                        }
+                        
+                        $profit = new Profit();
+                        $profit->status = 1;
+                        $profit->type = Profit::TYPE_TOP;
+                        $profit->amount = $item['amount'];
+                        $profit->user_balance_id = $personalBalance->id;
+                        $profit->comment = "Награда за первое место в топе \"{$value}\"";
+                        if ($i === 1) {
+                            $profit->comment = "Награда за второе место в топе \"{$value}\"";
+                        } elseif ($i === 2) {
+                            $profit->comment = "Награда за третье место в топе \"{$value}\"";
+                        }
+                        if (!empty($user->telegram_chat_id)) {
+                            $text = "🥇 Награда за первое место в топе \"{$value}\" - <b>{$profit->amount} РУБ</b>";
+                            if ($i === 1) {
+                                $text = "🥈 Награда за второе место в топе \"{$value}\" - <b>{$profit->amount} РУБ</b>";
+                            } elseif ($i === 2) {
+                                $text = "🥉 Награда за третье место в топе \"{$value}\" - <b>{$profit->amount} РУБ</b>";
+                            }
+                            if (!empty($tgMessage[$user->steam_id])) {
+                                $tgMessage[$user->steam_id] .= PHP_EOL . $text;
+                            } else {
+                                $tgMessage[$user->steam_id] = "Вам начислены награды за ТОП на сервере "
+                                    . $server->name . PHP_EOL . $text;
+                            }
+                        }
+                        $profit->created_at = date('Y-m-d H:i:s');
+                        $profit->save(false);
+                    }
+                }
+
+                if (YII_ENV_PROD) {
+                    foreach ($tgMessage as $steamId => $message) {
+                        $user = User::findBySteamId($steamId, false, 'top2');
+                        Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message);
+                    }
+                }
+
+                $results['step2_top_rewards'][$server->id] = [
+                    'success' => true,
+                    'message' => 'Награды за топы успешно начислены',
+                ];
+            } catch (\Exception $e) {
+                $results['step2_top_rewards'][$server->id] = [
+                    'success' => false,
+                    'message' => 'Ошибка: ' . $e->getMessage(),
+                ];
+                $overallSuccess = false;
+            }
+        }
+
+        // Если этап 2 не прошел, останавливаемся
+        if (!$overallSuccess) {
+            return [
+                'success' => false,
+                'message' => 'Ошибка на этапе 2: Начисление наград за топы',
+                'results' => $results,
+            ];
+        }
+
+        // Этап 3: Фиксация карты
+        $results['step3_fix_map'] = [];
+        foreach ($servers as $server) {
+            try {
+                if ($server->secret_map) {
+                    $results['step3_fix_map'][$server->id] = [
+                        'success' => true,
+                        'message' => 'Пропущено (секретная карта)',
+                    ];
+                    continue;
+                }
+
+                // Используем MapFixJob через очередь или напрямую
+                \Yii::$app->queueProcess->push(new MapFixJob(['serverId' => $server->id]));
+                
+                // Также фиксируем напрямую для немедленного результата
+                MapList::fixWinningMapForServer($server->id);
+                
+                $results['step3_fix_map'][$server->id] = [
+                    'success' => true,
+                    'message' => 'Карта успешно зафиксирована',
+                ];
+            } catch (\Exception $e) {
+                $results['step3_fix_map'][$server->id] = [
+                    'success' => false,
+                    'message' => 'Ошибка: ' . $e->getMessage(),
+                ];
+                $overallSuccess = false;
+            }
+        }
+
+        // Если этап 3 не прошел, останавливаемся
+        if (!$overallSuccess) {
+            return [
+                'success' => false,
+                'message' => 'Ошибка на этапе 3: Фиксация карты',
+                'results' => $results,
+            ];
+        }
+
+        // Этап 4: Обнуление промокода WIPE
+        $results['step4_reset_promocode'] = [];
+        try {
+            /** @var UserPromocode[] $uPromocodes */
+            $uPromocodes = UserPromocode::find()
+                ->andWhere(['promocode_id' => 2])
+                ->all();
+
+            $deletedCount = 0;
+            foreach ($uPromocodes as $item) {
+                $item->delete();
+                $deletedCount++;
+            }
+
+            $results['step4_reset_promocode'] = [
+                'success' => true,
+                'message' => "Промокод WIPE обнулен. Удалено записей: {$deletedCount}",
+            ];
+        } catch (\Exception $e) {
+            $results['step4_reset_promocode'] = [
+                'success' => false,
+                'message' => 'Ошибка: ' . $e->getMessage(),
+            ];
+            $overallSuccess = false;
+        }
+
+        // Если этап 4 не прошел, останавливаемся
+        if (!$overallSuccess) {
+            return [
+                'success' => false,
+                'message' => 'Ошибка на этапе 4: Обнуление промокода',
+                'results' => $results,
+            ];
+        }
+
+        // Этап 5: Выполнение RCON команды
+        $results['step5_rcon'] = [];
+        if (!empty($rconCommand)) {
+            $serverTags = array_map(function($server) {
+                return $server->tag;
+            }, $servers);
+
+            try {
+                $rconResults = RconTasks::executeWithResults($rconCommand, $serverTags);
+                
+                foreach ($rconResults as $tag => $rconResult) {
+                    $server = $rconResult['server'];
+                    if (!empty($rconResult['error'])) {
+                        $results['step5_rcon'][$server->id] = [
+                            'success' => false,
+                            'message' => 'Ошибка RCON: ' . $rconResult['error'],
+                        ];
+                        $overallSuccess = false;
+                    } else {
+                        $results['step5_rcon'][$server->id] = [
+                            'success' => true,
+                            'message' => 'RCON команда выполнена успешно',
+                            'result' => $rconResult['result'],
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                foreach ($servers as $server) {
+                    $results['step5_rcon'][$server->id] = [
+                        'success' => false,
+                        'message' => 'Ошибка: ' . $e->getMessage(),
+                    ];
+                }
+                $overallSuccess = false;
+            }
+        } else {
+            // RCON команда не указана - пропускаем этап
+            foreach ($servers as $server) {
+                $results['step5_rcon'][$server->id] = [
+                    'success' => true,
+                    'message' => 'Пропущено (команда не указана)',
+                ];
+            }
+        }
+
+        return [
+            'success' => $overallSuccess,
+            'message' => $overallSuccess ? 'Вайп успешно выполнен для всех серверов' : 'Вайп выполнен с ошибками',
+            'results' => $results,
+        ];
     }
 
 }
