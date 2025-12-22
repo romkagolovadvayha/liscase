@@ -12,7 +12,7 @@ interface Client {
 }
 
 export class WSServer {
-  private wss: WebSocketServer;
+  private wss!: WebSocketServer;
   private httpServer: any;
   private clients: Set<Client> = new Set();
   private clientsByUserId: Map<number, Set<Client>> = new Map();

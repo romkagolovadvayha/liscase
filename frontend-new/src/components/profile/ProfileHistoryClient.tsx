@@ -155,11 +155,12 @@ export default function ProfileHistoryClient() {
         }
         return (
           <span className={isNegative ? 'profile-history__sum--minus' : 'profile-history__sum--plus'}>
-            <Icon 
-              name={isNegative ? 'minus' : 'plus'} 
-              fontSize="small" 
-              style={{ marginRight: '6px', verticalAlign: 'middle' }}
-            />
+            <span style={{ marginRight: '6px', verticalAlign: 'middle', display: 'inline-flex', alignItems: 'center' }}>
+              <Icon
+                name={isNegative ? 'minus' : 'plus'}
+                fontSize="small"
+              />
+            </span>
             {amount} <span className="icons icons_16px icons_16px_coin"></span>
           </span>
         );

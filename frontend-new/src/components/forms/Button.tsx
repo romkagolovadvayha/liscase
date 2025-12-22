@@ -16,13 +16,15 @@ interface BaseButtonProps {
   loading?: boolean; // Состояние загрузки
 }
 
-interface ButtonProps extends BaseButtonProps, React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<BaseButtonProps, 'children'>, Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
   as?: 'button';
+  children?: React.ReactNode;
 }
 
-interface ButtonLinkProps extends BaseButtonProps, React.AnchorHTMLAttributes<HTMLAnchorElement> {
+interface ButtonLinkProps extends Omit<BaseButtonProps, 'children'>, Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'children'> {
   as: 'a';
   href: string;
+  children?: React.ReactNode;
 }
 
 type ButtonComponentProps = ButtonProps | ButtonLinkProps;

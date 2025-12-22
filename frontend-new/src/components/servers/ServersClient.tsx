@@ -24,8 +24,29 @@ interface ServerTag {
 
 interface Server {
   id: number;
+  name: string;
+  monitoring_name: string;
+  monitoring_description: string;
+  tag: string;
+  ip: string;
+  port: number;
+  players: number;
+  joined: number;
+  queued: number;
+  max: number;
+  team_limit: number;
+  status: number;
+  statusText: string;
+  wipe: string | null;
+  wipe_type: number;
+  next_wipe: string | null;
+  global_wipe: string | null;
+  secret_map: boolean;
+  map_id: number | null;
+  map_list_id: number | null;
   tags: ServerTag[];
-  [key: string]: any;
+  percentPlayers: number;
+  totalPlayers: number;
 }
 
 interface ServersClientProps {
@@ -207,18 +228,26 @@ export default function ServersClient({ projectStats }: ServersClientProps) {
 
           {/* Внутренняя перелинковка */}
           <div className="servers_page_seo_links mt-20">
-            <Button as={Link} href="/wipe-calendar" variant="secondary" size="medium">
-              Календарь вайпов Rust
-            </Button>
-            <Button as={Link} href="/raid-table" variant="secondary" size="medium">
-              Калькулятор рейда
-            </Button>
-            <Button as={Link} href="/posts" variant="secondary" size="medium">
-              Гайды и новости Rust
-            </Button>
-            <Button as={Link} href="/custom-skins" variant="secondary" size="medium">
-              Кастомные скины сообщества
-            </Button>
+            <Link href="/wipe-calendar">
+              <Button variant="secondary" size="medium">
+                Календарь вайпов Rust
+              </Button>
+            </Link>
+            <Link href="/raid-table">
+              <Button variant="secondary" size="medium">
+                Калькулятор рейда
+              </Button>
+            </Link>
+            <Link href="/posts">
+              <Button variant="secondary" size="medium">
+                Гайды и новости Rust
+              </Button>
+            </Link>
+            <Link href="/custom-skins">
+              <Button variant="secondary" size="medium">
+                Кастомные скины сообщества
+              </Button>
+            </Link>
           </div>
         </section>
 

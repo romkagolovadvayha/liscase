@@ -3,21 +3,13 @@ import { getWSServer } from './websocket';
 const WS_PORT = parseInt(process.env.WS_PORT || '4888', 10);
 
 // Запускаем WebSocket сервер с обработкой ошибок
-let wsServer;
+let wsServer: ReturnType<typeof getWSServer> | undefined;
 try {
   wsServer = getWSServer(WS_PORT);
   
   // Обработка ошибок сервера (например, порт занят)
-  if (wsServer && 'httpServer' in wsServer && wsServer.httpServer) {
-    wsServer.httpServer.on('error', (error: any) => {
-      if (error.code === 'EADDRINUSE') {
-        console.warn(`[WebSocket] Port ${WS_PORT} is already in use. WebSocket server may already be running.`);
-        console.warn(`[WebSocket] Continuing without WebSocket server. If you need to restart, stop the existing process first.`);
-      } else {
-        console.error('[WebSocket] Server error:', error);
-      }
-    });
-  }
+  // Примечание: httpServer является приватным свойством, поэтому мы не можем напрямую обращаться к нему
+  // Ошибки обрабатываются внутри класса WSServer
 } catch (error: any) {
   if (error.code === 'EADDRINUSE') {
     console.warn(`[WebSocket] Port ${WS_PORT} is already in use. Skipping WebSocket server startup.`);

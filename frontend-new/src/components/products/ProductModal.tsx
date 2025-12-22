@@ -25,7 +25,7 @@ interface Product {
   description?: string;
   image?: string;
   price: number;
-  priceReal: number;
+  priceReal?: number;
   count?: number;
   discount?: number;
   drop_type?: number;
@@ -214,7 +214,7 @@ export default function ProductModal({
     }).format(roundedPrice);
   };
 
-  const totalPrice = product ? Math.ceil(product.priceReal * quantity) : 0;
+  const totalPrice = product && product.priceReal ? Math.ceil(product.priceReal * quantity) : 0;
 
   return (
     <div className="product-modal-overlay" onClick={handleOverlayClick}>
@@ -357,7 +357,7 @@ export default function ProductModal({
                   // Для скинов показываем подтверждение покупки
                   <>
                     <p className="product-modal__description" style={{ textAlign: 'center', marginBottom: '24px' }}>
-                      Вы уверены, что хотите купить этот скин за {formatPrice(product.priceReal)}?
+                      Вы уверены, что хотите купить этот скин за {product.priceReal ? formatPrice(product.priceReal) : formatPrice(product.price)}?
                     </p>
                     <div style={{
                       background: 'var(--background-teritiary)',
@@ -368,7 +368,9 @@ export default function ProductModal({
                       textAlign: 'center',
                       fontSize: '14px'
                     }}>
-                      <Icon name="info" fontSize="small" style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                      <span style={{ marginRight: '8px', verticalAlign: 'middle', display: 'inline-flex', alignItems: 'center' }}>
+                        <Icon name="info" fontSize="small" />
+                      </span>
                       В случае если вы не примите обмен или не придет трейд, деньги автоматически вернутся на баланс в течение часа.
                     </div>
                   </>
@@ -412,7 +414,7 @@ export default function ProductModal({
                       <div className="product-modal__purchase-price">
                         {(() => {
                           if (product.isSkin) {
-                            return formatPrice(product.priceReal);
+                            return formatPrice(product.priceReal || product.price);
                           }
                           if (product.drop_type === 3 && selectedDropId && product.subDrops) {
                             const selectedSubDrop = product.subDrops.find(sd => sd.drop_id === selectedDropId);

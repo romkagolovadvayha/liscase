@@ -293,6 +293,8 @@ export async function getPlayerProfileData(steamId: string): Promise<PlayerProfi
         awards,
         awardsStats,
         currentWipe: null,
+        teamMembers: [],
+        kills: [],
       };
     }
 
