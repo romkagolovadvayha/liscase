@@ -106,7 +106,7 @@ export async function GET(request: Request) {
       ${whereClause}
       ORDER BY ${sortField} ${sortOrder}
       LIMIT ? OFFSET ?
-    `, [...params, limit, offset]);
+    `, [...params, parseInt(String(limit), 10), parseInt(String(offset), 10)]);
 
     return NextResponse.json({
       success: true,

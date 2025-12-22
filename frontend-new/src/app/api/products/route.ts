@@ -49,7 +49,10 @@ export async function GET(request: Request) {
     }
 
     sql += ' ORDER BY d.sort ASC, d.id DESC LIMIT ? OFFSET ?';
-    params.push(limit, offset);
+    // Убеждаемся, что limit и offset - целые числа
+    const limitValue = parseInt(String(limit), 10);
+    const offsetValue = parseInt(String(offset), 10);
+    params.push(limitValue, offsetValue);
 
     const productsRaw = await query<any>(sql, params);
 

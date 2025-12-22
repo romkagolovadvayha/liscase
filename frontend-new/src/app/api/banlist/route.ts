@@ -100,6 +100,12 @@ export async function GET(request: NextRequest) {
     const sortOrderSql = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
     // Получаем данные с пагинацией
+    // Создаем новый массив параметров для запроса с LIMIT и OFFSET
+    // Убеждаемся, что все параметры правильно типизированы
+    const limitValue = parseInt(String(pageSize), 10);
+    const offsetValue = parseInt(String(offset), 10);
+    const queryParams = [...params, limitValue, offsetValue];
+    
     const bans = await query<any>(`
       SELECT 
         b.id,
@@ -121,7 +127,7 @@ export async function GET(request: NextRequest) {
       ${whereClause}
       ORDER BY ${sortFieldSql} ${sortOrderSql}
       LIMIT ? OFFSET ?
-    `, [...params, pageSize, offset]);
+    `, queryParams);
 
     // Форматируем данные
     const formattedBans = bans.map((ban: any) => {

@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
       WHERE ut.parent_user_id = ? AND ut.user_id != ?
       ORDER BY ${sortFieldSql} ${sortOrderSql}
       LIMIT ? OFFSET ?
-    `, [user.id, user.id, pageSize, offset]);
+    `, [user.id, user.id, parseInt(String(pageSize), 10), parseInt(String(offset), 10)]);
 
     return NextResponse.json({
       success: true,

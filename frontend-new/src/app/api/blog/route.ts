@@ -143,9 +143,12 @@ export async function GET(request: NextRequest) {
 
     // Пагинация
     sqlQuery += ` LIMIT ? OFFSET ?`;
-    params.push(limit, offset);
+    // Убеждаемся, что limit и offset - целые числа
+    const limitValue = parseInt(String(limit), 10);
+    const offsetValue = parseInt(String(offset), 10);
+    const queryParams = [...params, limitValue, offsetValue];
 
-    const rows = await query(sqlQuery, params);
+    const rows = await query(sqlQuery, queryParams);
 
     // Получаем S3 URL из переменных окружения или используем дефолтный адрес
     const s3Url = process.env.S3_URL || process.env.NEXT_PUBLIC_S3_URL || 'https://storage.prostoj.store';
