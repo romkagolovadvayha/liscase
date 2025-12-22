@@ -132,7 +132,6 @@ export default function FormElements() {
             <Select
               value={selectValue}
               onChange={(e) => setSelectValue(e.target.value)}
-              placeholder="Выберите опцию"
             >
               <option value="">Выберите опцию</option>
               <option value="option1">Опция 1</option>
@@ -145,7 +144,6 @@ export default function FormElements() {
             <Select
               value={selectValue}
               onChange={(e) => setSelectValue(e.target.value)}
-              placeholder="Выберите опцию"
               hasError
             >
               <option value="">Выберите опцию</option>
