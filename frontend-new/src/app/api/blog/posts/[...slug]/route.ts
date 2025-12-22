@@ -136,7 +136,7 @@ export async function GET(
       content: row.content,
       keywords: row.keywords,
       image: formatImageUrl(images[0] || null),
-      images: images.map(formatImageUrl).filter((img): img is string => img !== null),
+      images: images.map(formatImageUrl).filter((img: string | null): img is string => img !== null),
       category: row.category_name,
       categoryLinkName: row.category_link_name,
       parentCategoryName: row.parent_category_name,
