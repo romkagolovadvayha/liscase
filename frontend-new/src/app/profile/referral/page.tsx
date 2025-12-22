@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import ProfileReferralClient from '@/components/profile/ProfileReferralClient';
 
 export const metadata: Metadata = {
@@ -7,7 +8,11 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfileReferralPage() {
-  return <ProfileReferralClient />;
+  return (
+    <Suspense fallback={<div>Загрузка...</div>}>
+      <ProfileReferralClient />
+    </Suspense>
+  );
 }
 
 

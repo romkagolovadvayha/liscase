@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import ProfileHistoryClient from '@/components/profile/ProfileHistoryClient';
 
 export const metadata: Metadata = {
@@ -7,7 +8,11 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfileHistoryPage() {
-  return <ProfileHistoryClient />;
+  return (
+    <Suspense fallback={<div>Загрузка...</div>}>
+      <ProfileHistoryClient />
+    </Suspense>
+  );
 }
 
 
