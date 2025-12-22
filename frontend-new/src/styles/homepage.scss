@@ -1,0 +1,54 @@
+// Стили для компонентов главной страницы
+// Мигрированы из frontend/assets/sources/css/design/
+
+@import './user';
+@import './daily-reward';
+@import './search';
+@import './categories';
+@import './products';
+@import './blog';
+
+.homepage {
+  padding-bottom: 32px;
+
+  @media (max-width: 768px) {
+    padding-bottom: 16px;
+  }
+
+  &-search {
+    margin-bottom: 24px;
+
+    @media (max-width: 768px) {
+      margin-bottom: 16px;
+    }
+  }
+
+  &-categories {
+    margin-bottom: 24px;
+
+    @media (max-width: 768px) {
+      margin-bottom: 16px;
+    }
+  }
+
+  &-products {
+    margin-bottom: 32px;
+
+    @media (max-width: 768px) {
+      margin-bottom: 16px;
+    }
+  }
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+}
+
+

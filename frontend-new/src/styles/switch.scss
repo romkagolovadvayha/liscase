@@ -1,0 +1,103 @@
+// Стили для переключателя (Switch/Toggle)
+// Создано на основе дизайн-системы проекта
+
+.switch-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+
+  &--disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &__input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+
+    &:checked + .switch__slider {
+      background-color: var(--primary-colors-main);
+
+      &:before {
+        transform: translateX(20px);
+      }
+    }
+
+    &:focus + .switch__slider {
+      box-shadow: 0 0 0 2px var(--primary-colors-main-opacity);
+    }
+
+    &:disabled + .switch__slider {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  &__slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color-default);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 24px;
+
+    &:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: var(--text-main);
+      transition: transform 0.3s ease;
+      border-radius: 50%;
+    }
+  }
+
+  &:hover:not(.switch--disabled) .switch__slider {
+    background-color: var(--border-color-hover);
+  }
+
+  &__input:checked + .switch__slider {
+    background-color: var(--primary-colors-main);
+
+    &:before {
+      transform: translateX(20px);
+    }
+  }
+
+  &__input:checked ~ .switch__slider {
+    background-color: var(--primary-colors-main);
+  }
+
+  &__label {
+    font-size: 14px; // p2
+    color: var(--text-main);
+    cursor: pointer;
+    user-select: none;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
