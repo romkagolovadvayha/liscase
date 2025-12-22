@@ -21,9 +21,15 @@ export default function BlogCard({ title, description, image, category, date, ur
 
   const formatDate = (dateString: string): string => {
     try {
-      const date = moment(dateString);
+      // Пытаемся распарсить в формате DD.MM.YYYY
+      const date = moment(dateString, 'DD.MM.YYYY', true);
       if (!date.isValid()) {
-        return dateString; // Возвращаем исходную строку, если не удалось распарсить
+        // Если не получилось, пробуем стандартный формат
+        const date2 = moment(dateString);
+        if (!date2.isValid()) {
+          return dateString; // Возвращаем исходную строку, если не удалось распарсить
+        }
+        return date2.format('DD.MM.YYYY');
       }
       return date.format('DD.MM.YYYY');
     } catch {

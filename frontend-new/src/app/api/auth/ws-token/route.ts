@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { query } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 // API endpoint для получения токена для WebSocket
 // Токен используется только для авторизации WebSocket и не содержит чувствительных данных
 export async function GET() {

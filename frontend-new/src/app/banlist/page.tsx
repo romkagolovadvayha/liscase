@@ -3,6 +3,8 @@ import BanlistClient from '@/components/banlist/BanlistClient';
 import { query } from '@/lib/db';
 import type { BanlistResponse } from '@/hooks/useBanlistData';
 
+export const dynamic = 'force-dynamic';
+
 async function getBanlistData() {
   try {
     // Получаем список серверов для фильтра

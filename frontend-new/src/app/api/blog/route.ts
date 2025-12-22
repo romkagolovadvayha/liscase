@@ -3,8 +3,7 @@ import { query } from '@/lib/db';
 
 const POSTS_PER_PAGE = 10;
 
-// Кэширование на 10 минут (600 секунд)
-export const revalidate = 600;
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {

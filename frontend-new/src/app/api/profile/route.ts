@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { query, execute } from '@/lib/db';
 import { getSettings } from '@/lib/services/settings';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Получение профиля пользователя
  */

@@ -3,6 +3,8 @@ import { query } from '@/lib/db';
 import { getSettings } from '@/lib/services/settings';
 import { formatImageUrl } from '@/lib/utils/imageUrl';
 
+export const dynamic = 'force-dynamic';
+
 interface BanListParams {
   page?: number;
   pageSize?: number;

@@ -2,6 +2,8 @@ import React from 'react';
 import ServersClient from '@/components/servers/ServersClient';
 import { query } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 async function getServersData() {
   try {
     // Получаем статистику проекта (как в старой версии)

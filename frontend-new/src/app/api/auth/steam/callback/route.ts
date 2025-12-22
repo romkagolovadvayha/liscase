@@ -3,6 +3,8 @@ import { createSteamUser, findUserBySteamId } from '@/lib/auth/steam';
 import { query } from '@/lib/db';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Обработка callback от Steam OpenID
  */

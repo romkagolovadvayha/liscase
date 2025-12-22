@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getDbConnection, query } from '@/lib/db';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 const TYPE_PAYMENT_MARKET_DROP = 2;
 
 export async function POST(

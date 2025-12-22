@@ -3,6 +3,8 @@ import { query } from '@/lib/db';
 import { getSettings } from '@/lib/services/settings';
 import { formatImageUrl } from '@/lib/utils/imageUrl';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

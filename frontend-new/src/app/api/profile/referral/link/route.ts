@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { query } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Получение партнерской ссылки (для вкладки "Как приглашать?")
  */

@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { query } from '@/lib/db';
 import { getSettings } from '@/lib/services/settings';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Получение статистики реферальной системы (для вкладки "Условия программы")
  */

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { query } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Получение информации о текущем авторизованном пользователе
  */

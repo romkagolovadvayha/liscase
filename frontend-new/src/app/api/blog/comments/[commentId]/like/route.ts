@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query, insert, execute } from '@/lib/db';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 // Поставить или убрать лайк с комментария
 export async function POST(
   request: NextRequest,

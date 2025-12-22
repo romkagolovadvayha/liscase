@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { query } from '@/lib/db';
 import { getServerStatsData } from '@/lib/server-stats';
 
+export const dynamic = 'force-dynamic';
+
 // Кэшируем на час (3600 секунд)
 export const revalidate = 3600;
 

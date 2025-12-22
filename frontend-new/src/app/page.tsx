@@ -5,6 +5,8 @@ import { getSettings } from '@/lib/services/settings';
 import { formatImageUrl } from '@/lib/utils/imageUrl';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 async function getUserData(userId: number, steamId: string) {
   try {
     // Получаем активный сервер пользователя

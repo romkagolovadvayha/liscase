@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query, insert, execute } from '@/lib/db';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 // Получение комментариев для поста
 // Используем [linkName] для совместимости с другими роутами
 export async function GET(

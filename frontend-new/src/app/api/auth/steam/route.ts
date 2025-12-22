@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Начало авторизации через Steam
  * Редиректит на Steam OpenID

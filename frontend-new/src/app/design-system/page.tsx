@@ -10,6 +10,8 @@ import ServerElements from '@/components/design-system/ServerElements';
 import ThemeSwitcher from '@/components/design-system/ThemeSwitcher';
 import '@/styles/design-system.scss';
 
+export const dynamic = 'force-dynamic';
+
 export default function DesignSystemPage() {
   return (
     <div className="design-system-page">
