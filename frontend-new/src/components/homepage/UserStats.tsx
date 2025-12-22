@@ -47,6 +47,10 @@ interface UserStatsProps {
   statsImage?: string;
   statsImageVideo?: string;
   notAuthImage?: string;
+  activeVip?: {
+    expires_at: string;
+  } | null;
+  activeVipTimestamp?: number;
 }
 
 export default function UserStats({
@@ -61,6 +65,8 @@ export default function UserStats({
   statsImage,
   statsImageVideo,
   notAuthImage,
+  activeVip,
+  activeVipTimestamp,
 }: UserStatsProps) {
   // Получаем значения из CSS переменных, если не переданы через пропсы
   const defaultStatsImage = useCSSVariable('statsBlockImage', '');
