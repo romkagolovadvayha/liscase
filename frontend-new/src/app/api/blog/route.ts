@@ -47,13 +47,22 @@ export async function GET(request: NextRequest) {
     }
 
     if (categoryId) {
+      // Преобразуем categoryId в число
+      const categoryIdNum = parseInt(String(categoryId), 10);
+      if (isNaN(categoryIdNum)) {
+        return NextResponse.json(
+          { success: false, message: 'Неверный ID категории' },
+          { status: 400 }
+        );
+      }
+      
       // Проверяем, является ли выбранная категория родительской или дочерней
       const categoryInfo = await query(`
         SELECT id, blog_category_id as parent_id 
         FROM blog_category 
         WHERE id = ? AND status = 1
         LIMIT 1
-      `, [categoryId]);
+      `, [categoryIdNum]);
       
       if ((categoryInfo as any[]).length > 0) {
         const catInfo = (categoryInfo as any[])[0];
@@ -63,11 +72,11 @@ export async function GET(request: NextRequest) {
           const childCategories = await query(`
             SELECT id FROM blog_category 
             WHERE blog_category_id = ? AND status = 1
-          `, [categoryId]);
+          `, [categoryIdNum]);
           
-          const categoryIds = [categoryId];
+          const categoryIds = [categoryIdNum];
           (childCategories as any[]).forEach((cat: any) => {
-            categoryIds.push(cat.id);
+            categoryIds.push(parseInt(String(cat.id), 10));
           });
           
           const placeholders = categoryIds.map(() => '?').join(',');
@@ -76,7 +85,7 @@ export async function GET(request: NextRequest) {
         } else {
           // Это дочерняя категория - показываем только записи этой категории
           sqlQuery += ` AND b.blog_category_id = ?`;
-          params.push(categoryId);
+          params.push(categoryIdNum);
         }
       }
     }
@@ -99,13 +108,22 @@ export async function GET(request: NextRequest) {
     }
     
     if (categoryId) {
+      // Преобразуем categoryId в число
+      const categoryIdNum = parseInt(String(categoryId), 10);
+      if (isNaN(categoryIdNum)) {
+        return NextResponse.json(
+          { success: false, message: 'Неверный ID категории' },
+          { status: 400 }
+        );
+      }
+      
       // Проверяем, является ли выбранная категория родительской или дочерней
       const categoryInfo = await query(`
         SELECT id, blog_category_id as parent_id 
         FROM blog_category 
         WHERE id = ? AND status = 1
         LIMIT 1
-      `, [categoryId]);
+      `, [categoryIdNum]);
       
       if ((categoryInfo as any[]).length > 0) {
         const catInfo = (categoryInfo as any[])[0];
@@ -115,11 +133,11 @@ export async function GET(request: NextRequest) {
           const childCategories = await query(`
             SELECT id FROM blog_category 
             WHERE blog_category_id = ? AND status = 1
-          `, [categoryId]);
+          `, [categoryIdNum]);
           
-          const categoryIds = [categoryId];
+          const categoryIds = [categoryIdNum];
           (childCategories as any[]).forEach((cat: any) => {
-            categoryIds.push(cat.id);
+            categoryIds.push(parseInt(String(cat.id), 10));
           });
           
           const placeholders = categoryIds.map(() => '?').join(',');
@@ -128,7 +146,7 @@ export async function GET(request: NextRequest) {
         } else {
           // Это дочерняя категория - показываем только записи этой категории
           countQuery += ` AND b.blog_category_id = ?`;
-          countParams.push(categoryId);
+          countParams.push(categoryIdNum);
         }
       }
     }
@@ -142,13 +160,14 @@ export async function GET(request: NextRequest) {
     sqlQuery += ` ORDER BY ${sortField} ${orderBy}`;
 
     // Пагинация
-    sqlQuery += ` LIMIT ? OFFSET ?`;
     // Убеждаемся, что limit и offset - целые числа
-    const limitValue = parseInt(String(limit), 10);
-    const offsetValue = parseInt(String(offset), 10);
-    const queryParams = [...params, limitValue, offsetValue];
+    const limitValue = Math.max(1, parseInt(String(limit), 10));
+    const offsetValue = Math.max(0, parseInt(String(offset), 10));
+    
+    // Используем template literal для LIMIT и OFFSET, чтобы избежать проблем с параметрами
+    sqlQuery += ` LIMIT ${limitValue} OFFSET ${offsetValue}`;
 
-    const rows = await query(sqlQuery, queryParams);
+    const rows = await query(sqlQuery, params);
 
     // Получаем S3 URL из переменных окружения или используем дефолтный адрес
     const s3Url = process.env.S3_URL || process.env.NEXT_PUBLIC_S3_URL || 'https://storage.prostoj.store';

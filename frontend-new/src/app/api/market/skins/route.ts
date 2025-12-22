@@ -105,8 +105,8 @@ export async function GET(request: Request) {
       FROM market_skins
       ${whereClause}
       ORDER BY ${sortField} ${sortOrder}
-      LIMIT ? OFFSET ?
-    `, [...params, parseInt(String(limit), 10), parseInt(String(offset), 10)]);
+      LIMIT ${Math.max(1, parseInt(String(limit), 10))} OFFSET ${Math.max(0, parseInt(String(offset), 10))}
+    `, params);
 
     return NextResponse.json({
       success: true,

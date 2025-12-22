@@ -52,8 +52,11 @@ export async function GET(request: NextRequest) {
 
     // Фильтр по server_id
     if (serverId) {
-      whereConditions.push(`b.server_id = ?`);
-      params.push(parseInt(serverId, 10));
+      const serverIdNum = parseInt(String(serverId), 10);
+      if (!isNaN(serverIdNum)) {
+        whereConditions.push(`b.server_id = ?`);
+        params.push(serverIdNum);
+      }
     }
 
     // Фильтр по banned_at (дата начала бана)
@@ -100,12 +103,11 @@ export async function GET(request: NextRequest) {
     const sortOrderSql = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
     // Получаем данные с пагинацией
-    // Создаем новый массив параметров для запроса с LIMIT и OFFSET
-    // Убеждаемся, что все параметры правильно типизированы
-    const limitValue = parseInt(String(pageSize), 10);
-    const offsetValue = parseInt(String(offset), 10);
-    const queryParams = [...params, limitValue, offsetValue];
+    // Убеждаемся, что pageSize и offset - целые числа
+    const limitValue = Math.max(1, parseInt(String(pageSize), 10));
+    const offsetValue = Math.max(0, parseInt(String(offset), 10));
     
+    // Используем template literal для LIMIT и OFFSET, чтобы избежать проблем с параметрами
     const bans = await query<any>(`
       SELECT 
         b.id,
@@ -126,8 +128,8 @@ export async function GET(request: NextRequest) {
       LEFT JOIN user u ON b.user_id = u.id
       ${whereClause}
       ORDER BY ${sortFieldSql} ${sortOrderSql}
-      LIMIT ? OFFSET ?
-    `, queryParams);
+      LIMIT ${limitValue} OFFSET ${offsetValue}
+    `, params);
 
     // Форматируем данные
     const formattedBans = bans.map((ban: any) => {

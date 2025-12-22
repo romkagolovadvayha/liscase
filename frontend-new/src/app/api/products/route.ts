@@ -39,8 +39,11 @@ export async function GET(request: Request) {
     const params: any[] = [];
 
     if (categoryId && categoryId !== '0') {
-      sql += ' AND d.category_id = ?';
-      params.push(categoryId);
+      const categoryIdNum = parseInt(String(categoryId), 10);
+      if (!isNaN(categoryIdNum)) {
+        sql += ' AND d.category_id = ?';
+        params.push(categoryIdNum);
+      }
     }
 
     if (search) {
@@ -48,11 +51,12 @@ export async function GET(request: Request) {
       params.push(`%${search}%`, `%${search}%`);
     }
 
-    sql += ' ORDER BY d.sort ASC, d.id DESC LIMIT ? OFFSET ?';
     // Убеждаемся, что limit и offset - целые числа
-    const limitValue = parseInt(String(limit), 10);
-    const offsetValue = parseInt(String(offset), 10);
-    params.push(limitValue, offsetValue);
+    const limitValue = Math.max(1, parseInt(String(limit), 10));
+    const offsetValue = Math.max(0, parseInt(String(offset), 10));
+    
+    // Используем template literal для LIMIT и OFFSET, чтобы избежать проблем с параметрами
+    sql += ` ORDER BY d.sort ASC, d.id DESC LIMIT ${limitValue} OFFSET ${offsetValue}`;
 
     const productsRaw = await query<any>(sql, params);
 
@@ -120,8 +124,11 @@ export async function GET(request: Request) {
     const countParams: any[] = [];
 
     if (categoryId && categoryId !== '0') {
-      countSql += ' AND d.category_id = ?';
-      countParams.push(categoryId);
+      const categoryIdNum = parseInt(String(categoryId), 10);
+      if (!isNaN(categoryIdNum)) {
+        countSql += ' AND d.category_id = ?';
+        countParams.push(categoryIdNum);
+      }
     }
 
     if (search) {

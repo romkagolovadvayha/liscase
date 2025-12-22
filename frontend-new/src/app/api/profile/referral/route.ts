@@ -149,8 +149,8 @@ export async function GET(request: NextRequest) {
       LEFT JOIN user_profile up ON u.id = up.user_id
       WHERE ut.parent_user_id = ? AND ut.user_id != ?
       ORDER BY ${sortFieldSql} ${sortOrderSql}
-      LIMIT ? OFFSET ?
-    `, [user.id, user.id, parseInt(String(pageSize), 10), parseInt(String(offset), 10)]);
+      LIMIT ${Math.max(1, parseInt(String(pageSize), 10))} OFFSET ${Math.max(0, parseInt(String(offset), 10))}
+    `, [user.id, user.id]);
 
     return NextResponse.json({
       success: true,
