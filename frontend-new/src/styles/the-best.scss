@@ -1,0 +1,327 @@
+// Стили для блоков топов игроков (как в старой версии)
+// Глобальные стили для .the-best__item, .the-best__list и т.д.
+
+.page-stats__the-best {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  width: 100%;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.the-best__item {
+  padding: 20px;
+  background-color: var(--background-secondary);
+  border-radius: var(--block-radius);
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: "";
+    position: absolute;
+    background: var(--light-the-best-background);
+    background-repeat: repeat-y;
+    background-size: 100%;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    transition: filter 0.25s ease-in-out;
+    pointer-events: none;
+  }
+
+  &:hover {
+    &::after {
+      filter: drop-shadow(2px 4px 6px var(--primary-colors-main));
+    }
+  }
+
+  h3 {
+    margin: 0 0 20px 0;
+    color: var(--text-main);
+    position: relative;
+    z-index: 1;
+    font-size: 16px;
+    font-weight: 600;
+  }
+}
+
+.the-best__list {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.the-best__list__avatar {
+  position: relative;
+  flex-shrink: 0;
+
+  &::after {
+    content: "";
+    position: absolute;
+    display: block;
+    border: 4px solid var(--background-secondary);
+    background-color: var(--online);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    bottom: -6px;
+    right: -6px;
+  }
+
+  &_hidden {
+    &::after {
+      background-color: var(--text-secondary) !important;
+    }
+  }
+
+  img {
+    border: 2px solid var(--icon-main);
+    display: block;
+    border-radius: var(--avatar-radius);
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
+    object-fit: cover;
+  }
+}
+
+.the-best__list__item {
+  width: 100%;
+  vertical-align: top;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+
+  &_offline {
+    .the-best__list__avatar {
+      &::after {
+        display: none;
+      }
+
+      img {
+        border-color: var(--icon-main);
+      }
+    }
+  }
+
+  &_hidden {
+    .the-best__list__avatar {
+      &::after {
+        display: block;
+        background-color: var(--text-secondary) !important;
+      }
+
+      img {
+        border-color: var(--icon-main);
+      }
+    }
+  }
+
+  &__wrap {
+    padding: 6px 0;
+    position: relative;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    text-decoration: none;
+    width: 100%;
+    color: inherit;
+  }
+
+  &_header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    width: 100%;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  &_header_name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 152px;
+    color: var(--text-main);
+  }
+
+  &_header_label {
+    background-color: var(--status-background-opacity);
+    padding: 2px 8px;
+    border-radius: var(--button-secondary-radius);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  &_footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    width: 100%;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  &_footer_score {
+    display: block;
+    flex: 1 0;
+    text-align: right;
+    color: var(--text-main);
+  }
+
+  &_reward {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: var(--background-main);
+    border-radius: 4px;
+    padding: 4px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-main);
+
+    .icons {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      min-width: 16px;
+      min-height: 16px;
+      max-width: 16px;
+      max-height: 16px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: var(--icon-main);
+
+      &.icons_16px_trophy {
+        mask: url("/images/design/icons/16px/trophy.svg") no-repeat center;
+        -webkit-mask: url("/images/design/icons/16px/trophy.svg") no-repeat center;
+        mask-size: contain;
+        -webkit-mask-size: contain;
+        background-color: var(--icon-main);
+
+        &.bg-system-colors-gold {
+          background-color: #FFD700 !important;
+        }
+
+        &.bg-system-colors-silver {
+          background-color: #C0C0C0 !important;
+        }
+
+        &.bg-system-colors-bronze {
+          background-color: #CD7F32 !important;
+        }
+      }
+
+      &.icons_16px_coin {
+        background: var(--icon-money) no-repeat center;
+      }
+    }
+
+    .p3 {
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .text-text-main {
+      color: var(--text-main);
+    }
+  }
+
+  &::before {
+    position: absolute;
+    transition: all 0.25s ease;
+    content: "";
+    opacity: 0;
+    inset: -1px;
+    z-index: -1;
+    border-radius: var(--button-secondary-radius);
+    border: 1px solid transparent;
+    background-image: var(--base-linear-gradiend);
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    background-size: 101% 100%;
+    background-position: center;
+    left: -6px;
+    right: -6px;
+  }
+
+  &.active {
+    &::before {
+      opacity: 1;
+    }
+  }
+}
+
+// Стили для отображения позиции пользователя
+.server-stats__category-user-position {
+  margin-top: 24px;
+  padding: 10px 12px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
+}
+
+// Утилита для margin-top: 24px (если не работает из design-system)
+.the-best__item .mt-24 {
+  margin-top: 24px !important;
+}
+
+.server-stats__category-user-position {
+  &--top {
+    color: var(--text-main);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+
+    .icons {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      min-width: 16px;
+      min-height: 16px;
+      max-width: 16px;
+      max-height: 16px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+
+      &.icons_16px_trophy {
+        mask: url("/images/design/icons/16px/trophy.svg") no-repeat center;
+        -webkit-mask: url("/images/design/icons/16px/trophy.svg") no-repeat center;
+
+        &.bg-system-colors-gold {
+          background-color: #FFD700;
+        }
+
+        &.bg-system-colors-silver {
+          background-color: #C0C0C0;
+        }
+
+        &.bg-system-colors-bronze {
+          background-color: #CD7F32;
+        }
+      }
+    }
+  }
+}
+

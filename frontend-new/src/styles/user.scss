@@ -1,0 +1,495 @@
+// Стили для блока статистики пользователя
+// Мигрированы из frontend/assets/sources/css/design/_user.scss
+
+.user {
+  padding: 40px;
+  position: relative;
+  background-color: var(--background-secondary);
+  border-radius: var(--block-radius);
+  flex: 1 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size;
+  align-items: start;
+
+  @container (max-width: 1200px) {
+    flex: 1 0;
+    width: auto;
+    min-width: auto;
+  }
+
+  @container (max-width: 927px) {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  &:before {
+    display: block;
+    position: absolute;
+    width: 422px;
+    height: 422px;
+    max-width: 422px;
+    max-height: 422px;
+    min-width: 422px;
+    min-height: 422px;
+    content: "";
+    background: var(--light-background);
+    right: 0;
+    bottom: 0;
+    background-repeat: no-repeat;
+    background-size: 422px 422px;
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
+  }
+
+  &__title {
+    position: relative;
+    margin-bottom: 22px;
+    color: var(--primary-colors-main);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    z-index: 1;
+    // Для авторизованного пользователя используется меньший размер шрифта
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 40px;
+  }
+
+  &__description {
+    margin-bottom: 22px;
+    color: var(--text-main);
+  }
+
+  &__vip {
+    position: relative;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 193, 7, 0.1) 100%);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: var(--card-radius);
+    z-index: 1;
+  }
+
+  &__vip-icon {
+    font-size: 24px !important;
+    color: #FFD700 !important;
+    text-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+  }
+
+  &__vip-text {
+    font-size: 14px;
+    color: var(--text-main);
+    margin: 0;
+    
+    .server_timer {
+      font-weight: 600;
+      color: var(--primary-colors-main);
+    }
+  }
+
+  &__stats {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(4, 100px);
+
+    @container (max-width: 450px) {
+      grid-template-columns: repeat(3, 100px);
+    }
+
+    &-wrapper {
+      position: relative;
+      display: grid;
+      gap: 10px;
+      z-index: 1;
+    }
+
+    &_footer {
+      flex: 1 0;
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    & .stats {
+      &__item {
+        display: grid;
+        padding: 12px 4px 12px 12px;
+        gap: 4px;
+
+        & p:first-of-type {
+          font-size: 14px;
+          color: var(--text-secondary);
+        }
+
+        & p:nth-of-type(2) {
+          font-size: 16px;
+          color: var(--text-main);
+          font-weight: 700;
+        }
+
+        &.stat {
+          padding: 8px;
+          border-radius: var(--card-radius);
+          background: var(--opacity-stat-background);
+
+          & p:first-of-type {
+            font-size: 16px;
+            color: var(--text-main);
+            font-weight: 700;
+          }
+        }
+
+        & .stat {
+          &__image {
+            object-fit: contain;
+            transition: transform 0.25s ease-in-out;
+            width: 32px;
+            height: 32px;
+            max-width: 32px;
+            max-height: 32px;
+            min-width: 32px;
+            min-height: 32px;
+          }
+        }
+
+        &:hover {
+          .stat__image {
+            transform: scale(1.08);
+          }
+        }
+      }
+    }
+  }
+
+  &__image {
+    position: absolute;
+    object-fit: contain;
+    width: auto;
+    height: 512px;
+    right: 0;
+    bottom: 0;
+
+    @container (max-width: 681px) {
+      right: -110px;
+    }
+  }
+
+  // Компактная версия для мобильных устройств
+  @media (max-width: 768px) {
+    padding: 20px 16px;
+    min-height: auto;
+
+    // Убираем фоновое изображение на мобильной версии
+    &:before {
+      display: none;
+    }
+
+    // Скрываем декоративное изображение справа
+    &__image {
+      display: none;
+    }
+
+    &__title {
+      font-size: 20px;
+      line-height: 24px;
+      margin-bottom: 16px;
+    }
+
+    &__description {
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+
+    &__vip {
+      margin-bottom: 16px;
+      padding: 12px;
+      gap: 8px;
+      border-radius: var(--card-radius);
+    }
+
+    &__vip-icon {
+      font-size: 20px !important;
+      width: 20px;
+      height: 20px;
+    }
+
+    &__vip-text {
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    &__stats {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      width: 100%;
+
+      &-wrapper {
+        gap: 12px;
+        width: 100%;
+      }
+
+      & .stats {
+        &__item {
+          padding: 12px;
+          border-radius: var(--card-radius);
+          background: var(--background-teritiary);
+          border: 1px solid var(--border-color-default);
+
+          & p:first-of-type {
+            font-size: 12px;
+            margin-bottom: 4px;
+          }
+
+          & p:nth-of-type(2) {
+            font-size: 16px;
+            font-weight: 700;
+          }
+
+          &.stat {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+
+            & p:first-of-type {
+              font-size: 14px;
+              font-weight: 600;
+            }
+
+            .stat__image {
+              width: 28px;
+              height: 28px;
+              max-width: 28px;
+              max-height: 28px;
+              min-width: 28px;
+              min-height: 28px;
+            }
+          }
+        }
+      }
+    }
+
+    &__awards {
+      margin-bottom: 20px;
+
+      &.awards {
+        margin-top: 16px;
+        gap: 12px;
+      }
+
+      & .awards {
+        &__title {
+          font-size: 13px;
+          margin-bottom: 8px;
+        }
+
+        &__wrapper {
+          gap: 12px;
+        }
+
+        &__image {
+          width: 40px;
+          height: 40px;
+        }
+      }
+    }
+
+    &__stats_footer {
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      margin-top: 16px;
+
+      .button {
+        width: 100%;
+      }
+    }
+
+    // Для неавторизованного пользователя
+    &_not-authorized {
+      // Переопределяем все десктопные стили для мобильной версии
+      padding: 20px 16px !important;
+      padding-top: 20px !important;
+      padding-right: 16px !important;
+      padding-bottom: 20px !important;
+      padding-left: 16px !important;
+      min-height: auto !important;
+
+      & .user__title {
+        font-size: 20px;
+        line-height: 24px;
+        margin-bottom: 16px;
+      }
+
+      & .user__description {
+        font-size: 14px;
+        margin-bottom: 16px;
+        line-height: 1.5;
+      }
+
+      & .user__image {
+        display: none !important;
+      }
+
+      & .user__stats {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        width: 100%;
+        margin-bottom: 16px;
+
+        .stats__item {
+          padding: 12px;
+          border-radius: var(--card-radius);
+          background: var(--background-teritiary);
+          border: 1px solid var(--border-color-default);
+          text-align: center;
+
+          p:first-of-type {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+          }
+
+          p:nth-of-type(2) {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+          }
+        }
+      }
+
+      & .user__stats_footer {
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+        margin-top: 16px;
+
+        .button {
+          position: relative !important;
+          bottom: auto !important;
+          left: auto !important;
+          width: 100%;
+          margin-top: 0;
+        }
+      }
+
+      // Переопределяем стили для кнопки из десктопной версии
+      & button {
+        position: relative !important;
+        bottom: auto !important;
+        left: auto !important;
+        width: 100%;
+        margin-top: 0;
+      }
+    }
+  }
+
+  &_not-authorized {
+    padding-top: 56px;
+    padding-right: 0;
+    padding-bottom: 40px;
+    padding-left: 40px;
+    min-height: 420px;
+
+    & .user__title {
+      margin-bottom: 12px;
+    }
+
+    & .user__image {
+      position: absolute;
+      object-fit: contain;
+      height: 490px;
+      right: 0;
+      bottom: 0;
+      width: auto;
+    }
+
+    & button {
+      padding: 12px;
+      position: absolute;
+      bottom: 40px;
+      left: 40px;
+    }
+  }
+
+  &__awards {
+    margin-bottom: 32px;
+
+    &.awards {
+      display: grid;
+      margin-top: 24px;
+      gap: 14px;
+    }
+
+    & .awards {
+      &__title {
+        font-size: 14px;
+        display: flex;
+        color: var(--text-secondary);
+        align-items: center;
+        gap: 8px;
+      }
+
+      &__wrapper {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      &__stats {
+        font-size: 13px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        margin: 0;
+        text-decoration: none;
+        transition: color 0.25s ease-in-out;
+        
+        &:hover {
+          color: var(--primary-colors-main);
+          text-decoration: underline;
+        }
+      }
+
+      &__list {
+        display: flex;
+        gap: 2px;
+        flex-wrap: wrap;
+      }
+
+      &__image {
+        object-fit: contain;
+        width: 48px;
+        height: 48px;
+        transition: opacity 0.25s ease-in-out, filter 0.25s ease-in-out;
+      }
+    }
+  }
+}
+
+.stats {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, 100px);
+}
+
+.main_title {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.short {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
