@@ -6,8 +6,7 @@
     .justify-space-between,
     .gap-x-32,
     .flex-wrap,
-    .gap-y-32,
-    .content-visibility-auto;
+    .gap-y-32;
   position: relative;
   z-index: 1; // Ниже меню и header
   border-top: 1px solid var(--border-color-default);

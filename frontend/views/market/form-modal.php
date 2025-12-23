@@ -150,7 +150,7 @@ $user = Yii::$app->user->identity;
         <?= Alert::widget() ?>
         <input type="hidden" class="modal_form_product_buy" name="buy" value="1"/>
         <div class="modal_form_product_buttons">
-            <button class="button-primary w-full" id="buy_product" type="submit">
+            <button class="button-primary w-full snow-drift snow-drift-1 snow-drift-right" id="buy_product" type="submit">
                 <span class="button__text"><?=Yii::t('common', 'Оплатить')?></span>
             </button>
         </div>

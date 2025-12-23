@@ -26,7 +26,7 @@
             <img src="{{ SETTINGS.get('design_image_not_auth') }}" alt="farmer" class="user__image" loading="lazy"/>
         {% endif %}
         <div class="user__stats_footer">
-            <a href="/auth/oauth?authclient=steam" rel="nofollow" class="button button-primary h-48" style="padding-top: 15px;">
+            <a href="/auth/oauth?authclient=steam" rel="nofollow" class="button button-primary h-48 snow-drift snow-drift-1 snow-drift-right" style="padding-top: 15px;">
               <span class="button__text">
                 {{ t('common', 'Войти через Steam') }}
                 <span class="icons icons_24px icons_24px_steam bg-white"></span>
@@ -136,11 +136,11 @@
             {% endif %}
             <div class="user__stats_footer">
                 {% if USER.USER_STATS_LINK %}
-                    <a href="{{ USER.USER_STATS_LINK }}" class="button button-primary">
+                    <a href="{{ USER.USER_STATS_LINK }}" class="button button-primary snow-drift snow-drift-1 snow-drift-right">
                         <span class="button__text">{{ t('common', 'Моя статистика') }}</span>
                     </a>
                 {% else %}
-                    <a href="/servers/{{ USER.SERVER_ACTIVE_TAG }}" class="button button-primary">
+                    <a href="/servers/{{ USER.SERVER_ACTIVE_TAG }}" class="button button-primary snow-drift snow-drift-1 snow-drift-right">
                         <span class="button__text">{{ t('common', 'Статистика игроков') }}</span>
                     </a>
                 {% endif %}
@@ -175,7 +175,7 @@
         {% else %}
             <img src="{{ SETTINGS.get('design_bonusBlockImage') }}" alt="symbol" loading="lazy" class="daily-reward__image"/>
         {% endif %}
-        <a href="{{ BOT_LINK }}" rel="nofollow" target="_blank" class="button button-secondary" style="padding-top: 15px;">
+        <a href="{{ BOT_LINK }}" rel="nofollow" target="_blank" class="button button-secondary snow-drift snow-drift-2 snow-drift-right" style="padding-top: 15px;">
             <span class="button__text">{{ t('common', 'Получить бонус') }}</span>
         </a>
     </section>

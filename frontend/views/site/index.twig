@@ -1,6 +1,8 @@
 {{ STATISTICS|raw }}
 {{ PRODUCTS_MAIN_BLOCK|raw }}
-<input placeholder="{{ t('common', 'Введите название предмета..') }}" onkeyup="search()" type="text" class="search" id="search" autocomplete="off" />
+<div class="snow-drift snow-drift-8 snow-drift-right">
+    <input placeholder="{{ t('common', 'Введите название предмета..') }}" onkeyup="search()" type="text" class="search" id="search" autocomplete="off" />
+</div>
 <section class="categories{% if (not SETTINGS.get('colors_categories-is-image')) %} categories_not_images{% endif %}">
     {{ CATEGORIES|raw }}
     {{ PRODUCTS|raw }}

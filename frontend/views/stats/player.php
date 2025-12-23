@@ -127,7 +127,7 @@ $kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam(
 </nav>
 
 <?= Alert::widget() ?>
-<div class="flex flex-column gap-x-12 gap-y-12 tab-pane active" id="Max3">
+<div class="flex flex-column gap-x-12 gap-y-12 tab-pane active snow-drift snow-drift-8 snow-drift-right" id="Max3">
     <div class="page-stats__two-blocks">
         <?php
         $userProfile = $user->userProfile;
