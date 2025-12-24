@@ -143,7 +143,7 @@ client.on(Events.MessageCreate, async (message) => {
             new ButtonBuilder()
                 .setLabel('Связаться с администрацией')
                 .setStyle(ButtonStyle.Link)
-                .setURL('https://prostoj.store/support')
+                .setURL('https://moscow77.store/support')
         );
 
         await message.channel.send({

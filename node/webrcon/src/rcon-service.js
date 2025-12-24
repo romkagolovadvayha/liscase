@@ -169,19 +169,41 @@ async function processQueue(tag) {
     }
 }
 
+// Создаем пул соединений
+let dbPool = null;
+
+function getDbPool() {
+    if (!dbPool) {
+        dbPool = mysql.createPool({
+            ...dbConfig,
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0,
+            enableKeepAlive: true,
+            keepAliveInitialDelay: 0,
+        });
+    }
+    return dbPool;
+}
+
 // Основной запуск
 // Основной запуск
 (async () => {
-    let db;
+    const pool = getDbPool();
+    console.log("✅ Пул соединений к БД создан");
+
+    let servers;
     try {
-        db = await mysql.createConnection(dbConfig);
-        console.log("✅ Подключение к БД");
+        const connection = await pool.getConnection();
+        try {
+            servers = await getServersFromDB(connection);
+        } finally {
+            connection.release();
+        }
     } catch (err) {
         console.error('❌ Ошибка подключения к БД:', err.message);
-        process.exit(1); // можно также переподключаться с интервалом
+        process.exit(1);
     }
-
-    const servers = await getServersFromDB(db);
 
     for (const server of servers) {
         try {
