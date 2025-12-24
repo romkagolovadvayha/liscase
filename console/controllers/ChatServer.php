@@ -1,6 +1,7 @@
 <?php
 namespace console\controllers;
 
+use common\components\queue\process\ReturnDropJob;
 use common\components\queue\support\BeforeMessageJob;
 use common\components\queue\support\OpenAiJob;
 use common\models\box\DropBlocked;
@@ -820,7 +821,12 @@ class ChatServer extends WebSocketServer
                 $this->_sellUserDrop($model, $userBalance->id);
 
                 // Отправляем через websocket
-                Yii::$app->queueProcess->push(new \common\components\queue\process\ReturnDropJob(['userDrop' => $model]));
+                try {
+                    Yii::$app->queueProcess->push(new ReturnDropJob(['userDrop' => $model]));
+                } catch (\Throwable $e) {
+                    $this->log("Error pushing ReturnDropJob to queue: " . $e->getMessage());
+                    // Не прерываем выполнение, так как возврат уже выполнен
+                }
 
                 $client->send(json_encode([
                     'type' => 'store.return.item',
@@ -1342,7 +1348,7 @@ class ChatServer extends WebSocketServer
     }
 
     /**
-     * Проверяет, является ли ошибка ошибкой "MySQL server has gone away"
+     * Проверяет, является ли ошибка ошибкой "MySQL server has gone away" или проблемой подключения
      * @param \Exception $e Исключение для проверки
      * @return bool
      */
@@ -1356,7 +1362,9 @@ class ChatServer extends WebSocketServer
                strpos($message, '2006') !== false || 
                strpos($message, 'MySQL server has gone away') !== false ||
                strpos($message, 'server has gone away') !== false ||
-               strpos($message, 'HY000') !== false && strpos($message, '2006') !== false;
+               strpos($message, 'HY000') !== false && strpos($message, '2006') !== false ||
+               strpos($message, 'No such file or directory') !== false ||
+               strpos($message, '[2002]') !== false;
     }
 
     /**
@@ -1505,12 +1513,18 @@ class ChatServer extends WebSocketServer
             } catch (\Exception $cacheEx) {
                 // Если ошибка при работе с кешем, пробуем напрямую запросить из БД
                 $this->log("Cache error in commandAuth, trying direct DB query: " . $cacheEx->getMessage());
-                $user = $this->safeDbQuery(function() use ($request) {
-                    return User::find()
-                        ->where(['jwt' => $request['token'], 'steam_id' => $request['steam_id']])
-                        ->limit(1)
-                        ->one();
-                });
+                try {
+                    $user = $this->safeDbQuery(function() use ($request) {
+                        return User::find()
+                            ->where(['jwt' => $request['token'], 'steam_id' => $request['steam_id']])
+                            ->limit(1)
+                            ->one();
+                    });
+                } catch (\Exception $dbEx) {
+                    // Если и прямой запрос не удался, логируем и возвращаем null
+                    $this->log("Auth error: " . $dbEx->getMessage());
+                    $user = null;
+                }
             }
 
             if ($user) {
@@ -1530,6 +1544,11 @@ class ChatServer extends WebSocketServer
             $this->log("Auth error: " . $ex->getMessage());
             $errorMessage = 'commandAuth: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage();
             
+            // Если это ошибка БД, пытаемся переподключиться
+            if ($this->isGoneAwayError($ex)) {
+                $this->reconnectDatabase();
+            }
+            
             // Отправляем ошибку в Telegram только если это не ошибка переподключения
             if (!$this->isGoneAwayError($ex)) {
                 try {
@@ -1537,6 +1556,14 @@ class ChatServer extends WebSocketServer
                 } catch (\Exception $telegramEx) {
                     $this->log("Failed to send error to Telegram: " . $telegramEx->getMessage());
                 }
+            }
+            
+            // Отправляем ответ клиенту
+            try {
+                $result['message'] = 'Invalid token';
+                $client->send(json_encode($result));
+            } catch (\Exception $sendEx) {
+                $this->log("Error sending auth error response: " . $sendEx->getMessage());
             }
         }
     }
