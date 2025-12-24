@@ -122,6 +122,7 @@ class ChatServer extends WebSocketServer
         self::$instance = $this;
 
         $this->on(self::EVENT_CLIENT_CONNECTED, function(WSClientEvent $e) {
+            $this->log("Client connected: " . $e->client->remoteAddress);
             $e->client->user = null;
             $e->client->chat = null;
             $e->client->launcher = false;
@@ -131,6 +132,9 @@ class ChatServer extends WebSocketServer
             $e->client->alive = true;
         });
         $this->on(self::EVENT_CLIENT_DISCONNECTED, function(WSClientEvent $e) {
+            $userId = !empty($e->client->user) ? $e->client->user->id : 'anonymous';
+            $this->log("Client disconnected: {$userId} from " . $e->client->remoteAddress);
+            
             // Удаляем из индексов
             if (!empty($e->client->user)) {
                 $userId = $e->client->user->id;
@@ -413,7 +417,13 @@ class ChatServer extends WebSocketServer
         $from->lastPong = time(); // CHANGED (оставляем)
         $from->alive = true;
 
-        $request = json_decode($msg, true) ?: [];
+        $request = json_decode($msg, true);
+        
+        // Логируем ошибки парсинга JSON
+        if ($request === null && json_last_error() !== JSON_ERROR_NONE) {
+            $this->log("JSON parse error: " . json_last_error_msg() . " | Message: " . substr($msg, 0, 200));
+            $request = [];
+        }
 
         // Принимаем pong и как action, и как type // NEW
         if (
@@ -424,7 +434,15 @@ class ChatServer extends WebSocketServer
             return 'pong';
         }
 
-        return !empty($request['action']) ? $request['action'] : parent::getCommand($from, $msg);
+        $action = !empty($request['action']) ? $request['action'] : parent::getCommand($from, $msg);
+        
+        // Логируем команды (кроме pong, чтобы не засорять логи)
+        if ($action !== 'pong' && $action !== 'Pong') {
+            $userId = !empty($from->user) ? $from->user->id : 'anonymous';
+            $this->log("Command from user {$userId}: {$action}");
+        }
+
+        return $action;
     }
 
     public function commandSubscription(ConnectionInterface $client, $msg)
