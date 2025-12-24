@@ -223,13 +223,36 @@ class MapGenerateJob extends BaseObject implements JobInterface
             try {
                 $fileIconName = $mapData['id'] . '.jpg';
                 $relativePreviewPath = '/uploads/maps/' . $mapData['id'] . '_200x200.jpg';
+                
+                // Скачиваем и обрабатываем изображение локально (с watermark)
                 $downloadedPath = Map::upload($imageIconUrl, $fileIconName);
-
-                $fullPreviewPath = Yii::getAlias('@frontend/web') . $relativePreviewPath;
-                DropImage::resizeImage($downloadedPath, $fullPreviewPath, 200);
-
-                $model->image = '/uploads/maps/' . $fileIconName;
-                $model->image_preview = $relativePreviewPath;
+                
+                // Создаем превью во временном файле
+                $tempDir = sys_get_temp_dir();
+                $tempPreviewPath = $tempDir . '/' . uniqid('map_preview_') . '.jpg';
+                DropImage::resizeImage($downloadedPath, $tempPreviewPath, 200);
+                
+                // Загружаем оригинал в S3
+                $s3Api = Yii::$app->s3Api;
+                $s3KeyOriginal = 'uploads/maps/' . $fileIconName;
+                $originalContent = file_get_contents($downloadedPath);
+                $s3ResultOriginal = $s3Api->putFile($s3KeyOriginal, $originalContent, 'image/jpeg');
+                
+                // Загружаем превью в S3
+                $s3KeyPreview = 'uploads/maps/' . $mapData['id'] . '_200x200.jpg';
+                $previewContent = file_exists($tempPreviewPath) ? file_get_contents($tempPreviewPath) : null;
+                $s3ResultPreview = $previewContent ? $s3Api->putFile($s3KeyPreview, $previewContent, 'image/jpeg') : false;
+                
+                // Удаляем временные файлы
+                @unlink($downloadedPath);
+                @unlink($tempPreviewPath);
+                
+                if ($s3ResultOriginal !== false) {
+                    $model->image = '/uploads/maps/' . $fileIconName;
+                }
+                if ($s3ResultPreview !== false) {
+                    $model->image_preview = $relativePreviewPath;
+                }
             } catch (\Throwable $throwable) {
                 Yii::error(
                     'MapGenerateJob failed to process image: ' . $throwable->getMessage(),

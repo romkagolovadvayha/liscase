@@ -111,20 +111,35 @@ class TasksV2Controller extends BackendController
                 if (!in_array(strtolower($exp), ['svg', 'png', 'jpg', 'jpeg', 'gif', 'webp'])) {
                     Yii::$app->session->setFlash('danger', 'Разрешено загружать только изображения в формате SVG, PNG, JPG, GIF, WEBP!');
                 } else {
-                    $uploadDir = Yii::getAlias('@frontend/web/uploads/tasks-v2');
-                    if (!file_exists($uploadDir)) {
-                        mkdir($uploadDir, 0775, true);
-                        chmod($uploadDir, 0775);
-                    }
                     $fileName = uniqid() . '_' . md5(time()) . '.png';
                     $fileUrl = 'uploads/tasks-v2/' . $fileName;
-                    $filePath = $uploadDir . '/' . $fileName;
                     
-                    if ($this->processTaskImage($imageFile->tempName, $filePath)) {
-                        chmod($filePath, 0664);
-                        $model->image_path = $fileUrl;
+                    // Создаем временный файл для обработки
+                    $tempDir = sys_get_temp_dir();
+                    $tempFilePath = $tempDir . '/' . uniqid('task_') . '.' . strtolower($exp);
+                    file_put_contents($tempFilePath, file_get_contents($imageFile->tempName));
+                    
+                    // Обрабатываем изображение во временный файл
+                    $tempProcessedPath = $tempDir . '/' . uniqid('task_processed_') . '.png';
+                    if ($this->processTaskImage($tempFilePath, $tempProcessedPath)) {
+                        // Загружаем в S3
+                        $s3Api = Yii::$app->s3Api;
+                        $s3Key = $fileUrl;
+                        $fileContent = file_get_contents($tempProcessedPath);
+                        $s3Result = $s3Api->putFile($s3Key, $fileContent, 'image/png');
+                        
+                        // Удаляем временные файлы
+                        @unlink($tempFilePath);
+                        @unlink($tempProcessedPath);
+                        
+                        if ($s3Result !== false) {
+                            $model->image_path = $fileUrl;
+                        } else {
+                            Yii::$app->session->setFlash('danger', 'Ошибка при загрузке изображения в S3!');
+                        }
                     } else {
-                        Yii::$app->session->setFlash('danger', 'Ошибка при сохранении изображения!');
+                        @unlink($tempFilePath);
+                        Yii::$app->session->setFlash('danger', 'Ошибка при обработке изображения!');
                     }
                 }
             }
@@ -217,12 +232,10 @@ class TasksV2Controller extends BackendController
             // Обработка загрузки изображения
             $imageFile = UploadedFile::getInstance($model, 'imageFile');
             if ($imageFile && !empty($imageFile->tempName)) {
-                // Удаляем старое изображение, если есть
+                // Удаляем старое изображение из S3, если есть
                 if ($model->image_path) {
-                    $oldFilePath = Yii::getAlias('@frontend/web') . '/' . ltrim($model->image_path, '/');
-                    if (file_exists($oldFilePath)) {
-                        @unlink($oldFilePath);
-                    }
+                    $s3Api = Yii::$app->s3Api;
+                    $s3Api->deleteFile($model->image_path);
                 }
                 
                 $exp = explode('.', $imageFile->name);
@@ -230,20 +243,35 @@ class TasksV2Controller extends BackendController
                 if (!in_array(strtolower($exp), ['svg', 'png', 'jpg', 'jpeg', 'gif', 'webp'])) {
                     Yii::$app->session->setFlash('danger', 'Разрешено загружать только изображения в формате SVG, PNG, JPG, GIF, WEBP!');
                 } else {
-                    $uploadDir = Yii::getAlias('@frontend/web/uploads/tasks-v2');
-                    if (!file_exists($uploadDir)) {
-                        mkdir($uploadDir, 0775, true);
-                        chmod($uploadDir, 0775);
-                    }
                     $fileName = uniqid() . '_' . md5(time()) . '.png';
                     $fileUrl = 'uploads/tasks-v2/' . $fileName;
-                    $filePath = $uploadDir . '/' . $fileName;
                     
-                    if ($this->processTaskImage($imageFile->tempName, $filePath)) {
-                        chmod($filePath, 0664);
-                        $model->image_path = $fileUrl;
+                    // Создаем временный файл для обработки
+                    $tempDir = sys_get_temp_dir();
+                    $tempFilePath = $tempDir . '/' . uniqid('task_') . '.' . strtolower($exp);
+                    file_put_contents($tempFilePath, file_get_contents($imageFile->tempName));
+                    
+                    // Обрабатываем изображение во временный файл
+                    $tempProcessedPath = $tempDir . '/' . uniqid('task_processed_') . '.png';
+                    if ($this->processTaskImage($tempFilePath, $tempProcessedPath)) {
+                        // Загружаем в S3
+                        $s3Api = Yii::$app->s3Api;
+                        $s3Key = $fileUrl;
+                        $fileContent = file_get_contents($tempProcessedPath);
+                        $s3Result = $s3Api->putFile($s3Key, $fileContent, 'image/png');
+                        
+                        // Удаляем временные файлы
+                        @unlink($tempFilePath);
+                        @unlink($tempProcessedPath);
+                        
+                        if ($s3Result !== false) {
+                            $model->image_path = $fileUrl;
+                        } else {
+                            Yii::$app->session->setFlash('danger', 'Ошибка при загрузке изображения в S3!');
+                        }
                     } else {
-                        Yii::$app->session->setFlash('danger', 'Ошибка при сохранении изображения!');
+                        @unlink($tempFilePath);
+                        Yii::$app->session->setFlash('danger', 'Ошибка при обработке изображения!');
                     }
                 }
             }
@@ -320,12 +348,10 @@ class TasksV2Controller extends BackendController
     {
         $model = $this->findModel($id);
         
-        // Удаляем изображение, если есть
+        // Удаляем изображение из S3, если есть
         if ($model->image_path) {
-            $filePath = Yii::getAlias('@frontend/web') . '/' . ltrim($model->image_path, '/');
-            if (file_exists($filePath)) {
-                @unlink($filePath);
-            }
+            $s3Api = Yii::$app->s3Api;
+            $s3Api->deleteFile($model->image_path);
         }
         
         $model->delete();

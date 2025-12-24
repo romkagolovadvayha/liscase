@@ -70,7 +70,7 @@ if ($task->type === \common\models\tasks_v2\TaskV2::TYPE_DAILY_REWARD && $task->
     $rewardDisplay = '<img src="' . Html::encode($itemImage) . '" alt="' . Html::encode($itemName) . '" class="tasksV2__card-reward-image"> <span class="tasksV2__card-reward-item-name">' . Html::encode($itemName) . '</span>' . ($itemCount ? '<span class="tasksV2__card-reward-item-count">' . $itemCount . '</span>' : '');
 }
 
-$imageUrl = $task->image_path ? '/' . ltrim($task->image_path, '/') : '/images/design/icons/128px/task-default.png';
+$imageUrl = $task->getImageUrl();
 
 // Определяем размер модального окна: для ежедневной награды - modal-lg, для остальных - modal
 $isDailyReward = $task->type === \common\models\tasks_v2\TaskV2::TYPE_DAILY_REWARD && $task->check_type === \common\models\tasks_v2\TaskV2::CHECK_TYPE_DAILY_REWARD;

@@ -234,6 +234,19 @@ class TaskV2 extends ActiveRecord
     }
 
     /**
+     * Получить публичный URL изображения из S3
+     * @return string
+     */
+    public function getImageUrl()
+    {
+        if (empty($this->image_path)) {
+            return '/images/design/icons/128px/task-default.png';
+        }
+        
+        return Yii::$app->settings->get('s3_publicUrl') . '/' . ltrim($this->image_path, '/');
+    }
+
+    /**
      * Получить статус задания для пользователя
      * @param User|null $user
      * @return array Статус: 'available', 'completed', 'limit_reached', 'unavailable'

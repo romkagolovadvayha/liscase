@@ -117,21 +117,28 @@ class SettingsController extends BackendController
             return null;
         }
         $fileName = md5(time() . $code);
-        $uploadDir = Yii::getAlias('@frontend/web');
         $fileUrl = "/uploads/site/{$category}/{$fileName}.{$exp}";
-        $filePath = $uploadDir . $fileUrl;
-        if (!file_exists(dirname(dirname($filePath)))) {
-            mkdir(dirname(dirname($filePath)));
-            chmod(dirname(dirname($filePath)), 0777);
+        
+        // Определяем MIME-тип
+        $contentType = 'image/' . ($exp === 'jpg' ? 'jpeg' : ($exp === 'svg' ? 'svg+xml' : ($exp === 'ico' ? 'x-icon' : $exp)));
+        
+        // Загружаем в S3
+        $s3Api = Yii::$app->s3Api;
+        $s3Key = 'uploads/site/' . $category . '/' . $fileName . '.' . $exp;
+        $fileContent = file_get_contents($tmpName);
+        $s3Result = $s3Api->putFile($s3Key, $fileContent, $contentType);
+        
+        if ($s3Result === false) {
+            Yii::$app->session->setFlash('danger', 'Ошибка загрузки изображения в S3');
+            return null;
         }
-        if (!file_exists(dirname($filePath))) {
-            mkdir(dirname($filePath));
-            chmod(dirname($filePath), 0777);
+        
+        // Удаляем старое изображение из S3, если оно было
+        if (!empty($oldFile) && strpos($oldFile, '/uploads/') === 0) {
+            $oldS3Key = 'uploads' . $oldFile;
+            $s3Api->deleteFile($oldS3Key);
         }
-        if (file_exists($oldFile)) {
-            unlink($oldFile);
-        }
-        file_put_contents($filePath, file_get_contents($tmpName));
+        
         return $fileUrl;
     }
 
@@ -146,21 +153,28 @@ class SettingsController extends BackendController
             return null;
         }
         $fileName = md5(time() . $code);
-        $uploadDir = Yii::getAlias('@frontend/web');
         $fileUrl = "/uploads/site/{$category}/{$fileName}.{$exp}";
-        $filePath = $uploadDir . $fileUrl;
-        if (!file_exists(dirname(dirname($filePath)))) {
-            mkdir(dirname(dirname($filePath)));
-            chmod(dirname(dirname($filePath)), 0777);
+        
+        // Определяем MIME-тип
+        $contentType = 'video/webm';
+        
+        // Загружаем в S3
+        $s3Api = Yii::$app->s3Api;
+        $s3Key = 'uploads/site/' . $category . '/' . $fileName . '.' . $exp;
+        $fileContent = file_get_contents($tmpName);
+        $s3Result = $s3Api->putFile($s3Key, $fileContent, $contentType);
+        
+        if ($s3Result === false) {
+            Yii::$app->session->setFlash('danger', 'Ошибка загрузки видео в S3');
+            return null;
         }
-        if (!file_exists(dirname($filePath))) {
-            mkdir(dirname($filePath));
-            chmod(dirname($filePath), 0777);
+        
+        // Удаляем старое видео из S3, если оно было
+        if (!empty($oldFile) && strpos($oldFile, '/uploads/') === 0) {
+            $oldS3Key = 'uploads' . $oldFile;
+            $s3Api->deleteFile($oldS3Key);
         }
-        if (file_exists($oldFile)) {
-            unlink($oldFile);
-        }
-        file_put_contents($filePath, file_get_contents($tmpName));
+        
         return $fileUrl;
     }
 

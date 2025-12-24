@@ -94,33 +94,66 @@ class DropForm extends Drop
             Yii::$app->session->setFlash('danger', 'Разрешенно загружать только изображения в формате SVG, PNG, JPG, ICO, WEBP!');
             return null;
         }
-        $uploadDir = Yii::getAlias('@app/web/uploads');
+        
         $filename = $this->id . "_" . $type . "_" . md5(time()) . ".{$exp}";
         $fileUrl = "/drop/{$filename}";
-        $filePath = $uploadDir . $fileUrl;
-        if (!file_exists(dirname($filePath))) {
-            mkdir(dirname($filePath));
-            chmod(dirname($filePath), 0777);
+        
+        // Определяем MIME-тип
+        $contentType = 'image/' . ($exp === 'jpg' ? 'jpeg' : ($exp === 'svg' ? 'svg+xml' : $exp));
+        
+        // Загружаем оригинальное изображение в S3
+        $s3Key = 'uploads' . $fileUrl;
+        $fileContent = file_get_contents($image->tempName);
+        $s3Result = Yii::$app->s3Api->putFile($s3Key, $fileContent, $contentType);
+        
+        if ($s3Result === false) {
+            Yii::$app->session->setFlash('danger', 'Ошибка загрузки изображения в S3');
+            return null;
         }
-        file_put_contents($filePath, file_get_contents($image->tempName));
-
-        $newPath150 = "/drop150/" . $filename;
-        $fullNewPath150 = \Yii::getAlias('@frontend/web/uploads') . $newPath150;
-        $newPath64 = "/drop64/" . $filename;
-        $fullNewPath64 = \Yii::getAlias('@frontend/web/uploads') . $newPath64;
-        $newPath100 = "/drop100/" . $filename;
-        $fullNewPath100 = \Yii::getAlias('@frontend/web/uploads') . $newPath100;
-        if (file_exists($filePath)) {
-            DropImage::resizeImage($filePath, $fullNewPath150, 150);
-            DropImage::createRecord($newPath150, DropImage::TYPE_150, $boxId);
-            DropImage::resizeImage($filePath, $fullNewPath64, 64);
-            DropImage::createRecord($newPath64, DropImage::TYPE_64, $boxId);
-            DropImage::resizeImage($filePath, $fullNewPath100, 100);
-            DropImage::createRecord($newPath100, DropImage::TYPE_100, $boxId);
+        
+        // Создаем временный файл для ресайза
+        $tempDir = sys_get_temp_dir();
+        $tempFilePath = $tempDir . '/' . uniqid('drop_') . '.' . $exp;
+        file_put_contents($tempFilePath, $fileContent);
+        
+        // Создаем ресайзы и загружаем их в S3
+        if (file_exists($tempFilePath) && $exp !== 'svg') {
+            $newPath150 = "/drop150/" . $filename;
+            $s3Key150 = 'uploads' . $newPath150;
+            $tempPath150 = $tempDir . '/' . uniqid('drop150_') . '.png';
+            DropImage::resizeImage($tempFilePath, $tempPath150, 150);
+            if (file_exists($tempPath150)) {
+                Yii::$app->s3Api->putFile($s3Key150, file_get_contents($tempPath150), 'image/png');
+                DropImage::createRecord($newPath150, DropImage::TYPE_150, $boxId);
+                @unlink($tempPath150);
+            }
+            
+            $newPath64 = "/drop64/" . $filename;
+            $s3Key64 = 'uploads' . $newPath64;
+            $tempPath64 = $tempDir . '/' . uniqid('drop64_') . '.png';
+            DropImage::resizeImage($tempFilePath, $tempPath64, 64);
+            if (file_exists($tempPath64)) {
+                Yii::$app->s3Api->putFile($s3Key64, file_get_contents($tempPath64), 'image/png');
+                DropImage::createRecord($newPath64, DropImage::TYPE_64, $boxId);
+                @unlink($tempPath64);
+            }
+            
+            $newPath100 = "/drop100/" . $filename;
+            $s3Key100 = 'uploads' . $newPath100;
+            $tempPath100 = $tempDir . '/' . uniqid('drop100_') . '.png';
+            DropImage::resizeImage($tempFilePath, $tempPath100, 100);
+            if (file_exists($tempPath100)) {
+                Yii::$app->s3Api->putFile($s3Key100, file_get_contents($tempPath100), 'image/png');
+                DropImage::createRecord($newPath100, DropImage::TYPE_100, $boxId);
+                @unlink($tempPath100);
+            }
         }
-
+        
+        // Удаляем временный файл
+        @unlink($tempFilePath);
+        
         DropImage::createRecord($fileUrl, $type, $boxId);
-        return $filePath;
+        return $s3Key;
     }
 
 }

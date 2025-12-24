@@ -52,7 +52,19 @@ class BlogImageForm extends BlogImage
         $exp = explode('.', $file->name);
         $exp = $exp[count($exp) - 1];
         $fileName = $this->blog_id . "_" . md5($file->name) . "." . $exp;
-        Yii::$app->s3Api->uploadFile('blog/' . $fileName, file_get_contents($file->tempName));
+        
+        // Определяем MIME-тип
+        $contentType = 'image/' . ($exp === 'jpg' ? 'jpeg' : ($exp === 'svg' ? 'svg+xml' : $exp));
+        
+        // Загружаем в S3
+        $s3Api = Yii::$app->s3Api;
+        $s3Key = 'uploads/blog/' . $fileName;
+        $fileContent = file_get_contents($file->tempName);
+        $s3Result = $s3Api->putFile($s3Key, $fileContent, $contentType);
+        
+        if ($s3Result === false) {
+            throw new \Exception(Yii::t('common', 'Ошибка загрузки изображения в S3'));
+        }
 
         $this->link = $fileName;
         if (!$this->save()) {

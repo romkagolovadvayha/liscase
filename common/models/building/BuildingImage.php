@@ -62,10 +62,14 @@ class BuildingImage extends \yii\db\ActiveRecord
     }
 
     public function getPublicUrl() {
-        return Yii::$app->settings->get('site_cdnUrl') . '/uploads/buildings/' . $this->image;
+        $s3Api = Yii::$app->s3Api;
+        $s3Key = 'uploads/buildings/' . $this->image;
+        return $s3Api->getPublicUrl($s3Key);
     }
 
     public function getPublicUrlPreview() {
-        return Yii::$app->settings->get('site_cdnUrl') .  '/uploads/buildings/preview_' . $this->image;
+        $s3Api = Yii::$app->s3Api;
+        $s3Key = 'uploads/buildings/preview_' . $this->image;
+        return $s3Api->getPublicUrl($s3Key);
     }
 }

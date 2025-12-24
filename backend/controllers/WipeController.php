@@ -550,4 +550,205 @@ class WipeController extends Controller
         ];
     }
 
+    /**
+     * Страница для выбора сервера и выполнения вайпа через RCON команду
+     */
+    public function actionRunWipe()
+    {
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->cache(30)
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        return $this->render('run-wipe', [
+            'servers' => $servers,
+        ]);
+    }
+
+    /**
+     * Страница подтверждения вайпа с отображением параметров и команды
+     */
+    public function actionConfirmWipe()
+    {
+        $serverId = Yii::$app->request->get('server_id');
+        $wipeType = Yii::$app->request->get('wipe_type', 'wipe'); // 'wipe' или 'global'
+
+        if (empty($serverId)) {
+            Yii::$app->session->addFlash('danger', 'Сервер не выбран');
+            return $this->redirect(['run-wipe']);
+        }
+
+        /** @var Servers $server */
+        $server = Servers::findOne($serverId);
+        if (!$server) {
+            Yii::$app->session->addFlash('danger', 'Сервер не найден');
+            return $this->redirect(['run-wipe']);
+        }
+
+        // Получаем данные карты
+        $mapList = null;
+        $seed = null;
+        $worldsize = null;
+        
+        if (!empty($server->map_list_id)) {
+            $mapList = MapList::findOne($server->map_list_id);
+            if ($mapList) {
+                $seed = $mapList->seed;
+                $worldsize = $mapList->size_int;
+            }
+        }
+
+        // Формируем параметры команды
+        $preset = $wipeType; // 'wipe' или 'global'
+        $gamemode = $server->game_mode ?? 'vanilla';
+        $description = $server->wipe_server_description ?? '';
+        // Заменяем переносы строк на \n
+        $description = str_replace(["\r\n", "\r", "\n"], "\\n", $description);
+        $maxplayers = $server->max ?? 0;
+        $hostname = $server->wipe_server_name ?? '';
+        $tags = $server->monitoring_tags ?? 'weekly, vanilla, EU, tut';
+
+        // Формируем команду: autowipe.runnow <seed> <worldsize> [имя_пресета] [gamemode] [description] [maxplayers] [hostname] [tags]
+        $commandParts = ['autowipe.runnow'];
+        
+        // Обязательные параметры
+        $commandParts[] = $seed !== null ? $seed : '0';
+        $commandParts[] = $worldsize !== null ? $worldsize : '0';
+        
+        // Опциональные параметры в правильном порядке
+        // Если хотим передать параметр дальше, нужно передать все предыдущие (даже пустые)
+        // Но обычно можно пропускать, если они не нужны
+        $commandParts[] = $preset; // имя_пресета
+        $commandParts[] = $gamemode; // gamemode
+        $commandParts[] = $description; // description
+        $commandParts[] = $maxplayers; // maxplayers
+        $commandParts[] = $hostname; // hostname
+        $commandParts[] = $tags; // tags
+
+        $rconCommand = implode(' ', array_map(function($part) {
+            // Экранируем пробелы в параметрах
+            if (strpos($part, ' ') !== false || strpos($part, '\\n') !== false) {
+                return '"' . str_replace('"', '\\"', $part) . '"';
+            }
+            return $part;
+        }, $commandParts));
+
+        return $this->render('confirm-wipe', [
+            'server' => $server,
+            'wipeType' => $wipeType,
+            'mapList' => $mapList,
+            'seed' => $seed,
+            'worldsize' => $worldsize,
+            'gamemode' => $gamemode,
+            'description' => $server->wipe_server_description ?? '',
+            'maxplayers' => $maxplayers,
+            'hostname' => $hostname,
+            'tags' => $tags,
+            'rconCommand' => $rconCommand,
+        ]);
+    }
+
+    /**
+     * Выполнение вайпа через RCON команду
+     */
+    public function actionExecuteRunWipe()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        $serverId = Yii::$app->request->post('server_id');
+        $wipeType = Yii::$app->request->post('wipe_type', 'wipe');
+
+        if (empty($serverId)) {
+            return [
+                'success' => false,
+                'message' => 'Сервер не выбран',
+            ];
+        }
+
+        /** @var Servers $server */
+        $server = Servers::findOne($serverId);
+        if (!$server) {
+            return [
+                'success' => false,
+                'message' => 'Сервер не найден',
+            ];
+        }
+
+        // Получаем данные карты
+        $mapList = null;
+        $seed = null;
+        $worldsize = null;
+        
+        if (!empty($server->map_list_id)) {
+            $mapList = MapList::findOne($server->map_list_id);
+            if ($mapList) {
+                $seed = $mapList->seed;
+                $worldsize = $mapList->size_int;
+            }
+        }
+
+        // Формируем параметры команды
+        $preset = $wipeType;
+        $gamemode = $server->game_mode ?? 'vanilla';
+        $description = $server->wipe_server_description ?? '';
+        // Заменяем переносы строк на \n
+        $description = str_replace(["\r\n", "\r", "\n"], "\\n", $description);
+        $maxplayers = $server->max ?? 0;
+        $hostname = $server->wipe_server_name ?? '';
+        $tags = $server->monitoring_tags ?? 'weekly, vanilla, EU, tut';
+
+        // Формируем команду: autowipe.runnow <seed> <worldsize> [имя_пресета] [gamemode] [description] [maxplayers] [hostname] [tags]
+        $commandParts = ['autowipe.runnow'];
+        
+        // Обязательные параметры
+        $commandParts[] = $seed !== null ? $seed : '0';
+        $commandParts[] = $worldsize !== null ? $worldsize : '0';
+        
+        // Опциональные параметры в правильном порядке
+        $commandParts[] = $preset; // имя_пресета
+        $commandParts[] = $gamemode; // gamemode
+        $commandParts[] = $description; // description
+        $commandParts[] = $maxplayers; // maxplayers
+        $commandParts[] = $hostname; // hostname
+        $commandParts[] = $tags; // tags
+
+        $rconCommand = implode(' ', array_map(function($part) {
+            // Экранируем пробелы в параметрах
+            if (strpos($part, ' ') !== false || strpos($part, '\\n') !== false) {
+                return '"' . str_replace('"', '\\"', $part) . '"';
+            }
+            return $part;
+        }, $commandParts));
+
+        try {
+            // Выполняем команду через RCON
+            $results = RconTasks::executeWithResults($rconCommand, [$server->tag]);
+            
+            $result = $results[$server->tag] ?? null;
+            
+            if ($result && !empty($result['error'])) {
+                return [
+                    'success' => false,
+                    'message' => 'Ошибка RCON: ' . $result['error'],
+                    'command' => $rconCommand,
+                ];
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Вайп успешно выполнен',
+                'command' => $rconCommand,
+                'result' => $result['result'] ?? null,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Ошибка: ' . $e->getMessage(),
+                'command' => $rconCommand,
+            ];
+        }
+    }
+
 }

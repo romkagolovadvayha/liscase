@@ -40,6 +40,14 @@ $selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
             </div>
             <div class="row">
                 <div class="col-md-3">
+                    <?= $form->field($model, 'game_mode')->textInput(['class' => 'form-control ds-input', 'placeholder' => 'vanilla']) ?>
+                </div>
+                <div class="col-md-3">
+                    <?= $form->field($model, 'monitoring_tags')->textInput(['class' => 'form-control ds-input', 'placeholder' => 'weekly, vanilla, EU, tut']) ?>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3">
                     <?= $form->field($model, 'rust_app_id')->textInput(['class' => 'form-control ds-input']) ?>
                 </div>
                 <div class="col-md-3">
@@ -83,6 +91,14 @@ $selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
                         ],
                         ['prompt' => 'Выберите тип...', 'class' => 'form-control ds-input']
                     ) ?>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <?= $form->field($model, 'wipe_server_name')->textInput(['class' => 'form-control ds-input', 'placeholder' => 'Название сервера при вайпе (для игры)']) ?>
+                </div>
+                <div class="col-md-6">
+                    <?= $form->field($model, 'wipe_server_description')->textarea(['rows' => 4, 'class' => 'form-control ds-input', 'placeholder' => 'Описание сервера при вайпе (для игры)']) ?>
                 </div>
             </div>
         </div>

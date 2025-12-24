@@ -131,29 +131,50 @@ class ServerSkinForm extends ServerSkin
         if (empty($image)) {
             return null;
         }
-        $uploadDir = Yii::getAlias('@app/web');
+        
+        $s3Api = Yii::$app->s3Api;
+        $tempDir = sys_get_temp_dir();
         $filename = $this->id . "_" . md5(time()) . ".png";
-        $fileUrl = "/uploads/server-skin/{$filename}";
-        $filePath = $uploadDir . $fileUrl;
-        if (!file_exists(dirname($filePath))) {
-            mkdir(dirname($filePath));
-            chmod(dirname($filePath), 0777);
+        
+        // Сохраняем оригинал во временный файл
+        $tempOriginal = $tempDir . '/' . uniqid('skin_orig_') . '.png';
+        file_put_contents($tempOriginal, $image);
+        
+        // Создаем превью разных размеров во временных файлах
+        $temp200 = $tempDir . '/' . uniqid('skin_200_') . '.png';
+        $temp64 = $tempDir . '/' . uniqid('skin_64_') . '.png';
+        $temp150 = $tempDir . '/' . uniqid('skin_150_') . '.png';
+        
+        DropImage::resizeImage($tempOriginal, $temp200, 200);
+        DropImage::resizeImage($tempOriginal, $temp64, 64);
+        DropImage::resizeImage($tempOriginal, $temp150, 150);
+        
+        // Загружаем все версии в S3
+        $s3KeyOriginal = 'uploads/server-skin/' . $filename;
+        $s3Key200 = 'uploads/server-skin-x150/' . $filename;
+        $s3Key64 = 'uploads/server-skin-64/' . $filename;
+        $s3Key150 = 'uploads/server-skin-150/' . $filename;
+        
+        $s3ResultOriginal = $s3Api->putFile($s3KeyOriginal, file_get_contents($tempOriginal), 'image/png');
+        $s3Result200 = $s3Api->putFile($s3Key200, file_get_contents($temp200), 'image/png');
+        $s3Result64 = $s3Api->putFile($s3Key64, file_get_contents($temp64), 'image/png');
+        $s3Result150 = $s3Api->putFile($s3Key150, file_get_contents($temp150), 'image/png');
+        
+        // Удаляем временные файлы
+        @unlink($tempOriginal);
+        @unlink($temp200);
+        @unlink($temp64);
+        @unlink($temp150);
+        
+        if ($s3ResultOriginal === false || $s3Result200 === false || $s3Result64 === false || $s3Result150 === false) {
+            Yii::error('Error uploading server skin image to S3', __METHOD__);
+            return null;
         }
-        file_put_contents($filePath, $image);
-
-        $newPath200 = "/uploads/server-skin-x150/" . $filename;
-        $fullNewPath200 = \Yii::getAlias('@frontend/web') . $newPath200;
-        $newPath64 = "/server-skin-64/" . $filename;
-        $fullNewPath64 = \Yii::getAlias('@frontend/web/uploads') . $newPath64;
-        $newPath150 = "/server-skin-150/" . $filename;
-        $fullNewPath150 = \Yii::getAlias('@frontend/web/uploads') . $newPath150;
-        if (file_exists($filePath)) {
-            DropImage::resizeImage($filePath, $fullNewPath200, 200);
-            DropImage::resizeImage($filePath, $fullNewPath64, 64);
-            DropImage::resizeImage($filePath, $fullNewPath150, 150);
-            $this->image_64 = $newPath64;
-            $this->image_150 = $newPath150;
-        }
-        return $newPath200;
+        
+        // Сохраняем пути в модели
+        $this->image_64 = '/server-skin-64/' . $filename;
+        $this->image_150 = '/server-skin-150/' . $filename;
+        
+        return '/uploads/server-skin-x150/' . $filename;
     }
 }

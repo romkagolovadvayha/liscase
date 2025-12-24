@@ -162,16 +162,13 @@ class BuildingController extends BackendController
         foreach ($model->buildingResident as $resident) {
             $resident->delete();
         }
+        $s3Api = Yii::$app->s3Api;
         foreach ($model->buildingImage as $image) {
-            $uploadDir = Yii::getAlias('@app/web/uploads');
-            $filePath = $uploadDir . "/buildings/" . $image->image;
-            $filePathPreview = $uploadDir . "/buildings/preview_" . $image->image;
-            if (file_exists($filePath)) {
-                unlink($filePath);
-            }
-            if (file_exists($filePathPreview)) {
-                unlink($filePathPreview);
-            }
+            // Удаляем из S3
+            $s3KeyOriginal = 'uploads/buildings/' . $image->image;
+            $s3KeyPreview = 'uploads/buildings/preview_' . $image->image;
+            $s3Api->deleteFile($s3KeyOriginal);
+            $s3Api->deleteFile($s3KeyPreview);
             $image->delete();
         }
         foreach ($model->buildingLikes as $like) {

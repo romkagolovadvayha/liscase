@@ -62,12 +62,7 @@ foreach ($tasksV2 as $task) {
     $completed = isset($userCompletions[$task->id]) && $userCompletions[$task->id]->count_completed > 0;
     
     // Получаем изображение задания
-    if (!empty($task->image_path)) {
-        // Если путь не начинается с /, добавляем его
-        $image = strpos($task->image_path, '/') === 0 ? $task->image_path : '/' . $task->image_path;
-    } else {
-        $image = '/images/awards/default.png';
-    }
+    $image = $task->getImageUrl();
     
     $awards[] = [
         'id' => $task->id,

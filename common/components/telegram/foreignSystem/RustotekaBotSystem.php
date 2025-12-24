@@ -481,7 +481,7 @@ class RustotekaBotSystem extends AbstractSystemBots
                     $message .= "⏱️ <b>Время в Rust:</b> {$hours} ч. {$minutes} мин.\n";
                 } elseif ($minutes > 0) {
                     $message .= "⏱️ <b>Время в Rust:</b> {$minutes} мин.\n";
-                } else {
+        } else {
                     $message .= "⏱️ <b>Время в Rust:</b> Не играл\n";
                 }
             }

@@ -203,12 +203,48 @@ class MapList extends \yii\db\ActiveRecord
             return null;
         }
 
-        // Обновляем map_list_id в таблице servers
+        // Получаем сервер и удаляем предыдущую карту, если она есть
         $server = \common\models\servers\Servers::findOne($serverId);
-        if ($server) {
-            $server->map_list_id = $winningMap->id;
-            $server->save(false);
+        if (!$server) {
+            return null;
         }
+
+        // Если у сервера была зафиксирована предыдущая карта, удаляем её
+        if (!empty($server->map_list_id) && $server->map_list_id != $winningMap->id) {
+            $previousMap = self::findOne($server->map_list_id);
+            if ($previousMap) {
+                // Удаляем все голоса для текущей карты на данном сервере
+                try {
+                    MapListVote::deleteAll([
+                        'map_list_id' => $previousMap->id,
+                        'server_id' => $serverId,
+                    ]);
+                    Yii::info("Deleted all votes for map ID {$previousMap->id} on server ID {$serverId}", __METHOD__);
+                } catch (\Exception $e) {
+                    Yii::error("Error deleting votes for map ID {$previousMap->id} on server ID {$serverId}: " . $e->getMessage(), __METHOD__);
+                }
+                
+                // Проверяем, используется ли эта карта на других серверах
+                $usedOnOtherServers = \common\models\servers\Servers::find()
+                    ->where(['map_list_id' => $previousMap->id])
+                    ->andWhere(['!=', 'id', $serverId])
+                    ->exists();
+                
+                // Удаляем карту только если она не используется на других серверах
+                if (!$usedOnOtherServers) {
+                    try {
+                        $previousMap->delete();
+                        Yii::info("Deleted previous map ID {$previousMap->id} for server ID {$serverId}", __METHOD__);
+                    } catch (\Exception $e) {
+                        Yii::error("Error deleting previous map ID {$previousMap->id} for server ID {$serverId}: " . $e->getMessage(), __METHOD__);
+                    }
+                }
+            }
+        }
+
+        // Обновляем map_list_id в таблице servers
+        $server->map_list_id = $winningMap->id;
+        $server->save(false);
 
         return $winningMap;
     }

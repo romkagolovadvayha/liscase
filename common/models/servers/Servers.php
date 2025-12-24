@@ -59,6 +59,10 @@ use yii\helpers\ArrayHelper;
  * @property string $updated_at
  * @property string $monitoring_name
  * @property string $monitoring_description
+ * @property string $game_mode
+ * @property string $monitoring_tags
+ * @property string $wipe_server_name
+ * @property string $wipe_server_description
  * @property string $rust_app_id
  * @property int $min_map_size
  * @property int $max_map_size
@@ -130,8 +134,12 @@ class Servers extends \common\components\base\ActiveRecord
             'wargm_id'          => Yii::t('common', 'WarGM ID'),
             'is_store'          => Yii::t('common', 'Магазин на сервере'),
             'updated_at'          => Yii::t('common', 'Последнее обновление'),
-            'monitoring_name'          => Yii::t('common', 'Название в мониторинге'),
-            'monitoring_description'          => Yii::t('common', 'Доп. название в мониторинге'),
+            'monitoring_name'          => Yii::t('common', 'Название сервера в мониторинге'),
+            'monitoring_description'          => Yii::t('common', 'Описание сервера в мониторинге'),
+            'game_mode'          => Yii::t('common', 'Режим игры'),
+            'monitoring_tags'          => Yii::t('common', 'Теги сервера в мониторинге'),
+            'wipe_server_name'          => Yii::t('common', 'Название сервера при вайпе (для игры)'),
+            'wipe_server_description'          => Yii::t('common', 'Описание сервера при вайпе (для игры)'),
             'rust_app_id'          => Yii::t('common', 'ID в RustApp'),
             'min_map_size'          => Yii::t('common', 'Минимальный размер карты'),
             'max_map_size'          => Yii::t('common', 'Максимальный размер карты'),
@@ -146,7 +154,7 @@ class Servers extends \common\components\base\ActiveRecord
     {
         return [
             [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description', 'min_map_size', 'max_map_size'], 'required'],
-            [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'secret_key'], 'string'],
+            [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'game_mode', 'monitoring_tags', 'wipe_server_name', 'wipe_server_description', 'secret_key'], 'string'],
             [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id'], 'integer'],
             [['wipe', 'next_wipe', 'global_wipe', 'secret_map'], 'safe'],
         ];

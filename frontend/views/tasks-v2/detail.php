@@ -13,7 +13,7 @@ use yii\helpers\Url;
 
 $status = $userStatus['status'] ?? 'available';
 $canCheck = $status === 'available';
-$imageUrl = $task->image_path ? '/' . ltrim($task->image_path, '/') : '/images/design/icons/128px/task-default.png';
+$imageUrl = $task->getImageUrl();
 
 // Определяем тип награды для отображения
 $rewardDisplay = '';

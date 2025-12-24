@@ -20,6 +20,33 @@ $this->title = Yii::t('common', 'Вайп');
 <div class="content">
     <?= \frontend\widgets\Alert::widget() ?>
 
+    <!-- Выполнить вайп через RCON -->
+    <div class="ds-card mb-4" style="border: 2px solid #dc3545;">
+        <div class="ds-card__header" style="background: #dc3545; color: white;">
+            <h5 class="ds-card__header-title" style="color: white;">
+                <i class="bi bi-play-circle"></i> <?= Yii::t('common', 'Выполнить вайп через RCON') ?>
+            </h5>
+        </div>
+        <div class="ds-card__body">
+            <p class="mb-3">
+                <strong>Выполнение вайпа через RCON команду autowipe.runnow</strong> Выберите сервер и тип вайпа, затем подтвердите выполнение:
+            </p>
+            <ul class="mb-3">
+                <li>Выбор сервера для вайпа</li>
+                <li>Выбор типа вайпа (wipe или global)</li>
+                <li>Просмотр всех параметров и команды</li>
+                <li>Подтверждение и выполнение вайпа</li>
+            </ul>
+            <?= Html::a(
+                '<i class="bi bi-play-circle"></i> Перейти к выполнению вайпа',
+                '/wipe/run-wipe',
+                [
+                    'class' => 'ds-btn ds-btn--danger',
+                ]
+            ) ?>
+        </div>
+    </div>
+
     <!-- Комплексный вайп серверов -->
     <div class="ds-card mb-4" style="border: 2px solid #198754;">
         <div class="ds-card__header" style="background: #198754; color: white;">

@@ -167,6 +167,24 @@ class ServerSkinController extends Controller
     public function actionDelete($id)
     {
         $model = $this->findModel($id);
+        
+        // Удаляем изображения из S3
+        $s3Api = Yii::$app->s3Api;
+        if (!empty($model->image)) {
+            $s3Key = ltrim($model->image, '/');
+            if (strpos($s3Key, 'uploads/') !== 0) {
+                $s3Key = 'uploads' . $model->image;
+            }
+            $s3Api->deleteFile($s3Key);
+        }
+        if (!empty($model->image_64)) {
+            $s3Key = 'uploads' . $model->image_64;
+            $s3Api->deleteFile($s3Key);
+        }
+        if (!empty($model->image_150)) {
+            $s3Key = 'uploads' . $model->image_150;
+            $s3Api->deleteFile($s3Key);
+        }
 
         $model->delete();
 

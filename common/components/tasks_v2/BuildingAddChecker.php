@@ -89,3 +89,8 @@ class BuildingAddChecker implements TaskCheckerInterface
 
 
 
+
+
+
+
+

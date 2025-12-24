@@ -206,17 +206,25 @@ class BlogController extends BackendController
         if (!in_array($file->type, $allowed, true)) return ['error' => 'Файл не является изображением'];
         if ($file->size > 5 * 1024 * 1024) return ['error' => 'Файл слишком большого размера'];
 
-        $basePath = Yii::getAlias('@frontend/web/uploads/blog');
-        $baseUrl  = '/uploads/blog';
-        \yii\helpers\FileHelper::createDirectory($basePath, 0775, true);
-
         $safe = preg_replace('~[^a-z0-9\.\-_]~i', '_', $file->name);
         $fname = date('Ymd_His') . '_' . Yii::$app->security->generateRandomString(8) . '_' . $safe;
-
-        if (!$file->saveAs($basePath . DIRECTORY_SEPARATOR . $fname)) {
-            return ['error' => 'Save failed'];
+        $s3Key = 'uploads/blog/' . $fname;
+        
+        // Определяем MIME-тип
+        $contentType = $file->type;
+        
+        // Загружаем в S3
+        $s3Api = Yii::$app->s3Api;
+        $fileContent = file_get_contents($file->tempName);
+        $s3Result = $s3Api->putFile($s3Key, $fileContent, $contentType);
+        
+        if ($s3Result === false) {
+            return ['error' => 'Ошибка загрузки в S3'];
         }
-        return ['location' => $baseUrl . '/' . $fname];
+        
+        // Возвращаем публичный URL из S3
+        $publicUrl = $s3Api->getPublicUrl($s3Key);
+        return ['location' => $publicUrl];
     }
 
     /**

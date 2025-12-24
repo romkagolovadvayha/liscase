@@ -85,24 +85,24 @@ class ServerSkin extends \yii\db\ActiveRecord
     }
 
     public function getImagePubUrl($cdn = true) {
-        if ($cdn) {
-            return Yii::$app->settings->get('site_cdnUrl') . $this->image;
+        $s3Api = Yii::$app->s3Api;
+        $s3Key = ltrim($this->image, '/');
+        if (strpos($s3Key, 'uploads/') !== 0) {
+            $s3Key = 'uploads' . $this->image;
         }
-        return $this->image;
+        return $s3Api->getPublicUrl($s3Key);
     }
 
     public function getImage64PubUrl($cdn = true) {
-        if ($cdn) {
-            return Yii::$app->settings->get('site_cdnUrl') . "/uploads" . $this->image_64;
-        }
-        return $this->image_64;
+        $s3Api = Yii::$app->s3Api;
+        $s3Key = 'uploads' . $this->image_64;
+        return $s3Api->getPublicUrl($s3Key);
     }
 
     public function getImage150PubUrl($cdn = true) {
-        if ($cdn) {
-            return Yii::$app->settings->get('site_cdnUrl') . "/uploads" .  $this->image_150;
-        }
-        return $this->image_150;
+        $s3Api = Yii::$app->s3Api;
+        $s3Key = 'uploads' . $this->image_150;
+        return $s3Api->getPublicUrl($s3Key);
     }
 
     /**

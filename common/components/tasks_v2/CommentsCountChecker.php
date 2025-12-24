@@ -85,3 +85,8 @@ class CommentsCountChecker implements TaskCheckerInterface
 
 
 
+
+
+
+
+
