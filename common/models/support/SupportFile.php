@@ -62,4 +62,16 @@ class SupportFile extends \yii\db\ActiveRecord
     {
         return $this->hasOne(SupportMessage::class, ['id' => 'support_message_id']);
     }
+
+    /**
+     * Получает публичный URL для файла в S3
+     * 
+     * @return string Публичный URL
+     */
+    public function getPublicUrl()
+    {
+        $s3Api = Yii::$app->s3Api;
+        $s3Key = 'support/' . $this->file;
+        return $s3Api->getPublicUrl($s3Key);
+    }
 }
