@@ -154,10 +154,9 @@ class OpenAiJob extends BaseObject implements JobInterface
                 UserTree::appendUser($user->id, 509);
                 UserProfile::createModel($user, $username);
                 $user->userProfile->name = $username;
-                try {
-                    $avatar                    = self::_loadImage($avatar, $steamId);
-                    $user->userProfile->avatar = $avatar;
-                } catch (\Exception $ex) {
+                // Сохраняем URL аватара из Steam вместо загрузки на сервер
+                if (!empty($avatar)) {
+                    $user->userProfile->steam_avatar_url = $avatar;
                 }
                 $user->userProfile->save();
                 return $user;
