@@ -38,12 +38,17 @@ async function getChatGptReply(messages, channelId) {
             server: 'Discord',
             chatHistory: history
         }, {
-            timeout: 30000 // 30 секунд таймаут (увеличено для обработки нескольких сообщений)
+            timeout: 30000, // 30 секунд таймаут (увеличено для обработки нескольких сообщений)
+            validateStatus: function (status) {
+                // Разрешаем обрабатывать все статусы, чтобы не выбрасывать исключение
+                return status < 600;
+            }
         });
         
-        console.log(`[ChatGPT] Ответ API:`, JSON.stringify(response.data));
+        console.log(`[ChatGPT] Ответ API (статус ${response.status}):`, JSON.stringify(response.data));
         
-        if (response.data && response.data.success && response.data.reply) {
+        // Проверяем статус ответа
+        if (response.status === 200 && response.data && response.data.success && response.data.reply) {
             // Обновляем историю
             messages.forEach(msg => {
                 history.push({ user: `${msg.username}: ${msg.content}` });
@@ -60,7 +65,16 @@ async function getChatGptReply(messages, channelId) {
             console.log(`[ChatGPT] Успешно получен ответ: ${response.data.reply.substring(0, 100)}...`);
             return response.data.reply;
         } else {
-            console.warn(`[ChatGPT] API вернул неожиданный ответ:`, response.data);
+            // Обрабатываем ошибки
+            if (response.status === 500) {
+                console.error(`[ChatGPT] Ошибка 500 от сервера. Ответ:`, JSON.stringify(response.data));
+                console.error(`[ChatGPT] Это может быть проблема с OpenAI API или настройками на сервере`);
+            } else if (response.status >= 400) {
+                console.error(`[ChatGPT] Ошибка API (${response.status}):`, response.data);
+            } else {
+                console.warn(`[ChatGPT] API вернул неожиданный ответ:`, response.data);
+            }
+            
             if (response.data && response.data.message) {
                 console.warn(`[ChatGPT] Сообщение об ошибке: ${response.data.message}`);
             }
@@ -70,13 +84,18 @@ async function getChatGptReply(messages, channelId) {
     } catch (error) {
         if (error.response) {
             // Сервер ответил с кодом ошибки
-            console.error(`[ChatGPT] Ошибка API (${error.response.status}):`, error.response.data);
+            console.error(`[ChatGPT] Ошибка API (${error.response.status}):`, JSON.stringify(error.response.data));
+            if (error.response.status === 500) {
+                console.error(`[ChatGPT] Внутренняя ошибка сервера. Проверьте логи на сервере.`);
+            }
         } else if (error.request) {
             // Запрос был отправлен, но ответа не получено
             console.error('[ChatGPT] Нет ответа от API:', error.message);
+            console.error('[ChatGPT] Возможно, сервер недоступен или превышен таймаут');
         } else {
             // Ошибка при настройке запроса
             console.error('[ChatGPT] Ошибка запроса:', error.message);
+            console.error('[ChatGPT] Stack:', error.stack);
         }
         return null;
     }
@@ -244,6 +263,16 @@ const client = new Client({
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages
     ]
+});
+
+// Обработка ошибок WebSocket (525 и другие)
+client.on('error', (error) => {
+    console.error('[Discord] Ошибка клиента:', error.message);
+    // Не критично - бот продолжит работу
+});
+
+client.on('warn', (warning) => {
+    console.warn('[Discord] Предупреждение:', warning);
 });
 
 const YEAR_IN_MS = 360 * 24 * 60 * 60 * 1000; // 12 месяцев в миллисекундах

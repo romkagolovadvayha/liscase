@@ -66,6 +66,7 @@ class DiscordChatGptController extends Controller
             );
             
             if (empty($reply)) {
+                Yii::error('Discord ChatGPT: пустой ответ от OpenAI', __METHOD__);
                 return [
                     'success' => false,
                     'message' => 'Не удалось получить ответ от ChatGPT'
@@ -78,10 +79,16 @@ class DiscordChatGptController extends Controller
             ];
             
         } catch (\Exception $e) {
-            Yii::error('Discord ChatGPT error: ' . $e->getMessage(), __METHOD__);
+            Yii::error('Discord ChatGPT error: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine(), __METHOD__);
+            Yii::error('Discord ChatGPT stack trace: ' . $e->getTraceAsString(), __METHOD__);
+            
+            // Возвращаем более детальную информацию об ошибке
             return [
                 'success' => false,
-                'message' => 'Ошибка при обработке запроса'
+                'message' => 'Ошибка при обработке запроса: ' . $e->getMessage(),
+                'error_type' => get_class($e),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
             ];
         }
     }
