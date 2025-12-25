@@ -75,25 +75,16 @@ class MapsV2Controller extends Controller
             ->andWhere(['<=', 'ml.size_int', (int)$server->max_map_size])
             ->orderBy(['ml.created_at' => SORT_DESC]);
         
-        // Исключаем зафиксированные карты (кроме той, что зафиксирована на текущем сервере)
-        $currentServerFixedMapId = $server->map_list_id;
-        $fixedMapIdsExcludingCurrent = array_filter($fixedMapIds, function($id) use ($currentServerFixedMapId) {
-            return $id != $currentServerFixedMapId;
-        });
-        
-        if (!empty($fixedMapIdsExcludingCurrent)) {
-            $mapQuery->andWhere(['NOT IN', 'ml.id', $fixedMapIdsExcludingCurrent]);
+        // Исключаем все зафиксированные карты
+        if (!empty($fixedMapIds)) {
+            $mapQuery->andWhere(['NOT IN', 'ml.id', $fixedMapIds]);
         }
         
         // Не зафиксированные карты показываем только если next_wipe сервера <= now + 3 дня
-        if (!$shouldShowUnfixedMaps && !empty($currentServerFixedMapId)) {
-            // Если next_wipe > now + 3 дня и есть зафиксированная карта, показываем только её
-            $mapQuery->andWhere(['=', 'ml.id', $currentServerFixedMapId]);
-        } elseif (!$shouldShowUnfixedMaps) {
-            // Если next_wipe > now + 3 дня и нет зафиксированной карты, не показываем ничего
+        if (!$shouldShowUnfixedMaps) {
+            // Если next_wipe > now + 3 дня, не показываем ничего
             $mapQuery->andWhere(['=', 'ml.id', 0]); // Несуществующий ID, чтобы вернуть пустой результат
         }
-        // Если shouldShowUnfixedMaps = true, показываем все не зафиксированные карты (логика выше уже исключила зафиксированные на других серверах)
 
         $maps = $mapQuery->all();
         if (empty($maps)) {
@@ -132,10 +123,10 @@ class MapsV2Controller extends Controller
                     'saveVersion' => $fixedMap->save_version,
                     'downloadUrl' => $fixedMap->url,
                     'rustMapsUrl' => $fixedMap->hash ? 'https://rustmaps.com/map/' . $fixedMap->hash : null,
-                    'image' => Yii::$app->settings->get('s3_publicUrl') . $fixedMap->image ?: ($details['imageUrl'] ?? $fixedMap->image_url),
-                    'imagePreview' => Yii::$app->settings->get('s3_publicUrl') . $fixedMap->image_preview ?: ($details['thumbnailUrl'] ?? $fixedMap->thumbnail_url),
-                    'rawImageUrl' => Yii::$app->settings->get('s3_publicUrl') . $fixedMap->raw_image_url ?: ($details['rawImageUrl'] ?? null),
-                    'imageIconUrl' => Yii::$app->settings->get('s3_publicUrl') . $fixedMap->image_icon_url ?: ($details['imageIconUrl'] ?? null),
+                    'image' => $this->getMapImageUrl($fixedMap->image ?: ($details['imageUrl'] ?? $fixedMap->image_url)),
+                    'imagePreview' => $this->getMapImageUrl($fixedMap->image_preview ?: ($details['thumbnailUrl'] ?? $fixedMap->thumbnail_url)),
+                    'rawImageUrl' => $this->getMapImageUrl($fixedMap->raw_image_url ?: ($details['rawImageUrl'] ?? null)),
+                    'imageIconUrl' => $this->getMapImageUrl($fixedMap->image_icon_url ?: ($details['imageIconUrl'] ?? null)),
                     'isStaging' => (bool)$fixedMap->is_staging,
                     'isCustomMap' => (bool)$fixedMap->is_custom_map,
                     'canDownload' => (bool)$fixedMap->can_download,
@@ -279,10 +270,10 @@ class MapsV2Controller extends Controller
                 'saveVersion' => $map->save_version,
                 'downloadUrl' => $map->url,
                 'rustMapsUrl' => $map->hash ? 'https://rustmaps.com/map/' . $map->hash : null,
-                'image' => $map->image ?: ($details['imageUrl'] ?? $map->image_url),
-                'imagePreview' => $map->image_preview ?: ($details['thumbnailUrl'] ?? $map->thumbnail_url),
-                'rawImageUrl' => $map->raw_image_url ?: ($details['rawImageUrl'] ?? null),
-                'imageIconUrl' => $map->image_icon_url ?: ($details['imageIconUrl'] ?? null),
+                'image' => $this->getMapImageUrl($map->image ?: ($details['imageUrl'] ?? $map->image_url)),
+                'imagePreview' => $this->getMapImageUrl($map->image_preview ?: ($details['thumbnailUrl'] ?? $map->thumbnail_url)),
+                'rawImageUrl' => $this->getMapImageUrl($map->raw_image_url ?: ($details['rawImageUrl'] ?? null)),
+                'imageIconUrl' => $this->getMapImageUrl($map->image_icon_url ?: ($details['imageIconUrl'] ?? null)),
                 'isStaging' => (bool)$map->is_staging,
                 'isCustomMap' => (bool)$map->is_custom_map,
                 'canDownload' => (bool)$map->can_download,
@@ -483,10 +474,10 @@ class MapsV2Controller extends Controller
             'saveVersion' => $map->save_version,
             'downloadUrl' => $map->url,
             'rustMapsUrl' => $map->hash ? 'https://rustmaps.com/map/' . $map->hash : null,
-            'image' => $map->image ?: ($details['imageUrl'] ?? $map->image_url),
-            'imagePreview' => $map->image_preview ?: ($details['thumbnailUrl'] ?? $map->thumbnail_url),
-            'rawImageUrl' => $map->raw_image_url ?: ($details['rawImageUrl'] ?? null),
-            'imageIconUrl' => $map->image_icon_url ?: ($details['imageIconUrl'] ?? null),
+            'image' => $this->getMapImageUrl($map->image ?: ($details['imageUrl'] ?? $map->image_url)),
+            'imagePreview' => $this->getMapImageUrl($map->image_preview ?: ($details['thumbnailUrl'] ?? $map->thumbnail_url)),
+            'rawImageUrl' => $this->getMapImageUrl($map->raw_image_url ?: ($details['rawImageUrl'] ?? null)),
+            'imageIconUrl' => $this->getMapImageUrl($map->image_icon_url ?: ($details['imageIconUrl'] ?? null)),
             'isStaging' => (bool)$map->is_staging,
             'isCustomMap' => (bool)$map->is_custom_map,
             'canDownload' => (bool)$map->can_download,
@@ -515,12 +506,35 @@ class MapsV2Controller extends Controller
         $nextMap = null;
         
         if (!$isFixed) {
+            // Вычисляем дату через 3 суток от текущего момента
+            $threeDaysFromNow = new \DateTime();
+            $threeDaysFromNow->modify('+3 days');
+            $serverNextWipe = new \DateTime($server->next_wipe);
+            $shouldShowUnfixedMaps = $serverNextWipe <= $threeDaysFromNow;
+
+            // Получаем ID карт, которые уже зафиксированы на любом из серверов
+            $fixedMapIds = Servers::find()
+                ->select('map_list_id')
+                ->andWhere(['IS NOT', 'map_list_id', null])
+                ->column();
+
             $allMapsQuery = MapList::find()
                 ->alias('ml')
                 ->andWhere(['IS NOT', 'ml.size_int', null])
                 ->andWhere(['>=', 'ml.size_int', (int)$server->min_map_size])
                 ->andWhere(['<=', 'ml.size_int', (int)$server->max_map_size])
                 ->orderBy(['ml.created_at' => SORT_DESC]);
+
+            // Исключаем все зафиксированные карты
+            if (!empty($fixedMapIds)) {
+                $allMapsQuery->andWhere(['NOT IN', 'ml.id', $fixedMapIds]);
+            }
+            
+            // Не зафиксированные карты показываем только если next_wipe сервера <= now + 3 дня
+            if (!$shouldShowUnfixedMaps) {
+                // Если next_wipe > now + 3 дня, не показываем ничего
+                $allMapsQuery->andWhere(['=', 'ml.id', 0]); // Несуществующий ID, чтобы вернуть пустой результат
+            }
 
             $allMaps = $allMapsQuery->all();
             
@@ -636,6 +650,12 @@ class MapsV2Controller extends Controller
             ->select('map_list_id')
             ->andWhere(['IS NOT', 'map_list_id', null])
             ->column();
+
+        // Вычисляем дату через 3 суток от текущего момента
+        $threeDaysFromNow = new \DateTime();
+        $threeDaysFromNow->modify('+3 days');
+        $serverNextWipe = new \DateTime($server->next_wipe);
+        $shouldShowUnfixedMaps = $serverNextWipe <= $threeDaysFromNow;
         
         // Пересчитываем все данные для возврата обновленной карточки
         $allMapsQuery = MapList::find()
@@ -645,9 +665,15 @@ class MapsV2Controller extends Controller
             ->andWhere(['<=', 'ml.size_int', (int)$server->max_map_size])
             ->orderBy(['ml.created_at' => SORT_DESC]);
         
-        // Исключаем зафиксированные карты из списка
+        // Исключаем все зафиксированные карты
         if (!empty($fixedMapIds)) {
             $allMapsQuery->andWhere(['NOT IN', 'ml.id', $fixedMapIds]);
+        }
+        
+        // Не зафиксированные карты показываем только если next_wipe сервера <= now + 3 дня
+        if (!$shouldShowUnfixedMaps) {
+            // Если next_wipe > now + 3 дня, не показываем ничего
+            $allMapsQuery->andWhere(['=', 'ml.id', 0]); // Несуществующий ID, чтобы вернуть пустой результат
         }
         
         $allMaps = $allMapsQuery->all();
@@ -769,10 +795,10 @@ class MapsV2Controller extends Controller
                 'saveVersion' => $currentMapForCard->save_version,
                 'downloadUrl' => $currentMapForCard->url,
                 'rustMapsUrl' => $currentMapForCard->hash ? 'https://rustmaps.com/map/' . $currentMapForCard->hash : null,
-                'image' => $currentMapForCard->image ?: ($details['imageUrl'] ?? $currentMapForCard->image_url),
-                'imagePreview' => $currentMapForCard->image_preview ?: ($details['thumbnailUrl'] ?? $currentMapForCard->thumbnail_url),
-                'rawImageUrl' => $currentMapForCard->raw_image_url ?: ($details['rawImageUrl'] ?? null),
-                'imageIconUrl' => $currentMapForCard->image_icon_url ?: ($details['imageIconUrl'] ?? null),
+                'image' => $this->getMapImageUrl($currentMapForCard->image ?: ($details['imageUrl'] ?? $currentMapForCard->image_url)),
+                'imagePreview' => $this->getMapImageUrl($currentMapForCard->image_preview ?: ($details['thumbnailUrl'] ?? $currentMapForCard->thumbnail_url)),
+                'rawImageUrl' => $this->getMapImageUrl($currentMapForCard->raw_image_url ?: ($details['rawImageUrl'] ?? null)),
+                'imageIconUrl' => $this->getMapImageUrl($currentMapForCard->image_icon_url ?: ($details['imageIconUrl'] ?? null)),
                 'isStaging' => (bool)$currentMapForCard->is_staging,
                 'isCustomMap' => (bool)$currentMapForCard->is_custom_map,
                 'canDownload' => (bool)$currentMapForCard->can_download,
@@ -815,10 +841,10 @@ class MapsV2Controller extends Controller
                 'saveVersion' => $mapItem->save_version,
                 'downloadUrl' => $mapItem->url,
                 'rustMapsUrl' => $mapItem->hash ? 'https://rustmaps.com/map/' . $mapItem->hash : null,
-                'image' => $mapItem->image ?: ($details['imageUrl'] ?? $mapItem->image_url),
-                'imagePreview' => $mapItem->image_preview ?: ($details['thumbnailUrl'] ?? $mapItem->thumbnail_url),
-                'rawImageUrl' => $mapItem->raw_image_url ?: ($details['rawImageUrl'] ?? null),
-                'imageIconUrl' => $mapItem->image_icon_url ?: ($details['imageIconUrl'] ?? null),
+                'image' => $this->getMapImageUrl($mapItem->image ?: ($details['imageUrl'] ?? $mapItem->image_url)),
+                'imagePreview' => $this->getMapImageUrl($mapItem->image_preview ?: ($details['thumbnailUrl'] ?? $mapItem->thumbnail_url)),
+                'rawImageUrl' => $this->getMapImageUrl($mapItem->raw_image_url ?: ($details['rawImageUrl'] ?? null)),
+                'imageIconUrl' => $this->getMapImageUrl($mapItem->image_icon_url ?: ($details['imageIconUrl'] ?? null)),
                 'isStaging' => (bool)$mapItem->is_staging,
                 'isCustomMap' => (bool)$mapItem->is_custom_map,
                 'canDownload' => (bool)$mapItem->can_download,
@@ -1120,6 +1146,37 @@ class MapsV2Controller extends Controller
             'serverId' => $server->id,
             'isVoted' => $isVoted,
         ]);
+    }
+
+    /**
+     * Получить публичный URL изображения карты из S3
+     * @param string|null $path Путь к изображению
+     * @return string|null
+     */
+    private function getMapImageUrl(?string $path): ?string
+    {
+        if (empty($path)) {
+            return null;
+        }
+        
+        // Если это уже полный URL (http:// или https://), возвращаем как есть
+        if (preg_match('#^https?://#i', $path)) {
+            return $path;
+        }
+        
+        // Добавляем S3 публичный URL
+        $s3PublicUrl = Yii::$app->settings->get('s3_publicUrl');
+        if (empty($s3PublicUrl)) {
+            return $path;
+        }
+        
+        // Убираем слэш в начале пути, если есть
+        $path = ltrim($path, '/');
+        
+        // Убираем слэш в конце S3 URL, если есть
+        $s3PublicUrl = rtrim($s3PublicUrl, '/');
+        
+        return $s3PublicUrl . '/' . $path;
     }
 
     private function registerSeo(Servers $server): void
