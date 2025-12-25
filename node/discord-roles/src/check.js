@@ -38,7 +38,7 @@ async function getChatGptReply(messages, channelId) {
             server: 'Discord',
             chatHistory: history
         }, {
-            timeout: 30000, // 30 секунд таймаут (увеличено для обработки нескольких сообщений)
+            timeout: 60000, // 60 секунд таймаут (увеличено для обработки нескольких сообщений и медленного OpenAI API)
             validateStatus: function (status) {
                 // Разрешаем обрабатывать все статусы, чтобы не выбрасывать исключение
                 return status < 600;
