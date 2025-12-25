@@ -46,15 +46,42 @@ class DiscordChatGptController extends Controller
         $message = Yii::$app->request->post('message');
         $username = Yii::$app->request->post('username', 'Пользователь');
         $chatHistory = Yii::$app->request->post('chatHistory', []);
-        $server = Yii::$app->request->post('server', 'Сервер');
+        $server = Yii::$app->request->post('server', 'Discord');
         
         if (empty($message)) {
-            throw new BadRequestHttpException('Необходимо указать сообщение');
+            Yii::$app->response->statusCode = 400;
+            return [
+                'success' => false,
+                'message' => 'Необходимо указать сообщение'
+            ];
         }
         
         try {
+            // Проверяем наличие компонента
+            if (!isset(Yii::$app->openAiSupport)) {
+                Yii::error('Discord ChatGPT: компонент openAiSupport не найден', __METHOD__);
+                Yii::$app->response->statusCode = 500;
+                return [
+                    'success' => false,
+                    'message' => 'Компонент OpenAI не настроен'
+                ];
+            }
+            
             /** @var OpenAiSupport $openAiSupport */
             $openAiSupport = Yii::$app->openAiSupport;
+            
+            // Проверяем настройки
+            $apiKey = Yii::$app->settings->get('openAi_apiKey');
+            if (empty($apiKey)) {
+                Yii::error('Discord ChatGPT: API ключ OpenAI не настроен', __METHOD__);
+                Yii::$app->response->statusCode = 500;
+                return [
+                    'success' => false,
+                    'message' => 'API ключ OpenAI не настроен'
+                ];
+            }
+            
+            Yii::info('Discord ChatGPT: запрос от ' . $username . ', сообщение: ' . mb_substr($message, 0, 100), __METHOD__);
             
             $reply = $openAiSupport->getReply(
                 trim($message),
@@ -67,28 +94,38 @@ class DiscordChatGptController extends Controller
             
             if (empty($reply)) {
                 Yii::error('Discord ChatGPT: пустой ответ от OpenAI', __METHOD__);
+                Yii::$app->response->statusCode = 500;
                 return [
                     'success' => false,
                     'message' => 'Не удалось получить ответ от ChatGPT'
                 ];
             }
             
+            Yii::info('Discord ChatGPT: успешно получен ответ длиной ' . mb_strlen($reply), __METHOD__);
+            
             return [
                 'success' => true,
                 'reply' => $reply
             ];
             
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Yii::error('Discord ChatGPT error: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine(), __METHOD__);
             Yii::error('Discord ChatGPT stack trace: ' . $e->getTraceAsString(), __METHOD__);
             
-            // Возвращаем более детальную информацию об ошибке
+            // В режиме разработки возвращаем детальную информацию
+            $errorMessage = 'Ошибка при обработке запроса';
+            if (YII_DEBUG) {
+                $errorMessage .= ': ' . $e->getMessage();
+            }
+            
+            Yii::$app->response->statusCode = 500;
             return [
                 'success' => false,
-                'message' => 'Ошибка при обработке запроса: ' . $e->getMessage(),
+                'message' => $errorMessage,
                 'error_type' => get_class($e),
                 'error_file' => $e->getFile(),
-                'error_line' => $e->getLine()
+                'error_line' => $e->getLine(),
+                'debug' => YII_DEBUG ? $e->getTraceAsString() : null
             ];
         }
     }
