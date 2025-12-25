@@ -49,12 +49,31 @@ class DiscordChatGptController extends Controller
         
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         
-        $message = Yii::$app->request->post('message');
-        $username = Yii::$app->request->post('username', 'Пользователь');
-        $chatHistory = Yii::$app->request->post('chatHistory', []);
-        $server = Yii::$app->request->post('server', 'Discord');
+        // Получаем данные из POST (может быть JSON или form-data)
+        $rawBody = Yii::$app->request->rawBody;
+        if (!empty($rawBody)) {
+            $jsonData = json_decode($rawBody, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($jsonData)) {
+                $message = $jsonData['message'] ?? null;
+                $username = $jsonData['username'] ?? 'Пользователь';
+                $chatHistory = $jsonData['chatHistory'] ?? [];
+                $server = $jsonData['server'] ?? 'Discord';
+            } else {
+                // Если не JSON, пробуем обычный POST
+                $message = Yii::$app->request->post('message');
+                $username = Yii::$app->request->post('username', 'Пользователь');
+                $chatHistory = Yii::$app->request->post('chatHistory', []);
+                $server = Yii::$app->request->post('server', 'Discord');
+            }
+        } else {
+            // Обычный POST
+            $message = Yii::$app->request->post('message');
+            $username = Yii::$app->request->post('username', 'Пользователь');
+            $chatHistory = Yii::$app->request->post('chatHistory', []);
+            $server = Yii::$app->request->post('server', 'Discord');
+        }
         
-        Yii::info('Discord ChatGPT: получены данные - message: ' . mb_substr($message ?? '', 0, 50) . ', username: ' . $username, __METHOD__);
+        Yii::info('Discord ChatGPT: получены данные - message: ' . mb_substr($message ?? '', 0, 50) . ', username: ' . $username . ', rawBody length: ' . strlen($rawBody ?? ''), __METHOD__);
         
         if (empty($message)) {
             Yii::warning('Discord ChatGPT: пустое сообщение', __METHOD__);

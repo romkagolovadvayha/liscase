@@ -39,6 +39,9 @@ async function getChatGptReply(messages, channelId) {
             chatHistory: history
         }, {
             timeout: 60000, // 60 секунд таймаут (увеличено для обработки нескольких сообщений и медленного OpenAI API)
+            headers: {
+                'Content-Type': 'application/json'
+            },
             validateStatus: function (status) {
                 // Разрешаем обрабатывать все статусы, чтобы не выбрасывать исключение
                 return status < 600;
