@@ -90,13 +90,13 @@ class UserController extends Controller
             $user->username = HtmlPurifier::process($infoUser['personaname']);
             $user->save();
             
-            // Загружаем аватар
-            $avatar = $this->_loadImage($infoUser['avatarfull'], $infoUser['steamid']);
+            // Сохраняем URL аватара из Steam вместо загрузки на сервер
+            $avatarUrl = !empty($infoUser['avatarfull']) ? $infoUser['avatarfull'] : null;
             
             // Обновляем профиль только если он существует
             if (!empty($user->userProfile)) {
                 $user->userProfile->name = HtmlPurifier::process($infoUser['personaname']);
-                $user->userProfile->avatar = $avatar;
+                $user->userProfile->steam_avatar_url = $avatarUrl;
                 $user->userProfile->save();
             } else {
                 \Yii::warning("UserProfile not found for user {$user->steam_id}", __METHOD__);

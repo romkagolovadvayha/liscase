@@ -375,10 +375,10 @@ class AuthController extends WebController
                         UserTree::appendUser($user->id, 509);
                     }
                     UserProfile::createModel($user, $username);
-                    try {
-                        $avatar = $this->_loadImage($avatarLink, $steamId);
-                        $user->userProfile->avatar = $avatar;
-                    } catch (\Exception $ex) {}
+                    // Сохраняем URL аватара из Steam вместо загрузки на сервер
+                    if (!empty($avatarLink)) {
+                        $user->userProfile->steam_avatar_url = $avatarLink;
+                    }
                     $user->userProfile->save();
                     $auth = new Auth(
                         [
