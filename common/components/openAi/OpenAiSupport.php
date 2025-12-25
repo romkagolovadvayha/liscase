@@ -64,20 +64,42 @@ class OpenAiSupport extends \yii\base\Component
         try {
             $knowledge = $this->loadKnowledgeBase();
 
-            $p = new PersonalBotSystem();
-
             // Контекст (не инструкции!)
             $context = [];
             $context[] = "Ник игрока: " . htmlspecialchars($username);
             $context[] = "Сервер: " . trim((string)$server);
 
-            $context[] = "Как подключиться к серверу?";
-            $context[] = "Подключение через консоль F1. Список IP серверов:";
-            $context[] = trim($p->getIp());
-
-            $context[] = "Когда вайп?";
-            $context[] = "Даты вайпов на серверах:";
-            $context[] = trim($p->getWipe());
+            // Пытаемся получить информацию о серверах (может быть ошибка)
+            try {
+                $p = new PersonalBotSystem();
+                
+                $context[] = "Как подключиться к серверу?";
+                $context[] = "Подключение через консоль F1. Список IP серверов:";
+                $ipInfo = $p->getIp();
+                if (!empty($ipInfo)) {
+                    // Удаляем HTML теги для чистого текста
+                    $ipInfo = strip_tags($ipInfo);
+                    $ipInfo = html_entity_decode($ipInfo, ENT_QUOTES, 'UTF-8');
+                    if (!empty(trim($ipInfo))) {
+                        $context[] = trim($ipInfo);
+                    }
+                }
+                
+                $context[] = "Когда вайп?";
+                $context[] = "Даты вайпов на серверах:";
+                $wipeInfo = $p->getWipe();
+                if (!empty($wipeInfo)) {
+                    // Удаляем HTML теги для чистого текста
+                    $wipeInfo = strip_tags($wipeInfo);
+                    $wipeInfo = html_entity_decode($wipeInfo, ENT_QUOTES, 'UTF-8');
+                    if (!empty(trim($wipeInfo))) {
+                        $context[] = trim($wipeInfo);
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Если не удалось получить информацию о серверах - пропускаем
+                Yii::warning('OpenAiSupport: не удалось получить информацию о серверах: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine(), __METHOD__);
+            }
 
             if (!empty($user)) {
                 /** @var Reports[] $reports */

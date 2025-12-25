@@ -19,7 +19,7 @@ const channelHistory = new Map();
 const messageBuffer = new Map(); // channelId -> { messages: [], timer: null }
 
 // Таймаут сбора сообщений (2 минуты)
-const MESSAGE_COLLECTION_TIMEOUT = 2 * 60 * 1000; // 2 минуты в миллисекундах
+const MESSAGE_COLLECTION_TIMEOUT = 10 * 1000; // 2 минуты в миллисекундах
 
 // Функция для получения ответа от ChatGPT через API (обрабатывает несколько сообщений)
 async function getChatGptReply(messages, channelId) {

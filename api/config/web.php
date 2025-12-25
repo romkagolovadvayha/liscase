@@ -61,11 +61,6 @@ $config = [
                 'telegram-error' => [
                     'class' => 'common\components\log\TelegramSenderErrors',
                     'levels' => ['error'],
-                    'logFile' => '@runtime/logs/app.log',
-                    'maxFileSize' => 10240, // 10MB
-                    'maxLogFiles' => 5,
-                    'categories' => ['application', 'yii\*', 'api\*'],
-                    'logVars' => ['_GET', '_POST', '_FILES', '_COOKIE', '_SESSION', '_SERVER'],
                     'except'  => [
                         'yii\web\HttpException:403',
                         'yii\web\HttpException:404',
