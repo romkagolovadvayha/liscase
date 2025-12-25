@@ -658,7 +658,7 @@ client.on(Events.MessageCreate, async (message) => {
             }
 
             await message.channel.send({
-                content: '**📜 Правила серверов ПРОСТОЙ**\nВыберите сервер ниже, чтобы ознакомиться с его правилами:',
+                content: '**📜 Правила серверов**\nВыберите сервер ниже, чтобы ознакомиться с его правилами:',
                 components
             });
 
