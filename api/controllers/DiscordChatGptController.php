@@ -13,6 +13,8 @@ class DiscordChatGptController extends Controller
 
     public function beforeAction($action)
     {
+        Yii::info('DiscordChatGptController::beforeAction вызван для action: ' . $action->id, __METHOD__);
+        
         // Устанавливаем CORS заголовки
         Yii::$app->response->headers->set('Access-Control-Allow-Origin', '*');
         Yii::$app->response->headers->set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -21,10 +23,12 @@ class DiscordChatGptController extends Controller
         
         // Обработка preflight запросов
         if (Yii::$app->request->method === 'OPTIONS') {
+            Yii::info('DiscordChatGptController: OPTIONS запрос, завершаем', __METHOD__);
             Yii::$app->response->statusCode = 200;
             Yii::$app->end();
         }
         
+        Yii::info('DiscordChatGptController::beforeAction завершен, продолжаем', __METHOD__);
         return parent::beforeAction($action);
     }
 
@@ -41,6 +45,8 @@ class DiscordChatGptController extends Controller
      */
     public function actionReply()
     {
+        Yii::info('Discord ChatGPT: начало обработки запроса', __METHOD__);
+        
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         
         $message = Yii::$app->request->post('message');
@@ -48,7 +54,10 @@ class DiscordChatGptController extends Controller
         $chatHistory = Yii::$app->request->post('chatHistory', []);
         $server = Yii::$app->request->post('server', 'Discord');
         
+        Yii::info('Discord ChatGPT: получены данные - message: ' . mb_substr($message ?? '', 0, 50) . ', username: ' . $username, __METHOD__);
+        
         if (empty($message)) {
+            Yii::warning('Discord ChatGPT: пустое сообщение', __METHOD__);
             Yii::$app->response->statusCode = 400;
             return [
                 'success' => false,
@@ -57,6 +66,8 @@ class DiscordChatGptController extends Controller
         }
         
         try {
+            Yii::info('Discord ChatGPT: проверка компонента openAiSupport', __METHOD__);
+            
             // Проверяем наличие компонента
             if (!isset(Yii::$app->openAiSupport)) {
                 Yii::error('Discord ChatGPT: компонент openAiSupport не найден', __METHOD__);
@@ -70,6 +81,8 @@ class DiscordChatGptController extends Controller
             /** @var OpenAiSupport $openAiSupport */
             $openAiSupport = Yii::$app->openAiSupport;
             
+            Yii::info('Discord ChatGPT: проверка API ключа', __METHOD__);
+            
             // Проверяем настройки
             $apiKey = Yii::$app->settings->get('openAi_apiKey');
             if (empty($apiKey)) {
@@ -82,6 +95,7 @@ class DiscordChatGptController extends Controller
             }
             
             Yii::info('Discord ChatGPT: запрос от ' . $username . ', сообщение: ' . mb_substr($message, 0, 100), __METHOD__);
+            Yii::info('Discord ChatGPT: вызов getReply()', __METHOD__);
             
             $reply = $openAiSupport->getReply(
                 trim($message),
@@ -91,6 +105,8 @@ class DiscordChatGptController extends Controller
                 null, // ticketId
                 null  // user
             );
+            
+            Yii::info('Discord ChatGPT: getReply() завершен, reply: ' . (empty($reply) ? 'пусто' : mb_substr($reply, 0, 50)), __METHOD__);
             
             if (empty($reply)) {
                 Yii::error('Discord ChatGPT: пустой ответ от OpenAI', __METHOD__);

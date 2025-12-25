@@ -32,7 +32,7 @@ async function getChatGptReply(messages, channelId) {
         
         console.log(`[ChatGPT] Запрос для канала ${channelId} (${messages.length} сообщений): ${combinedMessage.substring(0, 100)}...`);
         
-        const response = await axios.post('https://api.prostoj.store/api/discord-chatgpt/reply', {
+        const response = await axios.post('https://api.prostoj.store/discord-chatgpt/reply', {
             message: combinedMessage,
             username: messages[messages.length - 1].username, // Используем имя последнего отправителя
             server: 'Discord',
