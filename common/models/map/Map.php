@@ -361,11 +361,38 @@ class Map extends \yii\db\ActiveRecord
         // Загружаем основное изображение
         $background = imagecreatefromstring($image);
 
+        // Получаем путь к watermark изображению
+        $watermarkPath = Yii::$app->settings->get('design_watemark');
+        $watermarkFilePath = null;
+        $isTempFile = false;
+        
+        // Проверяем, является ли watermark URL (S3 или другой)
+        if (preg_match('#^https?://#i', $watermarkPath)) {
+            // Это URL, нужно скачать во временный файл
+            try {
+                $tempDir = sys_get_temp_dir();
+                $tempFilePath = $tempDir . '/' . uniqid('watermark_') . '.png';
+                $watermarkContent = (clone Yii::$app->curl)->get($watermarkPath);
+                file_put_contents($tempFilePath, $watermarkContent);
+                $watermarkFilePath = $tempFilePath;
+                $isTempFile = true;
+            } catch (\Exception $e) {
+                Yii::error('Map::watermarkOld: Failed to download watermark from URL: ' . $watermarkPath . '. Error: ' . $e->getMessage(), __METHOD__);
+                die('Ошибка при загрузке накладываемого изображения: не удалось скачать watermark');
+            }
+        } else {
+            // Это локальный путь
+            $watermarkFilePath = \Yii::getAlias('@frontend/web') . $watermarkPath;
+        }
+
         // Загружаем накладываемое изображение
-        $overlay = imagecreatefrompng(\Yii::getAlias('@frontend/web') . Yii::$app->settings->get('design_watemark')); // для прозрачного изображения используем PNG
+        $overlay = imagecreatefrompng($watermarkFilePath); // для прозрачного изображения используем PNG
 
         // Проверка на ошибку при загрузке накладываемого изображения
         if (empty($overlay)) {
+            if ($isTempFile) {
+                @unlink($watermarkFilePath);
+            }
             die('Ошибка при загрузке накладываемого изображения');
         }
 
@@ -424,6 +451,11 @@ class Map extends \yii\db\ActiveRecord
         imagedestroy($background);
         imagedestroy($overlay);
         imagedestroy($resized_image);
+        
+        // Удаляем временный файл watermark, если использовался
+        if ($isTempFile && file_exists($watermarkFilePath)) {
+            @unlink($watermarkFilePath);
+        }
     }
 
     public static function upload($imageUrl, $filename, $depecate = null) {
@@ -441,11 +473,38 @@ class Map extends \yii\db\ActiveRecord
         // Загружаем основное изображение
         $background = imagecreatefromstring($image);
 
+        // Получаем путь к watermark изображению
+        $watermarkPath = Yii::$app->settings->get('design_watemark');
+        $watermarkFilePath = null;
+        $isTempFile = false;
+        
+        // Проверяем, является ли watermark URL (S3 или другой)
+        if (preg_match('#^https?://#i', $watermarkPath)) {
+            // Это URL, нужно скачать во временный файл
+            try {
+                $tempDir = sys_get_temp_dir();
+                $tempFilePath = $tempDir . '/' . uniqid('watermark_') . '.png';
+                $watermarkContent = (clone Yii::$app->curl)->get($watermarkPath);
+                file_put_contents($tempFilePath, $watermarkContent);
+                $watermarkFilePath = $tempFilePath;
+                $isTempFile = true;
+            } catch (\Exception $e) {
+                Yii::error('Map::watermark: Failed to download watermark from URL: ' . $watermarkPath . '. Error: ' . $e->getMessage(), __METHOD__);
+                die('Ошибка при загрузке накладываемого изображения: не удалось скачать watermark');
+            }
+        } else {
+            // Это локальный путь
+            $watermarkFilePath = \Yii::getAlias('@frontend/web') . $watermarkPath;
+        }
+
         // Загружаем накладываемое изображение
-        $overlay = imagecreatefrompng(\Yii::getAlias('@frontend/web') . Yii::$app->settings->get('design_watemark')); // для прозрачного изображения используем PNG
+        $overlay = imagecreatefrompng($watermarkFilePath); // для прозрачного изображения используем PNG
 
         // Проверка на ошибку при загрузке накладываемого изображения
         if (empty($overlay)) {
+            if ($isTempFile) {
+                @unlink($watermarkFilePath);
+            }
             die('Ошибка при загрузке накладываемого изображения');
         }
 
@@ -484,6 +543,11 @@ class Map extends \yii\db\ActiveRecord
         // Освобождаем память
         imagedestroy($background);
         imagedestroy($overlay);
+        
+        // Удаляем временный файл watermark, если использовался
+        if ($isTempFile && file_exists($watermarkFilePath)) {
+            @unlink($watermarkFilePath);
+        }
     }
 
     public static function getSearchQuery($size) {

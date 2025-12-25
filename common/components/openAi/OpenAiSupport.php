@@ -50,6 +50,7 @@ class OpenAiSupport extends \yii\base\Component
      * @param        $server
      * @param null   $ticketId
      * @param User   $user
+     * @param bool   $useDiscordInstructions Использовать инструкции для Discord
      *
      * @return string|null
      */
@@ -59,7 +60,8 @@ class OpenAiSupport extends \yii\base\Component
         string $server,
         array $chatHistory = [],
         ?int $ticketId = null,
-        $user = null
+        $user = null,
+        bool $useDiscordInstructions = false
     ): ?string {
         try {
             $knowledge = $this->loadKnowledgeBase();
@@ -137,8 +139,17 @@ class OpenAiSupport extends \yii\base\Component
             $messages = [];
 
             // Инструкции — только в system
-            $systemInstructions = Yii::$app->settings->get('openAi_instructions')
-                . "\n\nВажно: отвечай простым, человеческим комментарием на текст статьи. Без формата JSON, без метаданных, без обращений к разработчикам. Коротко и по делу.";
+            if ($useDiscordInstructions) {
+                $systemInstructions = Yii::$app->settings->get('openAi_instructionsDiscord');
+                if (empty($systemInstructions)) {
+                    // Если инструкции для Discord не настроены, используем обычные
+                    $systemInstructions = Yii::$app->settings->get('openAi_instructions');
+                }
+            } else {
+                $systemInstructions = Yii::$app->settings->get('openAi_instructions');
+            }
+            
+            $systemInstructions .= "\n\nВажно: отвечай простым, человеческим комментарием на текст статьи. Без формата JSON, без метаданных, без обращений к разработчикам. Коротко и по делу.";
 
             $messages[] = ['role' => 'system', 'content' => $systemInstructions];
 
@@ -171,7 +182,7 @@ class OpenAiSupport extends \yii\base\Component
                     'temperature' => $this->temperature ?? 0.7,
                     'max_tokens' => 350, // чтобы не расплывался
                 ],
-                'timeout' => 20,
+                'timeout' => 60, // Увеличено до 50 секунд для медленных ответов
             ]);
 
             $data = json_decode($response->getBody(), true);
