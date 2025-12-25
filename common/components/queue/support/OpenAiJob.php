@@ -127,7 +127,7 @@ class OpenAiJob extends BaseObject implements JobInterface
     private function createUser($steamId, $username) {
         $dbTransaction = Yii::$app->db->beginTransaction();
         try {
-            $avatar = 'https://' . Yii::$app->settings->get('site_domain') . Yii::$app->settings->get('openAi_avatar');
+            $avatar = Yii::$app->settings->get('openAi_avatar');
             $user           = new User();
             $user->email    = "chatgpt@steam.com";
             $user->steam_id = $steamId;
