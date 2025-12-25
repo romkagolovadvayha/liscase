@@ -62,6 +62,12 @@ class MapsV2Controller extends Controller
             ->andWhere(['IS NOT', 'map_list_id', null])
             ->column();
 
+        // Вычисляем дату через 3 суток от текущего момента
+        $threeDaysFromNow = new \DateTime();
+        $threeDaysFromNow->modify('+3 days');
+        $serverNextWipe = new \DateTime($server->next_wipe);
+        $shouldShowUnfixedMaps = $serverNextWipe <= $threeDaysFromNow;
+
         $mapQuery = MapList::find()
             ->alias('ml')
             ->andWhere(['IS NOT', 'ml.size_int', null])
@@ -69,10 +75,25 @@ class MapsV2Controller extends Controller
             ->andWhere(['<=', 'ml.size_int', (int)$server->max_map_size])
             ->orderBy(['ml.created_at' => SORT_DESC]);
         
-        // Исключаем зафиксированные карты из списка
-        if (!empty($fixedMapIds)) {
-            $mapQuery->andWhere(['NOT IN', 'ml.id', $fixedMapIds]);
+        // Исключаем зафиксированные карты (кроме той, что зафиксирована на текущем сервере)
+        $currentServerFixedMapId = $server->map_list_id;
+        $fixedMapIdsExcludingCurrent = array_filter($fixedMapIds, function($id) use ($currentServerFixedMapId) {
+            return $id != $currentServerFixedMapId;
+        });
+        
+        if (!empty($fixedMapIdsExcludingCurrent)) {
+            $mapQuery->andWhere(['NOT IN', 'ml.id', $fixedMapIdsExcludingCurrent]);
         }
+        
+        // Не зафиксированные карты показываем только если next_wipe сервера <= now + 3 дня
+        if (!$shouldShowUnfixedMaps && !empty($currentServerFixedMapId)) {
+            // Если next_wipe > now + 3 дня и есть зафиксированная карта, показываем только её
+            $mapQuery->andWhere(['=', 'ml.id', $currentServerFixedMapId]);
+        } elseif (!$shouldShowUnfixedMaps) {
+            // Если next_wipe > now + 3 дня и нет зафиксированной карты, не показываем ничего
+            $mapQuery->andWhere(['=', 'ml.id', 0]); // Несуществующий ID, чтобы вернуть пустой результат
+        }
+        // Если shouldShowUnfixedMaps = true, показываем все не зафиксированные карты (логика выше уже исключила зафиксированные на других серверах)
 
         $maps = $mapQuery->all();
         if (empty($maps)) {
