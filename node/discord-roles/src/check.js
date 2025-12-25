@@ -19,7 +19,7 @@ const channelHistory = new Map();
 const messageBuffer = new Map(); // channelId -> { messages: [], timer: null, lastMessage: null, questionMessage: null }
 
 // Таймаут сбора сообщений (2 минуты)
-const MESSAGE_COLLECTION_TIMEOUT = 10 * 1000; // 2 минуты в миллисекундах
+const MESSAGE_COLLECTION_TIMEOUT = 60 * 1000; // 2 минуты в миллисекундах
 
 // Время для получения контекста из канала (10 минут)
 const CONTEXT_TIME_WINDOW = 10 * 60 * 1000; // 10 минут в миллисекундах
