@@ -355,10 +355,9 @@ class User extends ActiveRecord implements IdentityInterface
                         UserTree::appendUser($user->id, 509);
                         UserProfile::createModel($user, $username);
                         $user->userProfile->name = $username;
-                        try {
-                            //$avatar                    = self::_loadImage($avatar, $steamId);
-                            $user->userProfile->avatar = null;
-                        } catch (\Exception $ex) {
+                        // Сохраняем URL аватара из Steam вместо загрузки на сервер
+                        if (!empty($avatar) && $avatar !== 'https://' . Yii::$app->settings->get('site_domain') . Yii::$app->settings->get('design_avatar_default')) {
+                            $user->userProfile->steam_avatar_url = $avatar;
                         }
                         $user->userProfile->save();
                     }
@@ -372,9 +371,11 @@ class User extends ActiveRecord implements IdentityInterface
                 $user->updated_at = date('Y-m-d H:i:s');
                 $user->username = HtmlPurifier::process($infoUser[0]['personaname']);
                 $user->save();
-                //$avatar = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
+                // Сохраняем URL аватара из Steam вместо загрузки на сервер
+                if (!empty($infoUser[0]['avatarfull'])) {
+                    $user->userProfile->steam_avatar_url = $infoUser[0]['avatarfull'];
+                }
                 $user->userProfile->name = HtmlPurifier::process($infoUser[0]['personaname']);
-                $user->userProfile->avatar = null;
                 $user->userProfile->save();
             }
 
@@ -776,7 +777,15 @@ class User extends ActiveRecord implements IdentityInterface
         if (empty($this->userProfile)) {
             return '';
         }
-        return Yii::$app->settings->get('site_cdnUrl') . $this->userProfile->avatar;
+        // Сначала проверяем новое поле steam_avatar_url (ссылка на Steam аватар)
+        if (!empty($this->userProfile->steam_avatar_url)) {
+            return $this->userProfile->steam_avatar_url;
+        }
+        // Если нового поля нет, используем старое (локальный файл)
+        if (!empty($this->userProfile->avatar)) {
+            return Yii::$app->settings->get('site_cdnUrl') . $this->userProfile->avatar;
+        }
+        return '';
     }
 
     public function getStatus() {

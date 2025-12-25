@@ -9,6 +9,107 @@ const {
 } = require('discord.js');
 const axios = require('axios');
 
+// Каналы, где ChatGPT должен отвечать
+const CHATGPT_CHANNELS = ['1120701864980263002', '1211335821555142736'];
+
+// Хранилище истории сообщений для каждого канала (последние 10 сообщений)
+const channelHistory = new Map();
+
+// Функция для получения ответа от ChatGPT через API
+async function getChatGptReply(message, username, channelId) {
+    try {
+        // Получаем историю для канала
+        const history = channelHistory.get(channelId) || [];
+        
+        const response = await axios.post('https://api.prostoj.store/api/discord-chatgpt/reply', {
+            message: message,
+            username: username,
+            server: 'Discord',
+            chatHistory: history
+        }, {
+            timeout: 20000 // 20 секунд таймаут
+        });
+        
+        if (response.data && response.data.success && response.data.reply) {
+            // Обновляем историю
+            history.push({ user: message });
+            history.push({ bot: response.data.reply });
+            
+            // Оставляем только последние 10 сообщений (5 пар вопрос-ответ)
+            if (history.length > 10) {
+                history.splice(0, history.length - 10);
+            }
+            
+            channelHistory.set(channelId, history);
+            
+            return response.data.reply;
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Ошибка при получении ответа от ChatGPT:', error.message);
+        return null;
+    }
+}
+
+// Функция для проверки, нужно ли отвечать на сообщение
+function shouldRespondToMessage(message) {
+    // Не отвечаем на сообщения от ботов
+    if (message.author.bot) {
+        return false;
+    }
+    
+    // Проверяем, что это нужный канал
+    if (!CHATGPT_CHANNELS.includes(message.channelId)) {
+        return false;
+    }
+    
+    // Проверяем, что сообщение не пустое
+    if (!message.content || message.content.trim().length === 0) {
+        return false;
+    }
+    
+    // Не отвечаем на команды бота
+    if (message.content.startsWith('!')) {
+        return false;
+    }
+    
+    return true;
+}
+
+// Функция для проверки, был ли ответ от модератора/админа
+async function hasStaffReply(channel, messageId) {
+    try {
+        // Получаем последние 20 сообщений до текущего
+        const messages = await channel.messages.fetch({ limit: 20, before: messageId });
+        
+        for (const msg of messages.values()) {
+            // Пропускаем текущее сообщение
+            if (msg.id === messageId) {
+                continue;
+            }
+            
+            // Если есть сообщение от пользователя с правами модератора/админа (не бот)
+            if (!msg.author.bot && msg.member) {
+                // Проверяем роли (можно настроить список ролей модераторов)
+                const hasModRole = msg.member.roles.cache.some(role => 
+                    role.permissions.has('ManageMessages') || 
+                    role.permissions.has('Administrator')
+                );
+                
+                if (hasModRole) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    } catch (error) {
+        console.error('Ошибка при проверке ответов модераторов:', error.message);
+        return false;
+    }
+}
+
 const client = new Client({
     partials: [Partials.Channel, Partials.Message],
     intents: [
@@ -199,6 +300,35 @@ client.on(Events.MessageCreate, async (message) => {
             } catch (e) {}
         }
     }
+    // ChatGPT ответы в указанных каналах
+    if (shouldRespondToMessage(message)) {
+        try {
+            // Проверяем, был ли ответ от модератора/админа
+            const staffReplied = await hasStaffReply(message.channel, message.id);
+            
+            if (!staffReplied) {
+                // Показываем индикатор "бот печатает" (асинхронно, не ждем)
+                message.channel.sendTyping();
+                
+                // Получаем ответ от ChatGPT
+                const reply = await getChatGptReply(
+                    message.content,
+                    message.author.globalName || message.author.username,
+                    message.channelId
+                );
+                
+                if (reply) {
+                    // Отправляем ответ
+                    await message.channel.send(reply);
+                }
+            } else {
+                console.log(`Пропущен ответ ChatGPT для сообщения ${message.id}: модератор уже ответил`);
+            }
+        } catch (error) {
+            console.error('Ошибка при обработке ChatGPT запроса:', error.message);
+        }
+    }
+    
     if (message.guildId == null && !message.author.bot) {
         try {
             client.channels.fetch('1237317039396487179').then(function(channel) {

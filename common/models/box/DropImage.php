@@ -45,14 +45,10 @@ class DropImage extends ActiveRecord
     }
 
     public function getImagePubUrl($cdn = true) {
-        // Проверяем, хранится ли изображение в S3 (по префиксу или другим признакам)
-        // Для новых загрузок используем S3, для старых - локальное хранилище
+        // Формируем ключ для S3
         $s3Key = 'uploads' . $this->image;
         
-        // Используем S3 URL для всех изображений drop
-        if ($cdn) {
-            return Yii::$app->params['s3Url'] . '/' . $s3Key;
-        }
+        // Используем S3Api для получения публичного URL (он использует настройки из settings)
         return Yii::$app->s3Api->getPublicUrl($s3Key);
     }
 
@@ -70,9 +66,8 @@ class DropImage extends ActiveRecord
             $image .= "/{$pref}";
         }
         $s3Key = 'uploads' . $image;
-        if ($cdn) {
-            return Yii::$app->params['s3Url'] . '/' . $s3Key;
-        }
+        
+        // Используем S3Api для получения публичного URL (он использует настройки из settings)
         return Yii::$app->s3Api->getPublicUrl($s3Key);
     }
 

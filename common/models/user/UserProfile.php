@@ -29,6 +29,7 @@ use yii\helpers\ArrayHelper;
  * @property string|null $twitch_link
  * @property string|null $vk_link
  * @property string|null $telegram_link
+ * @property string|null $steam_avatar_url
  * @property bool   $is_hide_online
  * @property bool   $is_hide_team
  *
@@ -71,9 +72,9 @@ class UserProfile extends \common\components\base\ActiveRecord
                 'integer',
             ],
             [['name', 'surname', 'trade_link', 'full_name', 'avatar'], 'string', 'max' => 255],
-            [['youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'string', 'max' => 500],
-            [['youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true],
-            [['birthday', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link', 'is_hide_online', 'is_hide_team'], 'safe'],
+            [['youtube_link', 'twitch_link', 'vk_link', 'telegram_link', 'steam_avatar_url'], 'string', 'max' => 500],
+            [['youtube_link', 'twitch_link', 'vk_link', 'telegram_link', 'steam_avatar_url'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true],
+            [['birthday', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link', 'steam_avatar_url', 'is_hide_online', 'is_hide_team'], 'safe'],
             [['is_hide_online', 'is_hide_team'], 'boolean'],
             [['user_id'], 'unique'],
         ];
