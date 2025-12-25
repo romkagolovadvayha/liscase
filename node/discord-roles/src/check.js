@@ -16,10 +16,13 @@ const CHATGPT_CHANNELS = ['1120701864980263002', '1211335821555142736', '1288617
 const channelHistory = new Map();
 
 // Буфер сообщений для каждого канала (собираем сообщения перед отправкой)
-const messageBuffer = new Map(); // channelId -> { messages: [], timer: null }
+const messageBuffer = new Map(); // channelId -> { messages: [], timer: null, lastMessage: null, questionMessage: null }
 
 // Таймаут сбора сообщений (2 минуты)
 const MESSAGE_COLLECTION_TIMEOUT = 10 * 1000; // 2 минуты в миллисекундах
+
+// Время для получения контекста из канала (10 минут)
+const CONTEXT_TIME_WINDOW = 10 * 60 * 1000; // 10 минут в миллисекундах
 
 // Функция для получения ответа от ChatGPT через API (обрабатывает несколько сообщений)
 async function getChatGptReply(messages, channelId) {
@@ -104,6 +107,94 @@ async function getChatGptReply(messages, channelId) {
     }
 }
 
+// Функция для проверки, содержит ли сообщение вопрос или запрос
+function isQuestionOrRequest(messageText) {
+    const questionWords = ['?', 'когда', 'как', 'где', 'что', 'почему', 'зачем', 'кто', 'помоги', 'помощь', 'help', 'подскажи', 'скажи', 'ответь', 'ответ', 'вопрос'];
+    const requestWords = ['вайп', 'wipe', 'ip', 'сервер', 'server', 'подключ', 'connect', 'правила', 'rules', 'баг', 'bug', 'ошибка', 'error', 'проблема', 'problem'];
+    
+    const text = messageText.toLowerCase();
+    
+    // Проверяем наличие знака вопроса
+    if (text.includes('?')) {
+        return true;
+    }
+    
+    // Проверяем наличие вопросных слов
+    for (const word of questionWords) {
+        if (text.includes(word)) {
+            return true;
+        }
+    }
+    
+    // Проверяем наличие слов-запросов
+    for (const word of requestWords) {
+        if (text.includes(word)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Функция для получения всех сообщений за последние 5 минут из канала
+async function getRecentChannelMessages(channel, beforeMessageId = null) {
+    try {
+        const now = Date.now();
+        const messages = [];
+        let lastMessageId = beforeMessageId;
+        let hasMore = true;
+        
+        // Получаем сообщения порциями по 100
+        while (hasMore && messages.length < 200) { // Ограничение на 200 сообщений
+            const options = { limit: 100 };
+            if (lastMessageId) {
+                options.before = lastMessageId;
+            }
+            
+            const fetched = await channel.messages.fetch(options);
+            
+            if (fetched.size === 0) {
+                hasMore = false;
+                break;
+            }
+            
+            for (const msg of fetched.values()) {
+                // Проверяем, не старше ли сообщение 10 минут
+                const messageAge = now - msg.createdTimestamp;
+                if (messageAge > CONTEXT_TIME_WINDOW) {
+                    hasMore = false;
+                    break;
+                }
+                
+                // Пропускаем сообщения от ботов
+                if (!msg.author.bot) {
+                    messages.push({
+                        content: msg.content,
+                        username: msg.author.globalName || msg.author.username,
+                        messageId: msg.id,
+                        timestamp: msg.createdTimestamp
+                    });
+                }
+                
+                lastMessageId = msg.id;
+            }
+            
+            // Если получили меньше 100 сообщений, значит больше нет
+            if (fetched.size < 100) {
+                hasMore = false;
+            }
+        }
+        
+        // Сортируем по времени (старые первыми)
+        messages.sort((a, b) => a.timestamp - b.timestamp);
+        
+        return messages;
+    } catch (error) {
+        console.error('[ChatGPT] Ошибка при получении сообщений из канала:', error.message);
+        return [];
+    }
+}
+
 // Функция для обработки накопленных сообщений и отправки ответа
 async function processBufferedMessages(channel) {
     const channelId = channel.id;
@@ -119,32 +210,61 @@ async function processBufferedMessages(channel) {
         buffer.timer = null;
     }
     
-    // Получаем копию сообщений и очищаем буфер
-    const messages = [...buffer.messages];
+    // Получаем копию сообщений и находим сообщение с вопросом
+    const bufferedMessages = [...buffer.messages];
+    const questionMessageObj = buffer.questionMessage; // Сохраняем ссылку на сообщение с вопросом
     buffer.messages = [];
+    buffer.questionMessage = null;
+    buffer.lastMessage = null;
     messageBuffer.set(channelId, buffer);
+    
+    // Проверяем, есть ли в сообщениях вопросы или запросы
+    const hasQuestion = bufferedMessages.some(msg => isQuestionOrRequest(msg.content));
+    if (!hasQuestion) {
+        console.log(`[ChatGPT] Пропущен ответ: в сообщениях нет вопросов или запросов`);
+        return;
+    }
+    
+    // Получаем все сообщения за последние 10 минут из канала для контекста
+    const lastMessageId = bufferedMessages[bufferedMessages.length - 1].messageId;
+    const recentMessages = await getRecentChannelMessages(channel, lastMessageId);
+    
+    console.log(`[ChatGPT] Получено ${recentMessages.length} сообщений за последние 10 минут для контекста`);
     
     // Проверяем, был ли ответ от модератора/админа за последние 5 минут
     try {
-        const lastMessage = messages[messages.length - 1];
-        const staffReplied = await hasStaffReply(channel, lastMessage.messageId);
+        const staffReplied = await hasStaffReply(channel, lastMessageId);
         
         if (staffReplied) {
-            console.log(`[ChatGPT] Пропущен ответ для ${messages.length} сообщений: модератор уже ответил`);
+            console.log(`[ChatGPT] Пропущен ответ для ${bufferedMessages.length} сообщений: модератор уже ответил`);
             return;
         }
         
         // Показываем индикатор "бот печатает"
         channel.sendTyping();
         
-        // Получаем ответ от ChatGPT
-        const reply = await getChatGptReply(messages, channelId);
+        // Получаем ответ от ChatGPT (используем все сообщения за 5 минут как контекст)
+        const reply = await getChatGptReply(recentMessages, channelId);
         
         if (reply) {
-            // Отправляем ответ
-            console.log(`[ChatGPT] Отправка ответа в канал ${channelId} (на ${messages.length} сообщений)`);
-            await channel.send(reply);
-            console.log(`[ChatGPT] Ответ успешно отправлен`);
+            // Отправляем ответ как reply на сообщение с вопросом, если оно доступно
+            if (questionMessageObj && !questionMessageObj.deleted) {
+                try {
+                    console.log(`[ChatGPT] Отправка ответа как reply на сообщение с вопросом ${questionMessageObj.id} (контекст: ${recentMessages.length} сообщений)`);
+                    await questionMessageObj.reply(reply);
+                    console.log(`[ChatGPT] Ответ успешно отправлен как reply`);
+                } catch (error) {
+                    // Если не удалось отправить reply (например, сообщение удалено), отправляем обычное сообщение
+                    console.warn(`[ChatGPT] Не удалось отправить reply, отправляем обычное сообщение:`, error.message);
+                    await channel.send(reply);
+                    console.log(`[ChatGPT] Ответ отправлен как обычное сообщение`);
+                }
+            } else {
+                // Если сообщение с вопросом недоступно, отправляем обычное сообщение
+                console.log(`[ChatGPT] Отправка ответа как обычное сообщение в канал ${channelId} (контекст: ${recentMessages.length} сообщений)`);
+                await channel.send(reply);
+                console.log(`[ChatGPT] Ответ успешно отправлен`);
+            }
         } else {
             console.warn(`[ChatGPT] Ответ не получен, сообщение не отправлено`);
         }
@@ -161,7 +281,7 @@ function addMessageToBuffer(message, channel) {
     // Получаем или создаем буфер для канала
     let buffer = messageBuffer.get(channelId);
     if (!buffer) {
-        buffer = { messages: [], timer: null };
+        buffer = { messages: [], timer: null, lastMessage: null, questionMessage: null };
         messageBuffer.set(channelId, buffer);
     }
     
@@ -172,6 +292,15 @@ function addMessageToBuffer(message, channel) {
         messageId: message.id,
         timestamp: Date.now()
     });
+    
+    // Сохраняем ссылку на последнее сообщение
+    buffer.lastMessage = message;
+    
+    // Если это сообщение содержит вопрос и еще не сохранено сообщение с вопросом - сохраняем его
+    if (!buffer.questionMessage && isQuestionOrRequest(message.content)) {
+        buffer.questionMessage = message;
+        console.log(`[ChatGPT] Найдено сообщение с вопросом от ${message.author.globalName || message.author.username}: ${message.content.substring(0, 50)}...`);
+    }
     
     // Очищаем предыдущий таймер
     if (buffer.timer) {
