@@ -10,7 +10,7 @@ const {
 const axios = require('axios');
 
 // Каналы, где ChatGPT должен отвечать
-const CHATGPT_CHANNELS = ['1120701864980263002', '1211335821555142736'];
+const CHATGPT_CHANNELS = ['1120701864980263002', '1211335821555142736', '1288617959136301086'];
 
 // Хранилище истории сообщений для каждого канала (последние 10 сообщений)
 const channelHistory = new Map();
@@ -77,11 +77,16 @@ function shouldRespondToMessage(message) {
     return true;
 }
 
-// Функция для проверки, был ли ответ от модератора/админа
+// ID ролей, которые блокируют ответы ChatGPT
+const BLOCKING_ROLE_IDS = ['1453659091649036401', '1453659405940686990'];
+const BLOCKING_TIMEOUT_MS = 5 * 60 * 1000; // 5 минут в миллисекундах
+
+// Функция для проверки, был ли ответ от модератора/админа или от специальных ролей
 async function hasStaffReply(channel, messageId) {
     try {
-        // Получаем последние 20 сообщений до текущего
-        const messages = await channel.messages.fetch({ limit: 20, before: messageId });
+        const now = Date.now();
+        // Получаем последние 50 сообщений для проверки (чтобы охватить 5 минут)
+        const messages = await channel.messages.fetch({ limit: 50, before: messageId });
         
         for (const msg of messages.values()) {
             // Пропускаем текущее сообщение
@@ -89,15 +94,21 @@ async function hasStaffReply(channel, messageId) {
                 continue;
             }
             
+            // Проверяем, не старше ли сообщение 5 минут
+            const messageAge = now - msg.createdTimestamp;
+            if (messageAge > BLOCKING_TIMEOUT_MS) {
+                continue; // Сообщение старше 5 минут, пропускаем
+            }
+            
             // Если есть сообщение от пользователя с правами модератора/админа (не бот)
             if (!msg.author.bot && msg.member) {
-                // Проверяем роли (можно настроить список ролей модераторов)
-                const hasModRole = msg.member.roles.cache.some(role => 
-                    role.permissions.has('ManageMessages') || 
-                    role.permissions.has('Administrator')
+                // Проверяем специальные роли, которые блокируют ответы
+                const hasBlockingRole = msg.member.roles.cache.some(role => 
+                    BLOCKING_ROLE_IDS.includes(role.id)
                 );
                 
-                if (hasModRole) {
+                if (hasBlockingRole) {
+                    console.log(`Сообщение от роли ${msg.member.roles.cache.find(r => BLOCKING_ROLE_IDS.includes(r.id))?.name} блокирует ответы ChatGPT на 5 минут`);
                     return true;
                 }
             }
