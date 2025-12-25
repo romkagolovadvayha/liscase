@@ -50,27 +50,24 @@ class DiscordChatGptController extends Controller
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         
         // Получаем данные из POST (может быть JSON или form-data)
-        $rawBody = Yii::$app->request->rawBody;
-        if (!empty($rawBody)) {
-            $jsonData = json_decode($rawBody, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($jsonData)) {
-                $message = $jsonData['message'] ?? null;
-                $username = $jsonData['username'] ?? 'Пользователь';
-                $chatHistory = $jsonData['chatHistory'] ?? [];
-                $server = $jsonData['server'] ?? 'Discord';
-            } else {
-                // Если не JSON, пробуем обычный POST
-                $message = Yii::$app->request->post('message');
-                $username = Yii::$app->request->post('username', 'Пользователь');
-                $chatHistory = Yii::$app->request->post('chatHistory', []);
-                $server = Yii::$app->request->post('server', 'Discord');
+        // Yii2 автоматически парсит JSON если Content-Type: application/json
+        $message = Yii::$app->request->post('message');
+        $username = Yii::$app->request->post('username', 'Пользователь');
+        $chatHistory = Yii::$app->request->post('chatHistory', []);
+        $server = Yii::$app->request->post('server', 'Discord');
+        
+        // Если через post() не получилось, пробуем rawBody
+        if (empty($message)) {
+            $rawBody = Yii::$app->request->rawBody;
+            if (!empty($rawBody)) {
+                $jsonData = json_decode($rawBody, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($jsonData)) {
+                    $message = $jsonData['message'] ?? null;
+                    $username = $jsonData['username'] ?? $username;
+                    $chatHistory = $jsonData['chatHistory'] ?? $chatHistory;
+                    $server = $jsonData['server'] ?? $server;
+                }
             }
-        } else {
-            // Обычный POST
-            $message = Yii::$app->request->post('message');
-            $username = Yii::$app->request->post('username', 'Пользователь');
-            $chatHistory = Yii::$app->request->post('chatHistory', []);
-            $server = Yii::$app->request->post('server', 'Discord');
         }
         
         Yii::info('Discord ChatGPT: получены данные - message: ' . mb_substr($message ?? '', 0, 50) . ', username: ' . $username . ', rawBody length: ' . strlen($rawBody ?? ''), __METHOD__);
@@ -122,7 +119,8 @@ class DiscordChatGptController extends Controller
                 $server,
                 $chatHistory,
                 null, // ticketId
-                null  // user
+                null, // user
+                true  // useDiscordInstructions - использовать инструкции для Discord
             );
             
             Yii::info('Discord ChatGPT: getReply() завершен, reply: ' . (empty($reply) ? 'пусто' : mb_substr($reply, 0, 50)), __METHOD__);
