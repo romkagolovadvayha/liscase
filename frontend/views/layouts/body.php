@@ -125,15 +125,6 @@ if (empty($this->params['_blog_similar_block'])) {
 
 // Виджет кнопки "ИТОГИ ГОДА"
 $yearReviewButton = '';
-$serverId = null;
-if (!empty($user) && !empty($user->server_id)) {
-    $serverId = $user->server_id;
-} elseif (!empty($servers) && count($servers) > 0) {
-    $serverId = $servers[0]->id;
-}
-if ($serverId) {
-    $yearReviewButton = \frontend\widgets\YearReviewButton::widget(['serverId' => $serverId]);
-}
 ?>
 
 <?php $this->beginBody() ?>
@@ -210,7 +201,6 @@ if ($serverId) {
     ]),
     'SETTINGS' => $SETTINGS,
     'PAGE' => $page,
-    'YEAR_REVIEW_BUTTON' => $yearReviewButton,
 ]);?>
 
 <?=Yii::$app->view->render('metrics.twig')?>
