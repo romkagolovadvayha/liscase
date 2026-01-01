@@ -682,10 +682,8 @@ class Drop extends ActiveRecord
         
         // Для VIP товаров и других товаров без subDrops создаем запись в user_drop
         if (empty($subDrops) || (in_array($this->drop_type, [Drop::TYPE_SET]) && $this->full_only)) {
-            // Устанавливаем boxId по умолчанию, если не указан
-            if (empty($parentId) && empty($setId) && empty($boxId)) {
-                $boxId = 14;
-            }
+            // boxId остается null для обычных покупок в магазине (чтобы товары можно было возвращать)
+            // box_id = 14 устанавливается явно только для заданий в TasksV2Controller
             
             if (in_array($this->rust_id, ['-2139580305'])) {
                 for ($i = 0; $i < $count; $i++) {
