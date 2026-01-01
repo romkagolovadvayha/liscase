@@ -223,8 +223,6 @@ class AudienceBonusController extends Controller
                         } else {
                             try {
                                 $message = $this->formatMessage($messageTemplate, $user, $userData);
-                                // Заменяем <br> и <br/> на переносы строк для Telegram HTML
-                                $message = preg_replace('/<br\s*\/?>/i', "\n", $message);
                                 Yii::info("Sending telegram message to user {$user->id} ({$user->getUsername()}), chat_id: {$user->telegram_chat_id}", __METHOD__);
                                 
                                 $personalBot = new PersonalBotSystem();
