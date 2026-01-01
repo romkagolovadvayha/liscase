@@ -282,7 +282,7 @@ class WipeController extends Controller
                 /** @var Drop[] $drops */
                 $drops = Drop::find()->all();
                 DropBlocked::unBlocked($server->id);
-
+                
                 foreach ($drops as $drop) {
                     if (!empty($drop->blocked_hour)) {
                         $date = new \DateTime();
@@ -290,13 +290,13 @@ class WipeController extends Controller
                         DropBlocked::createRecord($drop->id, $server->id, $date->format('Y-m-d H:i:s'));
                     }
                 }
-
+                
                 Yii::$app->cache->set($cacheKey, 1, 1*60);
                 $cacheKeyGetBlocked = "DropBlocked_getBlocked_" . $server->id;
                 Yii::$app->cache->delete($cacheKeyGetBlocked);
-
+                
                 \console\controllers\ChatServer::broadcastLauncherUpdate();
-
+                
                 $results['step1_block_items'][$server->id] = [
                     'success' => true,
                     'message' => 'Предметы успешно заблокированы',
@@ -344,20 +344,20 @@ class WipeController extends Controller
                     $value = $top['label'];
                     foreach ($top['items'] as $i => $item) {
                         $user = User::findBySteamId($item['steam_id'], false, 'top');
-
+                        
                         // Проверяем, что пользователь найден
                         if (empty($user)) {
                             Yii::warning("User not found for steam_id: {$item['steam_id']} in top rewards", __METHOD__);
                             continue;
                         }
-
+                        
                         // Получаем или создаем баланс пользователя
                         $personalBalance = $user->getPersonalBalance();
                         if (empty($personalBalance) || empty($personalBalance->id)) {
                             Yii::warning("Personal balance not found for user ID: {$user->id}, steam_id: {$item['steam_id']}", __METHOD__);
                             continue;
                         }
-
+                        
                         $profit = new Profit();
                         $profit->status = 1;
                         $profit->type = Profit::TYPE_TOP;
@@ -431,10 +431,10 @@ class WipeController extends Controller
 
                 // Используем MapFixJob через очередь или напрямую
                 \Yii::$app->queueProcess->push(new MapFixJob(['serverId' => $server->id]));
-
+                
                 // Также фиксируем напрямую для немедленного результата
                 MapList::fixWinningMapForServer($server->id);
-
+                
                 $results['step3_fix_map'][$server->id] = [
                     'success' => true,
                     'message' => 'Карта успешно зафиксирована',
@@ -501,7 +501,7 @@ class WipeController extends Controller
 
             try {
                 $rconResults = RconTasks::executeWithResults($rconCommand, $serverTags);
-
+                
                 foreach ($rconResults as $tag => $rconResult) {
                     $server = $rconResult['server'];
                     if (!empty($rconResult['error'])) {
