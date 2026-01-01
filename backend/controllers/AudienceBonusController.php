@@ -140,6 +140,8 @@ class AudienceBonusController extends Controller
         $messageTemplate = Yii::$app->request->post('message_template');
         $testUserIds = Yii::$app->request->post('test_user_ids');
 
+        Yii::info("AudienceBonus apply: audience_type={$audienceType}, message_template=" . (!empty($messageTemplate) ? 'provided' : 'empty'), __METHOD__);
+
         if (empty($audienceType)) {
             return ['success' => false, 'message' => 'Не указан тип аудитории'];
         }
@@ -200,7 +202,7 @@ class AudienceBonusController extends Controller
                     $profit->type = Profit::TYPE_AUDIENCE_BONUS;
                     $profit->amount = $bonusAmount;
                     $profit->user_balance_id = $userBalance->id;
-                    $profit->comment = 'Бонус аудитории';
+                    $profit->comment = 'Бонус от проекта';
                     $profit->created_at = date('Y-m-d H:i:s');
                     
                     if (!$profit->save(false)) {
@@ -215,16 +217,32 @@ class AudienceBonusController extends Controller
                     $successCount++;
 
                     // Отправляем сообщение в ТГ бот, если есть шаблон и chat_id
-                    if (!empty($messageTemplate) && !empty($user->telegram_chat_id)) {
-                        try {
-                            $message = $this->formatMessage($messageTemplate, $user, $userData);
-                            $personalBot = new PersonalBotSystem();
-                            $personalBot->getTelegramBot()->sendMessage($user->telegram_chat_id, $message);
-                            $telegramSentCount++;
-                        } catch (\Exception $e) {
-                            Yii::error("Failed to send telegram message to user {$user->id}: " . $e->getMessage(), __METHOD__);
-                            $telegramErrorCount++;
+                    if (!empty($messageTemplate)) {
+                        if (empty($user->telegram_chat_id)) {
+                            Yii::info("User {$user->id} ({$user->getUsername()}) has no telegram_chat_id, skipping message", __METHOD__);
+                        } else {
+                            try {
+                                $message = $this->formatMessage($messageTemplate, $user, $userData);
+                                Yii::info("Sending telegram message to user {$user->id} ({$user->getUsername()}), chat_id: {$user->telegram_chat_id}", __METHOD__);
+                                
+                                $personalBot = new PersonalBotSystem();
+                                $result = $personalBot->getTelegramBot()->sendMessage($user->telegram_chat_id, $message);
+                                
+                                if ($result === false || (isset($result['ok']) && !$result['ok'])) {
+                                    $errorMessage = isset($result['description']) ? $result['description'] : 'Unknown error';
+                                    Yii::error("Failed to send telegram message to user {$user->id} ({$user->getUsername()}): {$errorMessage}", __METHOD__);
+                                    $telegramErrorCount++;
+                                } else {
+                                    Yii::info("Telegram message successfully sent to user {$user->id} ({$user->getUsername()})", __METHOD__);
+                                    $telegramSentCount++;
+                                }
+                            } catch (\Exception $e) {
+                                Yii::error("Exception when sending telegram message to user {$user->id} ({$user->getUsername()}): " . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
+                                $telegramErrorCount++;
+                            }
                         }
+                    } else {
+                        Yii::info("No message template provided, skipping telegram message for user {$user->id}", __METHOD__);
                     }
                 } catch (\Exception $e) {
                     Yii::error("Error processing user {$user->id}: " . $e->getMessage(), __METHOD__);
