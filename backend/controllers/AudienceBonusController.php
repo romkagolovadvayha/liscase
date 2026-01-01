@@ -272,7 +272,7 @@ class AudienceBonusController extends Controller
             $user = $userData['user'];
             $previewList[] = [
                 'id' => $user->id,
-                'username' => $user->username,
+                'username' => $user->getUsername(),
                 'bonus_amount' => $userData['bonus_amount'],
                 'additional_info' => $userData['additional_info'] ?? [],
             ];
@@ -379,24 +379,55 @@ class AudienceBonusController extends Controller
         $minWipes = isset($parameters['wipes_count']) && $parameters['wipes_count'] !== '' ? (int)$parameters['wipes_count'] : 40;
         $wipesBonus = isset($parameters['wipes_bonus']) && $parameters['wipes_bonus'] !== '' ? (float)$parameters['wipes_bonus'] : 500;
 
+        // Сначала получаем всех пользователей
         $query = User::find()
-            ->select(['user.id', 'user.steam_id'])
-            ->where(['IS NOT', 'steam_id', null]);
+            ->select(['user.id', 'user.steam_id', 'user.username'])
+            ->where(['IS NOT', 'steam_id', null])
+            ->andWhere(['!=', 'steam_id', '']);
 
         if (!empty($testUserIds) && is_array($testUserIds)) {
             $query->andWhere(['IN', 'user.id', $testUserIds]);
         }
 
-        $users = $query->all();
+        $users = $query->asArray()->all();
+        
+        if (empty($users)) {
+            return [];
+        }
 
+        // Получаем steam_id всех пользователей
+        $steamIds = array_filter(array_column($users, 'steam_id'));
+        if (empty($steamIds)) {
+            return [];
+        }
+
+        // Оптимизированный запрос: получаем количество вайпов для всех пользователей одним запросом
+        $wipesCounts = Statistics::find()
+            ->select(['steam_id', 'COUNT(DISTINCT `wipe`) as wipes_count'])
+            ->where(['IN', 'steam_id', $steamIds])
+            ->groupBy('steam_id')
+            ->asArray()
+            ->all();
+
+        // Преобразуем в массив [steam_id => count]
+        $wipesCountMap = [];
+        foreach ($wipesCounts as $row) {
+            $wipesCountMap[$row['steam_id']] = (int)$row['wipes_count'];
+        }
+
+        // Формируем результат
         $usersData = [];
-        foreach ($users as $user) {
-            $wipesCount = Statistics::find()
-                ->select('COUNT(DISTINCT `wipe`)')
-                ->where(['steam_id' => $user->steam_id])
-                ->scalar() ?? 0;
+        foreach ($users as $userData) {
+            $steamId = $userData['steam_id'];
+            $wipesCount = $wipesCountMap[$steamId] ?? 0;
 
             if ($wipesCount >= $minWipes) {
+                // Загружаем модель User только для пользователей, которые прошли проверку
+                $user = User::findOne($userData['id']);
+                if (!$user) {
+                    continue;
+                }
+
                 $usersData[] = [
                     'user' => $user,
                     'bonus_amount' => $wipesBonus,
@@ -420,8 +451,8 @@ class AudienceBonusController extends Controller
     private function formatMessage($template, $user, $userData)
     {
         $replacements = [
-            '{username}' => $user->username,
-            '{amount}' => number_format($userData['bonus_amount'], 2, '.', ' '),
+            '{username}' => $user->getUsername(),
+            '{amount}' => number_format($userData['bonus_amount'], 2, '.', ' ') . ' РУБ',
         ];
 
         if (isset($userData['additional_info']['total_deposit'])) {
