@@ -445,6 +445,10 @@ class AudienceBonusController extends Controller
             $query->andWhere(['IN', 'user.id', $testUserIds]);
         }
 
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
         $results = $query->asArray()->all();
 
         $usersData = [];
@@ -523,14 +527,27 @@ class AudienceBonusController extends Controller
         $minWipes = isset($parameters['wipes_count']) && $parameters['wipes_count'] !== '' ? (int)$parameters['wipes_count'] : 40;
         $wipesBonus = isset($parameters['wipes_bonus']) && $parameters['wipes_bonus'] !== '' ? (float)$parameters['wipes_bonus'] : 500;
 
-        // Сначала получаем всех пользователей
+        // Используем подзапрос для получения только нужных пользователей (оптимизация)
+        $subQuery = Statistics::find()
+            ->select(['steam_id', 'COUNT(DISTINCT `wipe`) as wipes_count'])
+            ->groupBy('steam_id')
+            ->having(['>=', 'COUNT(DISTINCT `wipe`)', $minWipes]);
+
         $query = User::find()
-            ->select(['user.id', 'user.steam_id', 'user.username'])
-            ->where(['IS NOT', 'steam_id', null])
-            ->andWhere(['!=', 'steam_id', '']);
+            ->select(['user.id', 'user.steam_id'])
+            ->innerJoin(
+                ['stats' => $subQuery],
+                'stats.steam_id = user.steam_id'
+            )
+            ->where(['IS NOT', 'user.steam_id', null])
+            ->andWhere(['!=', 'user.steam_id', '']);
 
         if (!empty($testUserIds) && is_array($testUserIds)) {
             $query->andWhere(['IN', 'user.id', $testUserIds]);
+        }
+
+        if ($limit !== null) {
+            $query->limit($limit);
         }
 
         $users = $query->asArray()->all();
@@ -539,12 +556,7 @@ class AudienceBonusController extends Controller
             return [];
         }
 
-        if (empty($users)) {
-            return [];
-        }
-
-        // Получаем количество вайпов из подзапроса (уже отфильтровано)
-        // Получаем steam_id всех пользователей для дополнительного запроса вайпов
+        // Получаем steam_id всех пользователей
         $steamIds = array_filter(array_column($users, 'steam_id'));
         if (empty($steamIds)) {
             return [];
@@ -570,7 +582,7 @@ class AudienceBonusController extends Controller
             $steamId = $userData['steam_id'];
             $wipesCount = $wipesCountMap[$steamId] ?? 0;
 
-            // Загружаем модель User
+            // Загружаем модель User только для пользователей, которые прошли проверку
             $user = User::findOne($userData['id']);
             if (!$user) {
                 continue;
