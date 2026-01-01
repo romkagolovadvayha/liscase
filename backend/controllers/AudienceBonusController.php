@@ -279,13 +279,16 @@ class AudienceBonusController extends Controller
      */
     private function getAudiencePreview($audienceType, $parameters, $testUserIds)
     {
-        $usersData = $this->getAudienceUsers($audienceType, $parameters, $testUserIds);
-
-        $totalUsers = count($usersData);
-        $totalAmount = array_sum(ArrayHelper::getColumn($usersData, 'bonus_amount'));
+        // Для предпросмотра загружаем только первые 50 пользователей
+        $previewUsersData = $this->getAudienceUsers($audienceType, $parameters, $testUserIds, 50);
+        
+        // Для подсчета статистики используем оптимизированные методы без загрузки всех данных
+        $stats = $this->getAudienceStats($audienceType, $parameters, $testUserIds);
+        $totalUsers = $stats['total_users'];
+        $totalAmount = $stats['total_amount'];
 
         $previewList = [];
-        foreach (array_slice($usersData, 0, 50) as $userData) {
+        foreach ($previewUsersData as $userData) {
             /** @var User $user */
             $user = $userData['user'];
             $previewList[] = [
@@ -298,8 +301,8 @@ class AudienceBonusController extends Controller
 
         $previewMessage = null;
         $messageTemplate = Yii::$app->request->post('message_template');
-        if (!empty($messageTemplate) && !empty($usersData)) {
-            $firstUser = reset($usersData);
+        if (!empty($messageTemplate) && !empty($previewUsersData)) {
+            $firstUser = reset($previewUsersData);
             $previewMessage = $this->formatMessage($messageTemplate, $firstUser['user'], $firstUser);
         }
 
@@ -313,32 +316,117 @@ class AudienceBonusController extends Controller
     }
 
     /**
+     * Получить статистику аудитории без загрузки всех пользователей
+     * @param int $audienceType
+     * @param array $parameters
+     * @param array|null $testUserIds
+     * @return array ['total_users' => int, 'total_amount' => float]
+     */
+    private function getAudienceStats($audienceType, $parameters, $testUserIds)
+    {
+        if ($audienceType == AudienceBonus::AUDIENCE_TYPE_DEPOSITS) {
+            return $this->getDepositsAudienceStats($parameters, $testUserIds);
+        } elseif ($audienceType == AudienceBonus::AUDIENCE_TYPE_WIPES) {
+            return $this->getWipesAudienceStats($parameters, $testUserIds);
+        }
+
+        return ['total_users' => 0, 'total_amount' => 0];
+    }
+
+    /**
      * Получить список пользователей аудитории с расчетом бонусов
      * @param int $audienceType
      * @param array $parameters
      * @param array|null $testUserIds
+     * @param int|null $limit Лимит пользователей (для предпросмотра)
      * @return array Массив ['user' => User, 'bonus_amount' => float, 'additional_info' => array]
      */
-    private function getAudienceUsers($audienceType, $parameters, $testUserIds)
+    private function getAudienceUsers($audienceType, $parameters, $testUserIds, $limit = null)
     {
         $usersData = [];
 
         if ($audienceType == AudienceBonus::AUDIENCE_TYPE_DEPOSITS) {
-            $usersData = $this->getDepositsAudience($parameters, $testUserIds);
+            $usersData = $this->getDepositsAudience($parameters, $testUserIds, $limit);
         } elseif ($audienceType == AudienceBonus::AUDIENCE_TYPE_WIPES) {
-            $usersData = $this->getWipesAudience($parameters, $testUserIds);
+            $usersData = $this->getWipesAudience($parameters, $testUserIds, $limit);
         }
 
         return $usersData;
     }
 
     /**
+     * Получить статистику аудитории по депозитам без загрузки всех пользователей
+     * @param array $parameters
+     * @param array|null $testUserIds
+     * @return array ['total_users' => int, 'total_amount' => float]
+     */
+    private function getDepositsAudienceStats($parameters, $testUserIds)
+    {
+        // Значения по умолчанию
+        $minDeposit = isset($parameters['deposit_min']) && $parameters['deposit_min'] !== '' ? (float)$parameters['deposit_min'] : 5000;
+        $percent = isset($parameters['deposit_percent']) && $parameters['deposit_percent'] !== '' ? (float)$parameters['deposit_percent'] : 3;
+        $minBonus = isset($parameters['deposit_min_bonus']) && $parameters['deposit_min_bonus'] !== '' ? (float)$parameters['deposit_min_bonus'] : 500;
+        $round = isset($parameters['deposit_round']) && $parameters['deposit_round'] !== '' ? (float)$parameters['deposit_round'] : 100;
+
+        $query = User::find()
+            ->select(['user.id', 'SUM(deposit.amount) as total_deposit'])
+            ->innerJoin('deposit', 'deposit.user_id = user.id')
+            ->where(['deposit.status' => Deposit::STATUS_SUCCESS])
+            ->groupBy('user.id')
+            ->having(['>=', 'SUM(deposit.amount)', $minDeposit]);
+
+        if (!empty($testUserIds) && is_array($testUserIds)) {
+            $query->andWhere(['IN', 'user.id', $testUserIds]);
+        }
+
+        // Используем count для подсчета без загрузки всех данных
+        $totalUsers = (int)$query->count();
+
+        if ($totalUsers == 0) {
+            return ['total_users' => 0, 'total_amount' => 0];
+        }
+
+        // Подсчитываем общую сумму бонусов через SQL
+        $sql = "SELECT 
+                    SUM(
+                        GREATEST(
+                            {$minBonus},
+                            ROUND(
+                                (total_deposit * {$percent} / 100) / {$round}
+                            ) * {$round}
+                        )
+                    ) as total_amount
+                FROM (
+                    SELECT user.id, SUM(deposit.amount) as total_deposit
+                    FROM `user`
+                    INNER JOIN `deposit` ON deposit.user_id = user.id
+                    WHERE deposit.status = " . Deposit::STATUS_SUCCESS;
+        
+        if (!empty($testUserIds) && is_array($testUserIds)) {
+            $ids = implode(',', array_map('intval', $testUserIds));
+            $sql .= " AND user.id IN ({$ids})";
+        }
+        
+        $sql .= " GROUP BY user.id
+                  HAVING SUM(deposit.amount) >= {$minDeposit}
+                ) as deposits";
+
+        $totalAmount = (float)Yii::$app->db->createCommand($sql)->queryScalar() ?: 0;
+
+        return [
+            'total_users' => $totalUsers,
+            'total_amount' => $totalAmount,
+        ];
+    }
+
+    /**
      * Получить аудиторию по депозитам
      * @param array $parameters
      * @param array|null $testUserIds
+     * @param int|null $limit Лимит пользователей
      * @return array
      */
-    private function getDepositsAudience($parameters, $testUserIds)
+    private function getDepositsAudience($parameters, $testUserIds, $limit = null)
     {
         // Значения по умолчанию
         $minDeposit = isset($parameters['deposit_min']) && $parameters['deposit_min'] !== '' ? (float)$parameters['deposit_min'] : 5000;
@@ -386,12 +474,50 @@ class AudienceBonusController extends Controller
     }
 
     /**
+     * Получить статистику аудитории по вайпам без загрузки всех пользователей
+     * @param array $parameters
+     * @param array|null $testUserIds
+     * @return array ['total_users' => int, 'total_amount' => float]
+     */
+    private function getWipesAudienceStats($parameters, $testUserIds)
+    {
+        // Значения по умолчанию
+        $minWipes = isset($parameters['wipes_count']) && $parameters['wipes_count'] !== '' ? (int)$parameters['wipes_count'] : 40;
+        $wipesBonus = isset($parameters['wipes_bonus']) && $parameters['wipes_bonus'] !== '' ? (float)$parameters['wipes_bonus'] : 500;
+
+        // Используем SQL для подсчета без загрузки всех данных
+        $sql = "SELECT COUNT(DISTINCT user.id) as total_users
+                FROM `user`
+                WHERE user.steam_id IS NOT NULL AND user.steam_id != ''";
+        
+        if (!empty($testUserIds) && is_array($testUserIds)) {
+            $ids = implode(',', array_map('intval', $testUserIds));
+            $sql .= " AND user.id IN ({$ids})";
+        }
+        
+        $sql .= " AND (
+                    SELECT COUNT(DISTINCT `wipe`)
+                    FROM `statistics`
+                    WHERE statistics.steam_id = user.steam_id
+                ) >= {$minWipes}";
+
+        $totalUsers = (int)Yii::$app->db->createCommand($sql)->queryScalar() ?: 0;
+        $totalAmount = $totalUsers * $wipesBonus;
+
+        return [
+            'total_users' => $totalUsers,
+            'total_amount' => $totalAmount,
+        ];
+    }
+
+    /**
      * Получить аудиторию по вайпам
      * @param array $parameters
      * @param array|null $testUserIds
+     * @param int|null $limit Лимит пользователей
      * @return array
      */
-    private function getWipesAudience($parameters, $testUserIds)
+    private function getWipesAudience($parameters, $testUserIds, $limit = null)
     {
         // Значения по умолчанию
         $minWipes = isset($parameters['wipes_count']) && $parameters['wipes_count'] !== '' ? (int)$parameters['wipes_count'] : 40;
@@ -413,13 +539,18 @@ class AudienceBonusController extends Controller
             return [];
         }
 
-        // Получаем steam_id всех пользователей
+        if (empty($users)) {
+            return [];
+        }
+
+        // Получаем количество вайпов из подзапроса (уже отфильтровано)
+        // Получаем steam_id всех пользователей для дополнительного запроса вайпов
         $steamIds = array_filter(array_column($users, 'steam_id'));
         if (empty($steamIds)) {
             return [];
         }
 
-        // Оптимизированный запрос: получаем количество вайпов для всех пользователей одним запросом
+        // Получаем количество вайпов для пользователей одним запросом
         $wipesCounts = Statistics::find()
             ->select(['steam_id', 'COUNT(DISTINCT `wipe`) as wipes_count'])
             ->where(['IN', 'steam_id', $steamIds])
@@ -439,21 +570,19 @@ class AudienceBonusController extends Controller
             $steamId = $userData['steam_id'];
             $wipesCount = $wipesCountMap[$steamId] ?? 0;
 
-            if ($wipesCount >= $minWipes) {
-                // Загружаем модель User только для пользователей, которые прошли проверку
-                $user = User::findOne($userData['id']);
-                if (!$user) {
-                    continue;
-                }
-
-                $usersData[] = [
-                    'user' => $user,
-                    'bonus_amount' => $wipesBonus,
-                    'additional_info' => [
-                        'wipes_count' => $wipesCount,
-                    ],
-                ];
+            // Загружаем модель User
+            $user = User::findOne($userData['id']);
+            if (!$user) {
+                continue;
             }
+
+            $usersData[] = [
+                'user' => $user,
+                'bonus_amount' => $wipesBonus,
+                'additional_info' => [
+                    'wipes_count' => $wipesCount,
+                ],
+            ];
         }
 
         return $usersData;
