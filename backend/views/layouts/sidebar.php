@@ -267,8 +267,14 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                        'label' => 'Бонусы',
                        'icon' => 'fas fa-cog',
                        'visibility' => $moder,
-                       'active' => _checkActive('/payment-bonuses') || _checkActive('/promocode') || _checkActive('/tasks-v2') || _checkActive('/settings/index?category=referral'),
+                       'active' => _checkActive('/audience-bonus') || _checkActive('/payment-bonuses') || _checkActive('/promocode') || _checkActive('/tasks-v2') || _checkActive('/settings/index?category=referral'),
                        'items' => [
+                           [
+                               'label' => 'Бонусы аудитории',
+                               'icon' => 'fa-solid fa-users',
+                               'url' => ['/audience-bonus/index'],
+                               'active' => _checkActive('/audience-bonus'),
+                           ],
                            [
                                'label' => 'Промокоды',
                                'icon' => 'fa-solid fa-percent',
