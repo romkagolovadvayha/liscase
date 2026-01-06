@@ -1,4 +1,5 @@
 const { queue, playlist } = require('../engine');
+const Metadata = require('../utils/metadata');
 
 const plugin = {
     name: 'streamServer',
@@ -78,8 +79,9 @@ const plugin = {
         server.route({
             method: 'GET',
             path: '/api/status',
-            handler: (request, h) => {
+            handler: async (request, h) => {
                 const currentSong = queue.getCurrentSong();
+                const currentMetadata = queue.getCurrentMetadata();
                 const queueList = queue.getQueue();
                 const playlistItems = playlist.getItems();
                 const listenersCount = queue.getListenersCount();
@@ -91,6 +93,7 @@ const plugin = {
                     current: currentSong ? {
                         name: currentSong,
                         position: queue.getCurrentPosition(),
+                        metadata: Metadata.formatMetadataForAPI(currentMetadata)
                     } : null,
                     queue: queueList.map((item, idx) => ({
                         position: idx + 1,
@@ -161,11 +164,13 @@ const plugin = {
         server.route({
             method: 'GET',
             path: '/api/current',
-            handler: (request, h) => {
+            handler: async (request, h) => {
                 const currentSong = queue.getCurrentSong();
+                const currentMetadata = queue.getCurrentMetadata();
                 return {
                     current: currentSong || null,
                     position: queue.getCurrentPosition(),
+                    metadata: Metadata.formatMetadataForAPI(currentMetadata)
                 };
             }
         });
@@ -403,7 +408,7 @@ const plugin = {
             }
         });
 
-        // GET /api/track-info - Получить информацию о треке (длительность, битрейт)
+        // GET /api/track-info - Получить информацию о треке (используя node-internet-radio подход)
         server.route({
             method: 'GET',
             path: '/api/track-info',
@@ -415,54 +420,28 @@ const plugin = {
                 }
                 
                 try {
-                    const Path = require('path');
-                    const Fs = require('fs');
+                    // Используем node-internet-radio подход для получения метаданных
+                    const metadata = await Metadata.getTrackMetadata(track);
                     
-                    const trackPath = Path.join(process.cwd(), track);
-                    
-                    // Проверяем существование файла
-                    if (!Fs.existsSync(trackPath)) {
+                    if (!metadata) {
                         return h.response({ 
                             success: false, 
-                            error: 'Track file not found' 
+                            error: 'Track file not found or could not read metadata' 
                         }).code(404);
                     }
                     
-                    // Пытаемся использовать ffprobe если доступен
-                    let duration = 0;
-                    let bitRate = 128000;
-                    
-                    try {
-                        const { ffprobe } = require('@dropb/ffprobe');
-                        const result = await ffprobe(trackPath);
-                        
-                        duration = parseFloat(result.format.duration) || 0;
-                        bitRate = parseInt(result.format.bit_rate) || 128000;
-                    } catch (ffprobeError) {
-                        // Fallback: оцениваем длительность по размеру файла
-                        const stats = Fs.statSync(trackPath);
-                        const fileSize = stats.size;
-                        
-                        // Предполагаем средний битрейт 192 kbps = 24000 bytes/sec
-                        duration = Math.round(fileSize / 24000);
-                        bitRate = 192000;
-                        
-                        console.log(`⚠️  ffprobe not available, estimated duration: ${duration}s`);
-                    }
-                    
+                    const Path = require('path');
+                    const Fs = require('fs');
+                    const trackPath = Path.join(process.cwd(), track);
                     const fileStats = Fs.statSync(trackPath);
-                    const fileSize = fileStats.size;
                     
-                    console.log(`ℹ️  Track info for ${track}: duration=${duration}s, bitrate=${bitRate}, size=${fileSize}`);
+                    console.log(`ℹ️  Track info for ${track}: ${metadata.title} - ${metadata.artist}, duration=${metadata.duration}s, bitrate=${metadata.bitrate}`);
                     
                     return {
                         success: true,
                         track: track,
-                        duration: duration, // секунды
-                        durationFormatted: formatDuration(duration), // MM:SS
-                        bitRate: bitRate,
-                        fileSize: fileSize,
-                        format: 'mp3'
+                        ...Metadata.formatMetadataForAPI(metadata),
+                        fileSize: fileStats.size
                     };
                 } catch (err) {
                     console.error(`❌ Error getting track info: ${err.message}`);
@@ -477,11 +456,9 @@ const plugin = {
     }
 };
 
-// Вспомогательная функция для форматирования длительности
+// Вспомогательная функция для форматирования длительности (используем из Metadata модуля)
 function formatDuration(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    return Metadata.formatDuration(seconds);
 }
 
 module.exports = plugin;

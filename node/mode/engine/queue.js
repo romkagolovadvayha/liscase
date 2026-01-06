@@ -6,9 +6,11 @@ const { PassThrough } = require('stream');
 const Throttle = require('throttle');
 const NeoBlessed = require('neo-blessed');
 const { ffprobe } = require('@dropb/ffprobe');
+const Radio = require('node-internet-radio');
 
 const AbstractClasses = require('./shared/abstract-classes');
 const Utils = require('../utils');
+const Metadata = require('../utils/metadata');
 const { keys }  = require('../config');
 
 /**
@@ -25,6 +27,7 @@ class Queue extends AbstractClasses.TerminalItemBox {
         this._sinks = new Map(); // map of active sinks/writables
         this._songs = []; // list of queued up songs
         this._currentSong = null;
+        this._currentMetadata = null; // метаданные текущего трека
         this._currentStreams = null; // { readable, throttle } - текущие потоки для остановки
         this._shouldSkip = false; // флаг для пропуска текущего трека
         this._isPlaying = false; // флаг для защиты от рекурсивных вызовов _playLoop
@@ -248,6 +251,17 @@ class Queue extends AbstractClasses.TerminalItemBox {
             
             if (!bitRate || bitRate <= 0) {
                 console.error(`❌ Invalid bitrate for ${Path.basename(songToPlay)}, using default`);
+            }
+            
+            // Получаем метаданные трека используя node-internet-radio подход
+            try {
+                this._currentMetadata = await Metadata.getTrackMetadata(songToPlay);
+                if (this._currentMetadata) {
+                    console.log(`🎵 Track: ${this._currentMetadata.title} - ${this._currentMetadata.artist}`);
+                }
+            } catch (metadataError) {
+                console.warn(`⚠️  Could not get metadata: ${metadataError.message}`);
+                this._currentMetadata = null;
             }
             
             // ТЕПЕРЬ меняем currentSong - поток начал читать файл!
@@ -690,6 +704,14 @@ class Queue extends AbstractClasses.TerminalItemBox {
      */
     getCurrentSong() {
         return this._currentSong;
+    }
+
+    /**
+     * Get current track metadata
+     * @returns {Object|null}
+     */
+    getCurrentMetadata() {
+        return this._currentMetadata;
     }
 
     /**
