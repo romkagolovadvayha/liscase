@@ -1,17 +1,37 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Map } from '@/types/maps';
 import MapCard from './MapCard';
+import apiClient from '@/lib/api/client';
 
 interface MapsClientProps {
-  initialData: {
+  initialData?: {
     maps: Map[];
   };
 }
 
 export default function MapsClient({ initialData }: MapsClientProps) {
-  const [maps, setMaps] = useState(initialData.maps);
+  const [maps, setMaps] = useState<Map[]>(initialData?.maps || []);
+  const [isLoading, setIsLoading] = useState(!initialData);
+
+  useEffect(() => {
+    if (!initialData) {
+      setIsLoading(true);
+      apiClient.get('/maps-v2')
+        .then(response => {
+          if (response.data.success) {
+            setMaps(response.data.data?.maps || []);
+          }
+        })
+        .catch(error => {
+          console.error('Failed to fetch maps:', error);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [initialData]);
 
   const handleVote = async (mapId: number) => {
     try {
@@ -44,6 +64,21 @@ export default function MapsClient({ initialData }: MapsClientProps) {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="maps-page">
+        <div className="maps-container">
+          <div className="maps-header">
+            <h1>Карты серверов</h1>
+          </div>
+          <div className="maps-content">
+            <div className="maps-empty">Загрузка...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="maps-page">
       <div className="maps-container">
@@ -51,9 +86,13 @@ export default function MapsClient({ initialData }: MapsClientProps) {
           <h1>Карты серверов</h1>
         </div>
         <div className="maps-grid">
-          {maps.map((map) => (
-            <MapCard key={map.id} map={map} onVote={handleVote} />
-          ))}
+          {maps.length === 0 ? (
+            <div className="maps-empty">Нет карт</div>
+          ) : (
+            maps.map((map) => (
+              <MapCard key={map.id} map={map} onVote={handleVote} />
+            ))
+          )}
         </div>
       </div>
     </div>

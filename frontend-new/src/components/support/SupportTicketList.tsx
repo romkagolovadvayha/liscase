@@ -124,7 +124,7 @@ export default function SupportTicketList({
                     <span className="support-ticket-item-number">
                       #{ticket.number}
                     </span>
-                    {ticket.unread_count > 0 && (
+                    {(ticket.unread_count ?? 0) > 0 && (
                       <span className="support-ticket-item-unread">
                         {ticket.unread_count}
                       </span>

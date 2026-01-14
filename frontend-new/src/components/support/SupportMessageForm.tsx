@@ -359,7 +359,9 @@ export default function SupportMessageForm({
               if (typeof ref === 'function') {
                 ref(e);
               }
-              textareaRef.current = e;
+              if (e && textareaRef) {
+                (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = e;
+              }
             }}
             placeholder={editingMessageId !== null ? "Редактируйте сообщение..." : "Напишите сообщение..."}
             disabled={disabled || isSending}

@@ -61,12 +61,12 @@ export default function TaskCard({ task, onClick }: TaskCardProps) {
         <div className="category-card__image-wrapper">
           <img className="category-card__image" src={task.image} alt={task.title} loading="lazy" />
           {/* Прогресс поверх изображения */}
-          {task.progress !== null && task.maxProgress !== null && task.maxProgress > 0 && (
+          {task.progress !== null && task.maxProgress !== null && task.maxProgress !== undefined && task.maxProgress > 0 && (
             <div className="task-card__progress-overlay">
               <div className="task-card__progress-bar-overlay">
                 <div
                   className="task-card__progress-fill-overlay"
-                  style={{ width: `${Math.min((task.progress / task.maxProgress) * 100, 100)}%` }}
+                  style={{ width: `${Math.min(((task.progress ?? 0) / (task.maxProgress ?? 1)) * 100, 100)}%` }}
                 />
               </div>
               <span className="task-card__progress-text-overlay">

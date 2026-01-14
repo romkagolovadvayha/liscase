@@ -13,7 +13,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { getDefaultAvatar } from '@/lib/utils/settingsImage';
 
 interface SupportTicketClientProps {
-  initialData: {
+  initialData?: {
     ticket: SupportTicket;
     messages: SupportMessage[];
     tickets: SupportTicket[];
@@ -69,8 +69,8 @@ export default function SupportTicketClient({
     },
   };
   console.log('[SupportTicketClient] Default ticket:', initialData);
-  const [ticket, setTicket] = useState(initialData.ticket || defaultTicket);
-  const [messages, setMessages] = useState<SupportMessage[]>(initialData.messages || []);
+  const [ticket, setTicket] = useState(initialData?.ticket || defaultTicket);
+  const [messages, setMessages] = useState<SupportMessage[]>(initialData?.messages || []);
   const [showUserTicketsHistory, setShowUserTicketsHistory] = useState(false);
   console.log('[SupportTicketClient] State initialized');
   const [ticketUser, setTicketUser] = useState<{
@@ -84,7 +84,7 @@ export default function SupportTicketClient({
     server?: any;
     trade_link?: string;
   }>(
-    (initialData.ticket?.user && typeof initialData.ticket.user === 'object') 
+    (initialData?.ticket?.user && typeof initialData.ticket.user === 'object') 
       ? {
           id: initialData.ticket.user.id,
           username: initialData.ticket.user.username,
@@ -93,7 +93,7 @@ export default function SupportTicketClient({
           avatar: initialData.ticket.user.avatar,
         }
       : {
-          id: initialData.ticket?.user_id || ticket.user_id || 0,
+          id: initialData?.ticket?.user_id || ticket.user_id || 0,
           username: 'Unknown',
           blocked_support: false,
           blocked_support_at: null,
@@ -172,7 +172,7 @@ export default function SupportTicketClient({
 
   // Обновляем состояние при изменении initialData (только при первой загрузке, если данные уже есть)
   useEffect(() => {
-    if (initialData.ticket && !ticket.id) {
+    if (initialData?.ticket && !ticket.id) {
       setTicket(initialData.ticket);
       if (initialData.ticket.user && typeof initialData.ticket.user === 'object') {
         setTicketUser({
@@ -470,9 +470,9 @@ export default function SupportTicketClient({
   };
 
   const isBlocked =
-    initialData.user?.blocked_support ||
-    (initialData.user?.blocked_support_at &&
-      initialData.user.blocked_support_at &&
+    initialData?.user?.blocked_support ||
+    (initialData?.user?.blocked_support_at &&
+      initialData?.user?.blocked_support_at &&
       new Date(initialData.user.blocked_support_at) > new Date());
 
   // Если ticket не загружен или невалиден, показываем загрузку
@@ -488,24 +488,24 @@ export default function SupportTicketClient({
     <>
       <SupportTicketHeader
         ticket={ticket}
-        user={initialData.user}
+        user={initialData?.user || null}
         ticketUser={ticketUser}
         onClose={handleCloseTicket}
         onOpen={handleOpenTicket}
         onMute={handleMute}
         onBlockChat={handleBlockChat}
         onBlockAccount={handleBlockAccount}
-        onShowUserTicketsHistory={initialData.user?.isAdmin ? () => setShowUserTicketsHistory(!showUserTicketsHistory) : undefined}
+        onShowUserTicketsHistory={initialData?.user?.isAdmin ? () => setShowUserTicketsHistory(!showUserTicketsHistory) : undefined}
       />
       {(() => {
-        console.log('[SupportTicketClient] Rendering history check - showUserTicketsHistory:', showUserTicketsHistory, 'isAdmin:', initialData.user?.isAdmin, 'ticketUser:', ticketUser);
+        console.log('[SupportTicketClient] Rendering history check - showUserTicketsHistory:', showUserTicketsHistory, 'isAdmin:', initialData?.user?.isAdmin, 'ticketUser:', ticketUser);
         return null;
       })()}
-      {showUserTicketsHistory && initialData.user?.isAdmin && ticketUser && (
+      {showUserTicketsHistory && initialData?.user?.isAdmin && ticketUser && (
         <SupportUserTicketsHistory
           userId={ticketUser.id}
           currentTicketId={ticket.id}
-          isAdmin={initialData.user.isAdmin}
+          isAdmin={initialData?.user?.isAdmin || false}
           onClose={() => {
             console.log('[SupportTicketClient] Closing history');
             setShowUserTicketsHistory(false);
@@ -514,8 +514,8 @@ export default function SupportTicketClient({
       )}
       <SupportMessages
         messages={messages}
-        currentUserId={initialData.user?.id || 0}
-        isAdmin={initialData.user?.isAdmin || false}
+        currentUserId={initialData?.user?.id || 0}
+        isAdmin={initialData?.user?.isAdmin || false}
         onDeleteMessage={handleDeleteMessage}
         onEditMessage={handleEditMessage}
         ticketUser={ticketUser ? {
@@ -525,7 +525,7 @@ export default function SupportTicketClient({
           server: (ticketUser as any).server,
           trade_link: (ticketUser as any).trade_link,
         } : undefined}
-        reports={initialData.reports}
+        reports={initialData?.reports}
       />
       {ticket.status === 'open' ? (
         !isBlocked ? (
@@ -542,9 +542,9 @@ export default function SupportTicketClient({
           <div className="support-blocked-message">
             <p>
               Доступ в чат будет разблокирован{' '}
-              {initialData.user?.blocked_support_at && (
+              {initialData?.user?.blocked_support_at && (
                 <span>
-                  {new Date(initialData.user.blocked_support_at).toLocaleString('ru-RU')}
+                  {initialData?.user?.blocked_support_at && new Date(initialData.user.blocked_support_at).toLocaleString('ru-RU')}
                 </span>
               )}
             </p>

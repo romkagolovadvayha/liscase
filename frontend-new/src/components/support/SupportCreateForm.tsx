@@ -105,7 +105,7 @@ export default function SupportCreateForm({
       <>
         <SupportTicketHeader
           ticket={fakeTicket}
-          user={user}
+          user={user ? { ...user, isAdmin: user.isAdmin || false } : null}
           ticketUser={user ? {
             id: user.id,
             username: user.username,
@@ -142,7 +142,7 @@ export default function SupportCreateForm({
     <>
       <SupportTicketHeader
         ticket={fakeTicket}
-        user={user}
+        user={user ? { ...user, isAdmin: user.isAdmin || false } : null}
         ticketUser={user ? {
           id: user.id,
           username: user.username,

@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import ServerCard from './ServerCard';
+import apiClient from '@/lib/api/client';
 import '@/styles/servers.scss';
 
 interface ServerTag {
@@ -15,11 +17,61 @@ interface ServerTag {
 }
 
 interface ServerTagClientProps {
-  tag: ServerTag;
-  servers: any[];
+  tag?: ServerTag;
+  servers?: any[];
 }
 
-export default function ServerTagClient({ tag, servers }: ServerTagClientProps) {
+export default function ServerTagClient({ tag: initialTag, servers: initialServers }: ServerTagClientProps) {
+  const params = useParams();
+  const linkName = params?.linkName as string;
+  
+  const [tag, setTag] = useState<ServerTag | null>(initialTag || null);
+  const [servers, setServers] = useState<any[]>(initialServers || []);
+  const [isLoading, setIsLoading] = useState(!initialTag || !initialServers);
+
+  useEffect(() => {
+    if (!initialTag && linkName) {
+      setIsLoading(true);
+      apiClient.get(`/servers/tag/${linkName}`)
+        .then(response => {
+          if (response.data.success) {
+            setTag(response.data.data?.tag || null);
+            setServers(response.data.data?.servers || []);
+          }
+        })
+        .catch(error => {
+          console.error('Failed to fetch server tag data:', error);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [initialTag, linkName]);
+
+  if (isLoading) {
+    return (
+      <div className="servers_page">
+        <div className="page-stats__block-without-hover">
+          <div className="servers_page_empty">
+            <p>Загрузка...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!tag) {
+    return (
+      <div className="servers_page">
+        <div className="page-stats__block-without-hover">
+          <div className="servers_page_empty">
+            <p>Тег не найден</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="servers_page">
       <div className="page-stats__block-without-hover">

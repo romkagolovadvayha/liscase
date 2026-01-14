@@ -4,20 +4,45 @@ import React, { useState, useEffect } from 'react';
 import type { RadioStation, RadioTrack } from '@/types/radio';
 import RadioPlayer from './RadioPlayer';
 import RadioTrackList from './RadioTrackList';
+import apiClient from '@/lib/api/client';
 
 interface RadioClientProps {
-  initialData: {
+  initialData?: {
     stations: RadioStation[];
   };
 }
 
 export default function RadioClient({ initialData }: RadioClientProps) {
+  const [stations, setStations] = useState<RadioStation[]>(initialData?.stations || []);
   const [selectedStation, setSelectedStation] = useState<RadioStation | null>(
-    initialData.stations[0] || null
+    stations[0] || null
   );
   const [tracks, setTracks] = useState<RadioTrack[]>([]);
   const [currentTrack, setCurrentTrack] = useState<RadioTrack | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingStations, setIsLoadingStations] = useState(!initialData);
+
+  useEffect(() => {
+    if (!initialData) {
+      setIsLoadingStations(true);
+      apiClient.get('/radio/stations')
+        .then(response => {
+          if (response.data.success) {
+            const loadedStations = response.data.data?.stations || [];
+            setStations(loadedStations);
+            if (loadedStations.length > 0) {
+              setSelectedStation(loadedStations[0]);
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Failed to fetch radio stations:', error);
+        })
+        .finally(() => {
+          setIsLoadingStations(false);
+        });
+    }
+  }, [initialData]);
 
   useEffect(() => {
     if (selectedStation) {
@@ -52,38 +77,61 @@ export default function RadioClient({ initialData }: RadioClientProps) {
     }
   };
 
+  if (isLoadingStations) {
+    return (
+      <div className="radio-page">
+        <div className="radio-container">
+          <div className="radio-header">
+            <h1>Радиостанция</h1>
+          </div>
+          <div className="radio-content">
+            <div className="radio-empty">Загрузка...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="radio-page">
       <div className="radio-container">
         <div className="radio-header">
           <h1>Радиостанция</h1>
         </div>
-        <div className="radio-stations">
-          {initialData.stations.map((station) => (
-            <button
-              key={station.id}
-              className={`radio-station-button ${
-                selectedStation?.id === station.id ? 'active' : ''
-              }`}
-              onClick={() => setSelectedStation(station)}
-            >
-              {station.name}
-            </button>
-          ))}
-        </div>
-        {selectedStation && (
+        {stations.length === 0 ? (
+          <div className="radio-content">
+            <div className="radio-empty">Нет доступных радиостанций</div>
+          </div>
+        ) : (
           <>
-            <RadioPlayer
-              station={selectedStation}
-              track={currentTrack || selectedStation.currentTrack}
-            />
-            <RadioTrackList
-              tracks={tracks}
-              currentTrack={currentTrack || selectedStation.currentTrack}
-              onTrackSelect={handleTrackSelect}
-              onLike={handleLike}
-              isLoading={isLoading}
-            />
+            <div className="radio-stations">
+              {stations.map((station) => (
+                <button
+                  key={station.id}
+                  className={`radio-station-button ${
+                    selectedStation?.id === station.id ? 'active' : ''
+                  }`}
+                  onClick={() => setSelectedStation(station)}
+                >
+                  {station.name}
+                </button>
+              ))}
+            </div>
+            {selectedStation && (
+              <>
+                <RadioPlayer
+                  station={selectedStation}
+                  track={currentTrack || selectedStation.currentTrack}
+                />
+                <RadioTrackList
+                  tracks={tracks}
+                  currentTrack={currentTrack || selectedStation.currentTrack}
+                  onTrackSelect={handleTrackSelect}
+                  onLike={handleLike}
+                  isLoading={isLoading}
+                />
+              </>
+            )}
           </>
         )}
       </div>

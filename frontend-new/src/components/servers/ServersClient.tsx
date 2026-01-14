@@ -51,10 +51,30 @@ interface Server {
 }
 
 interface ServersClientProps {
-  projectStats: ProjectStats;
+  projectStats?: ProjectStats;
 }
 
-export default function ServersClient({ projectStats }: ServersClientProps) {
+export default function ServersClient({ projectStats: initialProjectStats }: ServersClientProps) {
+  const [projectStats, setProjectStats] = useState<ProjectStats | undefined>(initialProjectStats);
+  const [isLoadingStats, setIsLoadingStats] = useState(!initialProjectStats);
+
+  useEffect(() => {
+    if (!initialProjectStats) {
+      setIsLoadingStats(true);
+      apiClient.get('/servers/stats')
+        .then(response => {
+          if (response.data.success) {
+            setProjectStats(response.data.data?.projectStats);
+          }
+        })
+        .catch(error => {
+          console.error('Failed to fetch project stats:', error);
+        })
+        .finally(() => {
+          setIsLoadingStats(false);
+        });
+    }
+  }, [initialProjectStats]);
   const [servers, setServers] = useState<Server[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTagId, setSelectedTagId] = useState<number | null>(null);

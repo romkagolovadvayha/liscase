@@ -67,7 +67,7 @@ export default function TasksClient() {
         let filteredTasks = tasksData;
         if (filter === 'active') {
           filteredTasks = tasksData.filter(
-            (task: Task) => task.userStatus?.status === 'available' || task.userStatus?.status === 'in_progress'
+            (task: Task) => task.userStatus?.status === 'available' || (task.userStatus?.status as any) === 'in_progress'
           );
         } else if (filter === 'completed') {
           filteredTasks = tasksData.filter((task: Task) => task.userStatus?.status === 'completed');

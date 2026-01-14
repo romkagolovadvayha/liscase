@@ -34,6 +34,8 @@ interface ReferralListItem {
   createdAt: string;
   hasBonus: boolean;
   hasSkinSent: boolean;
+  hasHourInServer?: boolean;
+  canGetReward?: boolean;
 }
 
 export default function ProfileReferralClient() {

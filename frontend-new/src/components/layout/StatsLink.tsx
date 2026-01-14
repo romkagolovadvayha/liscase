@@ -23,9 +23,11 @@ export default function StatsLink({ children, className }: { children: React.Rea
         if (isAuthenticated()) {
           try {
             const user = await getMe();
-            if (user?.server_tag && servers.length > 0) {
+            // server_tag может быть в расширенных данных пользователя, но не в базовом типе
+            const userWithServerTag = user as any;
+            if (userWithServerTag?.server_tag && servers.length > 0) {
               // Ищем сервер по тегу из кэшированных данных
-              const server = servers.find((s: any) => s.tag === user.server_tag);
+              const server = servers.find((s: any) => s.tag === userWithServerTag.server_tag);
               if (server) {
                 setHref(`/servers/${server.tag}`);
                 return;

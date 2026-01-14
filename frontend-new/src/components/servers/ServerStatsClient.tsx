@@ -154,6 +154,7 @@ function ServerStatsContent({ initialData }: ServerStatsClientProps) {
   }
 
   const handleServerChange = async (tag: string) => {
+    if (!data || !data.server) return;
     if (tag === data.server.tag) {
       return; // Уже на этом сервере
     }

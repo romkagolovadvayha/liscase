@@ -42,7 +42,7 @@ export default function BlogLatestPosts() {
       <ul className="blog-latest-posts__list">
         {posts.map((post) => {
           // Формируем URL поста
-          let postUrl = post.url || `/posts/post-${post.link_name || post.id}`;
+          let postUrl = post.url || `/posts/post-${(post as any).link_name || (post as any).linkName || post.id}`;
           if (!postUrl.startsWith('/')) {
             postUrl = `/posts/${postUrl}`;
           }

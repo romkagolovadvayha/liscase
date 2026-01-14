@@ -6,7 +6,7 @@ export async function loginUser(page: any, tokens?: { access: string; refresh: s
   const accessToken = tokens?.access || 'test_access_token_' + Date.now();
   const refreshToken = tokens?.refresh || 'test_refresh_token_' + Date.now();
   
-  await page.evaluate(({ access, refresh }) => {
+  await page.evaluate(({ access, refresh }: { access: string; refresh: string }) => {
     localStorage.setItem('access_token', access);
     localStorage.setItem('refresh_token', refresh);
   }, { access: accessToken, refresh: refreshToken });

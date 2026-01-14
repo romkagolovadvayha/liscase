@@ -5,7 +5,7 @@ import Link from 'next/link';
 import type { Deposit } from '@/types/payment';
 
 interface PaymentResultClientProps {
-  deposit: Deposit | null;
+  deposit?: Deposit | null;
 }
 
 export default function PaymentResultClient({ deposit }: PaymentResultClientProps) {

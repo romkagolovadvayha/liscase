@@ -51,6 +51,8 @@ interface BlogPost {
   views: number;
   commentsCount: number;
   url: string;
+  linkName?: string;
+  link_name?: string;
 }
 
 interface SimilarPost {
@@ -523,7 +525,7 @@ export default function BlogPostPage({ linkName, slug }: BlogPostPageProps) {
 
         {/* Комментарии */}
         {post && (
-          <BlogComments blogId={post.linkName || post.link_name || String(post.id)} />
+          <BlogComments blogId={post.linkName || post.link_name || post.url || String(post.id)} />
         )}
       </div>
     </div>

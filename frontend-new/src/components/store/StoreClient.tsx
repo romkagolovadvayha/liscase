@@ -8,29 +8,36 @@ import StoreStats from './StoreStats';
 import apiClient from '@/lib/api/client';
 import { isAuthenticated } from '@/lib/api/auth';
 
+interface Server {
+  id: number;
+  name: string;
+  tag: string;
+  is_store: number;
+}
+
+interface Category {
+  id: number;
+  name: string;
+}
+
 interface StoreClientProps {
-  initialData: {
+  initialData?: {
     items: StoreItem[];
-    server: {
-      id: number;
-      name: string;
-      tag: string;
-      is_store: number;
-    } | null;
-    categories: Array<{
-      id: number;
-      name: string;
-    }>;
+    server: Server | null;
+    categories: Category[];
     total: number;
   };
 }
 
 export default function StoreClient({ initialData }: StoreClientProps) {
-  const [items, setItems] = useState(initialData.items);
+  const [items, setItems] = useState<StoreItem[]>(initialData?.items || []);
+  const [server, setServer] = useState<Server | null>(initialData?.server || null);
+  const [categories, setCategories] = useState<Category[]>(initialData?.categories || []);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isLoading, setIsLoading] = useState(!initialData);
 
   // WebSocket для real-time обновлений
-  const { isConnected, onInventoryUpdate } = useStoreWebSocket({
+  const { isConnected } = useStoreWebSocket({
     enabled: true,
     onInventoryUpdate: (updatedItems) => {
       setItems(updatedItems);
@@ -43,7 +50,7 @@ export default function StoreClient({ initialData }: StoreClientProps) {
       return;
     }
 
-    if (!initialData.server) {
+    if (!server) {
       alert('Сервер не выбран');
       return;
     }
@@ -52,7 +59,7 @@ export default function StoreClient({ initialData }: StoreClientProps) {
       // TODO: store/deliver endpoint пока не реализован в новом API
       const response = await apiClient.post('/store/deliver', {
         itemId,
-        serverId: initialData.server.id,
+        serverId: server.id,
       });
 
       if (response.data.success) {
@@ -89,6 +96,21 @@ export default function StoreClient({ initialData }: StoreClientProps) {
     ? items
     : items.filter((item) => item.category?.id.toString() === selectedCategory);
 
+  if (isLoading) {
+    return (
+      <div className="store-page">
+        <div className="store-container">
+          <div className="store-header">
+            <h1>Корзина сервера</h1>
+          </div>
+          <div className="store-content">
+            <div className="store-empty">Загрузка...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="store-page">
       <div className="store-container">
@@ -97,12 +119,12 @@ export default function StoreClient({ initialData }: StoreClientProps) {
             <h1>Корзина сервера</h1>
             <p>Это ваша корзина с покупками, вы можете забрать их в любой момент</p>
           </div>
-          {items.length > 0 && (
-            <StoreStats items={items} server={initialData.server} />
+          {items.length > 0 && server && (
+            <StoreStats items={items} server={server} />
           )}
         </div>
 
-        {!initialData.server || initialData.server.is_store === 0 ? (
+        {!server || server.is_store === 0 ? (
           <div className="store-warning">
             ⚠️ Магазин на сервере, на котором вы находитесь, недоступен!
           </div>
@@ -119,7 +141,7 @@ export default function StoreClient({ initialData }: StoreClientProps) {
               >
                 Все
               </div>
-              {initialData.categories.map((category) => (
+              {categories.map((category) => (
                 <div
                   key={category.id}
                   className={`store-category ${selectedCategory === category.id.toString() ? 'active' : ''}`}
@@ -131,7 +153,7 @@ export default function StoreClient({ initialData }: StoreClientProps) {
             </div>
             <StoreInventory
               items={filteredItems}
-              server={initialData.server}
+              server={server}
               onDeliver={handleDeliver}
               onReturn={handleReturn}
             />
