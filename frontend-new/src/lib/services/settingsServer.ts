@@ -31,8 +31,9 @@ export async function getSettingsServer(update: boolean = false): Promise<Record
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      // Не кешируем на уровне fetch, используем свой кеш
-      cache: 'no-store',
+      // Используем ISR (Incremental Static Regeneration) с revalidate 1 час
+      // Это позволяет статически генерировать страницы, но обновлять их периодически
+      next: { revalidate: 3600 }, // 1 час в секундах
     });
 
     if (!response.ok) {
