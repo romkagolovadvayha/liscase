@@ -226,7 +226,7 @@ export default function Header({
   }, []);
 
   // WebSocket подключение для обновления баланса
-  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? `ws://${window.location.hostname}:4889` : undefined);
+  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? `ws://45.129.128.211:4889` : undefined);
   const [wsToken, setWsToken] = useState<string | undefined>(undefined);
   const [wsSteamId, setWsSteamId] = useState<string | undefined>(steamId);
 
