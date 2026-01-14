@@ -73,7 +73,7 @@ class BlogImage extends \yii\db\ActiveRecord
 
     public function getPublicUrl() {
         
-        return Yii::$app->settings->get('s3_publicUrl') . '/uploads/blog/' . $this->link;
+        return Yii::$app->settings->get('s3_publicUrl') . '/blog/' . $this->link;
     }
 
     public static function getMimetypeFromExtension($extension)

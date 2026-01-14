@@ -31,7 +31,28 @@ $this->params['breadcrumbs'][] = $this->title;
             ['class' => 'yii\grid\SerialColumn'],
 
             'id',
-            'user_id',
+            [
+                'attribute' => 'user_id',
+                'format' => 'raw',
+                'value' => function (Support $model) {
+                    if (!$model->user) {
+                        return Html::encode($model->user_id);
+                    }
+                    $avatar = $model->user->getAvatar();
+                    $avatarHtml = '';
+                    if ($avatar) {
+                        $avatarHtml = Html::img($avatar, [
+                            'alt' => Html::encode($model->user->username),
+                            'style' => 'width: 32px; height: 32px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 8px;',
+                        ]);
+                    }
+                    $url = Url::to(['/user/profile', 'userId' => $model->user->id]);
+                    return $avatarHtml . Html::a(Html::encode($model->user->username), $url, [
+                        'class' => 'ds-text--primary',
+                        'style' => 'text-decoration: none; vertical-align: middle;'
+                    ]);
+                },
+            ],
             'name',
             'status',
             'created_at',

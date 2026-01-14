@@ -6,6 +6,7 @@ use common\models\servers\Servers;
 use yii\base\BaseObject;
 use yii\console\Controller;
 use WebSocket\Client;
+use console\controllers\NotificationServer;
 
 class ServerWsController extends Controller
 {
@@ -15,6 +16,19 @@ class ServerWsController extends Controller
     public function actionStart($port = null)
     {
         $server = new ChatServer();
+        if ($port) {
+            $server->port = $port;
+        }
+        $server->start();
+    }
+
+    /**
+     * server-ws/start-notifications
+     * Запуск нового WebSocket сервера для уведомлений
+     */
+    public function actionStartNotifications($port = null)
+    {
+        $server = new NotificationServer();
         if ($port) {
             $server->port = $port;
         }

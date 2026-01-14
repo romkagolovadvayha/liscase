@@ -809,6 +809,7 @@ class User extends ActiveRecord implements IdentityInterface
      * @param string $jwt
      *
      * @return User|null
+     * @deprecated Используйте JwtService для работы с JWT токенами
      */
     public static function findByJwtToken($jwt)
     {
@@ -817,6 +818,62 @@ class User extends ActiveRecord implements IdentityInterface
         }
 
         return static::findOne(['jwt' => $jwt]);
+    }
+
+    /**
+     * Генерация JWT токена через JwtService
+     * 
+     * @param bool $isRefreshToken Генерировать refresh токен?
+     * @return string JWT токен
+     */
+    public function generateJwtToken($isRefreshToken = false)
+    {
+        if (!Yii::$app->has('jwt')) {
+            // Если JwtService не настроен, используем старый метод
+            return $this->getJwtToken();
+        }
+
+        $jwtService = Yii::$app->get('jwt');
+        return $jwtService->generateToken($this->id, $this->steam_id, $isRefreshToken);
+    }
+
+    /**
+     * Поиск пользователя по JWT токену через JwtService
+     * 
+     * @param string $token JWT токен
+     * @return User|null
+     */
+    public static function findByJwtTokenNew($token)
+    {
+        if (empty($token)) {
+            return null;
+        }
+
+        if (!Yii::$app->has('jwt')) {
+            // Если JwtService не настроен, используем старый метод
+            return static::findByJwtToken($token);
+        }
+
+        try {
+            $jwtService = Yii::$app->get('jwt');
+            $payload = $jwtService->validateToken($token);
+
+            $userId = $jwtService->getUserId($payload);
+            $steamId = $jwtService->getSteamId($payload);
+
+            if ($userId) {
+                return static::findIdentity($userId);
+            }
+
+            if ($steamId) {
+                return static::find()->where(['steam_id' => $steamId])->one();
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            Yii::warning('JWT token validation failed: ' . $e->getMessage(), 'jwt');
+            return null;
+        }
     }
 
     /**

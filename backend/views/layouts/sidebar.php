@@ -256,6 +256,13 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                        'visibility' => Yii::$app->settings->get('section_blog') && ($moder || $support),
                        'active' => _checkActive('/blog/'),
                    ],
+                   [
+                       'label'  => Yii::t('common', 'Стикеры поддержки'),
+                       'icon'   => 'fa-regular fa-face-smile',
+                       'url'    => '/support-sticker',
+                       'visibility' => $admin,
+                       'active' => _checkActive('/support-sticker'),
+                   ],
                     [
                         'label' => 'WIPE меню',
                         'icon' => 'fa-solid fa-cloud-sun',

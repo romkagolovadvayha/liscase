@@ -2,14 +2,14 @@
 
 namespace backend\models\support;
 
+use common\models\support\SupportSticker;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
-use common\models\support\Support;
 
 /**
- * SupportSearch represents the model behind the search form of `common\models\support\Support`.
+ * SupportStickerSearch represents the model behind the search form of `common\models\support\SupportSticker`.
  */
-class SupportSearch extends Support
+class SupportStickerSearch extends SupportSticker
 {
     /**
      * {@inheritdoc}
@@ -17,8 +17,8 @@ class SupportSearch extends Support
     public function rules()
     {
         return [
-            [['id', 'user_id', 'status'], 'integer'],
-            [['name', 'created_at'], 'safe'],
+            [['id', 'width', 'height', 'sort', 'status', 'created_at', 'updated_at'], 'integer'],
+            [['code', 'name', 'file', 'type'], 'safe'],
         ];
     }
 
@@ -40,32 +40,42 @@ class SupportSearch extends Support
      */
     public function search($params)
     {
-        $query = Support::find()->with(['user', 'user.userProfile']);
-
-        // add conditions that should always apply here
+        $query = SupportSticker::find();
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
+            'sort' => [
+                'defaultOrder' => ['sort' => SORT_ASC, 'id' => SORT_DESC],
+            ],
+            'pagination' => [
+                'pageSize' => 20,
+            ],
         ]);
 
         $this->load($params);
 
         if (!$this->validate()) {
-            // uncomment the following line if you do not want to return any records when validation fails
-            // $query->where('0=1');
             return $dataProvider;
         }
 
         // grid filtering conditions
         $query->andFilterWhere([
             'id' => $this->id,
-            'user_id' => $this->user_id,
+            'width' => $this->width,
+            'height' => $this->height,
+            'sort' => $this->sort,
             'status' => $this->status,
+            'type' => $this->type,
             'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
         ]);
 
-        $query->andFilterWhere(['like', 'name', $this->name]);
+        $query->andFilterWhere(['like', 'code', $this->code])
+              ->andFilterWhere(['like', 'name', $this->name])
+              ->andFilterWhere(['like', 'file', $this->file]);
 
         return $dataProvider;
     }
 }
+
+

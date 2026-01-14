@@ -148,6 +148,31 @@ class Blog extends \yii\db\ActiveRecord
     }
 
     /**
+     * Обрабатывает контент блога и заменяет ссылки на изображения на S3 URL
+     * @param string $content
+     * @return string
+     */
+    public function processContentWithS3Images($content) {
+        if (empty($content)) {
+            return $content;
+        }
+
+        $s3PublicUrl = Yii::$app->settings->get('s3_publicUrl');
+        if (empty($s3PublicUrl)) {
+            return $content;
+        }
+
+        // Заменяем /uploads/blog/ на /blog/ в src атрибутах изображений
+        $processedContent = preg_replace(
+            '/(<img[^>]*src=["\'])(\/uploads\/blog\/)([^"\']+)(["\'])/i',
+            '$1' . $s3PublicUrl . '/uploads/blog/$3$4',
+            $content
+        );
+
+        return $processedContent;
+    }
+
+    /**
      * @param      $categoryLinkName
      * @param      $blogLinkName
      * @param null $categoryLinkNameChild

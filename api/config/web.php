@@ -2,6 +2,12 @@
 
 use yii\base\Component;
 
+// Убеждаемся что Yii загружен (для тестов)
+if (!class_exists('Yii', false)) {
+    require __DIR__ . '/../../vendor/autoload.php';
+    require __DIR__ . '/../../vendor/yiisoft/yii2/Yii.php';
+}
+
 $params = require __DIR__ . '/../../common/config/params-local.php';
 $db     = require __DIR__ . '/../../common/config/db-local.php';
 $languages = [
@@ -24,14 +30,127 @@ $config = [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
     ],
+    'modules' => [
+        'swagger' => [
+            'class' => 'api\modules\swagger\Module',
+        ],
+    ],
     'components' => [
+        'jwt' => [
+            'class' => 'api\components\jwt\JwtService',
+            'secret' => $params['jwt']['secret'] ?? getenv('JWT_SECRET'),
+            'algorithm' => $params['jwt']['algorithm'] ?? 'HS256',
+            'expiration' => $params['jwt']['expiration'] ?? 3600,
+            'refreshExpiration' => $params['jwt']['refreshExpiration'] ?? 604800,
+        ],
         'urlManager'    => [
             'enablePrettyUrl' => true,
             'showScriptName'  => false,
+            'rules' => [
+                // Swagger
+                'swagger' => 'swagger/index/index',
+                'swagger/json' => 'swagger/index/json',
+                
+                // API v1 routes
+                // Auth
+                'v1/auth/oauth' => 'v1/auth/oauth',
+                'v1/auth/callback' => 'v1/auth/callback',
+                'v1/auth/login' => 'v1/auth/login',
+                'v1/auth/refresh' => 'v1/auth/refresh',
+                'v1/auth/logout' => 'v1/auth/logout',
+                'v1/auth/me' => 'v1/auth/me',
+                
+                // User
+                'v1/user/profile' => 'v1/user/profile',
+                'v1/user/social-links' => 'v1/user/social-links',
+                'v1/user/balance' => 'v1/user/balance',
+                'v1/user/history' => 'v1/user/history',
+                'v1/user/operations' => 'v1/user/operations',
+                'v1/user/skins-balance' => 'v1/user/skins-balance',
+                'v1/user/skins-statistics' => 'v1/user/skins-statistics',
+                'v1/user/skins-operations' => 'v1/user/skins-operations',
+                'v1/user/sell-drop' => 'v1/user/sell-drop',
+                'v1/user/transfer' => 'v1/user/transfer',
+                'v1/user/partner' => 'v1/user/partner',
+                'v1/user/partner/conditions' => 'v1/user/partner-conditions',
+                'v1/user/partner/invite' => 'v1/user/partner-invite',
+                'v1/user/partner/referrals' => 'v1/user/partner-referrals',
+                'v1/user/partner/promocode' => 'v1/user/partner-promocode',
+                'v1/user/partner-bonus' => 'v1/user/partner-bonus',
+                'v1/user/promocode' => 'v1/user/promocode',
+                
+                // Settings
+                'v1/settings' => 'v1/settings/index',
+                
+                // Skins
+                'v1/skins' => 'v1/skins/index',
+                'v1/skins/confirm/<id:\d+>' => 'v1/skins/confirm',
+                
+                // Products
+            'v1/products' => 'v1/products/index',
+            'v1/products/categories' => 'v1/products/categories',
+            'v1/products/<id:\d+>' => 'v1/products/view',
+            'v1/products/<id:\d+>/buy' => 'v1/products/buy',
+            'v1/banlist' => 'v1/banlist/index',
+                
+                // Servers
+                'v1/servers' => 'v1/servers/index',
+                'v1/servers/<tag:[\w-]+>' => 'v1/servers/view',
+                'v1/servers/tag/<tagLink:[\w-]+>' => 'v1/servers/tag',
+                'v1/servers/<serverTag:[\w-]+>/rules' => 'v1/servers/rules',
+                'v1/servers/<serverTag:[\w-]+>/wipe-info' => 'v1/servers/wipe-info',
+                'v1/servers/wipe-block' => 'v1/servers/wipe-block',
+                
+                // Stats
+                'v1/stats' => 'v1/stats/stats',
+                'v1/stats/players' => 'v1/stats/players',
+                'v1/stats/player/<steamId:\d+>' => 'v1/stats/player-new',
+                'v1/stats/search' => 'v1/stats/search',
+                'v1/stats/tops' => 'v1/stats/tops',
+                'v1/stats/personal' => 'v1/stats/personal',
+                'v1/stats/report/<serverTag:[\w-]+>/<steamId:\d+>' => 'v1/stats/report',
+                
+                // Tasks
+                'v1/tasks' => 'v1/tasks/index',
+                'v1/tasks/<id:\d+>' => 'v1/tasks/detail',
+                'v1/tasks/<id:\d+>/check' => 'v1/tasks/check',
+                
+                // Payment
+                'v1/payment/methods' => 'v1/payment/methods',
+                'v1/payment/create' => 'v1/payment/create',
+                'v1/payment/status/<id:\d+>' => 'v1/payment/status',
+                'v1/payment/callback/<payment:[\w-]+>' => 'v1/payment/callback',
+                
+                // Support
+                'v1/support/tickets' => 'v1/support/tickets',
+                'v1/support/tickets/create' => 'v1/support/create',
+                'v1/support/tickets/<id:\d+>' => 'v1/support/view',
+                'v1/support/tickets/<id:\d+>/messages/<messageId:\d+>' => 'v1/support/update-message', // Более специфичный маршрут должен быть первым
+                'v1/support/tickets/<id:\d+>/messages' => 'v1/support/send',
+                'v1/support/tickets/<id:\d+>/close' => 'v1/support/close',
+                'v1/support/tickets/<id:\d+>/open' => 'v1/support/open',
+                'v1/support/users/<userId:\d+>/mute' => 'v1/support/mute',
+                'v1/support/users/<userId:\d+>/block-chat' => 'v1/support/block-chat',
+                'v1/support/users/<userId:\d+>/block-account' => 'v1/support/block-account',
+                
+                // Store
+                'v1/store/deliver' => 'v1/store/deliver',
+                'v1/store/return' => 'v1/store/return',
+                
+                // Blog
+                'v1/blog/categories' => 'v1/blog/categories',
+                'v1/blog/<linkName>/similar' => 'v1/blog/similar',
+                'v1/blog/<linkName>/comments' => 'v1/blog/comments',
+                'v1/blog/comments/<id:\d+>/like' => 'v1/blog/like-comment',
+                'v1/blog' => 'v1/blog/index',
+            ],
         ],
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => '5c4cf22fbe90065a4a8e4591cf2cea84',
+            'parsers' => [
+                'application/json' => 'yii\web\JsonParser',
+            ],
         ],
         'assetManager' => [
             'class' => 'yii\web\AssetManager',
@@ -86,12 +205,17 @@ $languages = [
 //    'es' => 'es-ES',
 ];
 $config['params']['language'] = 'ru-RU';
-$subDomain = explode('.', $_SERVER['HTTP_HOST'])[0];
-$subDomain = str_replace(['https://', 'http://'], '', $subDomain);
-if (in_array($subDomain, array_keys($languages))) {
-    $config['language'] = $languages[$subDomain];
-    $config['params']['language'] = $languages[$subDomain];
+
+// Проверяем наличие HTTP_HOST только если это веб-запрос
+if (isset($_SERVER['HTTP_HOST']) && !empty($_SERVER['HTTP_HOST'])) {
+    $subDomain = explode('.', $_SERVER['HTTP_HOST'])[0];
+    $subDomain = str_replace(['https://', 'http://'], '', $subDomain);
+    if (in_array($subDomain, array_keys($languages))) {
+        $config['language'] = $languages[$subDomain];
+        $config['params']['language'] = $languages[$subDomain];
+    }
 }
+
 if (YII_ENV_DEV) {
     // configuration adjustments for 'dev' environment
     $config['bootstrap'][] = 'debug';
@@ -108,5 +232,12 @@ if (YII_ENV_DEV) {
         //'allowedIPs' => ['127.0.0.1', '::1'],
     ];
 }
-$config['params']['homePage'] = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
+
+// Устанавливаем homePage только если доступны необходимые переменные
+if (isset($_SERVER['REQUEST_SCHEME']) && isset($_SERVER['HTTP_HOST'])) {
+    $config['params']['homePage'] = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
+} else {
+    $config['params']['homePage'] = $params['homePage'] ?? 'http://localhost';
+}
+
 return $config;
