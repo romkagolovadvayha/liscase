@@ -36,11 +36,11 @@ const getUserIdFromToken = (): number | null => {
   try {
     const token = getToken();
     if (!token) return null;
-    
+
     // JWT токен состоит из трех частей, разделенных точками: header.payload.signature
     const parts = token.split('.');
     if (parts.length !== 3) return null;
-    
+
     // Декодируем payload (вторая часть)
     const payload = JSON.parse(atob(parts[1]));
     return payload.user_id || null;
@@ -67,8 +67,8 @@ export function NotificationWebSocketProvider({ children }: { children: React.Re
   const disconnectRef = useRef<(() => void) | null>(null);
 
   // Получаем WebSocket URL
-  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? `ws://${window.location.hostname}:4888` : undefined);
-  
+  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? `ws://45.129.128.211:4889` : undefined);
+
   // Получаем токен для WebSocket
   const [wsToken] = useState<string | null>(() => {
     try {
@@ -94,11 +94,11 @@ export function NotificationWebSocketProvider({ children }: { children: React.Re
 
   const enabled = authChecked && typeof window !== 'undefined' && isAuthenticated() && !!wsToken;
 
-  console.log('[NotificationWebSocket] Provider state:', { 
-    enabled, 
-    wsUrl, 
-    hasToken: !!wsToken, 
-    authChecked 
+  console.log('[NotificationWebSocket] Provider state:', {
+    enabled,
+    wsUrl,
+    hasToken: !!wsToken,
+    authChecked
   });
 
   const { isConnected: wsConnected, sendMessage: wsSendMessage, disconnect: wsDisconnect } = useWebSocket({
@@ -115,7 +115,7 @@ export function NotificationWebSocketProvider({ children }: { children: React.Re
             action: 'auth',
             token: wsToken,
           });
-          
+
           if (!authResult) {
             console.error('[NotificationWebSocket] ❌ Failed to send auth message');
             if (wsDisconnect) {
@@ -151,7 +151,7 @@ export function NotificationWebSocketProvider({ children }: { children: React.Re
     onMessage: (wsMessage: any) => {
       try {
         console.log('[NotificationWebSocket] Received message:', wsMessage);
-        
+
         // Обработка авторизации
         if (wsMessage.success !== undefined && wsMessage.type === undefined) {
           // Очищаем таймаут авторизации
@@ -189,14 +189,14 @@ export function NotificationWebSocketProvider({ children }: { children: React.Re
           if (handlers?.onMessage) {
             handlers.onMessage(wsMessage.messageId, wsMessage.userId);
           }
-          
+
           // Воспроизводим звук нового сообщения только если:
           // 1. Сообщение не от текущего пользователя
           // 2. Тикет не открыт (нет обработчиков для этого тикета)
           const currentUserId = getUserIdFromToken();
           const isOwnMessage = currentUserId !== null && wsMessage.userId === currentUserId;
           const isTicketOpen = handlers !== undefined; // Если есть обработчики, значит тикет открыт
-          
+
           if (!isOwnMessage && !isTicketOpen) {
             try {
               const audio = new Audio('/sounds/notification.mp3');
@@ -236,8 +236,8 @@ export function NotificationWebSocketProvider({ children }: { children: React.Re
         } else if (wsMessage.type === 'purchase.completed') {
           // Уведомление о покупке - диспатчим событие для обновления баланса
           if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('purchase-completed', { 
-              detail: { newBalance: wsMessage.newBalance } 
+            window.dispatchEvent(new CustomEvent('purchase-completed', {
+              detail: { newBalance: wsMessage.newBalance }
             }));
           }
         } else if (wsMessage.type === 'support.message.updated') {
@@ -310,9 +310,9 @@ export function NotificationWebSocketProvider({ children }: { children: React.Re
         console.log('[NotificationWebSocket] Message sent:', { message, result });
         return result;
       } else {
-        console.warn('[NotificationWebSocket] Cannot send message:', { 
-          hasSendMessage: !!sendMessageRef.current, 
-          authenticated: authenticatedRef.current 
+        console.warn('[NotificationWebSocket] Cannot send message:', {
+          hasSendMessage: !!sendMessageRef.current,
+          authenticated: authenticatedRef.current
         });
         return false;
       }

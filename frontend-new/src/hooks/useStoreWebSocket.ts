@@ -38,7 +38,7 @@ export function useStoreWebSocket({
     setSteamId(null);
   }, [enabled]);
 
-  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:4888';
+  const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://45.129.128.211:4889';
   const { isConnected } = useWebSocket({
     url: enabled && wsToken ? wsUrl : undefined,
     enabled: enabled && !!wsToken,
