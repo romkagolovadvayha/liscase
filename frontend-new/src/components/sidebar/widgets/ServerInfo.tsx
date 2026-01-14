@@ -40,3 +40,11 @@ export default function ServerInfo({ data }: ServerInfoProps) {
 
 
 
+
+
+
+
+
+
+
+

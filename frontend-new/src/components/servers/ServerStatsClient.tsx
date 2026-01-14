@@ -37,7 +37,7 @@ interface Server {
 }
 
 interface ServerStatsClientProps {
-  initialData: {
+  initialData?: {
     server: Server;
     servers: Server[];
     tops: Record<string, TopCategory>;
@@ -143,15 +143,11 @@ function ServerStatsContent({ initialData }: ServerStatsClientProps) {
   
   // Проверка на наличие данных
   if (!initialData || !initialData.server || !initialData.tops) {
-    console.error('Missing initialData:', initialData);
+    // Если данных нет, показываем skeleton (данные должны загружаться через API)
     return (
       <div className="server-stats">
         <div className="container">
-          <Result
-            status="404"
-            title="404"
-            subTitle="Сервер не найден или данные не загружены"
-          />
+          <Skeleton active paragraph={{ rows: 4 }} />
         </div>
       </div>
     );

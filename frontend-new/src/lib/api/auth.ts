@@ -1,58 +1,81 @@
 import apiClient from './client';
-import { User } from '@/types/user';
-
-export interface AuthResponse {
-  user: User | null;
-  authenticated: boolean;
-}
+import { setTokens, clearTokens } from './client';
 
 export interface LoginResponse {
   success: boolean;
-  user?: User;
-  error?: string;
-}
-
-/**
- * Проверка текущей сессии пользователя
- */
-export async function checkAuth(): Promise<AuthResponse> {
-  try {
-    const response = await apiClient.get<AuthResponse>('/auth/check');
-    return response.data;
-  } catch (error) {
-    return {
-      user: null,
-      authenticated: false,
+  data: {
+    token: string;
+    refresh_token: string;
+    expires_in: number;
+    user: {
+      id: number;
+      username: string;
+      steam_id: string;
+      avatar: string;
+      roles: string[];
     };
+  };
+}
+
+export interface MeResponse {
+  success: boolean;
+  data: {
+    id: number;
+    username: string;
+    steam_id: string;
+    avatar: string;
+    roles: string[];
+    created_at: string;
+    isAdmin?: boolean; // Добавляем isAdmin из API
+    activeVip?: {
+      expires_at: string;
+      timestamp: number;
+    } | null;
+  };
+}
+
+/**
+ * Авторизация через Steam OAuth
+ */
+export const startSteamAuth = (): void => {
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://api.test.prostoj.store';
+  // Передаем текущий origin фронтенда для редиректа после авторизации
+  const redirectUri = typeof window !== 'undefined' ? window.location.origin : '';
+  const oauthUrl = new URL(`${apiBaseUrl}/v1/auth/oauth`);
+  if (redirectUri) {
+    oauthUrl.searchParams.set('redirect_uri', redirectUri);
   }
-}
+  window.location.href = oauthUrl.toString();
+};
 
 /**
- * Выход пользователя
+ * Получение информации о текущем пользователе
  */
-export async function logout(): Promise<void> {
-  await apiClient.post('/auth/logout');
-}
+export const getMe = async (): Promise<MeResponse['data']> => {
+  const response = await apiClient.get<MeResponse>('/auth/me');
+  return response.data.data;
+};
 
 /**
- * Получение текущего пользователя
+ * Выход из системы
  */
-export async function getCurrentUser(): Promise<User | null> {
+export const logout = async (): Promise<void> => {
   try {
-    const response = await apiClient.get<User>('/auth/me');
-    return response.data;
+    await apiClient.get('/auth/logout');
   } catch (error) {
-    return null;
+    console.error('Logout error:', error);
+  } finally {
+    clearTokens();
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   }
-}
+};
 
-
-
-
-
-
-
-
-
-
-
+/**
+ * Проверка, авторизован ли пользователь
+ */
+export const isAuthenticated = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return !!localStorage.getItem('access_token');
+};

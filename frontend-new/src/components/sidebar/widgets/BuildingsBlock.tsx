@@ -28,3 +28,11 @@ export default function BuildingsBlock({ data }: BuildingsBlockProps) {
 
 
 
+
+
+
+
+
+
+
+

@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import { Avatar } from 'antd';
 import { toastSuccess, toastError, toastWarning, toastInfo } from '@/lib/toast';
 import ProfileTabs from '@/components/profile/ProfileTabs';
+import ProfileSectionSkeleton from '@/components/profile/ProfileSectionSkeleton';
 import Tabs from '@/components/design-system/Tabs';
 import Button from '@/components/forms/Button';
 import Input from '@/components/forms/Input';
@@ -13,6 +14,8 @@ import Icon from '@/components/icons/Icon';
 import DataTable, { DataTableColumn } from '@/components/design-system/DataTable';
 import moment from 'moment';
 import 'moment/locale/ru';
+import apiClient from '@/lib/api/client';
+import { isAuthenticated } from '@/lib/api/auth';
 import '@/styles/profile.scss';
 
 interface ReferralStats {
@@ -53,6 +56,10 @@ export default function ProfileReferralClient() {
   const [page, setPage] = useState(parseInt(searchParams.get('page') || '1', 10));
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const isFetchingStatsRef = useRef(false);
+  const isFetchingLinkRef = useRef(false);
+  const isFetchingListRef = useRef(false);
+  const lastActiveTabRef = useRef<string>('');
 
   // Устанавливаем локаль один раз
   useEffect(() => {
@@ -61,15 +68,40 @@ export default function ProfileReferralClient() {
 
   // Загрузка статистики (для вкладки "Условия программы")
   const fetchStats = useCallback(async () => {
+    // Защита от повторных запросов
+    if (isFetchingStatsRef.current) {
+      return;
+    }
+
+    if (!isAuthenticated()) {
+      setError('Требуется авторизация');
+      setLoading(false);
+      return;
+    }
+
     try {
+      isFetchingStatsRef.current = true;
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/profile/referral/stats');
-      const data = await response.json();
+      // Используем новый endpoint для условий программы
+      const [conditionsResponse, inviteResponse] = await Promise.all([
+        apiClient.get('/user/partner/conditions'),
+        apiClient.get('/user/partner/invite')
+      ]);
+      
+      const conditionsData = conditionsResponse.data;
+      const inviteData = inviteResponse.data;
 
-      if (data.success) {
-        setStats(data.stats);
-        setPartnerLink(data.stats.partnerLink);
+      if (inviteData.success) {
+        setStats({
+          partnerLink: inviteData.data.referral_link || inviteData.data.partnerLink || '',
+          referralPercent: inviteData.data.referral_percent || 0,
+          referralClicks: inviteData.data.referral_clicks || 0,
+          registeredCount: inviteData.data.registered_count || 0,
+          playedCount: inviteData.data.played_count || 0,
+          referralBalance: inviteData.data.referral_balance || 0,
+        });
+        setPartnerLink(inviteData.data.referral_link || inviteData.data.partnerLink || '');
       } else {
         setError('Не удалось загрузить статистику реферальной системы');
       }
@@ -77,41 +109,61 @@ export default function ProfileReferralClient() {
       setError(err.message || 'Ошибка при загрузке статистики');
     } finally {
       setLoading(false);
+      isFetchingStatsRef.current = false;
     }
   }, []);
 
   // Загрузка партнерской ссылки и промокода (для вкладки "Как приглашать?")
   const fetchPartnerLink = useCallback(async () => {
+    // Защита от повторных запросов
+    if (isFetchingLinkRef.current) {
+      return;
+    }
+
+    if (!isAuthenticated()) {
+      setError('Требуется авторизация');
+      setLoading(false);
+      return;
+    }
+
     try {
+      isFetchingLinkRef.current = true;
       setLoading(true);
       setError(null);
-      const [linkResponse, promocodeResponse] = await Promise.all([
-        fetch('/api/profile/referral/link'),
-        fetch('/api/profile/referral/promocode')
+      // Используем новый endpoint для приглашения
+      const [inviteResponse, promocodeResponse] = await Promise.all([
+        apiClient.get('/user/partner/invite'),
+        apiClient.get('/user/partner/promocode')
       ]);
       
-      const linkData = await linkResponse.json();
-      const promocodeData = await promocodeResponse.json();
+      const inviteData = inviteResponse.data;
+      const promocodeData = promocodeResponse.data;
 
-      if (linkData.success) {
-        setPartnerLink(linkData.partnerLink);
+      if (inviteData.success) {
+        setPartnerLink(inviteData.data.referral_link || inviteData.data.partnerLink || '');
       } else {
         setError('Не удалось загрузить партнерскую ссылку');
       }
 
       if (promocodeData.success) {
-        setPromocode(promocodeData.promocode || '');
-        setPromocodeInput(promocodeData.promocode || '');
+        setPromocode(promocodeData.data.promocode || '');
+        setPromocodeInput(promocodeData.data.promocode || '');
       }
     } catch (err: any) {
       setError(err.message || 'Ошибка при загрузке данных');
     } finally {
       setLoading(false);
+      isFetchingLinkRef.current = false;
     }
   }, []);
 
   // Создание/обновление промокода
   const handleSavePromocode = async () => {
+    if (!isAuthenticated()) {
+      toastError('Требуется авторизация');
+      return;
+    }
+
     if (!promocodeInput.trim()) {
       toastWarning('Введите промокод');
       return;
@@ -119,15 +171,12 @@ export default function ProfileReferralClient() {
 
     try {
       setSavingPromocode(true);
-      const response = await fetch('/api/profile/referral/promocode', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ promocode: promocodeInput }),
+      // TODO: referral/promocode endpoint пока не реализован в новом API
+      const response = await apiClient.post('/user/partner/promocode', {
+        promocode: promocodeInput,
       });
 
-      const data = await response.json();
+      const data = response.data;
 
       if (data.success) {
         setPromocode(data.promocode);
@@ -144,22 +193,41 @@ export default function ProfileReferralClient() {
 
   // Загрузка списка рефералов (для вкладки "Мои рефералы")
   const fetchReferralList = useCallback(async () => {
+    // Защита от повторных запросов
+    if (isFetchingListRef.current) {
+      return;
+    }
+
+    if (!isAuthenticated()) {
+      setError('Требуется авторизация');
+      setLoading(false);
+      return;
+    }
+
     try {
+      isFetchingListRef.current = true;
       setLoading(true);
       setError(null);
-      const params = new URLSearchParams();
-      if (page > 1) params.set('page', page.toString());
-      params.set('pageSize', '10');
-      if (sortField) params.set('sort', sortField);
-      if (sortOrder) params.set('order', sortOrder);
+      // Используем новый endpoint для списка рефералов
+      const response = await apiClient.get('/user/partner/referrals');
+      const data = response.data;
 
-      const response = await fetch(`/api/profile/referral/list?${params.toString()}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setReferralList(data.referrals);
-        setTotalPages(data.pagination?.totalPages || 1);
-        setTotal(data.pagination?.total || 0);
+      if (data.success && data.data) {
+        // Нормализуем данные рефералов
+        const referrals = (data.data.referrals || []).map((ref: any) => ({
+          id: ref.id || ref.userId,
+          userId: ref.userId || ref.id,
+          username: ref.username || '',
+          avatar: ref.avatar || '',
+          createdAt: ref.created_at || ref.createdAt || '',
+          hasBonus: ref.hasBonus || false,
+          hasSkinSent: ref.hasSkinSent || false,
+          hasHourInServer: ref.hasHourInServer || false,
+          canGetReward: ref.canGetReward || false,
+        }));
+        setReferralList(referrals);
+        setTotalPages(1); // TODO: pagination пока не поддерживается
+        setTotal(data.data.total || referrals.length || 0);
       } else {
         setError('Не удалось загрузить список рефералов');
       }
@@ -167,6 +235,7 @@ export default function ProfileReferralClient() {
       setError(err.message || 'Ошибка при загрузке списка рефералов');
     } finally {
       setLoading(false);
+      isFetchingListRef.current = false;
     }
   }, [page, sortField, sortOrder]);
 
@@ -185,6 +254,12 @@ export default function ProfileReferralClient() {
 
   // Загружаем данные в зависимости от активной вкладки
   useEffect(() => {
+    // Защита от повторных запросов при той же вкладке
+    if (lastActiveTabRef.current === activeReferralTab) {
+      return;
+    }
+    lastActiveTabRef.current = activeReferralTab;
+
     if (activeReferralTab === 'conditions') {
       fetchStats();
     } else if (activeReferralTab === 'invite') {
@@ -192,7 +267,8 @@ export default function ProfileReferralClient() {
     } else if (activeReferralTab === 'list') {
       fetchReferralList();
     }
-  }, [activeReferralTab, fetchStats, fetchPartnerLink, fetchReferralList]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeReferralTab]);
 
   const updateURL = useCallback((params: Record<string, string>) => {
     const newParams = new URLSearchParams();
@@ -225,11 +301,15 @@ export default function ProfileReferralClient() {
   };
 
   const handleGetBonus = async (userId: number) => {
+    if (!isAuthenticated()) {
+      toastError('Требуется авторизация');
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/profile/referral/bonus?id=${userId}`, {
-        method: 'POST',
-      });
-      const data = await response.json();
+      // TODO: referral/bonus endpoint пока не реализован в новом API
+      const response = await apiClient.post(`/user/partner-bonus/${userId}`);
+      const data = response.data;
 
       if (data.success) {
         toastSuccess('Награда успешно получена');
@@ -296,7 +376,7 @@ export default function ProfileReferralClient() {
       key: 'hasBonus',
       label: 'Более часа на сервере',
       sortable: true,
-      render: (referral) => referral.hasBonus || referral.hasSkinSent ? 'Да' : 'Нет',
+      render: (referral) => (referral.hasHourInServer || referral.hasBonus || referral.hasSkinSent) ? 'Да' : 'Нет',
     },
     {
       key: 'createdAt',
@@ -313,7 +393,7 @@ export default function ProfileReferralClient() {
           <Button variant="secondary" size="small" disabled>
             Получено
           </Button>
-        ) : referral.hasBonus || referral.hasSkinSent ? (
+        ) : (referral.hasHourInServer || referral.canGetReward) ? (
           <Button
             variant="secondary"
             size="small"
@@ -359,7 +439,7 @@ export default function ProfileReferralClient() {
         {activeReferralTab === 'conditions' && (
           <>
             {loading ? (
-              <div className="loading">Загрузка...</div>
+              <ProfileSectionSkeleton />
             ) : error ? (
               <div className="error">{error}</div>
             ) : !stats ? (
@@ -440,7 +520,7 @@ export default function ProfileReferralClient() {
         {activeReferralTab === 'invite' && (
           <>
             {loading ? (
-              <div className="loading">Загрузка...</div>
+              <ProfileSectionSkeleton />
             ) : error ? (
               <div className="error">{error}</div>
             ) : !partnerLink ? (

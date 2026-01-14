@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import apiClient from '@/lib/api/client';
 
 export interface Server {
   id: number;
@@ -34,14 +35,17 @@ export interface ServersData {
 }
 
 async function fetchServersData(): Promise<ServersData> {
-  const response = await fetch('/api/servers', {
-    cache: 'no-store',
-  });
-  if (!response.ok) {
-    throw new Error('Failed to fetch servers data');
+  const response = await apiClient.get('/servers');
+  const data = response.data;
+  const result = data.data || data;
+  
+  // Маппинг project_stats в projectStats
+  if (result.project_stats) {
+    result.projectStats = result.project_stats;
+    delete result.project_stats;
   }
-  const data = await response.json();
-  return data.data || data;
+  
+  return result;
 }
 
 export function useServersData(options?: {

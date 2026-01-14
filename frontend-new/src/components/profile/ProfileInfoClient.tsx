@@ -1,10 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Avatar } from 'antd';
 import ProfileTabs from '@/components/profile/ProfileTabs';
 import Icon from '@/components/icons/Icon';
+import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
 import Link from 'next/link';
+import apiClient from '@/lib/api/client';
+import { isAuthenticated } from '@/lib/api/auth';
 import '@/styles/profile.scss';
 
 interface UserData {
@@ -23,29 +26,60 @@ export default function ProfileInfoClient() {
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     fetchUserData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchUserData = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/auth/me');
-      const data = await response.json();
+    // Защита от повторных запросов
+    if (isFetchingRef.current) {
+      return;
+    }
 
-      if (data.success && data.user) {
-        // Получаем VIP статус
-        const vipResponse = await fetch('/api/profile');
-        const vipData = await vipResponse.json();
-        
-        setUserData({
-          ...data.user,
-          activeVip: vipData.success && vipData.profile?.hasVip ? {
-            expires_at: '',
-            timestamp: 0,
-          } : null,
-        });
+    if (!isAuthenticated()) {
+      setError('Требуется авторизация');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      isFetchingRef.current = true;
+      setLoading(true);
+      const response = await apiClient.get('/auth/me');
+      const data = response.data;
+
+      if (data.success && data.data) {
+        // Получаем баланс и VIP статус
+        try {
+          const [balanceResponse, vipResponse] = await Promise.all([
+            apiClient.get('/user/balance'),
+            apiClient.get('/user/profile').catch(() => ({ data: { success: false } })),
+          ]);
+          
+          const balanceData = balanceResponse.data;
+          const vipData = vipResponse.data;
+          
+          setUserData({
+            ...data.data,
+            balance: balanceData.success && balanceData.data?.balance !== undefined 
+              ? balanceData.data.balance 
+              : 0,
+            activeVip: vipData.success && vipData.data?.hasVip ? {
+              expires_at: '',
+              timestamp: 0,
+            } : null,
+          });
+        } catch (err) {
+          // Если не удалось загрузить баланс, используем значение по умолчанию
+          setUserData({
+            ...data.data,
+            balance: 0,
+            activeVip: null,
+          });
+        }
       } else {
         setError('Не удалось загрузить данные пользователя');
       }
@@ -53,13 +87,22 @@ export default function ProfileInfoClient() {
       setError(err.message || 'Ошибка при загрузке данных');
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
+
+  const tabs = [
+    { id: 'info', label: 'Информация о пользователе', icon: 'info', href: '/profile' },
+    { id: 'history', label: 'История операций', icon: 'article', href: '/profile/history' },
+    { id: 'referral', label: 'Реферальная система', icon: 'people', href: '/profile/referral' },
+    { id: 'settings', label: 'Настройки', icon: 'palette', href: '/profile/settings' },
+  ];
 
   if (loading) {
     return (
       <div>
-        <div className="loading">Загрузка...</div>
+        <ProfileTabs tabs={tabs} />
+        <ProfileSkeleton />
       </div>
     );
   }
@@ -71,13 +114,6 @@ export default function ProfileInfoClient() {
       </div>
     );
   }
-
-  const tabs = [
-    { id: 'info', label: 'Информация о пользователе', icon: 'info', href: '/profile' },
-    { id: 'history', label: 'История операций', icon: 'article', href: '/profile/history' },
-    { id: 'referral', label: 'Реферальная система', icon: 'people', href: '/profile/referral' },
-    { id: 'settings', label: 'Настройки', icon: 'palette', href: '/profile/settings' },
-  ];
 
   return (
     <div>
@@ -104,7 +140,7 @@ export default function ProfileInfoClient() {
             <div className="profile-info__balance">
               <span className="profile-info__balance-label">Баланс:</span>
               <span className="profile-info__balance-value">
-                {userData.balance.toLocaleString('ru-RU')}
+                {(userData.balance ?? 0).toLocaleString('ru-RU')}
               </span>
             </div>
             {userData.activeVip && (

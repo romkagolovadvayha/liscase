@@ -4,15 +4,16 @@ import { useQuery } from '@tanstack/react-query';
 import type { PlayerProfileData } from '@/types/profile';
 
 async function fetchProfileData(steamId: string): Promise<PlayerProfileData> {
-  // Используем тот же endpoint, что и в page.tsx
-  const response = await fetch(`/api/profile/${steamId}`, {
+  // Используем API endpoint для получения данных профиля
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://api.test.prostoj.store';
+  const response = await fetch(`${API_BASE_URL}/v1/stats/player-new?steam_id=${steamId}`, {
     cache: 'no-store',
   });
   if (!response.ok) {
     throw new Error('Failed to fetch profile data');
   }
-  const data = await response.json();
-  return data.data || data;
+  const result = await response.json();
+  return result.data || result;
 }
 
 export function useProfileData(

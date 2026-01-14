@@ -7,6 +7,7 @@ import Input from '@/components/forms/Input';
 import Tabs from '@/components/design-system/Tabs';
 import ProductCard from '@/components/homepage/ProductCard';
 import ProductModal from '@/components/products/ProductModal';
+import apiClient from '@/lib/api/client';
 import '@/styles/market-skins.scss';
 
 interface MarketSkin {
@@ -88,8 +89,9 @@ export default function MarketSkinsClient() {
         params.append('search', search);
       }
 
-      const response = await fetch(`/api/market/skins?${params.toString()}`);
-      const result = await response.json();
+      // Используем /v1/skins вместо /api/market/skins
+      const response = await apiClient.get(`/skins?${params.toString()}`);
+      const result = response.data;
       
       if (result.success) {
         if (append) {

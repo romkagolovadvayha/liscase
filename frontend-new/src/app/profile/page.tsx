@@ -1,13 +1,8 @@
-import { Metadata } from 'next';
+'use client';
+
+import React from 'react';
 import ProfileInfoClient from '@/components/profile/ProfileInfoClient';
 
-export const dynamic = 'force-dynamic';
-
-export const metadata: Metadata = {
-  title: 'Профиль - Liscase',
-  description: 'Информация о пользователе',
-};
-
-export default async function ProfilePage() {
+export default function ProfilePage() {
   return <ProfileInfoClient />;
 }

@@ -247,35 +247,54 @@ body {
 // Общий layout с sidebar (используется в layout.tsx)
 .main-layout {
   display: grid;
-  grid-template-columns: 1fr 335px;
+  grid-template-columns: 80px 1fr 335px;
   gap: 20px;
   width: 100%;
   max-width: 1580px;
   margin: 0 auto;
-  padding: 32px 24px 0;
+  padding: 0 24px 40px;
   flex: 1;
   background-color: var(--background-main);
   color: var(--text-main);
+  transition: grid-template-columns 0.3s ease;
 
   @media (min-width: 1921px) {
-    grid-template-columns: 1fr 395px;
+    grid-template-columns: 80px 1fr 395px;
   }
 
   @media (max-width: 1200px) {
-    grid-template-columns: 1fr;
-    padding: 32px 10px 0;
+    grid-template-columns: 80px 1fr;
+    padding: 0 10px 40px;
   }
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
-    padding: 16px 10px 0;
+    padding: 0 10px 40px;
     gap: 12px;
+  }
+
+  // Когда меню открыто
+  body.left-menu-open & {
+    grid-template-columns: 280px 1fr 335px;
+
+    @media (min-width: 1921px) {
+      grid-template-columns: 280px 1fr 395px;
+    }
+
+    @media (max-width: 1200px) {
+      grid-template-columns: 280px 1fr;
+    }
   }
 
   &__content {
     min-width: 0; // Для правильной работы grid
     width: 100%;
     position: relative; // Для позиционирования скелетона
+    padding-top: 32px;
+
+    @media (max-width: 768px) {
+      padding-top: 16px;
+    }
   }
 
   // Скрываем sidebar на странице профиля
@@ -284,7 +303,11 @@ body {
   }
 
   body.profile-page-active & {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 80px 1fr !important;
+  }
+
+  body.profile-page-active.left-menu-open & {
+    grid-template-columns: 280px 1fr !important;
   }
   
   &__sidebar {
@@ -295,8 +318,13 @@ body {
     max-height: 100vh;
     overflow-y: auto;
     overflow-x: hidden;
+    padding-top: 32px;
     // Скрываем скроллбары
     scrollbar-width: none; // Firefox
+
+    @media (max-width: 768px) {
+      padding-top: 16px;
+    }
     -ms-overflow-style: none; // IE и Edge
 
     &::-webkit-scrollbar {

@@ -8,6 +8,28 @@
 @import './the-best.scss';
 /* Стили для страницы статистики */
 @import './page-stats.scss';
+/* Стили для левого меню */
+@import './left-menu.scss';
+/* Стили для поддержки */
+@import './support.scss';
+/* Стили для магазина */
+@import './store.scss';
+/* Стили для продуктов (карточки товаров) */
+@import './products.scss';
+/* Стили для платежей */
+@import './payment.scss';
+/* Стили для заданий */
+@import './tasks.scss';
+/* Стили для медиа */
+@import './media.scss';
+/* Стили для построек */
+@import './buildings.scss';
+/* Стили для карт */
+@import './maps.scss';
+/* Стили для радио */
+@import './radio.scss';
+/* Стили для дополнительных функций */
+@import './additional.scss';
 
 :root {
   --foreground-rgb: 0, 0, 0;

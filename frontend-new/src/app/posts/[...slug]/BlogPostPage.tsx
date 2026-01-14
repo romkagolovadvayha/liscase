@@ -27,6 +27,7 @@ import {
 import { useTableOfContents } from '@/contexts/TableOfContentsContext';
 import BlogMiniCard from '@/components/blog/BlogMiniCard';
 import BlogComments from '@/components/blog/BlogComments';
+import apiClient from '@/lib/api/client';
 import '@/styles/blog.scss';
 
 interface BlogPostPageProps {
@@ -57,8 +58,13 @@ interface SimilarPost {
   title: string;
   description: string;
   image?: string;
-  category?: string;
-  date: string;
+  category?: {
+    id: number;
+    name: string;
+    linkName: string;
+  } | null;
+  date?: string;
+  createdAt?: string;
   url: string;
 }
 
@@ -88,16 +94,16 @@ export default function BlogPostPage({ linkName, slug }: BlogPostPageProps) {
     setSimilarLoading(true);
     try {
       console.log('Loading similar posts for:', postLinkName);
-      const response = await fetch(`/api/blog/${postLinkName}/similar`);
-      const result = await response.json();
+      const response = await apiClient.get(`/blog/${postLinkName}/similar`, {
+        params: {
+          limit: 5,
+        }
+      });
+      const result = response.data;
 
-      console.log('Similar posts API response:', result);
-
-      if (result.success) {
-        console.log('Similar posts loaded:', result.data);
-        setSimilarPosts(result.data || []);
+      if (result.success && result.data?.posts) {
+        setSimilarPosts(result.data.posts);
       } else {
-        console.error('Failed to load similar posts:', result.message);
         setSimilarPosts([]);
       }
     } catch (err: any) {
@@ -156,30 +162,48 @@ export default function BlogPostPage({ linkName, slug }: BlogPostPageProps) {
     
     const fetchPost = async () => {
       try {
-        // Используем API для старых URL формата /posts/...
-        // Если есть slug, формируем API путь из него, иначе используем linkName
-        let apiPath = `/api/blog/${actualLinkName}`;
-        if (slug && slug.length > 0) {
-          const slugPath = slug.join('/');
-          apiPath = `/api/blog/posts/${slugPath}`;
-        }
-        const response = await fetch(apiPath);
-        const result = await response.json();
+        // Используем API для получения поста по link_name
+        // Ищем пост в списке постов блога
+        // TODO: В будущем нужен отдельный endpoint для получения одного поста
+        const response = await apiClient.get('/blog', {
+          params: {
+            limit: 1000, // Получаем достаточно постов для поиска
+          }
+        });
+        const result = response.data;
 
-        if (result.success) {
-          const postData = result.data;
+        if (result.success && result.data?.posts) {
+          // Ищем пост по linkName
+          const post = result.data.posts.find((p: any) => p.linkName === actualLinkName);
+          
+          if (!post) {
+            setError('Пост не найден');
+            setLoading(false);
+            return;
+          }
+          
+          // Преобразуем данные поста в нужный формат
+          const postData = {
+            id: post.id,
+            title: post.title,
+            description: post.description,
+            content: post.content,
+            keywords: '',
+            image: post.image || null,
+            images: post.image ? [post.image] : [],
+            category: post.category?.name || '',
+            categoryLinkName: post.category?.linkName || '',
+            parentCategoryName: null,
+            parentCategoryLinkName: null,
+            date: post.createdAt,
+            views: post.views || 0,
+            commentsCount: post.commentsCount || 0,
+            link_name: post.linkName,
+            url: post.url,
+          };
           
           // Определяем link_name для загрузки похожих записей
-          // Используем link_name из данных поста, или actualLinkName, или извлекаем из URL
-          let postLinkName = postData.link_name || actualLinkName;
-          
-          // Если все еще нет link_name, пытаемся извлечь из URL
-          if (!postLinkName && postData.url) {
-            const urlMatch = postData.url.match(/post-([^/]+)/);
-            if (urlMatch) {
-              postLinkName = urlMatch[1];
-            }
-          }
+          const postLinkName = post.linkName || actualLinkName;
           
           // Извлекаем заголовки и обновляем контент
           const updatedContent = extractTableOfContents(postData.content);
@@ -192,7 +216,7 @@ export default function BlogPostPage({ linkName, slug }: BlogPostPageProps) {
             console.warn('Cannot load similar posts: link_name is not available');
           }
         } else {
-          setError(result.message || 'Новость не найдена');
+          setError('Пост не найден');
           // Очищаем TOC, если пост не найден
           setItems([]);
         }
@@ -488,8 +512,8 @@ export default function BlogPostPage({ linkName, slug }: BlogPostPageProps) {
                   title={similarPost.title}
                   description={similarPost.description}
                   image={similarPost.image}
-                  category={similarPost.category}
-                  date={similarPost.date}
+                  category={typeof similarPost.category === 'string' ? similarPost.category : (similarPost.category?.name || undefined)}
+                  date={similarPost.createdAt || similarPost.date || ''}
                   url={similarPost.url}
                 />
               ))}
@@ -499,7 +523,7 @@ export default function BlogPostPage({ linkName, slug }: BlogPostPageProps) {
 
         {/* Комментарии */}
         {post && (
-          <BlogComments blogId={post.id} />
+          <BlogComments blogId={post.linkName || post.link_name || String(post.id)} />
         )}
       </div>
     </div>

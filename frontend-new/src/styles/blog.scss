@@ -2231,6 +2231,26 @@
       opacity: 0.6;
       cursor: not-allowed;
     }
+    
+    &--error {
+      border-color: #ff4d4f !important;
+      
+      &:focus {
+        border-color: #ff4d4f !important;
+        box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+      }
+    }
+  }
+  
+  &__error {
+    color: #ff4d4f;
+    font-size: 13px;
+    margin-top: 8px;
+    margin-bottom: 0;
+    padding: 8px 12px;
+    background: rgba(255, 77, 79, 0.1);
+    border: 1px solid rgba(255, 77, 79, 0.3);
+    border-radius: 4px;
   }
   
   &__char-count {

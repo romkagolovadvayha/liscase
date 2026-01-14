@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
 import Switch from '@/components/forms/Switch';
 import Input from '@/components/forms/Input';
@@ -8,6 +8,9 @@ import Button from '@/components/forms/Button';
 import Icon from '@/components/icons/Icon';
 import Tabs from '@/components/design-system/Tabs';
 import ProfileTabs from '@/components/profile/ProfileTabs';
+import ProfileSectionSkeleton from '@/components/profile/ProfileSectionSkeleton';
+import apiClient from '@/lib/api/client';
+import { isAuthenticated } from '@/lib/api/auth';
 import '@/styles/profile.scss';
 
 interface ProfileData {
@@ -32,19 +35,33 @@ export default function SettingsClient() {
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [activeTab, setActiveTab] = useState('general');
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     fetchProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchProfile = async () => {
+    // Защита от повторных запросов
+    if (isFetchingRef.current) {
+      return;
+    }
+
+    if (!isAuthenticated()) {
+      toastError('Требуется авторизация');
+      setLoading(false);
+      return;
+    }
+
     try {
+      isFetchingRef.current = true;
       setLoading(true);
-      const response = await fetch('/api/profile');
-      const data = await response.json();
+      const response = await apiClient.get('/user/profile');
+      const data = response.data;
 
       if (data.success) {
-        setProfile(data.profile);
+        setProfile(data.data);
       } else {
         toastError('Не удалось загрузить профиль');
       }
@@ -52,11 +69,17 @@ export default function SettingsClient() {
       toastError(err.message || 'Ошибка при загрузке профиля');
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!isAuthenticated()) {
+      toastError('Требуется авторизация');
+      return;
+    }
+
     if (!profile) return;
 
     try {
@@ -100,15 +123,8 @@ export default function SettingsClient() {
         data.discord_disabled = true;
       }
 
-      const response = await fetch('/api/profile', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
+      const response = await apiClient.put('/user/profile', data);
+      const result = response.data;
 
       if (result.success) {
         toastSuccess('Профиль успешно обновлен');
@@ -130,24 +146,6 @@ export default function SettingsClient() {
     toastInfo('Функция покупки VIP будет реализована позже');
   };
 
-  if (loading) {
-    return (
-      <div>
-        <h1 className="page-title">Настройки</h1>
-        <div className="loading">Загрузка...</div>
-      </div>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <div>
-        <h1 className="page-title">Настройки</h1>
-        <div className="error">Не удалось загрузить профиль</div>
-      </div>
-    );
-  }
-
   const tabs = [
     { id: 'general', label: 'Общие настройки' },
     { id: 'social', label: 'Социальные сети' },
@@ -160,6 +158,24 @@ export default function SettingsClient() {
     { id: 'referral', label: 'Реферальная система', icon: 'people', href: '/profile/referral' },
     { id: 'settings', label: 'Настройки', icon: 'palette', href: '/profile/settings' },
   ];
+
+  if (loading) {
+    return (
+      <div>
+        <ProfileTabs tabs={profileTabs} />
+        <ProfileSectionSkeleton />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div>
+        <ProfileTabs tabs={profileTabs} />
+        <div className="error">Не удалось загрузить профиль</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -278,7 +294,7 @@ export default function SettingsClient() {
                   </Button>
                 ) : (
                   <a
-                    href="/api/auth/discord"
+                    href={`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://api.test.prostoj.store'}/v1/auth/discord`}
                     className="button button-secondary button-size__s"
                   >
                     Привязать аккаунт

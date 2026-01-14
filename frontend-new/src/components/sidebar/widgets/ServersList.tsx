@@ -32,13 +32,14 @@ export interface Server {
 }
 
 export interface ServersListProps {
-  servers: Server[];
+  servers?: Server[];
   projectStats?: {
     online?: number;
   };
+  isLoading?: boolean;
 }
 
-export default function ServersList({ servers, projectStats }: ServersListProps) {
+export default function ServersList({ servers, projectStats, isLoading }: ServersListProps) {
   const pathname = usePathname();
   const [now, setNow] = useState(moment());
   const [animatedServers, setAnimatedServers] = useState<Set<number>>(new Set());
@@ -62,6 +63,8 @@ export default function ServersList({ servers, projectStats }: ServersListProps)
 
   // Анимация прогресс-баров по порядку
   useEffect(() => {
+    if (!servers || servers.length === 0) return;
+    
     const animateProgressBars = () => {
       servers.forEach((server, index) => {
         setTimeout(() => {
@@ -89,26 +92,60 @@ export default function ServersList({ servers, projectStats }: ServersListProps)
     }
   };
 
-  const formatWipeTime = (timestamp: number | string | undefined): string => {
-    if (!timestamp) return '';
+  const formatWipeTime = (timestamp: number | string | undefined | null): string => {
+    if (!timestamp && timestamp !== 0) return '';
     try {
-      let wipeTime: moment.Moment;
-      if (typeof timestamp === 'number') {
-        wipeTime = moment.unix(timestamp);
-      } else {
-        const parsed = parseInt(timestamp);
-        if (isNaN(parsed)) {
-          // Если это строка-дата, пытаемся распарсить как дату
-          wipeTime = moment(timestamp);
-        } else {
-          wipeTime = moment.unix(parsed);
-        }
+      // API возвращает Unix timestamp в секундах как число
+      const timestampNum = typeof timestamp === 'number' ? timestamp : parseInt(String(timestamp), 10);
+      if (isNaN(timestampNum)) {
+        return '';
       }
+      const wipeTime = moment.unix(timestampNum);
       return wipeTime.isValid() ? wipeTime.fromNow() : '';
     } catch {
       return '';
     }
   };
+
+  // Skeleton для загрузки
+  if (isLoading || !servers) {
+    return (
+      <section className="sidebar__widget servers-list">
+        <h4 className="servers-list__title">
+          <span>Наши сервера</span>
+        </h4>
+        <div className="servers-list__list">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="servers-list__server-link" style={{ pointerEvents: 'none' }}>
+              <article className="servers-list__server server">
+                <header className="server__header">
+                  <div style={{ height: 20, backgroundColor: 'var(--background-hover)', borderRadius: 4, width: '60%', marginBottom: 8 }}></div>
+                  <div style={{ height: 16, backgroundColor: 'var(--background-hover)', borderRadius: 4, width: '30%' }}></div>
+                </header>
+                <div className="server__link">
+                  <div style={{ height: 14, backgroundColor: 'var(--background-hover)', borderRadius: 4, width: '80%', marginBottom: 8 }}></div>
+                  <div style={{ height: 14, backgroundColor: 'var(--background-hover)', borderRadius: 4, width: '50%' }}></div>
+                </div>
+                <div className="server__progress-wrapper">
+                  <div className="server__progress-wrap">
+                    <div className="server__progress" style={{ width: '0%', backgroundColor: 'var(--background-hover)' }}></div>
+                  </div>
+                  <span className="server__progress-value">
+                    <span style={{ height: 16, backgroundColor: 'var(--background-hover)', borderRadius: 4, width: 50, display: 'inline-block' }}></span>
+                  </span>
+                  <div style={{ width: 32, height: 32, backgroundColor: 'var(--background-hover)', borderRadius: 4 }}></div>
+                </div>
+              </article>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (!servers || servers.length === 0) {
+    return null;
+  }
 
   return (
     <section className="sidebar__widget servers-list">
@@ -136,16 +173,16 @@ export default function ServersList({ servers, projectStats }: ServersListProps)
                   <h5 className="server__title">{server.name}</h5>
                   <span className="server__status">{server.wipeType || 'Вайп'}</span>
                 </header>
-                <p className="server__link">
-                  <span className="server__link-text">{server.description}</span>
-                  {server.nextWipe && (
-                    <span className="server__wipe">
-                      Вайп <span className="server__wipe-time" data-time={server.nextWipe}>
-                        {formatWipeTime(server.nextWipe)}
-                      </span>
-                    </span>
-                  )}
-                </p>
+                        <div className="server__link">
+                          <span className="server__link-text">{server.description}</span>
+                          {server.nextWipe && (
+                            <span className="server__wipe">
+                              Вайп <span className="server__wipe-time" data-time={server.nextWipe}>
+                                {formatWipeTime(server.nextWipe)}
+                              </span>
+                            </span>
+                          )}
+                        </div>
                 <div className="server__progress-wrapper">
                   <div className="server__progress-wrap">
                     <div

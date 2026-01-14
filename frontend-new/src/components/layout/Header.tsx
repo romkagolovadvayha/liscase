@@ -11,6 +11,12 @@ import { WorkspacePremiumRounded } from '@mui/icons-material';
 import moment from 'moment';
 import 'moment/locale/ru';
 import StatsLink from './StatsLink';
+import { logout, startSteamAuth, isAuthenticated } from '@/lib/api/auth';
+import apiClient from '@/lib/api/client';
+import { useSettings } from '@/hooks/useSettings';
+import { useUser } from '@/providers/UserProvider';
+import ImpersonateModal from '@/components/admin/ImpersonateModal';
+import { getLogo, getDefaultAvatar } from '@/lib/utils/settingsImage';
 
 type Theme = 'original' | 'glamour' | 'winter' | 'summer' | 'dark';
 
@@ -42,13 +48,13 @@ interface HeaderProps {
 }
 
 export default function Header({
-  logo = '/uploads/site/design/0554f1c40e29411f9422851a1918153c.svg',
+  logo: initialLogo,
   balance: initialBalance = 0,
-  avatar = '/uploads/site/design/86e6c084c19ad0c4c824c8e985b3bc8c.png',
-  username = 'Player123',
-  steamId = '76561198012345678',
-  isGuest = false,
-  activeVip = null,
+  avatar: initialAvatar = '/uploads/site/design/86e6c084c19ad0c4c824c8e985b3bc8c.png',
+  username: initialUsername = 'Player123',
+  steamId: initialSteamId = '76561198012345678',
+  isGuest: initialIsGuest = false,
+  activeVip: initialActiveVip = null,
   menuItems = [
     { label: 'Маркет скинов', href: '/market/skins', icon: 'shopping-bag' },
     { label: 'Главная', href: '/', icon: 'home' },
@@ -84,10 +90,133 @@ export default function Header({
   const [currentTheme, setCurrentTheme] = useState<Theme>('original');
   const [loadingHref, setLoadingHref] = useState<string | null>(null);
   const [balance, setBalance] = useState(initialBalance);
+  // Инициализируем logo из пропсов (полученных на сервере) или дефолтное значение
+  const [logo, setLogo] = useState<string>(initialLogo || '/uploads/site/design/0554f1c40e29411f9422851a1918153c.svg');
+  const [avatar, setAvatar] = useState(initialAvatar);
+  const [username, setUsername] = useState(initialUsername);
+  const [steamId, setSteamId] = useState(initialSteamId);
+  const [activeVip, setActiveVip] = useState(initialActiveVip);
+  const [isImpersonateModalOpen, setIsImpersonateModalOpen] = useState(false);
   const themeMenuRef = useRef<HTMLLIElement>(null);
   const pathname = usePathname();
   const router = useRouter();
   const { isLoading: isRouteLoading } = useNavigationLoading();
+
+  // Используем глобальные данные пользователя
+  const { user, isGuest, isLoading: isUserLoading } = useUser();
+  
+  // Логируем для отладки
+  useEffect(() => {
+    if (user) {
+      console.log('[Header] User data:', {
+        id: user.id,
+        username: user.username,
+        isAdmin: user.isAdmin,
+        roles: user.roles,
+      });
+    }
+  }, [user]);
+
+  // Слушаем уведомления о покупке для обновления баланса
+  useEffect(() => {
+    const handlePurchaseCompleted = (event: CustomEvent) => {
+      const newBalance = event.detail?.newBalance;
+      if (typeof newBalance === 'number') {
+        setBalance(newBalance);
+      } else {
+        // Если баланс не передан, обновляем его с сервера
+        apiClient.get('/user/balance')
+          .then(response => {
+            if (response.data.success) {
+              setBalance(response.data.data.personal?.balance || 0);
+            }
+          })
+          .catch(error => {
+            console.warn('Failed to fetch balance after purchase:', error);
+          });
+      }
+    };
+
+    window.addEventListener('purchase-completed', handlePurchaseCompleted as EventListener);
+    
+    return () => {
+      window.removeEventListener('purchase-completed', handlePurchaseCompleted as EventListener);
+    };
+  }, []);
+
+  // Обновляем локальное состояние из глобальных данных пользователя
+  useEffect(() => {
+    if (user) {
+      setUsername(user.username || 'Player123');
+      setSteamId(user.steam_id || '');
+      const cdnUrl = settings?.site?.cdnUrl as string | null | undefined;
+      const userAvatar = user.avatar || (settings ? getDefaultAvatar(settings, cdnUrl) : null) || initialAvatar;
+      setAvatar(userAvatar);
+      
+      // Устанавливаем информацию о VIP, если она есть
+      if (user.activeVip) {
+        setActiveVip({
+          expires_at: user.activeVip.expires_at,
+          timestamp: user.activeVip.timestamp,
+        });
+      } else {
+        setActiveVip(null);
+      }
+    } else if (!isUserLoading) {
+      // Если данные загружены и пользователя нет, сбрасываем значения
+      setUsername(initialUsername);
+      setSteamId(initialSteamId);
+      setAvatar(initialAvatar);
+      setActiveVip(null);
+    }
+  }, [user, isUserLoading]);
+
+  // Загружаем баланс отдельно (не из UserProvider, так как он обновляется через WebSocket)
+  useEffect(() => {
+    if (!isGuest && isAuthenticated()) {
+      apiClient.get('/user/balance')
+        .then(response => {
+          if (response.data.success) {
+            setBalance(response.data.data.personal?.balance || 0);
+          }
+        })
+        .catch(error => {
+          console.warn('Failed to fetch balance:', error);
+        });
+    }
+  }, [isGuest]);
+
+  // Используем React Query для настроек (для других компонентов, не для логотипа)
+  const { data: settings } = useSettings();
+  
+  // Инициализируем логотип из пропсов (полученных на сервере)
+  useEffect(() => {
+    // Используем initialLogo, переданный с сервера (приоритет)
+    if (initialLogo) {
+      setLogo(initialLogo);
+      return;
+    }
+    
+    // Если initialLogo не передан, пытаемся получить из настроек на клиенте
+    if (settings && Object.keys(settings).length > 0) {
+      const cdnUrl = settings?.site?.cdnUrl as string | null | undefined;
+      const logoUrl = getLogo(settings, cdnUrl);
+      if (logoUrl) {
+        setLogo(logoUrl);
+      }
+    }
+  }, [settings, initialLogo]);
+  
+  // Обновляем аватар по умолчанию когда настройки загружены
+  useEffect(() => {
+    if (settings && !user?.avatar) {
+      const cdnUrl = settings.site?.cdnUrl as string | null | undefined;
+      const defaultAvatarUrl = getDefaultAvatar(settings, cdnUrl);
+      if (defaultAvatarUrl) {
+        setAvatar(defaultAvatarUrl);
+      }
+    }
+  }, [settings, user?.avatar]);
 
   // Инициализируем moment локаль
   useEffect(() => {
@@ -102,26 +231,30 @@ export default function Header({
   const [wsSteamId, setWsSteamId] = useState<string | undefined>(steamId);
 
   // Получаем токен для WebSocket через API (так как cookie httpOnly)
+  // TODO: ws-token endpoint пока не реализован в новом API
   useEffect(() => {
     if (!isGuest && wsUrl) {
-      fetch('/api/auth/ws-token')
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            console.log('[Header] Got WS token from API');
-            setWsToken(data.token);
-            setWsSteamId(data.steam_id);
-          } else {
-            console.log('[Header] Failed to get WS token:', data.message);
-            setWsToken(undefined);
-            setWsSteamId(undefined);
-          }
-        })
-        .catch(error => {
-          console.error('[Header] Error getting WS token:', error);
-          setWsToken(undefined);
-          setWsSteamId(undefined);
-        });
+      // Временно отключаем ws-token, так как endpoint не реализован в новом API
+      // apiClient.get('/auth/ws-token')
+      //   .then(res => {
+      //     const data = res.data;
+      //     if (data.success) {
+      //       console.log('[Header] Got WS token from API');
+      //       setWsToken(data.data.token);
+      //       setWsSteamId(data.data.steam_id);
+      //     } else {
+      //       console.log('[Header] Failed to get WS token:', data.message);
+      //       setWsToken(undefined);
+      //       setWsSteamId(undefined);
+      //     }
+      //   })
+      //   .catch(error => {
+      //     console.error('[Header] Error getting WS token:', error);
+      //     setWsToken(undefined);
+      //     setWsSteamId(undefined);
+      //   });
+      setWsToken(undefined);
+      setWsSteamId(undefined);
     } else {
       setWsToken(undefined);
       setWsSteamId(undefined);
@@ -154,10 +287,7 @@ export default function Header({
     }
   }, [wsEnabled, wsUrl, isGuest, wsToken, wsSteamId]);
 
-  // Обновляем баланс при изменении initialBalance
-  useEffect(() => {
-    setBalance(initialBalance);
-  }, [initialBalance]);
+  // Убираем useEffect для initialBalance - баланс теперь загружается через API
   
   // Функция для вычисления видимых элементов на основе ширины экрана
   const calculateVisibleItems = (items: MenuItem[]) => {
@@ -423,7 +553,6 @@ export default function Header({
                                 href={item.href}
                                 className={linkClassName}
                                 onClick={(e) => {
-                                  e.preventDefault();
                                   handleLinkClick(item.href, e);
                                   setIsMoreMenuOpen(false);
                                 }}
@@ -546,6 +675,26 @@ export default function Header({
                           </div>
                         )}
                       </li>
+                      {user?.isAdmin && (
+                        <>
+                          <li className="header__user-menu-divider"></li>
+                          <li>
+                            <button
+                              type="button"
+                              className="header__user-menu-item"
+                              style={{ width: '100%' }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setIsImpersonateModalOpen(true);
+                                setIsUserMenuOpen(false);
+                              }}
+                            >
+                              <Icon name="person" fontSize="small" />
+                              <span>Войти под пользователем</span>
+                            </button>
+                          </li>
+                        </>
+                      )}
                       <li className="header__user-menu-divider"></li>
                       <li>
                         <button
@@ -554,17 +703,7 @@ export default function Header({
                           style={{ width: '100%' }}
                           onClick={async (e) => {
                             e.preventDefault();
-                            try {
-                              const response = await fetch('/api/auth/logout', {
-                                method: 'POST',
-                              });
-                              if (response.ok) {
-                                // Перезагружаем страницу для обновления состояния
-                                window.location.href = '/';
-                              }
-                            } catch (error) {
-                              console.error('Error logging out:', error);
-                            }
+                            await logout();
                           }}
                         >
                           <Icon name="logout" fontSize="small" />
@@ -578,15 +717,27 @@ export default function Header({
             </>
           )}
           {isGuest && (
-            <Link href="/api/auth/steam" className="button button-primary button-size__s">
+            <button 
+              onClick={() => startSteamAuth()} 
+              className="button button-primary button-size__s"
+            >
               <span className="button__text">
                 Войти через Steam
                 <Icon name="steam" faFixedSize={20} />
               </span>
-            </Link>
+            </button>
           )}
         </div>
       </div>
+
+      {/* Модальное окно для входа под пользователем */}
+      <ImpersonateModal
+        isOpen={isImpersonateModalOpen}
+        onClose={() => setIsImpersonateModalOpen(false)}
+        onSuccess={() => {
+          // Страница перезагрузится автоматически после успешного входа
+        }}
+      />
     </header>
   );
 }

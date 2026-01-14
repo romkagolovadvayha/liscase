@@ -28,7 +28,7 @@ interface FooterProps {
 }
 
 export default function Footer({
-  logo = '/uploads/site/design/0554f1c40e29411f9422851a1918153c.svg',
+  logo,
   email = 'support@example.com',
   socialLinks = [
     { name: 'telegram', url: 'https://t.me/channel' },

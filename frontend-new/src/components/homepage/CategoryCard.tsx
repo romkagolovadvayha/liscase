@@ -34,3 +34,11 @@ export default function CategoryCard({ id, name, image, isActive, onClick }: Cat
 
 
 
+
+
+
+
+
+
+
+

@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { toastSuccess, toastError } from '@/lib/toast';
 import Icon from '@/components/icons/Icon';
 import Button from '@/components/forms/Button';
 import Link from 'next/link';
 import { Tooltip } from 'react-tooltip';
+import apiClient from '@/lib/api/client';
+import { isAuthenticated } from '@/lib/api/auth';
+import { useSettings } from '@/hooks/useSettings';
+import { getModalLightImage } from '@/lib/utils/settingsImage';
 import '@/styles/product-modal.scss';
 
 interface SubDrop {
@@ -56,28 +60,72 @@ export default function ProductModal({
   isOpen,
   onClose,
   onPurchaseSuccess,
-  isGuest = false,
+  isGuest: isGuestProp = false,
 }: ProductModalProps) {
+  const { data: settings } = useSettings();
+  const modalLightImage = getModalLightImage(settings);
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedDropId, setSelectedDropId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState(() => {
+    // Инициализируем состояние авторизации при монтировании
+    if (typeof window !== 'undefined') {
+      return isAuthenticated();
+    }
+    return !isGuestProp;
+  });
+
+  // Отслеживаем изменения авторизации
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const checkAuth = () => {
+        const authenticated = isAuthenticated();
+        setIsUserAuthenticated(authenticated);
+      };
+
+      checkAuth();
+
+      // Слушаем изменения в localStorage (срабатывает только при изменениях из других вкладок)
+      const handleStorageChange = (e: StorageEvent) => {
+        if (e.key === 'access_token') {
+          checkAuth();
+        }
+      };
+
+      window.addEventListener('storage', handleStorageChange);
+      
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+      };
+    }
+  }, []);
+
+  // Определяем isGuest: проверяем реальную авторизацию, а не только проп
+  const isGuest = !isUserAuthenticated;
 
   useEffect(() => {
-    if (isOpen && productProp) {
-      // Для скинов загружаем данные из API
-      if (productProp.isSkin) {
-        loadSkinData(productProp.id);
-      } else if ((productProp.drop_type === 2 || productProp.drop_type === 3) && !productProp.subDrops) {
-        // Если у продукта нет subDrops, но они нужны (TYPE_SET или TYPE_SELECT), загружаем их
-        loadSubDrops(productProp.id);
-      } else {
-        setProduct(productProp);
-        if (productProp.drop_type === 3 && productProp.subDrops && productProp.subDrops.length > 0) {
-          // Для TYPE_SELECT выбираем первый вариант по умолчанию
-          setSelectedDropId(productProp.subDrops[0].drop_id);
+    if (isOpen) {
+      // При открытии модального окна проверяем авторизацию
+      if (typeof window !== 'undefined') {
+        setIsUserAuthenticated(isAuthenticated());
+      }
+
+      if (productProp) {
+        // Для скинов загружаем данные из API
+        if (productProp.isSkin) {
+          loadSkinData(productProp.id);
+        } else if ((productProp.drop_type === 2 || productProp.drop_type === 3) && !productProp.subDrops) {
+          // Если у продукта нет subDrops, но они нужны (TYPE_SET или TYPE_SELECT), загружаем их
+          loadSubDrops(productProp.id);
+        } else {
+          setProduct(productProp);
+          if (productProp.drop_type === 3 && productProp.subDrops && productProp.subDrops.length > 0) {
+            // Для TYPE_SELECT выбираем первый вариант по умолчанию
+            setSelectedDropId(productProp.subDrops[0].drop_id);
+          }
         }
       }
     } else {
@@ -92,8 +140,9 @@ export default function ProductModal({
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/market/skins/${skinId}`);
-      const result = await response.json();
+      // TODO: /v1/skins/{id} endpoint пока не реализован в новом API
+      const response = await apiClient.get(`/skins/${skinId}`);
+      const result = response.data;
 
       if (result.success) {
         setProduct({ ...result.data, isSkin: true });
@@ -114,8 +163,9 @@ export default function ProductModal({
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/products/${productId}`);
-      const result = await response.json();
+      // TODO: /v1/products/{id} endpoint пока не реализован в новом API
+      const response = await apiClient.get(`/products/${productId}`);
+      const result = response.data;
 
       if (result.success) {
         setProduct(result.data);
@@ -155,24 +205,18 @@ export default function ProductModal({
     setError(null);
 
     try {
-      // Для скинов используем другой endpoint
+      // TODO: /v1/skins/{id}/buy и /v1/products/{id}/buy endpoints пока не реализованы в новом API
       const endpoint = product.isSkin 
-        ? `/api/market/skins/${product.id}/buy`
-        : `/api/products/${product.id}/buy`;
+        ? `/skins/${product.id}/buy`
+        : `/products/${product.id}/buy`;
       
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(
-          product.isSkin 
-            ? {} // Для скинов не передаем quantity и drop_id
-            : { quantity, drop_id: selectedDropId }
-        ),
-      });
+      const response = await apiClient.post(endpoint, 
+        product.isSkin 
+          ? {} // Для скинов не передаем quantity и drop_id
+          : { quantity, drop_id: selectedDropId }
+      );
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.success) {
         toastSuccess(result.message || 'Предмет успешно приобретен!');
@@ -272,7 +316,7 @@ export default function ProductModal({
               ) : product.drop_type !== 2 && product.drop_type !== 3 ? (
                 <figure className="product-modal__image-wrapper">
                   <img
-                    src="/images/design/modal/light.png"
+                    src={modalLightImage}
                     alt=""
                     className="product-modal__light"
                   />
@@ -397,8 +441,11 @@ export default function ProductModal({
               )}
 
               {isGuest ? (
-                <Link
-                  href="/api/auth/steam"
+                <button
+                  onClick={() => {
+                    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://api.test.prostoj.store';
+                    window.location.href = `${apiBaseUrl}/v1/auth/oauth`;
+                  }}
                   className="button button-primary"
                   style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
                 >
@@ -406,7 +453,7 @@ export default function ProductModal({
                     Войти через Steam
                     <Icon name="steam" faFixedSize={20} />
                   </span>
-                </Link>
+                </button>
               ) : (
                 <div className="product-modal__purchase">
                   <div className="product-modal__purchase-top">

@@ -35,6 +35,8 @@ export interface BanlistResponse {
   };
 }
 
+import apiClient from '@/lib/api/client';
+
 async function fetchBanlistData(filters: BanlistFilters): Promise<BanlistResponse> {
   const params = new URLSearchParams();
   if (filters.page && filters.page > 1) params.set('page', filters.page.toString());
@@ -44,11 +46,8 @@ async function fetchBanlistData(filters: BanlistFilters): Promise<BanlistRespons
   if (filters.sort) params.set('sort', filters.sort);
   if (filters.order) params.set('order', filters.order);
 
-  const response = await fetch(`/api/banlist?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch banlist data');
-  }
-  return response.json();
+  const response = await apiClient.get<BanlistResponse>(`/banlist?${params.toString()}`);
+  return response.data;
 }
 
 export function useBanlistData(

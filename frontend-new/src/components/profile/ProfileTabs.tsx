@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import classNames from 'classnames';
 import Icon from '@/components/icons/Icon';
 import Tabs from '@/components/design-system/Tabs';
@@ -20,6 +20,7 @@ interface ProfileTabsProps {
 
 export default function ProfileTabs({ tabs, className }: ProfileTabsProps) {
   const pathname = usePathname();
+  const router = useRouter();
   
   // Определяем активную вкладку на основе pathname
   // Проверяем точное совпадение или начало пути (для вложенных страниц)
@@ -33,7 +34,7 @@ export default function ProfileTabs({ tabs, className }: ProfileTabsProps) {
   const handleTabChange = (tabId: string) => {
     const tab = tabs.find(t => t.id === tabId);
     if (tab) {
-      window.location.href = tab.href;
+      router.push(tab.href);
     }
   };
 

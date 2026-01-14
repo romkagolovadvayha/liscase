@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Avatar } from 'antd';
 import moment from 'moment';
 import 'moment/locale/ru';
+import { useSettings } from '@/hooks/useSettings';
+import { getDefaultAvatar } from '@/lib/utils/settingsImage';
 
 export interface Comment {
   id: number;
@@ -21,6 +23,8 @@ export interface BlogCommentsListProps {
 }
 
 export default function BlogCommentsList({ comments }: BlogCommentsListProps) {
+  const { data: settings } = useSettings();
+  const defaultAvatar = getDefaultAvatar(settings);
   moment.locale('ru');
 
   const formatDate = (dateString: string): string => {
@@ -46,7 +50,7 @@ export default function BlogCommentsList({ comments }: BlogCommentsListProps) {
           <li key={comment.id} className="stat-block__list-item">
             <div className="stat-block__list-avatar">
               <Avatar
-                src={comment.avatar || '/images/default-avatar.png'}
+                src={comment.avatar || defaultAvatar}
                 alt={comment.username}
                 className="stat-block__list-avatar-img"
                 size="default"

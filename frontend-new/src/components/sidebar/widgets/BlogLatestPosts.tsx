@@ -1,40 +1,17 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import BlogLatestPostCard from './BlogLatestPostCard';
-
-export interface BlogPost {
-  id: number;
-  title: string;
-  image?: string;
-  views?: number;
-  commentsCount?: number;
-  url?: string;
-  link_name?: string;
-}
+import { useBlogPosts, type BlogPost } from '@/hooks/useBlogPosts';
 
 export default function BlogLatestPosts() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: blogData, isLoading: loading } = useBlogPosts({
+    limit: 5,
+    sort: 'created_at',
+    order: 'desc',
+  });
 
-  useEffect(() => {
-    const fetchLatestPosts = async () => {
-      try {
-        const response = await fetch('/api/blog?limit=5&sort=created_at&order=desc');
-        const result = await response.json();
-        
-        if (result.success && result.data?.posts) {
-          setPosts(result.data.posts);
-        }
-      } catch (error) {
-        console.error('Error fetching latest posts:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLatestPosts();
-  }, []);
+  const posts = blogData?.data?.posts || [];
 
   if (loading) {
     return (

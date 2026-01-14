@@ -9,6 +9,7 @@ import BlogCard from '@/components/homepage/BlogCard';
 import Input from '@/components/forms/Input';
 import Button from '@/components/forms/Button';
 import Tabs from '@/components/design-system/Tabs';
+import apiClient from '@/lib/api/client';
 import '@/styles/blog.scss';
 
 interface BlogPost {
@@ -16,8 +17,13 @@ interface BlogPost {
   title: string;
   description: string;
   image?: string;
-  category?: string;
+  category?: {
+    id: number;
+    name: string;
+    linkName: string;
+  } | null;
   date: string;
+  createdAt?: string;
   views: number;
   url: string;
 }
@@ -100,14 +106,20 @@ export default function BlogClient() {
         params.append('category_id', selectedCategoryId.toString());
       }
 
-      const response = await fetch(`/api/blog?${params.toString()}`);
-      const result = await response.json();
+      const response = await apiClient.get(`/blog?${params.toString()}`);
+      const result = response.data;
       
       if (result.success) {
+        // Преобразуем данные постов: используем createdAt как date, если date не задано
+        const postsData = result.data.posts.map((post: any) => ({
+          ...post,
+          date: post.date || post.createdAt || '',
+        }));
+        
         if (append) {
-          setPosts((prev) => [...prev, ...result.data.posts]);
+          setPosts((prev) => [...prev, ...postsData]);
         } else {
-          setPosts(result.data.posts);
+          setPosts(postsData);
         }
         setCurrentPage(page);
         setTotalPages(result.data.pagination.totalPages);
@@ -163,8 +175,9 @@ export default function BlogClient() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('/api/blog/categories');
-        const result = await response.json();
+        // TODO: blog/categories endpoint пока не реализован в новом API
+        const response = await apiClient.get('/blog/categories');
+        const result = response.data;
         
         if (result.success) {
           setCategories(result.data);
@@ -524,7 +537,7 @@ export default function BlogClient() {
                     title={post.title}
                     description={post.description}
                     image={post.image}
-                    category={post.category}
+                    category={post.category?.name || undefined}
                     date={post.date}
                     url={post.url}
                   />

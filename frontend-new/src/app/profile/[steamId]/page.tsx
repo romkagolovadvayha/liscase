@@ -1,46 +1,53 @@
+'use client';
+
+import React from 'react';
+import { useParams, usePathname } from 'next/navigation';
 import PlayerProfileClient from '@/components/profile/PlayerProfileClient';
 import ProfilePageWrapper from '@/components/profile/ProfilePageWrapper';
 import '@/styles/profile-player.scss';
-import { notFound } from 'next/navigation';
-import { getPlayerProfileData } from '@/lib/profile';
 
-export const revalidate = 3600; // Кешировать на 1 час
+// Список статических маршрутов, которые не должны обрабатываться этим динамическим маршрутом
+const STATIC_ROUTES = ['settings', 'history', 'referral', 'invite', 'list'];
 
-export default async function PlayerProfilePage({
-  params,
-}: {
-  params: Promise<{ steamId: string }>;
-}) {
-  const { steamId } = await params;
-  console.log(`[PlayerProfilePage] Rendering page for steamId: ${steamId}`);
+export default function PlayerProfilePage() {
+  const params = useParams();
+  const pathname = usePathname();
+  const steamId = params?.steamId as string;
+
+  // Проверяем, что steamId не является статическим маршрутом
+  // Это должно быть сделано ДО проверки pathname, чтобы избежать проблем с маршрутизацией
+  if (steamId && STATIC_ROUTES.includes(steamId)) {
+    return null;
+  }
+
+  // Проверяем pathname - если это статический маршрут, не обрабатываем его здесь
+  if (pathname) {
+    const isStaticRoute = STATIC_ROUTES.some(route => {
+      // Проверяем точное совпадение или начало пути
+      return pathname === `/profile/${route}` || pathname.startsWith(`/profile/${route}/`);
+    });
+    
+    if (isStaticRoute) {
+      return null;
+    }
+  }
+
+  if (!steamId) {
+    return null;
+  }
+
+  // Проверяем, что steamId выглядит как Steam ID (17 цифр)
+  // Steam ID обычно длинный числовой идентификатор (17 цифр)
+  // Если steamId не соответствует формату Steam ID, не обрабатываем его
+  if (!/^\d{17}$/.test(steamId)) {
+    return null;
+  }
 
   return (
     <ProfilePageWrapper>
       <div className="player-profile-page">
-        <PlayerProfileContent steamId={steamId} />
+        <PlayerProfileClient steamId={steamId} />
       </div>
     </ProfilePageWrapper>
   );
 }
-
-async function PlayerProfileContent({ steamId }: { steamId: string }) {
-  console.log(`[PlayerProfileContent] Fetching data for steamId: ${steamId}`);
-  
-  try {
-    const data = await getPlayerProfileData(steamId);
-    
-    console.log(`[PlayerProfileContent] Data received:`, data ? 'success' : 'null');
-
-    if (!data) {
-      console.error(`[PlayerProfileContent] Data is null for steamId: ${steamId}, calling notFound()`);
-      notFound();
-    }
-
-    return <PlayerProfileClient initialData={data} />;
-  } catch (error: any) {
-    console.error(`[PlayerProfileContent] Error for steamId ${steamId}:`, error);
-    console.error('[PlayerProfileContent] Error stack:', error?.stack);
-    notFound();
-  }
-}
-

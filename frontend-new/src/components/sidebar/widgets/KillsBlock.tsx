@@ -28,3 +28,11 @@ export default function KillsBlock({ data }: KillsBlockProps) {
 
 
 
+
+
+
+
+
+
+
+

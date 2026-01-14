@@ -5,6 +5,7 @@ import ServerCard from './ServerCard';
 import Icon from '@/components/icons/Icon';
 import Button from '@/components/forms/Button';
 import Link from 'next/link';
+import apiClient from '@/lib/api/client';
 import '@/styles/servers.scss';
 
 interface ProjectStats {
@@ -61,11 +62,13 @@ export default function ServersClient({ projectStats }: ServersClientProps) {
   useEffect(() => {
     const fetchServers = async () => {
       try {
-        const response = await fetch('/api/servers');
-        const result = await response.json();
+        const response = await apiClient.get('/servers');
+        const result = response.data;
         
-        if (result.success) {
-          setServers(result.data);
+        if (result.success && result.data) {
+          // API возвращает { servers: [...], projectStats: {...} }
+          const serversData = Array.isArray(result.data) ? result.data : (result.data.servers || []);
+          setServers(serversData);
         }
       } catch (error) {
         console.error('Error fetching servers:', error);
@@ -92,6 +95,9 @@ export default function ServersClient({ projectStats }: ServersClientProps) {
 
   // Фильтрация серверов по выбранному тегу
   const filteredServers = useMemo(() => {
+    if (!Array.isArray(servers)) {
+      return [];
+    }
     if (!selectedTagId) return servers;
     return servers.filter((server) =>
       server.tags?.some((tag) => tag.id === selectedTagId)

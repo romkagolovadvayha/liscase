@@ -10,8 +10,12 @@ import Switch from '@/components/forms/Switch';
 import Button from '@/components/forms/Button';
 import FormGroup from '@/components/forms/FormGroup';
 import AutoComplete from '@/components/design-system/AutoComplete';
+import { useSettings } from '@/hooks/useSettings';
+import { getDefaultAvatar } from '@/lib/utils/settingsImage';
 
 export default function FormElements() {
+  const { data: settings } = useSettings();
+  const defaultAvatar = getDefaultAvatar(settings);
   const [inputValue, setInputValue] = useState('');
   const [textareaValue, setTextareaValue] = useState('');
   const [selectValue, setSelectValue] = useState('');
@@ -245,7 +249,7 @@ export default function FormElements() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <div style={{ position: 'relative' }}>
                             <img 
-                              src="/uploads/site/design/86e6c084c19ad0c4c824c8e985b3bc8c.png" 
+                              src={defaultAvatar} 
                               alt="User"
                               style={{
                                 width: 24,
@@ -284,7 +288,7 @@ export default function FormElements() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <div style={{ position: 'relative' }}>
                             <img 
-                              src="/uploads/site/design/86e6c084c19ad0c4c824c8e985b3bc8c.png" 
+                              src={defaultAvatar} 
                               alt="User"
                               style={{
                                 width: 24,

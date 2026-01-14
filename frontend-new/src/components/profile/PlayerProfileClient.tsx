@@ -11,18 +11,53 @@ import {
   faVk,
   faTelegram,
 } from '@fortawesome/free-brands-svg-icons';
+import {
+  Straighten as RulerIcon,
+  Bed as BedIcon,
+  Group as GroupIcon,
+  Person as PersonIcon,
+  Warning as WarningIcon,
+  ExpandMore as ExpandMoreIcon,
+} from '@mui/icons-material';
 import Tabs from '@/components/design-system/Tabs';
 import DataTable, { DataTableColumn } from '@/components/design-system/DataTable';
 import Icon from '@/components/icons/Icon';
 import { useProfileData } from '@/hooks/useProfileData';
 import type { PlayerProfileData, KillItem } from '@/types/profile';
+import TeamWidget from '@/components/profile/TeamWidget';
 import '@/styles/profile-player.scss';
 
 interface PlayerProfileClientProps {
-  initialData: PlayerProfileData;
+  steamId: string;
+  initialData?: PlayerProfileData;
 }
 
-export default function PlayerProfileClient({ initialData }: PlayerProfileClientProps) {
+export default function PlayerProfileClient({ steamId, initialData }: PlayerProfileClientProps) {
+  // Используем useProfileData для загрузки данных через API
+  const { data: profileData, isLoading, isError } = useProfileData(steamId, {
+    initialData,
+  });
+
+  if (isLoading && !initialData) {
+    return (
+      <div className="player-profile-page">
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <p>Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !profileData) {
+    return (
+      <div className="player-profile-page">
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <p>Ошибка загрузки данных профиля</p>
+        </div>
+      </div>
+    );
+  }
+
   const { 
     user, 
     server, 
@@ -43,7 +78,7 @@ export default function PlayerProfileClient({ initialData }: PlayerProfileClient
     currentWipe,
     teamMembers = [],
     kills = [],
-  } = initialData;
+  } = profileData;
 
   // Состояния для "Показать еще"
   const [expandedWeapons, setExpandedWeapons] = useState(false);
@@ -132,7 +167,13 @@ export default function PlayerProfileClient({ initialData }: PlayerProfileClient
             onClick={() => onExpandChange(!expanded)}
           >
             <span>{expanded ? 'Скрыть' : `Показать еще ${hiddenCount}`}</span>
-            <i className={`fas fa-chevron-down ${expanded ? 'rotated' : ''}`}></i>
+            <ExpandMoreIcon 
+              sx={{ 
+                fontSize: 11, 
+                transition: 'transform 0.25s ease-in-out',
+                transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              }} 
+            />
           </button>
         )}
       </section>
@@ -184,7 +225,6 @@ export default function PlayerProfileClient({ initialData }: PlayerProfileClient
   // Табы для статистики
   const tabs = [
     { id: 'combat', label: 'Общая информация' },
-    { id: 'team', label: 'Команда' },
     { id: 'kills', label: 'Убийства' },
     { id: 'resources', label: 'Ресурсы и добыча' },
     { id: 'activity', label: 'Активность' },
@@ -284,6 +324,11 @@ export default function PlayerProfileClient({ initialData }: PlayerProfileClient
                 )}
               </div>
             </section>
+          )}
+
+          {/* Команда */}
+          {teamMembers && teamMembers.length > 0 && (
+            <TeamWidget teamMembers={teamMembers} />
           )}
         </aside>
 
@@ -495,76 +540,26 @@ export default function PlayerProfileClient({ initialData }: PlayerProfileClient
             </div>
           )}
 
-          {/* Команда */}
-          {activeTab === 'team' && (
-            <div className="flex flex-column gap-x-12 gap-y-12">
-              {teamMembers && teamMembers.length > 0 ? (
-                <section className="page-stats__block-without-hover team-widget">
-                  <header className="flex items-center justify-space-between mb-24 transition-all">
-                    <h3 className="flex items-center gap-x-12">Команда</h3>
-                    <div className="team-widget__stats">
-                      <span className="team-widget__stat team-widget__stat--online">
-                        <Icon name="circle" fontSize="small" />
-                        {teamMembers.filter(m => m.is_online).length}
-                      </span>
-                      <span className="team-widget__stat">
-                        {teamMembers.length}
-                      </span>
-                    </div>
-                  </header>
-                  <ul className="team-widget__list">
-                    {teamMembers.map((member) => (
-                      <li key={member.id} className={`team-member ${member.is_hidden ? 'team-member--hidden' : ''}`}>
-                        <div className={`team-member__avatar ${member.is_hidden ? 'team-member__avatar--hidden' : (!member.is_online ? 'team-member__avatar--offline' : '')}`}>
-                          <Avatar src={member.avatar} alt={member.username} size={40} />
-                          {member.is_online && <span className="team-member__status"></span>}
-                        </div>
-                        <div className="team-member__content">
-                          <div className="team-member__info">
-                            <a href={member.link} rel="nofollow" className="team-member__name">
-                              {member.username}
-                            </a>
-                            {member.is_leader && (
-                              <span className="team-member__badge team-member__badge--leader">
-                                <Icon name="crown" fontSize="small" />
-                                лидер
-                              </span>
-                            )}
-                          </div>
-                          <div className="team-member__status-text">
-                            {member.is_hidden ? (
-                              <>
-                                <Icon name="eye-slash" fontSize="small" />
-                                <span>Скрыт</span>
-                              </>
-                            ) : member.is_online ? (
-                              <span>Онлайн</span>
-                            ) : (
-                              <>
-                                <Icon name="clock" fontSize="small" />
-                                <span>Был онлайн {member.date_visit}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ) : (
-                <section className="page-stats__block-without-hover">
-                  <p className="text-text-secondary">Игрок не состоит в команде</p>
-                </section>
-              )}
-            </div>
-          )}
-
           {/* Убийства */}
           {activeTab === 'kills' && (
             <div className="flex flex-column gap-x-12 gap-y-12">
               {kills && kills.length > 0 ? (
-                <DataTable
-                  data={[...kills]
+                (() => {
+                  // Отладочное логирование для убийств типа 'animal'
+                  const animalKills = kills.filter(k => k.type === 'animal');
+                  console.log('[PlayerProfileClient] Animal kills:', animalKills);
+                  if (animalKills.length > 0) {
+                    console.log('[PlayerProfileClient] Animal kills found:', animalKills.map(k => ({
+                      id: k.id,
+                      type: k.type,
+                      dead: k.dead,
+                      animal: k.animal,
+                      animal2: k.animal2,
+                    })));
+                  }
+                  return (
+                    <DataTable
+                    data={[...kills]
                     .slice(0, 30) // Берем только последние 30 записей
                     .sort((a, b) => {
                       if (killsSortField === 'distance') {
@@ -597,7 +592,7 @@ export default function PlayerProfileClient({ initialData }: PlayerProfileClient
                                 }}
                               />
                             ) : (
-                              <i className="fas fa-skull-crossbones" style={{ fontSize: '24px', color: 'var(--text-secondary)' }}></i>
+                              <WarningIcon sx={{ fontSize: 24, color: 'var(--text-secondary)' }} />
                             )}
                           </div>
                         ),
@@ -609,68 +604,72 @@ export default function PlayerProfileClient({ initialData }: PlayerProfileClient
                         render: (kill: KillItem) => {
                           if (kill.type === 'suicides') {
                             return (
-                              <div className="kill-table-action">
+                              <div className="kill-table-action" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                                 {kill.name ? (
                                   <a href={kill.link || '#'} className="link">{kill.name}</a>
                                 ) : (
-                                  <span>Неизвестный</span>
+                                  <span>Неизвестный игрок</span>
                                 )}
-                                <span className="text-text-secondary ml-8">совершил самоубийство</span>
+                                <span className="text-text-secondary" style={{ fontSize: '0.875rem' }}>покончил с собой</span>
                               </div>
                             );
                           }
                           if (kill.type === 'animal') {
                             return (
-                              <div className="kill-table-action">
+                              <div className="kill-table-action" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                                 {kill.name ? (
                                   <a href={kill.link || '#'} className="link">{kill.name}</a>
                                 ) : (
-                                  <span>Неизвестный</span>
+                                  <span>Неизвестный игрок</span>
                                 )}
-                                <span className="text-text-secondary ml-8">убил {kill.animal2 || 'животное'}</span>
+                                <span className="text-text-secondary" style={{ fontSize: '0.875rem' }}>убил {kill.animal2 || 'животное'}</span>
                               </div>
                             );
                           }
                           if (kill.type === 'deaths') {
                             return (
-                              <div className="kill-table-action">
-                                <span className="text-text-secondary">{kill.animal || 'Животное'} убил</span>
+                              <div className="kill-table-action" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
+                                <span className="text-text-secondary" style={{ fontSize: '0.875rem' }}>{kill.animal || 'Животное'} убило</span>
                                 {kill.name ? (
-                                  <a href={kill.link || '#'} className="link ml-8">{kill.name}</a>
+                                  <a href={kill.link || '#'} className="link">{kill.name}</a>
                                 ) : (
-                                  <span className="ml-8">Неизвестный</span>
+                                  <span>Неизвестного игрока</span>
                                 )}
                               </div>
                             );
                           }
                           if (kill.type === 'scientists') {
                             return (
-                              <div className="kill-table-action">
+                              <div className="kill-table-action" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                                 {kill.name ? (
                                   <a href={kill.link || '#'} className="link">{kill.name}</a>
                                 ) : (
-                                  <span>Неизвестный</span>
+                                  <span>Неизвестный игрок</span>
                                 )}
-                                <span className="text-text-secondary ml-8">убил бота</span>
+                                <span className="text-text-secondary" style={{ fontSize: '0.875rem' }}>убил учёного</span>
                               </div>
                             );
                           }
                           if (kill.type === 'kill') {
+                            const killerName = kill.bot ? (
+                              <span className="text-text-secondary">Бот</span>
+                            ) : kill.name ? (
+                              <a href={kill.link || '#'} className="link">{kill.name}</a>
+                            ) : (
+                              <span>Неизвестный игрок</span>
+                            );
+                            
+                            const victimName = kill.dead_name ? (
+                              <a href={kill.dead_link || '#'} className="link">{kill.dead_name}</a>
+                            ) : (
+                              <span>Неизвестного игрока</span>
+                            );
+                            
                             return (
-                              <div className="kill-table-action">
-                                {kill.bot ? (
-                                  <span className="text-text-secondary">Бот</span>
-                                ) : kill.name ? (
-                                  <a href={kill.link || '#'} className="link">{kill.name}</a>
-                                ) : (
-                                  <span>Неизвестный</span>
-                                )}
-                                <i className="fas fa-arrow-right mx-8" style={{ color: 'var(--text-secondary)' }}></i>
-                                {kill.dead_name ? (
-                                  <a href={kill.dead_link || '#'} className="link">{kill.dead_name}</a>
-                                ) : (
-                                  <span>Неизвестный</span>
-                                )}
+                              <div className="kill-table-action" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
+                                {killerName}
+                                <span className="text-text-secondary" style={{ fontSize: '0.875rem' }}>убил</span>
+                                {victimName}
                               </div>
                             );
                           }
@@ -684,7 +683,7 @@ export default function PlayerProfileClient({ initialData }: PlayerProfileClient
                         width: '120px',
                         render: (kill: KillItem) => (
                           <div className="flex items-center gap-x-8">
-                            <i className="fas fa-ruler" style={{ fontSize: '12px', color: 'var(--text-secondary)' }}></i>
+                            <RulerIcon sx={{ fontSize: 14, color: 'var(--text-secondary)' }} />
                             <span>{kill.distance} м</span>
                           </div>
                         ),
@@ -698,19 +697,19 @@ export default function PlayerProfileClient({ initialData }: PlayerProfileClient
                           <div className="flex items-center gap-x-8 flex-wrap">
                             {kill.signs && kill.signs.includes('sleep') && (
                               <span className="kill-badge kill-badge--sleep">
-                                <i className="fas fa-bed"></i>
+                                <BedIcon sx={{ fontSize: 12 }} />
                                 Спящий
                               </span>
                             )}
                             {kill.signs && kill.signs.includes('team') && (
                               <span className="kill-badge kill-badge--team">
-                                <i className="fas fa-user-friends"></i>
+                                <GroupIcon sx={{ fontSize: 12 }} />
                                 Тимейт
                               </span>
                             )}
                             {!kill.wears && (
                               <span className="kill-badge kill-badge--naked">
-                                <i className="fas fa-user"></i>
+                                <PersonIcon sx={{ fontSize: 12 }} />
                                 Голый
                               </span>
                             )}
@@ -757,7 +756,9 @@ export default function PlayerProfileClient({ initialData }: PlayerProfileClient
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     pageSize={20}
-                  />
+                    />
+                  );
+                })()
               ) : (
                 <div className="data-table-wrapper">
                   <div className="data-table-empty">
@@ -945,7 +946,13 @@ export default function PlayerProfileClient({ initialData }: PlayerProfileClient
                       <span className="awards-show-more-text">
                         {expandedAwards ? 'Скрыть' : `Показать еще ${hiddenAwardsCount}`}
                       </span>
-                      <i className={`fas fa-chevron-down ${expandedAwards ? 'awards-show-more-icon--rotated' : ''}`}></i>
+                      <ExpandMoreIcon 
+                        sx={{ 
+                          fontSize: 11, 
+                          transition: 'transform 0.25s ease-in-out',
+                          transform: expandedAwards ? 'rotate(180deg)' : 'rotate(0deg)',
+                        }} 
+                      />
                     </button>
                   )}
                 </section>

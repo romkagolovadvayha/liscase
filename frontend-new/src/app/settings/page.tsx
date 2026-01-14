@@ -1,19 +1,8 @@
-import { Metadata } from 'next';
+'use client';
+
+import React from 'react';
 import SettingsClient from '@/components/settings/SettingsClient';
 
-export const dynamic = 'force-dynamic';
-
-export const metadata: Metadata = {
-  title: 'Настройки - Liscase',
-  description: 'Настройки профиля пользователя',
-};
-
-export default async function SettingsPage() {
+export default function SettingsPage() {
   return <SettingsClient />;
 }
-
-
-
-
-
-

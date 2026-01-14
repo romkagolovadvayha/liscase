@@ -21,8 +21,7 @@ const nextConfig = {
   
   // Переменные окружения
   env: {
-    API_BASE_URL: process.env.API_BASE_URL || 'http://api.test.prostoj.store',
-    // NODE_ENV автоматически устанавливается Next.js, не нужно указывать здесь
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://api.test.prostoj.store',
   },
   
   // Rewrites для проксирования статики /uploads/*
@@ -71,7 +70,60 @@ const nextConfig = {
   images: {
     domains: [
       'localhost',
-      // Добавьте домены для изображений
+      'avatars.steamstatic.com',
+      'steamcdn-a.akamaihd.net',
+      'cdn.steamstatic.com',
+      'prostoj.store',
+      'test.prostoj.store',
+      'api.test.prostoj.store',
+      'prostoj.storeuploads', // Временное решение для некорректных URL (должно быть исправлено на бэкенде)
+      // Добавьте другие домены для изображений при необходимости
+    ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.steamstatic.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.steamcdn-a.akamaihd.net',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.cdn.steamstatic.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'prostoj.store',
+      },
+      {
+        protocol: 'http',
+        hostname: 'prostoj.store',
+      },
+      {
+        protocol: 'https',
+        hostname: 'test.prostoj.store',
+      },
+      {
+        protocol: 'http',
+        hostname: 'test.prostoj.store',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.test.prostoj.store',
+      },
+      {
+        protocol: 'http',
+        hostname: 'api.test.prostoj.store',
+      },
+      {
+        protocol: 'https',
+        hostname: 'prostoj.storeuploads',
+      },
+      {
+        protocol: 'http',
+        hostname: 'prostoj.storeuploads',
+      },
     ],
     formats: ['image/webp', 'image/avif'],
   },

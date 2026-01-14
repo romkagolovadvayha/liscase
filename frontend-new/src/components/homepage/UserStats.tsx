@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import classNames from 'classnames';
 import Button from '@/components/forms/Button';
 import Icon from '@/components/icons/Icon';
 import { useCSSVariable } from '@/hooks/useCSSVariable';
+import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 
 interface StatItem {
   label: string;
@@ -77,6 +78,95 @@ export default function UserStats({
   const finalStatsImage = statsImage || defaultStatsImage;
   const finalStatsImageVideo = statsImageVideo || defaultStatsImageVideo;
   const finalNotAuthImage = notAuthImage || defaultNotAuthImage;
+  
+  // Refs для видео элементов
+  const videoRef1 = useRef<HTMLVideoElement>(null);
+  const videoRef2 = useRef<HTMLVideoElement>(null);
+  
+  // Обработка ленивой загрузки видео
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const videos = [videoRef1.current, videoRef2.current].filter(Boolean) as HTMLVideoElement[];
+    
+    if (videos.length === 0) return;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.target instanceof HTMLVideoElement) {
+            const video = entry.target;
+            // Загружаем и воспроизводим видео
+            video.load();
+            video.play().catch((error) => {
+              console.warn('Failed to play video:', error);
+            });
+            observer.unobserve(video);
+          }
+        });
+      },
+      { rootMargin: '50px' }
+    );
+    
+    videos.forEach((video) => {
+      if (video) {
+        observer.observe(video);
+      }
+    });
+    
+    return () => {
+      videos.forEach((video) => {
+        if (video) {
+          observer.unobserve(video);
+        }
+      });
+    };
+  }, [finalStatsImageVideo]);
+
+  // Анимированные значения для боевой статистики (вызываем ДО условного return)
+  const animatedKills = useAnimatedCounter({ 
+    target: userStats?.kills || 0, 
+    duration: 1500,
+    enabled: !isGuest && !!userStats 
+  });
+  const animatedDeaths = useAnimatedCounter({ 
+    target: userStats?.deaths || 0, 
+    duration: 1500,
+    enabled: !isGuest && !!userStats 
+  });
+  const animatedKd = useAnimatedCounter({ 
+    target: userStats?.kd || 0, 
+    duration: 1500,
+    enabled: !isGuest && !!userStats 
+  });
+  const animatedScientists = useAnimatedCounter({ 
+    target: userStats?.scientists || 0, 
+    duration: 1500,
+    enabled: !isGuest && !!userStats 
+  });
+
+  // Анимированные значения для ресурсов
+  const animatedSulfurOre = useAnimatedCounter({ 
+    target: userStats?.['sulfur.ore'] || 0, 
+    duration: 1500,
+    enabled: !isGuest && !!userStats 
+  });
+  const animatedMetalOre = useAnimatedCounter({ 
+    target: userStats?.['metal.ore'] || 0, 
+    duration: 1500,
+    enabled: !isGuest && !!userStats 
+  });
+  const animatedStones = useAnimatedCounter({ 
+    target: userStats?.stones || 0, 
+    duration: 1500,
+    enabled: !isGuest && !!userStats 
+  });
+  const animatedWood = useAnimatedCounter({ 
+    target: userStats?.wood || 0, 
+    duration: 1500,
+    enabled: !isGuest && !!userStats 
+  });
+
   if (isGuest) {
     return (
       <section className="user user_not-authorized">
@@ -102,6 +192,7 @@ export default function UserStats({
         </div>
         {finalStatsImageVideo ? (
           <video
+            ref={videoRef1}
             className="user__image"
             playsInline
             loop
@@ -149,17 +240,17 @@ export default function UserStats({
   }
 
   const combatStats: StatItem[] = [
-    { label: 'Убийств', value: userStats?.kills || 0 },
-    { label: 'Смертей', value: userStats?.deaths || 0 },
-    { label: 'K/D', value: userStats?.kd?.toFixed(2) || '0.00' },
-    { label: 'Убито ботов', value: userStats?.scientists || 0 },
+    { label: 'Убийств', value: Math.round(animatedKills) },
+    { label: 'Смертей', value: Math.round(animatedDeaths) },
+    { label: 'K/D', value: animatedKd.toFixed(2) },
+    { label: 'Убито ботов', value: Math.round(animatedScientists) },
   ];
 
   const resourceStats: StatItem[] = [
-    { label: 'Серная руда', value: userStats?.['sulfur.ore'] || 0, image: '/images/user-stats/gold.png' },
-    { label: 'Железная руда', value: userStats?.['metal.ore'] || 0, image: '/images/user-stats/iron_stone.png' },
-    { label: 'Камень', value: userStats?.stones || 0, image: '/images/user-stats/stone.png' },
-    { label: 'Дерево', value: userStats?.wood || 0, image: '/images/user-stats/wood.png' },
+    { label: 'Серная руда', value: Math.round(animatedSulfurOre), image: '/images/user-stats/gold.png' },
+    { label: 'Железная руда', value: Math.round(animatedMetalOre), image: '/images/user-stats/iron_stone.png' },
+    { label: 'Камень', value: Math.round(animatedStones), image: '/images/user-stats/stone.png' },
+    { label: 'Дерево', value: Math.round(animatedWood), image: '/images/user-stats/wood.png' },
   ];
 
   return (
@@ -183,7 +274,8 @@ export default function UserStats({
           ))}
         </div>
 
-        {awardsStats && awards.length > 0 && (
+        {/* Раздел наград - показываем всегда для авторизованных пользователей */}
+        {!isGuest && (
           <div className="user__awards awards">
             <div className="awards__title">
               Награды
@@ -197,27 +289,47 @@ export default function UserStats({
             </div>
             <div className="awards__wrapper">
               <div className="awards__list">
-                {awards.map((award) => (
-                  <img
-                    key={award.id}
-                    src={award.image}
-                    alt={award.name}
-                    className="awards__image"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="right"
-                    title={award.name}
-                  />
-                ))}
+                {awards && awards.length > 0 ? (
+                  awards.map((award) => (
+                    <img
+                      key={award.id}
+                      src={award.image}
+                      alt={award.name}
+                      className={classNames('awards__image', { 'awards__image--completed': award.completed })}
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="right"
+                      title={award.name}
+                      loading="lazy"
+                    />
+                  ))
+                ) : awardsStats ? (
+                  // Если данные загружены, но наград нет, показываем пустое состояние
+                  <div className="awards__placeholder">Нет выполненных заданий с наградами</div>
+                ) : (
+                  // Показываем скелетон пока данные загружаются
+                  <>
+                    {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                      <div key={i} className="awards__image awards__image--skeleton" />
+                    ))}
+                  </>
+                )}
               </div>
-              <a href="/tasks-v2" className="awards__stats">
-                выполнено {awardsStats.completed} из {awardsStats.total} заданий
-              </a>
+              {awardsStats ? (
+                <a href="/tasks" className="awards__stats">
+                  выполнено {awardsStats.completed} из {awardsStats.total} заданий
+                </a>
+              ) : (
+                <a href="/tasks" className="awards__stats">
+                  Перейти к заданиям
+                </a>
+              )}
             </div>
           </div>
         )}
       </div>
       {finalStatsImageVideo ? (
         <video
+          ref={videoRef2}
           className="user__image"
           playsInline
           loop

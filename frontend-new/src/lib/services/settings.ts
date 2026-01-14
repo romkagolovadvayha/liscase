@@ -1,21 +1,11 @@
-import { query } from '@/lib/db';
-
-interface SiteSetting {
-  id: number;
-  name: string;
-  category: string;
-  type: string;
-  value: string;
-  code: string;
-  is_translate: number;
-}
+import apiClient from '@/lib/api/client';
 
 interface SettingsCache {
   data: Record<string, any>;
   timestamp: number;
 }
 
-// Кеш на 3 часа (как в старой версии)
+// Кеш на 3 часа
 const CACHE_DURATION = 3 * 60 * 60 * 1000; // 3 часа в миллисекундах
 let settingsCache: SettingsCache | null = null;
 
@@ -39,69 +29,20 @@ export async function getSettings(update: boolean = false): Promise<Record<strin
   }
 
   try {
-    const settings = await query<SiteSetting>(`
-      SELECT 
-        id,
-        name,
-        category,
-        type,
-        value,
-        code,
-        is_translate
-      FROM site_settings
-    `);
-
-    const result: Record<string, any> = {};
-    const seenKeys = new Set<string>();
-
-    // Формируем ключи как category_code и обрабатываем типы
-    settings.forEach((item) => {
-      // Пропускаем записи без category или code
-      if (!item.category || !item.code) {
-        return;
-      }
-
-      // Ключ формируется как category_code (уникальная комбинация category + code)
-      const key = `${item.category}_${item.code}`;
-      
-      // Предупреждаем о дубликатах
-      if (seenKeys.has(key)) {
-        console.warn(`Duplicate setting key found: ${key}. Last value will be used.`);
-      }
-      seenKeys.add(key);
-
-      let value: any = item.value;
-
-      // Обработка типов (как в методе getValue() модели)
-      if (item.type === 'checkbox') {
-        value = item.value === '1';
-      } else if (item.type === 'number') {
-        value = item.value ? parseFloat(item.value) : 0;
-      } else {
-        value = item.value || '';
-      }
-
-      result[key] = value;
-    });
-
-    // Сохраняем в кеш
-    settingsCache = {
-      data: result,
-      timestamp: Date.now(),
-    };
-
-    return result;
+    const response = await apiClient.get<{ success: boolean; data: Record<string, any> }>('/settings');
+    
+    if (response.data.success) {
+      // Сохраняем в кеш
+      settingsCache = {
+        data: response.data.data,
+        timestamp: Date.now(),
+      };
+      return response.data.data;
+    }
+    
+    return {};
   } catch (error) {
-    console.error('Error fetching settings:', error);
-    // Возвращаем кеш, если есть, или пустой объект
-    return settingsCache?.data || {};
+    console.error('Failed to fetch settings:', error);
+    return {};
   }
 }
-
-/**
- * Очистить кеш настроек
- */
-export function clearSettingsCache(): void {
-  settingsCache = null;
-}
-

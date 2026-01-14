@@ -14,9 +14,10 @@ interface CategoriesProps {
   categories: Category[];
   activeCategoryId?: number | null;
   onCategoryClick?: (id: number) => void;
+  isLoading?: boolean;
 }
 
-export default function Categories({ categories, activeCategoryId, onCategoryClick }: CategoriesProps) {
+export default function Categories({ categories, activeCategoryId, onCategoryClick, isLoading = false }: CategoriesProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showRightArrow, setShowRightArrow] = useState(false);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -69,6 +70,10 @@ export default function Categories({ categories, activeCategoryId, onCategoryCli
     }
   };
 
+  // Всегда показываем категорию "Все" (если она есть)
+  const allCategory = categories.find((cat) => cat.id === 0);
+  const otherCategories = categories.filter((cat) => cat.id !== 0);
+
   return (
     <section className="categories">
       <div className="categories__carousel-wrapper">
@@ -83,14 +88,35 @@ export default function Categories({ categories, activeCategoryId, onCategoryCli
           </button>
         )}
         <div className="categories__carousel" ref={scrollContainerRef}>
-          {categories.map((category) => (
+          {/* Всегда показываем категорию "Все" */}
+          {allCategory && (
             <CategoryCard
-              key={category.id}
-              {...category}
-              isActive={activeCategoryId === category.id}
+              key={allCategory.id}
+              {...allCategory}
+              isActive={activeCategoryId === allCategory.id}
               onClick={onCategoryClick}
             />
-          ))}
+          )}
+          
+          {/* Если загрузка, показываем skeleton для остальных категорий */}
+          {isLoading ? (
+            [1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={`skeleton-${i}`} style={{ flexShrink: 0, minWidth: 120, marginRight: 12 }}>
+                <div style={{ width: 120, height: 120, backgroundColor: 'var(--background-hover)', borderRadius: 'var(--card-radius)', marginBottom: 8 }}></div>
+                <div style={{ height: 16, backgroundColor: 'var(--background-hover)', borderRadius: 4, width: '80%', margin: '0 auto' }}></div>
+              </div>
+            ))
+          ) : (
+            // Показываем остальные категории
+            otherCategories.map((category) => (
+              <CategoryCard
+                key={category.id}
+                {...category}
+                isActive={activeCategoryId === category.id}
+                onClick={onCategoryClick}
+              />
+            ))
+          )}
         </div>
         {showRightArrow && (
           <button

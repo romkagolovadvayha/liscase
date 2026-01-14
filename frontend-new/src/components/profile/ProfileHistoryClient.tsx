@@ -6,6 +6,8 @@ import ProfileTabs from '@/components/profile/ProfileTabs';
 import Tabs from '@/components/design-system/Tabs';
 import Icon from '@/components/icons/Icon';
 import DataTable, { DataTableColumn } from '@/components/design-system/DataTable';
+import apiClient from '@/lib/api/client';
+import { isAuthenticated } from '@/lib/api/auth';
 import moment from 'moment';
 import 'moment/locale/ru';
 import '@/styles/profile.scss';
@@ -32,10 +34,19 @@ export default function ProfileHistoryClient() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [filterType, setFilterType] = useState<'all' | 'debit' | 'credit'>(searchParams.get('type') as 'all' | 'debit' | 'credit' || 'all');
+  const isFetchingRef = useRef(false);
+  const lastParamsRef = useRef<string>('');
 
   useEffect(() => {
     moment.locale('ru');
+    const paramsKey = `${page}-${sortField}-${sortOrder}-${filterType}`;
+    // Защита от повторных запросов с теми же параметрами
+    if (isFetchingRef.current || lastParamsRef.current === paramsKey) {
+      return;
+    }
+    lastParamsRef.current = paramsKey;
     fetchHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, sortField, sortOrder, filterType]);
 
   const updateURL = useCallback((params: Record<string, string>) => {
@@ -57,29 +68,85 @@ export default function ProfileHistoryClient() {
   }, [router]);
 
   const fetchHistory = async () => {
+    // Защита от повторных запросов
+    if (isFetchingRef.current) {
+      return;
+    }
+
+    if (!isAuthenticated()) {
+      setError('Требуется авторизация');
+      setLoading(false);
+      return;
+    }
+
     try {
+      isFetchingRef.current = true;
       setLoading(true);
+      setError(null);
       const params = new URLSearchParams();
       if (page > 1) params.set('page', page.toString());
       params.set('pageSize', '20');
-      if (sortField) params.set('sort', sortField);
-      if (sortOrder) params.set('order', sortOrder);
-      if (filterType && filterType !== 'all') params.set('filterType', filterType);
+      // Примечание: сортировка на сервере не поддерживается, фильтрация тоже
 
-      const response = await fetch(`/api/profile/history?${params.toString()}`);
-      const data = await response.json();
+      const response = await apiClient.get(`/user/history?${params.toString()}`);
+      const data = response.data;
 
-      if (data.success) {
-        setHistory(data.history || []);
-        setTotalPages(data.pagination?.totalPages || 1);
-        setTotal(data.pagination?.total || 0);
+      if (data.success && data.data) {
+        // Преобразуем данные из API в формат компонента
+        const operations = data.data.operations || [];
+        let formattedHistory = operations.map((op: any) => ({
+          comment: op.comment || '',
+          sum: op.sum || '0',
+          created_at: op.created_at || '',
+        }));
+
+        // Клиентская фильтрация по типу
+        if (filterType !== 'all') {
+          formattedHistory = formattedHistory.filter((item: any) => {
+            const isNegative = item.sum.startsWith('-');
+            if (filterType === 'debit') return isNegative;
+            if (filterType === 'credit') return !isNegative && item.sum !== '0';
+            return true;
+          });
+        }
+
+        // Клиентская сортировка
+        formattedHistory.sort((a: any, b: any) => {
+          let comparison = 0;
+          if (sortField === 'comment') {
+            comparison = a.comment.localeCompare(b.comment);
+          } else if (sortField === 'created_at') {
+            comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          } else if (sortField === 'sum') {
+            const aSum = parseFloat(a.sum.replace(/[+\- ]/g, ''));
+            const bSum = parseFloat(b.sum.replace(/[+\- ]/g, ''));
+            comparison = aSum - bSum;
+          }
+          return sortOrder === 'asc' ? comparison : -comparison;
+        });
+
+        // Клиентская пагинация
+        const totalCount = formattedHistory.length;
+        const pageSize = 20;
+        const totalPagesCalc = Math.ceil(totalCount / pageSize);
+        const offset = (page - 1) * pageSize;
+        formattedHistory = formattedHistory.slice(offset, offset + pageSize);
+        
+        setHistory(formattedHistory);
+        setTotalPages(totalPagesCalc);
+        setTotal(totalCount);
       } else {
         setError('Не удалось загрузить историю операций');
       }
     } catch (err: any) {
-      setError(err.message || 'Ошибка при загрузке истории');
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setError('Требуется авторизация');
+      } else {
+        setError(err.message || 'Ошибка при загрузке истории');
+      }
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 

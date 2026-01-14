@@ -17,6 +17,7 @@ export interface SidebarProps {
   projectStats?: {
     online?: number;
   };
+  serversLoading?: boolean;
   profile?: any;
   buildings?: any;
   teams?: any;
@@ -28,6 +29,7 @@ export interface SidebarProps {
 export default function Sidebar({
   servers,
   projectStats,
+  serversLoading,
   profile,
   buildings,
   teams,
@@ -38,7 +40,7 @@ export default function Sidebar({
   return (
     <aside className="sidebar">
       <BlogTableOfContents />
-      {servers && <ServersList servers={servers} projectStats={projectStats} />}
+      <ServersList servers={servers} projectStats={projectStats} isLoading={serversLoading} />
       <BlogLatestPosts />
       {profile && <ProfileBlock data={profile} />}
       {buildings && <BuildingsBlock data={buildings} />}

@@ -13,23 +13,51 @@ export function useCSSVariable(variableName: string, defaultValue: string = ''):
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const cssValue = getComputedStyle(document.documentElement)
-        .getPropertyValue(`--${variableName}`)
-        .trim();
+      const updateValue = () => {
+        const cssValue = getComputedStyle(document.documentElement)
+          .getPropertyValue(`--${variableName}`)
+          .trim();
+        
+        // Убираем url() и кавычки из значения
+        const cleanValue = cssValue
+          .replace(/^url\(/, '')
+          .replace(/\)$/, '')
+          .replace(/^['"]/, '')
+          .replace(/['"]$/, '');
+        
+        setValue(cleanValue || defaultValue);
+      };
       
-      // Убираем url() и кавычки из значения
-      const cleanValue = cssValue
-        .replace(/^url\(/, '')
-        .replace(/\)$/, '')
-        .replace(/^['"]/, '')
-        .replace(/['"]$/, '');
+      // Обновляем значение сразу
+      updateValue();
       
-      setValue(cleanValue || defaultValue);
+      // Создаем MutationObserver для отслеживания изменений CSS переменных
+      const observer = new MutationObserver(updateValue);
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['style'],
+      });
+      
+      // Также проверяем периодически (на случай, если изменения не отслеживаются)
+      const interval = setInterval(updateValue, 100);
+      
+      return () => {
+        observer.disconnect();
+        clearInterval(interval);
+      };
     }
   }, [variableName, defaultValue]);
 
   return value;
 }
+
+
+
+
+
+
+
+
 
 
 

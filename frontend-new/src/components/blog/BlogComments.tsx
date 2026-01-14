@@ -9,6 +9,8 @@ import Button from '@/components/forms/Button';
 import Input from '@/components/forms/Input';
 import moment from 'moment';
 import 'moment/locale/ru';
+import apiClient from '@/lib/api/client';
+import { isAuthenticated } from '@/lib/api/auth';
 import '@/styles/blog.scss';
 
 interface Comment {
@@ -24,6 +26,7 @@ interface Comment {
   updatedAt: number;
   likesCount: number;
   isLiked: boolean;
+  canReply?: boolean;
   replies: Comment[];
 }
 
@@ -41,27 +44,49 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState<number | null>(null);
   const [showReplyEmojiPicker, setShowReplyEmojiPicker] = useState(false);
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(5);
+  const [error, setError] = useState<string | null>(null);
+  const [replyError, setReplyError] = useState<string | null>(null);
 
   moment.locale('ru');
+  const userIsAuthenticated = isAuthenticated();
 
   // Загрузка комментариев
   const loadComments = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/blog/posts/${blogId}/comments`);
-      const result = await response.json();
+      const response = await apiClient.get(`/blog/${blogId}/comments`);
+      const result = response.data;
 
-      if (result.success) {
-        const commentsData = result.data || [];
-        // Логируем для отладки
-        if (commentsData.length > 0) {
-          console.log('First comment avatar:', commentsData[0].avatar);
-        }
-        setComments(commentsData);
-        setVisibleCommentsCount(5); // Сбрасываем счетчик при загрузке
+      if (result.success && result.data?.comments) {
+        // Преобразуем плоский массив в древовидную структуру
+        const buildCommentTree = (commentData: any): Comment => {
+          return {
+            id: commentData.id,
+            content: commentData.content,
+            parentId: commentData.parentId,
+            level: commentData.level,
+            userId: commentData.userId,
+            username: commentData.username,
+            steamId: commentData.steamId,
+            avatar: commentData.avatar,
+            createdAt: commentData.createdAt,
+            updatedAt: commentData.updatedAt,
+            likesCount: commentData.likesCount,
+            isLiked: commentData.isLiked,
+            canReply: commentData.canReply !== undefined ? commentData.canReply : (commentData.level < 2),
+            replies: (commentData.replies || []).map(buildCommentTree),
+          };
+        };
+
+        const commentsTree = result.data.comments.map(buildCommentTree);
+        setComments(commentsTree);
+      } else {
+        setComments([]);
       }
+      setVisibleCommentsCount(5);
     } catch (err: any) {
       console.error('Error loading comments:', err);
+      setComments([]);
     } finally {
       setLoading(false);
     }
@@ -77,30 +102,54 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
     
     if (!newComment.trim() || submitting) return;
 
+    setError(null);
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/blog/posts/${blogId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: newComment.trim(),
-          parentId: null,
-        }),
+      const response = await apiClient.post(`/blog/${blogId}/comments`, {
+        content: newComment.trim(),
       });
+      const result = response.data;
 
-      const result = await response.json();
-
-      if (result.success) {
-        setNewComment('');
+      if (result.success && result.data?.comment) {
+        // Перезагружаем комментарии
         await loadComments();
+        setNewComment('');
+        setError(null);
       } else {
-        alert(result.message || 'Ошибка при добавлении комментария');
+        // Извлекаем сообщения об ошибках из details
+        const errorDetails = result.error?.details || {};
+        const errorMessages: string[] = [];
+        Object.keys(errorDetails).forEach(key => {
+          if (Array.isArray(errorDetails[key])) {
+            errorMessages.push(...errorDetails[key]);
+          } else {
+            errorMessages.push(errorDetails[key]);
+          }
+        });
+        const errorMessage = errorMessages.length > 0 
+          ? errorMessages.join('. ') 
+          : (result.error?.message || 'Ошибка при добавлении комментария');
+        setError(errorMessage);
       }
     } catch (err: any) {
       console.error('Error submitting comment:', err);
-      alert('Ошибка при добавлении комментария');
+      if (err.response?.status === 401) {
+        setError('Требуется авторизация');
+      } else {
+        const errorDetails = err.response?.data?.error?.details || {};
+        const errorMessages: string[] = [];
+        Object.keys(errorDetails).forEach(key => {
+          if (Array.isArray(errorDetails[key])) {
+            errorMessages.push(...errorDetails[key]);
+          } else {
+            errorMessages.push(errorDetails[key]);
+          }
+        });
+        const errorMessage = errorMessages.length > 0 
+          ? errorMessages.join('. ') 
+          : (err.response?.data?.error?.message || err.message || 'Ошибка при добавлении комментария');
+        setError(errorMessage);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -110,31 +159,58 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
   const handleReply = async (parentId: number) => {
     if (!replyContent.trim() || submitting) return;
 
+    setReplyError(null);
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/blog/posts/${blogId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          content: replyContent.trim(),
-          parentId,
-        }),
+      const response = await apiClient.post(`/blog/${blogId}/comments`, {
+        content: replyContent.trim(),
+        parentId: parentId,
       });
+      const result = response.data;
+      console.log('Reply response:', result); // Логируем ответ для отладки
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (result.success && result.data?.comment) {
+        // Перезагружаем комментарии
+        await loadComments();
         setReplyContent('');
         setReplyingTo(null);
-        await loadComments();
+        setReplyError(null);
       } else {
-        alert(result.message || 'Ошибка при добавлении ответа');
+        console.error('Invalid response structure:', result);
+        // Извлекаем сообщения об ошибках из details
+        const errorDetails = result.error?.details || {};
+        const errorMessages: string[] = [];
+        Object.keys(errorDetails).forEach(key => {
+          if (Array.isArray(errorDetails[key])) {
+            errorMessages.push(...errorDetails[key]);
+          } else {
+            errorMessages.push(errorDetails[key]);
+          }
+        });
+        const errorMessage = errorMessages.length > 0 
+          ? errorMessages.join('. ') 
+          : (result.error?.message || result.message || 'Ошибка при добавлении ответа');
+        setReplyError(errorMessage);
       }
     } catch (err: any) {
       console.error('Error submitting reply:', err);
-      alert('Ошибка при добавлении ответа');
+      if (err.response?.status === 401) {
+        setReplyError('Требуется авторизация');
+      } else {
+        const errorDetails = err.response?.data?.error?.details || {};
+        const errorMessages: string[] = [];
+        Object.keys(errorDetails).forEach(key => {
+          if (Array.isArray(errorDetails[key])) {
+            errorMessages.push(...errorDetails[key]);
+          } else {
+            errorMessages.push(errorDetails[key]);
+          }
+        });
+        const errorMessage = errorMessages.length > 0 
+          ? errorMessages.join('. ') 
+          : (err.response?.data?.error?.message || err.message || 'Ошибка при добавлении ответа');
+        setReplyError(errorMessage);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -142,16 +218,19 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
 
   // Лайк/дизлайк комментария
   const handleLike = async (commentId: number, currentIsLiked: boolean) => {
+    if (!userIsAuthenticated) {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://api.test.prostoj.store';
+      window.location.href = `${apiBaseUrl}/v1/auth/oauth`;
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/blog/comments/${commentId}/like`, {
-        method: 'POST',
-      });
+      const response = await apiClient.post(`/blog/comments/${commentId}/like`);
+      const result = response.data;
 
-      const result = await response.json();
-
-      if (result.success) {
-        // Обновляем состояние комментария
-        const updateComment = (comments: Comment[]): Comment[] => {
+      if (result.success && result.data) {
+        // Обновляем состояние комментария в массиве
+        const updateCommentLike = (comments: Comment[]): Comment[] => {
           return comments.map(comment => {
             if (comment.id === commentId) {
               return {
@@ -163,17 +242,21 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
             if (comment.replies.length > 0) {
               return {
                 ...comment,
-                replies: updateComment(comment.replies),
+                replies: updateCommentLike(comment.replies),
               };
             }
             return comment;
           });
         };
 
-        setComments(updateComment(comments));
+        setComments(prev => updateCommentLike(prev));
       }
     } catch (err: any) {
       console.error('Error toggling like:', err);
+      if (err.response?.status === 401) {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://api.test.prostoj.store';
+        window.location.href = `${apiBaseUrl}/v1/auth/oauth`;
+      }
     }
   };
 
@@ -197,8 +280,8 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
 
   // Рендер одного комментария (рекурсивно)
   const renderComment = (comment: Comment, depth: number = 0) => {
-    const maxDepth = 3;
-    const canReply = depth < maxDepth - 1;
+    // Используем canReply из API ответа (уровень комментария < 2)
+    const canReply = comment.canReply !== undefined ? comment.canReply : (comment.level < 2);
 
     return (
       <div key={comment.id} className={`blog-comment ${depth > 0 ? 'blog-comment--reply' : ''}`} style={{ marginLeft: depth * 40 }}>
@@ -227,7 +310,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
               <span>{comment.likesCount}</span>
             </button>
             
-            {canReply && (
+            {canReply && userIsAuthenticated && (
               <button
                 className="blog-comment__reply"
                 onClick={() => {
@@ -239,19 +322,39 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                 <span>Ответить</span>
               </button>
             )}
+            {canReply && !userIsAuthenticated && (
+              <button
+                className="blog-comment__reply"
+                onClick={() => {
+                  const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://api.test.prostoj.store';
+                  window.location.href = `${apiBaseUrl}/v1/auth/oauth`;
+                }}
+              >
+                <MessageOutlined />
+                <span>Авторизоваться для ответа</span>
+              </button>
+            )}
           </div>
 
           {/* Форма ответа */}
           {replyingTo === comment.id && (
             <div className="blog-comment__reply-form">
               <textarea
-                className="blog-comment__textarea"
+                className={`blog-comment__textarea ${replyError ? 'blog-comment__textarea--error' : ''}`}
                 value={replyContent}
-                onChange={(e) => setReplyContent(e.target.value)}
+                onChange={(e) => {
+                  setReplyContent(e.target.value);
+                  if (replyError) setReplyError(null);
+                }}
                 placeholder="Написать ответ..."
                 rows={3}
                 maxLength={5000}
               />
+              {replyError && (
+                <div className="blog-comment__error">
+                  {replyError}
+                </div>
+              )}
               {replyContent.length > 0 && (
                 <div className="blog-comment__char-count">
                   {replyContent.length} / 5000
@@ -284,6 +387,7 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
                     onClick={() => {
                       setReplyingTo(null);
                       setReplyContent('');
+                      setReplyError(null);
                     }}
                   >
                     Отмена
@@ -330,15 +434,24 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
       <h2 className="blog-post__comments-title">Комментарии</h2>
 
       {/* Форма добавления комментария */}
-      <form onSubmit={handleSubmit} className="blog-comment__form">
+      {userIsAuthenticated ? (
+        <form onSubmit={handleSubmit} className="blog-comment__form">
         <textarea
-          className="blog-comment__textarea"
+          className={`blog-comment__textarea ${error ? 'blog-comment__textarea--error' : ''}`}
           value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
+          onChange={(e) => {
+            setNewComment(e.target.value);
+            if (error) setError(null);
+          }}
           placeholder="Написать комментарий..."
           rows={4}
           maxLength={5000}
         />
+        {error && (
+          <div className="blog-comment__error">
+            {error}
+          </div>
+        )}
         {newComment.length > 0 && (
           <div className="blog-comment__char-count">
             {newComment.length} / 5000
@@ -376,6 +489,19 @@ export default function BlogComments({ blogId }: BlogCommentsProps) {
           </Button>
         </div>
       </form>
+      ) : (
+        <div className="blog-comment__auth-required">
+          <p className="blog-comment__auth-text">
+            Чтобы оставлять комментарии, необходимо{' '}
+            <a
+              href={`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://api.test.prostoj.store'}/v1/auth/oauth`}
+              className="blog-comment__auth-link"
+            >
+              авторизоваться
+            </a>
+          </p>
+        </div>
+      )}
 
       {/* Список комментариев */}
       {comments.length === 0 ? (

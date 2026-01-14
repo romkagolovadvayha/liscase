@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Button from '@/components/forms/Button';
 import { useCSSVariable } from '@/hooks/useCSSVariable';
 
@@ -18,6 +18,38 @@ export default function DailyReward({ botLink = '#', bonusImage, bonusImageVideo
   // Используем переданные значения или значения из CSS переменных
   const finalBonusImage = bonusImage || defaultBonusImage;
   const finalBonusImageVideo = bonusImageVideo || defaultBonusImageVideo;
+  
+  // Ref для видео элемента
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Обработка ленивой загрузки видео
+  useEffect(() => {
+    if (typeof window === 'undefined' || !videoRef.current) return;
+    
+    const video = videoRef.current;
+    
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.target === video) {
+            // Загружаем и воспроизводим видео
+            video.load();
+            video.play().catch((error) => {
+              console.warn('Failed to play video:', error);
+            });
+            observer.unobserve(video);
+          }
+        });
+      },
+      { rootMargin: '50px' }
+    );
+    
+    observer.observe(video);
+    
+    return () => {
+      observer.unobserve(video);
+    };
+  }, [finalBonusImageVideo]);
 
   return (
     <section className="daily-reward">
@@ -38,6 +70,7 @@ export default function DailyReward({ botLink = '#', bonusImage, bonusImageVideo
 
       {finalBonusImageVideo ? (
         <video
+          ref={videoRef}
           className="daily-reward__image"
           playsInline
           loop
