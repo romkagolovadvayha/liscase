@@ -14,7 +14,7 @@ using WebSocketSharp;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.7.0")]
+    [Info("ProstojRUST", "prostoj.store", "0.4.1")]
     public class ProstojRUST : RustPlugin
     {
         #region References
@@ -91,8 +91,6 @@ namespace Oxide.Plugins
                 public bool BucketEnable = true;
                 [JsonProperty("Включить отображение названий предметов")]
                 public bool TextShow = true;
-                [JsonProperty("Загружать встроенные изображения предметов")]
-                public bool LoadSpriteImages = true;
                 [JsonProperty("Ссылка на изображение корзины (BUCKET - стандартное изображение)")]
                 public string BucketURL = "BUCKET";
                 [JsonProperty("Количество предметов на строке")]
@@ -257,52 +255,30 @@ namespace Oxide.Plugins
                         }
                     }
 
-                    // Оптимизированная система изображений с кэшированием
                     var imageLibrary = instance.plugins.Find("ImageLibrary");
                     if (imageLibrary != null)
                     {
-                        string cacheKey = $"IconGS.{ID}";
-                        
-                        // Проверяем кэш изображений
-                        string cachedImage = instance.GetCachedImage(cacheKey);
-                        if (!string.IsNullOrEmpty(cachedImage) && cachedImage != instance.NoImageID && cachedImage != instance.LoadingImageID)
-                        {
-                            ImageUrl = cachedImage;
+                        //if (ItemID == 0)
+                        //{
+                            if ((bool)imageLibrary.Call("HasImage", $"IconGS.{ID}"))
+                            {
+                                string probablyId = (string)imageLibrary.Call("GetImage", $"IconGS.{ID}");
+                                if (!probablyId.IsNullOrEmpty() && probablyId != instance.NoImageID && probablyId != instance.LoadingImageID)
+                                    ImageUrl = probablyId;
                                 return;
                             }
 
-                        // Если есть внешнее изображение и ItemID пустой или равен 0
-                        if (!ImageUrl.IsNullOrEmpty() && ImageUrl.StartsWith("http") && ItemID == 0)
-                        {
-                            // Загружаем в кэш асинхронно
-                            instance.LoadImageToCache(ImageUrl, cacheKey);
-                            // Пока загружается, используем fallback
-                            ImageUrl = instance.NoImageID;
-                        }
-                        // Если есть внешнее изображение и ItemID не пустой
-                        else if (!ImageUrl.IsNullOrEmpty() && ImageUrl.StartsWith("http") && ItemID != 0)
-                        {
-                            // Загружаем в кэш асинхронно, но используем встроенную иконку как fallback
-                            instance.LoadImageToCache(ImageUrl, cacheKey);
-                        }
-                        
-                        // Используем встроенные спрайты игры как основной источник или fallback
-                        if (ItemID != 0 && !string.IsNullOrEmpty(ShortName))
-                        {
-                            string gameSprite = IsBlueprint ? "assets/icons/blueprint_base.png" : $"assets/icons/{ShortName}.png";
-                            if (string.IsNullOrEmpty(ImageUrl) || !ImageUrl.StartsWith("http"))
+                            if (!ImageUrl.IsNullOrEmpty())
                             {
-                                ImageUrl = gameSprite;
+                                imageLibrary.Call("AddImage", ImageUrl.Replace("https", "http"), $"IconGS.{ID}");
                             }
-                        }
-                    }
-                    else
-                    {
-                        // Без ImageLibrary используем только встроенные спрайты
-                        if (ItemID != 0 && !string.IsNullOrEmpty(ShortName))
-                        {
-                            ImageUrl = IsBlueprint ? "assets/icons/blueprint_base.png" : $"assets/icons/{ShortName}.png";
-                        }
+                        //}
+                        //else
+                        //{
+                        //    string probablyId = (string)imageLibrary.Call("GetImage", ShortName);
+                        //    if (!probablyId.IsNullOrEmpty() && probablyId != instance.NoImageID && probablyId != instance.LoadingImageID)
+                        //        ImageUrl = probablyId;
+                        //}
                     }
                 }
                 catch (NullReferenceException e)
@@ -343,42 +319,6 @@ namespace Oxide.Plugins
         private Dictionary<ulong, List<int>> playersBasketCache = new Dictionary<ulong, List<int>>();
         private HashSet<ulong> ListBannedCommandUserID = new HashSet<ulong>();
         private Timer TimerCheckInstant;
-        
-        // Кэш изображений для оптимизации
-        private Dictionary<string, string> imageCache = new Dictionary<string, string>();
-        private HashSet<string> loadingImages = new HashSet<string>();
-        
-        // Отслеживание состояний кнопок
-        private HashSet<string> processingItems = new HashSet<string>();
-
-        #region Request Queue System
-        
-        private class BasketRequest
-        {
-            public ulong SteamId;
-            public BasePlayer Player;
-            public int Page;
-        }
-
-        private class GetItemRequest
-        {
-            public BasePlayer Player;
-            public string RequestId;
-            public bool Instant;
-            public int BasketId;
-            public int Index;
-        }
-
-        private LinkedList<BasketRequest> basketQueue = new LinkedList<BasketRequest>();
-        private LinkedList<GetItemRequest> getItemQueue = new LinkedList<GetItemRequest>();
-        
-        private int basketConcurrentRequestCount = 0;
-        private int basketMaxConcurrentRequests = 10;
-        
-        private int getItemConcurrentRequestCount = 0;
-        private int getItemMaxConcurrentRequests = 10;
-
-        #endregion
         private string MainApiLink = "https://prostoj.store/api/";
         private string ReserveApiLink = "https://prostoj.store/api/";
         //private string BaseRequest => $"https://gamestores.app/api/?shop_id={Settings.APISettings.ShopID}&secret={Settings.APISettings.SecretKey}{(!Settings.APISettings.ServerID.IsNullOrEmpty() && Settings.APISettings.ServerID != "0" && Settings.APISettings.ServerID != "1" && Settings.APISettings.ServerID != "UNDEFINED" ? $"&server={Settings.APISettings.ServerID}" : "")}";
@@ -565,9 +505,6 @@ namespace Oxide.Plugins
             if (Settings.APISettings.ShopID == "UNDEFINED" || Settings.APISettings.SecretKey == "UNDEFINED")
             {
                 LogAction(null, $"Verify that plugin is installed correct! Some of API settings are 'UNDEFINED'", true, true);
-                // Временно разрешаем работу без API для тестирования UI
-                Initialized = true;
-                Puts("ProstojRUST: Working in TEST MODE without API");
                 return;
             }
 
@@ -650,31 +587,10 @@ namespace Oxide.Plugins
             //if (Initialized) StatHandler.SendStats();
 
             if (LoadingCoroutine != null) ServerMgr.Instance.StopCoroutine(LoadingCoroutine);
-            
-            // Очищаем очереди запросов
-            basketQueue.Clear();
-            getItemQueue.Clear();
-            basketConcurrentRequestCount = 0;
-            getItemConcurrentRequestCount = 0;
-            
-            // Очищаем кэш изображений
-            ClearImageCache();
-            
-            // Очищаем состояния кнопок
-            processingItems.Clear();
-            
-            // Закрываем UI для всех игроков
             foreach (var pl in BasePlayer.activePlayerList)
             {
-                if (pl != null && pl.IsConnected)
-                {
-                    CuiHelper.DestroyUi(pl, MAIN_UI);
-                    CuiHelper.DestroyUi(pl, BASKET_UI);
-                    CuiHelper.DestroyUi(pl, HELP_UI);
-                }
+                OnPlayerConnected(pl);
             }
-            
-            LogMessage(null, "Плагин ProstojRUST выгружен", LogLevel.Info, true);
         }
 
         #endregion
@@ -683,11 +599,6 @@ namespace Oxide.Plugins
 
         private void OnPlayerDisconnected(BasePlayer player, string reason)
         {
-            // Закрываем UI при отключении игрока
-            CuiHelper.DestroyUi(player, MAIN_UI);
-            CuiHelper.DestroyUi(player, BASKET_UI);
-            CuiHelper.DestroyUi(player, HELP_UI);
-            
             StatHandler.AddStat(new StatHandler.TimeStat(player));
         }
 
@@ -850,13 +761,8 @@ namespace Oxide.Plugins
         [ChatCommand("store")]
         private void CmdChatStore(BasePlayer player, string command, string[] args)
         {
-            if (!Initialized)
-            {
-                player.ChatMessage(_(player, "PluginNotInitialized"));
+			player.SendConsoleCommand("chat.add", 0, 76561198394504608, "Чтобы вывести предметы перейдите по ссылке prostoj.store/store");
 			return;
-            }
-
-            ShowBasketUI(player);
         }
 		
        [ConsoleCommand("store.take")]
@@ -870,7 +776,10 @@ namespace Oxide.Plugins
             ulong steam_id = 0;
             int id = 0;
             bool isBlockedBuilding = false;
-            if (!ulong.TryParse(args.Args[0], out steam_id) || !int.TryParse(args.Args[1], out id) || !bool.TryParse(args.Args[2], out isBlockedBuilding)) 
+			if (args.Args[2] == "true") {
+				isBlockedBuilding = true;
+			}
+            if (!ulong.TryParse(args.Args[0], out steam_id) || !int.TryParse(args.Args[1], out id)) 
             {
                 args.ReplyWith("{\"success\": false, \"error\": \"Ошибка выполнения запроса, обратитесь в тех. поддержку\"}");
                 return;
@@ -891,7 +800,7 @@ namespace Oxide.Plugins
 
             if (ListBannedCommandUserID.Contains(player.userID))
             {
-                player.ChatMessage(_(player, "PlayerFloodBlock"));
+                player.SendConsoleCommand("chat.add", 0, 76561198394504608, _(player, "PlayerFloodBlock"));
                 args.ReplyWith("{\"success\": false, \"error\": \"Игрок заблокирован за флуд, нельзя выполнять много запросов подряд. Подождите 30 секунд.\"}");
                 return;
             }
@@ -1001,1188 +910,7 @@ namespace Oxide.Plugins
 		}
         #endregion
 
-        #region UI Interface
-
-        private const string MAIN_UI = "ProstojStore_Main";
-        private const string BASKET_UI = "ProstojStore_Basket";
-        private const string HELP_UI = "ProstojStore_Help";
-
-        private void ShowStoreUI(BasePlayer player)
-        {
-            CuiHelper.DestroyUi(player, MAIN_UI);
-            
-            var container = new CuiElementContainer();
-
-            // Главная панель
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0.1 0.1 0.1 0.95" },
-                RectTransform = { AnchorMin = "0.2 0.15", AnchorMax = "0.8 0.85" },
-                CursorEnabled = true
-            }, "Overlay", MAIN_UI);
-
-            // Заголовок
-            container.Add(new CuiLabel
-            {
-                Text = { Text = _(player, "BASKET"), FontSize = 24, Align = TextAnchor.MiddleCenter, Color = "1 0.8 0 1" },
-                RectTransform = { AnchorMin = "0 0.9", AnchorMax = "1 1" }
-            }, MAIN_UI);
-
-            // Описание
-            container.Add(new CuiLabel
-            {
-                Text = { Text = _(player, "BASKET.DESCRIPTION"), FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "0.8 0.8 0.8 1" },
-                RectTransform = { AnchorMin = "0.05 0.82", AnchorMax = "0.95 0.88" }
-            }, MAIN_UI);
-
-            // Кнопка "Корзина"
-            container.Add(new CuiButton
-            {
-                Button = { Command = "store.basket", Color = "0.2 0.6 0.2 0.8" },
-                RectTransform = { AnchorMin = "0.05 0.7", AnchorMax = "0.3 0.8" },
-                Text = { Text = _(player, "BASKET"), FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
-            }, MAIN_UI);
-
-            // Кнопка "Помощь"
-            container.Add(new CuiButton
-            {
-                Button = { Command = "store.help", Color = "0.2 0.4 0.6 0.8" },
-                RectTransform = { AnchorMin = "0.35 0.7", AnchorMax = "0.6 0.8" },
-                Text = { Text = _(player, "HELP"), FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
-            }, MAIN_UI);
-
-            // Кнопка "Выход"
-            container.Add(new CuiButton
-            {
-                Button = { Command = "store.close", Color = "0.6 0.2 0.2 0.8" },
-                RectTransform = { AnchorMin = "0.7 0.7", AnchorMax = "0.95 0.8" },
-                Text = { Text = _(player, "EXIT"), FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
-            }, MAIN_UI);
-
-            // Информационная панель
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0.15 0.15 0.15 0.8" },
-                RectTransform = { AnchorMin = "0.05 0.1", AnchorMax = "0.95 0.65" }
-            }, MAIN_UI, "InfoPanel");
-
-            // Ссылка на магазин
-            container.Add(new CuiLabel
-            {
-                Text = { Text = $"Магазин: {ShopURL}", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "0.8 0.8 1 1" },
-                RectTransform = { AnchorMin = "0.05 0.45", AnchorMax = "0.95 0.55" }
-            }, "InfoPanel");
-
-            // Инструкция
-            container.Add(new CuiLabel
-            {
-                Text = { Text = "Для покупки предметов перейдите на сайт магазина\nи авторизуйтесь через Steam", FontSize = 12, Align = TextAnchor.MiddleCenter, Color = "0.7 0.7 0.7 1" },
-                RectTransform = { AnchorMin = "0.05 0.25", AnchorMax = "0.95 0.4" }
-            }, "InfoPanel");
-
-            CuiHelper.AddUi(player, container);
-        }
-
-        private void ShowBasketUI(BasePlayer player)
-        {
-            CuiHelper.DestroyUi(player, BASKET_UI);
-
-            var container = new CuiElementContainer();
-
-            // Главная панель корзины в стиле RustCraft
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0.12 0.12 0.12 0.98" }, // Темно-серый фон как на скриншоте
-                RectTransform = { AnchorMin = "0.1 0.1", AnchorMax = "0.9 0.9" },
-                CursorEnabled = true
-            }, "Overlay", BASKET_UI);
-
-            // Заголовок корзины в стиле RustCraft
-            container.Add(new CuiLabel
-            {
-                Text = { Text = _(player, "BASKET"), FontSize = 22, Align = TextAnchor.MiddleCenter, Color = "0.85 0.85 0.85 1" }, // Светло-серый текст
-                RectTransform = { AnchorMin = "0 0.92", AnchorMax = "1 1" }
-            }, BASKET_UI);
-
-            // Интерактивная кнопка "Закрыть"
-            CreateInteractiveButton(container, BASKET_UI, "store.close", "✕", "0.92 0.92", "0.98 0.98");
-
-            // Интерактивная кнопка "Обновить"
-            CreateInteractiveButton(container, BASKET_UI, "store.refresh", "🔄 Обновить", "0.02 0.92", "0.15 0.98");
-
-            // Область для предметов корзины с темным фоном
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0.08 0.08 0.08 0.9" }, // Еще более темный фон для контента
-                RectTransform = { AnchorMin = "0.02 0.05", AnchorMax = "0.98 0.9" }
-            }, BASKET_UI, "BasketContent");
-
-            CuiHelper.AddUi(player, container);
-            
-            // Загружаем корзину игрока с небольшой задержкой для лучшего UX
-            timer.Once(0.1f, () => {
-                if (player != null && player.IsConnected)
-                    LoadPlayerBasket(player);
-            });
-        }
-
-        private void ShowHelpUI(BasePlayer player)
-        {
-            CuiHelper.DestroyUi(player, HELP_UI);
-
-            var container = new CuiElementContainer();
-
-            // Главная панель помощи
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0.1 0.1 0.1 0.95" },
-                RectTransform = { AnchorMin = "0.2 0.2", AnchorMax = "0.8 0.8" },
-                CursorEnabled = true
-            }, "Overlay", HELP_UI);
-
-            // Заголовок
-            container.Add(new CuiLabel
-            {
-                Text = { Text = _(player, "USER.MANUAL"), FontSize = 20, Align = TextAnchor.MiddleCenter, Color = "1 0.8 0 1" },
-                RectTransform = { AnchorMin = "0 0.9", AnchorMax = "1 1" }
-            }, HELP_UI);
-
-            // Кнопка "Назад"
-            container.Add(new CuiButton
-            {
-                Button = { Command = "store.main", Color = "0.4 0.4 0.4 0.8" },
-                RectTransform = { AnchorMin = "0.02 0.9", AnchorMax = "0.15 0.98" },
-                Text = { Text = "← Назад", FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "1 1 1 1" }
-            }, HELP_UI);
-
-            // Описание
-            container.Add(new CuiLabel
-            {
-                Text = { Text = _(player, "USER.MANUAL.DESCRIPTION"), FontSize = 14, Align = TextAnchor.UpperLeft, Color = "0.9 0.9 0.9 1" },
-                RectTransform = { AnchorMin = "0.05 0.5", AnchorMax = "0.95 0.85" }
-            }, HELP_UI);
-
-            // Ссылка на магазин
-            container.Add(new CuiLabel
-            {
-                Text = { Text = $"Ссылка на магазин:\n{ShopURL}", FontSize = 16, Align = TextAnchor.MiddleCenter, Color = "0.8 0.8 1 1" },
-                RectTransform = { AnchorMin = "0.05 0.3", AnchorMax = "0.95 0.45" }
-            }, HELP_UI);
-
-            // Бонус при регистрации
-            if (StartBalance > 0)
-            {
-                container.Add(new CuiLabel
-                {
-                    Text = { Text = string.Format(_(player, "USER.MANUAL.BALANCE"), StartBalance), FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "0.8 1 0.8 1" },
-                    RectTransform = { AnchorMin = "0.05 0.1", AnchorMax = "0.95 0.25" }
-                }, HELP_UI);
-            }
-
-            CuiHelper.AddUi(player, container);
-        }
-
-        #region Queue Management
-
-        public void RequestBasket(BasePlayer player, int page = 0)
-        {
-            if (!CanRequestBasket(player))
-            {
-                ShowBasketMessage(player, _(player, "WaitPreviousAction"));
-                return;
-            }
-
-            var basketRequest = new BasketRequest
-            {
-                SteamId = player.userID,
-                Player = player,
-                Page = page
-            };
-
-            basketQueue.AddLast(basketRequest);
-
-            if (basketConcurrentRequestCount < basketMaxConcurrentRequests)
-            {
-                StartBasketOpeningProcess(basketRequest);
-            }
-        }
-
-        private void StartBasketOpeningProcess(BasketRequest basketRequest)
-        {
-            basketConcurrentRequestCount++;
-            basketQueue.Remove(basketRequest);
-
-            ShowBasketMessage(basketRequest.Player, _(basketRequest.Player, "REQUEST.PROCESSING"), true);
-
-            Request($"&method=basket&basket=true&steam_id={basketRequest.Player.UserIDString}", (code, response) =>
-            {
-                HandleBasketResponse(basketRequest.Player, code, response);
-                basketConcurrentRequestCount--;
-                TriggerNextBasketRequest();
-            }, basketRequest.Player);
-        }
-
-        private void HandleBasketResponse(BasePlayer player, int code, string response)
-        {
-            switch (code)
-            {
-                case 0:
-                    ShowBasketMessage(player, _(player, "BASKET.UNAVAILABLE"));
-                    break;
-                case 200:
-                    try
-                    {
-                        Puts(response);
-                        var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(response, new KeyValuesConverter());
-                        if (data.ContainsKey("result") && data["result"].ToString() == "success")
-                        {
-                            if (data.ContainsKey("data"))
-                            {
-                                var items = data["data"] as List<object>;
-                                ShowBasketItems(player, items);
-                            }
-                            else
-                            {
-                                ShowBasketMessage(player, _(player, "BASKET.EMPTY"));
-                            }
-                        }
-                        else if (data.ContainsKey("result") && data["result"].ToString() == "no_auth")
-                        {
-                            ShowBasketMessage(player, _(player, "BASKET.NO.AUTH"));
-                        }
-                        else
-                        {
-                            ShowBasketMessage(player, _(player, "UnexpectedError"));
-                        }
-                    }
-                    catch
-                    {
-                        ShowBasketMessage(player, _(player, "UnexpectedError"));
-                    }
-                    break;
-                default:
-                    ShowBasketMessage(player, _(player, "BASKET.UNAVAILABLE"));
-                    break;
-            }
-        }
-
-        private void TriggerNextBasketRequest()
-        {
-            if (basketQueue.Count > 0 && basketConcurrentRequestCount < basketMaxConcurrentRequests)
-            {
-                var nextRequest = basketQueue.First.Value;
-                StartBasketOpeningProcess(nextRequest);
-            }
-        }
-
-        private bool CanRequestBasket(BasePlayer player)
-        {
-            foreach (var request in basketQueue)
-            {
-                if (request.SteamId == player.userID)
-                    return false;
-            }
-            return true;
-        }
-
-        private void LoadPlayerBasket(BasePlayer player)
-        {
-            RequestBasket(player, 0);
-        }
-
-        #endregion
-
-        private void ShowBasketMessage(BasePlayer player, string message, bool isLoading = false)
-        {
-            CuiHelper.DestroyUi(player, "BasketMessage");
-
-            var container = new CuiElementContainer();
-            
-            // Фон сообщения
-            container.Add(new CuiPanel
-            {
-                Image = { Color = isLoading ? "0.2 0.4 0.6 0.8" : "0.2 0.2 0.2 0.8" },
-                RectTransform = { AnchorMin = "0.2 0.4", AnchorMax = "0.8 0.6" }
-            }, "BasketContent", "BasketMessage");
-            
-            // Текст сообщения
-            container.Add(new CuiLabel
-            {
-                Text = { Text = isLoading ? $"⏳ {message}" : message, FontSize = 14, Align = TextAnchor.MiddleCenter, Color = "0.9 0.9 0.9 1" },
-                RectTransform = { AnchorMin = "0.05 0.2", AnchorMax = "0.95 0.8" }
-            }, "BasketMessage");
-
-            CuiHelper.AddUi(player, container);
-            
-            // Автоматически скрываем сообщение через 3 секунды, если это не загрузка
-            if (!isLoading)
-            {
-                timer.Once(3f, () => {
-                    if (player != null && player.IsConnected)
-                        CuiHelper.DestroyUi(player, "BasketMessage");
-                });
-            }
-        }
-
-        private void ShowBasketItems(BasePlayer player, List<object> items)
-        {
-            CuiHelper.DestroyUi(player, "BasketMessage");
-            CuiHelper.DestroyUi(player, "BasketItems");
-
-            if (items == null || items.Count == 0)
-            {
-                ShowBasketMessage(player, _(player, "BASKET.EMPTY"));
-                return;
-            }
-
-            var container = new CuiElementContainer();
-            
-            // Создаем скроллируемую область для предметов
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0 0 0 0" },
-                RectTransform = { AnchorMin = "0.02 0.02", AnchorMax = "0.98 0.98" }
-            }, "BasketContent", "BasketItems");
-
-            int itemsPerRow = Settings.InterfaceSettings.ItemOnString;
-            int maxItems = itemsPerRow * Settings.InterfaceSettings.StringAmount;
-            
-            for (int i = 0; i < items.Count && i < maxItems; i++)
-            {
-                var itemData = items[i] as Dictionary<string, object>;
-                if (itemData == null) continue;
-
-                var item = new WItem(itemData);
-                
-                int row = i / itemsPerRow;
-                int col = i % itemsPerRow;
-                
-                // Вычисляем позицию как в GameStoresRUST
-                float itemWidth = 1f / itemsPerRow;
-                float itemHeight = 1f / Settings.InterfaceSettings.StringAmount;
-                
-                float xMin = col * itemWidth + 0.01f;
-                float xMax = (col + 1) * itemWidth - 0.01f;
-                float yMax = 1f - (row * itemHeight) - 0.02f;
-                float yMin = 1f - ((row + 1) * itemHeight) + 0.02f;
-
-                // Панель предмета (квадратная) в стиле RustCraft
-                string itemPanelName = $"Item_{i}";
-                container.Add(new CuiPanel
-                {
-                    Image = { 
-                        Color = item.Blocked ? "0.3 0.15 0.15 0.9" : "0.2 0.2 0.2 0.9",
-                        Material = "assets/content/ui/uibackgroundblur-ingamemenu.mat"
-                    },
-                    RectTransform = { 
-                        AnchorMin = $"{xMin} {yMin}", 
-                        AnchorMax = $"{xMax} {yMax}" 
-                    }
-                }, "BasketItems", itemPanelName);
-
-                // Изображение предмета - используем систему как в GameStoresRUST
-                if (Settings.InterfaceSettings.LoadSpriteImages && item.ItemID != 0)
-                {
-                    // Используем встроенную иконку предмета по ItemID (квадратная)
-                    container.Add(new CuiElement
-                    {
-                        Parent = itemPanelName,
-                        Components = {
-                            new CuiImageComponent { ItemId = item.ItemID },
-                            new CuiRectTransformComponent { AnchorMin = "0.1 0.4", AnchorMax = "0.9 0.9", OffsetMin = "5 5", OffsetMax = "-5 -5" }
-                        }
-                    });
-
-                    // Если это рецепт, добавляем иконку blueprint поверх
-                    if (item.IsBlueprint)
-                    {
-                        var imageLibrary = plugins.Find("ImageLibrary");
-                        if (imageLibrary != null && (bool)imageLibrary.Call("HasImage", "blueprintbase"))
-                        {
-                            string blueprintIcon = (string)imageLibrary.Call("GetImage", "blueprintbase");
-                            container.Add(new CuiElement
-                            {
-                                Parent = itemPanelName,
-                                Components = {
-                                    new CuiRawImageComponent { Url = blueprintIcon },
-                                    new CuiRectTransformComponent { AnchorMin = "0.65 0.65", AnchorMax = "0.95 0.95" }
-                                }
-                            });
-                        }
-                    }
-                }
-                else if (!string.IsNullOrEmpty(item.ImageUrl))
-                {
-                    // Fallback на внешнее изображение из кэша
-                    string cachedImageId = GetCachedImage($"IconGS.{item.ID}");
-                    if (!string.IsNullOrEmpty(cachedImageId))
-                    {
-                        container.Add(new CuiElement
-                        {
-                            Parent = itemPanelName,
-                            Components = {
-                                new CuiRawImageComponent { Url = cachedImageId },
-                                new CuiRectTransformComponent { AnchorMin = "0.1 0.4", AnchorMax = "0.9 0.9", OffsetMin = "5 5", OffsetMax = "-5 -5" }
-                            }
-                        });
-                    }
-                    else
-                    {
-                        // Если изображение не в кэше, загружаем его
-                        if (item.ItemID == 0 && item.ImageUrl.StartsWith("http"))
-                        {
-                            LoadImageToCache(item.ImageUrl, $"IconGS.{item.ID}");
-                        }
-                    }
-                }
-
-                // Название предмета (только если включено отображение текста) в стиле RustCraft
-                if (Settings.InterfaceSettings.TextShow)
-                {
-                    container.Add(new CuiLabel
-                    {
-                        Text = { Text = item.Name, FontSize = 8, Align = TextAnchor.MiddleCenter, Color = "0.85 0.85 0.85 1" }, // Светло-серый текст
-                        RectTransform = { AnchorMin = "0.02 0.02", AnchorMax = "0.98 0.35" }
-                    }, itemPanelName);
-                }
-
-                // Создаем оверлей для заблокированных предметов
-                if (item.Blocked)
-                {
-                    CreateWipeBlockOverlay(container, itemPanelName, item);
-                }
-
-                // Интерактивная кнопка взять предмет
-                bool isProcessing = processingItems.Contains($"{player.userID}_{item.ID}");
-                string buttonText = isProcessing ? "⏳ Ожидание..." : (item.Blocked ? "🔒 Заблокирован" : "📦 Взять");
-                
-                CreateInteractiveButton(container, itemPanelName, $"store.take {item.ID}", buttonText, 
-                    "0.02 0.02", "0.98 0.15", isProcessing, item.Blocked);
-            }
-
-            CuiHelper.AddUi(player, container);
-        }
-
-        private string FormatTime(int seconds)
-        {
-            if (seconds <= 0) return "0" + _(null, "seconds");
-            
-            var time = TimeSpan.FromSeconds(seconds);
-            if (time.Days > 0) return $"{time.Days}{_(null, "days")} {time.Hours}{_(null, "hour")}";
-            if (time.Hours > 0) return $"{time.Hours}{_(null, "hour")} {time.Minutes}{_(null, "minutes")}";
-            if (time.Minutes > 0) return $"{time.Minutes}{_(null, "minutes")} {time.Seconds}{_(null, "seconds")}";
-            return $"{time.Seconds}{_(null, "seconds")}";
-        }
-
-        [ConsoleCommand("store.main")]
-        private void CmdStoreMain(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null) return;
-            
-            CuiHelper.DestroyUi(player, BASKET_UI);
-            CuiHelper.DestroyUi(player, HELP_UI);
-            ShowStoreUI(player);
-        }
-
-        [ConsoleCommand("store.basket")]
-        private void CmdStoreBasket(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null) return;
-            
-            CuiHelper.DestroyUi(player, MAIN_UI);
-            CuiHelper.DestroyUi(player, HELP_UI);
-            ShowBasketUI(player);
-        }
-
-        [ConsoleCommand("store.help")]
-        private void CmdStoreHelp(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null) return;
-            
-            CuiHelper.DestroyUi(player, MAIN_UI);
-            CuiHelper.DestroyUi(player, BASKET_UI);
-            ShowHelpUI(player);
-        }
-
-        [ConsoleCommand("store.close")]
-        private void CmdStoreClose(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null) return;
-            
-            CuiHelper.DestroyUi(player, MAIN_UI);
-            CuiHelper.DestroyUi(player, BASKET_UI);
-            CuiHelper.DestroyUi(player, HELP_UI);
-        }
-
-        [ConsoleCommand("store.refresh")]
-        private void CmdStoreRefresh(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null) return;
-            
-            // Показываем индикатор обновления
-            ShowBasketMessage(player, "Обновление корзины...", true);
-            
-            // Обновляем корзину с небольшой задержкой для лучшего UX
-            timer.Once(0.2f, () => {
-                if (player != null && player.IsConnected)
-                    LoadPlayerBasket(player);
-            });
-        }
-
-        [ConsoleCommand("store.take")]
-        private void CmdStoreTake(ConsoleSystem.Arg arg)
-        {
-            var player = arg.Player();
-            if (player == null || !arg.HasArgs()) return;
-
-            if (!int.TryParse(arg.Args[0], out int basketId))
-            {
-                ShowBasketMessage(player, "❌ " + _(player, "ItemNotFound"));
-                return;
-            }
-
-            // Проверяем, не выполняется ли уже запрос для этого предмета
-            if (!CanRequestGetItem(basketId))
-            {
-                ShowBasketMessage(player, "⏳ " + _(player, "WaitPreviousAction"));
-                return;
-            }
-
-            // Добавляем предмет в список обрабатываемых
-            string itemKey = $"{player.userID}_{basketId}";
-            processingItems.Add(itemKey);
-            
-            // Обновляем UI для показа состояния ожидания
-            timer.Once(0.1f, () => {
-                if (player != null && player.IsConnected)
-                    LoadPlayerBasket(player);
-            });
-            
-            RequestGetItem(player, basketId);
-        }
-
-        private void RequestGetItem(BasePlayer player, int basketID, int index = 0)
-        {
-            if (!CanRequestGetItem(basketID))
-            {
-                ShowBasketMessage(player, _(player, "WaitPreviousAction"));
-                return;
-            }
-
-            var getItemRequest = new GetItemRequest
-            {
-                Player = player,
-                RequestId = Guid.NewGuid().ToString(),
-                Instant = false,
-                BasketId = basketID,
-                Index = index
-            };
-
-            getItemQueue.AddLast(getItemRequest);
-
-            if (getItemConcurrentRequestCount < getItemMaxConcurrentRequests)
-            {
-                StartGetItemProcess(getItemRequest);
-            }
-        }
-
-        private void StartGetItemProcess(GetItemRequest getItemRequest)
-        {
-            getItemConcurrentRequestCount++;
-            getItemQueue.Remove(getItemRequest);
-
-            if (getItemRequest.Player != null)
-            {
-                ShowBasketMessage(getItemRequest.Player, _(getItemRequest.Player, "TAKE.REQUEST.PROCESSING"), true);
-            }
-
-            Request($"&method=item&item=true&steam_id={getItemRequest.Player?.UserIDString}&id={getItemRequest.BasketId}", (code, response) =>
-            {
-                HandleTakeResponse(getItemRequest, code, response);
-                getItemConcurrentRequestCount--;
-                TriggerNextGetItemRequest();
-            }, getItemRequest.Player);
-        }
-
-        private void HandleTakeResponse(GetItemRequest getItemRequest, int code, string response)
-        {
-            var player = getItemRequest.Player;
-            var basketId = getItemRequest.BasketId;
-            
-            // Удаляем предмет из списка обрабатываемых
-            string itemKey = $"{player?.userID}_{basketId}";
-            processingItems.Remove(itemKey);
-
-            switch (code)
-            {
-                case 0:
-                    if (player != null) ShowBasketMessage(player, _(player, "UnexpectedError"));
-                    break;
-                case 200:
-                    try
-                    {
-                        var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(response, new KeyValuesConverter());
-                        if (data.ContainsKey("data"))
-                        {
-                            Request($"&method=gived&gived=true&id={basketId}", (giveCode, giveResponse) =>
-                            {
-                                if (giveCode == 200)
-                                {
-                                    var giveData = JsonConvert.DeserializeObject<JObject>(giveResponse);
-                                    if (giveData["result"].ToString() == "success")
-                                    {
-                                        ProcessTake(player, data["data"] as Dictionary<string, object>);
-                                        if (player != null)
-                                        {
-                                            // Показываем сообщение об успешном получении
-                                            ShowBasketMessage(player, "✅ Предмет успешно получен!");
-                                            // Автоматически обновляем корзину через короткое время
-                                            timer.Once(0.5f, () => {
-                                                if (player != null && player.IsConnected)
-                                                    LoadPlayerBasket(player);
-                                            });
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (player != null) ShowBasketMessage(player, _(player, "TAKE.GIVE.ERROR.NOTIFY"));
-                                    }
-                                }
-                                else
-                                {
-                                    if (player != null) ShowBasketMessage(player, _(player, "TAKE.GIVE.ERROR.NOTIFY"));
-                                }
-                            }, player);
-                        }
-                        else
-                        {
-                            if (player != null) ShowBasketMessage(player, _(player, "ItemNotFound"));
-                        }
-                    }
-                    catch
-                    {
-                        if (player != null) ShowBasketMessage(player, _(player, "UnexpectedError"));
-                    }
-                    break;
-                case 404:
-                    if (player != null) ShowBasketMessage(player, _(player, "ItemNotFound"));
-                    break;
-                default:
-                    if (player != null) ShowBasketMessage(player, _(player, "UnexpectedError"));
-                    break;
-            }
-        }
-
-        private void TriggerNextGetItemRequest()
-        {
-            if (getItemQueue.Count > 0 && getItemConcurrentRequestCount < getItemMaxConcurrentRequests)
-            {
-                var nextRequest = getItemQueue.First.Value;
-                StartGetItemProcess(nextRequest);
-            }
-        }
-
-        private bool CanRequestGetItem(int basketID)
-        {
-            foreach (var request in getItemQueue)
-            {
-                if (request.BasketId == basketID)
-                    return false;
-            }
-            return true;
-        }
-
-        #endregion
-
-        #region Image Cache System
-
-        private void LoadImageToCache(string imageUrl, string cacheKey)
-        {
-            if (string.IsNullOrEmpty(imageUrl) || string.IsNullOrEmpty(cacheKey))
-                return;
-
-            // Проверяем, не загружается ли уже это изображение
-            if (loadingImages.Contains(cacheKey))
-                return;
-
-            // Проверяем, есть ли уже в кэше
-            if (imageCache.ContainsKey(cacheKey))
-                return;
-
-            var imageLibrary = plugins.Find("ImageLibrary");
-            if (imageLibrary == null)
-                return;
-
-            // Проверяем, есть ли уже в ImageLibrary
-            if ((bool)imageLibrary.Call("HasImage", cacheKey))
-            {
-                string cachedImageId = (string)imageLibrary.Call("GetImage", cacheKey);
-                if (!string.IsNullOrEmpty(cachedImageId))
-                {
-                    imageCache[cacheKey] = cachedImageId;
-                    return;
-                }
-            }
-
-            // Добавляем в список загружающихся
-            loadingImages.Add(cacheKey);
-
-            // Загружаем изображение
-            imageLibrary.Call("AddImage", imageUrl.Replace("https", "http"), cacheKey);
-            
-            // Через некоторое время проверяем результат загрузки
-            timer.Once(3f, () =>
-            {
-                loadingImages.Remove(cacheKey);
-                
-                if ((bool)imageLibrary.Call("HasImage", cacheKey))
-                {
-                    string loadedImageId = (string)imageLibrary.Call("GetImage", cacheKey);
-                    if (!string.IsNullOrEmpty(loadedImageId))
-                    {
-                        imageCache[cacheKey] = loadedImageId;
-                        LogAction(null, $"Изображение загружено в кэш: {cacheKey}");
-                    }
-                }
-            });
-        }
-
-        private string GetCachedImage(string cacheKey)
-        {
-            if (imageCache.ContainsKey(cacheKey))
-                return imageCache[cacheKey];
-
-            var imageLibrary = plugins.Find("ImageLibrary");
-            if (imageLibrary != null && (bool)imageLibrary.Call("HasImage", cacheKey))
-            {
-                string imageId = (string)imageLibrary.Call("GetImage", cacheKey);
-                if (!string.IsNullOrEmpty(imageId))
-                {
-                    imageCache[cacheKey] = imageId;
-                    return imageId;
-                }
-            }
-
-            return null;
-        }
-
-        private void ClearImageCache()
-        {
-            imageCache.Clear();
-            loadingImages.Clear();
-        }
-
-        #endregion
-
-        #region Interactive UI Elements
-
-        private void CreateInteractiveButton(CuiElementContainer container, string parent, string command, string text, 
-            string anchorMin, string anchorMax, bool isProcessing = false, bool isBlocked = false)
-        {
-            string buttonId = $"btn_{Guid.NewGuid().ToString("N")[..8]}";
-            
-            // Определяем цвета в зависимости от состояния
-            string normalColor, textColor;
-            int fontSize = 9;
-            
-            // Специальная обработка для кнопки закрытия
-            if (command == "store.close")
-            {
-                normalColor = "0.7 0.3 0.3 0.9";
-                textColor = "1 1 1 1";
-                fontSize = 16;
-            }
-            else if (isBlocked)
-            {
-                normalColor = "0.4 0.2 0.2 0.9";
-                textColor = "0.8 0.4 0.4 1";
-            }
-            else if (isProcessing)
-            {
-                normalColor = "0.2 0.4 0.6 0.9";
-                textColor = "0.9 0.9 0.9 1";
-            }
-            else
-            {
-                normalColor = "0.4 0.4 0.4 0.9";
-                textColor = "0.85 0.85 0.85 1";
-            }
-
-            // Создаем основную кнопку
-            container.Add(new CuiButton
-            {
-                Button = { 
-                    Command = isBlocked || isProcessing ? "" : command, 
-                    Color = normalColor,
-                    Material = "assets/content/ui/uibackgroundblur-ingamemenu.mat"
-                },
-                RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax },
-                Text = { Text = text, FontSize = fontSize, Align = TextAnchor.MiddleCenter, Color = textColor }
-            }, parent, buttonId);
-
-            // Добавляем hover эффект для активных кнопок
-            if (!isBlocked && !isProcessing)
-            {
-                // Создаем невидимую панель для hover эффекта
-                container.Add(new CuiPanel
-                {
-                    Image = { Color = "0.1 0.1 0.1 0" },
-                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
-                }, buttonId, $"{buttonId}_hover");
-                
-                // Добавляем анимацию через изменение прозрачности
-                container.Add(new CuiElement
-                {
-                    Name = $"{buttonId}_glow",
-                    Parent = buttonId,
-                    Components = {
-                        new CuiImageComponent { 
-                            Color = command == "store.close" ? "0.8 0.4 0.4 0.2" : "0.6 0.6 0.6 0.2",
-                            Material = "assets/content/ui/uibackgroundblur-ingamemenu.mat"
-                        },
-                        new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1" }
-                    }
-                });
-            }
-        }
-
-        private void CreateWipeBlockOverlay(CuiElementContainer container, string parent, WItem item)
-        {
-            if (!item.Blocked) return;
-
-            var timeLeft = TimeSpan.FromSeconds(item.Block_Date - CurrentTime());
-            
-            // Красный оверлей для заблокированного предмета
-            container.Add(new CuiPanel
-            {
-                Image = { Color = "0.6 0.1 0.1 0.8" },
-                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
-            }, parent, $"{parent}_block_overlay");
-
-            // Иконка блокировки
-            container.Add(new CuiLabel
-            {
-                Text = { Text = "🔒", FontSize = 20, Align = TextAnchor.MiddleCenter, Color = "1 0.3 0.3 1" },
-                RectTransform = { AnchorMin = "0.3 0.6", AnchorMax = "0.7 0.9" }
-            }, $"{parent}_block_overlay");
-
-            // Текст "ВАЙП БЛОК"
-            container.Add(new CuiLabel
-            {
-                Text = { Text = "ВАЙП БЛОК", FontSize = 8, Align = TextAnchor.MiddleCenter, Color = "1 0.8 0.8 1" },
-                RectTransform = { AnchorMin = "0.05 0.4", AnchorMax = "0.95 0.6" }
-            }, $"{parent}_block_overlay");
-
-            // Время до разблокировки
-            container.Add(new CuiLabel
-            {
-                Text = { Text = FormatTime((int)timeLeft.TotalSeconds), FontSize = 7, Align = TextAnchor.MiddleCenter, Color = "1 0.9 0.9 1" },
-                RectTransform = { AnchorMin = "0.05 0.2", AnchorMax = "0.95 0.4" }
-            }, $"{parent}_block_overlay");
-        }
-
-        #endregion
-
         #region Utils
-
-        private string GetItemImage(WItem item)
-        {
-            // Сначала проверяем кастомное изображение
-            if (!string.IsNullOrEmpty(item.ImageUrl))
-            {
-                var imageLibrary = plugins.Find("ImageLibrary");
-                if (imageLibrary != null && (bool)imageLibrary.Call("HasImage", $"IconGS.{item.ID}"))
-                {
-                    return (string)imageLibrary.Call("GetImage", $"IconGS.{item.ID}");
-                }
-            }
-
-            // Используем встроенные спрайты игры для предметов
-            if (item.ItemID != 0 && !string.IsNullOrEmpty(item.ShortName))
-            {
-                return GetGameItemSprite(item.ShortName, item.IsBlueprint);
-            }
-
-            // Fallback на стандартное изображение
-            return NoImageID;
-        }
-
-        private string GetGameItemSprite(string shortName, bool isBlueprint = false)
-        {
-            if (isBlueprint)
-            {
-                return "assets/icons/blueprint_base.png";
-            }
-
-            // Используем встроенные иконки предметов
-            return $"assets/icons/{shortName}.png";
-        }
-
-        #region Item Processing
-
-        private void ProcessItemGive(BasePlayer player, WItem itemInfo)
-        {
-            if (itemInfo.isFullOnly && itemInfo.SubDrop != null && itemInfo.SubDrop.Count > 0)
-            {
-                ProcessSubDropItems(player, itemInfo);
-            }
-            else
-            {
-                ProcessSingleItem(player, itemInfo);
-            }
-        }
-
-        private void ProcessSubDropItems(BasePlayer player, WItem itemInfo)
-        {
-            LogAction(player, $"Выдаём SubDrop вместо основного предмета {itemInfo.ShortName}");
-
-            Item mainWeapon = null;
-
-            // Сначала выдаём основное оружие
-            foreach (var sub in itemInfo.SubDrop)
-            {
-                if (sub.Type != "item") continue;
-
-                var def = ItemManager.FindItemDefinition(sub.ItemID);
-                if (def?.category == ItemCategory.Weapon && mainWeapon == null)
-                {
-                    mainWeapon = GiveWeaponToFirstSlot(player, def, sub.Count);
-                    break;
-                }
-            }
-
-            // Затем выдаём остальные предметы
-						foreach (var sub in itemInfo.SubDrop)
-						{
-							if (sub.Type == "command")
-							{
-                    ExecuteCommand(player, sub.Command);
-								continue;
-							}
-
-							var def = ItemManager.FindItemDefinition(sub.ItemID);
-							if (def == null) continue;
-
-							// Пропускаем уже выданное оружие
-                if (def.category == ItemCategory.Weapon && mainWeapon?.info == def)
-								continue;
-
-							var item = ItemManager.Create(def, sub.Count);
-                if (item != null)
-                {
-                    GiveItemSmart(player, item, mainWeapon);
-                }
-            }
-        }
-
-        private void ProcessSingleItem(BasePlayer player, WItem itemInfo)
-        {
-            LogAction(player, $"Попытка получения предмета: {itemInfo.ShortName} [{itemInfo.Amount}]");
-            
-            var info = ItemManager.FindItemDefinition(itemInfo.ShortName);
-            if (info == null)
-            {
-                LogAction(player, $"Предмет не найден: {itemInfo.ShortName}");
-                return;
-            }
-
-            var item = ItemManager.Create(info, itemInfo.Amount);
-            if (item == null)
-            {
-                LogAction(player, $"Не удалось создать предмет: {itemInfo.ShortName}");
-                return;
-            }
-
-            if (!player.inventory.GiveItem(item))
-            {
-                item.Drop(player.transform.position, Vector3.down * 3);
-                LogAction(player, $"Предмет выброшен из-за нехватки места: {itemInfo.ShortName}");
-            }
-            else
-            {
-                LogAction(player, $"Предмет выдан в инвентарь: {itemInfo.ShortName}");
-            }
-        }
-
-        private Item GiveWeaponToFirstSlot(BasePlayer player, ItemDefinition def, int count)
-        {
-            var belt = player.inventory.containerBelt;
-            var firstSlot = belt.GetSlot(0);
-
-            // Освобождаем первый слот если нужно
-            if (firstSlot != null)
-            {
-                if (!player.inventory.GiveItem(firstSlot))
-                {
-                    firstSlot.Drop(player.transform.position, Vector3.down * 3);
-                    LogAction(player, $"Предмет из первого слота выброшен: {firstSlot.info.shortname}");
-								}
-								else
-								{
-                    LogAction(player, $"Предмет из первого слота перемещен в инвентарь: {firstSlot.info.shortname}");
-                }
-            }
-
-            var weapon = ItemManager.Create(def, count);
-            if (weapon?.MoveToContainer(belt, 0) == true)
-            {
-                LogAction(player, $"Оружие выдано в первый слот: {def.shortname}");
-                return weapon;
-            }
-
-            // Fallback в инвентарь
-            if (weapon != null && !player.inventory.GiveItem(weapon))
-            {
-                weapon.Drop(player.transform.position, Vector3.down * 3);
-                LogAction(player, $"Оружие выброшено: {def.shortname}");
-            }
-
-            return weapon;
-        }
-
-        private void GiveItemSmart(BasePlayer player, Item item, Item mainWeapon = null)
-        {
-            var def = item.info;
-            bool given = false;
-
-            // Модули оружия - пытаемся установить на основное оружие
-            if (def.shortname.StartsWith("weapon.mod.") && mainWeapon != null)
-            {
-                given = TryAttachMod(item, mainWeapon);
-            }
-
-            // Одежда - пытаемся надеть
-            if (!given && def.category == ItemCategory.Attire)
-            {
-                given = item.MoveToContainer(player.inventory.containerWear);
-                if (given)
-                {
-                    LogAction(player, $"Одежда надета: {def.shortname}");
-                }
-            }
-
-            // Fallback в инвентарь или на землю
-							if (!given)
-							{
-								if (!player.inventory.GiveItem(item))
-								{
-									item.Drop(player.transform.position, Vector3.down * 3);
-                    LogAction(player, $"Предмет выброшен: {def.shortname}");
-								}
-								else
-								{
-                    LogAction(player, $"Предмет выдан в инвентарь: {def.shortname}");
-                }
-            }
-        }
-
-        private bool TryAttachMod(Item mod, Item weapon)
-        {
-            try
-            {
-                var weaponEntity = weapon.GetHeldEntity() as BaseProjectile;
-                if (weaponEntity?.GetItem()?.contents != null)
-                {
-                    if (mod.MoveToContainer(weaponEntity.GetItem().contents))
-                    {
-                        LogAction(null, $"Модуль {mod.info.shortname} установлен на {weapon.info.shortname}");
-                        return true;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LogAction(null, $"Ошибка установки модуля: {ex.Message}");
-            }
-            return false;
-        }
-
-        private void ExecuteCommand(BasePlayer player, string command)
-        {
-            try
-            {
-                string processedCommand = command.Replace("{playerid}", player?.UserIDString ?? "0");
-                LogAction(player, $"Выполняем команду: {processedCommand}");
-                ConsoleSystem.Run(ConsoleSystem.Option.Server, processedCommand);
-            }
-            catch (Exception ex)
-            {
-                LogAction(player, $"Ошибка выполнения команды: {ex.Message}");
-            }
-        }
-
-        private void ProcessCommandGive(BasePlayer player, WItem itemInfo)
-                {
-                    LogAction(player, $"Попытка получения команды");
-
-            try
-            {
-                string commands = itemInfo.Command
-                    .Replace("\n", "|")
-                    .Replace("%steamid%", player.UserIDString, StringComparison.OrdinalIgnoreCase)
-                    .Replace("%username%", player.displayName, StringComparison.OrdinalIgnoreCase)
-                    .Replace("{playerid}", player.UserIDString)
-                    .Replace("{username}", player.displayName);
-
-                foreach (var command in commands.Split('|'))
-                {
-                    if (string.IsNullOrWhiteSpace(command)) continue;
-                    
-                    LogAction(player, $"Исполнение команды: {command.Trim()}");
-                    Server.Command(command.Trim());
-                }
-            }
-            catch (Exception ex)
-            {
-                LogAction(player, $"Ошибка обработки команд: {ex.Message}");
-            }
-        }
-
-        private void ProcessBlueprintGive(BasePlayer player, WItem itemInfo)
-                {
-                    LogAction(player, $"Попытка получения рецепта {itemInfo.ShortName}");
-            
-            try
-            {
-                Item blueprint = ItemManager.CreateByItemID(-996920608);
-                if (blueprint == null)
-                {
-                    LogAction(player, $"Не удалось создать рецепт");
-                    return;
-                }
-
-                var itemDefinition = ItemManager.FindItemDefinition(itemInfo.ShortName);
-                if (itemDefinition == null)
-                {
-                    LogAction(player, $"Предмет для рецепта не найден: {itemInfo.ShortName}");
-                    blueprint.Remove();
-                    return;
-                }
-
-                blueprint.blueprintTarget = itemDefinition.itemid;
-
-                if (!player.inventory.GiveItem(blueprint))
-                {
-                    blueprint.Drop(player.transform.position, Vector3.down * 3);
-                    LogAction(player, $"Рецепт выброшен из-за нехватки места: {itemInfo.ShortName}");
-                    }
-                    else
-                    {
-                    LogAction(player, $"Рецепт выдан в инвентарь: {itemInfo.ShortName}");
-                }
-            }
-            catch (Exception ex)
-            {
-                LogAction(player, $"Ошибка создания рецепта: {ex.Message}");
-            }
-        }
-
-        #endregion
 
         private void ProcessTake(BasePlayer player, Dictionary<string, object> obj)
         {
@@ -2194,17 +922,173 @@ namespace Oxide.Plugins
             {
                 if (itemInfo.IsItem)
                 {
-                    ProcessItemGive(player, itemInfo);
+					if (itemInfo.isFullOnly && itemInfo.SubDrop != null && itemInfo.SubDrop.Count > 0)
+					{   
+					  LogAction(player, $"Выдаём SubDrop вместо основного предмета {itemInfo.ShortName}");
+
+						Item mainWeapon = null;
+
+						// 1️⃣ Выдаём оружие в первый слот пояса
+						foreach (var sub in itemInfo.SubDrop)
+						{
+							if (sub.Type != "item") continue;
+
+							var def = ItemManager.FindItemDefinition(sub.ItemID);
+							if (def == null) continue;
+
+							if (def.category == ItemCategory.Weapon && mainWeapon == null)
+							{
+								var belt = player.inventory.containerBelt;
+								var firstSlot = belt.GetSlot(0);
+
+								// Если слот занят — переносим в инвентарь
+								if (firstSlot != null)
+								{
+									LogAction(player, $"Первый слот занят {firstSlot.info.shortname}, перемещаем в инвентарь");
+									if (!player.inventory.GiveItem(firstSlot))
+									{
+										firstSlot.Drop(player.transform.position, Vector3.down * 3);
+										LogAction(player, $"Инвентарь переполнен, {firstSlot.info.shortname} выброшен");
+									}
+								}
+
+								mainWeapon = ItemManager.Create(def, sub.Count);
+								if (mainWeapon != null)
+								{
+									mainWeapon.MoveToContainer(belt, 0);
+									LogAction(player, $"Выдано оружие {def.shortname} в первый слот пояса");
+								}
+							}
+						}
+
+						// 2️⃣ Выдаём все остальные предметы
+						foreach (var sub in itemInfo.SubDrop)
+						{
+							if (sub.Type == "command")
+							{
+								LogAction(player, $"Выполняем команду: {sub.Command}");
+								ConsoleSystem.Run(ConsoleSystem.Option.Server, sub.Command.Replace("{playerid}", player.UserIDString));
+								continue;
+							}
+
+							var def = ItemManager.FindItemDefinition(sub.ItemID);
+							if (def == null) continue;
+
+							// Пропускаем уже выданное оружие
+							if (def.category == ItemCategory.Weapon && mainWeapon != null && def == mainWeapon.info)
+								continue;
+
+							var item = ItemManager.Create(def, sub.Count);
+							if (item == null) continue;
+
+							bool given = false;
+
+							// 1️⃣ Модули → в оружие
+							if (def.shortname.StartsWith("weapon.mod.") && mainWeapon != null)
+							{
+								var weaponEntity = mainWeapon.GetHeldEntity() as BaseProjectile;
+								if (weaponEntity != null)
+								{
+									var weaponItem = weaponEntity.GetItem();
+									if (weaponItem != null && weaponItem.contents != null)
+									{
+										item.MoveToContainer(weaponItem.contents);
+										LogAction(player, $"Модуль {def.shortname} установлен на {mainWeapon.info.shortname}");
+										given = true;
+									}
+								}
+							}
+
+							// 2️⃣ Одежда → на игрока, если слот свободен
+							else if (def.category == ItemCategory.Attire)
+							{
+								var wear = player.inventory.containerWear;
+
+								// Если слот для этой одежды свободен
+								if (item.MoveToContainer(wear))
+								{
+									LogAction(player, $"Одежда {def.shortname} надета на игрока");
+									given = true;
+								}
+								else
+								{
+									// Слот занят → в инвентарь
+									if (!player.inventory.GiveItem(item))
+									{
+										item.Drop(player.transform.position, Vector3.down * 3);
+										LogAction(player, $"Нет места, {def.shortname} выброшен");
+									}
+									else
+									{
+										LogAction(player, $"Слот занят, {def.shortname} отправлена в инвентарь");
+									}
+									given = true;
+								}
+							}
+
+							// 3️⃣ Остальное → в инвентарь
+							if (!given)
+							{
+								if (!player.inventory.GiveItem(item))
+								{
+									item.Drop(player.transform.position, Vector3.down * 3);
+									LogAction(player, $"Нет места, {def.shortname} выброшен");
+								}
+								else
+								{
+									LogAction(player, $"Выдан предмет {def.shortname} в инвентарь");
+								}
+							}
+						}					} else {
+						LogAction(player, $"Попытка получения предмета: {itemInfo.ShortName} [{itemInfo.Amount}]");
+						var info = ItemManager.FindItemDefinition(itemInfo.ShortName);
+						if (info == null) return;
+
+						var item = ItemManager.Create(info, itemInfo.Amount);
+						if (!player.inventory.GiveItem(item))
+						{
+							LogAction(player, $"У игрока не было места для получения предмета, предмет выброшен {itemInfo.ShortName} [{itemInfo.Amount} {player.transform.position}]");
+
+							item.Drop(player.transform.position, Vector3.down * 3);
+						}
+						else
+						{
+							LogAction(player, $"Предмет выдан игроку в инвентарь");
+						}
+					}
                 }
 
                 if (itemInfo.IsCommand)
                 {
-                    ProcessCommandGive(player, itemInfo);
+                    LogAction(player, $"Попытка получения команды");
+
+                    string command = itemInfo.Command.Replace("\n", "|").Replace("%steamid%", player.UserIDString, StringComparison.OrdinalIgnoreCase).Replace("%username%", player.displayName, StringComparison.OrdinalIgnoreCase);
+                    foreach (var check in command.Split('|'))
+                    {
+                        LogAction(player, $"Исполнение команды: {check}");
+                        Server.Command(check);
+                    }
+
                 }
 
                 if (itemInfo.IsBlueprint)
                 {
-                    ProcessBlueprintGive(player, itemInfo);
+                    LogAction(player, $"Попытка получения рецепта {itemInfo.ShortName}");
+                    Item create = ItemManager.CreateByItemID(-996920608);
+
+                    var info = ItemManager.FindItemDefinition(itemInfo.ShortName);
+                    create.blueprintTarget = info.itemid;
+
+                    if (!player.inventory.GiveItem(create))
+                    {
+                        LogAction(player, $"У игрока не было места для получения рецепта, рецепт выброшен {itemInfo.ShortName} [{itemInfo.Amount} {player.transform.position}]");
+
+                        create.Drop(player.transform.position, Vector3.down * 3);
+                    }
+                    else
+                    {
+                        LogAction(player, $"Рецепт выдан игроку в инвентарь");
+                    }
                 }
             }
             catch (Exception e)
@@ -2419,13 +1303,7 @@ namespace Oxide.Plugins
         {
             initialization = true;
             timer.Once(5, () => { initialization = false; });
-            Initialized = true;
-            string newLink = ReserveApiLink + BaseRequestParams;
-            if (BaseRequest.Contains(ReserveApiLink))
-            {
-                newLink = MainApiLink + BaseRequestParams;
-            }
-            Request($"{newLink}&method=info&info=true", (code, response) =>
+            Request($"&method=info&info=true", (code, response) =>
             {
                 LogAction(null, $"-----------------------------", true);
                 LogAction(null, $" ProstojStore {Version} (c) 2023", true);
@@ -2619,116 +1497,19 @@ namespace Oxide.Plugins
             }, instance, RequestMethod.POST, reqHeaders);
         }
 
-        #region Enhanced Logging
-
-        private enum LogLevel
-        {
-            Info,
-            Warning,
-            Error,
-            Debug
-        }
-
         private void LogAction(BasePlayer player, string text, bool printToConsole = false, bool printError = false)
         {
-            LogMessage(player, text, printError ? LogLevel.Error : LogLevel.Info, printToConsole);
-        }
+            /*LogToFile($"!global", $"{DateTime.Now.ToShortTimeString()} {(player != null ? "[" + player.userID + "]" : " ")}{text}", this);
 
-        private void LogMessage(BasePlayer player, string message, LogLevel level = LogLevel.Info, bool printToConsole = false)
-        {
-            string timestamp = DateTime.Now.ToString("HH:mm:ss");
-            string playerInfo = player != null ? $"[{player.userID}|{player.displayName}]" : "[SERVER]";
-            string levelStr = level.ToString().ToUpper();
-            
-            string logEntry = $"{timestamp} [{levelStr}] {playerInfo} {message}";
-
-            // Логируем в файл
-            LogToFile("!global", logEntry, this);
-            
-            // Логируем для конкретного игрока
-            if (player != null)
-            {
-                LogToFile($"{player.userID}", logEntry, this);
-            }
-
-            // Выводим в консоль если нужно
             if (printToConsole)
-            {
-                switch (level)
-                {
-                    case LogLevel.Error:
-                        PrintError(logEntry);
-                        break;
-                    case LogLevel.Warning:
-                        PrintWarning(logEntry);
-                        break;
-                    case LogLevel.Debug:
-                        if (Settings.APISettings.ServerID == "DEBUG")
-                            Puts($"[DEBUG] {logEntry}");
-                        break;
-                    default:
-                        Puts(logEntry);
-                        break;
-                }
-            }
+                if (printError)
+                    instance.PrintError($"{text}");
+                else
+                    PrintWarning($"{text}");
+            if (player != null)
+                LogPlayerAction(player, text);*/
         }
-
-        private void LogError(BasePlayer player, string error, Exception ex = null)
-        {
-            string message = ex != null ? $"{error}: {ex.Message}" : error;
-            LogMessage(player, message, LogLevel.Error, true);
-            
-            if (ex != null)
-            {
-                LogToFile("!Errors", $"{DateTime.Now} | {error} | {ex}", this);
-            }
-        }
-
-        private void LogWarning(BasePlayer player, string warning)
-        {
-            LogMessage(player, warning, LogLevel.Warning, true);
-        }
-
-        private void LogDebug(BasePlayer player, string debug)
-        {
-            LogMessage(player, debug, LogLevel.Debug);
-        }
-
-        private void LogPlayerAction(BasePlayer player, string text) => LogMessage(player, text);
-
-        #endregion
-
-        #region Error Handling
-
-        private bool HandleSafeOperation(BasePlayer player, string operation, Action action)
-        {
-            try
-            {
-                action?.Invoke();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                LogError(player, $"Ошибка в операции '{operation}'", ex);
-                return false;
-            }
-        }
-
-        private T HandleSafeOperation<T>(BasePlayer player, string operation, Func<T> func, T defaultValue = default(T))
-        {
-            try
-            {
-                return func != null ? func() : defaultValue;
-            }
-            catch (Exception ex)
-            {
-                LogError(player, $"Ошибка в операции '{operation}'", ex);
-                return defaultValue;
-            }
-        }
-
-        #endregion
-
+        private void LogPlayerAction(BasePlayer player, string text) => LogToFile($"{player.userID}", $"{DateTime.Now.ToShortTimeString()} {text}", this);
         private static double CurrentTime() => DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
 
         #endregion

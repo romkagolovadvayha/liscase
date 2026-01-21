@@ -1,6 +1,7 @@
 using Oxide.Game.Rust;
 using Rust;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace Oxide.Plugins
 {
@@ -10,6 +11,41 @@ namespace Oxide.Plugins
     {
         private const string HammerShortName = "hammer";
         private const float MaxRemoveDistance = 5f;
+
+        protected override void LoadDefaultMessages()
+        {
+            lang.RegisterMessages(new Dictionary<string, string>
+            {
+                ["helptext"] = "Нажмите колесико мыши для удаления блока"
+            }, this, "ru");
+            
+            lang.RegisterMessages(new Dictionary<string, string>
+            {
+                ["helptext"] = "Press mouse wheel to remove block"
+            }, this, "en");
+        }
+
+        private void OnActiveItemChanged(BasePlayer player, Item oldItem, Item newItem)
+        {
+            if (player == null) return;
+
+            if (newItem != null && newItem.info != null && newItem.info.shortname == HammerShortName)
+            {
+                // Показываем сообщение только если игрок авторизован в шкафу
+                if (IsAuthorizedInCupboard(player))
+                {
+                    SendGameTip(player, lang.GetMessage("helptext", this, player.UserIDString));
+                }
+            }
+        }
+
+        private bool IsAuthorizedInCupboard(BasePlayer player)
+        {
+            if (player == null) return false;
+
+            // Проверяем, находится ли игрок в зоне шкафа и авторизован ли он
+            return player.IsBuildingAuthed();
+        }
 
         private void OnPlayerInput(BasePlayer player, InputState input)
         {
@@ -62,6 +98,12 @@ namespace Oxide.Plugins
             }
 
             block.Kill(BaseNetworkable.DestroyMode.Gib);
+        }
+
+        private static void SendGameTip(BasePlayer player, string message)
+        {
+            if (player != null)
+                player.ShowToast(GameTip.Styles.Blue_Normal, message, true);
         }
     }
 }

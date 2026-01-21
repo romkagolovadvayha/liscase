@@ -1,9 +1,12 @@
 <div class="category__cards" id="products">
     {% set i = 0 %}
     {% for item in PRODUCT_DROPS %}
+        {% set is_favorite = not USER_GUEST and item.id in FAVORITE_IDS %}
         {% include 'product.twig'
             with {
             'URL': "/market/form-modal?id=#{item.id}",
+            'PRODUCT_ID': item.id,
+            'IS_FAVORITE': is_favorite,
             'PRICE': item.price,
             'PRICE_REAL': item.getRealPrice(),
             'CURRENCY': 'RUB',
@@ -16,6 +19,7 @@
             'BLOCKED_AT': item.blocked_at,
             'BLOCKED_TIME': item.blockedTime(),
             'INDEX': i,
+            'USER_GUEST': USER_GUEST,
         }
         %}
         {% set i = i + 1 %}

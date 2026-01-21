@@ -6,8 +6,23 @@
         data-size="modal"
         data-toggl="modal"
         data-target="modal-dialog"
+        data-product-id="{{ PRODUCT_ID }}"
         {% if INDEX > 24 %}style="display: none;"{% endif %}
         {% if BLOCKED %}aria-disabled="true"{% endif %}>
+    {% if not USER_GUEST %}
+        <button class="category-card__favorite {% if IS_FAVORITE %}active{% endif %}" 
+                type="button" 
+                data-product-id="{{ PRODUCT_ID }}"
+                title="{% if IS_FAVORITE %}{{ t('common', 'Удалить из избранного') }}{% else %}{{ t('common', 'Добавить в избранное') }}{% endif %}">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" 
+                      fill="{% if IS_FAVORITE %}#f8b34d{% else %}none{% endif %}" 
+                      stroke="{% if IS_FAVORITE %}#f8b34d{% else %}#564a66{% endif %}" 
+                      stroke-width="2" 
+                      stroke-linejoin="round"/>
+            </svg>
+        </button>
+    {% endif %}
     {% if COUNT > 1 %}
         <p class="category-card__boost">x{{ COUNT }}</p>
     {% endif %}

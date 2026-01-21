@@ -168,6 +168,40 @@ $images = Drop::productsImages();
 $SETTINGS = Yii::$app->settings;
 $canonical = Yii::$app->params['homePage'];
 $this->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
+
+// Получаем список избранных товаров для текущего пользователя
+$favoriteDropIds = [];
+if (!Yii::$app->user->isGuest) {
+    $favoriteDropIds = \common\models\box\DropFavorite::getFavoriteDropIds(Yii::$app->user->id);
+}
+
+// Функция для сортировки товаров: сначала избранные
+$sortProductsByFavorite = function($products, $favoriteIds) {
+    if (empty($favoriteIds)) {
+        return $products;
+    }
+    
+    $favorites = [];
+    $others = [];
+    
+    foreach ($products as $product) {
+        if (in_array($product->id, $favoriteIds)) {
+            $favorites[] = $product;
+        } else {
+            $others[] = $product;
+        }
+    }
+    
+    // Сначала избранные, потом остальные
+    return array_merge($favorites, $others);
+};
+
+// Получаем товары и сортируем их
+$productsMain = Drop::getForMarket(true);
+$productsMain = $sortProductsByFavorite($productsMain, $favoriteDropIds);
+
+$products = Drop::getForMarket();
+$products = $sortProductsByFavorite($products, $favoriteDropIds);
 ?>
 
 <?php //if (!empty($getNextOpenFreeBoxDate)) {
@@ -184,14 +218,18 @@ $this->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
 //    'ROULETTE_ACCESS' => !empty($getNextOpenFreeBoxDate),
     'USER_GUEST' => Yii::$app->user->isGuest,
     'PRODUCTS_MAIN_BLOCK' => Yii::$app->view->render('products_main.twig', [
-        'PRODUCT_DROPS' => Drop::getForMarket(true),
+        'PRODUCT_DROPS' => $productsMain,
         'IMAGES' => $images,
         'SETTINGS' => $SETTINGS,
+        'FAVORITE_IDS' => $favoriteDropIds,
+        'USER_GUEST' => Yii::$app->user->isGuest,
     ]),
     'PRODUCTS' => Yii::$app->view->render('products.twig', [
-        'PRODUCT_DROPS' => Drop::getForMarket(),
+        'PRODUCT_DROPS' => $products,
         'IMAGES' => $images,
         'SETTINGS' => $SETTINGS,
+        'FAVORITE_IDS' => $favoriteDropIds,
+        'USER_GUEST' => Yii::$app->user->isGuest,
     ]),
     'CATEGORIES' => Yii::$app->view->render('categories.twig', [
         'ITEMS' => $categories,

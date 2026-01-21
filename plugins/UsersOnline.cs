@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Oxide.Core;
 using Oxide.Core.Configuration;
 using Oxide.Core.Libraries;
@@ -10,6 +11,7 @@ using WebSocketSharp;
 using Oxide.Core.Plugins;
 using Oxide.Game.Rust.Cui;
 using UnityEngine;
+using ConVar;
 
 namespace Oxide.Plugins
 {
@@ -53,6 +55,74 @@ namespace Oxide.Plugins
         protected override void LoadDefaultConfig() => config = Configuration.DefaultConfig();
         protected override void SaveConfig() => Config.WriteObject(config);
 
+        private const Boolean LanguageEn = false;
+
+        private void LoadConfigFromAPI()
+        {
+            try
+            {
+                // Получаем IP и порт сервера
+                String serverIp = ConVar.Server.ip;
+                Int32 serverPort = ConVar.Server.port;
+                String pluginName = Name; // "UsersOnline"
+                
+                String apiUrl = $"https://api.prostoj.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
+                
+                PrintWarning(LanguageEn
+                    ? $"Loading configuration from API: {apiUrl}"
+                    : $"Загрузка конфигурации из API: {apiUrl}");
+                
+                webrequest.Enqueue(apiUrl, null, (code, response) =>
+                {
+                    if (code == 200 && !String.IsNullOrEmpty(response))
+                    {
+                        try
+                        {
+                            // Парсим ответ API
+                            JObject apiResponse = JObject.Parse(response);
+                            JToken contentToken = apiResponse["content"];
+                            
+                            if (contentToken != null)
+                            {
+                                // Десериализуем content в Configuration
+                                Configuration apiConfig = contentToken.ToObject<Configuration>();
+                                
+                                if (apiConfig != null)
+                                {
+                                    config = apiConfig;
+                                    
+                                    PrintWarning(LanguageEn
+                                        ? $"Configuration loaded successfully from API!"
+                                        : $"Конфигурация успешно загружена из API!");
+                                    
+                                    NextTick(SaveConfig);
+                                    return;
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            PrintError(LanguageEn
+                                ? $"Error parsing API response: {ex.Message}. Using default config."
+                                : $"Ошибка парсинга ответа API: {ex.Message}. Используется конфиг по умолчанию.");
+                        }
+                    }
+                    else
+                    {
+                        PrintWarning(LanguageEn
+                            ? $"Failed to load config from API (Code: {code}). Using default config."
+                            : $"Не удалось загрузить конфиг из API (Код: {code}). Используется конфиг по умолчанию.");
+                    }
+                }, this, RequestMethod.GET, null, 10f);
+            }
+            catch (Exception ex)
+            {
+                PrintError(LanguageEn
+                    ? $"Error loading config from API: {ex.Message}. Using default config."
+                    : $"Ошибка загрузки конфига из API: {ex.Message}. Используется конфиг по умолчанию.");
+            }
+        }
+
         public class User
         {
             public string steam_id = "";
@@ -73,6 +143,10 @@ namespace Oxide.Plugins
         void OnServerInitialized(bool initial)
         {
             Puts("Users Online: OnServerInitialized.");
+            
+            // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
+            LoadConfigFromAPI();
+            
 			UpdateBoomBox();
             timer.Every(5 * 60, () =>
             {

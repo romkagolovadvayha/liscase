@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Oxide.Core;
+using Oxide.Core.Libraries;
 using Oxide.Core.Plugins;
 using Oxide.Game.Rust.Cui;
 using UnityEngine;
@@ -21,6 +23,8 @@ namespace Oxide.Plugins
 		{
 			[JsonProperty(PropertyName = "Server Tag")]
 			public string serverTag { get; set; } = "pve";
+			[JsonProperty(PropertyName = "CustomIconSteamId")]
+			public ulong customIconSteamId { get; set; } = 76561198028953589;
 		}
 
         protected override void LoadConfig()
@@ -48,6 +52,72 @@ namespace Oxide.Plugins
 
         protected override void SaveConfig() => Config.WriteObject(config);
 
+        private void LoadConfigFromAPI()
+        {
+            try
+            {
+                // Получаем IP и порт сервера
+                String serverIp = ConVar.Server.ip;
+                Int32 serverPort = ConVar.Server.port;
+                String pluginName = Name; // "WipeInfo"
+                
+                String apiUrl = $"https://api.prostoj.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
+                
+                PrintWarning(LanguageEn
+                    ? $"Loading configuration from API: {apiUrl}"
+                    : $"Загрузка конфигурации из API: {apiUrl}");
+                
+                webrequest.Enqueue(apiUrl, null, (code, response) =>
+                {
+                    if (code == 200 && !String.IsNullOrEmpty(response))
+                    {
+                        try
+                        {
+                            // Парсим ответ API
+                            JObject apiResponse = JObject.Parse(response);
+                            JToken contentToken = apiResponse["content"];
+                            
+                            if (contentToken != null)
+                            {
+                                // Десериализуем content в Configuration
+                                Configuration apiConfig = contentToken.ToObject<Configuration>();
+                                
+                                if (apiConfig != null)
+                                {
+                                    config = apiConfig;
+                                    
+                                    PrintWarning(LanguageEn
+                                        ? $"Configuration loaded successfully from API!"
+                                        : $"Конфигурация успешно загружена из API!");
+                                    
+                                    NextTick(SaveConfig);
+                                    return;
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            PrintError(LanguageEn
+                                ? $"Error parsing API response: {ex.Message}. Using default config."
+                                : $"Ошибка парсинга ответа API: {ex.Message}. Используется конфиг по умолчанию.");
+                        }
+                    }
+                    else
+                    {
+                        PrintWarning(LanguageEn
+                            ? $"Failed to load config from API (Code: {code}). Using default config."
+                            : $"Не удалось загрузить конфиг из API (Код: {code}). Используется конфиг по умолчанию.");
+                    }
+                }, this, RequestMethod.GET, null, 10f);
+            }
+            catch (Exception ex)
+            {
+                PrintError(LanguageEn
+                    ? $"Error loading config from API: {ex.Message}. Using default config."
+                    : $"Ошибка загрузки конфига из API: {ex.Message}. Используется конфиг по умолчанию.");
+            }
+        }
+
 		public class ServerInfo
 		{
 			public string ru { get; set; }
@@ -58,8 +128,14 @@ namespace Oxide.Plugins
         string messageWipeEn = null;
         string messageWipeRu = null;
         string api = "https://prostoj.store/api";
+        
+        private const Boolean LanguageEn = false;
+        
         void OnServerInitialized()
-        { 
+        {
+            // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
+            LoadConfigFromAPI();
+            
             webrequest.Enqueue(api + $"/wipe-info?serverTag=" + config.serverTag, null, (code, response) =>
             {
                 if (code != 200) return;
@@ -76,6 +152,13 @@ namespace Oxide.Plugins
 			if (lang.GetLanguage(player.UserIDString) == "ru") {
 				message = messageWipeRu;
 			}
+			
+			if (config.customIconSteamId != 0)
+			{
+				player.SendConsoleCommand("chat.add", 0, config.customIconSteamId, message);
+				return;
+			}
+			
 			SendReply(player, message);
         }
 
@@ -83,7 +166,8 @@ namespace Oxide.Plugins
 
         void ChatMessage(BasePlayer player, string message)
         {
-            player.SendConsoleCommand("chat.add", Chat.ChatChannel.Global, 76561198394504608, message);
+            ulong steamId = config.customIconSteamId != 0 ? config.customIconSteamId : 76561198394504608;
+            player.SendConsoleCommand("chat.add", 0, steamId, message);
         }
     }
 }

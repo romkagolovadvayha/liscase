@@ -4,6 +4,7 @@ namespace frontend\controllers;
 
 use common\controllers\WebController;
 use common\models\box\Drop;
+use common\models\box\DropFavorite;
 use common\models\box\Select;
 use common\models\box\Sets;
 use common\models\invoice\Invoice;
@@ -18,6 +19,7 @@ use yii\bootstrap5\LinkPager;
 use yii\helpers\ArrayHelper;
 use yii\web\HttpException;
 use yii\web\NotFoundHttpException;
+use yii\web\Response;
 use Yii;
 
 class MarketController extends WebController
@@ -33,6 +35,17 @@ class MarketController extends WebController
                 'class' => 'yii\web\ErrorAction',
             ],
         ];
+    }
+
+    /**
+     * Отключаем CSRF валидацию для AJAX действий
+     */
+    public function beforeAction($action)
+    {
+        if (in_array($action->id, ['toggle-favorite'])) {
+            $this->enableCsrfValidation = false;
+        }
+        return parent::beforeAction($action);
     }
 
     /**
@@ -178,6 +191,62 @@ class MarketController extends WebController
         return $this->renderAjax('form-modal-select', [
             'model' => $modelForm
         ]);
+    }
+
+    /**
+     * Добавляет/удаляет товар из избранного
+     *
+     * @return Response
+     */
+    public function actionToggleFavorite()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        if (Yii::$app->user->isGuest) {
+            return [
+                'success' => false,
+                'message' => Yii::t('common', 'Необходимо авторизоваться')
+            ];
+        }
+
+        // Получаем ID из POST или GET запроса
+        $id = Yii::$app->request->post('id') ?: Yii::$app->request->get('id');
+        
+        if (empty($id)) {
+            return [
+                'success' => false,
+                'message' => Yii::t('common', 'Не указан ID товара')
+            ];
+        }
+
+        $drop = Drop::findOne($id);
+        if (empty($drop)) {
+            return [
+                'success' => false,
+                'message' => Yii::t('common', 'Товар не найден')
+            ];
+        }
+
+        $userId = Yii::$app->user->id;
+        $isFavorite = DropFavorite::isFavorite($userId, $id);
+
+        if ($isFavorite) {
+            // Удаляем из избранного
+            DropFavorite::removeFromFavorite($userId, $id);
+            return [
+                'success' => true,
+                'isFavorite' => false,
+                'message' => Yii::t('common', 'Товар удален из избранного')
+            ];
+        } else {
+            // Добавляем в избранное
+            DropFavorite::addToFavorite($userId, $id);
+            return [
+                'success' => true,
+                'isFavorite' => true,
+                'message' => Yii::t('common', 'Товар добавлен в избранное')
+            ];
+        }
     }
 
     /**

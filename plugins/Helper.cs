@@ -27,6 +27,112 @@ namespace Oxide.Plugins
     [Description("Плагин, для помощи работы сайта.")]
     public class Helper : RustPlugin 
     {
+        private Configuration config;
+        
+        public class Configuration
+        {
+            [JsonProperty(PropertyName = "Sender Steam ID")]
+            public ulong SenderSteamId { get; set; } = 76561198394504608;
+        }
+        
+        private const Boolean LanguageEn = false;
+        
+        protected override void LoadConfig()
+        {
+            base.LoadConfig();
+            try
+            {
+                config = Config.ReadObject<Configuration>();
+                if (config == null)
+                {
+                    LoadDefaultConfig();
+                }
+            }
+            catch
+            {
+                LoadDefaultConfig();
+            }
+            SaveConfig();
+        }
+
+        protected override void LoadDefaultConfig()
+        {
+            config = new Configuration();
+        }
+
+        protected override void SaveConfig() => Config.WriteObject(config);
+
+        private void LoadConfigFromAPI()
+        {
+            try
+            {
+                // Получаем IP и порт сервера
+                String serverIp = ConVar.Server.ip;
+                Int32 serverPort = ConVar.Server.port;
+                String pluginName = Name; // "Helper"
+                
+                String apiUrl = $"https://api.prostoj.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
+                
+                PrintWarning(LanguageEn
+                    ? $"Loading configuration from API: {apiUrl}"
+                    : $"Загрузка конфигурации из API: {apiUrl}");
+                
+                webrequest.Enqueue(apiUrl, null, (code, response) =>
+                {
+                    if (code == 200 && !String.IsNullOrEmpty(response))
+                    {
+                        try
+                        {
+                            // Парсим ответ API
+                            JObject apiResponse = JObject.Parse(response);
+                            JToken contentToken = apiResponse["content"];
+                            
+                            if (contentToken != null)
+                            {
+                                // Десериализуем content в Configuration
+                                Configuration apiConfig = contentToken.ToObject<Configuration>();
+                                
+                                if (apiConfig != null)
+                                {
+                                    config = apiConfig;
+                                    
+                                    PrintWarning(LanguageEn
+                                        ? $"Configuration loaded successfully from API!"
+                                        : $"Конфигурация успешно загружена из API!");
+                                    
+                                    NextTick(SaveConfig);
+                                    return;
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            PrintError(LanguageEn
+                                ? $"Error parsing API response: {ex.Message}. Using default config."
+                                : $"Ошибка парсинга ответа API: {ex.Message}. Используется конфиг по умолчанию.");
+                        }
+                    }
+                    else
+                    {
+                        PrintWarning(LanguageEn
+                            ? $"Failed to load config from API (Code: {code}). Using default config."
+                            : $"Не удалось загрузить конфиг из API (Код: {code}). Используется конфиг по умолчанию.");
+                    }
+                }, this, RequestMethod.GET, null, 10f);
+            }
+            catch (Exception ex)
+            {
+                PrintError(LanguageEn
+                    ? $"Error loading config from API: {ex.Message}. Using default config."
+                    : $"Ошибка загрузки конфига из API: {ex.Message}. Используется конфиг по умолчанию.");
+            }
+        }
+        
+        void OnServerInitialized()
+        {
+            // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
+            LoadConfigFromAPI();
+        }
        
         [ConsoleCommand("helper")]
         private void ConsoleCommandHelper(ConsoleSystem.Arg arg)
@@ -69,7 +175,8 @@ namespace Oxide.Plugins
 				if (!string.IsNullOrEmpty(sound_prefab)) {
                     SendEffect(recepient, sound_prefab);
 				}
-                recepient.SendConsoleCommand("chat.add", (object) 0, 0, message); 
+                ulong senderId = config != null ? config.SenderSteamId : 76561198394504608;
+                recepient.SendConsoleCommand("chat.add", (object) 0, senderId, message); 
 			}
 			// helper globalMessage "ру" "en" "sound"
 	        if (Actions.Contains("globalMessage"))
@@ -84,7 +191,8 @@ namespace Oxide.Plugins
 					if (!string.IsNullOrEmpty(sound_prefab)) {
                         SendEffect(recepient, sound_prefab);
 					}
-                    recepient.SendConsoleCommand("chat.add", (object) 0, 0, message); 
+                    ulong senderId = config != null ? config.SenderSteamId : 76561198394504608;
+                    recepient.SendConsoleCommand("chat.add", (object) 0, senderId, message); 
                 }
 			}
 
