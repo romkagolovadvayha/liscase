@@ -115,8 +115,19 @@ class DropImage extends ActiveRecord
             return false;
         }
 
+        // Проверяем, что исходный файл существует и доступен для чтения
+        if (!file_exists($sourcePath) || !is_readable($sourcePath)) {
+            \Yii::error('Source image file does not exist or is not readable: ' . $sourcePath, __METHOD__);
+            return false;
+        }
+
         // Открытие оригинального изображения
-        $image = Image::getImagine()->open($sourcePath);
+        try {
+            $image = Image::getImagine()->open($sourcePath);
+        } catch (\Exception $e) {
+            \Yii::error('Failed to open image file: ' . $sourcePath . ' - ' . $e->getMessage(), __METHOD__);
+            return false;
+        }
         $size = $image->getSize();
 
         $maxWidth = $newSize;
@@ -134,16 +145,27 @@ class DropImage extends ActiveRecord
         $resizedImage = $image->resize($box);
 
         if (!file_exists(dirname($destinationPath))) {
-            mkdir(dirname($destinationPath));
+            mkdir(dirname($destinationPath), 0777, true);
             chmod(dirname($destinationPath), 0777);
         }
 
         // Сохранение в PNG с уровнем сжатия 6 (примерно 70%)
-        $resizedImage->save($destinationPath, [
-            'format' => 'png',
-            'png_compression_level' => 9, // 0 — без сжатия, 9 — максимум
-            'flatten' => false, // сохраняет прозрачность
-        ]);
+        try {
+            $resizedImage->save($destinationPath, [
+                'format' => 'png',
+                'png_compression_level' => 9, // 0 — без сжатия, 9 — максимум
+                'flatten' => false, // сохраняет прозрачность
+            ]);
+            
+            // Проверяем, что файл был успешно создан
+            if (!file_exists($destinationPath) || !is_readable($destinationPath)) {
+                \Yii::error('Failed to save resized image to: ' . $destinationPath, __METHOD__);
+                return false;
+            }
+        } catch (\Exception $e) {
+            \Yii::error('Exception while saving resized image: ' . $destinationPath . ' - ' . $e->getMessage(), __METHOD__);
+            return false;
+        }
 
         if ($newSize == 150 || $newSize == 64 || $newSize == 200) {
             \Tinify\setKey("dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8"); // ← сюда свой ключ

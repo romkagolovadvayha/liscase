@@ -82,7 +82,18 @@ class ServerSkinForm extends ServerSkin
         $creatorSteamId = $info['creator'];
         $creatorUser = User::findBySteamId($creatorSteamId);
 
-        $imagePath = $this->_loadImage(file_get_contents($preview));
+        // Загружаем изображение превью
+        $imageData = @file_get_contents($preview);
+        if ($imageData === false || empty($imageData)) {
+            $this->addError('steam_link', Yii::t('common', 'Не удалось загрузить изображение превью скина'));
+            return false;
+        }
+
+        $imagePath = $this->_loadImage($imageData);
+        if (empty($imagePath)) {
+            $this->addError('steam_link', Yii::t('common', 'Ошибка обработки изображения превью'));
+            return false;
+        }
         $this->name = $title;
         $this->skin_id = $skinId;
         $this->image = $imagePath;
@@ -138,16 +149,50 @@ class ServerSkinForm extends ServerSkin
         
         // Сохраняем оригинал во временный файл
         $tempOriginal = $tempDir . '/' . uniqid('skin_orig_') . '.png';
-        file_put_contents($tempOriginal, $image);
+        $bytesWritten = file_put_contents($tempOriginal, $image);
+        
+        // Проверяем, что файл был успешно записан и существует
+        if ($bytesWritten === false || !file_exists($tempOriginal) || !is_readable($tempOriginal)) {
+            Yii::error('Failed to write temporary image file: ' . $tempOriginal, __METHOD__);
+            return null;
+        }
+        
+        // Проверяем, что это валидное изображение
+        if (!@getimagesize($tempOriginal)) {
+            Yii::error('Invalid image data in temporary file: ' . $tempOriginal, __METHOD__);
+            @unlink($tempOriginal);
+            return null;
+        }
         
         // Создаем превью разных размеров во временных файлах
         $temp200 = $tempDir . '/' . uniqid('skin_200_') . '.png';
         $temp64 = $tempDir . '/' . uniqid('skin_64_') . '.png';
         $temp150 = $tempDir . '/' . uniqid('skin_150_') . '.png';
         
-        DropImage::resizeImage($tempOriginal, $temp200, 200);
-        DropImage::resizeImage($tempOriginal, $temp64, 64);
-        DropImage::resizeImage($tempOriginal, $temp150, 150);
+        // Создаем ресайзы, проверяя успешность операции
+        $resize200 = DropImage::resizeImage($tempOriginal, $temp200, 200);
+        $resize64 = DropImage::resizeImage($tempOriginal, $temp64, 64);
+        $resize150 = DropImage::resizeImage($tempOriginal, $temp150, 150);
+        
+        // Проверяем, что ресайзы были созданы успешно
+        if (!$resize200 || !file_exists($temp200)) {
+            Yii::error('Failed to create 200px resize for server skin', __METHOD__);
+            @unlink($tempOriginal);
+            return null;
+        }
+        if (!$resize64 || !file_exists($temp64)) {
+            Yii::error('Failed to create 64px resize for server skin', __METHOD__);
+            @unlink($tempOriginal);
+            @unlink($temp200);
+            return null;
+        }
+        if (!$resize150 || !file_exists($temp150)) {
+            Yii::error('Failed to create 150px resize for server skin', __METHOD__);
+            @unlink($tempOriginal);
+            @unlink($temp200);
+            @unlink($temp64);
+            return null;
+        }
         
         // Загружаем все версии в S3
         $s3KeyOriginal = 'uploads/server-skin/' . $filename;
