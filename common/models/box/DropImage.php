@@ -128,25 +128,51 @@ class DropImage extends ActiveRecord
             \Yii::error('Failed to open image file: ' . $sourcePath . ' - ' . $e->getMessage(), __METHOD__);
             return false;
         }
+        
         $size = $image->getSize();
+        $originalWidth = $size->getWidth();
+        $originalHeight = $size->getHeight();
+        
+        // Проверяем, что изображение имеет валидные размеры
+        if ($originalWidth <= 0 || $originalHeight <= 0) {
+            \Yii::error('Invalid image dimensions: ' . $originalWidth . 'x' . $originalHeight . ' for file: ' . $sourcePath, __METHOD__);
+            return false;
+        }
 
         $maxWidth = $newSize;
         $maxHeight = $newSize;
 
         // Расчет масштабного коэффициента
-        $ratio = min($maxWidth / $size->getWidth(), $maxHeight / $size->getHeight(), 1);
+        $ratio = min($maxWidth / $originalWidth, $maxHeight / $originalHeight, 1);
 
         // Новые размеры
-        $newWidth = (int)($size->getWidth() * $ratio);
-        $newHeight = (int)($size->getHeight() * $ratio);
+        $newWidth = (int)($originalWidth * $ratio);
+        $newHeight = (int)($originalHeight * $ratio);
+        
+        // Проверяем, что новые размеры валидны
+        if ($newWidth <= 0 || $newHeight <= 0) {
+            \Yii::error('Invalid calculated dimensions: ' . $newWidth . 'x' . $newHeight . ' for size: ' . $newSize, __METHOD__);
+            return false;
+        }
+        
         $box = new \Imagine\Image\Box($newWidth, $newHeight);
 
         // Создание уменьшенного изображения с сохранением пропорций
-        $resizedImage = $image->resize($box);
+        try {
+            $resizedImage = $image->resize($box);
+        } catch (\Exception $e) {
+            \Yii::error('Failed to resize image: ' . $sourcePath . ' to ' . $newWidth . 'x' . $newHeight . ' - ' . $e->getMessage(), __METHOD__);
+            return false;
+        }
 
-        if (!file_exists(dirname($destinationPath))) {
-            mkdir(dirname($destinationPath), 0777, true);
-            chmod(dirname($destinationPath), 0777);
+        // Создаем директорию для файла назначения, если она не существует
+        $destinationDir = dirname($destinationPath);
+        if ($destinationDir !== '.' && $destinationDir !== '/' && !file_exists($destinationDir)) {
+            if (!@mkdir($destinationDir, 0777, true)) {
+                \Yii::error('Failed to create destination directory: ' . $destinationDir, __METHOD__);
+                return false;
+            }
+            @chmod($destinationDir, 0777);
         }
 
         // Сохранение в PNG с уровнем сжатия 6 (примерно 70%)
@@ -168,47 +194,57 @@ class DropImage extends ActiveRecord
         }
 
         if ($newSize == 150 || $newSize == 64 || $newSize == 200) {
+            // Пытаемся сжать изображение через Tinify (не критично, если не получится)
+            $tinifySuccess = false;
             \Tinify\setKey("dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8"); // ← сюда свой ключ
             try {
                 $source = \Tinify\fromFile($destinationPath);
                 $source->toFile($destinationPath); // перезаписывает исходный файл
+                $tinifySuccess = true;
             } catch(\Tinify\Exception $e) {
                 \Tinify\setKey("SQMyJN0ZNs1zQfzrwBjMcsRHCnpffCbl"); // ← сюда свой ключ
                 try {
                     $source = \Tinify\fromFile($destinationPath);
                     $source->toFile($destinationPath); // перезаписывает исходный файл
+                    $tinifySuccess = true;
                 } catch(\Tinify\Exception $e) {
                     \Tinify\setKey("8DTWnyW4m99062qs1X7p6dGgFcjM3Gb7"); // ← сюда свой ключ
                     try {
                         $source = \Tinify\fromFile($destinationPath);
                         $source->toFile($destinationPath); // перезаписывает исходный файл
+                        $tinifySuccess = true;
                     } catch(\Tinify\Exception $e) {
                         \Tinify\setKey("yq4GXtx6DlyJhqWmgH0f5JPYYw68JNZY"); // ← сюда свой ключ
                         try {
                             $source = \Tinify\fromFile($destinationPath);
                             $source->toFile($destinationPath); // перезаписывает исходный файл
+                            $tinifySuccess = true;
                         } catch(\Tinify\Exception $e) {
                             \Tinify\setKey("vtKS1W5X6sFdtyxgkvMfB58NzCPYT31X"); // ← сюда свой ключ
                             try {
                                 $source = \Tinify\fromFile($destinationPath);
                                 $source->toFile($destinationPath); // перезаписывает исходный файл
+                                $tinifySuccess = true;
                             } catch(\Tinify\Exception $e) {
                                 \Tinify\setKey("WmKCQdqXYJFhYtC2H8LgJwsk83Lm8L3h"); // ← сюда свой ключ
                                 try {
                                     $source = \Tinify\fromFile($destinationPath);
                                     $source->toFile($destinationPath); // перезаписывает исходный файл
+                                    $tinifySuccess = true;
                                 } catch(\Tinify\Exception $e) {
                                     \Tinify\setKey("Lzh9MLcXk3NVNw9cNDZLGl6jWGkdHySw"); // ← сюда свой ключ
                                     try {
                                         $source = \Tinify\fromFile($destinationPath);
                                         $source->toFile($destinationPath); // перезаписывает исходный файл
+                                        $tinifySuccess = true;
                                     } catch(\Tinify\Exception $e) {
                                         \Tinify\setKey("DFtVM70njvNkKXNBTkbQBB2nRHXjh59s"); // ← сюда свой ключ
                                         try {
                                             $source = \Tinify\fromFile($destinationPath);
                                             $source->toFile($destinationPath); // перезаписывает исходный файл
+                                            $tinifySuccess = true;
                                         } catch(\Tinify\Exception $e) {
-                                            Yii::error("TinyPNG compression error: " . $e->getMessage());
+                                            \Yii::error("TinyPNG compression error: " . $e->getMessage(), __METHOD__);
                                         }
                                     }
                                 }
@@ -216,6 +252,12 @@ class DropImage extends ActiveRecord
                         }
                     }
                 }
+            }
+            
+            // Проверяем, что файл все еще существует после попыток сжатия
+            if (!file_exists($destinationPath) || !is_readable($destinationPath)) {
+                \Yii::error('File was deleted or became unreadable after Tinify compression: ' . $destinationPath, __METHOD__);
+                return false;
             }
         }
 

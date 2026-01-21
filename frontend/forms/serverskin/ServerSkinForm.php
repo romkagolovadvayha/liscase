@@ -145,20 +145,50 @@ class ServerSkinForm extends ServerSkin
         
         $s3Api = Yii::$app->s3Api;
         $tempDir = sys_get_temp_dir();
+        
+        // Проверяем, что временная директория существует и доступна для записи
+        if (!is_dir($tempDir) || !is_writable($tempDir)) {
+            Yii::error('Temporary directory is not writable: ' . $tempDir, __METHOD__);
+            return null;
+        }
+        
         $filename = $this->id . "_" . md5(time()) . ".png";
         
-        // Сохраняем оригинал во временный файл
-        $tempOriginal = $tempDir . '/' . uniqid('skin_orig_') . '.png';
+        // Определяем формат изображения по содержимому
+        $imageInfo = @getimagesizefromstring($image);
+        if ($imageInfo === false) {
+            Yii::error('Invalid image data provided to _loadImage', __METHOD__);
+            return null;
+        }
+        
+        // Определяем расширение на основе MIME типа
+        $extension = 'png';
+        if (!empty($imageInfo['mime'])) {
+            $mimeToExt = [
+                'image/jpeg' => 'jpg',
+                'image/jpg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'image/webp' => 'webp',
+            ];
+            if (isset($mimeToExt[$imageInfo['mime']])) {
+                $extension = $mimeToExt[$imageInfo['mime']];
+            }
+        }
+        
+        // Сохраняем оригинал во временный файл с правильным расширением
+        $tempOriginal = $tempDir . '/' . uniqid('skin_orig_') . '.' . $extension;
         $bytesWritten = file_put_contents($tempOriginal, $image);
         
         // Проверяем, что файл был успешно записан и существует
         if ($bytesWritten === false || !file_exists($tempOriginal) || !is_readable($tempOriginal)) {
-            Yii::error('Failed to write temporary image file: ' . $tempOriginal, __METHOD__);
+            Yii::error('Failed to write temporary image file: ' . $tempOriginal . ' (bytes written: ' . ($bytesWritten !== false ? $bytesWritten : 'false') . ')', __METHOD__);
             return null;
         }
         
         // Проверяем, что это валидное изображение
-        if (!@getimagesize($tempOriginal)) {
+        $imageSize = @getimagesize($tempOriginal);
+        if ($imageSize === false) {
             Yii::error('Invalid image data in temporary file: ' . $tempOriginal, __METHOD__);
             @unlink($tempOriginal);
             return null;
@@ -176,18 +206,18 @@ class ServerSkinForm extends ServerSkin
         
         // Проверяем, что ресайзы были созданы успешно
         if (!$resize200 || !file_exists($temp200)) {
-            Yii::error('Failed to create 200px resize for server skin', __METHOD__);
+            Yii::error('Failed to create 200px resize for server skin. Original exists: ' . (file_exists($tempOriginal) ? 'yes' : 'no') . ', Resize result: ' . ($resize200 ? 'true' : 'false') . ', File exists: ' . (file_exists($temp200) ? 'yes' : 'no'), __METHOD__);
             @unlink($tempOriginal);
             return null;
         }
         if (!$resize64 || !file_exists($temp64)) {
-            Yii::error('Failed to create 64px resize for server skin', __METHOD__);
+            Yii::error('Failed to create 64px resize for server skin. Original exists: ' . (file_exists($tempOriginal) ? 'yes' : 'no') . ', Resize result: ' . ($resize64 ? 'true' : 'false') . ', File exists: ' . (file_exists($temp64) ? 'yes' : 'no'), __METHOD__);
             @unlink($tempOriginal);
             @unlink($temp200);
             return null;
         }
         if (!$resize150 || !file_exists($temp150)) {
-            Yii::error('Failed to create 150px resize for server skin', __METHOD__);
+            Yii::error('Failed to create 150px resize for server skin. Original exists: ' . (file_exists($tempOriginal) ? 'yes' : 'no') . ', Resize result: ' . ($resize150 ? 'true' : 'false') . ', File exists: ' . (file_exists($temp150) ? 'yes' : 'no'), __METHOD__);
             @unlink($tempOriginal);
             @unlink($temp200);
             @unlink($temp64);
