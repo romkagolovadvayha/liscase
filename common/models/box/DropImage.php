@@ -183,75 +183,58 @@ class DropImage extends ActiveRecord
                 'flatten' => false, // сохраняет прозрачность
             ]);
             
+            // Небольшая задержка для гарантии записи на диск
+            usleep(10000); // 10ms
+            
             // Проверяем, что файл был успешно создан
-            if (!file_exists($destinationPath) || !is_readable($destinationPath)) {
-                \Yii::error('Failed to save resized image to: ' . $destinationPath, __METHOD__);
+            if (!file_exists($destinationPath)) {
+                \Yii::error('Failed to save resized image to: ' . $destinationPath . ' - file does not exist after save', __METHOD__);
+                return false;
+            }
+            if (!is_readable($destinationPath)) {
+                \Yii::error('Failed to save resized image to: ' . $destinationPath . ' - file is not readable', __METHOD__);
+                return false;
+            }
+            if (filesize($destinationPath) === 0) {
+                \Yii::error('Failed to save resized image to: ' . $destinationPath . ' - file is empty', __METHOD__);
+                @unlink($destinationPath);
                 return false;
             }
         } catch (\Exception $e) {
-            \Yii::error('Exception while saving resized image: ' . $destinationPath . ' - ' . $e->getMessage(), __METHOD__);
+            \Yii::error('Exception while saving resized image: ' . $destinationPath . ' - ' . $e->getMessage() . ' (' . get_class($e) . ')', __METHOD__);
+            return false;
+        } catch (\Throwable $e) {
+            \Yii::error('Throwable while saving resized image: ' . $destinationPath . ' - ' . $e->getMessage() . ' (' . get_class($e) . ')', __METHOD__);
             return false;
         }
 
         if ($newSize == 150 || $newSize == 64 || $newSize == 200) {
             // Пытаемся сжать изображение через Tinify (не критично, если не получится)
+            // Используем только первый ключ с коротким таймаутом для быстрой обработки
             $tinifySuccess = false;
-            \Tinify\setKey("dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8"); // ← сюда свой ключ
             try {
+                // Устанавливаем таймаут для Tinify (если поддерживается)
+                if (method_exists('\Tinify\Tinify', 'setTimeout')) {
+                    \Tinify\Tinify::setTimeout(3); // 3 секунды таймаут
+                }
+                \Tinify\setKey("dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8"); // ← сюда свой ключ
                 $source = \Tinify\fromFile($destinationPath);
                 $source->toFile($destinationPath); // перезаписывает исходный файл
                 $tinifySuccess = true;
             } catch(\Tinify\Exception $e) {
-                \Tinify\setKey("SQMyJN0ZNs1zQfzrwBjMcsRHCnpffCbl"); // ← сюда свой ключ
+                // Если первый ключ не сработал, пробуем еще один раз, но не все ключи
                 try {
+                    \Tinify\setKey("SQMyJN0ZNs1zQfzrwBjMcsRHCnpffCbl"); // ← сюда свой ключ
                     $source = \Tinify\fromFile($destinationPath);
-                    $source->toFile($destinationPath); // перезаписывает исходный файл
+                    $source->toFile($destinationPath);
                     $tinifySuccess = true;
-                } catch(\Tinify\Exception $e) {
-                    \Tinify\setKey("8DTWnyW4m99062qs1X7p6dGgFcjM3Gb7"); // ← сюда свой ключ
-                    try {
-                        $source = \Tinify\fromFile($destinationPath);
-                        $source->toFile($destinationPath); // перезаписывает исходный файл
-                        $tinifySuccess = true;
-                    } catch(\Tinify\Exception $e) {
-                        \Tinify\setKey("yq4GXtx6DlyJhqWmgH0f5JPYYw68JNZY"); // ← сюда свой ключ
-                        try {
-                            $source = \Tinify\fromFile($destinationPath);
-                            $source->toFile($destinationPath); // перезаписывает исходный файл
-                            $tinifySuccess = true;
-                        } catch(\Tinify\Exception $e) {
-                            \Tinify\setKey("vtKS1W5X6sFdtyxgkvMfB58NzCPYT31X"); // ← сюда свой ключ
-                            try {
-                                $source = \Tinify\fromFile($destinationPath);
-                                $source->toFile($destinationPath); // перезаписывает исходный файл
-                                $tinifySuccess = true;
-                            } catch(\Tinify\Exception $e) {
-                                \Tinify\setKey("WmKCQdqXYJFhYtC2H8LgJwsk83Lm8L3h"); // ← сюда свой ключ
-                                try {
-                                    $source = \Tinify\fromFile($destinationPath);
-                                    $source->toFile($destinationPath); // перезаписывает исходный файл
-                                    $tinifySuccess = true;
-                                } catch(\Tinify\Exception $e) {
-                                    \Tinify\setKey("Lzh9MLcXk3NVNw9cNDZLGl6jWGkdHySw"); // ← сюда свой ключ
-                                    try {
-                                        $source = \Tinify\fromFile($destinationPath);
-                                        $source->toFile($destinationPath); // перезаписывает исходный файл
-                                        $tinifySuccess = true;
-                                    } catch(\Tinify\Exception $e) {
-                                        \Tinify\setKey("DFtVM70njvNkKXNBTkbQBB2nRHXjh59s"); // ← сюда свой ключ
-                                        try {
-                                            $source = \Tinify\fromFile($destinationPath);
-                                            $source->toFile($destinationPath); // перезаписывает исходный файл
-                                            $tinifySuccess = true;
-                                        } catch(\Tinify\Exception $e) {
-                                            \Yii::error("TinyPNG compression error: " . $e->getMessage(), __METHOD__);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                } catch(\Tinify\Exception $e2) {
+                    // Пропускаем остальные ключи для ускорения - просто логируем
+                    \Yii::info('Tinify compression skipped: ' . $e2->getMessage(), __METHOD__);
                 }
+            } catch(\Exception $e) {
+                // Любая другая ошибка - просто пропускаем сжатие
+                \Yii::info('Tinify compression error: ' . $e->getMessage(), __METHOD__);
             }
             
             // Проверяем, что файл все еще существует после попыток сжатия
@@ -259,8 +242,10 @@ class DropImage extends ActiveRecord
                 \Yii::error('File was deleted or became unreadable after Tinify compression: ' . $destinationPath, __METHOD__);
                 return false;
             }
+            
+            return true;
         }
-
+        
         return true;
     }
 }

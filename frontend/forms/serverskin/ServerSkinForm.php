@@ -82,10 +82,22 @@ class ServerSkinForm extends ServerSkin
         $creatorSteamId = $info['creator'];
         $creatorUser = User::findBySteamId($creatorSteamId);
 
-        // Загружаем изображение превью
-        $imageData = @file_get_contents($preview);
+        // Загружаем изображение превью с таймаутом
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 10, // 10 секунд таймаут
+                'ignore_errors' => true,
+            ]
+        ]);
+        $imageData = @file_get_contents($preview, false, $context);
         if ($imageData === false || empty($imageData)) {
             $this->addError('steam_link', Yii::t('common', 'Не удалось загрузить изображение превью скина'));
+            return false;
+        }
+        
+        // Проверяем размер файла (максимум 10MB)
+        if (strlen($imageData) > 10 * 1024 * 1024) {
+            $this->addError('steam_link', Yii::t('common', 'Изображение слишком большое (максимум 10MB)'));
             return false;
         }
 
@@ -161,6 +173,18 @@ class ServerSkinForm extends ServerSkin
             return null;
         }
         
+        // Быстрая проверка размеров изображения (максимум 10000x10000)
+        if (isset($imageInfo[0]) && isset($imageInfo[1])) {
+            if ($imageInfo[0] > 10000 || $imageInfo[1] > 10000) {
+                Yii::error('Image dimensions too large: ' . $imageInfo[0] . 'x' . $imageInfo[1], __METHOD__);
+                return null;
+            }
+            if ($imageInfo[0] <= 0 || $imageInfo[1] <= 0) {
+                Yii::error('Invalid image dimensions: ' . $imageInfo[0] . 'x' . $imageInfo[1], __METHOD__);
+                return null;
+            }
+        }
+        
         // Определяем расширение на основе MIME типа
         $extension = 'png';
         if (!empty($imageInfo['mime'])) {
@@ -194,28 +218,36 @@ class ServerSkinForm extends ServerSkin
             return null;
         }
         
+        // Быстрая проверка размера файла на диске
+        $fileSize = filesize($tempOriginal);
+        if ($fileSize === false || $fileSize > 10 * 1024 * 1024) {
+            Yii::error('Image file too large: ' . $fileSize . ' bytes', __METHOD__);
+            @unlink($tempOriginal);
+            return null;
+        }
+        
         // Создаем превью разных размеров во временных файлах
         $temp200 = $tempDir . '/' . uniqid('skin_200_') . '.png';
         $temp64 = $tempDir . '/' . uniqid('skin_64_') . '.png';
         $temp150 = $tempDir . '/' . uniqid('skin_150_') . '.png';
         
-        // Создаем ресайзы, проверяя успешность операции
+        // Создаем ресайзы по одному, сразу проверяя результат для быстрого возврата ошибки
         $resize200 = DropImage::resizeImage($tempOriginal, $temp200, 200);
-        $resize64 = DropImage::resizeImage($tempOriginal, $temp64, 64);
-        $resize150 = DropImage::resizeImage($tempOriginal, $temp150, 150);
-        
-        // Проверяем, что ресайзы были созданы успешно
         if (!$resize200 || !file_exists($temp200)) {
             Yii::error('Failed to create 200px resize for server skin. Original exists: ' . (file_exists($tempOriginal) ? 'yes' : 'no') . ', Resize result: ' . ($resize200 ? 'true' : 'false') . ', File exists: ' . (file_exists($temp200) ? 'yes' : 'no'), __METHOD__);
             @unlink($tempOriginal);
             return null;
         }
+        
+        $resize64 = DropImage::resizeImage($tempOriginal, $temp64, 64);
         if (!$resize64 || !file_exists($temp64)) {
             Yii::error('Failed to create 64px resize for server skin. Original exists: ' . (file_exists($tempOriginal) ? 'yes' : 'no') . ', Resize result: ' . ($resize64 ? 'true' : 'false') . ', File exists: ' . (file_exists($temp64) ? 'yes' : 'no'), __METHOD__);
             @unlink($tempOriginal);
             @unlink($temp200);
             return null;
         }
+        
+        $resize150 = DropImage::resizeImage($tempOriginal, $temp150, 150);
         if (!$resize150 || !file_exists($temp150)) {
             Yii::error('Failed to create 150px resize for server skin. Original exists: ' . (file_exists($tempOriginal) ? 'yes' : 'no') . ', Resize result: ' . ($resize150 ? 'true' : 'false') . ', File exists: ' . (file_exists($temp150) ? 'yes' : 'no'), __METHOD__);
             @unlink($tempOriginal);
