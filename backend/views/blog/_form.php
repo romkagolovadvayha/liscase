@@ -26,10 +26,18 @@ $csrfToken = Yii::$app->request->getCsrfToken();
     <?php if ($model->isNewRecord): ?>
         <p>Возможность загрузить главное изображение появится после публикации новости</p>
     <?php else: ?>
-        <a href="/blog-image/create?blogId=<?=$model->id?>" class="btn btn-primary show-modal-link"
-           data-toggl="modal"
-           data-target="modal-dialog"
-           data-title="Загрузить изображение">Загрузить главное изображение</a>
+        <div class="form-group">
+            <label>Главное изображение</label>
+            <div>
+                <a href="/blog-image/create?blogId=<?=$model->id?>" class="btn btn-primary show-modal-link"
+                   data-toggl="modal"
+                   data-target="modal-dialog"
+                   data-title="Загрузить изображение">Загрузить главное изображение</a>
+            </div>
+            <?=$this->render('list-images', [
+                'blogId' => $model->id,
+            ])?>
+        </div>
     <?php endif; ?>
 
     <?= $form->field($model, 'content')->widget(\dosamigos\tinymce\TinyMce::class, [
@@ -135,10 +143,6 @@ $csrfToken = Yii::$app->request->getCsrfToken();
     ]) ?>
 
     <?= $form->field($model, 'status')->dropDownList(\common\models\blog\Blog::getStatusList()) ?>
-
-    <?=$this->render('list-images', [
-            'blogId' => $model->id,
-        ])?>
 
     <div class="form-group">
         <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
