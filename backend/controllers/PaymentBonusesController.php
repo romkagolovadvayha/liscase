@@ -25,12 +25,12 @@ class PaymentBonusesController extends Controller
             [
                 'access' => [
                     'class' => AccessControl::class,
-                    'rules' => [
-                        [
-                            'allow' => true,
-                            'roles' => [Role::ROLE_ADMIN],
-                        ],
+                'rules' => [
+                    [
+                        'allow' => true,
+                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
                     ],
+                ],
                 ],
                 'verbs' => [
                     'class' => VerbFilter::className(),

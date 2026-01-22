@@ -71,7 +71,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                        'label' => 'Сервера',
                        'icon' => 'fas fa-gamepad',
                        'url' => [''],
-                       'visibility' => $moder,
+                       'visibility' => $admin,
                        'active' => _checkActive('/servers') || _checkActive('/map-list') || _checkActive('/rust-plugin-config'),
                        'items' => [
                            [
@@ -119,7 +119,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                          'label' => 'Репорты',
                          'icon' => 'fa-solid fa-flag',
                          'url' => ['/reports'],
-                         'visibility' => $moder,
+                         'visibility' => $admin,
                          'active' => _checkActive('/reports'),
                     ],
                    [
@@ -157,7 +157,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                        'icon' => 'fa-solid fa-music',
                        'badgeDanger' => $radioBadge,
                        'url' => [''],
-                       'visibility' => Yii::$app->settings->get('site_section_radio') && $moder,
+                       'visibility' => Yii::$app->settings->get('site_section_radio') && $admin,
                        'active' => _checkActive('/radio'),
                        'items' => [
                            [
@@ -246,7 +246,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                        'label'  => Yii::t('common', 'Категории'),
                        'url'    => '/category/index',
                        'icon'   => 'fa-solid fa-table-cells',
-                       'visibility' => $moder,
+                       'visibility' => $admin,
                        'active' => _checkActive('/category/'),
                    ],
                    [
@@ -260,7 +260,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                        'label'  => Yii::t('common', 'Стикеры поддержки'),
                        'icon'   => 'fa-regular fa-face-smile',
                        'url'    => '/support-sticker',
-                       'visibility' => $admin,
+                       'visibility' => $moder,
                        'active' => _checkActive('/support-sticker'),
                    ],
                     [
@@ -306,7 +306,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                                'label'  => Yii::t('common', 'При пополнении'),
                                'icon'   => 'fa-solid fa-ruble-sign',
                                'url'    => '/payment-bonuses',
-                               'visibility' => $admin,
+                               'visibility' => $moder,
                                'active' => _checkActive('/payment-bonuses'),
                            ],
                        ]
@@ -314,7 +314,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                    [
                        'label' => 'Настройки',
                        'icon' => 'fas fa-cog',
-                       'visibility' => $moder,
+                       'visibility' => $admin,
                        'active' => _checkActive('/settings'),
                        'items' => [
                            [
