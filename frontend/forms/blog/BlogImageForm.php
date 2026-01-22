@@ -58,7 +58,7 @@ class BlogImageForm extends BlogImage
         
         // Загружаем в S3
         $s3Api = Yii::$app->s3Api;
-        $s3Key = 'uploads/blog/' . $fileName;
+        $s3Key = 'blog/' . $fileName;
         $fileContent = file_get_contents($file->tempName);
         $s3Result = $s3Api->putFile($s3Key, $fileContent, $contentType);
         
