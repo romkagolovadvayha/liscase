@@ -150,7 +150,7 @@ class BlogController extends WebController
                                                       ->all();
 
         // на всякий случай фиксируем pageSize
-        $dataProvider->pagination->pageSize = 10;
+        $dataProvider->pagination->pageSize = 20;
         return $this->render('category', [
             'blogCategory' => $blogCategory,
             'dataProvider' => $dataProvider,
@@ -169,7 +169,7 @@ class BlogController extends WebController
         $searchModel  = new \backend\models\blog\BlogSearch();
         $dataProvider = $this->_getDataProvider($searchModel);
 
-        $dataProvider->pagination->pageSize = 10;
+        $dataProvider->pagination->pageSize = 20;
 
         if (!empty($searchModel->name)) {
             $dataProvider->setTotalCount(

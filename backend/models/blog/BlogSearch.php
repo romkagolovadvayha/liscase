@@ -54,7 +54,7 @@ class BlogSearch extends Blog
      */
     public function search($params, callable $filter = null)
     {
-        $query = BlogSearch::find()->alias('b')->joinWith(['blogCategory bc', 'blogImages i', 'blogRatings r', 'comments c', 'blogCategory.parentCategory pc']);
+        $query = BlogSearch::find()->alias('b')->distinct()->joinWith(['blogCategory bc', 'blogImages i', 'blogRatings r', 'comments c', 'blogCategory.parentCategory pc'])->groupBy('b.id');
 
         if (is_callable($filter)) {
             call_user_func($filter, $query);
@@ -63,7 +63,7 @@ class BlogSearch extends Blog
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'pagination' => [
-                'pageSize' => 10,
+                'pageSize' => 20,
             ],
             'sort'  => [
                 'defaultOrder' => ['created_at' => SORT_DESC],

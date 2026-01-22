@@ -61,7 +61,8 @@ $cacheData = Yii::$app->cache->get('actionGeneratePosts');
                 },
             ],
             [
-                'attribute' => 'created_at',
+                'attribute' => 'update_at',
+                'label' => 'Дата обновления',
                 'options'   => ['width' => '200'],
             ],
             [

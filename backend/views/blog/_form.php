@@ -21,7 +21,6 @@ $csrfToken = Yii::$app->request->getCsrfToken();
 
     <?= $form->field($model, 'name')->textInput() ?>
 
-    <?= $form->field($model, 'keywords')->textInput() ?>
     <?= $form->field($model, 'description')->textarea(['rows' => 3]) ?>
 
     <?php if ($model->isNewRecord): ?>

@@ -21,6 +21,7 @@ use yii2mod\comments\models\CommentModel;
  * @property string $link_name
  * @property int $status
  * @property string $created_at
+ * @property string $update_at
  * @property string $news_id
  *
  * @property BlogCategory $blogCategory
@@ -52,6 +53,13 @@ class Blog extends \yii\db\ActiveRecord
             if (empty($this->user_id)) {
                 $this->user_id = 509;
             }
+            // При создании устанавливаем update_at = created_at
+            if (empty($this->update_at)) {
+                $this->update_at = $this->created_at ?: date('Y-m-d H:i:s');
+            }
+        } else {
+            // При обновлении устанавливаем текущую дату
+            $this->update_at = date('Y-m-d H:i:s');
         }
 
         return parent::beforeSave($insert);
@@ -66,7 +74,7 @@ class Blog extends \yii\db\ActiveRecord
             [['name', 'blog_category_id', 'link_name', 'status'], 'required'],
             [['name', 'description', 'content', 'link_name', 'keywords'], 'string'],
             [['blog_category_id', 'status', 'views'], 'integer'],
-            [['created_at'], 'safe'],
+            [['created_at', 'update_at'], 'safe'],
             [['blog_category_id'], 'exist', 'skipOnError' => true, 'targetClass' => BlogCategory::class, 'targetAttribute' => ['blog_category_id' => 'id']],
         ];
     }
@@ -97,6 +105,7 @@ class Blog extends \yii\db\ActiveRecord
             'status' => 'Статус',
             'keywords' => 'Ключевые слова',
             'created_at' => 'Дата создания',
+            'update_at' => 'Дата обновления',
         ];
     }
 
