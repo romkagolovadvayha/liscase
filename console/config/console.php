@@ -46,7 +46,7 @@ $config['components']['supervisortask'] = [
     'class' => \console\components\Supervisortask::class,
 ];
 $config['modules']['crontask'] = [
-    'class'    => 'gofmanaa\crontask\Module',
+    'class'    => 'console\components\CrontaskModuleSafe',
     'fileName' => 'cron.txt',
     'yiiPath'  => __DIR__ . '/../../yii',
     'tasks'    => [
@@ -115,6 +115,10 @@ $config['modules']['crontask'] = [
         'getRustFiles'       => [
             'command' => 'support/empty && cd /var/www/www-root/data/var/www/prostoj.store/frontend/web/uploads/prices && wget https://rust.tm/api/v2/prices/class_instance/RUB.json -O rusttm.json',
             'min'     => '*/3',
+        ],
+        'marketSkinsSync'       => [
+            'command' => 'market-skins/sync',
+            'min'     => '*/10',
         ],
         'getApproved'       => [
             'command' => 'skin-drops/get-approved',
