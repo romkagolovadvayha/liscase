@@ -35,33 +35,59 @@ class CrontabSafe extends BaseCrontab
 
         // учитываем переносы строк с '\'
         foreach ($this->joinContinuedLines($merged) as $line) {
-            $line = $this->sanitizeLine($line);
-            if ($line === null) {
-                continue; // пропущено фильтром
-            }
-
-            // поддержка макросов (@daily и т.п.)
-            if ($this->allowMacros && preg_match('/^@(\w+)\s+(.+)$/', $line, $m)) {
-                $mapped = $this->mapMacro($m[1], $m[2]);
-                if ($mapped === null) {
-                    continue; // неизвестный макрос или @reboot
+            try {
+                $line = $this->sanitizeLine($line);
+                if ($line === null) {
+                    continue; // пропущено фильтром
                 }
-                $line = $mapped;
-            }
 
-            // окончательная простая валидация: 5 полей расписания + команда
-            $parts = preg_split('/\s+/', $line, 6);
-            if (count($parts) < 6) {
+                // поддержка макросов (@daily и т.п.)
+                if ($this->allowMacros && preg_match('/^@(\w+)\s+(.+)$/', $line, $m)) {
+                    $mapped = $this->mapMacro($m[1], $m[2]);
+                    if ($mapped === null) {
+                        continue; // неизвестный макрос или @reboot
+                    }
+                    $line = $mapped;
+                }
+
+                // окончательная простая валидация: 5 полей расписания + команда
+                $parts = preg_split('/\s+/', $line, 6);
+                
+                // Строгая проверка: должно быть ровно 6 частей и все должны быть непустыми
+                if (count($parts) < 6 || !isset($parts[5]) || empty(trim($parts[5]))) {
+                    continue;
+                }
+                
+                // Дополнительная проверка: первые 5 частей должны быть валидными полями расписания
+                $scheduleParts = array_slice($parts, 0, 5);
+                foreach ($scheduleParts as $part) {
+                    if (empty(trim($part))) {
+                        continue 2; // Пропускаем эту строку
+                    }
+                }
+
+                // выбор парсера библиотеки с обработкой ошибок
+                try {
+                    $obj = CronApplicationJob::isApplicationJob($line)
+                        ? CronApplicationJob::parseFromCommand($line)
+                        : Cronjob::parseFromCommand($line);
+
+                    if ($obj !== false && $obj !== null) {
+                        $this->jobs[] = $obj;
+                    }
+                } catch (\Exception $e) {
+                    // Пропускаем строки, которые не удалось распарсить
+                    continue;
+                } catch (\Error $e) {
+                    // Пропускаем ошибки типа "Undefined array key"
+                    continue;
+                }
+            } catch (\Exception $e) {
+                // Пропускаем проблемные строки
                 continue;
-            }
-
-            // выбор парсера библиотеки
-            $obj = CronApplicationJob::isApplicationJob($line)
-                ? CronApplicationJob::parseFromCommand($line)
-                : Cronjob::parseFromCommand($line);
-
-            if ($obj !== false && $obj !== null) {
-                $this->jobs[] = $obj;
+            } catch (\Error $e) {
+                // Пропускаем ошибки типа "Undefined array key"
+                continue;
             }
         }
     }
