@@ -15,7 +15,6 @@
     "minimum-stability": "stable",
     "require": {
         "php": ">=7.4.0",
-        "cweagans/composer-patches": "^1.7",
         "yiisoft/yii2": "~2.0.45",
         "yiisoft/yii2-bootstrap5": "2.0.3",
         "yiisoft/yii2-symfonymailer": "~2.0.3",
@@ -121,11 +120,6 @@
         "asset-installer-paths": {
           "npm-asset-library": "vendor/npm",
           "bower-asset-library": "vendor/bower"
-        },
-        "patches": {
-            "cboden/ratchet": {
-                "Fix PHP 8+ compatibility for Guzzle Http Url": "patches/ratchet-php8-guzzle-fix.patch"
-            }
         }
     },
     "repositories": [
