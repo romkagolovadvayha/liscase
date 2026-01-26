@@ -8,6 +8,9 @@ use yii\console\Controller;
 use WebSocket\Client;
 use console\controllers\NotificationServer;
 
+// Fix for Ratchet/Guzzle PHP 8+ compatibility
+require_once __DIR__ . '/../bootstrap-websocket-fix.php';
+
 class ServerWsController extends Controller
 {
     /**
