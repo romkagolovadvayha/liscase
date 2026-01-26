@@ -19,67 +19,126 @@ if (strpos($content, 'Fix for PHP 8+ compatibility') !== false) {
     exit(0);
 }
 
-// Backup original file
+// Restore from backup if exists (in case of previous failed patch)
 $backupFile = $ratchetFile . '.backup';
+if (file_exists($backupFile)) {
+    copy($backupFile, $ratchetFile);
+    echo "Restored from backup\n";
+}
+
+// Create new backup
 copy($ratchetFile, $backupFile);
 echo "Backup created: $backupFile\n";
 
-// Read the file
-$lines = file($ratchetFile);
+// Read the entire file
+$content = file_get_contents($ratchetFile);
 
-// Find the create method and replace it
-$newLines = [];
-$inCreateMethod = false;
-$methodIndent = '';
-$braceCount = 0;
+// Find and replace the create method
+// Pattern: public function create(...) { ... return parent::create(...); }
+$pattern = '/(public function create\([^)]+\)\s*\{[^}]*\$url\s*=\s*Url::factory\(\$url\);[^}]*return parent::create\(\$method,\s*\$url,\s*\$headers\);[^}]*\})/s';
 
-foreach ($lines as $i => $line) {
-    if (preg_match('/public function create\(/', $line)) {
-        $inCreateMethod = true;
-        $methodIndent = str_repeat(' ', strspn($line, ' '));
-        $braceCount = 0;
+$replacement = <<<'PHP'
+public function create($method, $url, array $headers = array())
+    {
+        // Fix for PHP 8+ compatibility: handle QueryString properly
+        if (is_string($url)) {
+            $url = Url::factory($url);
+        }
         
-        // Add the fixed method
-        $newLines[] = $line;
-        $newLines[] = $methodIndent . "    {\n";
-        $newLines[] = $methodIndent . "        // Fix for PHP 8+ compatibility: handle QueryString properly\n";
-        $newLines[] = $methodIndent . "        if (is_string(\$url)) {\n";
-        $newLines[] = $methodIndent . "            \$url = Url::factory(\$url);\n";
-        $newLines[] = $methodIndent . "        }\n";
-        $newLines[] = $methodIndent . "        \n";
-        $newLines[] = $methodIndent . "        // Ensure QueryString is an object, not a string\n";
-        $newLines[] = $methodIndent . "        if (\$url instanceof \\Guzzle\\Http\\Url) {\n";
-        $newLines[] = $methodIndent . "            \$query = \$url->getQuery();\n";
-        $newLines[] = $methodIndent . "            if (is_string(\$query)) {\n";
-        $newLines[] = $methodIndent . "                \$queryString = \\Guzzle\\Http\\QueryString::fromString(\$query);\n";
-        $newLines[] = $methodIndent . "                \$url->setQuery(\$queryString);\n";
-        $newLines[] = $methodIndent . "            }\n";
-        $newLines[] = $methodIndent . "        }\n";
-        $newLines[] = $methodIndent . "        \n";
-        $newLines[] = $methodIndent . "        return parent::create(\$method, \$url, \$headers);\n";
-        continue;
+        // Ensure QueryString is an object, not a string
+        if ($url instanceof \Guzzle\Http\Url) {
+            $query = $url->getQuery();
+            if (is_string($query)) {
+                $queryString = \Guzzle\Http\QueryString::fromString($query);
+                $url->setQuery($queryString);
+            }
+        }
+        
+        return parent::create($method, $url, $headers);
     }
+PHP;
+
+// Try pattern replacement first
+$newContent = preg_replace($pattern, $replacement, $content);
+
+// If pattern didn't match, try line-by-line replacement
+if ($newContent === $content) {
+    $lines = file($ratchetFile, FILE_IGNORE_NEW_LINES);
+    $newLines = [];
+    $inCreateMethod = false;
+    $methodStartLine = -1;
+    $braceCount = 0;
     
-    if ($inCreateMethod) {
-        // Count braces to know when method ends
-        $braceCount += substr_count($line, '{') - substr_count($line, '}');
-        
-        if ($braceCount <= 0 && strpos($line, '}') !== false) {
-            $inCreateMethod = false;
-            $newLines[] = $methodIndent . "    }\n";
+    foreach ($lines as $lineNum => $line) {
+        // Check if this is the start of create method
+        if (preg_match('/public function create\(/', $line)) {
+            $inCreateMethod = true;
+            $methodStartLine = $lineNum;
+            $braceCount = 0;
+            $newLines[] = $line;
             continue;
         }
         
-        // Skip original method body
-        continue;
+        if ($inCreateMethod) {
+            // Count braces
+            $braceCount += substr_count($line, '{') - substr_count($line, '}');
+            
+            // If we find the closing brace and brace count is back to 0, method ended
+            if (strpos($line, '}') !== false && $braceCount <= 0) {
+                $inCreateMethod = false;
+                
+                // Get indentation from method signature
+                $indent = str_repeat(' ', strspn($lines[$methodStartLine], ' '));
+                
+                // Add the fixed method body
+                $newLines[] = $indent . '    {';
+                $newLines[] = $indent . '        // Fix for PHP 8+ compatibility: handle QueryString properly';
+                $newLines[] = $indent . '        if (is_string($url)) {';
+                $newLines[] = $indent . '            $url = Url::factory($url);';
+                $newLines[] = $indent . '        }';
+                $newLines[] = $indent . '        ';
+                $newLines[] = $indent . '        // Ensure QueryString is an object, not a string';
+                $newLines[] = $indent . '        if ($url instanceof \\Guzzle\\Http\\Url) {';
+                $newLines[] = $indent . '            $query = $url->getQuery();';
+                $newLines[] = $indent . '            if (is_string($query)) {';
+                $newLines[] = $indent . '                $queryString = \\Guzzle\\Http\\QueryString::fromString($query);';
+                $newLines[] = $indent . '                $url->setQuery($queryString);';
+                $newLines[] = $indent . '            }';
+                $newLines[] = $indent . '        }';
+                $newLines[] = $indent . '        ';
+                $newLines[] = $indent . '        return parent::create($method, $url, $headers);';
+                $newLines[] = $indent . '    }';
+                continue;
+            }
+            
+            // Skip original method body lines
+            if ($braceCount > 0 || strpos($line, '{') !== false) {
+                continue;
+            }
+        } else {
+            $newLines[] = $line;
+        }
     }
     
-    $newLines[] = $line;
+    $newContent = implode("\n", $newLines) . "\n";
 }
 
 // Write the patched file
-file_put_contents($ratchetFile, implode('', $newLines));
+file_put_contents($ratchetFile, $newContent);
+
+// Validate PHP syntax
+$output = [];
+$returnCode = 0;
+exec("php -l $ratchetFile 2>&1", $output, $returnCode);
+
+if ($returnCode !== 0) {
+    echo "Error: PHP syntax check failed!\n";
+    echo implode("\n", $output) . "\n";
+    echo "Restoring backup...\n";
+    copy($backupFile, $ratchetFile);
+    exit(1);
+}
 
 echo "Patch applied successfully to $ratchetFile\n";
+echo "PHP syntax validated successfully\n";
 echo "You can now run: ./yii server-ws/start 4888\n";
-
