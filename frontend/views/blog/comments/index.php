@@ -14,12 +14,13 @@ use yii\widgets\Pjax;
 /* @var $listViewConfig array */
 /* @var $commentWrapperId string */
 ?>
-<div class="comment-wrapper" id="<?php echo $commentWrapperId; ?>">
+<div class="comment-wrapper" id="<?php echo $commentWrapperId; ?>" itemscope itemtype="https://schema.org/DiscussionForumPosting">
     <?php Pjax::begin(['enablePushState' => false, 'timeout' => 20000, 'id' => $pjaxContainerId]); ?>
     <div class="comments">
             <div class="title-block clearfix">
                 <h3 class="h3-body-title">
                     <?php echo Yii::t('common', 'Комментарии ({0})', $commentModel->getCommentsCount()); ?>
+                    <meta itemprop="commentCount" content="<?= $commentModel->getCommentsCount() ?>">
                 </h3>
                 <div class="title-separator"></div>
             </div>
@@ -34,6 +35,7 @@ use yii\widgets\Pjax;
                     'options' => [
                         'tag' => 'ol',
                         'class' => 'comments-list',
+                        'itemprop' => 'comment',
                     ],
                     'itemOptions' => [
                         'tag' => false,

@@ -136,6 +136,31 @@ class Kills extends ActiveRecord
 
         $scientists = Kills::getScientistsList();
 
+        // Собираем все уникальные steam_id для предзагрузки пользователей
+        $steamIds = [];
+        foreach ($models as $model) {
+            if (!empty($model['steam_id']) && strlen($model['steam_id']) === 17) {
+                $steamIds[$model['steam_id']] = true;
+            }
+            if (!empty($model['dead']) && strlen($model['dead']) === 17) {
+                $steamIds[$model['dead']] = true;
+            }
+        }
+        
+        // Предзагружаем всех пользователей одним запросом
+        $usersMap = [];
+        if (!empty($steamIds)) {
+            $steamIdsList = array_keys($steamIds);
+            $users = User::find()
+                ->where(['IN', 'steam_id', $steamIdsList])
+                ->with(['server'])
+                ->indexBy('steam_id')
+                ->all();
+            foreach ($users as $steamId => $userObj) {
+                $usersMap[$steamId] = $userObj;
+            }
+        }
+
         for ($i = 0; $i < count($models); $i++) {
             $model = $models[$i];
             if (!empty($model['signs'])) {
@@ -151,14 +176,28 @@ class Kills extends ActiveRecord
                 $model['dead_link'] = $user->getLink('stats');
             }
             if (empty($model['name']) && strlen($model['steam_id']) === 17) {
-                $_user = User::findBySteamId($model['steam_id'], false, 'kills');
-                $model['name'] = $_user->username;
-                $model['link'] = $_user->getLink('stats');
+                if (isset($usersMap[$model['steam_id']])) {
+                    $_user = $usersMap[$model['steam_id']];
+                    $model['name'] = $_user->username;
+                    $model['link'] = $_user->getLink('stats');
+                } else {
+                    // Fallback для пользователей, которых нет в базе
+                    $_user = User::findBySteamId($model['steam_id'], false, 'kills');
+                    $model['name'] = $_user->username;
+                    $model['link'] = $_user->getLink('stats');
+                }
             }
             if (empty($model['dead_name']) && strlen($model['dead']) === 17) {
-                $_user = User::findBySteamId($model['dead'], false, 'kills 2');
-                $model['dead_name'] = $_user->username;
-                $model['dead_link'] = $_user->getLink('stats');
+                if (isset($usersMap[$model['dead']])) {
+                    $_user = $usersMap[$model['dead']];
+                    $model['dead_name'] = $_user->username;
+                    $model['dead_link'] = $_user->getLink('stats');
+                } else {
+                    // Fallback для пользователей, которых нет в базе
+                    $_user = User::findBySteamId($model['dead'], false, 'kills 2');
+                    $model['dead_name'] = $_user->username;
+                    $model['dead_link'] = $_user->getLink('stats');
+                }
             }
             if ($model['type'] !== 'deaths' && $model['type'] !== 'suicides') {
                 if (!empty($drops[$model['weapon']])) {

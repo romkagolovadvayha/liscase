@@ -4,8 +4,10 @@ namespace frontend\controllers;
 
 use common\controllers\WebController;
 use common\models\servers\Servers;
+use common\models\servers\ServersTags;
 use common\models\user\UserBox;
 use common\models\user\UserDrop;
+use common\models\radio\RadioStation;
 use frontend\forms\promocode\PromocodeForm;
 use Yii;
 use yii\base\BaseObject;
@@ -63,7 +65,18 @@ class SiteController extends WebController
         $this->view->params['page'] = 'home';
         $this->view->params['meta_description'] = Yii::t('database', Yii::$app->settings->get('site_description'));
         $this->view->params['meta_keywords']    = Yii::t('database', Yii::$app->settings->get('site_keywords'));
-        return $this->render('index');
+        
+        // Get latest blog posts for homepage
+        $latestPosts = Blog::find()
+            ->where(['status' => Blog::STATUS_ACTIVE])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->limit(3)
+            ->cache(300) // Cache for 5 minutes
+            ->all();
+        
+        return $this->render('index', [
+            'latestPosts' => $latestPosts,
+        ]);
     }
 
     private function _botOpenBox() {
@@ -181,12 +194,6 @@ class SiteController extends WebController
     {
         Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
         Yii::$app->response->headers->add('Content-Type', 'text/xml');
-        $categories = BlogCategory::find()->andWhere(['status' => BlogCategory::STATUS_ACTIVE])->orderBy(['created_at' => SORT_ASC])->all();
-        $articles = Blog::find()->andWhere(['status' => Blog::STATUS_ACTIVE])->orderBy(['created_at' => SORT_ASC])->all();
-        $servers = Servers::find()
-                          ->andWhere(['status' => Servers::STATUS_ACTIVE])
-                          ->orderBy(['sort' => SORT_ASC])
-                          ->all();
         return $this->renderPartial('sitemap');
     }
 
@@ -219,6 +226,26 @@ class SiteController extends WebController
         return $this->renderPartial('sitemap-posts', [
             'articles' => $articles,
             'categories' => $categories,
+        ]);
+    }
+
+    public function actionSitemapRadio()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        Yii::$app->response->headers->add('Content-Type', 'text/xml');
+        return $this->renderPartial('sitemap-radio');
+    }
+
+    public function actionSitemapTags()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_RAW;
+        Yii::$app->response->headers->add('Content-Type', 'text/xml');
+        $tags = ServersTags::find()
+                          ->andWhere(['status' => ServersTags::STATUS_ACTIVE])
+                          ->orderBy(['sort' => SORT_ASC])
+                          ->all();
+        return $this->renderPartial('sitemap-tags', [
+            'tags' => $tags,
         ]);
     }
 

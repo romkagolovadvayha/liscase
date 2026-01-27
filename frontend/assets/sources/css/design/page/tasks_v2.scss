@@ -1,0 +1,918 @@
+// Tasks V2 Styles
+@import '../mixins';
+
+.tasksV2 {
+    padding: 24px 0 48px;
+    color: var(--text-main);
+
+    &__hero {
+        margin-bottom: 32px;
+
+        &-primary {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        &-eyebrow {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        &-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+
+            @media (max-width: 768px) {
+                font-size: 24px;
+            }
+        }
+
+        &-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+    }
+
+    &__stats {
+        margin-bottom: 32px;
+        padding: 24px;
+        background: var(--background-teritiary);
+        border-radius: var(--card-radius);
+
+        &-header {
+            margin-bottom: 20px;
+        }
+
+        &-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+            line-height: 1.5;
+            margin: 0;
+            text-align: center;
+
+            @media (max-width: 768px) {
+                font-size: 16px;
+            }
+        }
+
+        &-highlight {
+            color: var(--primary-colors-secondary);
+            font-weight: 700;
+        }
+
+        &-progress-wrapper {
+            margin-bottom: 20px;
+            padding: 4px;
+            background: var(--background-main);
+            border-radius: 16px;
+            width: 100%;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            overflow: hidden;
+        }
+
+        &-progress-bar {
+            width: 100%;
+            height: 12px;
+            background: var(--background-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        &-progress-fill {
+            height: 100%;
+            background: var(--base-linear-gradiend);
+            border-radius: 12px;
+            transition: width 0.3s ease;
+            min-width: 0;
+        }
+
+        &-footer {
+            display: flex;
+            justify-content: space-around;
+            gap: 16px;
+            flex-wrap: wrap;
+
+            @media (max-width: 768px) {
+                flex-direction: column;
+                gap: 12px;
+            }
+        }
+
+        &-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            min-width: 0;
+
+            @media (max-width: 768px) {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        }
+
+        &-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        &-value {
+            font-size: 18px;
+            color: var(--text-main);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    &__filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        justify-content: center;
+        margin-top: 32px;
+        padding: 24px;
+        background: var(--background-secondary);
+        border: 1px solid var(--border-color-default);
+        border-radius: var(--block-radius);
+
+        @media (max-width: 768px) {
+            flex-direction: column;
+            gap: 16px;
+            padding: 16px;
+        }
+    }
+
+    &__filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+        min-width: 200px;
+
+        @media (max-width: 768px) {
+            min-width: 100%;
+        }
+    }
+
+    &__filter-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-main);
+    }
+
+    &__filter-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    &__filter-button {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 16px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        background: var(--background-teritiary);
+        border: 1px solid var(--border-color-default);
+        border-radius: var(--card-radius);
+        text-decoration: none;
+        transition: all 0.2s;
+
+        &:hover {
+            color: var(--text-main);
+            background: var(--background-teritiary);
+            border-color: var(--border-color-hover);
+            text-decoration: none;
+        }
+
+        &.is-active {
+            color: var(--primary-colors-main);
+            background: var(--primary-colors-main-opacity);
+            border-color: var(--primary-colors-main);
+        }
+    }
+
+    &__empty {
+        text-align: center;
+        padding: 64px 24px;
+
+        &-icon {
+            font-size: 64px;
+            color: var(--icon-main);
+            margin-bottom: 16px;
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        p {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+    }
+
+    &__layout {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    &__cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 24px;
+        align-items: stretch; // Растягиваем карточки на всю высоту строки
+
+        @media (max-width: 768px) {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+    }
+
+    &__card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        padding: 20px 20px 32px;
+        background: var(--background-secondary);
+        border-radius: var(--card-radius);
+        overflow: hidden;
+        transition: box-shadow 0.25s ease-in-out;
+        cursor: pointer;
+        justify-content: space-between;
+        height: 100%; // Растягиваем карточку на всю высоту grid-ячейки
+        z-index: 0; // Create stacking context for :before
+
+        &:hover:not(.is-completed) {
+            box-shadow: var(--shadow-card);
+            
+            .tasksV2__card-image {
+                transform: rotateY(180deg);
+            }
+
+            &:before {
+                filter: drop-shadow(2px 4px 6px var(--primary-colors-main));
+            }
+        }
+
+        // Псевдоэлемент для светлого фона внизу (как в старом дизайне)
+        &:before {
+            @extend .block, .absolute;
+            content: "";
+            background: var(--light-background);
+            bottom: 0;
+            z-index: -1;
+            left: 0;
+            background-repeat: no-repeat;
+            background-size: 100% 240px;
+            min-width: 100%;
+            max-width: 100%;
+            width: 100%;
+            min-height: 240px;
+            max-height: 240px;
+            height: 240px;
+            border-top-left-radius: 8px;
+            transition: filter 0.25s ease-in-out;
+        }
+
+        &.is-completed {
+            background: #2a2a2a; // Серый фон
+            cursor: default;
+            pointer-events: none;
+            
+            &:hover {
+                box-shadow: none;
+                
+                .tasksV2__card-image img {
+                    transform: none;
+                }
+            }
+
+            // Обесцвечиваем изображение
+            .tasksV2__card-image img {
+                filter: grayscale(100%);
+            }
+
+            // Обесцвечиваем заголовок
+            .tasksV2__card-title {
+                color: #888888; // Серый цвет
+            }
+
+            // Обесцвечиваем описание
+            .tasksV2__card-description {
+                color: #666666; // Серый цвет
+                
+                p {
+                    color: #666666 !important;
+                }
+            }
+
+            // Обесцвечиваем награду
+            .tasksV2__card-reward {
+                &-label {
+                    color: #666666; // Серый цвет
+                }
+                
+                &-value {
+                    color: #888888; // Серый цвет
+                }
+            }
+
+            // Обесцвечиваем мета-информацию
+            .tasksV2__card-meta {
+                color: #666666; // Серый цвет
+            }
+
+            // Бейдж "Выполнено" остается цветным (зеленым)
+            .tasksV2__card-badge--status.is-completed {
+                background: var(--system-colors-success-color);
+                color: var(--text-main);
+                opacity: 1;
+            }
+        }
+
+        &.is-limit-reached {
+            opacity: 0.7;
+            border-color: var(--system-colors-gold);
+        }
+
+        &.is-unavailable {
+            opacity: 0.5;
+            border-color: var(--border-color-default);
+        }
+
+        &-content {
+            @extend .relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            height: 100%;
+        }
+
+        &-image-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        &-image {
+            @include range(76, 76, "px");
+            margin-bottom: 16px;
+            transition: transform 0.25s ease-in-out;
+            transform-style: preserve-3d;
+
+            img {
+                width: 76px;
+                height: 76px;
+                object-fit: contain;
+                display: block;
+            }
+        }
+
+        // Для недоступных заданий - обесцвечиваем изображение
+        &.is-unavailable .tasksV2__card-image img,
+        &.is-limit-reached .tasksV2__card-image img {
+            filter: grayscale(100%);
+        }
+
+        // Для активных заданий (available) изображение остается цветным
+        // Для выполненных заданий изображение обесцвечивается в .is-completed
+
+        &-badges {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 8px;
+            z-index: 2;
+            justify-content: flex-end;
+        }
+
+        &-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 6px;
+            white-space: nowrap;
+
+            &--type {
+                background: rgba(0, 0, 0, 0.7);
+                color: var(--text-main);
+                padding: 6px;
+                width: 28px;
+                height: 28px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+
+                i {
+                    font-size: 12px;
+                }
+            }
+
+            &--timer {
+                background: var(--background-teritiary);
+                color: var(--text-main);
+                padding: 4px 8px;
+                font-size: 11px;
+                border: 1px solid var(--border-color-default);
+                
+                i {
+                    font-size: 11px;
+                    color: var(--primary-colors-main);
+                }
+                
+                &-text {
+                    font-variant-numeric: tabular-nums;
+                    font-weight: 600;
+                }
+            }
+
+            &--status {
+                &.is-completed {
+                    background: var(--system-colors-success-color);
+                    color: var(--text-main);
+                    padding: 6px;
+                    width: 28px;
+                    height: 28px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 50%;
+
+                    i {
+                        font-size: 14px;
+                    }
+                }
+
+                &.is-limit-reached {
+                    background: var(--system-colors-gold);
+                    color: var(--text-main);
+                }
+
+                &.is-unavailable {
+                    background: var(--icon-main);
+                    color: var(--text-main);
+                }
+
+                &.is-available {
+                    background: var(--primary-colors-main);
+                    color: var(--text-main);
+                }
+            }
+        }
+
+        &-body {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0; // Allow flex shrinking
+            text-align: center; // Center all text
+            justify-content: flex-start; // Выравниваем контент по верху
+        }
+
+        &-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            line-height: 1.4;
+            text-align: center; // Center title
+        }
+
+        &-description {
+            margin-top: 8px;
+            text-align: center; // Center description
+            flex: 1; // Занимает доступное пространство, чтобы футер был внизу
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+
+            p {
+                font-size: 14px;
+                line-height: 1.5;
+                color: var(--text-secondary);
+                margin-bottom: 2px;
+                text-align: center; // Center paragraph text
+
+                &:last-child {
+                    color: var(--text-main);
+                    margin-bottom: 0;
+                }
+            }
+        }
+
+        &-progress {
+            margin-top: 12px;
+            margin-bottom: 8px;
+            padding: 12px;
+            background: var(--background-teritiary);
+            border: 1px solid var(--border-color-default);
+            border-radius: var(--card-radius);
+
+            &-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+            }
+
+            &-label {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--text-secondary);
+            }
+
+            &-text {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--text-main);
+                font-variant-numeric: tabular-nums;
+            }
+
+            &-bar {
+                width: 100%;
+                height: 6px;
+                background: var(--background-secondary);
+                border-radius: var(--button-radius);
+                overflow: hidden;
+            }
+
+            &-bar-fill {
+                height: 100%;
+                background: var(--base-linear-gradiend);
+                transition: width 0.3s;
+            }
+        }
+
+        &-footer {
+            margin-top: auto; // Push to bottom
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-top: 16px;
+        }
+
+        &-reward {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center; // Center reward content
+            text-align: center; // Center reward text
+
+            &-label {
+                font-size: 14px;
+                font-weight: 400;
+                color: var(--text-secondary);
+                margin-bottom: 0;
+                text-align: center; // Center label
+            }
+
+            &-value {
+                font-size: 14px;
+                font-weight: 400;
+                color: var(--text-main);
+                display: flex;
+                align-items: center;
+                justify-content: center; // Center value content
+                gap: 6px;
+                flex-wrap: wrap;
+                text-align: center; // Center value text
+            }
+
+            &-image {
+                width: 32px;
+                height: 32px;
+                object-fit: contain;
+                border-radius: var(--card-radius);
+                display: block;
+            }
+
+            &-item-name {
+                display: inline-block;
+            }
+
+            &-item-count {
+                color: var(--text-secondary);
+                font-weight: 500;
+            }
+        }
+
+        &-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-teritiary);
+            margin-top: 0;
+            padding-top: 16px;
+            justify-content: center; // Center text
+            text-align: center; // Center text
+
+            &-item {
+                display: flex;
+                align-items: center;
+                justify-content: center; // Center icon and text
+                gap: 4px;
+            }
+        }
+    }
+
+    // Detail Modal Styles
+    &__detail {
+        padding: 0 24px 24px 24px;
+        color: var(--text-main);
+
+        &-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        &-image {
+            @media (min-width: 769px) {
+                display: none;
+            }
+
+            img {
+                width: 120px;
+                height: 120px;
+                border-radius: var(--block-radius);
+                object-fit: contain;
+            }
+        }
+
+        &-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0;
+            text-align: center;
+
+            @media (max-width: 768px) {
+                font-size: 20px;
+            }
+        }
+
+        &-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            justify-content: center;
+
+            &-item {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+        }
+
+        &-description {
+            margin-bottom: 24px;
+            margin-top: 0;
+
+            h3 {
+                font-size: 18px;
+                font-weight: 600;
+                color: var(--text-main);
+                margin-bottom: 12px;
+            }
+
+            &-content {
+                font-size: 15px;
+                color: var(--text-secondary);
+                line-height: 1.6;
+                white-space: normal;
+                text-align: center;
+            }
+        }
+
+        &-external-links {
+            margin-bottom: 24px;
+            text-align: center;
+
+            h3 {
+                font-size: 18px;
+                font-weight: 600;
+                color: var(--text-main);
+                margin-bottom: 12px;
+                text-align: center;
+            }
+
+            &-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                align-items: center;
+            }
+        }
+
+        &-external-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-main);
+            background: var(--background-teritiary);
+            border: 1px solid var(--border-color-default);
+            border-radius: var(--card-radius);
+            text-decoration: none;
+            transition: all 0.2s;
+            gap: 12px;
+            &:hover {
+                background: var(--background-teritiary);
+                border-color: var(--primary-colors-secondary);
+                color: var(--primary-colors-secondary);
+                text-decoration: none;
+            }
+
+            i {
+                margin-left: 8px;
+                font-size: 12px;
+            }
+        }
+
+        &-progress {
+            margin-bottom: 24px;
+            padding: 16px;
+            background: var(--background-teritiary);
+            border: 1px solid var(--border-color-default);
+            border-radius: var(--card-radius);
+
+            &-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+
+            &-label {
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-main);
+            }
+
+            &-text {
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-main);
+                font-variant-numeric: tabular-nums;
+            }
+
+            &-bar {
+                width: 100%;
+                height: 8px;
+                background: var(--background-secondary);
+                border-radius: var(--button-radius);
+                overflow: hidden;
+            }
+
+            &-bar-fill {
+                height: 100%;
+                background: var(--base-linear-gradiend);
+                transition: width 0.3s;
+            }
+        }
+
+        &-reward {
+            margin-bottom: 24px;
+            text-align: center;
+
+            h3 {
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--text-main);
+                margin-bottom: 12px;
+                text-align: center;
+            }
+
+            &-content {
+                font-size: 18px;
+                font-weight: 700;
+                color: var(--primary-colors-secondary);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+
+            &-image {
+                width: 48px;
+                height: 48px;
+                object-fit: contain;
+                border-radius: var(--card-radius);
+                display: block;
+                background: var(--background-secondary);
+                padding: 4px;
+            }
+        }
+
+        &-actions {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color-default);
+        }
+
+        &-check-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+            background: var(--base-linear-gradiend);
+            border: none;
+            border-radius: var(--button-radius);
+            cursor: pointer;
+            transition: all 0.2s;
+
+            &:hover:not(.is-disabled) {
+                background: var(--button-primary-image-hover);
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-card);
+            }
+
+            &:active:not(.is-disabled) {
+                transform: translateY(0);
+            }
+
+            &.is-disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                background: var(--button-disabled);
+            }
+
+            i {
+                font-size: 18px;
+            }
+        }
+
+        &-message {
+            margin-top: 16px;
+            padding: 12px 16px;
+            border-radius: var(--card-radius);
+            font-size: 14px;
+            line-height: 1.5;
+
+            &.is-success {
+                background: var(--status-background-opacity);
+                color: var(--system-colors-success-color);
+                border: 1px solid var(--system-colors-success-color);
+            }
+
+            &.is-error {
+                background: var(--primary-colors-main-opacity);
+                color: var(--primary-colors-main);
+                border: 1px solid var(--primary-colors-main);
+            }
+        }
+
+        &-daily-rewards {
+            margin-bottom: 24px;
+
+            // Используем стили из page-stats__block-without-hover и page-stats__categories
+            // Стили уже определены в stats.scss
+        }
+    }
+}
+

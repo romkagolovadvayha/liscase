@@ -6,6 +6,7 @@ use common\components\queue\process\ActivatedDropJob;
 use common\controllers\WebController;
 use common\models\box\Drop;
 use common\models\promocode\Promocode;
+use common\models\radio\RadioStation;
 use common\models\servers\Servers;
 use common\models\site\SiteSetting;
 use common\models\statistics\Statistics;
@@ -114,7 +115,7 @@ class ApiController extends WebController
     private function methodGived($item_id, $server = null) {
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
-        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
+        if (empty($userDrop) || ($userDrop->status !== UserDrop::STATUS_WAIT && $userDrop->status !== UserDrop::STATUS_ACTIVE)) {
             return [
                 'result' => 'fail',
                 'message' => "Предмет уже получен/продан",
@@ -175,6 +176,29 @@ class ApiController extends WebController
             }
         }
 
+        // Обработка VIP товара
+        $drops = Drop::getDropListAll();
+        $drop = $drops[$userDrop->drop_id] ?? null;
+        if ($drop && $drop->drop_type === Drop::TYPE_VIP) {
+            // Проверяем, есть ли у сервера магазин (is_store = 1)
+            // Если сервер без доната, VIP уже выдан в методе give(), команда не выполняется
+            if ($server && $server->is_store == 1) {
+                // VIP всегда выдается на месяц (30 дней)
+                $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+                \common\models\user\UserVip::createOrExtend($userDrop->user_id, $expiresAt);
+                
+                // Выполняем команду на сервере, если она указана
+                if (!empty($drop->command)) {
+                    $user = $userDrop->user;
+                    if ($user) {
+                        $command = str_replace('%STEAMID%', $user->steam_id, $drop->command);
+                        \common\models\rcon\RconTasks::execute($command);
+                    }
+                }
+            }
+            // Если сервер без доната (is_store = 0), ничего не делаем - VIP уже выдан в методе give()
+        }
+
         \Yii::$app->queueProcess->push(new ActivatedDropJob(['userDrop'  => $userDrop]));
 
         $result = [];
@@ -190,7 +214,7 @@ class ApiController extends WebController
     private function methodItem($item_id, $steam_id = null) {
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
-        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
+        if (empty($userDrop) || ($userDrop->status !== UserDrop::STATUS_WAIT && $userDrop->status !== UserDrop::STATUS_ACTIVE)) {
             return [
                 'result' => 'fail',
                 'message' => "Предмет уже получен/продан",
@@ -254,7 +278,7 @@ class ApiController extends WebController
     private function methodTake($item_id) {
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
-        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
+        if (empty($userDrop) || ($userDrop->status !== UserDrop::STATUS_WAIT && $userDrop->status !== UserDrop::STATUS_ACTIVE)) {
             return [
                 'result' => 'fail',
                 'message' => "Предмет уже получен/продан",
@@ -305,7 +329,7 @@ class ApiController extends WebController
 
         /** @var UserDrop[] $userDrops */
         $userDrops = $user->getUserDrop()
-                          ->andWhere(['status' => UserDrop::STATUS_ACTIVE])
+                          ->andWhere(['IN', 'status', [UserDrop::STATUS_ACTIVE, UserDrop::STATUS_WAIT]])
                           ->orderBy(['id' => SORT_DESC])
                           ->all();
 
@@ -502,15 +526,22 @@ class ApiController extends WebController
               'name' => 'Спутник',
               'url' => 'https://radio.mediacdn.ru/sputnik_fm.mp3',
           ],
-          [
-              'name' => 'PROSTOJ ONE',
-              'url' => 'https://ws.prostoj.store/radio1/stream',
-          ],
-          [
-              'name' => 'PROSTOJ TWO',
-              'url' => 'https://myradio24.org/46527',
-          ],
         ];
+
+        // Получаем радиостанции из базы данных
+        $dbStations = RadioStation::find()
+            ->where(['status' => RadioStation::STATUS_ACTIVE])
+            ->andWhere(['is_running' => 1])
+            ->orderBy(['id' => SORT_ASC])
+            ->all();
+
+        // Добавляем радиостанции из БД в конец списка
+        foreach ($dbStations as $station) {
+            $list[] = [
+                'name' => $station->name,
+                'url' => $station->getStreamUrl(),
+            ];
+        }
 
         $str = "";
         foreach ($list as $item) {

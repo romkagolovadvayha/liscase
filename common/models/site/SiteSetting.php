@@ -64,6 +64,27 @@ class SiteSetting extends ActiveRecord
 
     public function getValue()
     {
+        if ($this->type === 'image' || $this->type === 'video') {
+            // Если это изображение или видео, возвращаем публичный URL из S3
+            if (!empty($this->value) && strpos($this->value, '/uploads/') === 0) {
+                // Получаем s3_publicUrl напрямую из базы, чтобы избежать рекурсии
+                // Используем статический кэш для оптимизации
+                static $s3PublicUrlCache = null;
+                if ($s3PublicUrlCache === null) {
+                    $s3PublicUrlCache = self::find()
+                        ->where(['category' => 's3', 'code' => 'publicUrl'])
+                        ->select('value')
+                        ->scalar();
+                    
+                    if (empty($s3PublicUrlCache)) {
+                        // Fallback на значение из params, если настройка не найдена
+                        $s3PublicUrlCache = Yii::$app->params['s3Url'] ?? '';
+                    }
+                }
+                
+                return rtrim($s3PublicUrlCache, '/') . $this->value;
+            }
+        }
         if ($this->type == 'checkbox') {
             return $this->value === '1';
         }

@@ -223,10 +223,12 @@ class GamestoresController extends Controller
                     $model->update(false, ['user_id']);
                     $transaction = $model->getDb()->beginTransaction();
                     UserProfile::createModel($model, $user['username']);
+                    // Сохраняем URL аватара из Steam вместо загрузки на сервер
                     try {
-                        $imageLink                  = \common\components\oauth\Steam::getAvatar($user['steamId']);
-                        $avatar                     = $this->_loadImage($imageLink, $user['steamId']);
-                        $model->userProfile->avatar = $avatar;
+                        $imageLink = \common\components\oauth\Steam::getAvatar($user['steamId']);
+                        if (!empty($imageLink)) {
+                            $model->userProfile->steam_avatar_url = $imageLink;
+                        }
                     } catch (\Exception $ex) {
                         //
                     }

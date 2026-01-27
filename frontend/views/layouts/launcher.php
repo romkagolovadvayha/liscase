@@ -31,9 +31,10 @@ JS
 <html lang="<?= substr(Yii::$app->language, 0, 2) ?>" class="h-100">
 <head>
     <title><?= Html::encode($this->title) ?></title>
+    <link href="/uploads/site/colors/colors.css?v=<?=Yii::$app->settings->get('site_version')?>" rel="stylesheet"/>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <?php $this->head() ?>
 </head>
 <body class="d-flex flex-column h-100">
@@ -49,6 +50,7 @@ JS
 </script>
 
 <?= $content ?>
+<?=Yii::$app->settings->get('metrics_code'); ?>
 <?php $this->endBody() ?>
 </body>
 </html>

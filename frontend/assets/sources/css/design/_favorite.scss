@@ -1,0 +1,86 @@
+// Стили для избранного на карточках товаров
+.category-card {
+    position: relative;
+}
+
+.category-card__favorite {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: none;
+    border: none;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.2s ease;
+    padding: 0;
+
+    &:hover {
+        transform: scale(1.15);
+    }
+
+    svg {
+        width: 24px;
+        height: 24px;
+
+        path {
+            fill: none;
+            stroke: #564a66;
+            transition: fill 0.2s ease, stroke 0.2s ease;
+        }
+    }
+
+    &:hover svg path,
+    &.active svg path {
+        fill: #f8b34d;
+        stroke: #f8b34d;
+    }
+}
+
+// Стили для избранного на сетах
+.set {
+    position: relative;
+}
+
+.set__favorite {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: none;
+    border: none;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.2s ease;
+    padding: 0;
+
+    &:hover {
+        transform: scale(1.15);
+    }
+
+    svg {
+        width: 24px;
+        height: 24px;
+
+        path {
+            fill: none;
+            stroke: #564a66;
+            transition: fill 0.2s ease, stroke 0.2s ease;
+        }
+    }
+
+    &:hover svg path,
+    &.active svg path {
+        fill: #f8b34d;
+        stroke: #f8b34d;
+    }
+}
+

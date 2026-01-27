@@ -1,0 +1,673 @@
+// CSS переменные из старого проекта
+// Мигрированы из frontend/assets/sources/css/design/_colors.scss и _root.scss
+
+:root {
+  // Primary colors
+  --primary-colors-main: #eb0c35;
+  --primary-colors-secondary: #ff6134;
+  --primary-colors-secondary-opacity: rgba(255, 97, 52, 0.15);
+  --primary-colors-white: #ffffff;
+  --primary-colors-main-opacity: rgba(235, 12, 53, 0.4);
+
+  // Background colors
+  --background-main: #080224;
+  --background-secondary: #19102d;
+  --background-teritiary: #2e1a3b;
+
+  // Text colors
+  --text-main: #ece4f3;
+  --text-secondary: #8f8f8f;
+  --text-teritiary: #b5b5b5;
+  --text-disabled: rgba(236, 228, 243, 0.2);
+
+  // Icon colors
+  --icon-main: #564a66;
+  --icon-hover: #7f718c;
+  --icon-mini: #ff6134;
+  --icon-in-button: #ece4f3;
+
+  // Status colors
+  --status-text-color: #ece4f3;
+  --status-background-opacity: rgba(236, 228, 243, 0.15);
+  --status-radius: 20px;
+
+  // Tooltip colors
+  --tooltip-background: #272140;
+  --tooltip-text-color: #ece4f3;
+
+  // Badge colors
+  --badge-text-color: #ece4f3;
+  --badge-background: #eb0c35;
+
+  // Border colors
+  --border-color-default: #3e3249;
+  --border-color-hover: #7f718c;
+  --border-color-active: #ece4f3;
+
+  // Link colors
+  --link-color-default: #ff4814;
+  --link-color-hover: #ff7834;
+  --link-color-disabled: #67504a;
+
+  // Button colors
+  --button-radius: 6px;
+  --button-disabled: rgba(255, 255, 255, 0.2);
+  --button-main-new-price-color-default: #ece4f3;
+  --button-main-old-price-color-default: rgba(236, 228, 243, 0.8);
+  --button-main-radius: 6px;
+  --button-secondary-text-color-default: #ece4f3;
+  --button-secondary-border-color-default: #3e3249;
+  --button-secondary-radius: 6px;
+  --button-teritiary-new-price-color-default: #ece4f3;
+  --button-teritiary-old-price-color-hover: rgba(236, 228, 243, 0.8);
+  --button-teritiary-background: #2e1a3b;
+  --button-teritiary-radius: 6px;
+
+  // Gradients
+  --base-linear-gradiend: linear-gradient(90deg, var(--primary-colors-main) 50%, var(--primary-colors-secondary) 100%);
+  --button-primary-image-hover: linear-gradient(90deg, var(--primary-colors-main) 0%, var(--primary-colors-secondary) 50.04%, #ffb834 100%);
+
+  // System colors
+  --system-colors-success-color: #009136;
+  --system-colors-gold: #f8b34d;
+  --system-colors-silver: #b4b4b4;
+  --system-colors-bronze: #af7355;
+  --online: #4BCC18;
+
+  // Shadows
+  --shadow-card: 4px 4px 4px 0px rgba(0, 0, 0, 0.25);
+
+  // Progress
+  --progress-step-color: #ff7d58;
+
+  // Radius
+  --card-radius: 8px;
+  --button-radius: 6px;
+  --button-main-radius: 6px;
+  --button-secondary-radius: 6px;
+  --button-teritiary-radius: 6px;
+  --block-radius: 16px;
+  --avatar-radius: 6px;
+
+  // Font
+  --font-link: 'https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap';
+  --font-main: 'Roboto', sans-serif;
+
+  // Images and backgrounds
+  --logo: url('/uploads/site/design/0554f1c40e29411f9422851a1918153c.svg');
+  --favicon: url('/uploads/site/design/273ce7b2b2b39b5df9a65d75d0b2b49a.svg');
+  --statsBlockImage: url('/uploads/site/design/05bcff0b3d97800f770da90e6b0dd7a4.png');
+  --bonusBlockImage: url('/uploads/site/design/9480975c085eaba7beef190ecb12c045.png');
+  --promoPopupImage: url('/uploads/site/design/ed51829cce613849269a12c3e117e1bf.png');
+  --payPopupImage: url('/uploads/site/design/3cb8da4cc81f5f0836121ad696e51911.png');
+  --wipeBlockPopupImage: url('/uploads/site/design/a9c5acfa1cbb82d174f22696a9086f1c.png');
+  --light-the-best-background: url('/uploads/site/colors/0a7b25a64742af33841f6b08ab3d7820.svg');
+  --light-background: url('/uploads/site/colors/811d0f50009f072bf3c00ab56fa6aaf4.svg');
+  --icon-money: url('/uploads/site/design/72d342d54b58fdf14adc5bd6ea00b994.svg');
+  --image-not-auth: url('/uploads/site/design/35ffaaecf35b4348b2438718ebfe5d37.png');
+  --iconskins: url('/uploads/site/design/5fbb804ed4015b8283707b0e080ed839.svg');
+  --servers-image: url('/uploads/site/design/8aa94e4f99ab7e3abb1972ce8150fd20.png');
+  --indicator-online: url('/uploads/site/colors/29e31f1a394723cc94f22128cd0f3ea4.svg');
+  --watemark: url('/uploads/site/design/d83ad05567daae70fe32228c441ace9c.png');
+  --avatar-default: url('/uploads/site/design/86e6c084c19ad0c4c824c8e985b3bc8c.png');
+  --year-review: url('/uploads/site/design/1200d080a8b33fd4b94c5d20c8ff4154.png');
+
+  // Videos
+  --bonusBlockImageVideo: /uploads/site/design/e9b68543541012c0111110f300ef73eb.webm;
+  --statsBlockImageVideo: /uploads/site/design/69dc6cddf4ee2b0cfff304e3a6aed89d.webm;
+
+  // Categories
+  --categories-image-shadow: url('/uploads/site/colors/7864300184aa67de3a3c193391c9cbf0.svg');
+  --categories-image-glow: url('/uploads/site/colors/2b08faaace1d26d11f676cfb9523cb40.svg');
+  --categories-is-image: 1;
+  --category-cards-grid: repeat(4, 1fr);
+  --category-card-image-size: 150px;
+
+  // Additional colors
+  --background-secondary-dark: #100b13;
+  --server-command: #aaf16e;
+  --server-command-primary: #feeda1;
+  --color-rules-punishment: #eb0c35;
+  --color-rules-icon: #aaf16e;
+  --icon-social-main: #a298ae;
+  --year-review-stats: #ffaec5;
+  --year-review-stats-resources: #797080;
+  --year-review-stats-description: #a39da7;
+
+  // Opacity stat background
+  --opacity-stat-background: #2e1a3b5c;
+
+  // Modal
+  --modal-promo-image-style: ;
+}
+
+// Гламурная тема (розовые оттенки)
+[data-theme='glamour'] {
+  --primary-colors-main: #ff69b4;
+  --primary-colors-secondary: #ffb6c1;
+  --primary-colors-secondary-opacity: rgba(255, 182, 193, 0.15);
+  --primary-colors-main-opacity: rgba(255, 105, 180, 0.4);
+  --background-main: #1a0d1a;
+  --background-secondary: #2d1a2d;
+  --background-teritiary: #3d2a3d;
+  --text-main: #ffe4e1;
+  --text-secondary: #d8a5b8;
+  --text-teritiary: #e6b8c8;
+  --icon-mini: #ffb6c1;
+  --link-color-default: #ff69b4;
+  --link-color-hover: #ffb6c1;
+  --badge-background: #ff69b4;
+  --border-color-default: #4a2a4a;
+  --border-color-hover: #8a5a8a;
+  --button-teritiary-background: #3d2a3d;
+  --base-linear-gradiend: linear-gradient(90deg, #ff69b4 50%, #ffb6c1 100%);
+  --button-primary-image-hover: linear-gradient(90deg, #ff69b4 0%, #ffb6c1 50.04%, #ffc0cb 100%);
+  --progress-step-color: #ffb6c1;
+}
+
+// Зимняя тема
+[data-theme='winter'] {
+  --primary-colors-main: #4a90e2;
+  --primary-colors-secondary: #87ceeb;
+  --primary-colors-secondary-opacity: rgba(135, 206, 235, 0.15);
+  --primary-colors-main-opacity: rgba(74, 144, 226, 0.4);
+  --background-main: #0a1628;
+  --background-secondary: #1a2a3a;
+  --background-teritiary: #2a3a4a;
+  --text-main: #e0f2f7;
+  --text-secondary: #a0c4d0;
+  --text-teritiary: #b8d4e0;
+  --icon-mini: #87ceeb;
+  --link-color-default: #4a90e2;
+  --link-color-hover: #87ceeb;
+  --badge-background: #4a90e2;
+  --border-color-default: #3a4a5a;
+  --border-color-hover: #6a8a9a;
+  --button-teritiary-background: #2a3a4a;
+  --base-linear-gradiend: linear-gradient(90deg, #4a90e2 50%, #87ceeb 100%);
+  --button-primary-image-hover: linear-gradient(90deg, #4a90e2 0%, #87ceeb 50.04%, #b0e0e6 100%);
+  --progress-step-color: #87ceeb;
+}
+
+// Летняя тема
+[data-theme='summer'] {
+  --primary-colors-main: #ff8c00;
+  --primary-colors-secondary: #ffd700;
+  --primary-colors-secondary-opacity: rgba(255, 215, 0, 0.15);
+  --primary-colors-main-opacity: rgba(255, 140, 0, 0.4);
+  --background-main: #1a1408;
+  --background-secondary: #2a1f0f;
+  --background-teritiary: #3a2f1f;
+  --text-main: #fff8dc;
+  --text-secondary: #d4af37;
+  --text-teritiary: #e6c85a;
+  --icon-mini: #ffd700;
+  --link-color-default: #ff8c00;
+  --link-color-hover: #ffd700;
+  --badge-background: #ff8c00;
+  --border-color-default: #4a3f2f;
+  --border-color-hover: #7a6f5f;
+  --button-teritiary-background: #3a2f1f;
+  --base-linear-gradiend: linear-gradient(90deg, #ff8c00 50%, #ffd700 100%);
+  --button-primary-image-hover: linear-gradient(90deg, #ff8c00 0%, #ffd700 50.04%, #ffeb3b 100%);
+  --progress-step-color: #ffd700;
+}
+
+// Темная тема
+[data-theme='dark'] {
+  --primary-colors-main: #8b8b8b;
+  --primary-colors-secondary: #a0a0a0;
+  --primary-colors-secondary-opacity: rgba(160, 160, 160, 0.15);
+  --primary-colors-main-opacity: rgba(139, 139, 139, 0.4);
+  --background-main: #000000;
+  --background-secondary: #0a0a0a;
+  --background-teritiary: #1a1a1a;
+  --text-main: #e0e0e0;
+  --text-secondary: #808080;
+  --text-teritiary: #a0a0a0;
+  --icon-mini: #a0a0a0;
+  --link-color-default: #8b8b8b;
+  --link-color-hover: #a0a0a0;
+  --badge-background: #8b8b8b;
+  --border-color-default: #2a2a2a;
+  --border-color-hover: #4a4a4a;
+  --button-teritiary-background: #1a1a1a;
+  --base-linear-gradiend: linear-gradient(90deg, #8b8b8b 50%, #a0a0a0 100%);
+  --button-primary-image-hover: linear-gradient(90deg, #8b8b8b 0%, #a0a0a0 50.04%, #b0b0b0 100%);
+  --progress-step-color: #a0a0a0;
+}
+
+// Базовые стили для body
+body {
+  color: var(--text-main);
+  background-color: var(--background-main);
+  font-family: var(--font-main);
+}
+
+// Общий layout с sidebar (используется в layout.tsx)
+.main-layout {
+  display: grid;
+  grid-template-columns: 80px 1fr 335px;
+  gap: 20px;
+  width: 100%;
+  max-width: 1580px;
+  margin: 0 auto;
+  padding: 0 24px 40px;
+  flex: 1;
+  background-color: var(--background-main);
+  color: var(--text-main);
+  transition: grid-template-columns 0.3s ease;
+
+  @media (min-width: 1921px) {
+    grid-template-columns: 80px 1fr 395px;
+  }
+
+  @media (max-width: 1200px) {
+    grid-template-columns: 80px 1fr;
+    padding: 0 10px 40px;
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    padding: 0 10px 40px;
+    gap: 12px;
+  }
+
+  // Когда меню открыто
+  body.left-menu-open & {
+    grid-template-columns: 280px 1fr 335px;
+
+    @media (min-width: 1921px) {
+      grid-template-columns: 280px 1fr 395px;
+    }
+
+    @media (max-width: 1200px) {
+      grid-template-columns: 280px 1fr;
+    }
+  }
+
+  &__content {
+    min-width: 0; // Для правильной работы grid
+    width: 100%;
+    position: relative; // Для позиционирования скелетона
+    padding-top: 32px;
+
+    @media (max-width: 768px) {
+      padding-top: 16px;
+    }
+  }
+
+  // Скрываем sidebar на странице профиля
+  body.profile-page-active &__sidebar {
+    display: none !important;
+  }
+
+  body.profile-page-active & {
+    grid-template-columns: 80px 1fr !important;
+  }
+
+  body.profile-page-active.left-menu-open & {
+    grid-template-columns: 280px 1fr !important;
+  }
+  
+  &__sidebar {
+    width: 100%;
+    position: sticky;
+    top: 0;
+    height: fit-content;
+    max-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-top: 32px;
+    // Скрываем скроллбары
+    scrollbar-width: none; // Firefox
+
+    @media (max-width: 768px) {
+      padding-top: 16px;
+    }
+    -ms-overflow-style: none; // IE и Edge
+
+    &::-webkit-scrollbar {
+      display: none; // Chrome, Safari, Opera
+    }
+
+    @media (max-width: 1200px) {
+      position: relative;
+      top: 0;
+      max-height: none;
+    }
+  }
+}
+
+// Стили для дизайн-системы страницы
+.design-system-page {
+  min-height: 100vh;
+  background-color: var(--background-main);
+  color: var(--text-main);
+  padding: 32px 0;
+
+  .design-system-layout {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+
+    @media (max-width: 768px) {
+      padding: 0 16px;
+    }
+  }
+
+  .design-system-content {
+    min-width: 0;
+  }
+
+  .design-system-header {
+    margin-bottom: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 24px;
+
+    @media (max-width: 768px) {
+      margin-bottom: 32px;
+    }
+  }
+
+  .design-system-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+
+    @media (max-width: 768px) {
+      gap: 32px;
+    }
+  }
+
+  .design-system-section {
+    background: var(--background-secondary);
+    border-radius: var(--card-radius);
+    padding: 32px;
+    border: 1px solid var(--border-color-default);
+
+    @media (max-width: 768px) {
+      padding: 24px 16px;
+    }
+
+    &-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0 0 24px 0;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border-color-default);
+    }
+  }
+}
+
+// Стили для типографики
+.typography-elements {
+  .typography-section {
+    margin-bottom: 32px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 16px 0;
+    }
+  }
+
+  .typography-examples {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .typography-item {
+    padding: 16px;
+    background: var(--background-teritiary);
+    border-radius: var(--card-radius);
+    border: 1px solid var(--border-color-default);
+
+    code.typography-code {
+      display: block;
+      margin-top: 12px;
+      padding: 8px 12px;
+      background: var(--background-main);
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color-default);
+    }
+  }
+}
+
+// Стили для тултипов
+.tooltip-elements {
+  .tooltip-section {
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 16px 0;
+    }
+  }
+
+  .tooltip-examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .tooltip-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: var(--background-teritiary);
+    border-radius: var(--card-radius);
+    border: 1px solid var(--border-color-default);
+    min-width: 200px;
+
+    code.tooltip-code {
+      padding: 6px 10px;
+      background: var(--background-main);
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color-default);
+      text-align: center;
+    }
+  }
+}
+
+// Стили для серверов
+.server-elements {
+  .server-section {
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 16px 0;
+    }
+  }
+
+  .server-examples {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .server-item {
+    padding: 16px;
+    background: var(--background-teritiary);
+    border-radius: var(--card-radius);
+    border: 1px solid var(--border-color-default);
+
+    h4 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 16px 0;
+    }
+
+    code.server-code {
+      display: block;
+      margin-top: 12px;
+      padding: 8px 12px;
+      background: var(--background-main);
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color-default);
+    }
+  }
+}
+
+// Утилитарные классы
+.user-select-none {
+  user-select: none;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+// Утилитарные классы для отступов
+.mb-2 {
+  margin-bottom: 8px;
+}
+
+.mb-4 {
+  margin-bottom: 16px;
+}
+
+.mb-6 {
+  margin-bottom: 24px;
+}
+
+.mb-8 {
+  margin-bottom: 32px;
+}
+
+.mb-12 {
+  margin-bottom: 12px;
+}
+
+.mb-16 {
+  margin-bottom: 16px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.mb-24 {
+  margin-bottom: 24px;
+}
+
+.mb-28 {
+  margin-bottom: 28px;
+}
+
+.mb-32 {
+  margin-bottom: 32px;
+}
+
+.mb-36 {
+  margin-bottom: 36px;
+}
+
+.mb-40 {
+  margin-bottom: 40px;
+}
+
+.mb-44 {
+  margin-bottom: 44px;
+}
+
+.mb-48 {
+  margin-bottom: 48px;
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.mt-6 {
+  margin-top: 24px;
+}
+
+.mt-8 {
+  margin-top: 32px;
+}
+
+.mt-12 {
+  margin-top: 12px;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.mt-24 {
+  margin-top: 24px;
+}
+
+.mt-28 {
+  margin-top: 28px;
+}
+
+.mt-32 {
+  margin-top: 32px;
+}
+
+.mt-36 {
+  margin-top: 36px;
+}
+
+.mt-40 {
+  margin-top: 40px;
+}
+
+.mt-44 {
+  margin-top: 44px;
+}
+
+.mt-48 {
+  margin-top: 48px;
+}
+
+// Импорт стилей форм и кнопок
+@import './typography';
+@import './forms';
+@import './buttons';
+@import './switch';
+@import './icons';
+@import './fontawesome';
+@import './info';
+@import './homepage';
+@import './theme-switcher';
+@import './tabs';
+@import './data-table';
+@import './header';
+@import './footer';
+@import './sidebar';
+

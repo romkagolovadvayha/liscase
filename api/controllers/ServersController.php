@@ -9,27 +9,77 @@ use yii\web\Response;
 
 class ServersController extends Controller
 {
+    public $enableCsrfValidation = false;
+
+    public function beforeAction($action)
+    {
+        // Устанавливаем CORS заголовки
+        Yii::$app->response->headers->set('Access-Control-Allow-Origin', '*');
+        Yii::$app->response->headers->set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        Yii::$app->response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+        Yii::$app->response->headers->set('Access-Control-Max-Age', '3600');
+        
+        // Обработка preflight запросов
+        if (Yii::$app->request->method === 'OPTIONS') {
+            Yii::$app->response->statusCode = 200;
+            Yii::$app->end();
+        }
+        
+        return parent::beforeAction($action);
+    }
 
     public function actionIndex() {
         Yii::$app->response->statusCode = 200;
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
-        /** @var Servers[] $list */
-        $list = Servers::find()
-                       ->cache(60)
-                       ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
-                       ->orderBy(['sort' => SORT_ASC])
-                       ->all();
+        // Кэшируем результат на 3 минуты (180 секунд)
+        $cacheKey = 'servers_api_list';
+        $items = Yii::$app->cache->get($cacheKey);
+        
+        if ($items === false) {
+            /** @var Servers[] $list */
+            $list = Servers::find()
+                           ->with('serversTags') // Загружаем теги вместе с серверами (eager loading)
+                           ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+                           ->orderBy(['sort' => SORT_ASC])
+                           ->all();
 
-        $items = [];
-        foreach ($list as $item) {
-            $items[] = [
-                'name' => $item->name,
-                'ip' => $item->ip,
-                'port' => $item->port,
-                'query' => $item->query,
-                'tag' => $item->tag,
-            ];
+            $items = [];
+            foreach ($list as $item) {
+                // Получаем теги сервера через связь
+                $tags = [];
+                foreach ($item->serversTags as $serverTag) {
+                    $tags[] = $serverTag->name;
+                }
+                
+                // Определяем тип вайпа
+                $wipeTypeText = null;
+                if ($item->wipe_type === 7) {
+                    $wipeTypeText = 'Недельный';
+                } elseif ($item->wipe_type === 14) {
+                    $wipeTypeText = 'Двухнедельный';
+                } elseif ($item->wipe_type === 30) {
+                    $wipeTypeText = 'Месячный';
+                }
+                
+                $items[] = [
+                    'name' => $item->monitoring_name,
+                    'ip' => $item->ip,
+                    'text_ip' => $item->text_ip, // Текстовый IP адрес
+                    'port' => $item->port,
+                    'query' => $item->query,
+                    'tag' => $item->tag,
+                    'online' => (int)$item->players, // Текущий онлайн на сервере
+                    'joined' => (int)$item->joined, // Игроки в очереди
+                    'max' => (int)$item->max, // Максимальный онлайн
+                    'tags' => implode(', ', $tags), // Теги сервера через запятую (link_name)
+                    'wipe_type' => $item->wipe_type, // Тип вайпа: 7, 14 или 30
+                    'wipe_type_text' => $wipeTypeText, // Текст типа вайпа
+                ];
+            }
+            
+            // Сохраняем в кэш на 3 минуты (180 секунд)
+            Yii::$app->cache->set($cacheKey, $items, 60);
         }
 
         return $items;

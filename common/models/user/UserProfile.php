@@ -18,9 +18,6 @@ use yii\helpers\ArrayHelper;
  * @property int    $gender
  * @property string $birthday
  * @property string $trade_link
- * @property string $youtube_link
- * @property string $tiktok_link
- * @property string $twitch_link
  * @property bool   $skindrops
  * @property string $skindrops_error
  * @property int    $referral_bonus
@@ -28,6 +25,13 @@ use yii\helpers\ArrayHelper;
  * @property string $blogger_account
  * @property bool   $is_blogger
  * @property bool   $parent_bonus
+ * @property string|null $youtube_link
+ * @property string|null $twitch_link
+ * @property string|null $vk_link
+ * @property string|null $telegram_link
+ * @property string|null $steam_avatar_url
+ * @property bool   $is_hide_online
+ * @property bool   $is_hide_team
  *
  * @property User    $user
  */
@@ -67,8 +71,11 @@ class UserProfile extends \common\components\base\ActiveRecord
                 ],
                 'integer',
             ],
-            [['name', 'surname', 'trade_link', 'youtube_link', 'tiktok_link', 'twitch_link', 'full_name', 'avatar'], 'string', 'max' => 255],
-            [['birthday'], 'safe'],
+            [['name', 'surname', 'trade_link', 'full_name', 'avatar'], 'string', 'max' => 255],
+            [['youtube_link', 'twitch_link', 'vk_link', 'telegram_link', 'steam_avatar_url'], 'string', 'max' => 500],
+            [['youtube_link', 'twitch_link', 'vk_link', 'telegram_link', 'steam_avatar_url'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true],
+            [['birthday', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link', 'steam_avatar_url', 'is_hide_online', 'is_hide_team'], 'safe'],
+            [['is_hide_online', 'is_hide_team'], 'boolean'],
             [['user_id'], 'unique'],
         ];
     }
@@ -78,9 +85,6 @@ class UserProfile extends \common\components\base\ActiveRecord
         return [
             'name' => 'Имя',
             'trade_link' => 'Ссылка на страницу обмена Steam',
-            'youtube_link' => 'Ссылка на YouTube канал',
-            'tiktok_link' => 'Ссылка на TikTok',
-            'twitch_link' => 'Ссылка на Twitch канал',
         ];
     }
 

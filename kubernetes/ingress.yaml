@@ -1,0 +1,162 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: liscase-ingress
+  namespace: liscase
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "128m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  tls:
+  - hosts:
+    - prostoj.store
+    - www.prostoj.store
+    - en.prostoj.store
+    - e.prostoj.store
+    - www.e.prostoj.store
+    - api.prostoj.store
+    - www.api.prostoj.store
+    - ws.prostoj.store
+    secretName: liscase-tls
+  rules:
+  # Frontend (Russian)
+  - host: prostoj.store
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: liscase-app-service
+            port:
+              number: 80
+  
+  - host: www.prostoj.store
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: liscase-app-service
+            port:
+              number: 80
+  
+  # Frontend (English)
+  - host: en.prostoj.store
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: liscase-app-service
+            port:
+              number: 80
+  
+  # Backend
+  - host: e.prostoj.store
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: liscase-app-service
+            port:
+              number: 80
+  
+  - host: www.e.prostoj.store
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: liscase-app-service
+            port:
+              number: 80
+  
+  # API
+  - host: api.prostoj.store
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: liscase-app-service
+            port:
+              number: 80
+  
+  # API www
+  - host: www.api.prostoj.store
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: liscase-app-service
+            port:
+              number: 80
+  
+  # WebSocket
+  - host: ws.prostoj.store
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: websocket-service
+            port:
+              number: 8080
+
+---
+# Ingress для WebSocket с особыми настройками
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: liscase-websocket-ingress
+  namespace: liscase
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "websocket-service"
+spec:
+  tls:
+  - hosts:
+    - ws.prostoj.store
+    secretName: websocket-tls
+  rules:
+  - host: ws.prostoj.store
+    http:
+      paths:
+      - path: /ws/
+        pathType: Prefix
+        backend:
+          service:
+            name: websocket-service
+            port:
+              number: 8080
+      - path: /radio1/
+        pathType: Prefix
+        backend:
+          service:
+            name: node-services
+            port:
+              number: 3007
+      - path: /radio2/
+        pathType: Prefix
+        backend:
+          service:
+            name: node-services
+            port:
+              number: 3008
+

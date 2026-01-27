@@ -35,12 +35,14 @@ usort(
     }
 );
 
-
-$items = array_slice($items, 0, 10);
+$totalItems = count($items);
+$visibleItems = array_slice($items, 0, 3);
+$hiddenItems = array_slice($items, 3);
+$hasMore = count($hiddenItems) > 0;
 
 ?>
 <!-- Любимая еда -->
-<section class="page-stats__block-without-hover w-50p">
+<section class="page-stats__block w-50p">
     <header class="flex items-center justify-space-between mb-24 transition-all">
         <h3 class="flex items-center gap-x-12">
             <?=Yii::t('common', 'Любимая еда')?><span
@@ -50,19 +52,10 @@ $items = array_slice($items, 0, 10);
                     data-bs-title="<?=Yii::t('common', 'В этом блоке отображается все, что сьел игрок за вайп.')?>"
             ></span>
         </h3>
-
-<!--        <label class="page-stats__show-statistics-block">-->
-<!--            <p class="p1 text-text-teritiary">--><?//=Yii::t('common', 'Показывать')?><!--</p>-->
-<!--            <input checked type="checkbox" class="show-statistics-block__switch none" />-->
-<!--            <span>-->
-<!--                      <span class="icons icons_switch icons_switch_on"></span>-->
-<!--                      <span class="icons icons_switch icons_switch_off"></span>-->
-<!--                    </span>-->
-<!--        </label>-->
     </header>
 
     <div class="page-stats__categories">
-        <?php foreach ($items as $item): ?>
+        <?php foreach ($visibleItems as $item): ?>
             <div class="page-stats__category category <?= $item['key'] ?>">
                 <h5 class="category__count-and-img">
                     <span><?= $item['desc'] ?></span>
@@ -71,5 +64,62 @@ $items = array_slice($items, 0, 10);
                 <p class="category__title"><?= $item['name'] ?></p>
             </div>
         <?php endforeach; ?>
+        <?php if ($hasMore): ?>
+            <?php foreach ($hiddenItems as $item): ?>
+                <div class="page-stats__category category food-item-hidden <?= $item['key'] ?>" style="display: none;">
+                    <h5 class="category__count-and-img">
+                        <span><?= $item['desc'] ?></span>
+                        <img src="<?= $item['image'] ?>" alt="<?= $item['name'] ?>" class="w-64 h-64 object-contain"/>
+                    </h5>
+                    <p class="category__title"><?= $item['name'] ?></p>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
+    
+    <?php if ($hasMore): ?>
+        <button type="button" class="food-show-more-btn button button-secondary w-full mt-16" data-text-more="<?= Yii::t('common', 'Показать еще {count}') ?>" data-text-less="<?= Yii::t('common', 'Скрыть') ?>">
+            <span class="food-show-more-text"><?= Yii::t('common', 'Показать еще {count}', ['count' => count($hiddenItems)]) ?></span>
+            <i class="fas fa-chevron-down"></i>
+        </button>
+    <?php endif; ?>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const showMoreBtn = document.querySelector('.food-show-more-btn');
+    if (!showMoreBtn) return;
+    
+    const hiddenItems = document.querySelectorAll('.food-item-hidden');
+    if (hiddenItems.length === 0) return;
+    
+    const textElement = showMoreBtn.querySelector('.food-show-more-text');
+    const iconElement = showMoreBtn.querySelector('i');
+    
+    if (!textElement) return;
+    
+    let isExpanded = false;
+    
+    showMoreBtn.addEventListener('click', function() {
+        isExpanded = !isExpanded;
+        
+        if (isExpanded) {
+            hiddenItems.forEach(item => {
+                item.style.display = '';
+            });
+            textElement.textContent = showMoreBtn.dataset.textLess;
+            if (iconElement) {
+                iconElement.classList.add('food-show-more-icon--rotated');
+            }
+        } else {
+            hiddenItems.forEach(item => {
+                item.style.display = 'none';
+            });
+            textElement.textContent = showMoreBtn.dataset.textMore.replace('{count}', hiddenItems.length);
+            if (iconElement) {
+                iconElement.classList.remove('food-show-more-icon--rotated');
+            }
+        }
+    });
+});
+</script>

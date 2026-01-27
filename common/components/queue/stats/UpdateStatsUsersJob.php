@@ -48,6 +48,10 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
 
                 unset($params['kills']);
                 unset($params['deaths']);
+
+                // Проверяем наличие cupboard_authorized для отправки уведомления
+                $hasCupboardAuth = !empty($params['cupboard_authorized']);
+
                 $dbTransaction = Yii::$app->db->beginTransaction();
                 try {
                     foreach ($params as $key => $value) {
@@ -74,6 +78,11 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
                                                                                'server' => $this->server,
                                                                                'steamId' => $steamId,
                                                                            ]));
+
+                    // Отправляем уведомление если игрок авторизовался в шкафу
+                    if ($hasCupboardAuth) {
+                        $this->sendRaidNotifyPromo($steamId);
+                    }
                 } catch (\Exception $e) {
                     Yii::$app->telegramChats->sendMessage("UpdateStatsUsersJob::updateTop(user, key, value, server, wipeDate): " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                     $dbTransaction->rollBack();
@@ -81,6 +90,38 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
             }
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage("UpdateStatsUsersJob::updateTop(user, key, value, server, wipeDate): " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+        }
+    }
+
+    /**
+     * Отправляет уведомление пользователю о подключении Telegram бота
+     *
+     * @param string $steamId Steam ID пользователя
+     * @return void
+     */
+    protected function sendRaidNotifyPromo($steamId)
+    {
+        try {
+            // Находим пользователя (без создания нового)
+            $user = User::find()->where(['steam_id' => $steamId])->one();
+            if (!$user) {
+                return;
+            }
+
+            // Находим сервер
+            $server = Servers::findOne(['tag' => $this->serverTag, 'status' => Servers::STATUS_ACTIVE]);
+            if (!$server) {
+                return;
+            }
+
+            // Проверяем нужно ли отправлять уведомление
+            // (если бот не подключен или оповещения отключены)
+            if (empty($user->telegram_chat_id) || $user->is_telegram_blocked || !$user->raid_notify) {
+                // Отправляем сообщение в игровой чат
+                $user->sendRaidNotifyPromoMessage($server);
+            }
+        } catch (\Exception $e) {
+            Yii::error("Failed to send raid notify promo: " . $e->getMessage(), __METHOD__);
         }
     }
 }

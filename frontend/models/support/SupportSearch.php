@@ -59,7 +59,7 @@ class SupportSearch extends Support
             return $dataProvider;
         }
 
-        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
             $query->andWhere(['user_id' => $user->id]);
         }
 

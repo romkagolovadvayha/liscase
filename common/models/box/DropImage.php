@@ -45,10 +45,11 @@ class DropImage extends ActiveRecord
     }
 
     public function getImagePubUrl($cdn = true) {
-        if ($cdn) {
-            return Yii::$app->settings->get('site_cdnUrl') . "/uploads" . $this->image;
-        }
-        return "/uploads" . $this->image;
+        // Формируем ключ для S3
+        $s3Key = 'uploads' . $this->image;
+        
+        // Используем S3Api для получения публичного URL (он использует настройки из settings)
+        return Yii::$app->s3Api->getPublicUrl($s3Key);
     }
 
     public function getImagePubUrlShop($cdn = true) {
@@ -64,10 +65,10 @@ class DropImage extends ActiveRecord
             }
             $image .= "/{$pref}";
         }
-        if ($cdn) {
-            return Yii::$app->settings->get('site_cdnUrl') . "/uploads" . $image;
-        }
-        return Yii::$app->params['baseUrl'] . "/uploads" . $image;
+        $s3Key = 'uploads' . $image;
+        
+        // Используем S3Api для получения публичного URL (он использует настройки из settings)
+        return Yii::$app->s3Api->getPublicUrl($s3Key);
     }
 
     public function rules(): array
@@ -114,93 +115,137 @@ class DropImage extends ActiveRecord
             return false;
         }
 
+        // Проверяем, что исходный файл существует и доступен для чтения
+        if (!file_exists($sourcePath) || !is_readable($sourcePath)) {
+            \Yii::error('Source image file does not exist or is not readable: ' . $sourcePath, __METHOD__);
+            return false;
+        }
+
         // Открытие оригинального изображения
-        $image = Image::getImagine()->open($sourcePath);
+        try {
+            $image = Image::getImagine()->open($sourcePath);
+        } catch (\Exception $e) {
+            \Yii::error('Failed to open image file: ' . $sourcePath . ' - ' . $e->getMessage(), __METHOD__);
+            return false;
+        }
+        
         $size = $image->getSize();
+        $originalWidth = $size->getWidth();
+        $originalHeight = $size->getHeight();
+        
+        // Проверяем, что изображение имеет валидные размеры
+        if ($originalWidth <= 0 || $originalHeight <= 0) {
+            \Yii::error('Invalid image dimensions: ' . $originalWidth . 'x' . $originalHeight . ' for file: ' . $sourcePath, __METHOD__);
+            return false;
+        }
 
         $maxWidth = $newSize;
         $maxHeight = $newSize;
 
         // Расчет масштабного коэффициента
-        $ratio = min($maxWidth / $size->getWidth(), $maxHeight / $size->getHeight(), 1);
+        $ratio = min($maxWidth / $originalWidth, $maxHeight / $originalHeight, 1);
 
         // Новые размеры
-        $newWidth = (int)($size->getWidth() * $ratio);
-        $newHeight = (int)($size->getHeight() * $ratio);
+        $newWidth = (int)($originalWidth * $ratio);
+        $newHeight = (int)($originalHeight * $ratio);
+        
+        // Проверяем, что новые размеры валидны
+        if ($newWidth <= 0 || $newHeight <= 0) {
+            \Yii::error('Invalid calculated dimensions: ' . $newWidth . 'x' . $newHeight . ' for size: ' . $newSize, __METHOD__);
+            return false;
+        }
+        
         $box = new \Imagine\Image\Box($newWidth, $newHeight);
 
         // Создание уменьшенного изображения с сохранением пропорций
-        $resizedImage = $image->resize($box);
+        try {
+            $resizedImage = $image->resize($box);
+        } catch (\Exception $e) {
+            \Yii::error('Failed to resize image: ' . $sourcePath . ' to ' . $newWidth . 'x' . $newHeight . ' - ' . $e->getMessage(), __METHOD__);
+            return false;
+        }
 
-        if (!file_exists(dirname($destinationPath))) {
-            mkdir(dirname($destinationPath));
-            chmod(dirname($destinationPath), 0777);
+        // Создаем директорию для файла назначения, если она не существует
+        $destinationDir = dirname($destinationPath);
+        if ($destinationDir !== '.' && $destinationDir !== '/' && !file_exists($destinationDir)) {
+            if (!@mkdir($destinationDir, 0777, true)) {
+                \Yii::error('Failed to create destination directory: ' . $destinationDir, __METHOD__);
+                return false;
+            }
+            @chmod($destinationDir, 0777);
         }
 
         // Сохранение в PNG с уровнем сжатия 6 (примерно 70%)
-        $resizedImage->save($destinationPath, [
-            'format' => 'png',
-            'png_compression_level' => 9, // 0 — без сжатия, 9 — максимум
-            'flatten' => false, // сохраняет прозрачность
-        ]);
+        try {
+            $resizedImage->save($destinationPath, [
+                'format' => 'png',
+                'png_compression_level' => 9, // 0 — без сжатия, 9 — максимум
+                'flatten' => false, // сохраняет прозрачность
+            ]);
+            
+            // Небольшая задержка для гарантии записи на диск
+            usleep(10000); // 10ms
+            
+            // Проверяем, что файл был успешно создан
+            if (!file_exists($destinationPath)) {
+                \Yii::error('Failed to save resized image to: ' . $destinationPath . ' - file does not exist after save', __METHOD__);
+                return false;
+            }
+            if (!is_readable($destinationPath)) {
+                \Yii::error('Failed to save resized image to: ' . $destinationPath . ' - file is not readable', __METHOD__);
+                return false;
+            }
+            if (filesize($destinationPath) === 0) {
+                \Yii::error('Failed to save resized image to: ' . $destinationPath . ' - file is empty', __METHOD__);
+                @unlink($destinationPath);
+                return false;
+            }
+        } catch (\Exception $e) {
+            \Yii::error('Exception while saving resized image: ' . $destinationPath . ' - ' . $e->getMessage() . ' (' . get_class($e) . ')', __METHOD__);
+            return false;
+        } catch (\Throwable $e) {
+            \Yii::error('Throwable while saving resized image: ' . $destinationPath . ' - ' . $e->getMessage() . ' (' . get_class($e) . ')', __METHOD__);
+            return false;
+        }
 
         if ($newSize == 150 || $newSize == 64 || $newSize == 200) {
-            DropImage::TinyPNG($destinationPath);
-        }
-
-        return true;
-    }
-
-    public static function TinyPNG($destinationPath) {
-
-        \Tinify\setKey("dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8"); // ← сюда свой ключ
-        try {
-            $source = \Tinify\fromFile($destinationPath);
-            $source->toFile($destinationPath); // перезаписывает исходный файл
-        } catch(\Tinify\Exception $e) {
-            \Tinify\setKey("SQMyJN0ZNs1zQfzrwBjMcsRHCnpffCbl"); // ← сюда свой ключ
+            // Пытаемся сжать изображение через Tinify (не критично, если не получится)
+            // Используем только первый ключ с коротким таймаутом для быстрой обработки
+            $tinifySuccess = false;
             try {
+                // Устанавливаем таймаут для Tinify (если поддерживается)
+                if (method_exists('\Tinify\Tinify', 'setTimeout')) {
+                    \Tinify\Tinify::setTimeout(3); // 3 секунды таймаут
+                }
+                \Tinify\setKey("dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8"); // ← сюда свой ключ
                 $source = \Tinify\fromFile($destinationPath);
                 $source->toFile($destinationPath); // перезаписывает исходный файл
+                $tinifySuccess = true;
             } catch(\Tinify\Exception $e) {
-                \Tinify\setKey("8DTWnyW4m99062qs1X7p6dGgFcjM3Gb7"); // ← сюда свой ключ
+                // Если первый ключ не сработал, пробуем еще один раз, но не все ключи
                 try {
+                    \Tinify\setKey("SQMyJN0ZNs1zQfzrwBjMcsRHCnpffCbl"); // ← сюда свой ключ
                     $source = \Tinify\fromFile($destinationPath);
-                    $source->toFile($destinationPath); // перезаписывает исходный файл
-                } catch(\Tinify\Exception $e) {
-                    \Tinify\setKey("yq4GXtx6DlyJhqWmgH0f5JPYYw68JNZY"); // ← сюда свой ключ
-                    try {
-                        $source = \Tinify\fromFile($destinationPath);
-                        $source->toFile($destinationPath); // перезаписывает исходный файл
-                    } catch(\Tinify\Exception $e) {
-                        \Tinify\setKey("vtKS1W5X6sFdtyxgkvMfB58NzCPYT31X"); // ← сюда свой ключ
-                        try {
-                            $source = \Tinify\fromFile($destinationPath);
-                            $source->toFile($destinationPath); // перезаписывает исходный файл
-                        } catch(\Tinify\Exception $e) {
-                            \Tinify\setKey("WmKCQdqXYJFhYtC2H8LgJwsk83Lm8L3h"); // ← сюда свой ключ
-                            try {
-                                $source = \Tinify\fromFile($destinationPath);
-                                $source->toFile($destinationPath); // перезаписывает исходный файл
-                            } catch(\Tinify\Exception $e) {
-                                \Tinify\setKey("Lzh9MLcXk3NVNw9cNDZLGl6jWGkdHySw"); // ← сюда свой ключ
-                                try {
-                                    $source = \Tinify\fromFile($destinationPath);
-                                    $source->toFile($destinationPath); // перезаписывает исходный файл
-                                } catch(\Tinify\Exception $e) {
-                                    \Tinify\setKey("DFtVM70njvNkKXNBTkbQBB2nRHXjh59s"); // ← сюда свой ключ
-                                    try {
-                                        $source = \Tinify\fromFile($destinationPath);
-                                        $source->toFile($destinationPath); // перезаписывает исходный файл
-                                    } catch(\Tinify\Exception $e) {
-                                        Yii::error("TinyPNG compression error: " . $e->getMessage());
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    $source->toFile($destinationPath);
+                    $tinifySuccess = true;
+                } catch(\Tinify\Exception $e2) {
+                    // Пропускаем остальные ключи для ускорения - просто логируем
+                    \Yii::info('Tinify compression skipped: ' . $e2->getMessage(), __METHOD__);
                 }
+            } catch(\Exception $e) {
+                // Любая другая ошибка - просто пропускаем сжатие
+                \Yii::info('Tinify compression error: ' . $e->getMessage(), __METHOD__);
             }
+            
+            // Проверяем, что файл все еще существует после попыток сжатия
+            if (!file_exists($destinationPath) || !is_readable($destinationPath)) {
+                \Yii::error('File was deleted or became unreadable after Tinify compression: ' . $destinationPath, __METHOD__);
+                return false;
+            }
+            
+            return true;
         }
+        
+        return true;
     }
 }

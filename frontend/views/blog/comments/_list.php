@@ -8,10 +8,10 @@ use yii2mod\editable\Editable;
 /* @var $model \yii2mod\comments\models\CommentModel */
 /* @var $maxLevel null|integer comments max level */
 ?>
-<li class="comment" id="comment-<?php echo $model->id; ?>">
+<li class="comment" id="comment-<?php echo $model->id; ?>" itemscope itemtype="https://schema.org/Comment">
     <div class="comment-content" data-comment-content-id="<?php echo $model->id; ?>">
         <div class="comment-author-avatar">
-            <?php echo Html::img($model->getAvatar(), ['alt' => $model->getAuthorName()]); ?>
+            <?php echo Html::img($model->getAvatar(), ['alt' => $model->getAuthorName(), 'itemprop' => 'image']); ?>
         </div>
         <div class="comment-details">
             <div class="comment-action-buttons">
@@ -20,10 +20,16 @@ use yii2mod\editable\Editable;
                 <?php endif; ?>
             </div>
             <div class="">
-                <span><?=$model->getAuthorName();?></span>
-                <?php echo Html::a($model->getPostedDate(), $model->getAnchorUrl(), ['class' => 'comment-date']); ?>
+                <span itemprop="author" itemscope itemtype="https://schema.org/Person">
+                    <span itemprop="name"><?=$model->getAuthorName();?></span>
+                </span>
+                <?php echo Html::a($model->getPostedDate(), $model->getAnchorUrl(), [
+                    'class' => 'comment-date',
+                    'itemprop' => 'datePublished',
+                    'datetime' => date('c', $model->createdAt)
+                ]); ?>
             </div>
-            <div class="comment-body">
+            <div class="comment-body" itemprop="text">
                 <?php if (Yii::$app->getModule('comment')->enableInlineEdit && Yii::$app->getUser()->can('admin')): ?>
                     <?php echo Editable::widget([
                         'model' => $model,
@@ -39,6 +45,7 @@ use yii2mod\editable\Editable;
             </div>
         </div>
     </div>
+    <meta itemprop="dateCreated" content="<?= date('c', $model->createdAt) ?>">
 </li>
 <?php if ($model->hasChildren()) : ?>
     <ul class="children">

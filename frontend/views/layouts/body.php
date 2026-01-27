@@ -98,13 +98,49 @@ if (!empty($this->params['_user'])) {
     if (!empty($buildings)) {
         $buildingsBlock = $this->render('@frontend/views/widgets/buildings.twig', ['ITEMS' => $buildings]);
     }
+
+    // Проверяем, является ли текущий пользователь владельцем страницы
+    $isOwner = !Yii::$app->user->isGuest && Yii::$app->user->id === $_user->id;
+
+    // Проверяем, есть ли команда у пользователя (даже если она скрыта)
+    $hasTeam = false;
     try {
-        $team = \common\models\teams\Teams::getTeamList($_server->id, $_user->user_id, $_server->currentWipe());
+        $teamRows = \common\models\teams\Teams::find()->alias('t')
+            ->innerJoin(\common\models\teams\Teams::tableName() . ' t2',
+                't.leader_user_id = t2.leader_user_id AND t.server_id = t2.server_id AND t.wipe = t2.wipe'
+            )
+            ->where([
+                't2.user_id' => $_user->user_id,
+                't2.server_id' => $_server->id,
+                't2.wipe' => $_server->currentWipe(),
+            ])
+            ->exists();
+        $hasTeam = $teamRows;
     } catch (\Exception $e) {
-        Yii::$app->telegramChats->sendMessage("getTeamList: " . $e->getFile() . ":" . $e->getLine() . ": " . $e->getMessage());
-        $team = [];
+        // Игнорируем ошибку при проверке
     }
-    $teamBlock = $this->render('@frontend/views/widgets/teams.twig', ['ITEMS' => $team]);
+
+    // Показываем блок команды только если:
+    // 1. У пользователя не скрыт список команды, ИЛИ
+    // 2. Текущий пользователь является владельцем страницы
+    if (!$isOwner && $_user->hasHideTeam()) {
+        // Если команда есть, но скрыта, показываем сообщение
+        if ($hasTeam) {
+            $teamBlock = $this->render('@frontend/views/widgets/team_hidden.twig');
+        } else {
+            // Если команды нет, не показываем ничего
+            $teamBlock = null;
+        }
+    } else {
+        try {
+            $team = \common\models\teams\Teams::getTeamList($_server->id, $_user->user_id, $_server->currentWipe());
+        } catch (\Exception $e) {
+            Yii::$app->telegramChats->sendMessage("getTeamList: " . $e->getFile() . ":" . $e->getLine() . ": " . $e->getMessage());
+            $team = [];
+        }
+        $teamBlock = $this->render('@frontend/views/widgets/teams.twig', ['ITEMS' => $team]);
+    }
+
     $kills = Kills::getKillsLive($_server, $_user);
     $killsBlock = $this->render('@frontend/views/widgets/kills.twig', ['ITEMS' => $kills]);
 }
@@ -114,10 +150,13 @@ if (!empty($this->params['_profile'])) {
 }
 $topBlock = null;
 $liveBlock = null;
-//if (empty($this->params['_blog_similar_block'])) {
-//    $topBlock = $this->render('@frontend/views/widgets/_top', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]);
-//    $liveBlock = $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS]);
-//}
+if (empty($this->params['_blog_similar_block'])) {
+    $topBlock = $this->render('@frontend/views/widgets/_top', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS, 'PAGE' => $page]);
+    $liveBlock = $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS, 'PAGE' => $page]);
+}
+
+// Виджет кнопки "ИТОГИ ГОДА"
+$yearReviewButton = '';
 ?>
 
 <?php $this->beginBody() ?>
@@ -173,6 +212,15 @@ $liveBlock = null;
         'SETTINGS' => $SETTINGS,
         'USER_GUEST' => Yii::$app->user->isGuest,
     ]),
+    'MOBILE_MENU' => Yii::$app->view->render('menu.twig', [
+        'MENU_HIDDEN' => false,
+        'MOBILE' => true,
+        'USER' => $userData,
+        'NOTIFICATIONS' => $notifications,
+        'PAGE' => $page,
+        'SETTINGS' => $SETTINGS,
+        'USER_GUEST' => Yii::$app->user->isGuest,
+    ]),
     'MODAL' => Yii::$app->view->render('modal.twig', [
         'SETTINGS' => $SETTINGS,
     ]),
@@ -186,7 +234,7 @@ $liveBlock = null;
         'USER_GUEST' => Yii::$app->user->isGuest,
     ]),
     'SETTINGS' => $SETTINGS,
-    'PAGE' => $page
+    'PAGE' => $page,
 ]);?>
 
 <?=Yii::$app->view->render('metrics.twig')?>

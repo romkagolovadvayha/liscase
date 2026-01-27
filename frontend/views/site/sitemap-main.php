@@ -14,6 +14,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
         ['/skindrops', 'priority' => '0.9'],
         ['/custom-skins', 'priority' => '0.9'],
         ['/buildings', 'priority' => '0.9'],
+        ['/radio', 'priority' => '0.9'],
     ];
     foreach ($urls as $u):
         $loc = Url::to($u[0], true);

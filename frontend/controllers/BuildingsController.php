@@ -35,7 +35,7 @@ class BuildingsController extends WebController
                 'rules' => [
                     [
                         'allow' => true,
-                        'actions' => ['index', 'view']
+                        'actions' => ['index', 'view', 'get-likes']
                     ],
                     [
                         'allow' => true,
@@ -72,8 +72,6 @@ class BuildingsController extends WebController
             'tag',
             'name'
         );
-
-        $this->view->params['meta_description'] = Yii::t('common', "Смотрите лучшие постройки игроков в Rust! На этой странице вы можете выкладывать свои творения, оценивать работы других игроков и находить вдохновение для новых проектов. Покажите свои строительные навыки, получите признание сообщества и узнайте, как создаются уникальные базы, форты и сооружения в Rust!");
 
         $canonical = Yii::$app->params['homePage'] . '/buildings';
         $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
@@ -264,16 +262,13 @@ class BuildingsController extends WebController
         foreach ($model->buildingResident as $resident) {
             $resident->delete();
         }
+        $s3Api = Yii::$app->s3Api;
         foreach ($model->buildingImage as $image) {
-            $uploadDir = Yii::getAlias('@app/web/uploads');
-            $filePath = $uploadDir . "/buildings/" . $image->image;
-            $filePathPreview = $uploadDir . "/buildings/preview_" . $image->image;
-            if (file_exists($filePath)) {
-                unlink($filePath);
-            }
-            if (file_exists($filePathPreview)) {
-                unlink($filePathPreview);
-            }
+            // Удаляем из S3
+            $s3KeyOriginal = 'uploads/buildings/' . $image->image;
+            $s3KeyPreview = 'uploads/buildings/preview_' . $image->image;
+            $s3Api->deleteFile($s3KeyOriginal);
+            $s3Api->deleteFile($s3KeyPreview);
             $image->delete();
         }
         foreach ($model->buildingLikes as $like) {
@@ -284,6 +279,49 @@ class BuildingsController extends WebController
 
         Yii::$app->session->addFlash('success', Yii::t('common', 'Запись успешно удалена!'));
         return $this->redirect(['index']);
+    }
+
+    /**
+     * Get users who liked this building (for tooltip)
+     * @param int $id Building ID
+     * @return array JSON response
+     */
+    public function actionGetLikes($id)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        
+        $building = Building::findOne($id);
+        if (!$building) {
+            return ['users' => [], 'total' => 0];
+        }
+        
+        // Get total count
+        $totalCount = BuildingLike::find()
+            ->where(['building_id' => $id])
+            ->count();
+        
+        // Get only 5 latest
+        $likes = BuildingLike::find()
+            ->where(['building_id' => $id])
+            ->with(['user'])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->limit(5)
+            ->all();
+        
+        $users = [];
+        foreach ($likes as $like) {
+            if ($like->user) {
+                $users[] = [
+                    'username' => $like->user->username,
+                    'avatar' => $like->user->getAvatar(),
+                ];
+            }
+        }
+        
+        return [
+            'users' => $users,
+            'total' => (int)$totalCount,
+        ];
     }
 
     /**

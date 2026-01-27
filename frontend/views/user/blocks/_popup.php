@@ -30,7 +30,10 @@ $skinsForm = new SkinsForm();
     <p class="category__title" <?php if ($model['statTrak']): ?>style="color: #CF6A32"<?php endif; ?>><?=$model['ru_name']?></p>
     <?php if (!empty($model['ru_quality'])): ?><p class="category__title"><span class="p3"><?=$model['ru_quality']?></span></p><?php endif; ?>
     <div class="page-stats__category__footer mt-6">
-        <?php if ($balance > $model['price']): ?>
+        <?php 
+        // Округляем баланс в большую сторону для корректного сравнения с ценой
+        $balanceCeil = ceil($balance);
+        if ($balanceCeil >= $model['price']): ?>
             <div style="display: none"><?=$form->field($skinsForm, 'id')->label(false)->hiddenInput(['value' => $model['id']])?></div>
             <div style="display: none"><?=$form->field($skinsForm, 'amount')->label(false)->hiddenInput(['value' => $model['price']])?></div>
             <button type="submit" class="button-secondary button-size__s h-36 w-full" style="padding-top: 6px; padding-bottom: 6px">

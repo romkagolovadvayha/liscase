@@ -8,14 +8,21 @@ use common\models\statistics\Reports;
 /** @var \common\models\user\User $user */
 
 $server = null;
+$ticketUser = null;
+
 if (!empty($model->support)) {
     if (!empty($model->support->server)) {
         $server = $model->support->server;
     }
-    $ticketUser = $model->support->user;
+    $ticketUser = !empty($model->support->user) ? $model->support->user : null;
 } else {
     $ticketUser = $user;
-    $server = $user->server;
+    $server = !empty($user->server) ? $user->server : null;
+}
+
+// Если пользователь не найден, используем текущего пользователя
+if (empty($ticketUser)) {
+    $ticketUser = $user;
 }
 
 $isUser = empty($model->support_id) || $ticketUser->id == $user->id;
@@ -35,7 +42,7 @@ $reports = Reports::find()
         <?=Yii::t('common', 'Сервер игрока')?>:
     <?php endif; ?> <?=(!empty($server)) ? Yii::t('database', $server->name) : Yii::t('common', 'неизвестно')?>
 </div>
-<?php if (!empty($ticketUser->userProfile->trade_link)): ?>
+<?php if (!empty($ticketUser->userProfile) && !empty($ticketUser->userProfile->trade_link)): ?>
     <div class="support_messages_item_message_text">
         <?php if ($isUser): ?>
             <?=Yii::t('common', 'Ваша трейд ссылка')?>:
@@ -70,22 +77,24 @@ $reports = Reports::find()
 <?php if (!empty($reports)): ?>
     <div class="support_messages_item_message_reports">
         <?php foreach ($reports as $item): ?>
-        <a href="<?=$item->user->getLink('stats')?>"
-           data-bs-toggle="tooltip"
-           data-bs-placement="bottom"
-           data-bs-title="<?=Yii::t('common', 'Причина: ')?> <?=$item->reason?>"
-           target="_blank"
-           rel="nofollow"
-           class="support_messages_item_message_reports_item">
-            <div class="support_messages_item_message_reports_item_avatar">
-                <img src="<?=$item->user->getAvatar()?>" width="50px">
-            </div>
-            <div class="support_messages_item_message_reports_item_content">
-                <div class="support_messages_item_message_reports_item_content_name"><?=$item->user->username?></div>
-                <div class="support_messages_item_message_reports_item_content_steam_id"><?=$item->user->steam_id?></div>
-                <div class="support_messages_item_message_reports_item_content_date server_timer" data-time="<?=strtotime($item->created_at)?>"><?=$item->created_at?></div>
-            </div>
-        </a>
+            <?php if (!empty($item->user)): ?>
+            <a href="<?=$item->user->getLink('stats')?>"
+               data-bs-toggle="tooltip"
+               data-bs-placement="bottom"
+               data-bs-title="<?=Yii::t('common', 'Причина: ')?> <?=$item->reason?>"
+               target="_blank"
+               rel="nofollow"
+               class="support_messages_item_message_reports_item">
+                <div class="support_messages_item_message_reports_item_avatar">
+                    <img src="<?=$item->user->getAvatar()?>" width="50px">
+                </div>
+                <div class="support_messages_item_message_reports_item_content">
+                    <div class="support_messages_item_message_reports_item_content_name"><?=$item->user->username?></div>
+                    <div class="support_messages_item_message_reports_item_content_steam_id"><?=$item->user->steam_id?></div>
+                    <div class="support_messages_item_message_reports_item_content_date server_timer" data-time="<?=strtotime($item->created_at)?>"><?=$item->created_at?></div>
+                </div>
+            </a>
+            <?php endif; ?>
         <?php endforeach; ?>
     </div>
 <?php endif; ?>

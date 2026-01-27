@@ -1,0 +1,96 @@
+<?php
+
+namespace backend\models\blog;
+
+use yii\base\Model;
+use Yii;
+use yii\data\ActiveDataProvider;
+use common\models\blog\Blog;
+use yii\helpers\ArrayHelper;
+
+/**
+ * BlogSearch represents the model behind the search form of `common\models\blog\Blog`.
+ */
+class BlogSearch extends Blog
+{
+
+    public $category_ids;
+
+    /**
+     * {@inheritdoc}
+     */
+    public function rules()
+    {
+        return [
+            [['id', 'blog_category_id', 'status'], 'integer'],
+            [['name', 'description', 'link_name', 'created_at'], 'safe'],
+        ];
+    }
+
+    public function attributeLabels(): array
+    {
+        return ArrayHelper::merge(parent::attributeLabels(), [
+            'views' => Yii::t('common', '<i class="fas fa-sort-amount-down-alt fas-asc"></i><i class="fas fa-sort-amount-up fas-desc"></i> По просмотрам'),
+            'created_at' => Yii::t('common', '<i class="fas fa-sort-amount-down-alt fas-asc"></i><i class="fas fa-sort-amount-up fas-desc"></i> По дате добавления')
+        ]);
+    }
+
+
+    /**
+     * {@inheritdoc}
+     */
+    public function scenarios()
+    {
+        return Model::scenarios();
+    }
+
+    /**
+     * Creates data provider instance with search query applied
+     *
+     * @param array $params
+     * @param callable|null $filter
+     *
+     * @return ActiveDataProvider
+     */
+    public function search($params, callable $filter = null)
+    {
+        $query = BlogSearch::find()->alias('b')->distinct()->joinWith(['blogCategory bc', 'blogImages i', 'blogRatings r', 'comments c', 'blogCategory.parentCategory pc'])->groupBy('b.id');
+
+        if (is_callable($filter)) {
+            call_user_func($filter, $query);
+        }
+
+        $dataProvider = new ActiveDataProvider([
+            'query' => $query,
+            'pagination' => [
+                'pageSize' => 20,
+            ],
+            'sort'  => [
+                'defaultOrder' => ['created_at' => SORT_DESC],
+            ],
+        ]);
+
+        $this->load($params);
+
+        if (!$this->validate()) {
+            return $dataProvider;
+        }
+
+        $query->andFilterWhere([
+            'b.id' => $this->id,
+            'b.blog_category_id' => $this->blog_category_id,
+            'b.status' => $this->status,
+            'b.created_at' => $this->created_at,
+        ]);
+
+        if (!empty($this->category_ids)) {
+            $query->andFilterWhere(['IN', 'b.blog_category_id', $this->category_ids]);
+        }
+
+        $query->andFilterWhere(['like', 'b.name', $this->name])
+            ->andFilterWhere(['like', 'b.description', $this->description])
+            ->andFilterWhere(['like', 'b.link_name', $this->link_name]);
+
+        return $dataProvider;
+    }
+}

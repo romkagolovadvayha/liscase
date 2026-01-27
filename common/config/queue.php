@@ -11,9 +11,11 @@ return [
         'queueReport',
         'queueTeam',
         'queueTelegram',
+        'queueVk',
         'queueProcess',
         'queueSupport',
         'queueClansStats',
+        'queueRustotekaBot',
 //        'queueOpenAi',
 //        'queueMidjourney',
     ],
@@ -72,6 +74,12 @@ return [
             'channel' => 'queue-telegram',
             'ttr' => 1200,
         ],
+        'queueVk'                => [
+            'class'   => 'yii\queue\redis\Queue',
+            'redis'   => 'redis',
+            'channel' => 'queue-vk',
+            'ttr' => 1200,
+        ],
         'queueProcess'                => [
             'class'   => 'yii\queue\redis\Queue',
             'redis'   => 'redis',
@@ -88,6 +96,12 @@ return [
             'class'   => 'yii\queue\redis\Queue',
             'redis'   => 'redis',
             'channel' => 'queue-clans-stats',
+            'ttr' => 1200,
+        ],
+        'queueRustotekaBot'                => [
+            'class'   => 'yii\queue\redis\Queue',
+            'redis'   => 'redis',
+            'channel' => 'queue-rustoteka-bot',
             'ttr' => 1200,
         ],
 //        'queueOpenAi'                => [

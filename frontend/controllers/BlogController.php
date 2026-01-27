@@ -85,8 +85,60 @@ class BlogController extends WebController
                 )->andFilterWhere(['like', 'b.name', $searchModel->name])->count()
             );
         }
-        $canonical = Yii::$app->params['homePage'] . $blogCategory->getUrl();
-        $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
+        $request = Yii::$app->request;
+
+        $pagination = $dataProvider->getPagination();
+        $sort = $dataProvider->getSort();
+
+        if ($pagination) {
+            $pagination->route = 'blog/category';
+            $paginationParams = $request->getQueryParams();
+            $paginationParams['categoryLinkName'] = $categoryLinkName;
+            if (!empty($categoryLinkNameChild)) {
+                $paginationParams['categoryLinkNameChild'] = $categoryLinkNameChild;
+            }
+            $pagination->params = $paginationParams;
+        }
+        if ($sort) {
+            $sort->route = 'blog/category';
+            $sortParams = $request->getQueryParams();
+            $sortParams['categoryLinkName'] = $categoryLinkName;
+            if (!empty($categoryLinkNameChild)) {
+                $sortParams['categoryLinkNameChild'] = $categoryLinkNameChild;
+            }
+            $sort->params = $sortParams;
+        }
+
+        $canonicalParams = $request->getQueryParams();
+        unset($canonicalParams['categoryLinkName'], $canonicalParams['categoryLinkNameChild']);
+        if ($pagination) {
+            $pageParam = $pagination->pageParam;
+            if (isset($canonicalParams[$pageParam]) && (int)$canonicalParams[$pageParam] <= 1) {
+                unset($canonicalParams[$pageParam]);
+            }
+            $pageSizeParam = $pagination->pageSizeParam;
+            if (!empty($pageSizeParam) && isset($canonicalParams[$pageSizeParam]) && (int)$canonicalParams[$pageSizeParam] === $pagination->pageSize) {
+                unset($canonicalParams[$pageSizeParam]);
+            }
+        }
+        if ($sort) {
+            $sortParam = $sort->sortParam;
+            if (!empty($canonicalParams[$sortParam])) {
+                $defaultOrder = $sort->defaultOrder;
+                $defaultSortValue = null;
+                if (!empty($defaultOrder)) {
+                    $attr = array_key_first($defaultOrder);
+                    $direction = $defaultOrder[$attr];
+                    $defaultSortValue = $direction === SORT_DESC ? '-' . $attr : $attr;
+                }
+                if ($defaultSortValue !== null && $canonicalParams[$sortParam] === $defaultSortValue) {
+                    unset($canonicalParams[$sortParam]);
+                }
+            }
+        }
+        $canonicalQuery = $canonicalParams ? '?' . http_build_query($canonicalParams) : '';
+        $canonicalUrl = Yii::$app->params['homePage'] . $blogCategory->getUrl() . $canonicalQuery;
+        $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonicalUrl]);
         $this->view->registerMetaTag(['name' => 'robots', 'content' => 'index,follow,max-image-preview:large']);
 
         $categories = \common\models\blog\BlogCategory::find()
@@ -98,7 +150,7 @@ class BlogController extends WebController
                                                       ->all();
 
         // на всякий случай фиксируем pageSize
-        $dataProvider->pagination->pageSize = 10;
+        $dataProvider->pagination->pageSize = 20;
         return $this->render('category', [
             'blogCategory' => $blogCategory,
             'dataProvider' => $dataProvider,
@@ -117,7 +169,7 @@ class BlogController extends WebController
         $searchModel  = new \backend\models\blog\BlogSearch();
         $dataProvider = $this->_getDataProvider($searchModel);
 
-        $dataProvider->pagination->pageSize = 10;
+        $dataProvider->pagination->pageSize = 20;
 
         if (!empty($searchModel->name)) {
             $dataProvider->setTotalCount(
@@ -137,28 +189,24 @@ class BlogController extends WebController
                                                       ->all();
 
         // 🔽 Добавляем мета-description
-        $this->view->registerMetaTag([
-                                         'name' => 'description',
-                                         'content' => Yii::t('common',
-                                                             'Новости и блог проекта: баги, ошибки, патчи, Twitch Drops, новые скины и обновления. Читайте полезные статьи и гайды для игроков Rust.'
-                                         )
-                                     ], 'description');
-
-        $this->view->registerMetaTag([
-                                         'property' => 'og:title',
-                                         'content' => Yii::t('common', 'Баги и новости Rust')
-                                     ], 'og:title');
-
-        $this->view->registerMetaTag([
-                                         'property' => 'og:description',
-                                         'content' => Yii::t('common',
-                                                             'Читайте блог: исправление ошибок, советы по выживанию, расписание ивентов, обзоры обновлений и новые Twitch Drops.'
-                                         )
-                                     ], 'og:description');
-
+        $request = Yii::$app->request;
+        $canonicalParams = $request->getQueryParams();
+        unset($canonicalParams['categoryLinkName'], $canonicalParams['categoryLinkNameChild']);
+        if ($dataProvider->getPagination()) {
+            $pageParam = $dataProvider->getPagination()->pageParam;
+            if (isset($canonicalParams[$pageParam]) && (int)$canonicalParams[$pageParam] <= 1) {
+                unset($canonicalParams[$pageParam]);
+            }
+            $pageSizeParam = $dataProvider->getPagination()->pageSizeParam;
+            if (!empty($pageSizeParam) && isset($canonicalParams[$pageSizeParam]) && (int)$canonicalParams[$pageSizeParam] === $dataProvider->getPagination()->pageSize) {
+                unset($canonicalParams[$pageSizeParam]);
+            }
+        }
+        $canonicalQuery = $canonicalParams ? '?' . http_build_query($canonicalParams) : '';
+        $canonicalIndexUrl = Yii::$app->params['homePage'] . '/posts' . $canonicalQuery;
         $this->view->registerLinkTag([
                                          'rel' => 'canonical',
-                                         'href' => Yii::$app->params['homePage'] . '/posts',
+                                         'href' => $canonicalIndexUrl,
                                      ]);
 
         return $this->render('index', [

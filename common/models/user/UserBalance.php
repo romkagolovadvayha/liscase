@@ -133,7 +133,18 @@ class UserBalance extends \common\components\base\ActiveRecord
      */
     public static function getBalance($userId, $type)
     {
-        return self::findOne(['user_id' => $userId, 'type' => $type]);
+        // Используем статический кэш для результата, чтобы не делать запрос каждый раз
+        static $cache = [];
+        $cacheKey = $userId . '_' . $type;
+        
+        if (isset($cache[$cacheKey])) {
+            return $cache[$cacheKey];
+        }
+        
+        $result = self::findOne(['user_id' => $userId, 'type' => $type]);
+        $cache[$cacheKey] = $result;
+        
+        return $result;
     }
 
     public function getBalanceCeil() {
@@ -189,21 +200,17 @@ class UserBalance extends \common\components\base\ActiveRecord
 
         try {
             if ($this->type === self::TYPE_PERSONAL && $oldBalance != $this->balance) {
-                $client = new Client(Yii::$app->params['ws']);
-                $client->send(
-                    json_encode(
-                        [
-                            'action'     => 'updatedBalance',
-                            'code'       => 200,
-                            'balanceStr' => $this->getBalanceFormat(),
-                            'balance'    => $this->balanceCeil,
-                            'user_id'    => $this->user_id,
-                        ]
-                    )
-                );
+                // Сохраняем в кеш для отправки через WebSocket таймер
+                $cacheKey = 'ws_balance_update_' . $this->user_id;
+                Yii::$app->cache->set($cacheKey, [
+                    'type' => 'update.balance',
+                    'balanceStr' => $this->getBalanceFormat(),
+                    'balance' => $this->balanceCeil,
+                    'timestamp' => time(),
+                ], 30);
             }
         } catch (\Exception $ex) {
-            Yii::$app->telegramChats->sendMessage('UserBalance recalculateBalance: ' . Yii::$app->params['ws'] . " " . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
+            Yii::$app->telegramChats->sendMessage('UserBalance recalculateBalance: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
 

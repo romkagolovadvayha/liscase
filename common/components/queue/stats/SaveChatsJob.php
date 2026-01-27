@@ -33,6 +33,9 @@ class SaveChatsJob extends BaseObject implements JobInterface
                 $model->created_at = $item['created_at'];
                 $model->server_tag = $this->serverTag;
                 $model->save();
+
+                $type = Chats::getMuteType($item['message']);
+                Chats::mute($type, $item['message'], $item['steam_id']);
             }
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage($this->data);

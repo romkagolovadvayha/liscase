@@ -12,19 +12,22 @@ class ProfileForm extends UserProfile
     public $ban_notify;
     public $raid_notify;
     public $telegram_disabled;
-    public $youtube_link;
-    public $tiktok_link;
-    public $twitch_link;
+    public $discord_disabled;
 
     public function rules(): array
     {
         return [
-            [['trade_link', 'youtube_link', 'tiktok_link', 'twitch_link'], 'trim'],
-            [['raid_notify', 'ban_notify', 'telegram_disabled'], 'integer'],
-            [['trade_link', 'youtube_link', 'tiktok_link', 'twitch_link'], 'string', 'max' => 255],
-            [['youtube_link'], 'match', 'pattern' => '/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)(\/.*)?$/', 'message' => 'Неверная ссылка на YouTube', 'when' => function($model) { return !empty($model->youtube_link); }],
-            [['tiktok_link'], 'match', 'pattern' => '/^(https?:\/\/)?(www\.)?tiktok\.com(\/.*)?$/', 'message' => 'Неверная ссылка на TikTok', 'when' => function($model) { return !empty($model->tiktok_link); }],
-            [['twitch_link'], 'match', 'pattern' => '/^(https?:\/\/)?(www\.)?twitch\.tv(\/.*)?$/', 'message' => 'Неверная ссылка на Twitch', 'when' => function($model) { return !empty($model->twitch_link); }],
+            [['trade_link', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'trim'],
+            [['raid_notify', 'ban_notify', 'telegram_disabled', 'discord_disabled'], 'integer'],
+            [['is_hide_online', 'is_hide_team'], 'boolean'],
+            [['trade_link', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'string', 'max' => 255],
+            // Валидация URL только для непустых значений
+            [['youtube_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
+            [['twitch_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
+            [['vk_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
+            [['telegram_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
+            // Помечаем поля как safe для массового присваивания
+            [['is_hide_online', 'is_hide_team'], 'safe'],
         ];
     }
 
@@ -32,9 +35,8 @@ class ProfileForm extends UserProfile
     {
         $this->ban_notify = $this->user->ban_notify;
         $this->raid_notify = $this->user->raid_notify;
-        $this->youtube_link = $this->youtube_link;
-        $this->tiktok_link = $this->tiktok_link;
-        $this->twitch_link = $this->twitch_link;
+        $this->is_hide_online = $this->is_hide_online ?? 0;
+        $this->is_hide_team = $this->is_hide_team ?? 0;
         parent::afterFind();
     }
 
@@ -43,6 +45,20 @@ class ProfileForm extends UserProfile
      */
     public function saveRecord(): bool
     {
+        // Обрабатываем пустые строки для URL полей перед валидацией
+        if ($this->youtube_link === '') {
+            $this->youtube_link = null;
+        }
+        if ($this->twitch_link === '') {
+            $this->twitch_link = null;
+        }
+        if ($this->vk_link === '') {
+            $this->vk_link = null;
+        }
+        if ($this->telegram_link === '') {
+            $this->telegram_link = null;
+        }
+        
         if (!$this->validate()) {
             return false;
         }
@@ -70,6 +86,29 @@ class ProfileForm extends UserProfile
             $this->user->telegram_chat_id = null;
         }
 
+        if (!empty($this->discord_disabled)) {
+            // Сохраняем discord_id перед обнулением для удаления роли
+            $discordId = $this->user->discord_id;
+            $this->user->discord_id = null;
+            
+            // Удаляем роль в Discord, если была привязана
+            if (!empty($discordId)) {
+                \common\controllers\AuthController::removeDiscordRole($discordId);
+            }
+        }
+
+        // Настройки приватности (только для VIP)
+        // Значения уже должны быть установлены из POST, просто проверяем VIP
+        if (!$this->user->hasVip()) {
+            // Если нет VIP, сбрасываем флаги
+            $this->is_hide_online = false;
+            $this->is_hide_team = false;
+        } else {
+            // Для VIP пользователей просто убеждаемся, что значения корректны (boolean)
+            $this->is_hide_online = (bool)$this->is_hide_online;
+            $this->is_hide_team = (bool)$this->is_hide_team;
+        }
+
         $this->skindrops = 0;
         if (!empty($this->trade_link)) {
             if (strpos($this->trade_link, 'steamcommunity.com') === false) {
@@ -90,10 +129,23 @@ class ProfileForm extends UserProfile
             $this->skindrops_error = null;
         }
 
-        if (!$this->save() || !$this->user->save()) {
-            throw new \Exception('User not saved');
+        // Сохранение социальных ссылок (так же, как trade_link)
+        $this->youtube_link = !empty($this->youtube_link) ? trim($this->youtube_link) : null;
+        $this->twitch_link = !empty($this->twitch_link) ? trim($this->twitch_link) : null;
+        $this->vk_link = !empty($this->vk_link) ? trim($this->vk_link) : null;
+        $this->telegram_link = !empty($this->telegram_link) ? trim($this->telegram_link) : null;
+        
+        if (!$this->save()) {
+            Yii::error('Failed to save UserProfile: ' . json_encode($this->getErrors()));
+            Yii::error('UserProfile attributes: ' . json_encode($this->attributes));
+            throw new \Exception('UserProfile not saved: ' . json_encode($this->getErrors()));
         }
-
+        
+        if (!$this->user->save()) {
+            Yii::error('Failed to save User: ' . json_encode($this->user->getErrors()));
+            throw new \Exception('User not saved: ' . json_encode($this->user->getErrors()));
+        }
+        Yii::info('User saved successfully');
         return true;
     }
 

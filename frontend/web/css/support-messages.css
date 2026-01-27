@@ -1,0 +1,235 @@
+/* Стили для сообщений поддержки */
+
+/* Ссылки в сообщениях */
+.message-link {
+    color: #007bff;
+    text-decoration: underline;
+    word-break: break-all;
+}
+
+.message-link:hover {
+    color: #0056b3;
+    text-decoration: none;
+}
+
+/* Стикеры в сообщениях */
+.message-sticker {
+    max-width: 64px;
+    max-height: 64px;
+    vertical-align: middle;
+    margin: 2px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    display: inline-block;
+    object-fit: contain;
+}
+
+.message-sticker:hover {
+    transform: scale(1.1);
+}
+
+/* Стикер не найден */
+.sticker-not-found {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.9em;
+    color: #6c757d;
+    font-style: italic;
+    display: inline-block;
+    margin: 2px;
+}
+
+.support_messages_form_file {
+    position: relative;
+    z-index: 1;
+}
+
+.sticker-button {
+    position: relative;
+    z-index: 2;
+}
+
+.support_messages_form textarea {
+    position: relative;
+    z-index: 2;
+}
+
+/* Улучшенное отображение стикеров в тексте сообщений */
+.support_messages_item_message_text .message-sticker {
+    margin: 0 2px;
+    vertical-align: text-bottom;
+}
+
+/* Группировка стикеров */
+.support_messages_item_message_text {
+    line-height: 1.4;
+}
+
+.support_messages_item_message_text .message-sticker:first-child {
+    margin-left: 0;
+}
+
+.support_messages_item_message_text .message-sticker:last-child {
+    margin-right: 0;
+}
+
+/* Форма сообщений - для правильного позиционирования панели стикеров */
+.support_messages_form {
+    position: relative;
+}
+
+.sticker-item {
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--card-radius);
+    transition: background-color 0.2s ease;
+    text-align: center;
+}
+
+.sticker-item:hover {
+    background-color: var(--background-teritiary);
+}
+
+.sticker-item img, .sticker-item video {
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+}
+
+.stickers-panel::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+    background-color: transparent;
+  }
+  .stickers-panel::-webkit-scrollbar-thumb {
+    border-radius: 8px;
+    background-color: var(--status-background-opacity);
+  }
+
+/* Кнопка стикеров */
+.sticker-button {
+    font-size: 26px;
+    line-height: 36px;
+    width: 32px;
+    cursor: pointer;
+    color: var(--text-main);
+    background-color: transparent;
+    outline: none;
+    border: none;
+}
+
+/* Анимации для стикеров */
+.sticker-item {
+    cursor: pointer;
+    padding: 4px;
+    transition: all 0.2s ease;
+    text-align: center;
+    position: relative;
+}
+
+.sticker-item:hover {
+    transform: scale(1.05);
+}
+
+.sticker-item:active {
+    transform: scale(0.95);
+}
+
+/* Индикатор загрузки стикера */
+.sticker-item.sending {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.sticker-item.sending::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid #007bff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: sticker-loading 1s linear infinite;
+}
+
+@keyframes sticker-loading {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.support_sticker {
+    width: 150px;
+}
+/* Улучшенные стили для панели стикеров */
+.stickers-panel {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    border-radius: var(--block-radius);
+    background-color: var(--bs-modal-bg);
+    padding: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    animation: panelSlideUp 0.2s ease-out;
+    width: 477px;
+    max-width: 100%;
+    border: 1px solid var(--border-color-default);
+    border-radius: var(--card-radius);
+    background-color: var(--background-main);
+    margin-bottom: 10px;
+}
+
+@keyframes panelSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Улучшенная сетка стикеров */
+.stickers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+    padding: 4px;
+}
+
+/* Индикатор состояния соединения */
+.connection-status {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #28a745;
+    transition: background-color 0.3s ease;
+}
+
+.connection-status.disconnected {
+    background-color: #dc3545;
+}
+
+.connection-status.connecting {
+    background-color: #ffc107;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+

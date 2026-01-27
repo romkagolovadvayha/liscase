@@ -67,7 +67,7 @@ class StatsController extends WebController
             'PARAM_SERVER_NAME' => Yii::t('database', $server->name),
             'PARAM_SERVER_NAME_SHORT' => Yii::t('database', $server->monitoring_name),
         ]);
-        $this->view->params['page'] = 'stats';
+        $this->view->params['page'] = 'stats-index';
         $canonical = Yii::$app->params['homePage'] . '/servers/' . $serverTag;
         $this->view->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
 

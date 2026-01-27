@@ -10,6 +10,9 @@ use common\models\servers\Servers;
 if ($PAGE === 'servers') {
     return;
 }
+if ($PAGE === 'stats') {
+    return;
+}
 
 $lang = substr(Yii::$app->language, 0, 2);
 $this->registerJs(

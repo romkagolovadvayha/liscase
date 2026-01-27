@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест PWA - LiSCase</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .status {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .status.success { border-left: 4px solid #27ae60; }
+        .status.error { border-left: 4px solid #e74c3c; }
+        .status.warning { border-left: 4px solid #f39c12; }
+        .status.info { border-left: 4px solid #3498db; }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Тест PWA для LiSCase</h1>
+    
+    <div class="status info">
+        <h3>📱 Информация о PWA</h3>
+        <p><strong>Браузер:</strong> <span id="browser-info">Проверяется...</span></p>
+        <p><strong>Протокол:</strong> <span id="protocol-info">Проверяется...</span></p>
+        <p><strong>Поддержка Service Worker:</strong> <span id="sw-support">Проверяется...</span></p>
+        <p><strong>Режим отображения:</strong> <span id="display-mode">Проверяется...</span></p>
+        <p><strong>Установлено как PWA:</strong> <span id="pwa-installed">Проверяется...</span></p>
+    </div>
+    
+    <div class="status" id="sw-status">
+        <h3>⚙️ Service Worker</h3>
+        <p>Статус: <span id="sw-state">Проверяется...</span></p>
+        <button onclick="registerSW()">Зарегистрировать SW</button>
+        <button onclick="unregisterSW()">Удалить SW</button>
+        <button onclick="updateSW()">Обновить SW</button>
+    </div>
+    
+    <div class="status" id="install-status">
+        <h3>📥 Установка PWA</h3>
+        <p>Статус: <span id="install-state">Ожидание...</span></p>
+        <button onclick="showInstallPrompt()" id="install-btn" style="display:none;">Установить приложение</button>
+    </div>
+    
+    <div class="status">
+        <h3>📊 Кэш</h3>
+        <button onclick="clearCache()">Очистить кэш</button>
+        <button onclick="listCache()">Показать кэш</button>
+        <button onclick="testOffline()">Тест офлайн</button>
+    </div>
+    
+    <div class="status">
+        <h3>📝 Лог событий</h3>
+        <button onclick="clearLog()">Очистить лог</button>
+        <div class="log" id="log"></div>
+    </div>
+    
+    <script>
+        let deferredPrompt;
+        let logElement = document.getElementById('log');
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`[PWA Test] ${message}`);
+        }
+        
+        function clearLog() {
+            logElement.textContent = '';
+        }
+        
+        // Проверка поддержки
+        function checkSupport() {
+            const swSupported = 'serviceWorker' in navigator;
+            const displayMode = window.matchMedia('(display-mode: standalone)').matches ? 'standalone' : 'browser';
+            const isPWA = displayMode === 'standalone';
+            const isHTTPS = location.protocol === 'https:' || location.hostname === 'localhost';
+            const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+            
+            // Детальная диагностика
+            log(`=== ДИАГНОСТИКА PWA ===`);
+            log(`Браузер: ${navigator.userAgent}`);
+            log(`Протокол: ${location.protocol}`);
+            log(`Хост: ${location.hostname}`);
+            log(`HTTPS/Localhost: ${isHTTPS ? '✅ Да' : '❌ Нет'}`);
+            log(`Service Worker в navigator: ${swSupported ? '✅ Да' : '❌ Нет'}`);
+            log(`Display mode: ${displayMode}`);
+            log(`PWA installed: ${isPWA ? 'да' : 'нет'}`);
+            
+            // Проверка других API
+            log(`Notification API: ${'Notification' in window ? '✅ Да' : '❌ Нет'}`);
+            log(`Cache API: ${'caches' in window ? '✅ Да' : '❌ Нет'}`);
+            log(`Fetch API: ${'fetch' in window ? '✅ Да' : '❌ Нет'}`);
+            
+            // Определяем браузер
+            let browserName = 'Неизвестный';
+            if (navigator.userAgent.includes('Chrome')) browserName = 'Chrome';
+            else if (navigator.userAgent.includes('Firefox')) browserName = 'Firefox';
+            else if (navigator.userAgent.includes('Safari')) browserName = 'Safari';
+            else if (navigator.userAgent.includes('Edge')) browserName = 'Edge';
+            
+            document.getElementById('browser-info').textContent = browserName;
+            document.getElementById('protocol-info').textContent = location.protocol;
+            document.getElementById('sw-support').textContent = swSupported ? '✅ Поддерживается' : '❌ Не поддерживается';
+            document.getElementById('display-mode').textContent = displayMode;
+            document.getElementById('pwa-installed').textContent = isPWA ? '✅ Да' : '❌ Нет';
+            
+            // Предупреждения
+            if (!swSupported) {
+                log(`⚠️ Service Worker не поддерживается в этом браузере`);
+                log(`💡 Попробуйте Chrome, Firefox, Edge или Safari последних версий`);
+            }
+            
+            if (!isHTTPS) {
+                log(`⚠️ Service Worker требует HTTPS или localhost`);
+                log(`💡 Текущий протокол: ${location.protocol}`);
+                log(`🔧 Решения:`);
+                log(`   - Используйте localhost вместо IP адреса`);
+                log(`   - Настройте HTTPS на сервере`);
+                log(`   - Используйте ngrok для HTTPS туннеля`);
+            }
+        }
+        
+        // Регистрация Service Worker
+        function registerSW() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw-debug.js')
+                    .then(registration => {
+                        log('Service Worker зарегистрирован: ' + registration.scope);
+                        document.getElementById('sw-state').textContent = '✅ Зарегистрирован';
+                        document.getElementById('sw-status').className = 'status success';
+                        
+                        // Показываем кнопку установки только на десктопе
+                        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                        if (!isMobile) {
+                            log('Десктопное устройство - можно показывать кнопку установки');
+                        } else {
+                            log('Мобильное устройство - кнопка установки скрыта');
+                        }
+                    })
+                    .catch(error => {
+                        log('Ошибка регистрации SW: ' + error);
+                        document.getElementById('sw-state').textContent = '❌ Ошибка';
+                        document.getElementById('sw-status').className = 'status error';
+                    });
+            } else {
+                log('Service Worker не поддерживается');
+            }
+        }
+        
+        // Удаление Service Worker
+        function unregisterSW() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    registrations.forEach(registration => {
+                        registration.unregister().then(() => {
+                            log('Service Worker удален');
+                            document.getElementById('sw-state').textContent = '❌ Удален';
+                            document.getElementById('sw-status').className = 'status warning';
+                        });
+                    });
+                });
+            }
+        }
+        
+        // Обновление Service Worker
+        function updateSW() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration().then(registration => {
+                    if (registration) {
+                        registration.update();
+                        log('Запрос на обновление SW отправлен');
+                    } else {
+                        log('Service Worker не найден');
+                    }
+                });
+            }
+        }
+        
+        // Показать промпт установки
+        function showInstallPrompt() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(choiceResult => {
+                    log(`Пользователь ${choiceResult.outcome === 'accepted' ? 'принял' : 'отклонил'} установку`);
+                    deferredPrompt = null;
+                    document.getElementById('install-btn').style.display = 'none';
+                });
+            } else {
+                log('Промпт установки недоступен');
+            }
+        }
+        
+        // Очистка кэша
+        function clearCache() {
+            caches.keys().then(cacheNames => {
+                cacheNames.forEach(cacheName => {
+                    caches.delete(cacheName);
+                    log(`Кэш ${cacheName} очищен`);
+                });
+            });
+        }
+        
+        // Показать кэш
+        function listCache() {
+            caches.keys().then(cacheNames => {
+                log(`Найдено кэшей: ${cacheNames.length}`);
+                cacheNames.forEach(cacheName => {
+                    caches.open(cacheName).then(cache => {
+                        cache.keys().then(keys => {
+                            log(`Кэш ${cacheName}: ${keys.length} записей`);
+                        });
+                    });
+                });
+            });
+        }
+        
+        // Тест офлайн режима
+        function testOffline() {
+            fetch('/test-offline')
+                .then(response => {
+                    log('Онлайн запрос успешен');
+                })
+                .catch(error => {
+                    log('Онлайн запрос failed: ' + error);
+                });
+        }
+        
+        // События PWA
+        window.addEventListener('beforeinstallprompt', e => {
+            log('beforeinstallprompt сработал');
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-btn').style.display = 'inline-block';
+            document.getElementById('install-state').textContent = '✅ Доступно';
+        });
+        
+        window.addEventListener('appinstalled', e => {
+            log('Приложение установлено');
+            document.getElementById('install-state').textContent = '✅ Установлено';
+        });
+        
+        // Проверка статуса SW при загрузке
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistration().then(registration => {
+                if (registration) {
+                    document.getElementById('sw-state').textContent = '✅ Активен';
+                    document.getElementById('sw-status').className = 'status success';
+                    log('Service Worker активен');
+                } else {
+                    document.getElementById('sw-state').textContent = '❌ Не зарегистрирован';
+                    log('Service Worker не зарегистрирован');
+                }
+            });
+        }
+        
+        // Инициализация
+        window.addEventListener('load', () => {
+            log('Страница загружена');
+            checkSupport();
+            
+            // Автоматическая регистрация SW
+            setTimeout(registerSW, 1000);
+        });
+    </script>
+</body>
+</html>

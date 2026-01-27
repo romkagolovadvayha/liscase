@@ -46,7 +46,7 @@ $config['components']['supervisortask'] = [
     'class' => \console\components\Supervisortask::class,
 ];
 $config['modules']['crontask'] = [
-    'class'    => 'gofmanaa\crontask\Module',
+    'class'    => 'console\components\CrontaskModuleSafe',
     'fileName' => 'cron.txt',
     'yiiPath'  => __DIR__ . '/../../yii',
     'tasks'    => [
@@ -96,10 +96,6 @@ $config['modules']['crontask'] = [
             'command' => 'server/check-status',
             'min'     => '*',
         ],
-        'chatCheck'       => [
-            'command' => 'chat/check',
-            'min'     => '*/10',
-        ],
         'serverWsOnline'       => [
             'command' => 'server-ws/online',
             'min'     => '*',
@@ -120,9 +116,18 @@ $config['modules']['crontask'] = [
             'command' => 'support/empty && cd /var/www/www-root/data/var/www/prostoj.store/frontend/web/uploads/prices && wget https://rust.tm/api/v2/prices/class_instance/RUB.json -O rusttm.json',
             'min'     => '*/3',
         ],
+        'marketSkinsSync'       => [
+            'command' => 'market-skins/sync',
+            'min'     => '*/10',
+        ],
         'getApproved'       => [
             'command' => 'skin-drops/get-approved',
             'hour'     => '6',
+        ],
+        'discordRolesCheckExpiredVip'       => [
+            'command' => 'discord-roles/check-expired-vip',
+            'hour'     => '3',
+            'min'     => '0',
         ],
     ]
 ];
@@ -204,6 +209,11 @@ $config['modules']['translateManager'] = [
             'table' => '{{%site_settings}}',
             'columns' => ['value'],
             'where' => 'is_translate = 1',
+        ],
+        [
+            'connection' => 'db',
+            'table' => '{{%servers_tags}}',
+            'columns' => ['name', 'title', 'short_description', 'description'],
         ],
     ],
     'ignoredItems' => [

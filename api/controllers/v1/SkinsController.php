@@ -1,0 +1,221 @@
+<?php
+
+namespace api\controllers\v1;
+
+use Yii;
+use OpenApi\Annotations as OA;
+use yii\web\NotFoundHttpException;
+use yii\web\BadRequestHttpException;
+use common\models\user\User;
+use frontend\modules\user\SkinsSearch;
+use frontend\forms\user\SkinsForm;
+use api\components\jwt\JwtAuthFilter;
+
+/**
+ * Контроллер для работы с каталогом скинов
+ * 
+ * @package api\controllers\v1
+ * @OA\Tag(name="Skins")
+ */
+class SkinsController extends BaseApiController
+{
+    /**
+     * Настройка behaviors
+     */
+    public function behaviors()
+    {
+        $behaviors = parent::behaviors();
+
+        // JWT авторизация только для покупки (actionConfirm)
+        $behaviors['authenticator'] = [
+            'class' => JwtAuthFilter::class,
+            'only' => ['confirm'],
+            'except' => ['index', 'options'],
+        ];
+
+        return $behaviors;
+    }
+
+    /**
+     * Публичный каталог скинов для покупки
+     * 
+     * @OA\Get(
+     *     path="/v1/skins",
+     *     operationId="getSkins",
+     *     tags={"Skins"},
+     *     summary="Получить каталог скинов",
+     *     description="Публичный метод, авторизация не требуется",
+     *     @OA\Parameter(name="type", in="query", @OA\Schema(type="string", enum={"rust", "cs2"}, default="rust")),
+     *     @OA\Parameter(name="name", in="query", @OA\Schema(type="string")),
+     *     @OA\Parameter(name="sort", in="query", @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="Каталог скинов")
+     * )
+     */
+    public function actionIndex($type = 'rust')
+    {
+        if (!Yii::$app->settings->get('section_skindrops')) {
+            throw new NotFoundHttpException('Страница не найдена');
+        }
+
+        // Валидация типа
+        if (!in_array($type, ['rust', 'cs2'])) {
+            $type = 'rust';
+        }
+
+        $searchModel = new SkinsSearch();
+        $params = Yii::$app->request->get();
+
+        // Устанавливаем параметры поиска
+        $searchModel->name = $params['name'] ?? null;
+        $searchModel->quality = $params['quality'] ?? null;
+        $searchModel->price_min = isset($params['price_min']) ? (int)$params['price_min'] : null;
+        $searchModel->price_max = isset($params['price_max']) ? (int)$params['price_max'] : null;
+        $searchModel->sort = $params['sort'] ?? 'price_asc';
+
+        // Получаем данные через поисковую модель
+        $dataProvider = $searchModel->search($params, $type);
+        $items = $dataProvider->getModels();
+
+        // Форматируем данные для API
+        $formattedItems = [];
+        foreach ($items as $item) {
+            $formattedItems[] = [
+                'id' => $item['id'] ?? null,
+                'name' => $item['name'] ?? '',
+                'price' => (float)($item['price'] ?? 0),
+                'image' => $item['image'] ?? null,
+                'image300' => $item['image300'] ?? null,
+                'type' => $type,
+                'market_info' => [
+                    'market_id' => $item['id'] ?? null,
+                    'market_url' => $item['url'] ?? null,
+                ],
+            ];
+        }
+
+        $pagination = $dataProvider->getPagination();
+
+        return $this->successResponse([
+            'items' => $formattedItems,
+            'filters' => [
+                'type' => ['rust', 'cs2'],
+                'search' => $searchModel->name,
+                'sort' => $searchModel->sort,
+            ],
+        ], [
+            'pagination' => [
+                'page' => $pagination->page + 1,
+                'pageSize' => $pagination->pageSize,
+                'totalCount' => $pagination->totalCount,
+                'totalPages' => $pagination->getPageCount(),
+            ],
+        ]);
+    }
+
+    /**
+     * Подтверждение покупки скина (требует JWT авторизации)
+     * 
+     * @OA\Post(
+     *     path="/v1/skins/confirm/{id}",
+     *     operationId="confirmSkinPurchase",
+     *     tags={"Skins"},
+     *     summary="Подтвердить покупку скина",
+     *     description="Требует JWT авторизации",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID скина",
+     *         @OA\Schema(type="integer", example=12345)
+     *     ),
+     *     @OA\Parameter(
+     *         name="type",
+     *         in="query",
+     *         required=false,
+     *         description="Тип игры",
+     *         @OA\Schema(type="string", enum={"rust", "cs2"}, default="rust")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Покупка обработана",
+     *         @OA\MediaType(mediaType="application/json")
+     *     ),
+     *     @OA\Response(response=400, description="Недостаточно средств или неверные параметры"),
+     *     @OA\Response(response=401, description="Не авторизован"),
+     *     @OA\Response(response=404, description="Скин не найден")
+     * )
+     */
+    public function actionConfirm($id, $type = 'rust')
+    {
+        if (!Yii::$app->settings->get('section_skindrops')) {
+            throw new NotFoundHttpException('Страница не найдена');
+        }
+
+        $user = $this->getCurrentUser();
+
+        // Валидация типа
+        if (!in_array($type, ['rust', 'cs2'])) {
+            return $this->errorResponse('INVALID_TYPE', 'Неверный тип игры. Допустимые значения: rust, cs2', [], 400);
+        }
+
+        // Выбираем маркетплейс
+        if ($type == 'rust') {
+            $market = Yii::$app->rustTm;
+        } else {
+            $market = Yii::$app->csGoMarket;
+        }
+
+        // Получаем данные о скинах
+        $data = $market->items();
+        if (empty($data[$id])) {
+            throw new NotFoundHttpException('Скин не найден');
+        }
+
+        $item = $data[$id];
+        $balance = $user->getSkinsBalance();
+
+        // Проверка баланса
+        if ($item['price'] > $balance->balance) {
+            return $this->errorResponse('INSUFFICIENT_BALANCE', 'Недостаточно средств', [
+                'balance' => (float)$balance->balance,
+                'required' => (float)$item['price'],
+            ], 400);
+        }
+
+        // Создаем форму для покупки
+        $formModel = new SkinsForm();
+        $formModel->market = $market;
+        $formModel->type = $type;
+        $formModel->id = $id;
+        $formModel->amount = $item['price'];
+
+        if ($formModel->load(Yii::$app->request->post(), '')) {
+            if ($formModel->saveRecord()) {
+                // Получаем обновленный баланс
+                $balance->refresh();
+                
+                return $this->successResponse([
+                    'message' => 'Скин отправляется, ожидайте трейд-обмен',
+                    'payout_id' => $formModel->payout_id ?? null,
+                    'balance' => (float)$balance->balance,
+                ]);
+            } else {
+                return $this->validationErrorResponse($formModel);
+            }
+        }
+
+        // Если это GET запрос, возвращаем информацию о скине и балансе
+        return $this->successResponse([
+            'skin' => [
+                'id' => $id,
+                'name' => $item['name'] ?? '',
+                'price' => (float)$item['price'],
+                'image' => $item['image'] ?? null,
+            ],
+            'balance' => (float)$balance->balance,
+            'can_buy' => $item['price'] <= $balance->balance,
+        ]);
+    }
+}
+

@@ -530,3 +530,400 @@ h2.how-works__title {
   overflow: hidden;
   animation: openedAnimation 0.3s, openedAnimation2 1s;
 }
+
+// Clean modern SkinDrops design
+.skindrops-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.skindrops-header {
+  text-align: center;
+  margin-bottom: 32px;
+  
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 12px;
+    
+    @media (max-width: 768px) {
+      font-size: 22px;
+    }
+  }
+  
+  p {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+}
+
+.skindrops-recent-drops {
+  margin-bottom: 40px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--border-color-default);
+}
+
+.skindrops-section {
+  margin-bottom: 40px;
+  
+  h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 12px;
+    text-align: center;
+    
+    @media (max-width: 768px) {
+      font-size: 20px;
+    }
+  }
+}
+
+.skindrops-subtitle {
+  text-align: center;
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin: 0 0 32px;
+}
+
+// Steps Grid
+.skindrops-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  
+  @media (max-width: 990px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media (max-width: 576px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.skindrops-card {
+  position: relative;
+  background: var(--background-secondary);
+  border: 1px solid var(--border-color-default);
+  border-radius: var(--card-radius);
+  padding: 24px 16px;
+  text-align: center;
+  transition: all 0.2s;
+  
+  &:hover {
+    border-color: var(--primary-colors-main);
+  }
+  
+  &.active {
+    border-color: var(--system-colors-success-color);
+    background: linear-gradient(135deg, 
+      var(--background-secondary), 
+      rgba(0, 145, 54, 0.03));
+  }
+  
+  &-icon {
+    font-size: 40px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    
+    .active & {
+      color: var(--system-colors-success-color);
+    }
+  }
+  
+  &-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 8px;
+  }
+  
+  &-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    
+    a {
+      color: var(--primary-colors-main);
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+  
+  &-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    background: var(--system-colors-success-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    i {
+      font-size: 10px;
+      color: white;
+    }
+  }
+}
+
+// Process Grid
+.skindrops-process-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  
+  @media (max-width: 768px) {
+    gap: 12px;
+  }
+}
+
+.skindrops-process-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 24px;
+  background: var(--background-secondary);
+  border-radius: var(--card-radius);
+  min-width: 120px;
+  
+  @media (max-width: 768px) {
+    min-width: 100px;
+    padding: 16px;
+  }
+  
+  i {
+    font-size: 32px;
+    color: var(--primary-colors-main);
+    
+    @media (max-width: 768px) {
+      font-size: 24px;
+    }
+  }
+  
+  span {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-main);
+    
+    @media (max-width: 768px) {
+      font-size: 13px;
+    }
+    
+    a {
+      color: var(--text-main);
+      text-decoration: none;
+      
+      &:hover {
+        color: var(--primary-colors-main);
+      }
+    }
+  }
+}
+
+.skindrops-arrow {
+  font-size: 16px;
+  color: var(--text-secondary);
+  
+  @media (max-width: 576px) {
+    transform: rotate(90deg);
+  }
+}
+
+// Recent wins (new design)
+.skindrops-recent {
+  margin-bottom: 40px;
+  
+  h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 8px;
+    text-align: center;
+  }
+  
+  &-subtitle {
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0 0 24px;
+  }
+  
+  &-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+    }
+  }
+}
+
+.skindrops-win-item {
+  background: var(--background-secondary);
+  border-radius: var(--card-radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s;
+  border: 1px solid var(--border-color-default);
+  
+  &:hover {
+    border-color: var(--primary-colors-main);
+    transform: translateY(-2px);
+  }
+}
+
+.skindrops-win-image {
+  background: var(--background-teritiary);
+  border-radius: var(--button-radius);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  
+  img {
+    max-width: 100%;
+    max-height: 70px;
+    display: block;
+  }
+}
+
+.skindrops-win-info {
+  text-align: center;
+}
+
+.skindrops-win-name {
+  font-size: 12px;
+  color: var(--text-main);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skindrops-win-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-colors-main);
+}
+
+.skindrops-win-user {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color-default);
+}
+
+.skindrops-win-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skindrops-win-username {
+  font-size: 11px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// SEO Text Section
+.skindrops-seo-text {
+  background: var(--background-secondary);
+  border-radius: var(--block-radius);
+  padding: 32px;
+  margin-bottom: 40px;
+  
+  @media (max-width: 768px) {
+    padding: 24px 20px;
+  }
+  
+  h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 16px;
+    
+    @media (max-width: 768px) {
+      font-size: 20px;
+    }
+  }
+  
+  h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 32px 0 12px;
+    
+    @media (max-width: 768px) {
+      font-size: 18px;
+      margin: 24px 0 12px;
+    }
+  }
+  
+  p {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-main);
+    margin: 0 0 16px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    strong {
+      color: var(--primary-colors-main);
+      font-weight: 700;
+    }
+  }
+}
+
+.skindrops-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  
+  li {
+    position: relative;
+    padding-left: 28px;
+    margin-bottom: 12px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-main);
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    &:before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--system-colors-success-color);
+      font-weight: 700;
+      font-size: 16px;
+    }
+    
+    strong {
+      color: var(--primary-colors-main);
+      font-weight: 700;
+    }
+  }
+}

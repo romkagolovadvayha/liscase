@@ -151,9 +151,23 @@ class BlogCategory extends \yii\db\ActiveRecord
         $google = new TranslateApi();
         $text = $google->translateText($name, 'en');
         $text = strtolower($text);
+        
+        // Удаляем все недопустимые символы, оставляем только буквы, цифры, пробелы и дефисы
+        $text = preg_replace("/[^a-zA-Z0-9\s\-]/", '', $text);
+        
+        // Заменяем множественные пробелы на один пробел
+        $text = preg_replace('/\s+/', ' ', $text);
+        
+        // Заменяем пробелы на дефисы
         $text = str_replace(' ', '-', $text);
+        
+        // Заменяем множественные дефисы на один дефис
+        $text = preg_replace('/-+/', '-', $text);
+        
+        // Убираем дефисы в начале и конце строки
+        $text = trim($text, '-');
 
-        return preg_replace( "/[^a-zA-Z_\-0-9\s]/", '', $text);
+        return $text;
     }
 
     /**

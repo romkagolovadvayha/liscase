@@ -1,0 +1,60 @@
+# Default values for liscase Helm chart
+replicaCount: 3
+
+image:
+  repository: your-registry/liscase-app
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+nodeImage:
+  repository: your-registry/liscase-node
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: prostoj.store
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: liscase-tls
+      hosts:
+        - prostoj.store
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# MySQL from Bitnami chart
+mysql:
+  enabled: true
+  auth:
+    rootPassword: "changeme"
+    database: "prostoj4"
+  primary:
+    persistence:
+      size: 50Gi
+
+# Redis from Bitnami chart  
+redis:
+  enabled: true
+  auth:
+    password: "changeme"

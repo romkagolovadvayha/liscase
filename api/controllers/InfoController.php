@@ -234,4 +234,29 @@ class InfoController extends Controller
 
         return $items;
     }
+
+    /**
+     * Получить значение настройки по ключу
+     * @param string $key Ключ настройки (например, openAi_channelIds)
+     * @return array
+     */
+    public function actionSetting($key) {
+        Yii::$app->response->statusCode = 200;
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        if (empty($key)) {
+            return [
+                'success' => false,
+                'message' => 'Необходимо указать ключ настройки'
+            ];
+        }
+
+        $value = Yii::$app->settings->get($key);
+
+        return [
+            'success' => true,
+            'key' => $key,
+            'value' => $value
+        ];
+    }
 }

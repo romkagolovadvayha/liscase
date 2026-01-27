@@ -131,10 +131,16 @@ class UserTeam extends \yii\db\ActiveRecord
             if (!$usr) {
                 continue;
             }
+            // Пропускаем пользователей со скрытым списком команды
+            if ($usr->hasHideTeam()) {
+                continue;
+            }
+            $displayStatus = $usr->getDisplayStatus();
             $users[] = [
                 'link'      => $usr->getLink('stats'),
                 'username'  => $usr->username,
-                'is_online'    => $usr->getStatus(),
+                'is_online'    => $displayStatus === null ? null : ($displayStatus ? true : false),
+                'is_hidden' => $displayStatus === null,
                 'date_visit' => $usr->last_visit_server_at,
                 'time_visit' => strtotime($usr->last_visit_server_at),
                 'avatar'    => $usr->getAvatar(),
@@ -149,10 +155,16 @@ class UserTeam extends \yii\db\ActiveRecord
             if (!$usr) {
                 continue;
             }
+            // Пропускаем пользователей со скрытым списком команды
+            if ($usr->hasHideTeam()) {
+                continue;
+            }
+            $displayStatus = $usr->getDisplayStatus();
             $users[] = [
                 'link'      => $usr->getLink('stats'),
                 'username'  => $usr->username,
-                'is_online'    => $usr->getStatus(),
+                'is_online'    => $displayStatus === null ? null : ($displayStatus ? true : false),
+                'is_hidden' => $displayStatus === null,
                 'date_visit' => $usr->last_visit_server_at,
                 'time_visit' => strtotime($usr->last_visit_server_at),
                 'avatar'    => $usr->getAvatar(),

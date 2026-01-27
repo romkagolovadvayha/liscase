@@ -28,7 +28,15 @@ $player = Statistics::getPlayerStats($server, $user->steam_id, $wipe);
 $images = Statistics::productsImages();
 $names = Statistics::productsNames();
 
-$statusClass = $user->getStatus() ? '' : ' profile_offline';
+$displayStatus = $user->getDisplayStatus();
+$isHidden = $displayStatus === null;
+if ($isHidden) {
+    $statusClass = ' profile_hidden';
+} elseif ($displayStatus) {
+    $statusClass = '';
+} else {
+    $statusClass = ' profile_offline';
+}
 if ($user->status === User::STATUS_BLOCKED) {
     $statusClass = ' profile_banned';
 }
@@ -36,7 +44,56 @@ $wipes = Statistics::find()
                    ->select('COUNT(DISTINCT `wipe`)')
                    ->andWhere(['steam_id' => $user->steam_id])
                    ->scalar() ?? 0;
-$awards = \common\models\tasks\Task::awards($user->id);
+// Получаем все активные задания из tasks_v2
+$tasksV2 = \common\models\tasks_v2\TaskV2::find()
+    ->where(['is_active' => 1])
+    ->orderBy(['sort' => SORT_ASC])
+    ->all();
+
+// Получаем выполненные задания пользователя
+$userCompletions = \common\models\tasks_v2\TaskV2UserCompletion::find()
+    ->where(['user_id' => $user->id])
+    ->indexBy('task_id')
+    ->all();
+
+// Формируем массив заданий с информацией о выполнении
+$awards = [];
+foreach ($tasksV2 as $task) {
+    $completed = isset($userCompletions[$task->id]) && $userCompletions[$task->id]->count_completed > 0;
+    
+    // Получаем изображение задания
+    $image = $task->getImageUrl();
+    
+    $awards[] = [
+        'id' => $task->id,
+        'name' => $task->title,
+        'image' => $image,
+        'completed' => $completed,
+    ];
+}
+
+// Сортируем: сначала выполненные
+usort($awards, function($a, $b) {
+    if ($a['completed'] === $b['completed']) {
+        return 0;
+    }
+    return $a['completed'] ? -1 : 1;
+});
+
+// Подсчитываем статистику
+$totalTasks = count($awards);
+$completedTasks = 0;
+foreach ($awards as $award) {
+    if ($award['completed']) {
+        $completedTasks++;
+    }
+}
+
+$awardsStats = [
+    'completed' => $completedTasks,
+    'total' => $totalTasks,
+];
+
 $kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam($player, 'kills') / Statistics::getParam($player, 'deaths'), 2) : Statistics::getParam($player, 'kills');
 ?>
 
@@ -65,12 +122,22 @@ $kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam(
 </nav>
 
 <?= Alert::widget() ?>
-<div class="flex flex-column gap-x-12 gap-y-12 tab-pane active" id="Max3">
+<div class="flex flex-column gap-x-12 gap-y-12 tab-pane active snow-drift snow-drift-8 snow-drift-right" id="Max3">
     <div class="page-stats__two-blocks">
+        <?php
+        $userProfile = $user->userProfile;
+        $isOwner = !Yii::$app->user->isGuest && Yii::$app->user->identity->id === $user->id;
+        ?>
         <?=Yii::$app->view->render('profile.twig', [
             'WRAPPER_CLASS' => $statusClass,
             'USER' => $user,
             'IS_GUEST' => $IS_GUEST,
+            'IS_OWNER' => $isOwner,
+            'IS_HIDDEN' => $isHidden,
+            'YOUTUBE_LINK' => $userProfile ? $userProfile->youtube_link : null,
+            'TWITCH_LINK' => $userProfile ? $userProfile->twitch_link : null,
+            'VK_LINK' => $userProfile ? $userProfile->vk_link : null,
+            'TELEGRAM_LINK' => $userProfile ? $userProfile->telegram_link : null,
             'STATS' => [
                 'PLAYTIME' => Statistics::getParam($player, 'playtime'),
                 'ONLINE' => Servers::getPlayTime(Statistics::getParam($player, 'playtime')),
@@ -97,6 +164,7 @@ $kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam(
        <div class="page-stats__categories__blocks_wrap w-50p">
            <?=Yii::$app->view->render('awards.twig', [
                'ITEMS' => $awards,
+               'AWARDS_STATS' => $awardsStats,
            ]);?>
            <?=$this->render('_player_stats_stats_blocks', [
                'images' => $images,
@@ -111,23 +179,25 @@ $kdr = Statistics::getParam($player, 'deaths') > 0 ? round(Statistics::getParam(
 
     <div class="flex flex-column gap-x-12 gap-y-12">
 
-        <?=$this->render('_player_stats_weapons', [
-            'images' => $images,
-            'names' => $names,
-            'player' => $player,
-            'server' => $server,
-            'steamId' => $steamId,
-            'user' => $user,
-        ]);?>
+        <div class="page-stats__two-blocks">
+            <?=$this->render('_player_stats_weapons', [
+                'images' => $images,
+                'names' => $names,
+                'player' => $player,
+                'server' => $server,
+                'steamId' => $steamId,
+                'user' => $user,
+            ]);?>
 
-        <?=$this->render('_player_stats_reider', [
-            'images' => $images,
-            'names' => $names,
-            'player' => $player,
-            'server' => $server,
-            'steamId' => $steamId,
-            'user' => $user,
-        ]);?>
+            <?=$this->render('_player_stats_reider', [
+                'images' => $images,
+                'names' => $names,
+                'player' => $player,
+                'server' => $server,
+                'steamId' => $steamId,
+                'user' => $user,
+            ]);?>
+        </div>
 
 <!--        <div class="page-stats__two-blocks">-->
 <!--            <section class="page-stats__block-without-hover w-50p">-->

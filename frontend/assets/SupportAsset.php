@@ -14,11 +14,16 @@ class SupportAsset extends AssetBundle
 
         $this->js = [
             'js/support.js?v=' . \Yii::$app->settings->get('site_version'),
+            '/js/support-stickers.js?v=' . \Yii::$app->settings->get('site_version'),
+        ];
+        
+        $this->css = [
+            '/css/support-messages.css?v=' . \Yii::$app->settings->get('site_version'),
         ];
     }
 
     public $jsOptions = [
-        'defer' => 'defer',
+        // Убираем defer для правильной инициализации стикеров
     ];
 
     public $depends

@@ -31,7 +31,7 @@
             </ul>
         </div>
         {% if USER_GUEST %}
-            <a href="/auth/oauth?authclient=steam" rel="nofollow" class="button button-primary button-size__s h-36" style="padding-top: 6px; padding-bottom: 6px">
+            <a href="/auth/oauth?authclient=steam" rel="nofollow" class="button button-primary button-size__s h-36 snow-drift snow-drift-1 snow-drift-right" style="padding-top: 6px; padding-bottom: 6px">
               <span class="button__text">
                 {{ t('common', 'Войти через Steam') }}
                 <span class="icons icons_24px icons_24px_steam bg-white"></span>
@@ -73,7 +73,7 @@
 {#            </button>#}
             <!-- Меню действий -->
             <div class="menu-actions mobile_hide">
-                <div class="menu-actions__balance-photo">
+                <div class="menu-actions__balance-photo  snow-drift snow-drift-1 snow-drift-right">
                     <span class="balance_count">{{ user.balance|number_format(0, '', ' ') }}</span>
                     <span class="icons icons_16px icons_16px_coin"></span>
 
@@ -109,13 +109,10 @@
                 </ul>
             </div>
 
-            <button class="button-primary show-modal-link button-size__s h-36 w-36 tablet_hide desktop_hide"
-                    data-href="/site/menu?page={{ PAGE }}"
-                    data-size="modal-sm"
-                    data-toggl="modal"
-                    data-target="modal-dialog"
-                    data-title="{{ t('common', 'Меню') }}"
-                    style="padding: 0; padding-top: 3px; z-index: 2">
+            <button class="button-primary button-size__s h-36 w-36 tablet_hide desktop_hide mobile-menu-toggle"
+                    type="button"
+                    style="padding: 0; padding-top: 3px; z-index: 2"
+                    aria-label="{{ t('common', 'Меню') }}">
                 <i class="fas fa-bars"></i>
             </button>
         {% endif %}

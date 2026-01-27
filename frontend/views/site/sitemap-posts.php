@@ -8,8 +8,8 @@ echo '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
 // Берём только опубликованные за последние 24–36 месяцев
 $articles = Blog::find()
                 ->where(['status' => Blog::STATUS_ACTIVE])
-                ->andWhere(['>=', 'created_at', date('Y-m-d H:i:s', strtotime('-24 months'))])
-                ->orderBy(['created_at' => SORT_DESC])
+                ->andWhere(['>=', 'update_at', date('Y-m-d H:i:s', strtotime('-24 months'))])
+                ->orderBy(['update_at' => SORT_DESC])
                 ->limit(5000) // на всякий случай
                 ->all();
 ?>
@@ -17,7 +17,7 @@ $articles = Blog::find()
     <?php foreach ($articles as $a): ?>
         <?php
         $loc = Yii::$app->params['homePage'] . $a->getUrl();
-        $last = $a->created_at;
+        $last = $a->update_at ?: $a->created_at; // Используем update_at, если есть, иначе created_at
         // приоритет: свежее → выше
         $ageDays = (time() - strtotime($last)) / 86400;
         $priority = $ageDays <= 60 ? '1.0' : ($ageDays <= 365 ? '0.8' : '0.6');

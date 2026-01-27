@@ -39,6 +39,8 @@ class Profit extends \common\components\base\ActiveRecord
     public const TYPE_TRANSFER_REFERRAL = 14;
     public const TYPE_TRANSFER_SKINS = 15;
     public const TYPE_WINNER_SKINS = 16;
+    public const TYPE_TASK_V2 = 17;
+    public const TYPE_AUDIENCE_BONUS = 18;
 
     /**
      * @return array
@@ -62,6 +64,8 @@ class Profit extends \common\components\base\ActiveRecord
             self::TYPE_TRANSFER_REFERRAL => Yii::t('common', 'Перевод с счета реферальной системы'),
             self::TYPE_TRANSFER_SKINS => Yii::t('common', 'Перевод с счета скинов'),
             self::TYPE_WINNER_SKINS => Yii::t('common', 'Выигран скин'),
+            self::TYPE_TASK_V2 => Yii::t('common', 'Выполнение задания v2'),
+            self::TYPE_AUDIENCE_BONUS => Yii::t('common', 'Бонус аудитории'),
         ];
     }
 

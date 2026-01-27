@@ -42,6 +42,23 @@ class OpenAiJob extends BaseObject implements JobInterface
             if ($chat->status !== Support::STATUS_OPEN) {
                 return;
             }
+            
+            // Проверяем, были ли ответы от админа/модератора (не ChatGPT)
+            $hasStaffReply = SupportMessage::find()
+                ->alias('sm')
+                ->joinWith('user u')
+                ->andWhere(['sm.support_id' => $this->chatId])
+                ->andWhere(['IS NOT', 'sm.user_id', null])
+                ->andWhere(['!=', 'sm.user_id', $chat->user_id]) // Не автор тикета
+                ->andWhere(['!=', 'u.steam_id', 777]) // Не ChatGPT бот (steam_id = 777)
+                ->exists();
+            
+            // Если админ/модератор уже вступил в диалог - ChatGPT не отвечает
+            if ($hasStaffReply) {
+                echo "Admin/Moderator already replied to ticket #{$chat->getNumber()}, ChatGPT skipped." . PHP_EOL;
+                return;
+            }
+            
             $chatHistory = [];
             /** @var SupportMessage[] $histories */
             $histories = SupportMessage::find()
@@ -97,18 +114,7 @@ class OpenAiJob extends BaseObject implements JobInterface
                 'chatNumber' => $this->chatNumber,
             ]));
             try {
-                $client = new Client(Yii::$app->params['ws']);
-                $client->send(
-                    json_encode(
-                        [
-                            'action'    => 'chatUpdate',
-                            'code'      => 200,
-                            'id'        => $this->chatNumber,
-                            'user_id'   => $this->ownerUserId,
-                            'messageId' => $modelBot->id,
-                        ]
-                    )
-                );
+                \console\controllers\ChatServer::broadcastChatUpdate($this->chatNumber, $this->ownerUserId, $modelBot->id);
             } catch (\Exception $ex) {
                 Yii::$app->telegramChats->sendMessage('Update chat: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
             }
@@ -121,7 +127,7 @@ class OpenAiJob extends BaseObject implements JobInterface
     private function createUser($steamId, $username) {
         $dbTransaction = Yii::$app->db->beginTransaction();
         try {
-            $avatar = 'https://' . Yii::$app->settings->get('site_domain') . Yii::$app->settings->get('openAi_avatar');
+            $avatar = Yii::$app->settings->get('openAi_avatar');
             $user           = new User();
             $user->email    = "chatgpt@steam.com";
             $user->steam_id = $steamId;
@@ -148,10 +154,9 @@ class OpenAiJob extends BaseObject implements JobInterface
                 UserTree::appendUser($user->id, 509);
                 UserProfile::createModel($user, $username);
                 $user->userProfile->name = $username;
-                try {
-                    $avatar                    = self::_loadImage($avatar, $steamId);
-                    $user->userProfile->avatar = $avatar;
-                } catch (\Exception $ex) {
+                // Сохраняем URL аватара из Steam вместо загрузки на сервер
+                if (!empty($avatar)) {
+                    $user->userProfile->steam_avatar_url = $avatar;
                 }
                 $user->userProfile->save();
                 return $user;

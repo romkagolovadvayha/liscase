@@ -1,0 +1,258 @@
+/* Стили для дополнительных функций */
+
+.raid-table-page,
+.wipe-calendar-page,
+.custom-skins-page,
+.skindrops-page,
+.bot-page,
+.worked-page,
+.blocked-page {
+  min-height: calc(100vh - 200px);
+  padding: 20px;
+}
+
+.raid-table-container,
+.wipe-calendar-container,
+.custom-skins-container,
+.skindrops-container,
+.bot-container,
+.worked-container,
+.blocked-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.raid-table-header,
+.wipe-calendar-header,
+.custom-skins-header,
+.skindrops-header,
+.bot-header,
+.worked-header,
+.blocked-header {
+  margin-bottom: 30px;
+
+  h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+  }
+}
+
+.raid-table-empty,
+.wipe-calendar-empty,
+.custom-skins-empty,
+.skindrops-empty,
+.worked-empty,
+.blocked-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+}
+
+.raid-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  overflow: hidden;
+
+  thead {
+    background: var(--bg-tertiary);
+  }
+
+  th,
+  td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  th {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  td {
+    color: var(--text-secondary);
+  }
+
+  tr:hover {
+    background: var(--bg-hover);
+  }
+}
+
+.wipe-calendar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wipe-calendar-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wipe-calendar-item-date {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.wipe-calendar-item-server {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.wipe-calendar-item-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.custom-skins-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.custom-skin-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.custom-skin-card-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.custom-skin-card-name {
+  padding: 12px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.skindrops-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skindrop-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.skindrop-item-id {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.skindrop-item-status {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.skindrop-item-date {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.bot-content {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+
+  p {
+    margin: 0;
+    color: var(--text-secondary);
+  }
+}
+
+.worked-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  overflow: hidden;
+
+  thead {
+    background: var(--bg-tertiary);
+  }
+
+  th,
+  td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  th {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  td {
+    color: var(--text-secondary);
+  }
+
+  tr:hover {
+    background: var(--bg-hover);
+  }
+}
+
+.blocked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.blocked-item {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.blocked-item-id {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.blocked-item-reason {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.blocked-item-date {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+
+
+
+
+
+

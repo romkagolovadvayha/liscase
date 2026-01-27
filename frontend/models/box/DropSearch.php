@@ -4,6 +4,7 @@ namespace frontend\models\box;
 
 use common\components\base\query\DateQuery;
 use common\models\box\Drop;
+use common\models\box\DropFavorite;
 use yii\data\ActiveDataProvider;
 use Yii;
 
@@ -66,6 +67,12 @@ class DropSearch extends Drop
             call_user_func($filter, $query);
         }
 
+        // Получаем список избранных товаров для текущего пользователя
+        $favoriteDropIds = [];
+        if (!Yii::$app->user->isGuest) {
+            $favoriteDropIds = DropFavorite::getFavoriteDropIds(Yii::$app->user->id);
+        }
+
         $query
             ->andFilterWhere([
                 'id'       => $this->id,
@@ -90,11 +97,19 @@ class DropSearch extends Drop
 //        DateQuery::addDateCondition($query, $this, 'created_at');
         DateQuery::addDateCondition($query, $this, 'price');
 
+        // Сортируем: сначала избранные товары, потом остальные
+        if (!empty($favoriteDropIds)) {
+            $query->orderBy([
+                new \yii\db\Expression('FIELD(drop.id, ' . implode(',', $favoriteDropIds) . ') DESC'),
+                'id' => SORT_DESC
+            ]);
+        } else {
+            $query->orderBy(['id' => SORT_DESC]);
+        }
+
         return new ActiveDataProvider([
             'query'      => $query,
-            'sort'       => [
-                'defaultOrder' => ['id' => SORT_DESC],
-            ],
+            'sort'       => false, // Отключаем стандартную сортировку, используем кастомную
             'pagination' => [
                 'pageSize' => 20,
             ],

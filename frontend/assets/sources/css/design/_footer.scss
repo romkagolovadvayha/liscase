@@ -6,9 +6,14 @@
     .justify-space-between,
     .gap-x-32,
     .flex-wrap,
-    .gap-y-32,
-    .content-visibility-auto;
+    .gap-y-32;
+  position: relative;
+  z-index: 1; // Ниже меню и header
   border-top: 1px solid var(--border-color-default);
+  
+  @media (max-width: 768px) {
+    z-index: 1; // Ниже мобильного меню (z-index: 300) и header
+  }
   grid-column-start: 1;
   grid-column-end: 4;
 

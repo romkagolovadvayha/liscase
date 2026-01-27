@@ -3,13 +3,83 @@ use yii\widgets\ListView;
 use yii\widgets\ActiveForm;
 use yii\widgets\Pjax;
 use yii\helpers\Html;
+use common\models\blog\BlogCategory;
 
 /** @var yii\web\View $this */
 /** @var \yii\data\ActiveDataProvider $dataProvider */
 /** @var \backend\models\blog\BlogSearch $searchModel */
 /** @var \common\models\blog\BlogCategory[] $categories */
 
-$this->title = Yii::t('common', 'Баги и новости Rust');
+$request = Yii::$app->request;
+$pagination = $dataProvider->getPagination();
+$sort = $dataProvider->getSort();
+$baseTitle = Yii::t('common', 'Баги и новости Rust');
+$baseDescription = Yii::t('common', 'Новости и блог проекта: баги, ошибки, патчи, Twitch Drops, новые скины и обновления. Читайте полезные статьи и гайды для игроков Rust.');
+$titleParts = [];
+$descriptionParts = [];
+
+if ($pagination) {
+    $pageNumber = (int)$request->get($pagination->pageParam, 1);
+    if ($pageNumber > 1) {
+        $titleParts[] = Yii::t('common', 'Страница {number}', ['number' => $pageNumber]);
+        $descriptionParts[] = Yii::t('common', 'Сейчас вы просматриваете страницу {number}.', ['number' => $pageNumber]);
+    }
+    $pageSizeParam = $pagination->pageSizeParam;
+    if (!empty($pageSizeParam) && $request->get($pageSizeParam)) {
+        $perPage = (int)$request->get($pageSizeParam);
+        if ($perPage > 0 && $perPage !== $pagination->pageSize) {
+            $titleParts[] = Yii::t('common', 'Показывать по {count} записей', ['count' => $perPage]);
+            $descriptionParts[] = Yii::t('common', 'На странице отображается {count} публикаций.', ['count' => $perPage]);
+        }
+    }
+}
+
+if ($sort) {
+    $sortValue = $request->get($sort->sortParam);
+    if (!empty($sortValue)) {
+        $sortLabels = [
+            '-created_at' => Yii::t('common', 'Сортировка по дате: новые сверху'),
+            'created_at'  => Yii::t('common', 'Сортировка по дате: старые сверху'),
+            '-views'      => Yii::t('common', 'Сортировка по просмотрам'),
+            'views'       => Yii::t('common', 'Сортировка по просмотрам (по возрастанию)'),
+        ];
+        $label = $sortLabels[$sortValue] ?? Yii::t('common', 'Сортировка: {value}', ['value' => $sortValue]);
+        $titleParts[] = $label;
+        $descriptionParts[] = $label . '.';
+    }
+}
+
+if (!empty($searchModel->name)) {
+    $queryLabel = Yii::t('common', 'Поиск: «{query}»', ['query' => $searchModel->name]);
+    $titleParts[] = $queryLabel;
+    $descriptionParts[] = Yii::t('common', 'Фильтр по названию: «{query}».', ['query' => $searchModel->name]);
+}
+
+$categorySlug = $request->get('categoryLinkNameChild') ?? $request->get('categoryLinkName');
+if (!empty($categorySlug)) {
+    $category = BlogCategory::find()->andWhere([
+        'status' => BlogCategory::STATUS_ACTIVE,
+        'link_name' => $categorySlug,
+    ])->one();
+    if ($category) {
+        $titleParts[] = Yii::t('common', 'Категория: {name}', ['name' => Yii::t('database', $category->name)]);
+        $descriptionParts[] = Yii::t('common', 'Материалы категории «{name}».', ['name' => Yii::t('database', $category->name)]);
+    }
+}
+
+$this->title = $baseTitle . (!empty($titleParts) ? ' — ' . implode(' · ', $titleParts) : '');
+$metaDescription = $baseDescription . (!empty($descriptionParts) ? ' ' . implode(' ', $descriptionParts) : '');
+
+$this->params['meta_description'] = $metaDescription;
+$this->registerMetaTag([
+    'property' => 'og:title',
+    'content' => $this->title,
+], 'og:title');
+$this->registerMetaTag([
+    'property' => 'og:description',
+    'content' => $metaDescription,
+], 'og:description');
+
 $this->params['h1'] = Yii::t('common', 'Блог');
 $this->params['page'] = 'blog';
 $this->params['_blog_comments_block'] = true;
@@ -29,23 +99,32 @@ $this->params['breadcrumbs'][] = ['label' => Yii::t('common', "Блог")];
     <!-- Шапка блога (если нужна) -->
     <?= $this->render('_header', ['dataProvider' => $dataProvider]) ?>
 
-    <!-- Фильтр по названию -->
-    <div class="blog-filter">
+    <!-- Поиск -->
+    <div class="blog-search-section">
         <?php $form = ActiveForm::begin([
-                                            'id' => 'blog-filter-form',
-                                            'method' => 'get',
-                                            'action' => ['index'],
-                                            'options' => ['data-pjax' => 1],
-                                        ]); ?>
+            'id' => 'blog-filter-form',
+            'method' => 'get',
+            'action' => ['index'],
+            'options' => ['data-pjax' => 1],
+        ]); ?>
 
-        <?= $form->field($searchModel, 'name')->textInput([
-                                                              'placeholder' => Yii::t('common', 'Поиск по названию…'),
-                                                              'autocomplete' => 'off',
-                                                              'onchange' => 'this.form.submit()',
-                                                          ])->label(false) ?>
+        <div class="blog-search-input-wrapper">
+            <i class="fas fa-search blog-search-icon"></i>
+            <?= Html::activeTextInput($searchModel, 'name', [
+                'placeholder' => Yii::t('common', 'Поиск по названию поста...'),
+                'autocomplete' => 'off',
+                'class' => 'blog-search-input',
+                'onkeyup' => 'if(event.key==="Enter") this.form.submit()',
+            ]) ?>
+            <button type="submit" class="blog-search-submit">
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
 
         <?php ActiveForm::end(); ?>
     </div>
+    
+    <!-- Категории -->
     <?= $this->render('_categories', ['categories' => $categories]) ?>
 
     <!-- Список в виде мозаики -->
@@ -119,7 +198,21 @@ $this->registerJs(<<<JS
       var \$newPager = \$html.find('#blog-list-view .pagination');
 
       if(\$newItems.length){
-        $('#blog-list-view .masonry').append(\$newItems);
+        // Проверяем дубликаты перед добавлением
+        var existingIds = {};
+        $('#blog-list-view .masonry .blog-card').each(function(){
+          var id = $(this).attr('id');
+          if(id) existingIds[id] = true;
+        });
+        
+        \$newItems.each(function(){
+          var \$card = $(this).find('.blog-card');
+          var id = \$card.attr('id');
+          if(!id || !existingIds[id]){
+            $('#blog-list-view .masonry').append($(this));
+            if(id) existingIds[id] = true;
+          }
+        });
       }
       if(\$newPager.length){
         $('#blog-list-view .pagination').replaceWith(\$newPager);
@@ -161,29 +254,33 @@ JS);
 ?>
 
 <script>
-    document.addEventListener('click', function(e){
-        var item = e.target.closest('.blog-cats__item');
-        // клик по "родителю" на таче — открываем/закрываем вместо мгновенного перехода
-        if (e.target.closest('.blog-cats__link')){
-            // если есть подкатегории — блокируем переход первым тапом
-            var hasDrop = !!(item && item.querySelector('.blog-subcats'));
-            if (hasDrop){
-                if (!item.classList.contains('is-open')){
-                    e.preventDefault();
-                    item.classList.add('is-open');
-                    item.querySelector('.blog-cats__link').setAttribute('aria-expanded','true');
-                    return;
-                }
-                // второй тап — пусть ведёт по ссылке
+// Categories dropdown interaction for touch devices
+document.addEventListener('click', function(e){
+    var item = e.target.closest('.blog-categories_item');
+    
+    // Click on category link with dropdown
+    if (e.target.closest('.blog-categories_link')){
+        var hasDrop = !!(item && item.querySelector('.blog-categories_dropdown'));
+        
+        if (hasDrop){
+            // First tap - open dropdown
+            if (!item.classList.contains('is-open')){
+                e.preventDefault();
+                item.classList.add('is-open');
+                item.querySelector('.blog-categories_link').setAttribute('aria-expanded','true');
+                return;
             }
+            // Second tap - follow link
         }
-        // клик вне — закрыть все
-        document.querySelectorAll('.blog-cats__item.is-open').forEach(function(it){
-            if (!it.contains(e.target)){
-                it.classList.remove('is-open');
-                var link = it.querySelector('.blog-cats__link');
-                if (link) link.setAttribute('aria-expanded','false');
-            }
-        });
+    }
+    
+    // Click outside - close all dropdowns
+    document.querySelectorAll('.blog-categories_item.is-open').forEach(function(it){
+        if (!it.contains(e.target)){
+            it.classList.remove('is-open');
+            var link = it.querySelector('.blog-categories_link');
+            if (link) link.setAttribute('aria-expanded','false');
+        }
     });
+});
 </script>

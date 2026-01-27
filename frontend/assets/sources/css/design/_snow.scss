@@ -1,0 +1,178 @@
+// Новогодняя тематика - снег
+
+// Контейнер для снега
+.snow-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000; // Поверх других элементов, но ниже модальных окон
+  overflow: hidden;
+}
+
+// Снежинки
+.snowflake {
+  position: absolute;
+  top: -10px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1em;
+  font-family: Arial, sans-serif;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+  animation: snowfall linear forwards;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, opacity;
+  
+  &::before {
+    content: '❄';
+  }
+}
+
+// Анимация падения снега с эффектом таяния (ускорено в 2 раза)
+@keyframes snowfall {
+  0% {
+    transform: translateY(var(--start-y, 0px)) translateX(0) rotate(0deg);
+    opacity: 1;
+  }
+  35% {
+    opacity: 0.8;
+  }
+  42.5% {
+    opacity: 0.4;
+  }
+  47.5% {
+    opacity: 0.1;
+  }
+  100% {
+    transform: translateY(100vh) translateX(var(--snow-drift, 0px)) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+// Адаптивность для мобильных устройств
+@media (max-width: 768px) {
+  .snowflake {
+    font-size: 0.8em;
+  }
+}
+
+// Отключение на очень маленьких экранах для производительности
+@media (max-width: 480px) {
+  .snow-container {
+    display: none;
+  }
+}
+
+// Стили для сугробов у блоков и кнопок
+.snow-drift {
+  position: relative;
+  overflow: visible;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 20px; // Минимальная высота для отображения
+    background-image: url("/images/design/snow/1.png");
+    background-repeat: no-repeat;
+    background-position: bottom center;
+    background-size: contain;
+    pointer-events: none;
+    z-index: 1;
+    display: block;
+  }
+  
+  // Варианты с разными изображениями сугробов
+  &-1::after {
+    background-image: url("/images/design/snow/1.png");
+    top: -15px;
+    left: 0;
+    height: 35px;
+  }
+  
+  &-2::after {
+    background-image: url("/images/design/snow/2.png");
+    top: -20px;
+    left: 0;
+    height: 35px;
+  }
+  
+  &-3::after {
+    background-image: url("/images/design/snow/3.png");
+    top: -20px;
+    left: 0;
+    height: 35px;
+  }
+  
+  &-4::after {
+    background-image: url("/images/design/snow/4.png");
+    top: -32px;
+    left: 0;
+    height: 42px;
+  }
+  
+  &-5::after {
+    background-image: url("/images/design/snow/5.png");
+    top: -21px;
+    left: -22px;
+    height: 76px;
+  }
+  
+  &-6::after {
+    background-image: url("/images/design/snow/6.png");
+    top: -21px;
+    left: 5px;
+    height: 76px;
+  }
+
+  &-7::after {
+    background-image: url("/images/design/snow/7.png");
+    top: -16px;
+    left: 0;
+    height: 35px;
+  }
+
+  &-8::after {
+    background-image: url("/images/design/snow/8.png");
+    top: -11px;
+    left: -13px;
+    height: 22px;
+  }
+  
+  // Вариант с сугробом слева
+  &-left::after {
+    background-position: top left;
+  }
+  
+  // Вариант с сугробом справа
+  &-right::after {
+    background-position: top right;
+  }
+  
+  // Вариант с сугробом по центру (по умолчанию)
+  &-center::after {
+    background-position: top center;
+  }
+  
+  // Вариант с сугробом на всю ширину
+  &-full::after {
+    background-size: 100% auto;
+  }
+  
+  // Вариант с сугробом, который выходит за пределы блока
+  &-overflow::after {
+    bottom: -10px; // Слегка выходит за нижний край
+  }
+}
+
+// Адаптивность для мобильных устройств
+@media (max-width: 768px) {
+  .snow-drift::after {
+    background-size: cover;
+  }
+}
+

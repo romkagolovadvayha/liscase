@@ -26,6 +26,7 @@ Yii::$container = new yii\di\Container;
  * @property \common\components\steam\MarketApi            $marketApi
  * @property \common\components\payments\Paypalych         $paypalych
  * @property \common\components\payments\Tome              $tomeApi
+ * @property \common\components\bansystem\RustApp          $rustApp
  * @property \common\components\rusttm\RustTm              $rustTm
  * @property \common\components\rusttm\CsGoMarket          $csGoMarket
  * @property \common\components\rustcheck\RustCheck        $rustCheck
@@ -35,6 +36,7 @@ Yii::$container = new yii\di\Container;
  * @property \common\components\telegram\TelegramPayments  $telegramPayments
  * @property \common\components\telegram\TelegramReports   $telegramReports
  * @property \common\components\telegram\TelegramChats     $telegramChats
+ * @property \common\components\telegram\TelegramRedFlag   $telegramRedFlag
  * @property \common\components\telegram\TelegramSupport   $telegramSupport
  * @property \common\components\telegram\TelegramReport    $telegramReport
  * @property \common\components\wargm\WarGM                $wargm
@@ -50,6 +52,7 @@ Yii::$container = new yii\di\Container;
  * @property \yii\queue\redis\Queue                        $queueKills
  * @property \yii\queue\redis\Queue                        $queueParams
  * @property \yii\queue\redis\Queue                        $queueTelegram
+ * @property \yii\queue\redis\Queue                        $queueVk
  * @property \yii\queue\redis\Queue                        $queueMidjourney
  * @property \yii\queue\redis\Queue                        $queueProcess
  * @property \yii\queue\redis\Queue                        $queueSupport

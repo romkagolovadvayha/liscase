@@ -180,10 +180,13 @@ class UserTop extends \yii\db\ActiveRecord
             'c4thrown' => 1,
             'satchelsthrown' => 0.2,
             'rocket_basic' => 0.5,
+            'rocket_basic_rpg' => 0.5, // учитывается вместе с rocket_basic через сумму в Statistics.php
             'rocket_hv' => 0.1,
+            'rocket_hv_rpg' => 0.1, // учитывается вместе с rocket_hv через сумму в Statistics.php
             'rocket_fire' => 0.1,
+            'rocket_fire_rpg' => 0.1, // учитывается вместе с rocket_fire через сумму в Statistics.php
             'ammo_explosive' => 0.01,
-            'grenade.f1.deployed' => 0.05,
+            'grenade.f1.deployed' => 0.02,
             'grenade.molotov.deployed' => 0.05,
             'grenade.beancan.deployed' => 0.05,
           ],
@@ -338,6 +341,7 @@ ORDER BY server_id, `key`, value DESC;
                         $user = $item->user;
                         $color = UserTop::getColor($position);
                         $amount = UserTop::getAmount($position);
+                        $displayStatus = $user->getDisplayStatus();
                         $items[$key]['items'][] = [
                             'position' => $position,
                             'color' => $color,
@@ -347,7 +351,8 @@ ORDER BY server_id, `key`, value DESC;
                             'link' => "/servers/{$server->tag}/{$user->steam_id}",
                             'username' => $user->username,
                             'avatar' => $user->getAvatar(),
-                            'status' => $user->getStatus(),
+                            'status' => $displayStatus === null ? null : ($displayStatus ? true : false),
+                            'is_hidden' => $displayStatus === null,
                         ];
                     }
                 } else {
@@ -363,6 +368,7 @@ ORDER BY server_id, `key`, value DESC;
                         $color = UserTop::getColor($position);
                         $amount = UserTop::getAmount($position);
                         $user = $item->user;
+                        $displayStatus = $user->getDisplayStatus();
                         $items[$key]['items'][] = [
                             'position' => $position,
                             'color' => $color,
@@ -372,7 +378,8 @@ ORDER BY server_id, `key`, value DESC;
                             'link' => "/servers/{$server->tag}/{$user->steam_id}",
                             'username' => $user->username,
                             'avatar' => $user->getAvatar(),
-                            'status' => $user->getStatus(),
+                            'status' => $displayStatus === null ? null : ($displayStatus ? true : false),
+                            'is_hidden' => $displayStatus === null,
                         ];
                     }
                 }
@@ -402,35 +409,41 @@ ORDER BY server_id, `key`, value DESC;
         if (empty($items)) {
             $items = [];
             foreach (UserTop::getTopsLabel() as $key => $label) {
-                /** @var UserTop[] $userTops */
-                $userTops = UserTop::find()
-                                   ->andWhere(['key' => $key])
-                                   ->andWhere(['server_id' => $server->id])
-                                   ->andWhere(['wipe' => $wipe])
-                                   ->orderBy(['value' => SORT_DESC])
-                                   ->all();
+                $query = UserTop::find()
+                                ->andWhere(['key' => $key])
+                                ->andWhere(['server_id' => $server->id])
+                                ->andWhere(['wipe' => $wipe])
+                                ->orderBy(['value' => SORT_DESC]);
                 $items[$key] = [
                     'label' => $label,
                     'items' => [],
                 ];
                 if ($key !== 'playtime') {
-                    foreach ($userTops as $position => $item) {
+                    $position = 1;
+                    foreach ($query->each(500) as $item) {
+                        if (empty($item->user)) {
+                            continue;
+                        }
                         $items[$key]['items'][$item->user->steam_id] = [
-                            'position' => $position + 1,
+                            'position' => $position,
                         ];
+                        $position++;
                     }
                 } else {
-                    /** @var Statistics[] $statistics */
-                    $statistics = Statistics::find()
-                                            ->andWhere(['key' => $key])
-                                            ->andWhere(['server_tag' => $server->tag])
-                                            ->andWhere(['wipe' => $wipe])
-                                            ->orderBy(['value' => SORT_DESC])
-                                            ->all();
-                    foreach ($statistics as $position => $item) {
+                    $statQuery = Statistics::find()
+                                           ->andWhere(['key' => $key])
+                                           ->andWhere(['server_tag' => $server->tag])
+                                           ->andWhere(['wipe' => $wipe])
+                                           ->orderBy(['value' => SORT_DESC]);
+                    $position = 1;
+                    foreach ($statQuery->each(500) as $item) {
+                        if (empty($item->steam_id)) {
+                            continue;
+                        }
                         $items[$key]['items'][$item->steam_id] = [
-                            'position' => $position + 1,
+                            'position' => $position,
                         ];
+                        $position++;
                     }
                 }
             }

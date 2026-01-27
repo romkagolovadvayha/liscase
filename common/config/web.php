@@ -147,6 +147,9 @@ $config = [
         'telegramChats'   => [
             'class'  => \common\components\telegram\TelegramChats::class,
         ],
+        'telegramRedFlag'   => [
+            'class'  => \common\components\telegram\TelegramRedFlag::class,
+        ],
         'telegramSupport'   => [
             'class'  => \common\components\telegram\TelegramSupport::class,
         ],
@@ -160,6 +163,9 @@ $config = [
         ],
         'tomeApi'   => [
             'class' => \common\components\payments\Tome::class,
+        ],
+        'rustApp'   => [
+            'class' => \common\components\bansystem\RustApp::class,
         ],
         'freeKassaApi'   => [
             'class' => \common\components\payments\FreeKassa::class,
@@ -216,6 +222,15 @@ $config = [
         ],
         'openAiComment' => [
             'class' => \common\components\openAi\OpenAiComment::class,
+        ],
+        'openAiVkPost' => [
+            'class' => \common\components\openAi\OpenAiVkPost::class,
+        ],
+        'openAiTelegramPost' => [
+            'class' => \common\components\openAi\OpenAiTelegramPost::class,
+        ],
+        'telegramChannelHelper' => [
+            'class' => \common\components\telegram\TelegramChannelHelper::class,
         ],
         'drop' => [
             'class' => \common\components\drop\Drop::class

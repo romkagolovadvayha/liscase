@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: liscase-app
+  namespace: liscase
+  labels:
+    app: liscase-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: liscase-app
+  template:
+    metadata:
+      labels:
+        app: liscase-app
+    spec:
+      initContainers:
+      - name: wait-for-mysql
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nc -z mysql-service 3306; do echo waiting for mysql; sleep 2; done;']
+      - name: run-migrations
+        image: your-registry/liscase-app:latest
+        command: ['php', 'yii', 'migrate', '--interactive=0']
+        envFrom:
+        - configMapRef:
+            name: liscase-config
+        - secretRef:
+            name: liscase-secrets
+      containers:
+      - name: app
+        image: your-registry/liscase-app:latest
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 9000
+          name: php-fpm
+        envFrom:
+        - configMapRef:
+            name: liscase-config
+        - secretRef:
+            name: liscase-secrets
+        volumeMounts:
+        - name: app-storage
+          mountPath: /var/www/html/frontend/web/uploads
+        - name: app-storage
+          mountPath: /var/www/html/backend/web/uploads
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: app-storage
+        persistentVolumeClaim:
+          claimName: app-storage-pvc
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-storage-pvc
+  namespace: liscase
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: standard
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: liscase-app-service
+  namespace: liscase
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: liscase-app
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: liscase-app-hpa
+  namespace: liscase
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: liscase-app
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+

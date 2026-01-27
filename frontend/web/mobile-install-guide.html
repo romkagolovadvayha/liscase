@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Как установить приложение на мобильном</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            backdrop-filter: blur(10px);
+        }
+        .step {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #3498db;
+        }
+        .icon {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        .android {
+            border-left-color: #4caf50;
+        }
+        .ios {
+            border-left-color: #007AFF;
+        }
+        .back-button {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="back-button" onclick="history.back()">← Назад</button>
+        
+        <h1 style="text-align: center; margin-bottom: 30px;">📱 Установка приложения</h1>
+        
+        <div class="card">
+            <h3>🤖 Android (Chrome)</h3>
+            <div class="step android">
+                <div class="icon">1️⃣</div>
+                <strong>Откройте меню браузера</strong><br>
+                Нажмите на три точки в правом верхнем углу
+            </div>
+            <div class="step android">
+                <div class="icon">2️⃣</div>
+                <strong>Найдите "Установить приложение"</strong><br>
+                Или "Добавить на главный экран"
+            </div>
+            <div class="step android">
+                <div class="icon">3️⃣</div>
+                <strong>Подтвердите установку</strong><br>
+                Нажмите "Установить" в диалоге
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>🍎 iOS (Safari)</h3>
+            <div class="step ios">
+                <div class="icon">1️⃣</div>
+                <strong>Нажмите кнопку "Поделиться"</strong><br>
+                Это квадрат со стрелкой вверх
+            </div>
+            <div class="step ios">
+                <div class="icon">2️⃣</div>
+                <strong>Выберите "На экран Домой"</strong><br>
+                Прокрутите вниз и найдите эту опцию
+            </div>
+            <div class="step ios">
+                <div class="icon">3️⃣</div>
+                <strong>Нажмите "Добавить"</strong><br>
+                Приложение появится на домашнем экране
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>💡 Преимущества установленного приложения</h3>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li>Быстрый доступ с домашнего экрана</li>
+                <li>Работает как обычное приложение</li>
+                <li>Уведомления о новых сообщениях</li>
+                <li>Работает в офлайн режиме</li>
+                <li>Не занимает много места</li>
+            </ul>
+        </div>
+        
+        <div class="card" style="text-align: center;">
+            <p><strong>Установили приложение?</strong></p>
+            <p>Попробуйте открыть его с домашнего экрана!</p>
+        </div>
+    </div>
+
+    <script>
+        // Определяем устройство и показываем соответствующие инструкции
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isAndroid = /Android/.test(navigator.userAgent);
+        
+        if (isIOS) {
+            document.querySelector('.android').style.display = 'none';
+            document.querySelector('h3:contains("Android")').style.display = 'none';
+        } else if (isAndroid) {
+            document.querySelector('.ios').style.display = 'none';
+            document.querySelector('h3:contains("iOS")').style.display = 'none';
+        }
+        
+        // Показываем уведомление, если приложение уже установлено
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            const statusCard = document.createElement('div');
+            statusCard.className = 'card';
+            statusCard.style.background = 'rgba(76, 175, 80, 0.3)';
+            statusCard.style.border = '2px solid #4caf50';
+            statusCard.innerHTML = `
+                <h3>🎉 Приложение уже установлено!</h3>
+                <p>Вы просматриваете установленную версию приложения.</p>
+            `;
+            document.querySelector('.container').insertBefore(statusCard, document.querySelector('.card'));
+        }
+    </script>
+</body>
+</html>

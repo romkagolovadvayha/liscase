@@ -82,7 +82,30 @@ class ServerSkinForm extends ServerSkin
         $creatorSteamId = $info['creator'];
         $creatorUser = User::findBySteamId($creatorSteamId);
 
-        $imagePath = $this->_loadImage(file_get_contents($preview));
+        // Загружаем изображение превью с таймаутом
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => 10, // 10 секунд таймаут
+                'ignore_errors' => true,
+            ]
+        ]);
+        $imageData = @file_get_contents($preview, false, $context);
+        if ($imageData === false || empty($imageData)) {
+            $this->addError('steam_link', Yii::t('common', 'Не удалось загрузить изображение превью скина'));
+            return false;
+        }
+        
+        // Проверяем размер файла (максимум 10MB)
+        if (strlen($imageData) > 10 * 1024 * 1024) {
+            $this->addError('steam_link', Yii::t('common', 'Изображение слишком большое (максимум 10MB)'));
+            return false;
+        }
+
+        $imagePath = $this->_loadImage($imageData);
+        if (empty($imagePath)) {
+            $this->addError('steam_link', Yii::t('common', 'Ошибка обработки изображения превью'));
+            return false;
+        }
         $this->name = $title;
         $this->skin_id = $skinId;
         $this->image = $imagePath;
@@ -131,29 +154,134 @@ class ServerSkinForm extends ServerSkin
         if (empty($image)) {
             return null;
         }
-        $uploadDir = Yii::getAlias('@app/web');
+        
+        $s3Api = Yii::$app->s3Api;
+        $tempDir = sys_get_temp_dir();
+        
+        // Проверяем, что временная директория существует и доступна для записи
+        if (!is_dir($tempDir) || !is_writable($tempDir)) {
+            Yii::error('Temporary directory is not writable: ' . $tempDir, __METHOD__);
+            return null;
+        }
+        
         $filename = $this->id . "_" . md5(time()) . ".png";
-        $fileUrl = "/uploads/server-skin/{$filename}";
-        $filePath = $uploadDir . $fileUrl;
-        if (!file_exists(dirname($filePath))) {
-            mkdir(dirname($filePath));
-            chmod(dirname($filePath), 0777);
+        
+        // Определяем формат изображения по содержимому
+        $imageInfo = @getimagesizefromstring($image);
+        if ($imageInfo === false) {
+            Yii::error('Invalid image data provided to _loadImage', __METHOD__);
+            return null;
         }
-        file_put_contents($filePath, $image);
-
-        $newPath200 = "/uploads/server-skin-x150/" . $filename;
-        $fullNewPath200 = \Yii::getAlias('@frontend/web') . $newPath200;
-        $newPath64 = "/server-skin-64/" . $filename;
-        $fullNewPath64 = \Yii::getAlias('@frontend/web/uploads') . $newPath64;
-        $newPath150 = "/server-skin-150/" . $filename;
-        $fullNewPath150 = \Yii::getAlias('@frontend/web/uploads') . $newPath150;
-        if (file_exists($filePath)) {
-            DropImage::resizeImage($filePath, $fullNewPath200, 200);
-            DropImage::resizeImage($filePath, $fullNewPath64, 64);
-            DropImage::resizeImage($filePath, $fullNewPath150, 150);
-            $this->image_64 = $newPath64;
-            $this->image_150 = $newPath150;
+        
+        // Быстрая проверка размеров изображения (максимум 10000x10000)
+        if (isset($imageInfo[0]) && isset($imageInfo[1])) {
+            if ($imageInfo[0] > 10000 || $imageInfo[1] > 10000) {
+                Yii::error('Image dimensions too large: ' . $imageInfo[0] . 'x' . $imageInfo[1], __METHOD__);
+                return null;
+            }
+            if ($imageInfo[0] <= 0 || $imageInfo[1] <= 0) {
+                Yii::error('Invalid image dimensions: ' . $imageInfo[0] . 'x' . $imageInfo[1], __METHOD__);
+                return null;
+            }
         }
-        return $newPath200;
+        
+        // Определяем расширение на основе MIME типа
+        $extension = 'png';
+        if (!empty($imageInfo['mime'])) {
+            $mimeToExt = [
+                'image/jpeg' => 'jpg',
+                'image/jpg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'image/webp' => 'webp',
+            ];
+            if (isset($mimeToExt[$imageInfo['mime']])) {
+                $extension = $mimeToExt[$imageInfo['mime']];
+            }
+        }
+        
+        // Сохраняем оригинал во временный файл с правильным расширением
+        $tempOriginal = $tempDir . '/' . uniqid('skin_orig_') . '.' . $extension;
+        $bytesWritten = file_put_contents($tempOriginal, $image);
+        
+        // Проверяем, что файл был успешно записан и существует
+        if ($bytesWritten === false || !file_exists($tempOriginal) || !is_readable($tempOriginal)) {
+            Yii::error('Failed to write temporary image file: ' . $tempOriginal . ' (bytes written: ' . ($bytesWritten !== false ? $bytesWritten : 'false') . ')', __METHOD__);
+            return null;
+        }
+        
+        // Проверяем, что это валидное изображение
+        $imageSize = @getimagesize($tempOriginal);
+        if ($imageSize === false) {
+            Yii::error('Invalid image data in temporary file: ' . $tempOriginal, __METHOD__);
+            @unlink($tempOriginal);
+            return null;
+        }
+        
+        // Быстрая проверка размера файла на диске
+        $fileSize = filesize($tempOriginal);
+        if ($fileSize === false || $fileSize > 10 * 1024 * 1024) {
+            Yii::error('Image file too large: ' . $fileSize . ' bytes', __METHOD__);
+            @unlink($tempOriginal);
+            return null;
+        }
+        
+        // Создаем превью разных размеров во временных файлах
+        $temp200 = $tempDir . '/' . uniqid('skin_200_') . '.png';
+        $temp64 = $tempDir . '/' . uniqid('skin_64_') . '.png';
+        $temp150 = $tempDir . '/' . uniqid('skin_150_') . '.png';
+        
+        // Создаем ресайзы по одному, сразу проверяя результат для быстрого возврата ошибки
+        $resize200 = DropImage::resizeImage($tempOriginal, $temp200, 200);
+        if (!$resize200 || !file_exists($temp200)) {
+            Yii::error('Failed to create 200px resize for server skin. Original exists: ' . (file_exists($tempOriginal) ? 'yes' : 'no') . ', Resize result: ' . ($resize200 ? 'true' : 'false') . ', File exists: ' . (file_exists($temp200) ? 'yes' : 'no'), __METHOD__);
+            @unlink($tempOriginal);
+            return null;
+        }
+        
+        $resize64 = DropImage::resizeImage($tempOriginal, $temp64, 64);
+        if (!$resize64 || !file_exists($temp64)) {
+            Yii::error('Failed to create 64px resize for server skin. Original exists: ' . (file_exists($tempOriginal) ? 'yes' : 'no') . ', Resize result: ' . ($resize64 ? 'true' : 'false') . ', File exists: ' . (file_exists($temp64) ? 'yes' : 'no'), __METHOD__);
+            @unlink($tempOriginal);
+            @unlink($temp200);
+            return null;
+        }
+        
+        $resize150 = DropImage::resizeImage($tempOriginal, $temp150, 150);
+        if (!$resize150 || !file_exists($temp150)) {
+            Yii::error('Failed to create 150px resize for server skin. Original exists: ' . (file_exists($tempOriginal) ? 'yes' : 'no') . ', Resize result: ' . ($resize150 ? 'true' : 'false') . ', File exists: ' . (file_exists($temp150) ? 'yes' : 'no'), __METHOD__);
+            @unlink($tempOriginal);
+            @unlink($temp200);
+            @unlink($temp64);
+            return null;
+        }
+        
+        // Загружаем все версии в S3
+        $s3KeyOriginal = 'uploads/server-skin/' . $filename;
+        $s3Key200 = 'uploads/server-skin-x150/' . $filename;
+        $s3Key64 = 'uploads/server-skin-64/' . $filename;
+        $s3Key150 = 'uploads/server-skin-150/' . $filename;
+        
+        $s3ResultOriginal = $s3Api->putFile($s3KeyOriginal, file_get_contents($tempOriginal), 'image/png');
+        $s3Result200 = $s3Api->putFile($s3Key200, file_get_contents($temp200), 'image/png');
+        $s3Result64 = $s3Api->putFile($s3Key64, file_get_contents($temp64), 'image/png');
+        $s3Result150 = $s3Api->putFile($s3Key150, file_get_contents($temp150), 'image/png');
+        
+        // Удаляем временные файлы
+        @unlink($tempOriginal);
+        @unlink($temp200);
+        @unlink($temp64);
+        @unlink($temp150);
+        
+        if ($s3ResultOriginal === false || $s3Result200 === false || $s3Result64 === false || $s3Result150 === false) {
+            Yii::error('Error uploading server skin image to S3', __METHOD__);
+            return null;
+        }
+        
+        // Сохраняем пути в модели
+        $this->image_64 = '/server-skin-64/' . $filename;
+        $this->image_150 = '/server-skin-150/' . $filename;
+        
+        return '/uploads/server-skin-x150/' . $filename;
     }
 }

@@ -20,7 +20,7 @@ use yii\helpers\ArrayHelper;
     <div class="support_messages_header">
         <div class="support_messages_header_name"><?=Yii::t('common', 'Поддержка')?></div>
         <div class="support_messages_header_actions">
-            <?php if ($user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])): ?>
+            <?php if ($user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])): ?>
                 <div class="dropdown">
                     <a class="button button-secondary button-size__s h-36" type="button" id="chat_tools" data-bs-toggle="dropdown" aria-expanded="false">
                         <span class="button__text"><i class="fas fa-cog"></i> <?=Yii::t('common', 'Управление')?></span>
@@ -52,7 +52,7 @@ use yii\helpers\ArrayHelper;
                     <span class="button__text"><i class="fas fa-times"></i> <?=Yii::t('common', 'Закрыть тикет')?></span>
                 </a>
             <?php endif; ?>
-            <?php if ($model->status === Support::STATUS_CLOSED && $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])): ?>
+            <?php if ($model->status === Support::STATUS_CLOSED && $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])): ?>
                 <a href="<?=$model->getUrl('open')?>" class="button button-secondary button-size__s h-36">
                     <span class="button__text"><i class="fas fa-pen"></i> <?=Yii::t('common', 'Открыть тикет')?></span>
                 </a>
@@ -87,7 +87,7 @@ use yii\helpers\ArrayHelper;
                     <?php endforeach; ?>
                 </div>
             </div>
-            <?php if ($model->status === Support::STATUS_OPEN || $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])): ?>
+            <?php if ($model->status === Support::STATUS_OPEN || $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])): ?>
                 <div class="support_messages_form">
                     <?php if (strtotime($user->blocked_support_at) > time()): ?>
                         <span><?=Yii::t('common', 'Доступ в чат будет разблокирован')?> <span class="ticket_timer" data-time="<?=strtotime($user->blocked_support_at)?>"><?=$user->blocked_support_at?></span></span>
@@ -100,9 +100,17 @@ use yii\helpers\ArrayHelper;
                             <input type="file" id="supportMessageFile" class="support_messages_form_file_input" accept=".png,.jpg,.gif,.jpeg,.txt,.mp4,.avi,.mov,.webm,.ogg" />
                             <i class="fa-solid fa-paperclip"></i>
                         </label>
+                        <button class="sticker-button" type="button" title="<?=Yii::t('common', 'Стикеры')?>">
+                            <i class="fa-solid fa-smile"></i>
+                        </button>
                         <textarea id="supportMessage" rows="1" placeholder="<?=Yii::t('common', 'Напишите сообщение...')?>" type="text" class="support_messages_form_input"></textarea>
                         <div class="support_messages_form_send" id="supportMessageSend">
                             <i class="fa-solid fa-paper-plane"></i>
+                        </div>
+                        
+                        <!-- Панель стикеров -->
+                        <div class="stickers-panel" style="display: none;">
+                            <div class="stickers-grid"></div>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -112,4 +120,27 @@ use yii\helpers\ArrayHelper;
 </div>
 <script>
     var chatId = <?=$model->getNumber()?>
+    
+    // Инициализация стикеров после загрузки DOM и скриптов
+    function initStickers() {
+        console.log('initStickers called, SupportStickers available:', typeof SupportStickers !== 'undefined');
+        console.log('Sticker button exists:', document.querySelector('.sticker-button') !== null);
+        console.log('Stickers panel exists:', document.querySelector('.stickers-panel') !== null);
+        
+        if (typeof SupportStickers !== 'undefined') {
+            window.supportStickersInstance = new SupportStickers();
+            console.log('SupportStickers initialized successfully');
+        } else {
+            // Повторяем попытку через небольшую задержку
+            console.log('SupportStickers not available, retrying...');
+            setTimeout(initStickers, 100);
+        }
+    }
+    
+    // Запускаем инициализацию после загрузки DOM
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initStickers);
+    } else {
+        initStickers();
+    }
 </script>

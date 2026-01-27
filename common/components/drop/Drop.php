@@ -13,8 +13,8 @@ class Drop
     private $_drop = [];
     private $_countBuy = [];
 
-    private function getBlocked($serverId) {
-        if (array_key_exists($serverId, $this->_blocked)) {
+    private function getBlocked($serverId, $update = false) {
+        if (array_key_exists($serverId, $this->_blocked) && !$update) {
             return $this->_blocked[$serverId];
         }
         $this->_blocked[$serverId] = DropBlocked::getBlockedList($serverId);
@@ -60,8 +60,8 @@ class Drop
         return $this->_drop;
     }
 
-    public function getBlockedByDropId($serverId, $dropId) {
-        $items = $this->getBlocked($serverId);
+    public function getBlockedByDropId($serverId, $dropId, $update = false) {
+        $items = $this->getBlocked($serverId, $update);
         if (empty($items[$dropId])) {
             return null;
         }

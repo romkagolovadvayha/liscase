@@ -8,6 +8,7 @@ use common\components\queue\process\BuyDropJob;
 use common\models\invoice\Invoice;
 use common\models\statistics\Statistics;
 use common\models\user\UserDrop;
+use common\models\user\UserVip;
 use Yii;
 use yii\base\BaseObject;
 use yii\web\JsExpression;
@@ -66,6 +67,7 @@ class Drop extends ActiveRecord
     const TYPE_COMMAND = 1;
     const TYPE_SET     = 2;
     const TYPE_SELECT  = 3;
+    const TYPE_VIP     = 4;
 
     /**
      * @return array
@@ -77,6 +79,7 @@ class Drop extends ActiveRecord
             self::TYPE_COMMAND       => Yii::t('common', 'Команда'),
             self::TYPE_SET       => Yii::t('common', 'Набор предметов'),
             self::TYPE_SELECT       => Yii::t('common', 'Товар с выбором'),
+            self::TYPE_VIP       => Yii::t('common', 'Вип'),
         ];
     }
     /**
@@ -571,6 +574,7 @@ class Drop extends ActiveRecord
 
         /** @var Drop[] $drops */
         $drops = Drop::find()
+                     ->with('dropImages')
                      ->all();
 
         foreach ($drops as $item) {
@@ -596,6 +600,7 @@ class Drop extends ActiveRecord
 
         /** @var Drop[] $drops */
         $drops = Drop::find()
+                     ->with('dropImages')
                      ->all();
 
         foreach ($drops as $item) {
@@ -648,21 +653,50 @@ class Drop extends ActiveRecord
     }
 
     public function give($userId, $count, $parentId = null, $boxId = null, $setId = null) {
-        if (empty($this->subDrops) || (in_array($this->drop_type, [Drop::TYPE_SET]) && $this->full_only)) {
+        // Для VIP товаров на серверах без доната выдаем сразу в user_vip без user_drop и без команды
+        if ($this->drop_type === self::TYPE_VIP) {
+            // Получаем текущий сервер игрока
+            $user = \common\models\user\User::findOne($userId);
+            $currentServer = $user ? $user->getCurrentServer() : null;
+            
+            // Если у игрока есть текущий сервер и у него нет доната (is_store = 0), выдаем VIP сразу
+            if ($currentServer && $currentServer instanceof \common\models\servers\Servers && $currentServer->is_store == 0) {
+                $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+                UserVip::createOrExtend($userId, $expiresAt);
+                $command = str_replace('%STEAMID%', $user->steam_id, $this->command);
+                \common\models\rcon\RconTasks::execute($command);
+                return;
+            }
+            
+            // Если текущего сервера нет или у него есть донат, продолжаем стандартную логику через user_drop
+        }
+        
+        // VIP товары на серверах с магазином и другие товары обрабатываются через user_drop
+        // Логика выдачи VIP будет в ShopController::methodGived()
+        
+        // Загружаем subDrops, если они не загружены
+        $subDrops = $this->subDrops;
+        if ($subDrops === null) {
+            $subDrops = $this->getSubDrops()->all();
+        }
+        
+        // Для VIP товаров и других товаров без subDrops создаем запись в user_drop
+        if (empty($subDrops) || (in_array($this->drop_type, [Drop::TYPE_SET]) && $this->full_only)) {
+            // boxId остается null для обычных покупок в магазине (чтобы товары можно было возвращать)
+            // box_id = 14 устанавливается явно только для заданий в TasksV2Controller
+            
             if (in_array($this->rust_id, ['-2139580305'])) {
                 for ($i = 0; $i < $count; $i++) {
-                    if (empty($parentId) && empty($setId) && empty($boxId)) {
-                        $boxId = 14;
-                    }
-                    $userDrop = UserDrop::createRecord($userId, $this->id, $boxId, $setId,UserDrop::STATUS_ACTIVE, false, 1, null, $parentId);
+                    $userDrop = UserDrop::createRecord($userId, $this->id, $boxId, $setId, UserDrop::STATUS_ACTIVE, false, 1, null, $parentId);
                     \Yii::$app->queueProcess->push(new BuyDropJob(['userDrop'  => $userDrop]));
                 }
             } else {
-                $userDrop = UserDrop::createRecord($userId, $this->id, $boxId, $setId,UserDrop::STATUS_ACTIVE, false, $count, null, $parentId);
+                $userDrop = UserDrop::createRecord($userId, $this->id, $boxId, $setId, UserDrop::STATUS_ACTIVE, false, $count, null, $parentId);
                 \Yii::$app->queueProcess->push(new BuyDropJob(['userDrop'  => $userDrop]));
             }
         } else {
-            foreach ($this->subDrops as $subDrop) {
+            // Если есть subDrops, обрабатываем их рекурсивно
+            foreach ($subDrops as $subDrop) {
                 $subDrop->drop->give($userId, $subDrop->count, $this->id, $boxId, $setId);
             }
         }

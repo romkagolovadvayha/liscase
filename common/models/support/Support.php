@@ -33,10 +33,19 @@ class Support extends \yii\db\ActiveRecord
      */
     public static function getStatusList()
     {
-        return [
-            self::STATUS_OPEN      => Yii::t('common', 'Открыт'),
-            self::STATUS_CLOSED       => Yii::t('common', 'Закрыт'),
-        ];
+        $cacheKey = 'support_status_list';
+        $cached = Yii::$app->cache->get($cacheKey);
+        
+        if ($cached === false) {
+            $cached = [
+                self::STATUS_OPEN      => Yii::t('common', 'Открыт'),
+                self::STATUS_CLOSED       => Yii::t('common', 'Закрыт'),
+            ];
+            // Кэшируем на 24 часа (86400 секунд)
+            Yii::$app->cache->set($cacheKey, $cached, 86400);
+        }
+        
+        return $cached;
     }
 
     /**

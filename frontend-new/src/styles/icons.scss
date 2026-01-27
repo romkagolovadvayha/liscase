@@ -1,0 +1,135 @@
+// Стили для Material Icons
+// Заменяют Font Awesome иконки
+
+.mui-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+// Совместимость со старыми классами иконок
+.icons {
+  display: inline-block;
+  vertical-align: middle;
+  
+  &_24px {
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
+  }
+  
+  &_16px {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+  
+  &_hover {
+    cursor: pointer;
+    transition: opacity 0.25s ease-in-out;
+    
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+  
+  &_24px_info {
+    color: var(--text-secondary);
+  }
+  
+  &_16px_coin {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    background-image: var(--icon-money);
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+  
+  &_24px_steam {
+    width: 24px;
+    height: 24px;
+    display: inline-block;
+    background-image: url('/images/icons/steam.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+
+  &_32px {
+    width: 32px;
+    height: 32px;
+    display: inline-block;
+    background-color: var(--icon-main);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    transition: background-color 0.3s ease;
+
+    &_telegram {
+      -webkit-mask-image: url('/images/design/icons/32px/telegram.svg');
+      mask-image: url('/images/design/icons/32px/telegram.svg');
+    }
+
+    &_vk {
+      -webkit-mask-image: url('/images/design/icons/32px/vk.svg');
+      mask-image: url('/images/design/icons/32px/vk.svg');
+    }
+
+    &_discord {
+      -webkit-mask-image: url('/images/design/icons/32px/discord.svg');
+      mask-image: url('/images/design/icons/32px/discord.svg');
+    }
+  }
+}
+
+// Стили для иконок в компонентах
+.user__vip-icon {
+  font-size: 24px;
+  color: #FFD700;
+  text-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.home-blog-card_image_overlay {
+  i,
+  .mui-icon {
+    font-size: 36px;
+    color: white;
+    transform: scale(0.8);
+    transition: transform 0.3s ease;
+  }
+  
+  &:hover {
+    i,
+    .mui-icon {
+      transform: scale(1);
+    }
+  }
+}
+
+.home-blog-card_date,
+.home-blog-card_category {
+  .mui-icon {
+    font-size: 12px;
+  }
+}
+
+.home-blog-card_read-more {
+  .mui-icon {
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+  
+  &:hover .mui-icon {
+    transform: translateX(4px);
+  }
+}
+

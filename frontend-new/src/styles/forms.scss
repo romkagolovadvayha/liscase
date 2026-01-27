@@ -1,0 +1,117 @@
+// Стили для элементов формы
+// Мигрированы из frontend/assets/sources/css/design/_form-group.scss
+
+// Импорт стилей для input с иконками
+@import 'forms/input';
+
+.form-group {
+  margin-bottom: 15px;
+
+  .control-label {
+    font-size: 14px; // p2
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    display: block;
+  }
+
+  .form-control {
+    font-size: 16px; // p1
+    padding: 12px 20px;
+    color: var(--text-main);
+    background-color: var(--background-main);
+    transition: border-color 0.25s ease-in-out;
+    border-radius: var(--card-radius);
+    width: 100%;
+    border: 1px solid var(--border-color-default);
+    outline: unset;
+
+    &::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+      background-color: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: var(--status-background-opacity);
+      border-radius: 8px;
+    }
+
+    &:hover {
+      border-color: var(--border-color-hover);
+    }
+
+    &:active,
+    &:focus {
+      border-color: var(--border-color-active);
+    }
+
+    &::placeholder {
+      font-size: 16px; // p1
+      color: var(--text-secondary);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .help-block {
+    font-size: 12px; // p3
+    margin-top: 5px;
+    color: var(--badge-background);
+  }
+}
+
+// Select стили (из styles.scss)
+.select {
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  border: 1px solid var(--border-color-default);
+  padding: 1px;
+  background-color: transparent;
+  color: var(--text-main);
+  padding-left: 20px;
+  padding-right: 60px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  position: relative;
+  transition: all 0.25s ease-in-out;
+  border-radius: var(--card-radius);
+  outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("/icons/16px/arrow_down.svg");
+  background-position: calc(100% - 20px);
+  background-size: 16px 16px;
+  background-repeat: no-repeat;
+  width: 100%;
+
+  &:hover {
+    border-color: var(--border-color-hover);
+  }
+
+  &:focus {
+    border-color: var(--border-color-active);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Checkbox и Radio стили
+.form-check-input {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary-colors-main);
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+

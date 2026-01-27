@@ -8,6 +8,9 @@ use common\models\user\UserTop;
 /** @var array $userData */
 /** @var $SETTINGS */
 
+if ($PAGE === 'stats') {
+    return;
+}
 $top = [];
 $serversList = [];
 foreach ($servers as $server) {

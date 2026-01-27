@@ -387,7 +387,7 @@ class WipeCalendarController extends Controller
             $prevDays  = (int)$prevMonth->format('t');
             for ($i = $lead - 1; $i >= 0; $i--) {
                 $d = $prevDays - $i;
-                $dateKey = sprintf('%04d-%02d-%02д', $prevYear, $prevNum, $d);
+                $dateKey = sprintf('%04d-%02d-%02d', $prevYear, $prevNum, $d);
                 $cells[] = [
                     'empty'        => false,
                     'day'          => $d,

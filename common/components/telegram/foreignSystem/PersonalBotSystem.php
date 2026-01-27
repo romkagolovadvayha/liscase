@@ -69,12 +69,17 @@ class PersonalBotSystem extends AbstractSystem
 
         switch ($messageText) {
             case '/help':
-                return "<b>/pop</b> - Онлайн на серверах"
-                    . PHP_EOL . "<b>/wipe</b> - Календарь вайпов"
-                    . PHP_EOL . "<b>/bonus</b> - Получить ежедневный бонус"
-                    . PHP_EOL . "<b>/ip</b> - IP серверов"
-                    . PHP_EOL . "<b>/raid_alert</b> - Включить/выключить оповещения о рейде"
-                    . PHP_EOL . "<b>/ban_alert</b> - Включить/выключить оповещения о банах";
+                return "📋 <b>Доступные команды:</b>"
+                    . PHP_EOL . PHP_EOL
+                    . "👥 <b>/pop</b> — Онлайн на серверах"
+                    . PHP_EOL . "📅 <b>/wipe</b> — Календарь вайпов"
+                    . PHP_EOL . "🎁 <b>/bonus</b> — Получить ежедневный бонус"
+                    . PHP_EOL . "🔗 <b>/ip</b> — IP-адреса серверов"
+                    . PHP_EOL . "💰 <b>/balance</b> — Баланс аккаунта"
+                    . PHP_EOL . PHP_EOL
+                    . "⚙️ <b>Настройки уведомлений:</b>"
+                    . PHP_EOL . "🚨 <b>/raid_alert</b> — Оповещения о рейдах"
+                    . PHP_EOL . "🔔 <b>/ban_alert</b> — Оповещения о банах";
             case '/pop':
                 return $this->getOnline();
             case '/wipe':
@@ -83,6 +88,8 @@ class PersonalBotSystem extends AbstractSystem
                 return $this->getIp();
             case '/bonus':
                 return $this->getBonus($message);
+            case '/balance':
+                return $this->getBalance($message);
             case '/raid_alert':
                 return $this->getRaidAlert($message);
             case '/ban_alert':
@@ -92,12 +99,29 @@ class PersonalBotSystem extends AbstractSystem
         return $answerMessage;
     }
 
+    /**
+     * @param Servers $server
+     * @return string
+     */
+    private function getServerName($server)
+    {
+        $wipeTypeLabel = '';
+        if ($server->wipe_type === 7) {
+            $wipeTypeLabel = 'Недельный';
+        } elseif ($server->wipe_type === 14) {
+            $wipeTypeLabel = 'Двухнедельный';
+        } elseif ($server->wipe_type === 30) {
+            $wipeTypeLabel = 'Месячный';
+        }
+        return '[' . Yii::t('database', $server->monitoring_name) . '] | ' . $wipeTypeLabel;
+    }
+
     public function getWipe() {
         $cacheKey = 'PersonalBotSystem_getWipe';
         if (Yii::$app->cache->get($cacheKey)) {
             return Yii::$app->cache->get($cacheKey);
         }
-        $text = "";
+        $text = "📅 <b>Календарь вайпов</b>" . PHP_EOL;
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
@@ -109,13 +133,13 @@ class PersonalBotSystem extends AbstractSystem
             $date = new \DateTime($server->next_wipe);
             $date2 = new \DateTime($server->global_wipe);
             if ($k > 0) {
-                $text .= PHP_EOL . PHP_EOL;
+                $text .= PHP_EOL;
             }
-            $name = substr($server->name, strpos($server->name, '['), strripos($server->name, ']'));
-            $text .= "<b>{$name}</b>";
-            $text .= PHP_EOL . "Последний: <code>{$date0->format('d.m.Y в H:i МСК')}</code>";
-            $text .= PHP_EOL . "Следующий: <code>{$date->format('d.m.Y в H:i МСК')}</code>";
-            $text .= PHP_EOL . "Глобал: <code>{$date2->format('d.m.Y в H:i МСК')}</code>";
+            $name = $this->getServerName($server);
+            $text .= PHP_EOL . "🖥️ <b>{$name}</b>";
+            $text .= PHP_EOL . "   ⏮️ Последний: <code>{$date0->format('d.m.Y в H:i')} МСК</code>";
+            $text .= PHP_EOL . "   ⏭️ Следующий: <code>{$date->format('d.m.Y в H:i')} МСК</code>";
+            $text .= PHP_EOL . "   🌍 Глобал: <code>{$date2->format('d.m.Y в H:i')} МСК</code>";
         }
 
         Yii::$app->cache->set($cacheKey, $text, 60);
@@ -130,25 +154,33 @@ class PersonalBotSystem extends AbstractSystem
         }
         $user = User::findByChatId($chatId);
         if (empty($user)) {
-            $return = '🔒 Авторизуйтесь, чтобы получать оповещения о рейдах!' . PHP_EOL . "Для авторизации напишите /start";
+            $return = '🔒 <b>Требуется авторизация</b>' 
+                . PHP_EOL . PHP_EOL
+                . "Для использования уведомлений необходимо авторизоваться." 
+                . PHP_EOL . "Напишите <code>/start</code> для начала.";
             return $return;
         }
         if ($user->status === User::STATUS_BLOCKED) {
-            $return = '🔒 Ваш аккаунт заблокирован!';
+            $return = '🚫 <b>Доступ запрещен</b>' 
+                . PHP_EOL . PHP_EOL
+                . "Ваш аккаунт заблокирован.";
             Yii::$app->cache->set($cacheKey, $return, 60);
             return $return;
         }
 
-
-        Yii::$app->cache->set($cacheKey, "Вы пытаетесь использовать команду слишком часто, попробуйте чуть позже!", 10);
+        Yii::$app->cache->set($cacheKey, "⏳ Вы пытаетесь использовать команду слишком часто, попробуйте чуть позже!", 10);
         if ($user->raid_notify) {
             $user->raid_notify = 0;
             $user->save();
-            return "⛔️ Вы успешно отключили оповещения о рейдах!";
+            return "🔕 <b>Уведомления отключены</b>" 
+                . PHP_EOL . PHP_EOL
+                . "Оповещения о рейдах успешно отключены.";
         } else {
             $user->raid_notify = 1;
             $user->save();
-            return "✅ Поздравляем теперь вам будут приходить оповещения о рейдах!";
+            return "🔔 <b>Уведомления включены</b>" 
+                . PHP_EOL . PHP_EOL
+                . "Теперь вы будете получать оповещения о рейдах на ваших базах.";
         }
     }
 
@@ -160,25 +192,33 @@ class PersonalBotSystem extends AbstractSystem
         }
         $user = User::findByChatId($chatId);
         if (empty($user)) {
-            $return = '🔒 Авторизуйтесь, чтобы получать оповещения о рейдах!' . PHP_EOL . "Для авторизации напишите /start";
+            $return = '🔒 <b>Требуется авторизация</b>' 
+                . PHP_EOL . PHP_EOL
+                . "Для использования уведомлений необходимо авторизоваться." 
+                . PHP_EOL . "Напишите <code>/start</code> для начала.";
             return $return;
         }
         if ($user->status === User::STATUS_BLOCKED) {
-            $return = '🔒 Ваш аккаунт заблокирован!';
+            $return = '🚫 <b>Доступ запрещен</b>' 
+                . PHP_EOL . PHP_EOL
+                . "Ваш аккаунт заблокирован.";
             Yii::$app->cache->set($cacheKey, $return, 60);
             return $return;
         }
 
-
-        Yii::$app->cache->set($cacheKey, "Вы пытаетесь использовать команду слишком часто, попробуйте чуть позже!", 10);
+        Yii::$app->cache->set($cacheKey, "⏳ Вы пытаетесь использовать команду слишком часто, попробуйте чуть позже!", 10);
         if ($user->ban_notify) {
             $user->ban_notify = 0;
             $user->save();
-            return "⛔️ Вы успешно отключили оповещения о банах!";
+            return "🔕 <b>Уведомления отключены</b>" 
+                . PHP_EOL . PHP_EOL
+                . "Оповещения о банах успешно отключены.";
         } else {
             $user->ban_notify = 1;
             $user->save();
-            return "✅ Поздравляем теперь вам будут приходить оповещения о банах игроков, на которых вы отправили жалобу!";
+            return "🔔 <b>Уведомления включены</b>" 
+                . PHP_EOL . PHP_EOL
+                . "Теперь вы будете получать оповещения о банах игроков, на которых вы отправили жалобу.";
         }
     }
 
@@ -187,7 +227,7 @@ class PersonalBotSystem extends AbstractSystem
         if (Yii::$app->cache->get($cacheKey)) {
             return Yii::$app->cache->get($cacheKey);
         }
-        $text = "";
+        $text = "👥 <b>Онлайн на серверах</b>" . PHP_EOL;
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
@@ -203,10 +243,10 @@ class PersonalBotSystem extends AbstractSystem
             }
             $lineSize -= $lineGreen;
             if ($k > 0) {
-                $text .= PHP_EOL . PHP_EOL;
+                $text .= PHP_EOL;
             }
-            $name = substr($server->name, strpos($server->name, '['), strripos($server->name, ']'));
-            $text .= "<b>{$name}</b>";
+            $name = $this->getServerName($server);
+            $text .= PHP_EOL . "🖥️ <b>{$name}</b>";
             $text .= PHP_EOL;
             for ($i = 0; $i < $lineGreen; $i++) {
                 $text .= "🟩";
@@ -214,7 +254,8 @@ class PersonalBotSystem extends AbstractSystem
             for ($i = 0; $i < $lineSize; $i++) {
                 $text .= "⬜️";
             }
-            $text .= PHP_EOL . "Онлайн: <code>{$pl}/{$server->max}</code>";
+            $percentage = round(($pl / $server->max) * 100);
+            $text .= PHP_EOL . "   👤 <code>{$pl}</code>/<code>{$server->max}</code> ({$percentage}%)";
         }
 
         Yii::$app->cache->set($cacheKey, $text, 60);
@@ -226,7 +267,7 @@ class PersonalBotSystem extends AbstractSystem
         if (Yii::$app->cache->get($cacheKey)) {
             return Yii::$app->cache->get($cacheKey);
         }
-        $text = "";
+        $text = "🔗 <b>IP-адреса серверов</b>" . PHP_EOL;
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->andWhere(['status' => Servers::STATUS_ACTIVE])
@@ -235,14 +276,59 @@ class PersonalBotSystem extends AbstractSystem
 
         foreach ($servers as $k => $server) {
             if ($k > 0) {
-                $text .= PHP_EOL . PHP_EOL;
+                $text .= PHP_EOL;
             }
-            $name = substr($server->name, strpos($server->name, '['), strripos($server->name, ']'));
-            $text .= "<b>{$name}</b>";
-            $text .= PHP_EOL . "<code>connect {$server->ip}:{$server->port}</code>";
+            $name = $this->getServerName($server);
+            $text .= PHP_EOL . "🖥️ <b>{$name}</b>";
+            $text .= PHP_EOL . "   📍 <code>connect {$server->ip}:{$server->port}</code>";
         }
 
         Yii::$app->cache->set($cacheKey, $text, 60);
+        return $text;
+    }
+
+    public function getBalance($message) {
+        $chatId = ArrayHelper::getValue($message, 'chat.id');
+        $cacheKey = 'PersonalBotSystem_getBalance_' . $chatId;
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+        
+        $user = User::findByChatId($chatId);
+        if (empty($user)) {
+            $return = '🔒 <b>Требуется авторизация</b>' 
+                . PHP_EOL . PHP_EOL
+                . "Для просмотра баланса необходимо авторизоваться." 
+                . PHP_EOL . "Напишите <code>/start</code> для начала.";
+            return $return;
+        }
+        
+        if ($user->status === User::STATUS_BLOCKED) {
+            $return = '🚫 <b>Доступ запрещен</b>' 
+                . PHP_EOL . PHP_EOL
+                . "Ваш аккаунт заблокирован.";
+            Yii::$app->cache->set($cacheKey, $return, 60);
+            return $return;
+        }
+        
+        $personalBalance = $user->getPersonalBalance();
+        $skinsBalance = $user->getSkinsBalance();
+        
+        $text = "💰 <b>Баланс аккаунта</b>" 
+            . PHP_EOL
+            . "👤 Пользователь: <b>{$user->username}</b>" 
+            . PHP_EOL . PHP_EOL
+            . "💳 Лицевой счет:" 
+            . PHP_EOL . "   <code>{$personalBalance->getBalanceFormat()}</code> РУБ" 
+            . PHP_EOL . PHP_EOL
+            . "🎨 Скины:" 
+            . PHP_EOL . "   <code>{$skinsBalance->getBalanceFormat()}</code> РУБ";
+        
+        $domain = Yii::$app->settings->get('site_domain');
+        $text .= PHP_EOL . PHP_EOL
+            . "🔗 <a href=\"https://{$domain}\">Перейти в магазин</a>";
+        
+        Yii::$app->cache->set($cacheKey, $text, 30);
         return $text;
     }
 
@@ -254,7 +340,10 @@ class PersonalBotSystem extends AbstractSystem
         }
         $user = User::findByChatId($chatId);
         if (empty($user)) {
-            $return = '🔒 Авторизуйтесь, чтобы получить награду!' . PHP_EOL . "Для авторизации напишите /start";
+            $return = '🔒 <b>Требуется авторизация</b>' 
+                . PHP_EOL . PHP_EOL
+                . "Для получения ежедневного бонуса необходимо авторизоваться." 
+                . PHP_EOL . "Напишите <code>/start</code> для начала.";
             return $return;
         }
         if ($user->is_telegram_blocked) {
@@ -262,7 +351,9 @@ class PersonalBotSystem extends AbstractSystem
             $user->save(false);
         }
         if ($user->status === User::STATUS_BLOCKED) {
-            $return = '🔒 Ваш аккаунт заблокирован!';
+            $return = '🚫 <b>Доступ запрещен</b>' 
+                . PHP_EOL . PHP_EOL
+                . "Ваш аккаунт заблокирован.";
             Yii::$app->cache->set($cacheKey, $return, 60);
             return $return;
         }
@@ -270,7 +361,11 @@ class PersonalBotSystem extends AbstractSystem
         $nextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate($user->id);
         if (!empty($nextOpenFreeBoxDate)) {
             $date = new \DateTime($nextOpenFreeBoxDate);
-            $return = '⛔ Вы уже получали сегодня награду, следующий кейс будет доступен ' . $date->format('d.m.Y H:i:s');
+            $return = '⏰ <b>Бонус уже получен</b>' 
+                . PHP_EOL . PHP_EOL
+                . "Вы уже получили награду сегодня." 
+                . PHP_EOL . "Следующий бонус будет доступен:" 
+                . PHP_EOL . "<code>{$date->format('d.m.Y в H:i')} МСК</code>";
             Yii::$app->cache->set($cacheKey, $return, 60);
             return $return;
         }
@@ -299,7 +394,10 @@ class PersonalBotSystem extends AbstractSystem
             $profit->save(false);
         }
 
-        return "🙌 Поздравляем вы успешно получили награду \"<b>{$dropName}</b>\" <b>x{$dropCount}</b>";
+        return "🎉 <b>Поздравляем!</b>" 
+            . PHP_EOL . PHP_EOL
+            . "Вы успешно получили награду:" 
+            . PHP_EOL . "🎁 <b>{$dropName}</b> × <code>{$dropCount}</code>";
     }
 
     /**
@@ -309,8 +407,15 @@ class PersonalBotSystem extends AbstractSystem
      */
     protected function _getStartMessageText($name)
     {
-        return "Приветствую{$name}!
-Для активации бота перейдите на страницу https://" . Yii::$app->settings->get('site_domain') . "/bot/activate и скопируйте код активации в этот чат.";
+        $domain = Yii::$app->settings->get('site_domain');
+        return "👋 Привет{$name}!" 
+            . PHP_EOL . PHP_EOL
+            . "Для активации бота выполните следующие шаги:" 
+            . PHP_EOL . PHP_EOL
+            . "1️⃣ Перейдите на страницу:" 
+            . PHP_EOL . "<code>https://{$domain}/bot/activate</code>" 
+            . PHP_EOL . PHP_EOL
+            . "2️⃣ Скопируйте код активации и отправьте его в этот чат.";
     }
 
     /**
@@ -341,6 +446,18 @@ class PersonalBotSystem extends AbstractSystem
                     if (!empty($action) && $action == 'reject-building') {
                       return Chats::actionRejectbuilding($buttonValueObj);
                     }
+                    if (!empty($action) && $action == 'success-track') {
+                      return Chats::actionSuccessTrack($buttonValueObj);
+                    }
+                    if (!empty($action) && $action == 'reject-track') {
+                      return Chats::actionRejectTrack($buttonValueObj);
+                    }
+                    if (!empty($action) && $action === 'ban-cheats') {
+                      return $this->actionBanPlayer($buttonValueObj, 'Читы');
+                    }
+                    if (!empty($action) && $action === 'ban-foreign-bans') {
+                      return $this->actionBanPlayer($buttonValueObj, 'Баны на других проектах');
+                    }
                 }
             }
         } catch (\Exception $e) {
@@ -356,7 +473,9 @@ class PersonalBotSystem extends AbstractSystem
                 ];
             }
         }*/
-        return '⛔ Команда не найдена, попробуйте другую';
+        return '❓ <b>Команда не найдена</b>' 
+            . PHP_EOL . PHP_EOL
+            . "Попробуйте другую команду или напишите <code>/help</code> для списка доступных команд.";
     }
 
     /**
@@ -371,7 +490,9 @@ class PersonalBotSystem extends AbstractSystem
         $code     = $this->_getMessageText($message);
         $user = $this->getUserByAuthCode($code, $chatId);
 
-        $answerMessage = 'Ошибка авторизации, код неверен! 🤔';
+        $answerMessage = '❌ <b>Ошибка авторизации</b>' 
+            . PHP_EOL . PHP_EOL
+            . "Код активации неверен. Проверьте правильность кода и попробуйте еще раз.";
 
         if (!empty($user) && !empty($chatId)) {
 
@@ -381,11 +502,15 @@ class PersonalBotSystem extends AbstractSystem
             }
 
             if (!empty($user->telegram_chat_id)) {
-                return 'Вы уже авторизованы!';
+                return 'ℹ️ <b>Уже авторизован</b>' 
+                    . PHP_EOL . PHP_EOL
+                    . "Вы уже авторизованы в этом боте.";
             }
             $userTG = User::findByChatId($chatId);
             if (!empty($userTG)) {
-                return "С этого Telegram вы уже авторизованы в пользователе {$userTG->username}!";
+                return '⚠️ <b>Telegram уже привязан</b>' 
+                    . PHP_EOL . PHP_EOL
+                    . "С этого Telegram-аккаунта вы уже авторизованы под пользователем <b>{$userTG->username}</b>.";
             }
             $user->telegram_chat_id = $chatId;
             $user->save(false);
@@ -467,6 +592,42 @@ class PersonalBotSystem extends AbstractSystem
         return $result;
     }
 
+    private function actionBanPlayer(array $buttonValueObj, string $reason)
+    {
+        $steamId = ArrayHelper::getValue($buttonValueObj, 'steam_id');
+        if (empty($steamId)) {
+            return '❌ <b>Ошибка</b>' 
+                . PHP_EOL . PHP_EOL
+                . "Не удалось определить игрока.";
+        }
+
+        $options = [];
+        $serverIds = ArrayHelper::getValue($buttonValueObj, 'server_ids', []);
+        if (is_array($serverIds) && !empty($serverIds)) {
+            $options['server_ids'] = array_values(array_filter(array_map('intval', $serverIds)));
+        }
+
+        try {
+            $result = Yii::$app->rustApp->createBan($steamId, $reason, $options);
+            if (empty($result['success'])) {
+                $message = ArrayHelper::getValue($result, 'message', 'Неизвестная ошибка');
+                return '❌ <b>Ошибка бана</b>' 
+                    . PHP_EOL . PHP_EOL
+                    . "Не удалось забанить игрока:" 
+                    . PHP_EOL . "<code>{$message}</code>";
+            }
+        } catch (\Throwable $throwable) {
+            Yii::error('Failed to ban via RustApp: ' . $throwable->getMessage(), __METHOD__);
+            return '⚠️ <b>Ошибка подключения</b>' 
+                . PHP_EOL . PHP_EOL
+                . "Ошибка при обращении к игровому серверу. Попробуйте позже.";
+        }
+
+        return '✅ <b>Игрок забанен</b>' 
+            . PHP_EOL . PHP_EOL
+            . "Причина: <code>{$reason}</code>";
+    }
+
     /**
      * @param User $user
      *
@@ -474,9 +635,14 @@ class PersonalBotSystem extends AbstractSystem
      */
     protected function _getAfterRegisterMessage($user)
     {
-        return "✅ {$user->username}, Вы успешно авторизовались!"
-            . PHP_EOL . "🎁 Вам начислен бонус <b>50 РУБ</b> на сайте!"
-            . PHP_EOL . PHP_EOL . "ℹ️Напишите /help, чтобы увидеть команды для бота.";
+        return "✅ <b>Авторизация успешна!</b>" 
+            . PHP_EOL . PHP_EOL
+            . "Добро пожаловать, <b>{$user->username}</b>!" 
+            . PHP_EOL . PHP_EOL
+            . "🎁 Вам начислен приветственный бонус:" 
+            . PHP_EOL . "<b>50 РУБ</b> на ваш баланс" 
+            . PHP_EOL . PHP_EOL
+            . "💡 Напишите <code>/help</code>, чтобы увидеть все доступные команды.";
     }
 
     /**

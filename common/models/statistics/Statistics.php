@@ -157,11 +157,11 @@ class Statistics extends ActiveRecord
                     //c4thrown + satchelsthrown * 0.2 + rocketsfired * 0.5
                     $item['reider'] = round(Statistics::getParam($params, 'c4thrown')
                                             + Statistics::getParam($params, 'satchelsthrown') * 0.2
-                                            + Statistics::getParam($params, 'rocket_basic') * 0.5
-                                            + Statistics::getParam($params, 'rocket_hv') * 0.1
-                                            + Statistics::getParam($params, 'rocket_fire') * 0.1
+                                            + (Statistics::getParam($params, 'rocket_basic') + Statistics::getParam($params, 'rocket_basic_rpg')) * 0.5
+                                            + (Statistics::getParam($params, 'rocket_hv') + Statistics::getParam($params, 'rocket_hv_rpg')) * 0.1
+                                            + (Statistics::getParam($params, 'rocket_fire') + Statistics::getParam($params, 'rocket_fire_rpg')) * 0.1
                                             + Statistics::getParam($params, 'ammo_explosive') * 0.01
-                                            + Statistics::getParam($params, 'grenade.f1.deployed') * 0.05
+                                            + Statistics::getParam($params, 'grenade.f1.deployed') * 0.02
                                             + Statistics::getParam($params, 'grenade.molotov.deployed') * 0.05
                                             + Statistics::getParam($params, 'grenade.beancan.deployed') * 0.05);
                     //wood * 0.2 + stones * 0.3 + metal_ore * 0.5 + sulfur_ore

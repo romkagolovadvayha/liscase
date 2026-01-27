@@ -1,0 +1,119 @@
+// Стили для Input
+// Мигрированы из frontend/assets/sources/css/design/_forms.scss
+
+.form-control {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-main);
+  background-color: var(--background-secondary);
+  border: 1px solid var(--border-color-default);
+  border-radius: var(--button-secondary-radius);
+  transition: all 0.25s ease-in-out;
+  font-family: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: var(--border-color-active);
+    box-shadow: 0 0 0 3px var(--primary-colors-main-opacity);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: var(--background-teritiary);
+  }
+
+  &::placeholder {
+    color: var(--text-secondary);
+  }
+
+  // Модификаторы для полей с иконками
+  // Используем !important чтобы переопределить базовый padding из forms.scss (.form-group .form-control)
+  &--with-left-icon {
+    padding-left: 48px !important; // Увеличиваем отступ для текста
+  }
+
+  &--with-right-icon {
+    padding-right: 48px !important; // Увеличиваем отступ для текста
+  }
+}
+
+// Более специфичный селектор для переопределения padding из .form-group .form-control
+.form-group .form-control {
+  &.form-control--with-left-icon {
+    padding-left: 48px !important;
+  }
+
+  &.form-control--with-right-icon {
+    padding-right: 48px !important;
+  }
+}
+
+// Обертка для input с иконками
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  &--error {
+    .form-control {
+      border-color: var(--border-color-active);
+    }
+  }
+}
+
+// Иконки в input
+.input-icon {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  pointer-events: none;
+  z-index: 1;
+
+  &--left {
+    left: 14px; // Немного увеличиваем отступ от края
+  }
+
+  &--right {
+    right: 14px; // Немного увеличиваем отступ от края
+  }
+
+  // Иконки должны наследовать цвет от родителя
+  svg,
+  .mui-icon {
+    color: inherit;
+    font-size: 20px; // Увеличиваем размер иконки
+  }
+
+  // Font Awesome иконки
+  svg.svg-inline--fa {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  // Material Icons
+  .mui-icon {
+    font-size: 20px !important;
+  }
+
+  &--clickable {
+    pointer-events: all;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+      opacity: 0.7;
+    }
+  }
+}
+
+// Специальные стили для поля поиска
+.search {
+  // Стили наследуются от .form-control
+}
+

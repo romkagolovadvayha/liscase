@@ -28,7 +28,7 @@ use yii\helpers\Url;
     ]
 ); ?>
 <?= Alert::widget() ?>
-<button type="submit" class="maps_content_list_item_footer_like<?=$liked ? ' active' : ''?>">
+<button type="submit" class="maps_content_list_item_footer_like<?=$liked ? ' active' : ''?>" data-map-id="<?= $model->id ?>">
     <?php if ($model->votes > 0): ?>
         <span class="maps_content_list_item_footer_like_count"><?=$model->votes?></span>
     <?php endif; ?>

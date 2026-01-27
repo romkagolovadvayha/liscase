@@ -1,5 +1,4 @@
 .tasks {
-  @extend .content-visibility-auto;
 
   &__title {
     @extend .mb-32, .flex, .text-text-main, .uppercase, .items-center, .gap-x-12;
@@ -18,8 +17,7 @@
         .bg-background-secondary,
         .justify-space-between,
         .flex-column,
-        .transition-box-shadow,
-        .content-visibility-auto;
+        .transition-box-shadow;
       overflow: hidden;
 
       border-radius: var(--card-radius);

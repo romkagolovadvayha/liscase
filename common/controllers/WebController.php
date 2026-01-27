@@ -82,7 +82,7 @@ class WebController extends Controller
 
         // Режим "site_enabled" → только админы/модераторы
         if (Yii::$app->settings->get('site_enabled')) {
-            if (Yii::$app->user->isGuest || !Yii::$app->user->identity->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+            if (Yii::$app->user->isGuest || !Yii::$app->user->identity->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
                 Yii::$app->response->redirect(['/worked'])->send();
                 return false;
             }

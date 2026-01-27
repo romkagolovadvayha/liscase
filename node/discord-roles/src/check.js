@@ -9,6 +9,540 @@ const {
 } = require('discord.js');
 const axios = require('axios');
 
+// URL API (из переменных окружения или значение по умолчанию)
+const API_URL = process.env.API_URL || 'https://api.prostoj.store';
+
+// Каналы, где ChatGPT должен отвечать (загружаются из настроек)
+let CHATGPT_CHANNELS = [];
+
+// URL сайта (загружается из настроек)
+let SITE_CDN_URL = 'https://prostoj.store';
+
+// Функция для загрузки каналов из настроек
+async function loadChatGptChannels() {
+    try {
+        const response = await axios.get(`${API_URL}/info/setting`, {
+            params: { key: 'openAi_channelIds' },
+            timeout: 10000,
+            validateStatus: function (status) {
+                return status < 600;
+            }
+        });
+
+        if (response.status === 200 && response.data && response.data.success && response.data.value) {
+            // Разбиваем строку по запятой и очищаем от пробелов
+            const channels = response.data.value
+                .split(',')
+                .map(id => id.trim())
+                .filter(id => id.length > 0);
+            
+            CHATGPT_CHANNELS = channels;
+            console.log(`[ChatGPT] Загружены каналы из настроек: ${CHATGPT_CHANNELS.length} каналов`);
+            console.log(`[ChatGPT] ID каналов: ${CHATGPT_CHANNELS.join(', ')}`);
+        } else {
+            console.warn(`[ChatGPT] Не удалось загрузить каналы из настроек. Статус: ${response.status}`);
+            if (response.data && response.data.message) {
+                console.warn(`[ChatGPT] Сообщение: ${response.data.message}`);
+            }
+            // Используем пустой массив, если не удалось загрузить
+            CHATGPT_CHANNELS = [];
+        }
+    } catch (error) {
+        console.error('[ChatGPT] Ошибка при загрузке каналов из настроек:', error.message);
+        // Используем пустой массив при ошибке
+        CHATGPT_CHANNELS = [];
+    }
+}
+
+// ID ролей, которые блокируют ответы ChatGPT (загружаются из настроек)
+let BLOCKING_ROLE_IDS = [];
+
+// Функция для загрузки ID ролей из настроек
+async function loadBlockingRoleIds() {
+    try {
+        const response = await axios.get(`${API_URL}/info/setting`, {
+            params: { key: 'openAi_idRolesIgnored' },
+            timeout: 10000,
+            validateStatus: function (status) {
+                return status < 600;
+            }
+        });
+
+        if (response.status === 200 && response.data && response.data.success && response.data.value) {
+            // Разбиваем строку по запятой и очищаем от пробелов
+            const roleIds = response.data.value
+                .split(',')
+                .map(id => id.trim())
+                .filter(id => id.length > 0);
+            
+            BLOCKING_ROLE_IDS = roleIds;
+            console.log(`[ChatGPT] Загружены ID ролей из настроек: ${BLOCKING_ROLE_IDS.length} ролей`);
+            console.log(`[ChatGPT] ID ролей: ${BLOCKING_ROLE_IDS.join(', ')}`);
+        } else {
+            console.warn(`[ChatGPT] Не удалось загрузить ID ролей из настроек. Статус: ${response.status}`);
+            if (response.data && response.data.message) {
+                console.warn(`[ChatGPT] Сообщение: ${response.data.message}`);
+            }
+            // Используем пустой массив, если не удалось загрузить
+            BLOCKING_ROLE_IDS = [];
+        }
+    } catch (error) {
+        console.error('[ChatGPT] Ошибка при загрузке ID ролей из настроек:', error.message);
+        // Используем пустой массив при ошибке
+        BLOCKING_ROLE_IDS = [];
+    }
+}
+
+// Функция для загрузки URL сайта из настроек
+async function loadSiteCdnUrl() {
+    try {
+        const response = await axios.get(`${API_URL}/info/setting`, {
+            params: { key: 'site_cdnUrl' },
+            timeout: 10000,
+            validateStatus: function (status) {
+                return status < 600;
+            }
+        });
+
+        if (response.status === 200 && response.data && response.data.success && response.data.value) {
+            // Убираем слэш в конце, если есть
+            SITE_CDN_URL = response.data.value.replace(/\/$/, '');
+            console.log(`[Settings] Загружен URL сайта из настроек: ${SITE_CDN_URL}`);
+        } else {
+            console.warn(`[Settings] Не удалось загрузить URL сайта из настроек. Статус: ${response.status}`);
+            if (response.data && response.data.message) {
+                console.warn(`[Settings] Сообщение: ${response.data.message}`);
+            }
+            // Используем значение по умолчанию
+            SITE_CDN_URL = 'https://prostoj.store';
+        }
+    } catch (error) {
+        console.error('[Settings] Ошибка при загрузке URL сайта из настроек:', error.message);
+        // Используем значение по умолчанию при ошибке
+        SITE_CDN_URL = 'https://prostoj.store';
+    }
+}
+
+// Хранилище истории сообщений для каждого канала (последние 10 сообщений)
+const channelHistory = new Map();
+
+// Буфер сообщений для каждого канала (собираем сообщения перед отправкой)
+const messageBuffer = new Map(); // channelId -> { messages: [], timer: null, lastMessage: null, questionMessage: null }
+
+// Таймаут сбора сообщений (2 минуты)
+const MESSAGE_COLLECTION_TIMEOUT = 60 * 1000; // 2 минуты в миллисекундах
+
+// Время для получения контекста из канала (10 минут)
+const CONTEXT_TIME_WINDOW = 10 * 60 * 1000; // 10 минут в миллисекундах
+
+// Функция для загрузки каналов из настроек
+async function loadChatGptChannels() {
+    try {
+        const response = await axios.get(`${API_URL}/info/setting`, {
+            params: { key: 'openAi_channelIds' },
+            timeout: 10000,
+            validateStatus: function (status) {
+                return status < 600;
+            }
+        });
+
+        if (response.status === 200 && response.data && response.data.success && response.data.value) {
+            // Разбиваем строку по запятой и очищаем от пробелов
+            const channels = response.data.value
+                .split(',')
+                .map(id => id.trim())
+                .filter(id => id.length > 0);
+            
+            CHATGPT_CHANNELS = channels;
+            console.log(`[ChatGPT] Загружены каналы из настроек: ${CHATGPT_CHANNELS.length} каналов`);
+            console.log(`[ChatGPT] ID каналов: ${CHATGPT_CHANNELS.join(', ')}`);
+        } else {
+            console.warn(`[ChatGPT] Не удалось загрузить каналы из настроек. Статус: ${response.status}`);
+            if (response.data && response.data.message) {
+                console.warn(`[ChatGPT] Сообщение: ${response.data.message}`);
+            }
+            // Используем пустой массив, если не удалось загрузить
+            CHATGPT_CHANNELS = [];
+        }
+    } catch (error) {
+        console.error('[ChatGPT] Ошибка при загрузке каналов из настроек:', error.message);
+        // Используем пустой массив при ошибке
+        CHATGPT_CHANNELS = [];
+    }
+}
+
+// Загружаем каналы, роли и URL сайта при старте
+loadChatGptChannels();
+loadBlockingRoleIds();
+loadSiteCdnUrl();
+
+// Обновляем каналы, роли и URL сайта каждые 5 минут
+setInterval(() => {
+    loadChatGptChannels();
+    loadBlockingRoleIds();
+    loadSiteCdnUrl();
+}, 5 * 60 * 1000);
+
+// Функция для получения ответа от ChatGPT через API (обрабатывает несколько сообщений)
+async function getChatGptReply(messages, channelId) {
+    try {
+        // Получаем историю для канала
+        const history = channelHistory.get(channelId) || [];
+        
+        // Формируем объединенное сообщение из всех собранных сообщений
+        const combinedMessage = messages.map(msg => `${msg.username}: ${msg.content}`).join('\n');
+        
+        console.log(`[ChatGPT] Запрос для канала ${channelId} (${messages.length} сообщений): ${combinedMessage.substring(0, 100)}...`);
+        
+        const response = await axios.post(`${API_URL}/discord-chat-gpt/reply`, {
+            message: combinedMessage,
+            username: messages[messages.length - 1].username, // Используем имя последнего отправителя
+            server: 'Discord',
+            chatHistory: history
+        }, {
+            timeout: 60000, // 60 секунд таймаут (увеличено для обработки нескольких сообщений и медленного OpenAI API)
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            validateStatus: function (status) {
+                // Разрешаем обрабатывать все статусы, чтобы не выбрасывать исключение
+                return status < 600;
+            }
+        });
+        
+        console.log(`[ChatGPT] Ответ API (статус ${response.status}):`, JSON.stringify(response.data));
+        
+        // Проверяем статус ответа
+        if (response.status === 200 && response.data && response.data.success && response.data.reply) {
+            // Обновляем историю
+            messages.forEach(msg => {
+                history.push({ user: `${msg.username}: ${msg.content}` });
+            });
+            history.push({ bot: response.data.reply });
+            
+            // Оставляем только последние 10 сообщений (5 пар вопрос-ответ)
+            if (history.length > 10) {
+                history.splice(0, history.length - 10);
+            }
+            
+            channelHistory.set(channelId, history);
+            
+            console.log(`[ChatGPT] Успешно получен ответ: ${response.data.reply.substring(0, 100)}...`);
+            return response.data.reply;
+        } else {
+            // Обрабатываем ошибки
+            if (response.status === 500) {
+                console.error(`[ChatGPT] Ошибка 500 от сервера. Ответ:`, JSON.stringify(response.data));
+                console.error(`[ChatGPT] Это может быть проблема с OpenAI API или настройками на сервере`);
+            } else if (response.status >= 400) {
+                console.error(`[ChatGPT] Ошибка API (${response.status}):`, response.data);
+            } else {
+                console.warn(`[ChatGPT] API вернул неожиданный ответ:`, response.data);
+            }
+            
+            if (response.data && response.data.message) {
+                console.warn(`[ChatGPT] Сообщение об ошибке: ${response.data.message}`);
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        if (error.response) {
+            // Сервер ответил с кодом ошибки
+            console.error(`[ChatGPT] Ошибка API (${error.response.status}):`, JSON.stringify(error.response.data));
+            if (error.response.status === 500) {
+                console.error(`[ChatGPT] Внутренняя ошибка сервера. Проверьте логи на сервере.`);
+            }
+        } else if (error.request) {
+            // Запрос был отправлен, но ответа не получено
+            console.error('[ChatGPT] Нет ответа от API:', error.message);
+            console.error('[ChatGPT] Возможно, сервер недоступен или превышен таймаут');
+        } else {
+            // Ошибка при настройке запроса
+            console.error('[ChatGPT] Ошибка запроса:', error.message);
+            console.error('[ChatGPT] Stack:', error.stack);
+        }
+        return null;
+    }
+}
+
+// Функция для проверки, содержит ли сообщение вопрос или запрос
+function isQuestionOrRequest(messageText) {
+    const questionWords = ['?', 'когда', 'как', 'где', 'что', 'почему', 'зачем', 'кто', 'помоги', 'помощь', 'help', 'подскажи', 'скажи', 'ответь', 'ответ', 'вопрос'];
+    const requestWords = ['вайп', 'wipe', 'ip', 'сервер', 'server', 'подключ', 'connect', 'правила', 'rules', 'баг', 'bug', 'ошибка', 'error', 'проблема', 'problem'];
+    
+    const text = messageText.toLowerCase();
+    
+    // Проверяем наличие знака вопроса
+    if (text.includes('?')) {
+        return true;
+    }
+    
+    // Проверяем наличие вопросных слов
+    for (const word of questionWords) {
+        if (text.includes(word)) {
+            return true;
+        }
+    }
+    
+    // Проверяем наличие слов-запросов
+    for (const word of requestWords) {
+        if (text.includes(word)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Функция для получения всех сообщений за последние 5 минут из канала
+async function getRecentChannelMessages(channel, beforeMessageId = null) {
+    try {
+        const now = Date.now();
+        const messages = [];
+        let lastMessageId = beforeMessageId;
+        let hasMore = true;
+        
+        // Получаем сообщения порциями по 100
+        while (hasMore && messages.length < 200) { // Ограничение на 200 сообщений
+            const options = { limit: 100 };
+            if (lastMessageId) {
+                options.before = lastMessageId;
+            }
+            
+            const fetched = await channel.messages.fetch(options);
+            
+            if (fetched.size === 0) {
+                hasMore = false;
+                break;
+            }
+            
+            for (const msg of fetched.values()) {
+                // Проверяем, не старше ли сообщение 10 минут
+                const messageAge = now - msg.createdTimestamp;
+                if (messageAge > CONTEXT_TIME_WINDOW) {
+                    hasMore = false;
+                    break;
+                }
+                
+                // Пропускаем сообщения от ботов
+                if (!msg.author.bot) {
+                    messages.push({
+                        content: msg.content,
+                        username: msg.author.globalName || msg.author.username,
+                        messageId: msg.id,
+                        timestamp: msg.createdTimestamp
+                    });
+                }
+                
+                lastMessageId = msg.id;
+            }
+            
+            // Если получили меньше 100 сообщений, значит больше нет
+            if (fetched.size < 100) {
+                hasMore = false;
+            }
+        }
+        
+        // Сортируем по времени (старые первыми)
+        messages.sort((a, b) => a.timestamp - b.timestamp);
+        
+        return messages;
+    } catch (error) {
+        console.error('[ChatGPT] Ошибка при получении сообщений из канала:', error.message);
+        return [];
+    }
+}
+
+// Функция для обработки накопленных сообщений и отправки ответа
+async function processBufferedMessages(channel) {
+    const channelId = channel.id;
+    const buffer = messageBuffer.get(channelId);
+    
+    if (!buffer || buffer.messages.length === 0) {
+        return;
+    }
+    
+    // Очищаем таймер
+    if (buffer.timer) {
+        clearTimeout(buffer.timer);
+        buffer.timer = null;
+    }
+    
+    // Получаем копию сообщений и находим сообщение с вопросом
+    const bufferedMessages = [...buffer.messages];
+    const questionMessageObj = buffer.questionMessage; // Сохраняем ссылку на сообщение с вопросом
+    buffer.messages = [];
+    buffer.questionMessage = null;
+    buffer.lastMessage = null;
+    messageBuffer.set(channelId, buffer);
+    
+    // Проверяем, есть ли в сообщениях вопросы или запросы
+    const hasQuestion = bufferedMessages.some(msg => isQuestionOrRequest(msg.content));
+    if (!hasQuestion) {
+        console.log(`[ChatGPT] Пропущен ответ: в сообщениях нет вопросов или запросов`);
+        return;
+    }
+    
+    // Получаем все сообщения за последние 10 минут из канала для контекста
+    const lastMessageId = bufferedMessages[bufferedMessages.length - 1].messageId;
+    const recentMessages = await getRecentChannelMessages(channel, lastMessageId);
+    
+    console.log(`[ChatGPT] Получено ${recentMessages.length} сообщений за последние 10 минут для контекста`);
+    
+    // Проверяем, был ли ответ от модератора/админа за последние 5 минут
+    try {
+        const staffReplied = await hasStaffReply(channel, lastMessageId);
+        
+        if (staffReplied) {
+            console.log(`[ChatGPT] Пропущен ответ для ${bufferedMessages.length} сообщений: модератор уже ответил`);
+            return;
+        }
+        
+        // Показываем индикатор "бот печатает"
+        channel.sendTyping();
+        
+        // Получаем ответ от ChatGPT (используем все сообщения за 5 минут как контекст)
+        const reply = await getChatGptReply(recentMessages, channelId);
+        
+        if (reply) {
+            // Отправляем ответ как reply на сообщение с вопросом, если оно доступно
+            if (questionMessageObj && !questionMessageObj.deleted) {
+                try {
+                    console.log(`[ChatGPT] Отправка ответа как reply на сообщение с вопросом ${questionMessageObj.id} (контекст: ${recentMessages.length} сообщений)`);
+                    await questionMessageObj.reply(reply);
+                    console.log(`[ChatGPT] Ответ успешно отправлен как reply`);
+                } catch (error) {
+                    // Если не удалось отправить reply (например, сообщение удалено), отправляем обычное сообщение
+                    console.warn(`[ChatGPT] Не удалось отправить reply, отправляем обычное сообщение:`, error.message);
+                    await channel.send(reply);
+                    console.log(`[ChatGPT] Ответ отправлен как обычное сообщение`);
+                }
+            } else {
+                // Если сообщение с вопросом недоступно, отправляем обычное сообщение
+                console.log(`[ChatGPT] Отправка ответа как обычное сообщение в канал ${channelId} (контекст: ${recentMessages.length} сообщений)`);
+                await channel.send(reply);
+                console.log(`[ChatGPT] Ответ успешно отправлен`);
+            }
+        } else {
+            console.warn(`[ChatGPT] Ответ не получен, сообщение не отправлено`);
+        }
+    } catch (error) {
+        console.error('[ChatGPT] Ошибка при обработке буфера сообщений:', error.message);
+        console.error('[ChatGPT] Stack trace:', error.stack);
+    }
+}
+
+// Функция для добавления сообщения в буфер
+function addMessageToBuffer(message, channel) {
+    const channelId = channel.id;
+    
+    // Получаем или создаем буфер для канала
+    let buffer = messageBuffer.get(channelId);
+    if (!buffer) {
+        buffer = { messages: [], timer: null, lastMessage: null, questionMessage: null };
+        messageBuffer.set(channelId, buffer);
+    }
+    
+    // Добавляем сообщение в буфер
+    buffer.messages.push({
+        content: message.content,
+        username: message.author.globalName || message.author.username,
+        messageId: message.id,
+        timestamp: Date.now()
+    });
+    
+    // Сохраняем ссылку на последнее сообщение
+    buffer.lastMessage = message;
+    
+    // Если это сообщение содержит вопрос и еще не сохранено сообщение с вопросом - сохраняем его
+    if (!buffer.questionMessage && isQuestionOrRequest(message.content)) {
+        buffer.questionMessage = message;
+        console.log(`[ChatGPT] Найдено сообщение с вопросом от ${message.author.globalName || message.author.username}: ${message.content.substring(0, 50)}...`);
+    }
+    
+    // Очищаем предыдущий таймер
+    if (buffer.timer) {
+        clearTimeout(buffer.timer);
+    }
+    
+    // Устанавливаем новый таймер на 2 минуты
+    buffer.timer = setTimeout(() => {
+        processBufferedMessages(channel);
+    }, MESSAGE_COLLECTION_TIMEOUT);
+    
+    messageBuffer.set(channelId, buffer);
+    
+    console.log(`[ChatGPT] Сообщение добавлено в буфер для канала ${channelId}. Всего сообщений: ${buffer.messages.length}`);
+}
+
+// Функция для проверки, нужно ли отвечать на сообщение
+function shouldRespondToMessage(message) {
+    // Не отвечаем на сообщения от ботов
+    if (message.author.bot) {
+        return false;
+    }
+    
+    // Проверяем, что это нужный канал
+    if (!CHATGPT_CHANNELS.includes(message.channelId)) {
+        return false;
+    }
+    
+    // Проверяем, что сообщение не пустое
+    if (!message.content || message.content.trim().length === 0) {
+        return false;
+    }
+    
+    // Не отвечаем на команды бота
+    if (message.content.startsWith('!')) {
+        return false;
+    }
+    
+    return true;
+}
+
+const BLOCKING_TIMEOUT_MS = 5 * 60 * 1000; // 5 минут в миллисекундах
+
+// Функция для проверки, был ли ответ от модератора/админа или от специальных ролей
+async function hasStaffReply(channel, messageId) {
+    try {
+        const now = Date.now();
+        // Получаем последние 50 сообщений для проверки (чтобы охватить 5 минут)
+        const messages = await channel.messages.fetch({ limit: 50, before: messageId });
+        
+        for (const msg of messages.values()) {
+            // Пропускаем текущее сообщение
+            if (msg.id === messageId) {
+                continue;
+            }
+            
+            // Проверяем, не старше ли сообщение 5 минут
+            const messageAge = now - msg.createdTimestamp;
+            if (messageAge > BLOCKING_TIMEOUT_MS) {
+                continue; // Сообщение старше 5 минут, пропускаем
+            }
+            
+            // Если есть сообщение от пользователя с правами модератора/админа (не бот)
+            if (!msg.author.bot && msg.member) {
+                // Проверяем специальные роли, которые блокируют ответы
+                const hasBlockingRole = msg.member.roles.cache.some(role => 
+                    BLOCKING_ROLE_IDS.includes(role.id)
+                );
+                
+                if (hasBlockingRole) {
+                    console.log(`Сообщение от роли ${msg.member.roles.cache.find(r => BLOCKING_ROLE_IDS.includes(r.id))?.name} блокирует ответы ChatGPT на 5 минут`);
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    } catch (error) {
+        console.error('Ошибка при проверке ответов модераторов:', error.message);
+        return false;
+    }
+}
+
 const client = new Client({
     partials: [Partials.Channel, Partials.Message],
     intents: [
@@ -18,6 +552,16 @@ const client = new Client({
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages
     ]
+});
+
+// Обработка ошибок WebSocket (525 и другие)
+client.on('error', (error) => {
+    console.error('[Discord] Ошибка клиента:', error.message);
+    // Не критично - бот продолжит работу
+});
+
+client.on('warn', (warning) => {
+    console.warn('[Discord] Предупреждение:', warning);
 });
 
 const YEAR_IN_MS = 360 * 24 * 60 * 60 * 1000; // 12 месяцев в миллисекундах
@@ -77,26 +621,12 @@ async function checkMembers(guild) {
                     if (member.roles.cache.has(role.id)) {
                         await member.roles.remove(role);
                     }
-                    try {
-                        client.channels.fetch('1237317039396487179').then(function(channel) {
-                            if (channel != null) {
-                                channel.send(`Role ${ROLE_NAME_YEAR} added to <@${member.user.id}>`);
-                            }
-                        });
-                    } catch (e) {}
                     console.log(`Role ${ROLE_NAME_YEAR} added to ${member.user.tag}`);
                 }
             } else if (timeOnServer >= SIX_MONTHS_IN_MS) {
                 // Если участник на сервере больше полугода, выдаем роль
                 if (!member.roles.cache.has(role.id) && !member.roles.cache.has(role_year.id)) {
                     await member.roles.add(role);
-                    try {
-                        client.channels.fetch('1237317039396487179').then(function(channel) {
-                            if (channel != null) {
-                                channel.send(`Role ${ROLE_NAME_YEAR} added to <@${member.user.id}>`);
-                            }
-                        });
-                    } catch (e) {}
                     console.log(`Role ${ROLE_NAME} added to ${member.user.tag}`);
                 }
             }
@@ -109,7 +639,7 @@ async function checkMembers(guild) {
 client.on(Events.MessageCreate, async (message) => {
     if (message.content === '!rules') {
         try {
-            const response = await axios.get('https://api.prostoj.store/servers/rules');
+            const response = await axios.get(`${API_URL}/servers/rules`);
             const servers = response.data;
 
             // Создаём ActionRows с кнопками (по 5 в строке)
@@ -121,14 +651,14 @@ client.on(Events.MessageCreate, async (message) => {
                         new ButtonBuilder()
                             .setLabel(server.name)
                             .setStyle(ButtonStyle.Link)
-                            .setURL(`https://prostoj.store${server.link}`)
+                            .setURL(`${SITE_CDN_URL}${server.link}`)
                     );
                 });
                 components.push(row);
             }
 
             await message.channel.send({
-                content: '**📜 Правила серверов ПРОСТОЙ**\nВыберите сервер ниже, чтобы ознакомиться с его правилами:',
+                content: '**📜 Правила серверов**\nВыберите сервер ниже, чтобы ознакомиться с его правилами:',
                 components
             });
 
@@ -136,14 +666,13 @@ client.on(Events.MessageCreate, async (message) => {
             console.error('Ошибка при получении правил:', error);
             await message.channel.send('❌ Не удалось загрузить список серверов. Попробуйте позже.');
         }
-        await message.delete();
     }
     if (message.content === '!support') {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setLabel('Связаться с администрацией')
                 .setStyle(ButtonStyle.Link)
-                .setURL('https://prostoj.store/support')
+                .setURL(`${SITE_CDN_URL}/support`)
         );
 
         await message.channel.send({
@@ -155,50 +684,18 @@ client.on(Events.MessageCreate, async (message) => {
             ].join('\n\n'),
             components: [row]
         });
-        await message.delete();
     }
-    if (message.guildId === '1199050277773385728' && message.channelId === '1211335821555142736') {
-        const messageLower = message.content.toLowerCase();
-        if (messageLower.indexOf("админ") >= 0
-            || messageLower.indexOf("пидорас") >= 0
-            || messageLower.indexOf("хуесос") >= 0
-            || messageLower.indexOf("модератор") >= 0
-            || messageLower.indexOf("читер") >= 0
-            || messageLower.indexOf("провер") >= 0
-            || (messageLower.indexOf("сообще") >= 0 && messageLower.indexOf("удал") >= 0)) {
-            console.log(`Удаленно сообщение от пользователя "${message.author.globalName}" в канале "${message.channel.name}": ${message.content}`);
-            await message.delete();
-            try {
-                client.channels.fetch('1237317039396487179').then(function(channel) {
-                    channel.send(`Сообщение <@${message.author.id}> удаленно в канале "${message.channel.name}".\n\`\`\`${message.content}\`\`\``);
-                });
-            } catch (e) {}
-            try {
-                await message.author.send(`Здравствуйте ${message.author.globalName}!\n\nВаше сообщение автоматически удалено, если у вас есть вопросы к администрации или вы хотите оставить жалобу на игрока, создайте тикет в разделе <#1211335904350838904>!`);
-            } catch (e) {}
+    // ChatGPT ответы в указанных каналах
+    if (shouldRespondToMessage(message)) {
+        try {
+            // Добавляем сообщение в буфер (ответ будет отправлен через 2 минуты после последнего сообщения)
+            addMessageToBuffer(message, message.channel);
+        } catch (error) {
+            console.error('[ChatGPT] Ошибка при добавлении сообщения в буфер:', error.message);
+            console.error('[ChatGPT] Stack trace:', error.stack);
         }
     }
-    if (message.guildId === '1199050277773385728' && message.channelId === '1242706704798318652') {
-        const messageLower = message.content.toLowerCase();
-        var access = false;
-        message.guild.channels.cache.forEach(async (channel) => {
-            if (messageLower.indexOf(channel.id) >= 0) {
-                access = true;
-            }
-        });
-        if (!access) {
-            console.log(`Удаленно сообщение от пользователя "${message.author.globalName}" в канале "${message.channel.name}": ${message.content}`);
-            await message.delete();
-            try {
-                client.channels.fetch('1237317039396487179').then(function(channel) {
-                    channel.send(`Сообщение <@${message.author.id}> удаленно в канале "${message.channel.name}".\n\`\`\`${message.content}\`\`\``);
-                });
-            } catch (e) {}
-            try {
-                await message.author.send(`Здравствуйте ${message.author.globalName}!\n\nВаше сообщение автоматически удалено, потому что, нужно обязательно указать наш сервер, на котором вы ищите тимейта.\n\nУказать нужно сылкой на наш канал в дискорде, например:\nСервер: <#1263515112355008584>`);
-            } catch (e) {}
-        }
-    }
+    
     if (message.guildId == null && !message.author.bot) {
         try {
             client.channels.fetch('1237317039396487179').then(function(channel) {

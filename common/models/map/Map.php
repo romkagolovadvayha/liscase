@@ -51,9 +51,10 @@ class Map extends \yii\db\ActiveRecord
     {
         return [
             [['seed', 'size', 'version'], 'required'],
-            [['seed', 'size', 'version'], 'integer'],
+            [['seed', 'size', 'version', 'votes', 'server_id'], 'integer'],
             [['created_at'], 'safe'],
-            [['mapId', 'link', 'image_link', 'image_link_icons'], 'string', 'max' => 255],
+            [['is_archive', 'is_staging'], 'boolean'],
+            [['mapId', 'link', 'image_link', 'image_link_icons', 'name'], 'string', 'max' => 255],
         ];
     }
 
@@ -131,8 +132,8 @@ class Map extends \yii\db\ActiveRecord
         $userMap->created_at = date('Y-m-d H:i:s');
 
         if ($userMap->save()) {
-            $this->votes++;
-            $this->save();
+            // Используем updateCounters для атомарного обновления
+            $this->updateCounters(['votes' => 1]);
             return true;
         }
 
@@ -148,11 +149,13 @@ class Map extends \yii\db\ActiveRecord
             return false;
         }
 
-        $vote->delete();
-        $this->votes--;
-        $this->save();
+        if ($vote->delete()) {
+            // Используем updateCounters для атомарного обновления
+            $this->updateCounters(['votes' => -1]);
+            return true;
+        }
 
-        return true;
+        return false;
     }
 
     /**
@@ -163,6 +166,17 @@ class Map extends \yii\db\ActiveRecord
     public function getUserVotes()
     {
         return UserMap::find()->where(['map_id' => $this->id, 'vote' => 1])->count();
+    }
+    
+    /**
+     * Получает актуальное количество голосов из БД
+     *
+     * @return int
+     */
+    public function getVotes()
+    {
+        // Всегда берем актуальные данные из user_map
+        return (int)UserMap::find()->where(['map_id' => $this->id, 'vote' => 1])->count();
     }
 
     /**
@@ -222,12 +236,17 @@ class Map extends \yii\db\ActiveRecord
         ]);
     }
 
-    public static function getMapsList($size = 0) {
+    public static function getMapsList($size = 0, $useCache = true) {
         $result = [];
-        $cacheKey = 'MapsController_getMapsList2_' . $size;
-        if (Yii::$app->cache->get($cacheKey)) {
-            $result = Yii::$app->cache->get($cacheKey);
+        $cacheKey = 'MapsController_getMapsList3_' . $size;
+        
+        if ($useCache) {
+            $cached = Yii::$app->cache->get($cacheKey);
+            if (!empty($cached) && is_array($cached)) {
+                $result = $cached;
+            }
         }
+        
         if (empty($result)) {
             for ($i = 0; $i < 20; $i++) {
                 $staging = Yii::$app->settings->get('maps_staging') ? 'true' : 'false';
@@ -239,15 +258,20 @@ class Map extends \yii\db\ActiveRecord
 
                 $response = json_decode($response, 1);
 
-                if ($response['meta']['statusCode'] !== 200) {
-                    Yii::$app->telegramChats->sendMessage('Ошибка парсинга карт.');
+                if (!is_array($response) || ($response['meta']['statusCode'] ?? null) !== 200) {
+                    Yii::warning("Map::getMapsList: Error parsing maps for size {$size}, page {$i}", __METHOD__);
                     continue;
                 }
 
-                $result = ArrayHelper::merge($result, $response['data']);
+                if (!empty($response['data']) && is_array($response['data'])) {
+                    $result = ArrayHelper::merge($result, $response['data']);
+                }
                 sleep(1);
             }
-            Yii::$app->cache->set($cacheKey, $result, 60*60);
+            
+            if (!empty($result)) {
+                Yii::$app->cache->set($cacheKey, $result, 60*60);
+            }
         }
 
         shuffle($result);
@@ -337,11 +361,38 @@ class Map extends \yii\db\ActiveRecord
         // Загружаем основное изображение
         $background = imagecreatefromstring($image);
 
+        // Получаем путь к watermark изображению
+        $watermarkPath = Yii::$app->settings->get('design_watemark');
+        $watermarkFilePath = null;
+        $isTempFile = false;
+        
+        // Проверяем, является ли watermark URL (S3 или другой)
+        if (preg_match('#^https?://#i', $watermarkPath)) {
+            // Это URL, нужно скачать во временный файл
+            try {
+                $tempDir = sys_get_temp_dir();
+                $tempFilePath = $tempDir . '/' . uniqid('watermark_') . '.png';
+                $watermarkContent = (clone Yii::$app->curl)->get($watermarkPath);
+                file_put_contents($tempFilePath, $watermarkContent);
+                $watermarkFilePath = $tempFilePath;
+                $isTempFile = true;
+            } catch (\Exception $e) {
+                Yii::error('Map::watermarkOld: Failed to download watermark from URL: ' . $watermarkPath . '. Error: ' . $e->getMessage(), __METHOD__);
+                die('Ошибка при загрузке накладываемого изображения: не удалось скачать watermark');
+            }
+        } else {
+            // Это локальный путь
+            $watermarkFilePath = \Yii::getAlias('@frontend/web') . $watermarkPath;
+        }
+
         // Загружаем накладываемое изображение
-        $overlay = imagecreatefrompng(\Yii::getAlias('@frontend/web') . Yii::$app->settings->get('design_watemark')); // для прозрачного изображения используем PNG
+        $overlay = imagecreatefrompng($watermarkFilePath); // для прозрачного изображения используем PNG
 
         // Проверка на ошибку при загрузке накладываемого изображения
         if (empty($overlay)) {
+            if ($isTempFile) {
+                @unlink($watermarkFilePath);
+            }
             die('Ошибка при загрузке накладываемого изображения');
         }
 
@@ -400,6 +451,11 @@ class Map extends \yii\db\ActiveRecord
         imagedestroy($background);
         imagedestroy($overlay);
         imagedestroy($resized_image);
+        
+        // Удаляем временный файл watermark, если использовался
+        if ($isTempFile && file_exists($watermarkFilePath)) {
+            @unlink($watermarkFilePath);
+        }
     }
 
     public static function upload($imageUrl, $filename, $depecate = null) {
@@ -417,11 +473,38 @@ class Map extends \yii\db\ActiveRecord
         // Загружаем основное изображение
         $background = imagecreatefromstring($image);
 
+        // Получаем путь к watermark изображению
+        $watermarkPath = Yii::$app->settings->get('design_watemark');
+        $watermarkFilePath = null;
+        $isTempFile = false;
+        
+        // Проверяем, является ли watermark URL (S3 или другой)
+        if (preg_match('#^https?://#i', $watermarkPath)) {
+            // Это URL, нужно скачать во временный файл
+            try {
+                $tempDir = sys_get_temp_dir();
+                $tempFilePath = $tempDir . '/' . uniqid('watermark_') . '.png';
+                $watermarkContent = (clone Yii::$app->curl)->get($watermarkPath);
+                file_put_contents($tempFilePath, $watermarkContent);
+                $watermarkFilePath = $tempFilePath;
+                $isTempFile = true;
+            } catch (\Exception $e) {
+                Yii::error('Map::watermark: Failed to download watermark from URL: ' . $watermarkPath . '. Error: ' . $e->getMessage(), __METHOD__);
+                die('Ошибка при загрузке накладываемого изображения: не удалось скачать watermark');
+            }
+        } else {
+            // Это локальный путь
+            $watermarkFilePath = \Yii::getAlias('@frontend/web') . $watermarkPath;
+        }
+
         // Загружаем накладываемое изображение
-        $overlay = imagecreatefrompng(\Yii::getAlias('@frontend/web') . Yii::$app->settings->get('design_watemark')); // для прозрачного изображения используем PNG
+        $overlay = imagecreatefrompng($watermarkFilePath); // для прозрачного изображения используем PNG
 
         // Проверка на ошибку при загрузке накладываемого изображения
         if (empty($overlay)) {
+            if ($isTempFile) {
+                @unlink($watermarkFilePath);
+            }
             die('Ошибка при загрузке накладываемого изображения');
         }
 
@@ -460,6 +543,11 @@ class Map extends \yii\db\ActiveRecord
         // Освобождаем память
         imagedestroy($background);
         imagedestroy($overlay);
+        
+        // Удаляем временный файл watermark, если использовался
+        if ($isTempFile && file_exists($watermarkFilePath)) {
+            @unlink($watermarkFilePath);
+        }
     }
 
     public static function getSearchQuery($size) {

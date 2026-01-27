@@ -63,34 +63,131 @@ class Chats extends ActiveRecord
         ];
     }
 
-    public static function mute($data)
+    /** Определяет тип нарушения (1/2) по одному сообщению; 3 (спам) требует истории */
+    public static function getMuteType(string $message): ?int
     {
-        if (empty($data['steam_id'])) {
+        [$msg, $msgCompact] = self::normalizePair($message);
+
+        // --- type 1: родители + брань (оба паттерна небольшие) ---
+        if ((preg_match(self::reParents(), $msg) || self::containsParentsCompact($msgCompact))
+            && preg_match(self::reObscene(), $msg)) {
+            return 1;
+        }
+
+        // --- type 2: оскорбление администрации (рядом с бранью, окно ±25 символов) ---
+        if (preg_match(self::reAdminInsult(), $msg)) {
+            return 2;
+        }
+
+        return null;
+    }
+
+    /* ================= helpers ================= */
+
+    /** Нормализация: нижний регистр, простые leet-замены, ё→е; возвращаем [обычная, с удалёнными разделителями] */
+    private static function normalizePair(string $s): array
+    {
+        $s = mb_strtolower($s, 'utf-8');
+
+        // базовые look-alike замены для «обыденных» обфускаций
+        $map = [
+            // латиница -> кириллица
+            'a'=>'а','o'=>'о','e'=>'е','p'=>'р','c'=>'с','x'=>'х','y'=>'у','k'=>'к','h'=>'н','m'=>'м','t'=>'т','r'=>'г',
+            // цифры/символы, часто подменяют буквы
+            '0'=>'о','3'=>'з','4'=>'ч','6'=>'б','@'=>'а','$'=>'с',
+            // мягкий знак, «i|l!» как «и»
+            'b'=>'ь','i'=>'и','l'=>'и','!'=>'и','1'=>'и',
+        ];
+        $norm = strtr($s, $map);
+        $norm = str_replace('ё', 'е', $norm);
+
+        // схлопнуть >2 одинаковых символа подряд до 2
+        $norm = preg_replace('~(.)\1{2,}~u', '$1$1', $norm);
+        // нормальные пробелы
+        $norm = preg_replace('~\s+~u', ' ', $norm);
+        $norm = trim($norm);
+
+        // «компакт» — без пробелов и любых не-букв/не-цифр (ловим «ма-т@b» -> «мать»)
+        $compact = preg_replace('~[^\p{L}\p{N}]+~u', '', $norm);
+
+        return [$norm, $compact];
+    }
+
+    /** Небольшой список ключевых слов о «родителях» (с морф. хвостами) */
+    private static function reParents(): string
+    {
+        return '~\b(?:'
+            . 'мать|мам(?:а|ка|очк\w*|ул\w*)|батя|отец|пап(?:а|очка|аня|уля)?|родител\w*|родак\w*|предк\w*'
+            . '|mom(?:my)?|mother|mama|mamka|matka|ojciec|tata|parents?'
+            . ')\b~u';
+    }
+
+    /** Компакт-проверка: после удаления разделителей слово «родитель» может быть слепленным */
+    private static function containsParentsCompact(string $compact): bool
+    {
+        // Compact-лексемы без пробелов и пунктуации
+        $needles = [
+            'мать','мама','мамка','батя','отец','папа','родитель','родители','родак','предки',
+            'mom','mother','mama','mamka','matka','ojciec','tata','parents',
+        ];
+        foreach ($needles as $n) {
+            if (mb_strpos($compact, $n) !== false) return true;
+        }
+        return false;
+    }
+
+    /** Небольшой «ядро-мат» список (корни/слова), без чрезмерных классов */
+    private static function reObscene(): string
+    {
+        return '~(?:'
+            . 'еб|ёб|уеб|уёб|выеб|наеб|проеб|доеб|заеб'
+            . '|ху[йиее]|хер|хуесос|пизд|шлюх|сук|долбо[её]б|уебан|уебок|мудак|мудил|гандон|залуп|дроч|трах|сос(?:и|ал|ать)'
+            . '|fuck|bitch|motherfuck|pidor|pidr|gandon|blyad|xuy|hui'
+            . ')~u';
+    }
+
+    /** Слова про администрацию */
+    private static function reAdminWord(): string
+    {
+        return '~(?:админ\w*|модер\w*|модератор\w*|admin\w*|moder\w*)~u';
+    }
+
+    /** Админ рядом с бранью (окно ±25 символов) */
+    private static function reAdminInsult(): string
+    {
+        $adm = trim(self::reAdminWord(), '~u');
+        $obs = trim(self::reObscene(),  '~u');
+        return '~(?:' . $adm . '.{0,25}' . $obs . '|' . $obs . '.{0,25}' . $adm . ')~u';
+    }
+
+    public static function mute($type, $message, $steamId)
+    {
+        if (empty($type)) {
             return false;
         }
-        if (empty($data['type'])) {
+        if (empty($steamId)) {
             return false;
         }
-        if (empty($data['message'])) {
+        if (empty($message)) {
             return false;
         }
+
+        $info = Chats::muteReason()[$type];
 
         $reasons = self::muteReason();
-        if (empty($reasons[$data['type']])) {
+        if (empty($reasons[$type])) {
             return false;
         }
-        $reasonData = $reasons[$data['type']];
-        $hour = $reasonData['term']/60/60;
 
-        $user = User::findBySteamId($data['steam_id'], false, "Chats");
+        $user = User::findBySteamId($steamId, false, "Chats");
         if (empty($user)) {
             return false;
         }
 
         $message = "💭 <b>Подозрение на оскорбление</b>" . PHP_EOL
-            . "Отправил: {$user->username} ({$user->steam_id})" . PHP_EOL
-            . "Сообщение: {$data['message']}" . PHP_EOL
-            . "Причина: {$reasonData['reason']}" . PHP_EOL
+            . "Отправил: {$user->username} ({$steamId})" . PHP_EOL
+            . "Сообщение: {$message}" . PHP_EOL
+            . "Причина: {$info['reason']}" . PHP_EOL
             . "Сервер: {$user->getCurrentServer()->name}";
 
         Yii::$app->telegramSupport->sendMessage($message, [
@@ -98,8 +195,8 @@ class Chats extends ActiveRecord
                 'text' => '🔴 Замутить игрока',
                 'callback_data' => json_encode([
                     'action'   => 'mute',
-                    'steam_id' => $data['steam_id'],
-                    'type' => $data['type'],
+                    'steam_id' => $steamId,
+                    'type' => $type,
                 ])
             ]
         ]);
@@ -243,6 +340,101 @@ class Chats extends ActiveRecord
                                                            'action'   => 'success-building',
                                                            'id'  => $id,
                                                        ])
+                    ],
+                ],
+            ];
+        }
+        return '⛔ Произошла ошибка';
+    }
+
+    public static function actionSuccessTrack($buttonValueObj) {
+        $trackId = ArrayHelper::getValue($buttonValueObj, 'track_id');
+        
+        $track = \common\models\radio\RadioTrack::findOne($trackId);
+        
+        if (!$track) {
+            return '⛔ Трек не найден!';
+        }
+        
+        if ($track->status === \common\models\radio\RadioTrack::STATUS_ACTIVE) {
+            return '⛔ Трек уже подтвержден!';
+        }
+        
+        $track->status = \common\models\radio\RadioTrack::STATUS_ACTIVE;
+        if ($track->save()) {
+            // Добавить в очередь Node.js через прямой вызов
+            if ($track->radioStation && $track->filename) {
+                $station = $track->radioStation;
+                
+                try {
+                    $nodeApiUrl = "http://localhost:{$station->port}/api/reload";
+                    $context = stream_context_create([
+                        'http' => [
+                            'timeout' => 3,
+                            'ignore_errors' => true,
+                        ]
+                    ]);
+                    
+                    @file_get_contents($nodeApiUrl, false, $context);
+                } catch (\Exception $e) {
+                    Yii::error("Node.js API error: " . $e->getMessage(), __METHOD__);
+                }
+            }
+            
+            if (!empty($track->user->telegram_chat_id)) {
+                Yii::$app->personalBotTelegram->sendMessage(
+                    $track->user->telegram_chat_id, 
+                    '🎵 Ваш трек "' . $track->title . '" успешно прошёл модерацию и добавлен на радиостанцию!'
+                );
+            }
+            
+            return [
+                'editMessageReplyMarkup' => true,
+                'buttons' => [
+                    [
+                        'text' => '🔴 Отклонить',
+                        'callback_data' => json_encode([
+                            'action' => 'reject-track',
+                            'track_id' => $trackId,
+                        ])
+                    ]
+                ],
+            ];
+        }
+        return '⛔ Произошла ошибка';
+    }
+
+    public static function actionRejectTrack($buttonValueObj) {
+        $trackId = ArrayHelper::getValue($buttonValueObj, 'track_id');
+        
+        $track = \common\models\radio\RadioTrack::findOne($trackId);
+        
+        if (!$track) {
+            return '⛔ Трек не найден!';
+        }
+        
+        if ($track->status === \common\models\radio\RadioTrack::STATUS_REJECT) {
+            return '⛔ Трек уже отклонен!';
+        }
+        
+        $track->status = \common\models\radio\RadioTrack::STATUS_REJECT;
+        if ($track->save()) {
+            if (!empty($track->user->telegram_chat_id)) {
+                Yii::$app->personalBotTelegram->sendMessage(
+                    $track->user->telegram_chat_id, 
+                    '🎵 Ваш трек "' . $track->title . '" не прошёл модерацию.'
+                );
+            }
+            
+            return [
+                'editMessageReplyMarkup' => true,
+                'buttons' => [
+                    [
+                        'text' => '🟢 Принять',
+                        'callback_data' => json_encode([
+                            'action' => 'success-track',
+                            'track_id' => $trackId,
+                        ])
                     ],
                 ],
             ];

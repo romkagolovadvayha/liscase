@@ -5,10 +5,12 @@ namespace common\models\user;
 use common\components\helpers\DateHelper;
 use common\components\helpers\Role;
 use common\components\oauth\Steam;
+use common\components\queue\process\DiscordRolesUserJob;
 use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\components\queue\telegram\SendMessageJob;
 use common\components\web\Cookie;
 use common\models\auth\AuthAssignment;
+use common\models\bans\Bans;
 use common\models\box\Drop;
 use common\models\clan\UserRole;
 use common\models\invoice\Invoice;
@@ -17,6 +19,8 @@ use common\models\profit\Profit;
 use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
 use common\models\skindrops\Skindrops;
+use common\models\statistics\Kills;
+use common\models\statistics\Reports;
 use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
 use GeoIp2\Database\Reader;
@@ -35,6 +39,8 @@ use yii\web\JsExpression;
  * @property string          $email
  * @property string          $steam_id
  * @property int             $telegram_chat_id
+ * @property int|null        $vk_id
+ * @property string|null     $discord_id
  * @property string          $username
  * @property string          $password_hash
  * @property string          $auth_key
@@ -85,6 +91,7 @@ use yii\web\JsExpression;
  * @property Deposit[]       $deposits
  * @property UserPromocode[] $userPromocodes
  * @property UserTask        $userTasks
+ * @property UserVip[]       $userVip
  * @property string          $currency
  * @property Auth            $auth
  * @property UserTree        $userTree
@@ -349,10 +356,9 @@ class User extends ActiveRecord implements IdentityInterface
                         UserTree::appendUser($user->id, 509);
                         UserProfile::createModel($user, $username);
                         $user->userProfile->name = $username;
-                        try {
-                            //$avatar                    = self::_loadImage($avatar, $steamId);
-                            $user->userProfile->avatar = null;
-                        } catch (\Exception $ex) {
+                        // Сохраняем URL аватара из Steam вместо загрузки на сервер
+                        if (!empty($avatar) && $avatar !== 'https://' . Yii::$app->settings->get('site_domain') . Yii::$app->settings->get('design_avatar_default')) {
+                            $user->userProfile->steam_avatar_url = $avatar;
                         }
                         $user->userProfile->save();
                     }
@@ -366,9 +372,11 @@ class User extends ActiveRecord implements IdentityInterface
                 $user->updated_at = date('Y-m-d H:i:s');
                 $user->username = HtmlPurifier::process($infoUser[0]['personaname']);
                 $user->save();
-                //$avatar = self::_loadImage($infoUser[0]['avatarfull'], $steamId);
+                // Сохраняем URL аватара из Steam вместо загрузки на сервер
+                if (!empty($infoUser[0]['avatarfull'])) {
+                    $user->userProfile->steam_avatar_url = $infoUser[0]['avatarfull'];
+                }
                 $user->userProfile->name = HtmlPurifier::process($infoUser[0]['personaname']);
-                $user->userProfile->avatar = null;
                 $user->userProfile->save();
             }
 
@@ -481,6 +489,79 @@ class User extends ActiveRecord implements IdentityInterface
     {
         return $this->hasMany(UserDrop::class, ['user_id' => 'id']);
     }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUserVip()
+    {
+        return $this->hasMany(UserVip::class, ['user_id' => 'id']);
+    }
+
+    /**
+     * Получает активный VIP пользователя
+     *
+     * @return UserVip|null
+     */
+    public function getActiveVip()
+    {
+        return UserVip::getActiveVip($this->id);
+    }
+
+    /**
+     * Проверяет, есть ли у пользователя активный VIP
+     *
+     * @return bool
+     */
+    public function hasVip(): bool
+    {
+        return UserVip::find()
+            ->where(['user_id' => $this->id])
+            ->andWhere(['>', 'expires_at', date('Y-m-d H:i:s')])
+            ->exists();
+    }
+
+    /**
+     * Проверяет, скрыт ли статус онлайн/оффлайн
+     * Возвращает true только если у пользователя есть активный VIP и установлен флаг is_hide_online
+     *
+     * @return bool
+     */
+    public function hasHideOnline(): bool
+    {
+        // Если нет активного VIP, всегда возвращаем false
+        if (!$this->hasVip()) {
+            return false;
+        }
+        
+        // Проверяем флаг в профиле
+        if (empty($this->userProfile)) {
+            return false;
+        }
+        
+        return !empty($this->userProfile->is_hide_online);
+    }
+
+    /**
+     * Проверяет, скрыт ли список команды
+     * Возвращает true только если у пользователя есть активный VIP и установлен флаг is_hide_team
+     *
+     * @return bool
+     */
+    public function hasHideTeam(): bool
+    {
+        // Если нет активного VIP, всегда возвращаем false
+        if (!$this->hasVip()) {
+            return false;
+        }
+        
+        // Проверяем флаг в профиле
+        if (empty($this->userProfile)) {
+            return false;
+        }
+        
+        return !empty($this->userProfile->is_hide_team);
+    }
     /**
      * @return \yii\db\ActiveQuery
      */
@@ -576,6 +657,7 @@ class User extends ActiveRecord implements IdentityInterface
                                  [
                                      Role::ROLE_ADMIN,
                                      Role::ROLE_MODERATOR,
+                                     Role::ROLE_SUPPORT,
                                  ],
                              ])
                              ->exists();
@@ -691,12 +773,20 @@ class User extends ActiveRecord implements IdentityInterface
 
     public function getAvatar() {
         if ($this->steam_id == 777) {
-            return 'https://' . Yii::$app->settings->get('site_domain') . Yii::$app->settings->get('openAi_avatar');
+            return Yii::$app->settings->get('openAi_avatar');
         }
         if (empty($this->userProfile)) {
             return '';
         }
-        return Yii::$app->settings->get('site_cdnUrl') . $this->userProfile->avatar;
+        // Сначала проверяем новое поле steam_avatar_url (ссылка на Steam аватар)
+        if (!empty($this->userProfile->steam_avatar_url)) {
+            return $this->userProfile->steam_avatar_url;
+        }
+        // Если нового поля нет, используем старое (локальный файл)
+        if (!empty($this->userProfile->avatar)) {
+            return Yii::$app->settings->get('site_cdnUrl') . $this->userProfile->avatar;
+        }
+        return '';
     }
 
     public function getStatus() {
@@ -704,9 +794,23 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
+     * Получает статус для отображения с учетом скрытия
+     * Возвращает null, если статус скрыт, иначе true/false
+     *
+     * @return bool|null
+     */
+    public function getDisplayStatus() {
+        if ($this->hasHideOnline()) {
+            return null; // Статус скрыт
+        }
+        return $this->getStatus();
+    }
+
+    /**
      * @param string $jwt
      *
      * @return User|null
+     * @deprecated Используйте JwtService для работы с JWT токенами
      */
     public static function findByJwtToken($jwt)
     {
@@ -715,6 +819,62 @@ class User extends ActiveRecord implements IdentityInterface
         }
 
         return static::findOne(['jwt' => $jwt]);
+    }
+
+    /**
+     * Генерация JWT токена через JwtService
+     * 
+     * @param bool $isRefreshToken Генерировать refresh токен?
+     * @return string JWT токен
+     */
+    public function generateJwtToken($isRefreshToken = false)
+    {
+        if (!Yii::$app->has('jwt')) {
+            // Если JwtService не настроен, используем старый метод
+            return $this->getJwtToken();
+        }
+
+        $jwtService = Yii::$app->get('jwt');
+        return $jwtService->generateToken($this->id, $this->steam_id, $isRefreshToken);
+    }
+
+    /**
+     * Поиск пользователя по JWT токену через JwtService
+     * 
+     * @param string $token JWT токен
+     * @return User|null
+     */
+    public static function findByJwtTokenNew($token)
+    {
+        if (empty($token)) {
+            return null;
+        }
+
+        if (!Yii::$app->has('jwt')) {
+            // Если JwtService не настроен, используем старый метод
+            return static::findByJwtToken($token);
+        }
+
+        try {
+            $jwtService = Yii::$app->get('jwt');
+            $payload = $jwtService->validateToken($token);
+
+            $userId = $jwtService->getUserId($payload);
+            $steamId = $jwtService->getSteamId($payload);
+
+            if ($userId) {
+                return static::findIdentity($userId);
+            }
+
+            if ($steamId) {
+                return static::find()->where(['steam_id' => $steamId])->one();
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            Yii::warning('JWT token validation failed: ' . $e->getMessage(), 'jwt');
+            return null;
+        }
     }
 
     /**
@@ -840,6 +1000,13 @@ class User extends ActiveRecord implements IdentityInterface
         if (!empty($this->server)) {
             return $this->server;
         }
+        
+        // Используем статический кэш для результата, чтобы не делать запрос каждый раз
+        static $cachedServer = null;
+        if ($cachedServer !== null) {
+            return $cachedServer;
+        }
+        
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->cache(30)
@@ -847,7 +1014,8 @@ class User extends ActiveRecord implements IdentityInterface
                           ->orderBy(['sort' => SORT_ASC])
                           ->all();
 
-        return $servers[0];
+        $cachedServer = !empty($servers[0]) ? $servers[0] : null;
+        return $cachedServer;
     }
 
     public function getLink($key) {
@@ -1273,6 +1441,317 @@ class User extends ActiveRecord implements IdentityInterface
             return $this->floating_price_percent;
         }
         return $drop->floating_price_percent;
+    }
+
+    /**
+     * Отправляет сообщение в игровой чат пользователю о подключении Telegram бота и оповещений о банах
+     * 
+     * @param Servers $server Сервер на котором находится игрок
+     * @return bool
+     */
+    public function sendBanNotifyPromoMessage($server) {
+        // Проверяем что бот не подключен или оповещения отключены
+        $needsPromo = false;
+        $messageRu = '';
+        $messageEn = '';
+        
+        if (empty($this->telegram_chat_id) || $this->is_telegram_blocked) {
+            // Бот не подключен
+            $needsPromo = true;
+            $messageRu = "<color=#feeda1>Подключите Telegram бота</color> для получения оповещений о банах!\n";
+            $messageRu .= "Инструкция: <color=#aaf16e>/help</color> в боте";
+            $messageEn = "<color=#feeda1>Connect Telegram bot</color> to get ban alerts!\n";
+            $messageEn .= "Instructions: <color=#aaf16e>/help</color> in bot";
+        } elseif (!$this->ban_notify) {
+            // Оповещения о банах отключены
+            $needsPromo = true;
+            $messageRu = "<color=#feeda1>Включите оповещения о банах игроков!</color>\n";
+            $messageRu .= "Узнавайте о банах игроков, на которых вы пожаловались";
+            $messageEn = "<color=#feeda1>Enable ban notifications!</color>\n";
+            $messageEn .= "Get notified when reported players are banned";
+        }
+        
+        if (!$needsPromo) {
+            return false;
+        }
+        
+        // Добавляем ссылку на Telegram бота
+        $telegramChannel = Yii::$app->settings->get('social_telegram');
+        if (!empty($telegramChannel)) {
+            $channelLink = str_replace('https://', '', $telegramChannel);
+            $channelLink = str_replace('http://', '', $channelLink);
+            $messageRu .= "\nНаш бот: <color=#aaf16e>{$channelLink}</color>";
+            $messageEn .= "\nOur bot: <color=#aaf16e>{$channelLink}</color>";
+        }
+        
+        // Добавляем ссылку на Telegram канал
+        $telegramChannel = Yii::$app->settings->get('social_telegram_channel');
+        if (!empty($telegramChannel)) {
+            $channelLink = str_replace('https://', '', $telegramChannel);
+            $channelLink = str_replace('http://', '', $channelLink);
+            $messageRu .= "\nНаш канал: <color=#aaf16e>{$channelLink}</color>";
+            $messageEn .= "\nOur channel: <color=#aaf16e>{$channelLink}</color>";
+        }
+        
+        // Отправляем сообщение через RCON
+        $command = "helper message \"{$messageRu}\" \"{$messageEn}\" \"\" \"{$this->steam_id}\"";
+        
+        try {
+            $response = (Yii::$app->curl)
+                ->setHeaders(['Content-Type' => 'application/json'])
+                ->setRawPostData(json_encode(['server' => $server->tag, 'command' => $command]))
+                ->post(Yii::$app->settings->get('site_rconUrl') . '/send');
+            
+            // Сохраняем в лог RCON задач
+            $rconTask = new RconTasks();
+            $rconTask->status = RconTasks::STATUS_DONE;
+            $rconTask->command = $command;
+            $rconTask->result = $response;
+            $rconTask->server_tag = $server->tag;
+            $rconTask->created_at = date('Y-m-d H:i:s');
+            $rconTask->save();
+            
+            return true;
+        } catch (\Exception $e) {
+            Yii::error("Failed to send ban notify promo message to user {$this->id}: " . $e->getMessage(), __METHOD__);
+            return false;
+        }
+    }
+
+    /**
+     * Отправляет сообщение в игровой чат пользователю о подключении Telegram бота и оповещений о рейдах
+     * 
+     * @param Servers $server Сервер на котором находится игрок
+     * @return bool
+     */
+    public function sendRaidNotifyPromoMessage($server) {
+        // Проверяем что бот не подключен или оповещения отключены
+        $needsPromo = false;
+        $messageRu = '';
+        $messageEn = '';
+        
+        if (empty($this->telegram_chat_id) || $this->is_telegram_blocked) {
+            // Бот не подключен
+            $needsPromo = true;
+            $messageRu = "<color=#feeda1>Подключите Telegram бота</color> для получения оповещений о рейдах!\n";
+            $messageRu .= "Инструкция: <color=#aaf16e>/help</color> в боте";
+            $messageEn = "<color=#feeda1>Connect Telegram bot</color> to get raid alerts!\n";
+            $messageEn .= "Instructions: <color=#aaf16e>/help</color> in bot";
+        } elseif (!$this->raid_notify) {
+            // Оповещения о рейдах отключены
+            $needsPromo = true;
+            $messageRu = "<color=#feeda1>Включите оповещения о рейдах!</color>\n";
+            $messageEn = "<color=#feeda1>Enable raid notifications!</color>\n";
+        }
+        
+        if (!$needsPromo) {
+            return false;
+        }
+        
+        // Добавляем ссылку на Telegram бота
+        $telegramChannel = Yii::$app->settings->get('social_telegram');
+        if (!empty($telegramChannel)) {
+            $channelLink = str_replace('https://', '', $telegramChannel);
+            $channelLink = str_replace('http://', '', $channelLink);
+            $messageRu .= "\nНаш бот: <color=#aaf16e>{$channelLink}</color>";
+            $messageEn .= "\nOur bot: <color=#aaf16e>{$channelLink}</color>";
+        }
+        
+        // Добавляем ссылку на Telegram канал
+        $telegramChannel = Yii::$app->settings->get('social_telegram_channel');
+        if (!empty($telegramChannel)) {
+            $channelLink = str_replace('https://', '', $telegramChannel);
+            $channelLink = str_replace('http://', '', $channelLink);
+            $messageRu .= "\nНаш канал: <color=#aaf16e>{$channelLink}</color>";
+            $messageEn .= "\nOur channel: <color=#aaf16e>{$channelLink}</color>";
+        }
+        
+        // Отправляем сообщение через RCON
+        $command = "helper message \"{$messageRu}\" \"{$messageEn}\" \"\" \"{$this->steam_id}\"";
+        
+        try {
+            $response = (Yii::$app->curl)
+                ->setHeaders(['Content-Type' => 'application/json'])
+                ->setRawPostData(json_encode(['server' => $server->tag, 'command' => $command]))
+                ->post(Yii::$app->settings->get('site_rconUrl') . '/send');
+            
+            // Сохраняем в лог RCON задач
+            $rconTask = new RconTasks();
+            $rconTask->status = RconTasks::STATUS_DONE;
+            $rconTask->command = $command;
+            $rconTask->result = $response;
+            $rconTask->server_tag = $server->tag;
+            $rconTask->created_at = date('Y-m-d H:i:s');
+            $rconTask->save();
+            
+            return true;
+        } catch (\Exception $e) {
+            Yii::error("Failed to send raid notify promo message to user {$this->id}: " . $e->getMessage(), __METHOD__);
+            return false;
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     * Проверяет изменение server_id и обновляет Discord роли при необходимости
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+
+        // Проверяем, изменился ли server_id
+        if (!$insert && isset($changedAttributes['server_id']) && $this->server_id != $changedAttributes['server_id']) {
+            $oldServerId = $changedAttributes['server_id'];
+            $this->updateDiscordRolesOnServerChange($oldServerId);
+        }
+    }
+
+    /**
+     * Обновляет Discord роли при изменении server_id
+     * 
+     * @param int|null $oldServerId Старый server_id
+     * @return void
+     */
+    protected function updateDiscordRolesOnServerChange($oldServerId = null)
+    {
+        try {
+            // Проверяем, что у пользователя есть привязанный Discord аккаунт
+            if (empty($this->discord_id)) {
+                return;
+            }
+
+            // Добавляем job в очередь для обновления Discord ролей
+            if (Yii::$app->has('queueProcess')) {
+                Yii::$app->queueProcess->push(new DiscordRolesUserJob(['userId' => $this->id]));
+                $oldServerIdStr = $oldServerId !== null ? (string)$oldServerId : 'null';
+                Yii::info("Discord roles update job queued for user {$this->id} after server_id change (old: {$oldServerIdStr}, new: {$this->server_id})", __METHOD__);
+            }
+        } catch (\Exception $e) {
+            // Логируем ошибку, но не прерываем процесс сохранения
+            Yii::error("Failed to queue Discord roles update for user {$this->id} after server_id change: " . $e->getMessage(), __METHOD__);
+        }
+    }
+
+    /**
+     * Метрики за все время
+     * @return array
+     */
+    public function getMetrikiZaVseVremya(): array
+    {
+        $steamId = $this->steam_id;
+
+        // Оптимизация: получаем все статистики одним запросом
+        $statisticsKeys = [
+            'playtime', 'kills', 'deaths', 'sulfur.ore', 'wood', 'metal.ore', 
+            'stones', 'crate_open', 'barrel'
+        ];
+        
+        $statsData = Statistics::find()
+            ->select(['key', 'SUM(value) as total'])
+            ->where(['steam_id' => $steamId])
+            ->andWhere(['IN', 'key', $statisticsKeys])
+            ->groupBy('key')
+            ->asArray()
+            ->all();
+        
+        // Инициализируем значения по умолчанию
+        $stats = array_fill_keys($statisticsKeys, 0);
+        $wipes = 0;
+        
+        // Обрабатываем результаты
+        foreach ($statsData as $row) {
+            $key = $row['key'];
+            $stats[$key] = (int)$row['total'];
+        }
+        
+        // Количество отыгранных вайпов (отдельный запрос для точности)
+        $wipes = Statistics::find()
+            ->select('COUNT(DISTINCT `wipe`)')
+            ->where(['steam_id' => $steamId])
+            ->scalar() ?? 0;
+
+        // Часы на серверах (конвертируем секунды в часы)
+        $hours = round($stats['playtime'] / 60);
+        
+        // Извлекаем значения
+        $kills = $stats['kills'];
+        $deaths = $stats['deaths'];
+        $sulfur = $stats['sulfur.ore'];
+        $wood = $stats['wood'];
+        $metal = $stats['metal.ore'];
+        $stone = $stats['stones'];
+        $boxesOpened = $stats['crate_open'];
+        $barrelsBroken = $stats['barrel'];
+
+        // Репорты (количество репортов, созданных пользователем)
+        $reportsCreated = Reports::find()
+            ->where(['steam_id' => $steamId])
+            ->count();
+
+        // Забанено благодаря репортам
+        // Считаем количество уникальных пользователей, на которых был создан репорт и которые были забанены
+        $bansFromReports = 0;
+        $reportedSteamIds = Reports::find()
+            ->select('recepient_steam_id')
+            ->distinct()
+            ->where(['steam_id' => $steamId])
+            ->column();
+        
+        if (!empty($reportedSteamIds)) {
+            $bansFromReports = Bans::find()
+                ->where(['IN', 'steam_id', $reportedSteamIds])
+                ->count();
+        }
+
+        // Выиграно скинами (сумма price из таблицы skindrops)
+        $skindropsWinnings = Skindrops::find()
+            ->where(['steam_id' => $steamId])
+            ->sum('price') ?? 0;
+        $skindropsWinnings = round($skindropsWinnings, 2);
+        
+        // Если выиграно скинами = 0, считаем количество ежедневных наград из user_box
+        $dailyRewardsCount = 0;
+        $useDailyRewards = false;
+        if ($skindropsWinnings == 0) {
+            $dailyRewardsCount = UserBox::find()
+                ->where(['user_id' => $this->id])
+                ->count();
+            $useDailyRewards = true;
+        }
+
+        // Зарейдил шкафов (количество рейдов типа 'cupboard')
+        $cupboardsRaided = UserRaid::find()
+            ->where(['user_id' => $this->id, 'type' => 'cupboard'])
+            ->count();
+
+        // Максимальная дистанция убийства (из таблицы kills)
+        $maxKillDistance = Kills::find()
+            ->where(['steam_id' => $steamId])
+            ->andWhere(['!=', 'distance', ''])
+            ->andWhere(['IS NOT', 'distance', null])
+            ->andWhere(['type' => 'kill']) // Только убийства игроков
+            ->max('CAST(distance AS DECIMAL(10,2))') ?? 0;
+        $maxKillDistance = round($maxKillDistance);
+
+        return [
+            'wipes' => $wipes,
+            'hours' => $hours,
+            'kills' => $kills,
+            'deaths' => $deaths,
+            'sulfur' => $sulfur,
+            'wood' => $wood,
+            'metal' => $metal,
+            'stone' => $stone,
+            'boxes_opened' => $boxesOpened,
+            'barrels_broken' => $barrelsBroken,
+            'reports_created' => $reportsCreated,
+            'bans_from_reports' => $bansFromReports,
+            'skindrops_winnings' => $skindropsWinnings,
+            'daily_rewards_count' => $dailyRewardsCount,
+            'use_daily_rewards' => $useDailyRewards,
+            'cupboards_raided' => $cupboardsRaided,
+            'max_kill_distance' => $maxKillDistance,
+        ];
     }
 
 }

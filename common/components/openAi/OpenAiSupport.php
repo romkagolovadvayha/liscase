@@ -50,6 +50,7 @@ class OpenAiSupport extends \yii\base\Component
      * @param        $server
      * @param null   $ticketId
      * @param User   $user
+     * @param bool   $useDiscordInstructions Использовать инструкции для Discord
      *
      * @return string|null
      */
@@ -59,25 +60,48 @@ class OpenAiSupport extends \yii\base\Component
         string $server,
         array $chatHistory = [],
         ?int $ticketId = null,
-        $user = null
+        $user = null,
+        bool $useDiscordInstructions = false
     ): ?string {
         try {
             $knowledge = $this->loadKnowledgeBase();
-
-            $p = new PersonalBotSystem();
 
             // Контекст (не инструкции!)
             $context = [];
             $context[] = "Ник игрока: " . htmlspecialchars($username);
             $context[] = "Сервер: " . trim((string)$server);
 
-            $context[] = "Как подключиться к серверу?";
-            $context[] = "Подключение через консоль F1. Список IP серверов:";
-            $context[] = trim($p->getIp());
-
-            $context[] = "Когда вайп?";
-            $context[] = "Даты вайпов на серверах:";
-            $context[] = trim($p->getWipe());
+            // Пытаемся получить информацию о серверах (может быть ошибка)
+            try {
+                $p = new PersonalBotSystem();
+                
+                $context[] = "Как подключиться к серверу?";
+                $context[] = "Подключение через консоль F1. Список IP серверов:";
+                $ipInfo = $p->getIp();
+                if (!empty($ipInfo)) {
+                    // Удаляем HTML теги для чистого текста
+                    $ipInfo = strip_tags($ipInfo);
+                    $ipInfo = html_entity_decode($ipInfo, ENT_QUOTES, 'UTF-8');
+                    if (!empty(trim($ipInfo))) {
+                        $context[] = trim($ipInfo);
+                    }
+                }
+                
+                $context[] = "Когда вайп?";
+                $context[] = "Даты вайпов на серверах:";
+                $wipeInfo = $p->getWipe();
+                if (!empty($wipeInfo)) {
+                    // Удаляем HTML теги для чистого текста
+                    $wipeInfo = strip_tags($wipeInfo);
+                    $wipeInfo = html_entity_decode($wipeInfo, ENT_QUOTES, 'UTF-8');
+                    if (!empty(trim($wipeInfo))) {
+                        $context[] = trim($wipeInfo);
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Если не удалось получить информацию о серверах - пропускаем
+                Yii::warning('OpenAiSupport: не удалось получить информацию о серверах: ' . $e->getMessage() . ' | ' . $e->getFile() . ':' . $e->getLine(), __METHOD__);
+            }
 
             if (!empty($user)) {
                 /** @var Reports[] $reports */
@@ -115,8 +139,17 @@ class OpenAiSupport extends \yii\base\Component
             $messages = [];
 
             // Инструкции — только в system
-            $systemInstructions = Yii::$app->settings->get('openAi_instructions')
-                . "\n\nВажно: отвечай простым, человеческим комментарием на текст статьи. Без формата JSON, без метаданных, без обращений к разработчикам. Коротко и по делу.";
+            if ($useDiscordInstructions) {
+                $systemInstructions = Yii::$app->settings->get('openAi_instructionsDiscord');
+                if (empty($systemInstructions)) {
+                    // Если инструкции для Discord не настроены, используем обычные
+                    $systemInstructions = Yii::$app->settings->get('openAi_instructions');
+                }
+            } else {
+                $systemInstructions = Yii::$app->settings->get('openAi_instructions');
+            }
+            
+            $systemInstructions .= "\n\nВажно: отвечай простым, человеческим комментарием на текст статьи. Без формата JSON, без метаданных, без обращений к разработчикам. Коротко и по делу.";
 
             $messages[] = ['role' => 'system', 'content' => $systemInstructions];
 
@@ -149,7 +182,7 @@ class OpenAiSupport extends \yii\base\Component
                     'temperature' => $this->temperature ?? 0.7,
                     'max_tokens' => 350, // чтобы не расплывался
                 ],
-                'timeout' => 20,
+                'timeout' => 60, // Увеличено до 50 секунд для медленных ответов
             ]);
 
             $data = json_decode($response->getBody(), true);

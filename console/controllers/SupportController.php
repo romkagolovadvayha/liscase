@@ -38,10 +38,23 @@ class SupportController extends Controller
                 ->orderBy(['id' => SORT_DESC])
                 ->one();
 
-            if (empty($message->user) || $message->user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+            if (empty($message->user) || $message->user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])) {
                 continue;
             }
 
+            // Проверяем, были ли ответы от админа/модератора в этом тикете
+            $hasStaffReply = SupportMessage::find()
+                ->alias('sm')
+                ->joinWith('user u')
+                ->andWhere(['sm.support_id' => $ticket->id])
+                ->andWhere(['IS NOT', 'sm.user_id', null])
+                ->andWhere(['!=', 'sm.user_id', $ticket->user_id]) // Не сообщения автора тикета
+                ->exists();
+
+            // Если админ/модератор уже отвечал - пропускаем, ChatGPT не должен отвечать
+            if ($hasStaffReply) {
+                continue;
+            }
 
             if ($ticket->is_bot) {
                 Yii::$app->queueSupport->push(new OpenAiJob([

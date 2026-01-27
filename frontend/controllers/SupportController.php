@@ -73,16 +73,17 @@ class SupportController extends WebController
                                      ->indexBy('support_id')
                                      ->all();
 
-        $ticketsQuery = SupportSearch::find();
+        $ticketsQuery = SupportSearch::find()
+            ->with(['user', 'user.userProfile']);
         $activeTicket = null;
-        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
             $ticketsQuery->andWhere(['user_id' => Yii::$app->user->id]);
         }
 
         $ticketsQuery->orderBy(['status' => SORT_ASC, 'updated_at' => SORT_DESC]);
         /** @var Support[] $tickets */
         $tickets = $ticketsQuery->limit(20)->all();
-        if ($user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+        if ($user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
             $activeTicket = $tickets[0];
         } else {
             foreach ($tickets as $ticket) {
@@ -179,7 +180,7 @@ class SupportController extends WebController
 
     public function actionMute($support_id, $user_id, $blocked = true) {
         $user = \Yii::$app->user->identity;
-        if (!$user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+        if (!$user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])) {
             return $this->redirect(['ticket', 'id' => $support_id]);
         }
         $ticket = Support::findByNumber($support_id);
@@ -191,7 +192,7 @@ class SupportController extends WebController
         if (empty($player)) {
             return $this->redirect(['/support']);
         }
-        if ($player->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+        if ($player->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])) {
             return $this->redirect(['/support']);
         }
 
@@ -216,17 +217,7 @@ class SupportController extends WebController
         $player->save();
 
         try {
-            $client = new Client(Yii::$app->params['ws']);
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'supportStatus',
-                        'code'   => 200,
-                        'id'     => $ticket->getNumber(),
-                    ]
-                )
-            );
-            $client->close();
+            \console\controllers\ChatServer::broadcastSupportStatus($ticket->getNumber());
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('actionBlocked: ' . $ex->getMessage());
         }
@@ -236,7 +227,7 @@ class SupportController extends WebController
 
     public function actionBlockedChat($support_id, $user_id, $blocked = true) {
         $user = \Yii::$app->user->identity;
-        if (!$user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+        if (!$user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])) {
             return $this->redirect(['ticket', 'id' => $support_id]);
         }
         $ticket = Support::findByNumber($support_id);
@@ -248,7 +239,7 @@ class SupportController extends WebController
         if (empty($player)) {
             return $this->redirect(['/support']);
         }
-        if ($player->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+        if ($player->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])) {
             return $this->redirect(['/support']);
         }
 
@@ -267,17 +258,7 @@ class SupportController extends WebController
         $player->save();
 
         try {
-            $client = new Client(Yii::$app->params['ws']);
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'supportStatus',
-                        'code'   => 200,
-                        'id'     => $ticket->getNumber(),
-                    ]
-                )
-            );
-            $client->close();
+            \console\controllers\ChatServer::broadcastSupportStatus($ticket->getNumber());
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('actionBlocked: ' . $ex->getMessage());
         }
@@ -287,7 +268,7 @@ class SupportController extends WebController
 
     public function actionBlocked($support_id, $user_id, $blocked = true) {
         $user = \Yii::$app->user->identity;
-        if (!$user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+        if (!$user->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])) {
             return $this->redirect(['ticket', 'id' => $support_id]);
         }
         $ticket = Support::findByNumber($support_id);
@@ -299,7 +280,7 @@ class SupportController extends WebController
         if (empty($player)) {
             return $this->redirect(['/support']);
         }
-        if ($player->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN])) {
+        if ($player->canRoles([Role::ROLE_MODERATOR, Role::ROLE_ADMIN, Role::ROLE_SUPPORT])) {
             return $this->redirect(['/support']);
         }
 
@@ -321,17 +302,7 @@ class SupportController extends WebController
         }
 
         try {
-            $client = new Client(Yii::$app->params['ws']);
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'supportStatus',
-                        'code'   => 200,
-                        'id'     => $ticket->getNumber(),
-                    ]
-                )
-            );
-            $client->close();
+            \console\controllers\ChatServer::broadcastSupportStatus($ticket->getNumber());
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('actionBlocked: ' . $ex->getMessage());
         }
@@ -416,7 +387,7 @@ class SupportController extends WebController
             $mModel->save();
             $redirect = true;
         } else {
-            if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR]) && $chat->user_id !== $user->id) {
+            if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]) && $chat->user_id !== $user->id) {
                 return ['code' => 403, 'message' => Yii::t('common', "Доступ запрещен!")];
             }
             $chat->updated_at = date('Y-m-d H:i:s');
@@ -435,20 +406,13 @@ class SupportController extends WebController
         $file->mimetype = $mimetype;
         $file->created_at = date('Y-m-d H:i:s');
         $file->save();
+        
+        // Создаем запись о прочтении
+        SupportRead::createRecord($chat->user_id, $user->id, $message->id, $chat->id);
+        
         try {
-            $client = new Client(Yii::$app->params['ws']);
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'chatUpdate',
-                        'code'   => 200,
-                        'id'     => $chat->getNumber(),
-                        'user_id'     => $chat->user_id,
-                        'messageId'     => $message->id,
-                    ]
-                )
-            );
-            $client->close();
+            \console\controllers\ChatServer::broadcastChatUpdate($chat->getNumber(), $chat->user_id, $message->id);
+            \console\controllers\ChatServer::broadcastTicketUpdate($chat->user_id);
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('actionUploadFile: ' . $ex->getMessage());
         }
@@ -575,14 +539,25 @@ class SupportController extends WebController
         $this->view->title = Yii::t('common', 'Тикет') . "  ID" . $id;
         $this->view->params['page'] = 'support';
         $model = $this->findModel($id);
+        
+        // Загружаем сообщения с eager loading через relation
+        if (!empty($model->id)) {
+            $supportMessages = \common\models\support\SupportMessage::find()
+                ->where(['support_id' => $model->id])
+                ->with(['user', 'user.userProfile', 'supportFiles'])
+                ->orderBy(['created_at' => SORT_ASC])
+                ->all();
+            $model->populateRelation('supportMessages', $supportMessages);
+        }
 
         if (!empty($unreadMessages[$model->id]) && $unreadMessages[$model->id]['cnt'] > 0) {
             SupportRead::readedAll($model->id, $user->id);
             $unreadMessages[$model->id]['cnt']  = 0;
         }
 
-        $ticketsQuery = SupportSearch::find();
-        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+        $ticketsQuery = SupportSearch::find()
+            ->with(['user', 'user.userProfile']);
+        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
             $ticketsQuery->andWhere(['user_id' => Yii::$app->user->id]);
         }
         $ticketsQuery->orderBy(['status' => SORT_ASC, 'updated_at' => SORT_DESC]);
@@ -626,26 +601,8 @@ class SupportController extends WebController
         SupportRead::readedAll($model->id);
 
         try {
-            $client = new Client(Yii::$app->params['ws']);
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'supportStatus',
-                        'code'   => 200,
-                        'id'     => $model->getNumber(),
-                    ]
-                )
-            );
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'ticketUpdate',
-                        'code'   => 200,
-                        'user_id'     => $model->user_id,
-                    ]
-                )
-            );
-            $client->close();
+            \console\controllers\ChatServer::broadcastSupportStatus($model->getNumber());
+            \console\controllers\ChatServer::broadcastTicketUpdate($model->user_id);
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('actionTicketClose: ' . $ex->getMessage());
         }
@@ -675,26 +632,8 @@ class SupportController extends WebController
         $model->save(false);
 
         try {
-            $client = new Client(Yii::$app->params['ws']);
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'supportStatus',
-                        'code'   => 200,
-                        'id'     => $model->getNumber(),
-                    ]
-                )
-            );
-            $client->send(
-                json_encode(
-                    [
-                        'action' => 'ticketUpdate',
-                        'code'   => 200,
-                        'user_id'     => $model->user_id,
-                    ]
-                )
-            );
-            $client->close();
+            \console\controllers\ChatServer::broadcastSupportStatus($model->getNumber());
+            \console\controllers\ChatServer::broadcastTicketUpdate($model->user_id);
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('actionTicketOpen: ' . $ex->getMessage());
         }
@@ -703,12 +642,15 @@ class SupportController extends WebController
 
     public function actionGetMessage($id)
     {
-        $message = SupportMessage::findOne($id);
-        if (empty($message) || (!Yii::$app->user->identity->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR]) && $message->support->user->id !== Yii::$app->user->id)) {
+        $message = SupportMessage::find()
+            ->where(['id' => $id])
+            ->with(['user', 'user.userProfile', 'supportFiles', 'support', 'support.user'])
+            ->one();
+        if (empty($message) || (!Yii::$app->user->identity->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]) && $message->support->user->id !== Yii::$app->user->id)) {
             throw new ForbiddenHttpException(Yii::t('common', 'Ошибка доступа'));
         }
         return $this->renderAjax('_message', [
-            'model' => $message,
+'model' => $message,
             'classMessage' => 'animate__animated animate__bounceIn'
         ]);
     }
@@ -718,12 +660,13 @@ class SupportController extends WebController
         $model = $this->findModel($id);
         $user = Yii::$app->user->identity;
 
-        if (!empty($model->id) && (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR]) && $model->user->id !== $user->id)) {
+        if (!empty($model->id) && (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]) && $model->user->id !== $user->id)) {
             throw new ForbiddenHttpException(Yii::t('common', 'Ошибка доступа'));
         }
 
-        $ticketsQuery = SupportSearch::find();
-        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR])) {
+        $ticketsQuery = SupportSearch::find()
+            ->with(['user', 'user.userProfile']);
+        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
             $ticketsQuery->andWhere(['user_id' => Yii::$app->user->id]);
         }
         $ticketsQuery->orderBy(['status' => SORT_ASC, 'updated_at' => SORT_DESC]);
@@ -749,9 +692,103 @@ class SupportController extends WebController
             return new Support();
         }
         if (($model = Support::findByNumber($number)) !== null) {
+            // Загружаем связанного пользователя
+            $model->user;
             return $model;
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');
+    }
+
+    /**
+     * Получение списка стикеров
+     */
+    public function actionGetStickers()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        // Кэшируем список стикеров на 1 час
+        $cacheKey = 'support_stickers_list';
+        $stickers = Yii::$app->cache->get($cacheKey);
+        
+        if ($stickers === false) {
+            $stickersDir = Yii::getAlias('@frontend/web/stickers');
+            $stickers = [];
+
+            if (is_dir($stickersDir)) {
+                $supportedFormats = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'webm'];
+                $files = glob($stickersDir . '/*');
+                foreach ($files as $file) {
+                    $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                    if (in_array($extension, $supportedFormats)) {
+                        $name = pathinfo($file, PATHINFO_FILENAME);
+                        $url = '/stickers/' . basename($file);
+                        
+                        // Для .webm файлов используем video тег
+                        if ($extension === 'webm') {
+                            $code = '<video class="support_sticker" playsinline="" loop="" autoplay="" muted="" data-lazy="true" preload="none"><source src="' . $url . '" type="video/webm">Ваш браузер не поддерживает видео.</video>';
+                        } else {
+                            $code = '<img src="' . $url . '" class="support_sticker" alt="стикер ' . $name . '" title="стикер ' . $name . '">';
+                        }
+                        
+                        $stickers[] = [
+                            'name' => $name,
+                            'code' => $code,
+                            'url' => $url
+                        ];
+                    }
+                }
+            }
+            
+            // Кэшируем на 1 час
+            Yii::$app->cache->set($cacheKey, $stickers, 600);
+        }
+
+        return [
+            'success' => true,
+            'stickers' => $stickers
+        ];
+    }
+
+    /**
+     * Обработка стикеров в сообщении
+     */
+    private function processStickers($message)
+    {
+        // Заменяем [sticker:name] на HTML тег
+        $stickerRegex = '/\[sticker:([a-zA-Z0-9_.-]+)\]/';
+        $message = preg_replace_callback($stickerRegex, function($matches) {
+            $stickerName = $matches[1];
+            
+            // Поддерживаем разные форматы файлов
+            $supportedFormats = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'webm'];
+            $stickerPath = null;
+            $extension = null;
+            
+            foreach ($supportedFormats as $format) {
+                $testPath = Yii::getAlias('@frontend/web/stickers/' . $stickerName . '.' . $format);
+                if (file_exists($testPath)) {
+                    $stickerPath = $testPath;
+                    $extension = $format;
+                    break;
+                }
+            }
+            
+            if ($stickerPath) {
+                $url = '/stickers/' . htmlspecialchars($stickerName) . '.' . $extension;
+                
+                // Для .webm файлов используем video тег
+                if ($extension === 'webm') {
+                    return '<video class="message-sticker" playsinline="" loop="" autoplay="" muted="" data-lazy="true" preload="none"><source src="' . $url . '" type="video/webm">Ваш браузер не поддерживает видео.</video>';
+                } else {
+                    return '<img src="' . $url . '" class="message-sticker" alt="стикер ' . htmlspecialchars($stickerName) . '" title="стикер ' . htmlspecialchars($stickerName) . '">';
+                }
+            } else {
+                // Если стикер не найден, показываем текст
+                return '<span class="sticker-not-found">[стикер: ' . htmlspecialchars($stickerName) . ']</span>';
+            }
+        }, $message);
+        
+        return $message;
     }
 }

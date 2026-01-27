@@ -12,6 +12,32 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="{{ SETTINGS.get('colors_font_link') }}" rel="preload" as="style" onload="this.onload=null;this.rel=&#039;stylesheet&#039;">
+    
+    {# PWA Meta Tags #}
+    <meta name="application-name" content="LiSCase">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-config" content="/icons/browserconfig.xml">
+    <meta name="msapplication-TileColor" content="#2c3e50">
+    <meta name="msapplication-tap-highlight" content="no">
+    <meta name="theme-color" content="#2c3e50">
+    
+    {# PWA Icons #}
+    {% set favicon = SETTINGS.get('design_favicon') %}
+    {% if favicon is empty %}
+        {% set favicon = '/favicon.ico' %}
+    {% endif %}
+    <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
+    <link rel="mask-icon" href="/icons/icon.svg" color="#2c3e50">
+    <link rel="icon" href="{{ favicon }}" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ favicon }}">
+    
+    {# PWA Manifest #}
+    <link rel="manifest" href="/manifest.json">
+    
     {{ head|raw }}
 {#    <link href="/css/styles.min.css" rel="stylesheet"/>#}
 </head>
@@ -116,6 +142,92 @@ $policyUrl = Url::to(['/site/privacy']); // поменяй на свою стр�
             // (необязательно) сделай глобальный метод, чтобы открыть баннер снова:
             window.CookieConsentMini={ open:()=>{ $bar.hidden=false; } };
         })();
+    </script>
+    
+    {# PWA Service Worker Registration #}
+    <script>
+        const PWA_DEBUG = {{ constant('YII_ENV_DEV') ? 'true' : 'false' }};
+        const swFile = PWA_DEBUG ? '/sw-debug.js' : '/sw.js?v={{ v }}';
+        const pwaLog = (...args) => { if (PWA_DEBUG) { console.log('[PWA]', ...args); } };
+        const pwaError = (...args) => console.error('[PWA]', ...args);
+
+        pwaLog('Initializing PWA...');
+
+        if ('serviceWorker' in navigator) {
+            pwaLog('Service Worker supported');
+
+            window.addEventListener('load', function() {
+                pwaLog('Page loaded, registering SW...', swFile);
+
+                navigator.serviceWorker.register(swFile)
+                    .then(function(registration) {
+                        pwaLog('Service Worker registered:', registration.scope);
+
+                        if (PWA_DEBUG) {
+                            registration.addEventListener('updatefound', function() {
+                                pwaLog('Update found');
+                                const newWorker = registration.installing;
+                                if (!newWorker) {
+                                    return;
+                                }
+                                newWorker.addEventListener('statechange', function() {
+                                    pwaLog('New worker state:', newWorker.state);
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        if (confirm('Доступна новая версия приложения. Обновить?')) {
+                                            window.location.reload();
+                                        }
+                                    }
+                                });
+                            });
+                        }
+                    })
+                    .catch(function(error) {
+                        pwaError('Service Worker registration failed:', error);
+                    });
+            });
+        } else {
+            pwaLog('Service Worker not supported');
+        }
+
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', function(e) {
+            pwaLog('Install prompt triggered');
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        window.addEventListener('appinstalled', function(e) {
+            pwaLog('App was installed successfully');
+        });
+
+        if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+            pwaLog('App is running in standalone mode');
+        }
+
+        pwaLog('beforeinstallprompt supported:', 'onbeforeinstallprompt' in window);
+
+        window.addEventListener('online', function() {
+            pwaLog('App is online');
+        });
+
+        window.addEventListener('offline', function() {
+            pwaLog('App is offline');
+        });
+
+        function registerForPushNotifications() {
+            if ('Notification' in window && 'serviceWorker' in navigator) {
+                Notification.requestPermission().then(function(permission) {
+                    if (permission === 'granted') {
+                        pwaLog('Push notifications granted');
+                    }
+                });
+            }
+        }
+
+        if (!localStorage.getItem('pwa-notifications-asked')) {
+            setTimeout(registerForPushNotifications, 3000);
+            localStorage.setItem('pwa-notifications-asked', 'true');
+        }
     </script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 <?php
 
+use common\components\helpers\EmailHelper;
 use common\models\user\User;
 use yii\web\View;
 use common\models\invoice\Deposit;
@@ -49,12 +50,13 @@ $user = Yii::$app->user->identity;
                     ->label(false)
                     ->textInput(['placeholder' => Yii::t('common', 'Введите сумму пополнения'), 'autocomplete' => 'off']); ?>
         </div>
-        <?php if (!$user->is_email): ?>
+        <?php if (!$user->is_email || $modelForm->hasErrors('email') || !EmailHelper::isValid($user->email)): ?>
             <div class="relative">
                 <?=$form->field($modelForm, 'email', [
                     'inputOptions' => [
                         'class' => 'search search_pay'
                     ],
+                    'template' => "{input}{error}{hint}"
                 ])
                         ->label(false)
                         ->textInput(['placeholder' => Yii::t('common', 'Ваш E-mail')]); ?>

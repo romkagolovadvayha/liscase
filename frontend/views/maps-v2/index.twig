@@ -1,0 +1,254 @@
+{% set hasMaps = maps|length > 0 %}
+
+<div class="mapsV2" id="mapsV2Root"
+     data-server-id="{{ server.id }}"
+     data-server-tag="{{ server.tag }}"
+     data-vote-url="{{ voteUrlTemplate }}"
+     data-voters-url="{{ votersUrlTemplate }}"
+     data-user-voted-id="{{ userVotedMapId|default('') }}"
+     data-user-voted-ids='{{ userVotedMapIds|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES'))|raw }}'
+     data-text-vote="{{ t('common', 'Проголосовать') }}"
+     data-text-download="{{ t('common', 'Скачать карту') }}"
+     data-text-empty-voters="{{ t('common', 'Будьте первым, кто проголосует за эту карту') }}"
+     data-text-no-votes="{{ t('common', 'Пока никто не голосовал') }}"
+     data-text-refresh="{{ t('common', 'Обновить') }}"
+     data-biome-labels='{{ biomeLabels|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES'))|raw }}'
+     data-total-maps="{{ totalMaps }}"
+     data-total-votes="{{ totalVotes }}"
+     data-display-limit="{{ displayLimit }}"
+     data-maps='{{ mapsPayloadJson|raw }}'>
+
+    <header class="mapsV2__hero">
+        <div class="mapsV2__hero-primary">
+            <p class="mapsV2__eyebrow">{{ t('common', 'Голосование карт v2') }}</p>
+            <h1 class="mapsV2__title">
+                {{ t('common', 'Выбор следующей карты') }}
+                <span>{{ t('database', server.name) }}</span>
+            </h1>
+        </div>
+        <dl class="mapsV2__meta">
+            <div class="mapsV2__meta-card">
+                <dt class="mapsV2__meta-label">{{ t('common', 'Размер карты') }}</dt>
+                <dd class="mapsV2__meta-value">{{ server.min_map_size }} – {{ server.max_map_size }}</dd>
+            </div>
+            <div class="mapsV2__meta-card">
+                <dt class="mapsV2__meta-label">{{ t('common', 'Следующий вайп') }}</dt>
+                <dd class="mapsV2__meta-value">{{ server.next_wipe|date('d.m.Y H:i') }} МСК</dd>
+            </div>
+            <div class="mapsV2__meta-card">
+                <dt class="mapsV2__meta-label">{{ t('common', 'Условия голосования') }}</dt>
+                <dd class="mapsV2__meta-value">{{ t('common', '1+ час игры на сервере') }}</dd>
+            </div>
+        </dl>
+
+        <nav class="mapsV2__servers">
+            {% for ITEM in servers %}
+                <a class="mapsV2__server-link{% if ITEM.tag == server.tag %} is-active{% endif %}"
+                   href="/maps-v2/{{ ITEM.tag }}">
+                    <span>{{ t('database', ITEM.monitoring_name) }}</span>
+                    <small>{{ ITEM.min_map_size }}–{{ ITEM.max_map_size }}</small>
+                </a>
+            {% endfor %}
+        </nav>
+
+        {% if totalMaps > displayLimit %}
+            <p class="mapsV2__note">
+                {{ t('common', 'Показаны {shown} из {total} доступных карт.', {shown: displayLimit, total: totalMaps}) }}
+            </p>
+        {% endif %}
+    </header>
+
+    {% if not hasMaps %}
+        <section class="mapsV2__empty">
+            <div class="mapsV2__empty-icon">
+                <i class="fas fa-map"></i>
+            </div>
+            <h2>{{ t('common', 'Пока нет карт в этом диапазоне') }}</h2>
+            <p>{{ t('common', 'Как только карты появятся, вы сможете проголосовать за любимый ландшафт.') }}</p>
+        </section>
+    {% else %}
+        <div class="mapsV2__layout">
+            {% set pjaxId = 'maps-v2-cards-pjax' %}
+            {{ use('yii/widgets/Pjax') }}
+            {{ use('frontend/widgets/Alert') }}
+            {{ Pjax.begin({
+                'id': pjaxId,
+                'enablePushState': false,
+                'timeout': 5000
+            }) }}
+            {{ Alert.widget()|raw }}
+            <div class="mapsV2__cards" data-role="map-list">
+                {% for map in maps %}
+                    {{ cardsHtml[map.id]|raw }}
+                {% endfor %}
+            </div>
+            {{ Pjax.end() }}
+        </div>
+    {% endif %}
+
+    {% if hasMaps and currentMap %}
+        {% set detail = mapCardsData[currentMap.id] %}
+    {% endif %}
+
+    <div class="mapsV2__modal" data-role="detail-modal" aria-hidden="true">
+        <div class="mapsV2__modal-backdrop" data-action="close-modal"></div>
+        <div class="mapsV2__modal-dialog" role="dialog" aria-modal="true">
+            <button class="mapsV2__modal-close" type="button" data-action="close-modal" aria-label="{{ t('common', 'Закрыть') }}">
+                <i class="fas fa-times"></i>
+            </button>
+            <section class="mapsV2__detail" data-role="map-detail">
+                {% if hasMaps and detail %}
+                    <div class="mapsV2__detail-visual">
+                        <div class="mapsV2__preview{% if detail.imageIconUrl or detail.rawImageUrl or detail.image %} is-clickable{% endif %}"
+                             data-role="preview"
+                             data-src="{{ detail.imageIconUrl|default(detail.rawImageUrl|default(detail.image|default(detail.imagePreview))) }}">
+                            <img src="{{ detail.imagePreview|default(detail.image) }}" alt="{{ detail.hash }}" data-role="preview-image">
+                            <div class="mapsV2__markers" data-role="markers"></div>
+                        </div>
+                        <div class="mapsV2__navigation">
+                            <button class="mapsV2__nav mapsV2__nav--prev" type="button" data-action="prev-map">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button class="mapsV2__nav mapsV2__nav--next" type="button" data-action="next-map">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mapsV2__detail-body" data-map-detail-id="{{ detail.id }}">
+                        <header class="mapsV2__detail-header">
+                            <div>
+                                <p class="mapsV2__detail-type" data-role="detail-type">{{ detail.type|default('Procedural') }}</p>
+                            </div>
+                            <div class="mapsV2__detail-actions">
+                                <button class="mapsV2__vote-button{% if userVotedMapId and userVotedMapId == detail.id %} is-active{% endif %}"
+                                        data-action="vote"
+                                        data-map-id="{{ detail.id }}">
+                                    <i class="fas fa-heart"></i>
+                                    <span>{{ t('common', 'Проголосовать') }}</span>
+                                </button>
+                                {% if detail.rustMapsUrl %}
+                                    <a class="mapsV2__rustmaps-button"
+                                       href="{{ detail.rustMapsUrl }}"
+                                       target="_blank"
+                                       rel="nofollow noopener">
+                                        <i class="fas fa-external-link-alt"></i>
+                                        {{ t('common', 'RustMaps') }}
+                                    </a>
+                                {% endif %}
+                                {% if detail.downloadUrl %}
+                                    <a class="mapsV2__download-button"
+                                       href="{{ detail.downloadUrl }}"
+                                       target="_blank"
+                                       rel="nofollow noopener">
+                                        <i class="fas fa-download"></i>
+                                        {{ t('common', 'Скачать карту') }}
+                                    </a>
+                                {% endif %}
+                                <button class="mapsV2__open-full{% if not detail.imageIconUrl and not detail.rawImageUrl and not detail.image %} is-hidden{% endif %}"
+                                        type="button"
+                                        data-action="open-fullscreen"
+                                        data-src="{{ detail.imageIconUrl|default(detail.rawImageUrl|default(detail.image|default(detail.imagePreview))) }}">
+                                    <i class="fas fa-expand"></i>
+                                    <span>{{ t('common', 'Открыть полностью') }}</span>
+                                </button>
+                            </div>
+                        </header>
+
+                        <div class="mapsV2__stats-grid">
+                            <div class="mapsV2__stat">
+                                <span class="mapsV2__stat-label">{{ t('common', 'Размер') }}</span>
+                                <span class="mapsV2__stat-value" data-stat="size">{{ detail.size }} x {{ detail.size }}</span>
+                            </div>
+                            <div class="mapsV2__stat">
+                                <span class="mapsV2__stat-label">{{ t('common', 'Seed') }}</span>
+                                <span class="mapsV2__stat-value" data-stat="seed">{{ detail.seed }}</span>
+                            </div>
+                            <div class="mapsV2__stat">
+                                <span class="mapsV2__stat-label">{{ t('common', 'Сохранённая версия') }}</span>
+                                <span class="mapsV2__stat-value" data-stat="saveVersion">{{ detail.saveVersion ?? '–' }}</span>
+                            </div>
+                            <div class="mapsV2__stat">
+                                <span class="mapsV2__stat-label">{{ t('common', 'Голоса') }}</span>
+                                <span class="mapsV2__stat-value" data-role="votes-count">{{ detail.voteCount }}</span>
+                            </div>
+                            <div class="mapsV2__stat">
+                                <span class="mapsV2__stat-label">{{ t('common', 'Земли на карте') }}</span>
+                                <span class="mapsV2__stat-value" data-stat="landPercentage">{{ detail.landPercentage ?? '–' }}%</span>
+                            </div>
+                            <div class="mapsV2__stat">
+                                <span class="mapsV2__stat-label">{{ t('common', 'Монументов') }}</span>
+                                <span class="mapsV2__stat-value" data-stat="monuments">{{ detail.totalMonuments ?? (detail.monuments|length) }}</span>
+                            </div>
+                        </div>
+
+                        {% if detail.biomePercentages %}
+                            <div class="mapsV2__biomes" data-role="biomes">
+                                <h3>{{ t('common', 'Биомы') }}</h3>
+                                <div class="mapsV2__biomes-list" data-role="biomes-list">
+                                    {% for code, value in detail.biomePercentages %}
+                                        <div class="mapsV2__biome">
+                                            <span class="mapsV2__biome-label">{{ biomeLabels[code]|default(code|upper) }}</span>
+                                            <span class="mapsV2__biome-value">{{ value|round(1, 'floor') }}%</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if detail.monuments %}
+                            <div class="mapsV2__monuments" data-role="monuments">
+                                <h3>{{ t('common', 'Монументы') }}</h3>
+                                <div class="mapsV2__monuments-list" data-role="monuments-list">
+                                    {% for monument in detail.monuments|slice(0, 40) %}
+                                        <span class="mapsV2__monument-chip"
+                                              title="{{ monument.label|default(monument.type) }}"
+                                              data-monument-index="{{ loop.index0 }}">
+                                            {{ monument.label|default(monument.type) }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <section class="mapsV2__voters" data-role="voters">
+                            <div class="mapsV2__voters-header">
+                                <h3>{{ t('common', 'Кто уже проголосовал') }}</h3>
+                                <button type="button" class="mapsV2__voters-refresh" data-action="refresh-voters">
+                                    <i class="fas fa-sync"></i>
+                                    {{ t('common', 'Обновить') }}
+                                </button>
+                            </div>
+                            <div class="mapsV2__voters-list" data-role="voters-list">
+                                {% if detail.voters %}
+                                    {% for voter in detail.voters %}
+                                        <div class="mapsV2__voter">
+                                            <img src="{{ voter.avatar }}" alt="{{ voter.username }}">
+                                            <div>
+                                                <strong>{{ voter.username }}</strong>
+                                                <span>{{ voter.created_at|date('d.m H:i') }}</span>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="mapsV2__voters-empty">
+                                        {{ t('common', 'Будьте первым, кто проголосует за эту карту') }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                        </section>
+                    </div>
+                {% else %}
+                    <div class="mapsV2__empty mapsV2__empty--detail">
+                        <div class="mapsV2__empty-icon">
+                            <i class="fas fa-map"></i>
+                        </div>
+                        <h2>{{ t('common', 'Выберите карту') }}</h2>
+                        <p>{{ t('common', 'Нажмите на кнопку «Подробнее» у любой карты.') }}</p>
+                    </div>
+                {% endif %}
+            </section>
+        </div>
+    </div>
+</div>
+

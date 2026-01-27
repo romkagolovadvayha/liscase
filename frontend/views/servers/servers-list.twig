@@ -49,12 +49,14 @@
                     <div class="servers_page_item">
                         <header class="servers_page_item_header">
                             <h5 class="servers_page_item_header_title">{{ t('database', SERVER.monitoring_description) }} [{{ t('database', SERVER.monitoring_name) }}]</h5>
-                            <span class="servers_page_item_header_status">{{ SERVER.wipeTypeText() }}</span>
-                            {% if not SERVER.is_store %}
-                                <span class="servers_page_item_header_status"><i class="fas fa-check"></i> {{ t('common', 'Донат выключен') }}</span>
-                            {% endif %}
-                            {% if SERVER.skindrops %}
-                                <span class="servers_page_item_header_status"><i class="fas fa-gift"></i> {{ t('common', 'Раздача скинов') }}</span>
+                            {% if SERVER.serversTags %}
+                                <div class="server_info_serversTags">
+                                    {% for TAG in SERVER.serversTags %}
+                                        <a href="{{ TAG.getLink() }}">
+                                            <span class="servers_page_item_header_status" style="background-color: {{ TAG.color }}">{{ t('database', TAG.name) }}</span>
+                                        </a>
+                                    {% endfor %}
+                                </div>
                             {% endif %}
                             {% if SERVER.team_limit > 0 %}
                                 <span class="servers_page_item_header_status"><i class="fas fa-users"></i> {{ t('common', 'Лимит') }} {{ SERVER.team_limit }} {{ t('common', 'человека') }}</span>
@@ -84,9 +86,21 @@
                                    data-toggl="modal"
                                    data-target="modal-dialog"
                                    data-title="{{ t('common', 'Когда вайп') }}">{{ t('common', 'Когда вайп') }}</a>
-                                {% if SERVER.map_id and SERVER.mapEntity and not SERVER.secret_map %}
-                                    <a class="button button-secondary servers_page_item_actions_r_image" href="{{ SERVER.mapEntity.getImage() }}" title="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}" target="_blank" >
-                                        {{ t('common', 'Текущая карта') }}<img src="{{ SERVER.mapEntity.getPreviewImage() }}" loading="lazy" alt="{{ SERVER.mapEntity.size }}_{{ SERVER.mapEntity.seed }}">
+                                {% if SERVER.map_list_id and SERVER.mapList and not SERVER.secret_map %}
+                                    <a class="button button-secondary servers_page_item_actions_r_image show-modal-link"
+                                       href="/maps-v2/detail/{{ SERVER.map_list_id }}?server_id={{ SERVER.id }}"
+                                       data-href="/maps-v2/detail/{{ SERVER.map_list_id }}?server_id={{ SERVER.id }}"
+                                       data-target="modal-dialog"
+                                       data-size="modal-xxl"
+                                       data-title="{{ t('common', 'Текущая карта') }}"
+                                       data-content-overflow="unset"
+                                       title="{{ t('common', 'Текущая карта') }}">
+                                        {{ t('common', 'Текущая карта') }}
+                                        {% if SERVER.mapList.image_preview %}
+                                            <img src="{{ SERVER.mapList.image_preview }}" loading="lazy" alt="{{ SERVER.mapList.hash }}">
+                                        {% elseif SERVER.mapList.image %}
+                                            <img src="{{ SERVER.mapList.image }}" loading="lazy" alt="{{ SERVER.mapList.hash }}">
+                                        {% endif %}
                                     </a>
                                 {% endif %}
                                 <a class="button button-secondary" href="{{ SERVER.getLink('rules') }}">{{ t('common', 'Правила сервера') }}</a>
@@ -163,18 +177,6 @@
 {{ this.params.ld_json|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES'))|raw }}
 </script>
 {% endif %}
-{{
-magnific_popup_widget({
-    'target': '.servers_page',
-    'options': {
-        'delegate': '.servers_page_item_actions_r_image',
-        'gallery': {
-            'enabled': false
-        },
-    },
-    'effect': 'with-zoom'
-})
-}}
 
 {% set faq_list = [
     {

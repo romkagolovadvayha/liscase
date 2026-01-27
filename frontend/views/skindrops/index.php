@@ -59,100 +59,125 @@ foreach ($skindrops as $item) {
 }
 
 ?>
-<div class="faq-how-works">
-    <div class="how-works">
-        <h1 class="how-works__title">
-            <?=Yii::t('common', "Получайте скины Steam за игру на наших серверах!")?>
-        </h1>
-        <p class="how-works__p"><?=Yii::t('common', "Раздача скинов в Steam! Просто укажите свою трейд-ссылку и добавьте пометку к нику в игре.")?></p>
-        <div class="container-fluid how-works_drops_wrapper">
-            <div class="last_drops">
-                <?php foreach ($result as $item): ?>
-                    <?= $this->render('@frontend/views/widgets/_last_drops_item', [
-                        'item' => $item,
-                    ]); ?>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <h2 class="how-works__title">
-            <?=Yii::t('common', "Как это работает?")?>
-        </h2>
-        <p class="how-works__p"><?=Yii::t('common', "Раздача скинов Rust проходит примерно каждые 60 минут среди всех участников, находящихся на сервере.")?></p>
-        <div class="how-works__content">
-            <div class="how-works__item<?=$authCompleted ? '' : ' danger'?>">
-                <div class="how-works__icon"><i class="fab fa-steam-symbol"></i></div>
-                <div class="how-works__desc"><?=Yii::t('common', 'Войдите на сайт')?> <?=Yii::$app->user->isGuest ? \yii\helpers\Html::a(Yii::t('common', 'через Steam'), '/auth/oauth?authclient=steam') : Yii::t('common', 'Войдите на сайт через Steam')?></div>
-            </div>
-            <div class="how-works__separator<?=$authCompleted ? '' : ' danger'?>">
-                <div class="how-works__separator-item"><i class="fas fa-angle-right"></i></div>
-            </div>
-            <div class="how-works__item<?=$tradeLinkCompleted ? '' : ' danger'?>">
-                <div class="how-works__icon"><i class="fas fa-link"></i></div>
-                <div class="how-works__desc"><?=Yii::t('common', "Введите свой Trade-URL.")?></div>
-            </div>
-            <div class="how-works__separator<?=$tradeLinkCompleted ? '' : ' danger'?>">
-                <div class="how-works__separator-item"><i class="fas fa-angle-right"></i></div>
-            </div>
-            <div class="how-works__item<?=$usernameCompleted ? '' : ' danger'?>">
-                <div class="how-works__icon"><i class="fas fa-spell-check"></i></div>
-                <div class="how-works__desc"><?=Yii::t('common', "Добавьте к нику приписку")?> "<?=Yii::$app->settings->get('skindrops_prefix')?>"</div>
-            </div>
-            <div class="how-works__separator<?=$usernameCompleted ? '' : ' danger'?>">
-                <div class="how-works__separator-item"><i class="fas fa-angle-right"></i></div>
-            </div>
-            <div class="how-works__item<?=$allCompleted ? '' : ' danger'?>">
-                <div class="how-works__icon"><i class="fas fa-gamepad"></i></div>
-                <div class="how-works__desc"><?=Yii::t('common', "Играйте на сервере и выигрывайте скины!")?></div>
-            </div>
-        </div>
-        <h2 class="how-works__title mt-40">
-            <?=Yii::t('common', "Как получать скины?")?>
-        </h2>
-        <p class="how-works__p"><?=Yii::t('common', "Вы сами выбираете скины в своём профиле — можно вывести их сразу или копить на более крутые!")?></p>
-        <div class="how-works__content">
-            <div class="how-works__item">
-                <div class="flex items-center justify-center" style="position: relative;display: flex;align-items: center;justify-content: center;width: 100%;height: 135px;border: 1px solid var(--background-teritiary);border-radius: 100%;font-size: 54px;line-height: 54px;color: var(--server-command);">
-                    <div class="p1" style="font-weight: 700;text-transform: uppercase;"><?=Yii::t('common', "Выигрыш")?></div>
-                </div>
-                <div class="how-works__desc"><?=Yii::t('common', 'Вы победили в розыгрыше')?></div>
-            </div>
-            <div class="how-works__separator">
-                <div class="how-works__separator-item"><i class="fas fa-angle-right"></i></div>
-            </div>
-            <div class="how-works__item">
-                <div class="flex items-center justify-center" style="position: relative;display: flex;align-items: center;justify-content: center;width: 100%;height: 135px;border: 1px solid var(--background-teritiary);border-radius: 100%;font-size: 54px;line-height: 54px;color: var(--server-command);">
-                    <div class="p1 flex items-center justify-center flex-column gap-y-6" style="font-weight: 700;text-transform: uppercase;">
-                        <span class="icons icons_32px icons_16px_coin_skins" style="background-size: contain;"></span>
-                        <span><?=Yii::t('common', "Баланс")?></span>
+<div class="skindrops-container">
+    <div class="skindrops-header">
+        <h1><?=Yii::t('common', "Бесплатные скины Rust каждый час — раздача от SkinDrops")?></h1>
+        <p><?=Yii::t('common', "Получайте скины Steam совершенно бесплатно за игру на наших серверах Rust! Розыгрыш проводится каждые 60 минут среди всех активных игроков. Стоимость скинов от 20 до 120 рублей. Всё, что нужно — авторизоваться через Steam, указать Trade-URL и добавить префикс к нику.")?></p>
+    </div>
+    
+    <div class="skindrops-recent">
+        <h2><?=Yii::t('common', "Последние выигрыши")?></h2>
+        <p class="skindrops-recent-subtitle"><?=Yii::t('common', "Игроки получают скины каждый час. Присоединяйтесь к розыгрышу прямо сейчас!")?></p>
+        <div class="skindrops-recent-grid">
+            <?php foreach ($result as $item): ?>
+                <div class="skindrops-win-item">
+                    <div class="skindrops-win-image">
+                        <img src="<?=$item['image']?>" alt="<?=$item['name']?>" loading="lazy">
+                    </div>
+                    <div class="skindrops-win-info">
+                        <div class="skindrops-win-name"><?=$item['name']?></div>
+                        <div class="skindrops-win-price"><?=$item['count']?></div>
+                    </div>
+                    <div class="skindrops-win-user">
+                        <img src="<?=$item['userAvatar']?>" alt="<?=$item['userName']?>" class="skindrops-win-avatar">
+                        <span class="skindrops-win-username"><?=$item['userName']?></span>
                     </div>
                 </div>
-                <div class="how-works__desc"><?=Yii::t('common', "Средства зачислились на ваш баланс")?></div>
-            </div>
-            <div class="how-works__separator">
-                <div class="how-works__separator-item"><i class="fas fa-angle-right"></i></div>
-            </div>
-            <div class="how-works__item">
-                <div class="flex items-center justify-center" style="position: relative;display: flex;align-items: center;justify-content: center;width: 100%;height: 135px;border: 1px solid var(--background-teritiary);border-radius: 100%;font-size: 54px;line-height: 54px;color: var(--server-command);">
-                    <div class="p1 flex items-center justify-center flex-column gap-y-6" style="font-weight: 700;text-transform: uppercase;">
-                        <span><?=Yii::t('common', "Вывод")?></span>
-                        <span><?=Yii::t('common', "скина")?></span>
-                    </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    
+    <div class="skindrops-section">
+        <h2><?=Yii::t('common', "Как участвовать в розыгрыше бесплатных скинов Rust?")?></h2>
+        <p class="skindrops-subtitle"><?=Yii::t('common', "Раздача скинов Rust проводится автоматически каждые 60 минут среди всех игроков на сервере. Для участия выполните 4 простых шага:")?></p>
+        
+        <div class="skindrops-steps-grid">
+            <div class="skindrops-card<?=$authCompleted ? ' active' : ''?>">
+                <div class="skindrops-card-icon"><i class="fab fa-steam-symbol"></i></div>
+                <div class="skindrops-card-title"><?=Yii::t('common', 'Войдите на сайт')?></div>
+                <div class="skindrops-card-text">
+                    <?=Yii::$app->user->isGuest ? \yii\helpers\Html::a(Yii::t('common', 'через Steam'), '/auth/oauth?authclient=steam') : Yii::t('common', 'через Steam')?>
                 </div>
-                <div class="how-works__desc"><?=Yii::t('common', "Выберите скин в вашем ")?> <?=\yii\helpers\Html::a(Yii::t('common', 'профиле'), '/user/skins')?></div>
+                <?php if ($authCompleted): ?>
+                    <div class="skindrops-card-badge"><i class="fas fa-check"></i></div>
+                <?php endif; ?>
             </div>
-            <div class="how-works__separator">
-                <div class="how-works__separator-item"><i class="fas fa-angle-right"></i></div>
+            
+            <div class="skindrops-card<?=$tradeLinkCompleted ? ' active' : ''?>">
+                <div class="skindrops-card-icon"><i class="fas fa-link"></i></div>
+                <div class="skindrops-card-title"><?=Yii::t('common', "Trade-URL")?></div>
+                <div class="skindrops-card-text"><?=Yii::t('common', "Введите свой Trade-URL")?></div>
+                <?php if ($tradeLinkCompleted): ?>
+                    <div class="skindrops-card-badge"><i class="fas fa-check"></i></div>
+                <?php endif; ?>
             </div>
-            <div class="how-works__item">
-                <div class="flex items-center justify-center" style="position: relative;display: flex;align-items: center;justify-content: center;width: 100%;height: 135px;border: 1px solid var(--background-teritiary);border-radius: 100%;font-size: 54px;line-height: 54px;color: var(--server-command);">
-                    <div class="p1 flex items-center justify-center flex-column gap-y-6" style="font-weight: 700;text-transform: uppercase;">
-                        <span><?=Yii::t('common', "Ждите")?></span>
-                        <span><?=Yii::t('common', "трейд")?></span>
-                    </div>
-                </div>
-                <div class="how-works__desc"><?=Yii::t('common', "Трейд придет в течении 10 минут")?></div>
+            
+            <div class="skindrops-card<?=$usernameCompleted ? ' active' : ''?>">
+                <div class="skindrops-card-icon"><i class="fas fa-spell-check"></i></div>
+                <div class="skindrops-card-title"><?=Yii::t('common', "Приписка к нику")?></div>
+                <div class="skindrops-card-text">"<?=Yii::$app->settings->get('skindrops_prefix')?>"</div>
+                <?php if ($usernameCompleted): ?>
+                    <div class="skindrops-card-badge"><i class="fas fa-check"></i></div>
+                <?php endif; ?>
+            </div>
+            
+            <div class="skindrops-card<?=$allCompleted ? ' active' : ''?>">
+                <div class="skindrops-card-icon"><i class="fas fa-gamepad"></i></div>
+                <div class="skindrops-card-title"><?=Yii::t('common', "Играйте!")?></div>
+                <div class="skindrops-card-text"><?=Yii::t('common', "Выигрывайте скины")?></div>
+                <?php if ($allCompleted): ?>
+                    <div class="skindrops-card-badge"><i class="fas fa-check"></i></div>
+                <?php endif; ?>
             </div>
         </div>
+    </div>
+    
+    <div class="skindrops-section">
+        <h2><?=Yii::t('common', "Процесс получения скинов в Steam")?></h2>
+        <p class="skindrops-subtitle"><?=Yii::t('common', "После победы в розыгрыше средства автоматически зачисляются на ваш игровой баланс. Вы сами выбираете, какой скин вывести — можно получить предмет сразу или накопить на более дорогой. Трейд-офер придёт в Steam в течение 10 минут.")?></p>
+        
+        <div class="skindrops-process-grid">
+            <div class="skindrops-process-item">
+                <i class="fas fa-trophy"></i>
+                <span><?=Yii::t('common', "Выигрыш")?></span>
+            </div>
+            <i class="fas fa-arrow-right skindrops-arrow"></i>
+            <div class="skindrops-process-item">
+                <i class="fas fa-wallet"></i>
+                <span><?=Yii::t('common', "Баланс")?></span>
+            </div>
+            <i class="fas fa-arrow-right skindrops-arrow"></i>
+            <div class="skindrops-process-item">
+                <i class="fas fa-shopping-cart"></i>
+                <span><?=\yii\helpers\Html::a(Yii::t('common', 'Вывод'), '/user/skins')?></span>
+            </div>
+            <i class="fas fa-arrow-right skindrops-arrow"></i>
+            <div class="skindrops-process-item">
+                <i class="fas fa-exchange-alt"></i>
+                <span><?=Yii::t('common', "Трейд")?></span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="skindrops-seo-text">
+        <h2><?=Yii::t('common', "Что такое SkinDrops и как работает система раздачи скинов?")?></h2>
+        <p><?=Yii::t('common', "<strong>SkinDrops</strong> — это уникальная система автоматической раздачи скинов Rust на наших игровых серверах. Каждый час система случайным образом выбирает одного игрока из всех находящихся на сервере и награждает его скином стоимостью от 20 до 120 рублей.")?></p>
+        
+        <h3><?=Yii::t('common', "Преимущества системы SkinDrops:")?></h3>
+        <ul class="skindrops-benefits">
+            <li><?=Yii::t('common', "<strong>Полностью бесплатно</strong> — никаких донатов или скрытых платежей")?></li>
+            <li><?=Yii::t('common', "<strong>Честная система</strong> — победитель выбирается случайно среди всех игроков")?></li>
+            <li><?=Yii::t('common', "<strong>Реальные скины Steam</strong> — все предметы можно продать, обменять или использовать в игре")?></li>
+            <li><?=Yii::t('common', "<strong>Регулярные розыгрыши</strong> — каждый час новая возможность выиграть")?></li>
+            <li><?=Yii::t('common', "<strong>Гибкий вывод</strong> — копите баланс или выводите скины сразу")?></li>
+        </ul>
+        
+        <h3><?=Yii::t('common', "Условия участия в раздаче скинов:")?></h3>
+        <p><?=Yii::t('common', "Для участия в розыгрыше необходимо находиться на сервере в момент проведения раздачи (каждые 60 минут). Розыгрыш автоматически отменяется, если онлайн на сервере меньше 20 человек — это гарантирует, что скины получают реальные активные игроки, а не AFK-пользователи.")?></p>
+        
+        <p><?=Yii::t('common', "Важно: в вашем игровом нике должна быть указана приписка <strong>{PREFIX}</strong>. Например, если ваш ник «Player123», измените его на «Player123 {PREFIX}». Без этой приписки система не сможет вас идентифицировать и вы не будете участвовать в розыгрыше.", [
+            'PREFIX' => Yii::$app->settings->get('skindrops_prefix')
+        ])?></p>
     </div>
 </div>
 <?php if (!Yii::$app->user->isGuest): ?>

@@ -48,11 +48,23 @@ $config = [
                 'posts/<categoryLinkName:[a-z0-9_-]+>/' => 'blog/category',
                 'posts/<categoryLinkName:[a-z0-9_-]+>/<categoryLinkNameChild:[a-z0-9_-]+>/' => 'blog/category',
                 '/servers/wipe-block' => '/servers/wipe-block',
+                '/servers/tag-<tagLink:[a-z0-9_-]+>' => '/servers/tag',
                 '/servers/<serverTag:[a-z0-9_-]+>/' => '/stats/stats',
                 '/servers/<serverTag:[a-z0-9_-]+>/<steamId:[0-9]+>/' => '/stats/player-new',
                 '/servers/<serverTag:[a-z0-9_-]+>/<steamId:[0-9]+>/report' => '/stats/report',
                 '/servers/<serverTag:[a-z0-9_-]+>/rules' => '/servers/rules',
                 '/servers/<serverTag:[a-z0-9_-]+>/wipe-info' => '/servers/wipe-info',
+                '/maps-v2/vote' => '/maps-v2/vote',
+                '/maps-v2/vote-detail' => '/maps-v2/vote-detail',
+                '/maps-v2/voters/<id:\d+>/<server_id:\d+>' => '/maps-v2/voters',
+                '/maps-v2/detail/<id:\d+>' => '/maps-v2/detail',
+                'maps-v2/<serverTag:[a-z0-9_-]+>/<mapId:\d+>' => 'maps-v2/index',
+                'maps-v2/<serverTag:[a-z0-9_-]+>' => 'maps-v2/index',
+                'maps-v2' => 'maps-v2/index',
+                'tasks-v2' => 'tasks-v2/index',
+                'tasks-v2/check/<id:\d+>' => 'tasks-v2/check',
+                'tasks-v2/detail/<id:\d+>' => 'tasks-v2/detail',
+                'year-review/generate/<userId:\d+>' => 'year-review/generate',
                 '/clans/' => '/clans/index',
                 '/clans/create' => '/clans/create',
                 '/clans/upload' => '/clans/upload',
@@ -81,31 +93,32 @@ $config = [
                 '/clans/profile/<linkHash:[a-z0-9_-]+>/' => '/clans/profile',
                 '/clans/profile/<linkHash:[a-z0-9_-]+>/page/<linkName:[a-z0-9_-]+>' => '/clans/view-page',
                 '/maps/vote' => '/maps/vote',
+                '/maps/get-likes' => '/maps/get-likes',
                 '/maps/<serverTag:[a-z0-9_-]+>/' => '/maps',
                 'sitemap.xml' => 'site/sitemap',
                 'sitemap-main.xml' => 'site/sitemap-main',
                 'sitemap-servers.xml' => 'site/sitemap-servers',
                 'sitemap-posts.xml' => 'site/sitemap-posts',
+                'sitemap-radio.xml' => 'site/sitemap-radio',
+                'sitemap-tags.xml' => 'site/sitemap-tags',
                 'robots.txt' => 'site/robots',
                 'rss' => 'site/rss',
+                'radio' => 'radio/index',
+                'radio/<id:\d+>' => 'radio/station',
                 'db-asset/<root>/<path:.+>' => 'db-asset/serve',
             ],
         ],
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => '5c4cf22fbe90065a4a8e4591cf2cea84',
-            'csrfCookie' => [
-                'httpOnly' => true,
-                'secure'   => true,
-                'sameSite' => yii\web\Cookie::SAME_SITE_LAX,
-            ],
+            'enableCsrfValidation' => !YII_ENV_DEV, // Отключаем CSRF валидацию в dev, включаем в prod
         ],
         'session' => [
-            'cookieParams' => [
-                'httpOnly' => true,
-                'secure'   => true,
-                'sameSite' => yii\web\Cookie::SAME_SITE_LAX,
-            ],
+            'cookieParams' => array_merge([
+                                              'httpOnly' => true,
+                                              'secure'   => !YII_ENV_DEV, // Только для прода (HTTPS), для dev (HTTP) - false
+                                              'sameSite' => yii\web\Cookie::SAME_SITE_LAX,
+                                          ], !empty($params['cookieDomain']) ? ['domain' => $params['cookieDomain']] : []),
         ],
 //        'languagepicker'       => [
 //            'class'      => 'common\components\web\LanguagePicker',
@@ -127,9 +140,8 @@ $config = [
 //        ],
         'assetManager' => [
             'class' => 'yii\web\AssetManager',
-            'forceCopy' => false,
+            'forceCopy' => YII_DEBUG,
             'appendTimestamp' => true,
-            'linkAssets' => false, // Windows: никаких symlink
         ],
         'user' => [
             'identityClass'   => 'common\models\user\User',

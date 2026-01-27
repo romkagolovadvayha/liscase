@@ -1,0 +1,69 @@
+// Стили для Font Awesome иконок
+// Используются для специфичных иконок, которых нет в Material Icons
+
+// Font Awesome SVG иконки
+svg.svg-inline--fa {
+  display: inline-block;
+  font-size: inherit;
+  height: 1em;
+  overflow: visible;
+  vertical-align: -0.125em;
+}
+
+// Совместимость со старыми классами
+.icons_24px_steam {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  &.bg-white {
+    background-color: var(--primary-colors-white);
+    border-radius: 4px;
+    padding: 2px;
+  }
+}
+
+// Общие стили для Font Awesome иконок
+.icons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  
+  &_24px {
+    width: 24px;
+    height: 24px;
+    
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+  
+  &_16px {
+    width: 16px;
+    height: 16px;
+    
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+  
+  &_hover {
+    cursor: pointer;
+    transition: opacity 0.25s ease-in-out;
+    
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+}
+

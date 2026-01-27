@@ -1,10 +1,22 @@
-<div class="maps_content_list_item" data-id="{{ model.id }}">
+{% set isWinner = (maxVotes > 0 and model.votes > 0 and model.votes == maxVotes) %}
+{% set votePercent = (totalVotes > 0 and model.votes > 0) ? ((model.votes / totalVotes * 100)|round(1)) : 0 %}
+
+{# Debug: Map {{ model.id }}: votes={{ model.votes }}, totalVotes={{ totalVotes }}, maxVotes={{ maxVotes }}, percent={{ votePercent }} #}
+<div class="maps_content_list_item{{ isWinner ? ' map-winner' : '' }}" data-id="{{ model.id }}" data-votes="{{ model.votes }}" data-max="{{ maxVotes }}" data-percent="{{ votePercent }}">
+    {% if isWinner %}
+        <div class="map-winner-badge">
+            <i class="fas fa-crown"></i>
+            <span>{{ t('common', 'Лидирует') }}</span>
+        </div>
+    {% endif %}
+    
     <div class="maps_content_list_item_images">
         <a href="{{ model.getImage() }}" target="_blank" class="maps_content_list_item_images_image" title="{{ model.name }}">
             <img src="{{ model.getPreviewImage() }}" alt="{{ model.name }}">
             <div class="maps_content_list_item_images_image_hover"><i class="fas fa-search-plus"></i></div>
         </a>
     </div>
+    
     <div class="maps_content_list_item_footer">
         <div class="maps_content_list_item_footer_name">
             <a href="{{ model.link }}" target="_blank">
@@ -16,5 +28,13 @@
             </a>
         </div>
         {{ model.renderLike(this)|raw }}
+    </div>
+    
+    <div class="map-vote-progress">
+        <div class="map-vote-progress-bar" style="width: {{ votePercent }}%"></div>
+        <div class="map-vote-progress-text">
+            <span class="votes-count">{{ model.votes }}</span>
+            <span class="votes-percent">{{ votePercent }}%</span>
+        </div>
     </div>
 </div>

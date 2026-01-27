@@ -121,39 +121,38 @@ class BuildingForm extends Building
         if (empty($images)) {
             return null;
         }
+        $s3Api = Yii::$app->s3Api;
+        
         foreach ($images as $i => $image) {
             if (empty($image->tempName)) {
                 continue;
             }
-            $uploadDir = Yii::getAlias('@app/web/uploads');
+            
+            // Создаем временные файлы для обработки
+            $tempDir = sys_get_temp_dir();
+            $tempOriginal = $tempDir . '/' . uniqid('building_orig_') . '.png';
+            $tempPreview = $tempDir . '/' . uniqid('building_preview_') . '.png';
+            
             $fileName = "" . $this->id . "_" . md5(time() . $i) . ".png";
-            $filePath = $uploadDir . "/buildings/" . $fileName;
-            $filePathPreview = $uploadDir . "/buildings/preview_" . $fileName;
-            if (!file_exists(dirname($filePath))) {
-                mkdir(dirname($filePath));
-                chmod(dirname($filePath), 0777);
-            }
-            file_put_contents($filePath, file_get_contents($image->tempName));
-            $model = new BuildingImage();
-            $model->building_id = $id;
-            $model->image = $fileName;
-            $model->created_at = date(('Y-m-d H:i:s'));
-            $model->save();
-
+            
+            // Сохраняем оригинал во временный файл
+            file_put_contents($tempOriginal, file_get_contents($image->tempName));
+            
+            // Создаем превью
             $imagine = Image::getImagine();
-            $image = $imagine->open($filePath);
+            $img = $imagine->open($tempOriginal);
             $diffWidth = 1;
             $diffHeight = 1;
             $offestX = 0;
             $offestY = 0;
             $newWidth = 200;
             $newHeight = 200;
-            if ($image->getSize()->getWidth() > $image->getSize()->getHeight()) {
-                $diffWidth = $image->getSize()->getWidth() / $image->getSize()->getHeight();
+            if ($img->getSize()->getWidth() > $img->getSize()->getHeight()) {
+                $diffWidth = $img->getSize()->getWidth() / $img->getSize()->getHeight();
                 $newWidth = 200 * $diffWidth;
                 $offestX = $newWidth / 2 - 100;
             } else {
-                $diffHeight = $image->getSize()->getHeight() / $image->getSize()->getWidth();
+                $diffHeight = $img->getSize()->getHeight() / $img->getSize()->getWidth();
                 $newHeight = 200 * $diffHeight;
                 $offestY = $newHeight / 2 - 100;
             }
@@ -165,10 +164,35 @@ class BuildingForm extends Building
                 $offestX = 0;
             }
 
-            $image
+            $img
                 ->resize(new Box($newWidth, $newHeight))
                 ->crop(new Point($offestX, $offestY), new Box(200, 200))
-                ->save($filePathPreview, ['quality' => 70]);
+                ->save($tempPreview, ['quality' => 70]);
+            
+            // Загружаем оригинал в S3
+            $s3KeyOriginal = 'uploads/buildings/' . $fileName;
+            $originalContent = file_get_contents($tempOriginal);
+            $s3ResultOriginal = $s3Api->putFile($s3KeyOriginal, $originalContent, 'image/png');
+            
+            // Загружаем превью в S3
+            $s3KeyPreview = 'uploads/buildings/preview_' . $fileName;
+            $previewContent = file_get_contents($tempPreview);
+            $s3ResultPreview = $s3Api->putFile($s3KeyPreview, $previewContent, 'image/png');
+            
+            // Удаляем временные файлы
+            @unlink($tempOriginal);
+            @unlink($tempPreview);
+            
+            if ($s3ResultOriginal === false || $s3ResultPreview === false) {
+                Yii::error('Error uploading building image to S3', __METHOD__);
+                continue;
+            }
+            
+            $model = new BuildingImage();
+            $model->building_id = $id;
+            $model->image = $fileName;
+            $model->created_at = date(('Y-m-d H:i:s'));
+            $model->save();
 
             if ($i >= 3) {
                 break;

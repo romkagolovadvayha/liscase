@@ -15,6 +15,7 @@ class ChatController extends Controller
      */
     public function actionCheck()
     {
+        return;
         $date = new \DateTime();
         $date->modify('-10 minute');
         /** @var Chats[] $messages */

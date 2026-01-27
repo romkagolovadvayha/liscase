@@ -2,6 +2,7 @@
 
 /** @var yii\web\View $this */
 /** @var \frontend\forms\promocode\PromocodeForm $promocodeForm */
+/** @var \common\models\blog\Blog[] $latestPosts */
 
 use common\models\statistics\Statistics;
 use yii\bootstrap5\Html;
@@ -16,6 +17,11 @@ $this->title = Yii::t('database', Yii::$app->settings->get('site_title'));
 
 /** @var \common\models\box\Category[] $categories */
 $categories = \common\models\box\Category::getCategories(true);
+
+// Ensure latestPosts is defined
+if (!isset($latestPosts)) {
+    $latestPosts = [];
+}
 ?>
 <?php
 $locale = substr(Yii::$app->language, 0, 2);
@@ -31,13 +37,35 @@ $this->registerJs(<<<JS
             var left = moment.unix(dateTime);
             $(blocked_products[i]).html(left.locale('{$locale}').fromNow());
         }
+        var server_timers = $('.server_timer');
+        for (var i = 0; i < server_timers.length; i++) {
+            var dateTime = $(server_timers[i]).attr('data-time');
+            var left;
+            // Если dateTime - это timestamp (число), используем moment.unix, иначе moment с форматом
+            if (/^\d+$/.test(dateTime)) {
+                left = moment.unix(dateTime);
+            } else {
+                // Пробуем распарсить дату в формате Y-m-d H:i:s
+                left = moment(dateTime, 'YYYY-MM-DD HH:mm:ss');
+                if (!left.isValid()) {
+                    // Если не получилось, пробуем стандартный формат
+                    left = moment(dateTime);
+                }
+            }
+            if (left.isValid()) {
+                $(server_timers[i]).html(left.locale('{$locale}').fromNow());
+            }
+        }
 JS
 );
 //$getNextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate();
 $userData = [];
 $awards = [];
+$awardsStats = ['completed' => 0, 'total' => 0];
 $projectStats = Statistics::projectStats();
 $userStats = null;
+$activeVip = null;
+$activeVipTimestamp = null;
 if (!Yii::$app->user->isGuest) {
     $user = Yii::$app->user->identity;
     $userData = [
@@ -53,7 +81,66 @@ if (!Yii::$app->user->isGuest) {
                                ->cache(60)
                                ->all();
     }
-    $awards = \common\models\tasks\Task::awards($user->id, false);
+    // Получаем все активные задания из tasks_v2
+    $tasksV2 = \common\models\tasks_v2\TaskV2::find()
+        ->where(['is_active' => 1])
+        ->orderBy(['sort' => SORT_ASC])
+        ->all();
+
+    // Получаем выполненные задания пользователя
+    $userCompletions = \common\models\tasks_v2\TaskV2UserCompletion::find()
+        ->where(['user_id' => $user->id])
+        ->indexBy('task_id')
+        ->all();
+
+    // Формируем массив заданий с информацией о выполнении
+    $awardsList = [];
+    $completedAwardsList = [];
+    
+    foreach ($tasksV2 as $task) {
+        $completed = isset($userCompletions[$task->id]) && $userCompletions[$task->id]->count_completed > 0;
+        
+        // Получаем изображение задания
+        $image = $task->getImageUrl();
+        
+        $awardData = [
+            'id' => $task->id,
+            'name' => $task->title,
+            'image' => $image,
+            'completed' => $completed,
+        ];
+        
+        $awardsList[] = $awardData;
+        
+        // Если задание выполнено, добавляем в отдельный список
+        if ($completed) {
+            $completedAwardsList[] = $awardData;
+        }
+    }
+
+    // Берем только выполненные задания (не более 7)
+    $awards = array_slice($completedAwardsList, 0, 7);
+    
+    // Подсчитываем статистику
+    $totalTasks = count($awardsList);
+    $completedTasks = count($completedAwardsList);
+    
+    $awardsStats = [
+        'completed' => $completedTasks,
+        'total' => $totalTasks,
+    ];
+    // Получаем активный VIP
+    $activeVip = $user->getActiveVip();
+    // Если VIP найден, вычисляем timestamp для JavaScript
+    if ($activeVip && !empty($activeVip->expires_at)) {
+        // Конвертируем expires_at в timestamp для JavaScript
+        if (is_numeric($activeVip->expires_at)) {
+            $activeVipTimestamp = (int)$activeVip->expires_at;
+            $activeVip->expires_at = date('Y-m-d H:i:s', $activeVip->expires_at);
+        } else {
+            $activeVipTimestamp = strtotime($activeVip->expires_at);
+        }
+    }
 }
 
 $servers = Servers::find()
@@ -81,6 +168,40 @@ $images = Drop::productsImages();
 $SETTINGS = Yii::$app->settings;
 $canonical = Yii::$app->params['homePage'];
 $this->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
+
+// Получаем список избранных товаров для текущего пользователя
+$favoriteDropIds = [];
+if (!Yii::$app->user->isGuest) {
+    $favoriteDropIds = \common\models\box\DropFavorite::getFavoriteDropIds(Yii::$app->user->id);
+}
+
+// Функция для сортировки товаров: сначала избранные
+$sortProductsByFavorite = function($products, $favoriteIds) {
+    if (empty($favoriteIds)) {
+        return $products;
+    }
+    
+    $favorites = [];
+    $others = [];
+    
+    foreach ($products as $product) {
+        if (in_array($product->id, $favoriteIds)) {
+            $favorites[] = $product;
+        } else {
+            $others[] = $product;
+        }
+    }
+    
+    // Сначала избранные, потом остальные
+    return array_merge($favorites, $others);
+};
+
+// Получаем товары и сортируем их
+$productsMain = Drop::getForMarket(true);
+$productsMain = $sortProductsByFavorite($productsMain, $favoriteDropIds);
+
+$products = Drop::getForMarket();
+$products = $sortProductsByFavorite($products, $favoriteDropIds);
 ?>
 
 <?php //if (!empty($getNextOpenFreeBoxDate)) {
@@ -97,14 +218,18 @@ $this->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
 //    'ROULETTE_ACCESS' => !empty($getNextOpenFreeBoxDate),
     'USER_GUEST' => Yii::$app->user->isGuest,
     'PRODUCTS_MAIN_BLOCK' => Yii::$app->view->render('products_main.twig', [
-        'PRODUCT_DROPS' => Drop::getForMarket(true),
+        'PRODUCT_DROPS' => $productsMain,
         'IMAGES' => $images,
         'SETTINGS' => $SETTINGS,
+        'FAVORITE_IDS' => $favoriteDropIds,
+        'USER_GUEST' => Yii::$app->user->isGuest,
     ]),
     'PRODUCTS' => Yii::$app->view->render('products.twig', [
-        'PRODUCT_DROPS' => Drop::getForMarket(),
+        'PRODUCT_DROPS' => $products,
         'IMAGES' => $images,
         'SETTINGS' => $SETTINGS,
+        'FAVORITE_IDS' => $favoriteDropIds,
+        'USER_GUEST' => Yii::$app->user->isGuest,
     ]),
     'CATEGORIES' => Yii::$app->view->render('categories.twig', [
         'ITEMS' => $categories,
@@ -118,8 +243,12 @@ $this->registerLinkTag(['rel' => 'canonical', 'href' => $canonical]);
         'USER_STATS' => $userStats,
         'STATS' => new Statistics(),
         'AWARDS' => $awards,
+        'AWARDS_STATS' => $awardsStats,
         'SETTINGS' => $SETTINGS,
+        'ACTIVE_VIP' => $activeVip,
+        'ACTIVE_VIP_TIMESTAMP' => $activeVipTimestamp,
     ]),
+    'latestPosts' => $latestPosts ?? [],
     'SETTINGS' => $SETTINGS,
     'LOGO' => Yii::$app->settings->get('design_logo'),
     'PROJECT_NAME' => Yii::$app->settings->get('site_project_name'),

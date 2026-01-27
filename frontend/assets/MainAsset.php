@@ -27,7 +27,10 @@ class MainAsset extends AssetBundle
             'js/clipboard.min.js?v=' . \Yii::$app->settings->get('site_version'),
             'js/design/main.js?v=' . \Yii::$app->settings->get('site_version'),
             'js/design/menu.js?v=' . \Yii::$app->settings->get('site_version'),
+            'js/snow.js?v=' . \Yii::$app->settings->get('site_version'),
             'js/main.js?v=' . \Yii::$app->settings->get('site_version'),
+            'js/favorite.js?v=' . \Yii::$app->settings->get('site_version'),
+            'js/year-review-modal.js?v=' . \Yii::$app->settings->get('site_version'),
         ];
         $this->css = [
             ['css/design/styles-local.min.css?v=' . \Yii::$app->settings->get('site_version'), 'rel' => 'preload', 'as' => 'style', 'onload' => "this.onload=null;this.rel='stylesheet'"],

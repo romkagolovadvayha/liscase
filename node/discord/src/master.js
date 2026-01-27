@@ -1,11 +1,13 @@
 const { fork } = require("child_process");
 const mysql = require("mysql");
 
-const con = mysql.createConnection({
+const pool = mysql.createPool({
     host: process.argv[2],
     user: process.argv[3],
     password: process.argv[4],
-    database: process.argv[5]
+    database: process.argv[5],
+    connectionLimit: 10,
+    queueLimit: 0,
 });
 
 const runningBots = new Map(); // tag -> child_process

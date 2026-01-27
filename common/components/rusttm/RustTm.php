@@ -18,7 +18,7 @@ class RustTm
     /**
      * {@inheritdoc}
      */
-    public function history($date): array
+    public function history($date = null): array
     {
         $secretKey = Yii::$app->settings->get('rusttm_secretKey');
         $url = $this->baseUrl . "/history?key={$secretKey}";
@@ -37,18 +37,40 @@ class RustTm
         $secretKey = Yii::$app->settings->get('rusttm_secretKey');
         $name = rawurlencode($name);
         $url = $this->baseUrl . "/buy-for?key={$secretKey}&hash_name=".$name."&price={$price}&partner={$partner}&token={$token}";
-        $response = Yii::$app->curl->get($url);
-        if (empty($response)) {
-            sleep(2);
+        $attempts = [0, 2, 3];
+        $response = null;
+        foreach ($attempts as $sleep) {
+            if ($sleep > 0) {
+                sleep($sleep);
+            }
             $response = Yii::$app->curl->get($url);
-            Yii::error('RustTm buy 2: ' .  $response);
+            if (!empty($response)) {
+                break;
+            }
+            Yii::error(sprintf('RustTm buy empty response (sleep %d): %s', $sleep, $response), __METHOD__);
         }
+
         if (empty($response)) {
-            sleep(3);
-            $response = Yii::$app->curl->get($url);
-            Yii::error('RustTm buy 3: ' .  $response);
+            Yii::error('RustTm buy failed: empty response after retries', __METHOD__);
+            return [
+                'success' => false,
+                'error' => 'empty_response',
+                'message' => 'Rust.tm returned empty response',
+            ];
         }
-        return json_decode($response, 1);
+
+        $decoded = json_decode($response, true);
+        if (!is_array($decoded)) {
+            Yii::error('RustTm buy invalid JSON: ' . $response, __METHOD__);
+            return [
+                'success' => false,
+                'error' => 'invalid_json',
+                'message' => 'Rust.tm returned invalid response',
+                'raw' => $response,
+            ];
+        }
+
+        return $decoded;
     }
 
     /**
@@ -57,7 +79,26 @@ class RustTm
     public function prices(): array
     {
         $uploadDir = Yii::getAlias('@frontend/web/uploads/prices');
-        return json_decode(file_get_contents($uploadDir . '/rusttm.json'), true);
+        $file = $uploadDir . '/rusttm.json';
+
+        if (!is_file($file)) {
+            Yii::error('RustTm prices file not found: ' . $file, __METHOD__);
+            return [];
+        }
+
+        $content = file_get_contents($file);
+        if ($content === false) {
+            Yii::error('RustTm prices failed to read file: ' . $file, __METHOD__);
+            return [];
+        }
+
+        $decoded = json_decode($content, true);
+        if (!is_array($decoded)) {
+            Yii::error('RustTm prices invalid JSON: ' . $content, __METHOD__);
+            return [];
+        }
+
+        return $decoded;
     }
 
     public function categories(): array
@@ -71,17 +112,82 @@ class RustTm
     }
 
     /**
+     * Справочник переводов типов предметов Rust
+     * @return array
+     */
+    public static function getItemTypeTranslations(): array
+    {
+        return [
+            'Armor' => 'Броня',
+            'Hat' => 'Шляпа',
+            'Mask' => 'Маска',
+            'Backpack' => 'Рюкзак',
+            'Tool' => 'Инструмент',
+            'Resource' => 'Ресурс',
+            'Food' => 'Еда',
+            'Medical' => 'Медицина',
+            'Construction' => 'Конструкция',
+            'Electrical' => 'Электрика',
+            'Fun' => 'Развлечение',
+            'Misc' => 'Прочее',
+            'Component' => 'Компонент',
+            'Ammunition' => 'Боеприпасы',
+            'Attire' => 'Одежда',
+            'Common' => 'Обычный',
+            'Uncommon' => 'Необычный',
+            'Rare' => 'Редкий',
+            'Very Rare' => 'Очень редкий',
+            'Legendary' => 'Легендарный',
+            'Weapon' => 'Оружие',
+            'Clothing' => 'Одежда',
+            'Tool' => 'Инструмент',
+            'Resource' => 'Ресурс',
+            'Food' => 'Еда',
+            'Medical' => 'Медицина',
+            'Construction' => 'Конструкция',
+            'Electrical' => 'Электрика',
+            'Fun' => 'Развлечение',
+            'Misc' => 'Прочее',
+            'Component' => 'Компонент',
+            'Ammunition' => 'Боеприпасы',
+            'Attire' => 'Одежда',
+            'Common' => 'Обычный',
+            'Uncommon' => 'Необычный',
+            'Rare' => 'Редкий',
+            'Very Rare' => 'Очень редкий',
+            'Legendary' => 'Легендарный',
+        ];
+    }
+
+    /**
+     * Получить перевод типа предмета
+     * @param string $type
+     * @return string
+     */
+    public static function translateItemType(string $type): string
+    {
+        $translations = self::getItemTypeTranslations();
+        return $translations[$type] ?? $type;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function items(): array
     {
         $cacheKey = "RustTm4_items";
         $cacheKeyCategories = "RustTm5_categories";
-        if (Yii::$app->cache->get($cacheKey)) {
-            return Yii::$app->cache->get($cacheKey);
+        $cachedItems = Yii::$app->cache->get($cacheKey);
+        if ($cachedItems) {
+            return $cachedItems;
         }
         $result = [];
-        $items = $this->prices()['items'];
+        $prices = $this->prices();
+        if (empty($prices['items']) || !is_array($prices['items'])) {
+            Yii::error('RustTm items(): prices item list is empty', __METHOD__);
+            return [];
+        }
+        $items = $prices['items'];
         $itemsName = [];
         $categories = [];
         foreach ($items as $id => $item) {
@@ -161,6 +267,7 @@ class RustTm
                 "ru_name" => $titleRu,
                 "market_hash_name" => $item['market_hash_name'],
                 "category" => $category,
+                // Округляем цену в большую сторону (умножаем на 1.3 и применяем ceil)
                 "price" => ceil($item['price'] * 1.3),
                 "popularity_7d" => $item['popularity_7d'],
                 "ru_quality" => $item['ru_quality'],

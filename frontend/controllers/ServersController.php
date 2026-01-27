@@ -4,8 +4,10 @@ namespace frontend\controllers;
 
 use common\controllers\WebController;
 use common\models\servers\Servers;
+use common\models\servers\ServersTags;
 use common\models\stats\Teams;
 use common\models\stats\Wipe;
+use frontend\assets\MapsV2Asset;
 use yii\web\NotFoundHttpException;
 use Yii;
 
@@ -31,13 +33,44 @@ class ServersController extends WebController
      */
     public function actionIndex()
     {
-        $servers = Servers::find()
-                          ->cache(30)
-                          ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
-                          ->orderBy(['sort' => SORT_ASC])
-                          ->all();
+        $cache = Yii::$app->cache;
+        $cacheKey = 'servers/index:data';
 
-        $projectStats = \common\models\statistics\Statistics::projectStats();
+        $cached = $cache->get($cacheKey);
+        if ($cached) {
+            [$servers, $projectStats, $serversLd] = $cached;
+        } else {
+            $servers = Servers::find()
+                              ->with([
+                                  'serversTags',
+                                  'mapEntity',
+                                  'mapList',
+                              ])
+                              ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+                              ->orderBy(['sort' => SORT_ASC])
+                              ->all();
+
+            $projectStats = \common\models\statistics\Statistics::projectStats();
+
+            $serversLd = [];
+            foreach ($servers as $s) {
+                $status = $s->status == Servers::STATUS_ACTIVE ? 'Online' :
+                    ($s->status == Servers::STATUS_WAIT ? 'Maintenance' : 'Offline');
+
+                $serversLd[] = [
+                    '@type' => 'GameServer',
+                    'name'  => Yii::t('database', $s->monitoring_description) . ' [' . Yii::t('database', $s->monitoring_name) . ']',
+                    'game'  => ['@type' => 'VideoGame', 'name' => 'Rust'],
+                    'serverStatus' => 'https://schema.org/' . $status,
+                    'playersOnline' => (int)($s->players + $s->joined),
+                    'maximumAttendeeCapacity' => (int)$s->max,
+                    'url'   => Yii::$app->params['homePage'] . $s->getLink('stats'),
+                    'address' => $s->ip . ':' . $s->port
+                ];
+            }
+
+            $cache->set($cacheKey, [$servers, $projectStats, $serversLd], 180);
+        }
         $this->view->title = Yii::t('common', 'Сервера Rust | Выберите сервер для комфортной игры');
         $this->view->params['page'] = 'servers';
         $this->view->params['meta_description'] = Yii::t('common', "Список всех наших серверов Rust с подробным описанием, датами вайпов и IP-адресами. Узнайте, когда следующий вайп, подключитесь к любимому серверу и начните играть уже сегодня!");
@@ -58,29 +91,6 @@ class ServersController extends WebController
         $view->registerMetaTag(['name'=>'twitter:card','content'=>'summary_large_image']);
         $view->registerMetaTag(['name'=>'twitter:title','content'=>$this->view->title]);
         $view->registerMetaTag(['name'=>'twitter:description','content'=>$this->view->params['meta_description']]);
-
-        $nowIso = date(DATE_ATOM);
-        $game = [
-            '@type' => 'VideoGame',
-            'name'  => 'Rust'
-        ];
-
-        $serversLd = [];
-        foreach ($servers as $s) {
-            $status = $s->status == \common\models\servers\Servers::STATUS_ACTIVE ? 'Online' :
-                ($s->status == \common\models\servers\Servers::STATUS_WAIT ? 'Maintenance' : 'Offline');
-
-            $serversLd[] = [
-                '@type' => 'GameServer',
-                'name'  => Yii::t('database', $s->monitoring_description) . ' [' . Yii::t('database', $s->monitoring_name) . ']',
-                'game'  => $game,
-                'serverStatus' => 'https://schema.org/' . $status,
-                'playersOnline' => (int)($s->players + $s->joined),
-                'maximumAttendeeCapacity' => (int)$s->max,
-                'url'   => Yii::$app->params['homePage'] . $s->getLink('stats'),
-                'address' => $s->ip . ':' . $s->port
-            ];
-        }
 
         // Хлебные крошки — ок
         $breadcrumbLd = [
@@ -131,6 +141,17 @@ class ServersController extends WebController
         // Отдавай оба (двумя <script>), если нужно:
         $this->view->params['ld_json'] = [$breadcrumbLd, $itemListLd, $gameServersGraph];
 
+        // Регистрируем MapsV2Asset для работы модального окна с деталями карты
+        $hasFixedMap = false;
+        foreach ($servers as $server) {
+            if ($server->map_list_id && $server->mapList) {
+                $hasFixedMap = true;
+                break;
+            }
+        }
+        if ($hasFixedMap) {
+            MapsV2Asset::register($this->view);
+        }
 
         return $this->render('servers-list.twig', [
             'SERVERS' => $servers,
@@ -201,6 +222,51 @@ class ServersController extends WebController
             'SERVER' => $server,
             'SERVERS' => $servers,
             'COMMANDS' => $commands,
+        ]);
+    }
+
+    /**
+     * @param $tagLink
+     *
+     * @return string
+     * @throws NotFoundHttpException
+     */
+    public function actionTag($tagLink)
+    {
+        /** @var ServersTags $serversTag */
+        $serversTag = ServersTags::find()
+                          ->with([
+                              'servers' => function($query) {
+                                  $query->with('mapList');
+                              }
+                          ])
+                          ->cache(30)
+                          ->andWhere(['IN', 'status', [ServersTags::STATUS_ACTIVE]])
+                          ->andWhere(['link_name' => $tagLink])
+                          ->one();
+
+        if (empty($serversTag)) {
+            throw new NotFoundHttpException(Yii::t('common', 'Страница не найдена!'));
+        }
+        $this->view->title = Yii::t('database', $serversTag->title);
+        $this->view->params['meta_description'] = Yii::t('database', $serversTag->short_description);
+
+        // Регистрируем MapsV2Asset для работы модального окна с деталями карты
+        $hasFixedMap = false;
+        if ($serversTag->servers) {
+            foreach ($serversTag->servers as $server) {
+                if ($server->map_list_id && $server->mapList) {
+                    $hasFixedMap = true;
+                    break;
+                }
+            }
+        }
+        if ($hasFixedMap) {
+            MapsV2Asset::register($this->view);
+        }
+
+        return $this->render('tag.twig', [
+            'TAG' => $serversTag,
         ]);
     }
 

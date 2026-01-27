@@ -72,6 +72,11 @@ function connectWebRcon(tag, ip, port, password) {
 // Отправка команды
 function sendCommand(ws, command, timeout = 3000) {
     return new Promise((resolve, reject) => {
+        // Проверяем состояние WebSocket перед отправкой
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            return reject(new Error('WebSocket соединение не открыто'));
+        }
+
         const id = Math.floor(Math.random() * 1000000000);
         const payload = {
             Identifier: id,
@@ -84,27 +89,54 @@ function sendCommand(ws, command, timeout = 3000) {
         const onMessage = data => {
             try {
                 const msg = JSON.parse(data.toString());
-                if ((msg.Type === 1 || msg.Type === "Generic") && msg.Identifier === id && typeof msg.Message === 'string') {
+                // Более гибкая проверка идентификатора (может быть строкой или числом)
+                const msgId = msg.Identifier;
+                const isMatch = msgId == id || String(msgId) === String(id);
+                
+                // Проверяем тип сообщения и идентификатор
+                if ((msg.Type === 1 || msg.Type === "Generic" || msg.Type === 0) && isMatch) {
                     resolved = true;
                     ws.removeListener('message', onMessage);
-                    resolve(msg.Message);
+                    const result = typeof msg.Message === 'string' ? msg.Message : JSON.stringify(msg.Message || '');
+                    resolve(result);
                 }
-            } catch (e) {}
+            } catch (e) {
+                // Игнорируем ошибки парсинга других сообщений
+            }
         };
 
         ws.on('message', onMessage);
 
-        ws.send(JSON.stringify(payload), err => {
-            if (err) {
+        // Проверяем состояние перед отправкой
+        if (ws.readyState !== WebSocket.OPEN) {
+            resolved = true;
+            ws.removeListener('message', onMessage);
+            return reject(new Error('WebSocket соединение закрыто перед отправкой'));
+        }
+
+        try {
+            ws.send(JSON.stringify(payload), err => {
+                if (err) {
+                    if (!resolved) {
+                        resolved = true;
+                        ws.removeListener('message', onMessage);
+                        reject(err);
+                    }
+                }
+            });
+        } catch (err) {
+            if (!resolved) {
+                resolved = true;
                 ws.removeListener('message', onMessage);
-                return reject(err);
+                reject(err);
             }
-        });
+        }
 
         setTimeout(() => {
             if (!resolved) {
+                resolved = true;
                 ws.removeListener('message', onMessage);
-                reject(new Error("RCON timeout (нет ответа от сервера)"));
+                reject(new Error(`RCON timeout (нет ответа от сервера за ${timeout}ms)`));
             }
         }, timeout);
     });
@@ -137,19 +169,41 @@ async function processQueue(tag) {
     }
 }
 
+// Создаем пул соединений
+let dbPool = null;
+
+function getDbPool() {
+    if (!dbPool) {
+        dbPool = mysql.createPool({
+            ...dbConfig,
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0,
+            enableKeepAlive: true,
+            keepAliveInitialDelay: 0,
+        });
+    }
+    return dbPool;
+}
+
 // Основной запуск
 // Основной запуск
 (async () => {
-    let db;
+    const pool = getDbPool();
+    console.log("✅ Пул соединений к БД создан");
+
+    let servers;
     try {
-        db = await mysql.createConnection(dbConfig);
-        console.log("✅ Подключение к БД");
+        const connection = await pool.getConnection();
+        try {
+            servers = await getServersFromDB(connection);
+        } finally {
+            connection.release();
+        }
     } catch (err) {
         console.error('❌ Ошибка подключения к БД:', err.message);
-        process.exit(1); // можно также переподключаться с интервалом
+        process.exit(1);
     }
-
-    const servers = await getServersFromDB(db);
 
     for (const server of servers) {
         try {
@@ -175,11 +229,29 @@ async function processQueue(tag) {
             return res.status(400).json({ success: false, error: 'Нет активного соединения с сервером' });
         }
 
+        // Таймаут для всего запроса (10 секунд)
+        const requestTimeout = setTimeout(() => {
+            if (!res.headersSent) {
+                res.status(500).json({ success: false, error: 'Таймаут запроса (10 секунд)' });
+            }
+        }, 10000);
+
+        let responseSent = false;
+        const sendResponse = (data) => {
+            if (!responseSent) {
+                responseSent = true;
+                clearTimeout(requestTimeout);
+                if (!res.headersSent) {
+                    res.json(data);
+                }
+            }
+        };
+
         try {
-            const result = await enqueueCommand(server, () => sendCommand(ws, command));
-            return res.json({ success: true, result });
+            const result = await enqueueCommand(server, () => sendCommand(ws, command, 8000));
+            sendResponse({ success: true, result });
         } catch (err) {
-            return res.json({ success: false, error: err.message });
+            sendResponse({ success: false, error: err.message });
         }
     });
 

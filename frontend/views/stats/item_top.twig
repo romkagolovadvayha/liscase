@@ -4,8 +4,8 @@
     <ol class="the-best__list">
         {% for ITEM in ITEMS %}
         <li>
-            <a href="{{ ITEM.link }}" rel="nofollow" class="the-best__list__item__wrap{% if not ITEM.status %} the-best__list__item_offline{% endif %}">
-                <div class="the-best__list__avatar">
+            <a href="{{ ITEM.link }}" rel="nofollow" class="the-best__list__item__wrap{% if ITEM.is_hidden %} the-best__list__item_hidden{% elseif not ITEM.status %} the-best__list__item_offline{% endif %}"{% if ITEM.is_hidden %} title="{{ t('common', 'Статус онлайн/оффлайн скрыт') }}" data-bs-toggle="tooltip" data-bs-placement="top"{% endif %}>
+                <div class="the-best__list__avatar{% if ITEM.is_hidden %} the-best__list__avatar_hidden{% endif %}">
                     <img src="{{ ITEM.avatar }}" alt="{{ ITEM.username }}" />
                 </div>
                 <div class="the-best__list__item{% if ITEM.steam_id == USER.steam_id %} active{% endif %}">

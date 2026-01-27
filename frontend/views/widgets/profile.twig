@@ -1,8 +1,21 @@
 {{ use('common/components/widgets') }}
 
 <section class="stats-aside__stat-block stat-block stat-block-profile">
-    <div class="stat-block-profile-image">
-        <img src="{{ userData.avatar }}"/>
+    <div class="stat-block-profile-header">
+        <div class="stat-block-profile-image">
+            <img src="{{ userData.avatar }}" alt="{{ userData.username }}"/>
+        </div>
+        <div class="stat-block-profile-info">
+            <h3 class="stat-block-profile-username">{{ userData.username }}</h3>
+            <div class="stat-block-profile-server">
+                <span class="stat-block-profile-server-label">{{ t('common', 'Ваш сервер') }}:</span>
+                {% if userData.server %}
+                    <span class="stat-block-profile-server-name">{{ t('database', userData.server.monitoring_name) }}</span>
+                {% else %}
+                    <span class="stat-block-profile-server-name stat-block-profile-server-name--empty">{{ t('common', 'не выбран') }}</span>
+                {% endif %}
+            </div>
+        </div>
     </div>
     {{ nav_menu_widget({
         'options': {
@@ -21,7 +34,7 @@
             },
             {
                 'label': t('common', 'Бонусы и задания'),
-                'url': "/user/tasks",
+                'url': "/tasks-v2",
                 'iconClass': 'icons icons_16px fa-solid fa-gift',
                 'activeClass': 'active',
                 'active': PAGE == 'user-task',
@@ -30,10 +43,10 @@
             },
             {
                 'label': t('common', 'Моя корзина'),
-                'url': "/user/inventory",
+                'url': "/store",
                 'iconClass': 'icons icons_16px fa-solid fa-basket-shopping',
                 'activeClass': 'active',
-                'active': PAGE == 'user-inventory',
+                'active': PAGE == 'store',
                 'spanClass': 'stat-block-profile-menu__item-text',
                 'options': {'class': 'stat-block-profile-menu__item'},
             },
@@ -56,27 +69,22 @@
                 'spanClass': 'stat-block-profile-menu__item-text',
                 'options': {'class': 'stat-block-profile-menu__item'},
             },
-            {
-                'label': t('common', 'Выдача скинов Rust'),
-                'url': "/user/skins?type=rust",
-                'iconClass': 'icons icons_16px fas fa-donate',
-                'activeClass': 'active',
-                'active': PAGE == 'user-skins-rust',
-                'visibility': SETTINGS.get('section_skindrops'),
-                'spanClass': 'stat-block-profile-menu__item-text',
-                'options': {'class': 'stat-block-profile-menu__item'},
-            },
-            {
-                'label': t('common', 'Выдача скинов CS2'),
-                'url': "/user/skins?type=csgo",
-                'iconClass': 'icons icons_16px fas fa-donate',
-                'activeClass': 'active',
-                'active': PAGE == 'user-skins-csgo',
-                'visibility': SETTINGS.get('section_skindrops'),
-                'spanClass': 'stat-block-profile-menu__item-text',
-                'options': {'class': 'stat-block-profile-menu__item'},
-            },
         ]
     })
     }}
+    {% if SETTINGS.get('section_skindrops') %}
+        <div class="stat-block-profile-skins">
+            <h4 class="stat-block-profile-skins__title">{{ t('common', 'Выдача скинов') }}</h4>
+            <div class="stat-block-profile-skins__items">
+                <a href="/user/skins?type=rust" class="stat-block-profile-skins__item{% if PAGE == 'user-skins-rust' %} active{% endif %}">
+                    <i class="icons icons_16px fas fa-donate"></i>
+                    <span class="stat-block-profile-skins__item-text">{{ t('common', 'Rust') }}</span>
+                </a>
+                <a href="/user/skins?type=csgo" class="stat-block-profile-skins__item{% if PAGE == 'user-skins-csgo' %} active{% endif %}">
+                    <i class="icons icons_16px fas fa-donate"></i>
+                    <span class="stat-block-profile-skins__item-text">{{ t('common', 'CS2') }}</span>
+                </a>
+            </div>
+        </div>
+    {% endif %}
 </section>

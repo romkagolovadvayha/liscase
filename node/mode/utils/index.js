@@ -11,3 +11,6 @@ exports.discardFirstWord = str => str.substring(str.indexOf(' ') + 1);
 exports.getFirstWord = str => str.split(' ')[0];
 
 exports.generateRandomId = () => Math.random().toString(36).slice(2);
+
+// Экспорт модуля метаданных с использованием node-internet-radio
+exports.Metadata = require('./metadata');

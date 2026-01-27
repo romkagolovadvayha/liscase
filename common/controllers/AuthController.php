@@ -4,6 +4,7 @@ namespace common\controllers;
 
 use common\components\oauth\AuthAction;
 use common\components\oauth\Steam;
+use common\components\queue\process\DiscordRolesUserJob;
 use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\forms\user\LoginForm;
 use common\models\profit\Profit;
@@ -52,7 +53,7 @@ class AuthController extends WebController
                         'roles'   => ['?'],
                     ],
                     [
-                        'actions' => ['login-success', 'logout', 'oauth', 'two-step-scan', 'disable-two-step-auth'],
+                        'actions' => ['login-success', 'logout', 'oauth', 'two-step-scan', 'disable-two-step-auth', 'discord', 'discord-callback'],
                         'allow'   => true,
                         'roles'   => ['@'],
                     ],
@@ -89,6 +90,195 @@ class AuthController extends WebController
             return $this->redirect($this->onAuthSuccess($_SESSION['steamdata']['steamid']));
         }
         return $this->redirect($steam->loginUrl());
+    }
+
+    /**
+     * Discord OAuth авторизация
+     */
+    public function actionDiscord()
+    {
+        // Детальное логирование для отладки
+        if (Yii::$app->user->isGuest) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Для привязки Discord необходимо быть авторизованным.'));
+            return $this->redirect(['/']);
+        }
+
+        $clientId = Yii::$app->settings->get('discord_client_id');
+        // Используем frontend для redirectUri
+        $baseUrl = Yii::$app->params['homePage'] ?? 'https://prostoj.store';
+        $redirectUri = $baseUrl . '/auth/discord-callback';
+        $userId = Yii::$app->user->id;
+
+        if (empty($clientId)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Discord OAuth не настроен. Обратитесь к администратору.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        // Сохраняем user_id в сессии для последующей привязки
+        Yii::$app->session->set('discord_oauth_user_id', $userId);
+
+        // Сохраняем состояние для защиты от CSRF в cookie
+        // Используем cookie вместо сессии, чтобы state сохранялся при редиректе от Discord
+        $state = Yii::$app->security->generateRandomString(32);
+        Cookie::add('discord_oauth_state', $state, true, 10); // 10 минут, с mainDomain для работы на всех поддоменах
+
+        $params = [
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'response_type' => 'code',
+            'scope' => 'identify',
+            'state' => $state,
+        ];
+
+        $authUrl = 'https://discord.com/api/oauth2/authorize?' . http_build_query($params);
+
+        return $this->redirect($authUrl);
+    }
+
+    /**
+     * Discord OAuth callback
+     */
+    public function actionDiscordCallback()
+    {
+        if (Yii::$app->user->isGuest) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Для привязки Discord необходимо быть авторизованным.'));
+            return $this->redirect(['/']);
+        }
+
+        $code = Yii::$app->request->get('code');
+        $state = Yii::$app->request->get('state');
+        $error = Yii::$app->request->get('error');
+
+        if (!empty($error)) {
+            // access_denied - это нормальная ситуация, когда пользователь отменяет авторизацию
+            if ($error === 'access_denied') {
+                Yii::info("Discord OAuth: User cancelled authorization", __METHOD__);
+                Yii::$app->session->setFlash('info', Yii::t('common', 'Авторизация Discord отменена. Вы можете привязать Discord аккаунт позже.'));
+            } else {
+                Yii::warning("Discord OAuth error: {$error}", __METHOD__);
+                $errorDescription = Yii::$app->request->get('error_description', $error);
+                Yii::$app->session->setFlash('warning', Yii::t('common', 'Ошибка при авторизации Discord: {error}', ['error' => $errorDescription]));
+            }
+            return $this->redirect(['/user/profile']);
+        }
+
+        // Проверяем state для защиты от CSRF (читаем из cookie)
+        $savedState = Cookie::getValue('discord_oauth_state');
+        if (empty($state) || $state !== $savedState) {
+            Yii::error("Discord OAuth state mismatch. State: {$state}, Saved: " . ($savedState ?? 'empty'), __METHOD__);
+            Cookie::remove('discord_oauth_state');
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка безопасности при авторизации Discord.'));
+            return $this->redirect(['/user/profile']);
+        }
+        Cookie::remove('discord_oauth_state');
+
+        if (empty($code)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Код авторизации Discord не получен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $clientId = Yii::$app->settings->get('discord_client_id');
+        $clientSecret = Yii::$app->settings->get('discord_client_secret');
+        $baseUrl = Yii::$app->params['homePage'] ?? 'https://prostoj.store';
+        $redirectUri = $baseUrl . '/auth/discord-callback';
+
+        if (empty($clientId) || empty($clientSecret)) {
+            Yii::error("Discord OAuth not configured", __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Discord OAuth не настроен. Обратитесь к администратору.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        // Обмениваем код на токен
+        $tokenUrl = 'https://discord.com/api/oauth2/token';
+        $tokenParams = [
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'grant_type' => 'authorization_code',
+            'code' => $code,
+            'redirect_uri' => $redirectUri,
+        ];
+
+        $ch = curl_init($tokenUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($tokenParams));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/x-www-form-urlencoded',
+        ]);
+
+        $tokenResponse = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            Yii::error("Discord OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}, cURL Error: {$curlError}", __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении токена Discord.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $tokenData = json_decode($tokenResponse, true);
+        if (empty($tokenData['access_token'])) {
+            Yii::error("Discord OAuth: no access_token in response", __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Токен Discord не получен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        // Получаем информацию о пользователе Discord
+        $userUrl = 'https://discord.com/api/v10/users/@me';
+        $ch = curl_init($userUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $tokenData['access_token'],
+        ]);
+
+        $userResponse = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            Yii::error("Discord API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении данных пользователя Discord.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $discordUser = json_decode($userResponse, true);
+        if (empty($discordUser['id'])) {
+            Yii::error("Discord OAuth: no user id in response", __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('common', 'ID пользователя Discord не получен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        // Сохраняем discord_id
+        $userId = Yii::$app->session->get('discord_oauth_user_id');
+        if (empty($userId)) {
+            $userId = Yii::$app->user->id;
+        }
+        Yii::$app->session->remove('discord_oauth_user_id');
+
+        $user = User::findOne($userId);
+        if ($user) {
+            $user->discord_id = $discordUser['id'];
+            if ($user->save(false)) {
+                // Выдаем роль в Discord
+                $this->assignDiscordRole($discordUser['id']);
+                
+                // Добавляем задачу в очередь для проверки ролей
+                $checkRolesJob = new DiscordRolesUserJob();
+                $checkRolesJob->userId = $user->id;
+                Yii::$app->queueProcess->push($checkRolesJob);
+                
+                Yii::$app->session->setFlash('success', Yii::t('common', 'Discord аккаунт успешно привязан!'));
+            } else {
+                Yii::error("Discord OAuth: Failed to save discord_id. Errors: " . json_encode($user->getErrors()), __METHOD__);
+                Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при сохранении Discord ID.'));
+            }
+        } else {
+            Yii::error("Discord OAuth: User not found. userId={$userId}", __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Пользователь не найден.'));
+        }
+
+        return $this->redirect(['/user/profile']);
     }
 
     public function init()
@@ -185,10 +375,10 @@ class AuthController extends WebController
                         UserTree::appendUser($user->id, 509);
                     }
                     UserProfile::createModel($user, $username);
-                    try {
-                        $avatar = $this->_loadImage($avatarLink, $steamId);
-                        $user->userProfile->avatar = $avatar;
-                    } catch (\Exception $ex) {}
+                    // Сохраняем URL аватара из Steam вместо загрузки на сервер
+                    if (!empty($avatarLink)) {
+                        $user->userProfile->steam_avatar_url = $avatarLink;
+                    }
                     $user->userProfile->save();
                     $auth = new Auth(
                         [
@@ -369,20 +559,24 @@ class AuthController extends WebController
     public function actionSwitchIdentity($authKey, $parentUser = null)
     {
         $user = (new User())->findByAuthKey($authKey);
+        
+        if (!$user) {
+            Yii::$app->session->addFlash('error', Yii::t('common', 'Пользователь не найден'));
+            return $this->redirect(Yii::$app->getHomeUrl());
+        }
 
         if (Yii::$app->user->isGuest) {
             Yii::$app->user->login($user, 3600 * 24);
-
         } else {
             Yii::$app->user->logout();
-            Yii::$app->user->switchIdentity($user);
+            Yii::$app->user->switchIdentity($user, 3600 * 24);
         }
 
-        if (empty($redirectUrl)) {
-            $redirectUrl = Yii::$app->getHomeUrl();
+        $redirectUrl = Yii::$app->getHomeUrl();
+        
+        if (!empty($parentUser)) {
+            Cookie::add('fromSwitcherUserId', $parentUser, true);
         }
-
-        Cookie::add('fromSwitcherUserId', $parentUser, true);
 
         return $this->redirect($redirectUrl);
     }
@@ -397,5 +591,120 @@ class AuthController extends WebController
         $user->save(false);
 
         return $this->redirect('/cabinet/profile/two-step-auth');
+    }
+
+    /**
+     * Удаляет роль у пользователя в Discord сервере
+     * @param string $discordUserId Discord User ID
+     * @return bool
+     */
+    public static function removeDiscordRole($discordUserId)
+    {
+        $guildId = Yii::$app->settings->get('discord_guild_id');
+        $botToken = Yii::$app->settings->get('discord_bot_token');
+        $roleId = Yii::$app->settings->get('discord_role_confirm');
+
+        if (empty($guildId) || empty($botToken) || empty($roleId)) {
+            Yii::warning("Discord role removal: guild_id, bot_token or role_id not configured", __METHOD__);
+            return false;
+        }
+
+        try {
+            $url = "https://discord.com/api/v10/guilds/{$guildId}/members/{$discordUserId}/roles/{$roleId}";
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bot ' . $botToken,
+                'Content-Type: application/json',
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($httpCode === 204 || $httpCode === 200) {
+                // Роль успешно удалена
+                Yii::info("Discord role {$roleId} successfully removed from user {$discordUserId}", __METHOD__);
+                Yii::$app->telegramChats->sendMessage("Discord: Role {$roleId} removed from user {$discordUserId}");
+                return true;
+            } else {
+                // Ошибка при удалении роли
+                Yii::error("Discord API error removing role: HTTP {$httpCode}, Response: {$response}, cURL Error: {$curlError}", __METHOD__);
+                Yii::$app->telegramChats->sendMessage("Discord: Failed to remove role {$roleId} from user {$discordUserId}. HTTP {$httpCode}, Response: {$response}");
+                return false;
+            }
+        } catch (\Exception $e) {
+            Yii::error("Discord role removal exception: " . $e->getMessage(), __METHOD__);
+            Yii::$app->telegramChats->sendMessage("Discord: Exception removing role: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Выдает роль пользователю в Discord сервере
+     * @param string $discordUserId Discord User ID
+     * @return bool
+     */
+    private function assignDiscordRole($discordUserId)
+    {
+        $guildId = Yii::$app->settings->get('discord_guild_id');
+        $botToken = Yii::$app->settings->get('discord_bot_token');
+        $roleId = Yii::$app->settings->get('discord_role_confirm');
+
+        if (empty($guildId) || empty($botToken) || empty($roleId)) {
+            Yii::warning("Discord role assignment: guild_id, bot_token or role_id not configured", __METHOD__);
+            return false;
+        }
+
+        try {
+            $url = "https://discord.com/api/v10/guilds/{$guildId}/members/{$discordUserId}/roles/{$roleId}";
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bot ' . $botToken,
+                'Content-Type: application/json',
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($httpCode === 204 || $httpCode === 200) {
+                // Роль успешно выдана
+                Yii::info("Discord role {$roleId} successfully assigned to user {$discordUserId}", __METHOD__);
+                Yii::$app->telegramChats->sendMessage("Discord: Role {$roleId} assigned to user {$discordUserId}");
+                return true;
+            } else {
+                // Парсим ответ для проверки кода ошибки
+                $errorData = json_decode($response, true);
+                $errorCode = $errorData['code'] ?? null;
+                
+                // Ошибка 10007 = "Unknown Member" - пользователь не является участником сервера
+                if ($errorCode === 10007) {
+                    // Это нормальная ситуация - пользователь привязал Discord, но не на сервере
+                    Yii::warning("Discord user {$discordUserId} is not a member of the server (code 10007). Role assignment skipped.", __METHOD__);
+                    return false;
+                }
+                
+                // Другие ошибки логируем как обычно
+                Yii::error("Discord API error assigning role: HTTP {$httpCode}, Response: {$response}, cURL Error: {$curlError}", __METHOD__);
+                Yii::$app->telegramChats->sendMessage("Discord: Failed to assign role {$roleId} to user {$discordUserId}. HTTP {$httpCode}, Response: {$response}");
+                return false;
+            }
+        } catch (\Exception $e) {
+            Yii::error("Discord role assignment exception: " . $e->getMessage(), __METHOD__);
+            Yii::$app->telegramChats->sendMessage("Discord: Exception assigning role: " . $e->getMessage());
+            return false;
+        }
     }
 }

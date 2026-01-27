@@ -1,28 +1,152 @@
-var like_items = $('.buildings_content_list_item_images_like');
-if (like_items) {
-    like_items.on('click', function () {
-        var id = $(this).attr('data-id');
-        var guest = $(this).attr('data-guest');
+/**
+ * Buildings likes functionality (точь-в-точь как в maps)
+ */
+
+$(document).ready(function() {
+    // Cache for loaded likes data
+    var likesCache = {};
+    
+    // Active AJAX requests tracker
+    var activeRequests = {};
+    
+    // Handle like button click
+    $(document).on('click', '.buildings_content_list_item_images_like', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        var btn = $(this);
+        var buildingId = btn.data('id');
+        var guest = btn.data('guest');
+        
+        // Check if user is guest
         if (guest == 1) {
-            toastr.error('<i class=\'fas fa-exclamation-circle\'></i><div class=\'toast-message_text\'>Чтобы голосовать, вам нужно авторизоваться на сайте.</div>', '', {'progressBar': true, 'positionClass': 'toast-top-right', 'escapeHtml': false,});
+            toastr.error('<i class=\'fas fa-exclamation-circle\'></i><div class=\'toast-message_text\'>Чтобы оценивать постройки, вам нужно авторизоваться на сайте.</div>', '', {
+                'progressBar': true, 
+                'positionClass': 'toast-top-right', 
+                'escapeHtml': false
+            });
             return;
         }
-        var el = $('.buildings_content_list_item_images_like[data-id=' + id + ']');
-        var count = 0;
-        if (el.hasClass('active')) {
-            el.removeClass('active');
-            count = parseInt(el.find('.buildings_content_list_item_images_like_count').html());
-            el.find('.buildings_content_list_item_images_like_count').html(count - 1);
+        
+        // Find all like buttons for this building (may be multiple on page)
+        var allButtons = $('.buildings_content_list_item_images_like[data-id=' + buildingId + ']');
+        var count = parseInt(btn.find('.buildings_content_list_item_images_like_count').text()) || 0;
+        
+        // Toggle active state and update count
+        if (btn.hasClass('active')) {
+            allButtons.removeClass('active');
+            count = Math.max(0, count - 1);
         } else {
-            el.addClass('active');
-            count = parseInt(el.find('.buildings_content_list_item_images_like_count').html());
-            el.find('.buildings_content_list_item_images_like_count').html(count + 1);
+            allButtons.addClass('active');
+            count = count + 1;
         }
+        
+        // Update count display
+        allButtons.find('.buildings_content_list_item_images_like_count').text(count);
+        
+        // Clear cache for this building
+        delete likesCache[buildingId];
+        
+        // Send AJAX request
         $.ajax({
-            url: '/buildings/like?id=' + id,
+            url: '/buildings/like?id=' + buildingId,
             type: 'POST',
-            error: function (xhr, status, error) {},
-            success: function (result, status, xhr) {}
+            error: function(xhr, status, error) {
+                console.error('Like error:', error);
+            },
+            success: function(result, status, xhr) {
+                // Success
+            }
         });
     });
-}
+    
+    // Show likes tooltip on hover
+    $(document).on('mouseenter', '.buildings_content_list_item_images_like', function() {
+        var btn = $(this);
+        var buildingId = btn.data('id');
+        var tooltip = btn.find('.likes-tooltip');
+        
+        // If tooltip already exists, don't do anything
+        if (tooltip.length > 0) {
+            return;
+        }
+        
+        // Get likes count
+        var likesCount = parseInt(btn.find('.buildings_content_list_item_images_like_count').text());
+        if (likesCount === 0 || isNaN(likesCount)) {
+            return;
+        }
+        
+        // Check if data is already cached
+        if (likesCache[buildingId]) {
+            // Show cached data immediately
+            var cachedTooltip = $('<div class="likes-tooltip">' + likesCache[buildingId] + '</div>');
+            btn.append(cachedTooltip);
+            return;
+        }
+        
+        // Check if request is already in progress
+        if (activeRequests[buildingId]) {
+            return;
+        }
+        
+        // Show loading state
+        tooltip = $('<div class="likes-tooltip"><div class="tooltip-loading">Загрузка...</div></div>');
+        btn.append(tooltip);
+        
+        // Mark request as active
+        activeRequests[buildingId] = true;
+        
+        // Load likes list via AJAX
+        $.ajax({
+            url: '/buildings/get-likes',
+            method: 'GET',
+            data: { id: buildingId },
+            success: function(response) {
+                // Remove from active requests
+                delete activeRequests[buildingId];
+                
+                if (response.users && response.users.length > 0) {
+                    var html = '<div class="tooltip-title">Оценили постройку:</div>';
+                    
+                    response.users.forEach(function(user) {
+                        html += `
+                            <div class="tooltip-user">
+                                <img src="${user.avatar}" width="24" height="24" alt="${user.username}">
+                                <span>${user.username}</span>
+                            </div>
+                        `;
+                    });
+                    
+                    // Show "and N more" if total > displayed count
+                    var remaining = response.total - response.users.length;
+                    if (remaining > 0) {
+                        var word = remaining === 1 ? 'человек' : (remaining < 5 ? 'человека' : 'человек');
+                        html += `<div class="tooltip-more">и ещё ${remaining} ${word}</div>`;
+                    }
+                    
+                    // Cache the result
+                    likesCache[buildingId] = html;
+                    
+                    // Update tooltip if it still exists (user hasn't moved mouse away)
+                    var currentTooltip = btn.find('.likes-tooltip');
+                    if (currentTooltip.length > 0) {
+                        currentTooltip.html(html);
+                    }
+                } else {
+                    btn.find('.likes-tooltip').remove();
+                }
+            },
+            error: function() {
+                // Remove from active requests
+                delete activeRequests[buildingId];
+                btn.find('.likes-tooltip').remove();
+            }
+        });
+    });
+    
+    // Remove tooltip on mouse leave
+    $(document).on('mouseleave', '.buildings_content_list_item_images_like', function() {
+        $(this).find('.likes-tooltip').remove();
+    });
+});

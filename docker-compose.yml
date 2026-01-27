@@ -1,9 +1,64 @@
-version: '2'
+version: '3.8'
+
 services:
   php:
     image: yiisoftware/yii2-php:7.4-apache
+    container_name: liscase-dev
     volumes:
       - ~/.composer-docker/cache:/root/.composer/cache:delegated
       - ./:/app:delegated
     ports:
       - '8000:80'
+    environment:
+      - APACHE_DOCUMENT_ROOT=/app/frontend/web
+      - APP_ENV=development
+    command: >
+      bash -c "
+      echo '🚀 Starting LiSCase development server...' &&
+      
+      echo '📦 Installing Composer dependencies...' &&
+      if [ ! -d '/app/vendor' ]; then
+        cd /app &&
+        COMPOSER_ALLOW_SUPERUSER=1 composer install --no-interaction --prefer-dist || echo 'Composer already installed';
+      else
+        echo '✅ Vendor directory exists, skipping composer install';
+      fi &&
+      
+      echo '🔧 Initializing Yii application...' &&
+      if [ ! -f '/app/frontend/config/main-local.php' ]; then
+        cd /app &&
+        echo '0' | php init --env=Development --overwrite=All;
+      else
+        echo '✅ App already initialized, skipping';
+      fi &&
+      
+      echo '📁 Creating runtime directories...' &&
+      mkdir -p /app/frontend/runtime/cache /app/frontend/runtime/logs &&
+      mkdir -p /app/backend/runtime/cache /app/backend/runtime/logs &&
+      mkdir -p /app/api/runtime/cache /app/api/runtime/logs &&
+      mkdir -p /app/console/runtime/cache /app/console/runtime/logs &&
+      mkdir -p /app/frontend/web/uploads /app/backend/web/uploads &&
+      
+      echo '🔐 Setting permissions...' &&
+      chmod -R 777 /app/frontend/runtime /app/backend/runtime /app/api/runtime /app/console/runtime &&
+      chmod -R 777 /app/frontend/web/uploads /app/backend/web/uploads || true &&
+      
+      echo '⚙️  Configuring Apache...' &&
+      sed -i 's|DocumentRoot /app/web|DocumentRoot /app/frontend/web|g' /etc/apache2/sites-available/000-default.conf &&
+      sed -i 's|<Directory /app/web>|<Directory /app/frontend/web>|g' /etc/apache2/sites-available/000-default.conf &&
+      echo '<Directory /app/frontend/web>
+          Options Indexes FollowSymLinks
+          AllowOverride All
+          Require all granted
+      </Directory>
+      <Directory /app>
+          Options Indexes FollowSymLinks
+          AllowOverride All
+          Require all granted
+      </Directory>' >> /etc/apache2/sites-available/000-default.conf &&
+      
+      a2enmod rewrite &&
+      
+      echo '✅ Setup complete! Starting Apache...' &&
+      apache2-foreground
+      "

@@ -1,0 +1,28 @@
+{
+  "name": "Мониторинг серверов",
+  "short_name": "Мониторинг",
+  "description": "Мониторинг серверов в реальном времени",
+  "version": "1.0.0",
+  "manifest_version": 2,
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#4680C2",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/server_logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/server_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
+
+

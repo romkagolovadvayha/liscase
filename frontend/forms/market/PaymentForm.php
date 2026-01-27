@@ -2,6 +2,7 @@
 
 namespace frontend\forms\market;
 
+use common\components\helpers\EmailHelper;
 use common\components\payments\PaymentApi;
 use common\models\invoice\Deposit;
 use common\models\user\User;
@@ -19,10 +20,15 @@ class PaymentForm extends Model
     public function rules(): array
     {
         return ArrayHelper::merge([
-            [['payment_id', 'amount', 'email'], 'required'],
+            [['payment_id', 'amount'], 'required'],
+            ['email', 'required', 'when' => function($model) {
+                $user = Yii::$app->user->identity;
+                return $user && !$user->is_email;
+            }],
             [['payment_id', 'email'], 'trim'],
             [['payment_id', 'amount', 'confirm'], 'integer'],
             ['payment_id', 'validatePaymentId'],
+            ['email', 'validateEmail'],
         ], parent::rules());
     }
 
@@ -61,6 +67,17 @@ class PaymentForm extends Model
         }
     }
 
+    /**
+     * @param $attribute
+     */
+    public function validateEmail($attribute)
+    {
+        // Проверяем валидность email только если он заполнен
+        if (!empty($this->email) && !EmailHelper::isValid($this->email)) {
+            $this->addError($attribute, Yii::t('common', 'E-mail адрес введен неверно.'));
+        }
+    }
+
     public function init()
     {
         parent::init();
@@ -86,15 +103,9 @@ class PaymentForm extends Model
         /** @var User $user */
         $user = Yii::$app->user->identity;
 
-        if (!$user->is_email) {
-            if (strpos($this->email, '@') === false) {
-                $this->addError('email', Yii::t('common', 'E-mail адрес введен неверно.'));
-                return false;
-            }
-            $user->is_email = true;
-            $user->email = $this->email;
-            $user->save();
-        }
+        $user->is_email = true;
+        $user->email = $this->email;
+        $user->save();
 
         $paymentApi = PaymentApi::getInstance($this->payment_id);
         $deposit = Deposit::createOperation($user->id, $this->amount, $this->payment_id);
