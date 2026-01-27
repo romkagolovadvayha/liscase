@@ -1,0 +1,2096 @@
+/* Стили для системы заявок в кланы */
+
+.application-item {
+    border: 1px solid var(--border-color, #e0e0e0);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.application-item:hover {
+    border-color: var(--primary-color, #007bff);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.application-item .flex {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.application-item .gap-x-12 {
+    gap: 12px;
+}
+
+.application-item .gap-x-8 {
+    gap: 8px;
+}
+
+.application-item .gap-x-16 {
+    gap: 16px;
+}
+
+.application-item .mb-16 {
+    margin-bottom: 16px;
+}
+
+.application-item .mb-8 {
+    margin-bottom: 8px;
+}
+
+.application-item .mb-4 {
+    margin-bottom: 4px;
+}
+
+.application-item .p-20 {
+    padding: 20px;
+}
+
+.application-item .rounded-12 {
+    border-radius: 12px;
+}
+
+.application-item .rounded-6 {
+    border-radius: 6px;
+}
+
+.application-item .w-48 {
+    width: 48px;
+}
+
+.application-item .h-48 {
+    height: 48px;
+}
+
+.application-item .w-36 {
+    width: 36px;
+}
+
+.application-item .h-36 {
+    height: 36px;
+}
+
+.application-item .w-24 {
+    width: 24px;
+}
+
+.application-item .h-24 {
+    height: 24px;
+}
+
+.application-item .object-cover {
+    object-fit: cover;
+}
+
+.application-item .h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.application-item .h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.application-item .text-text-secondary {
+    color: var(--text-secondary, #6c757d);
+}
+
+.application-item .text-text-main {
+    color: var(--text-main, #333);
+}
+
+.application-item .link {
+    color: var(--primary-color, #007bff);
+    text-decoration: none;
+}
+
+.application-item .link:hover {
+    text-decoration: underline;
+}
+
+.social-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--background-tertiary, #f8f9fa);
+    border-radius: 6px;
+    color: var(--text-main, #333);
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s ease;
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
+
+.social-link:hover {
+    background: var(--primary-color, #007bff);
+    color: white;
+}
+
+.bans-list {
+    background: var(--background-tertiary, #f8f9fa);
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 12px;
+}
+
+.ban-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.ban-item:last-child {
+    border-bottom: none;
+}
+
+.ban-server {
+    font-weight: 600;
+    color: var(--danger-color, #dc3545);
+}
+
+.ban-reason {
+    color: var(--text-secondary, #6c757d);
+    font-size: 14px;
+}
+
+.ban-date {
+    color: var(--text-secondary, #6c757d);
+    font-size: 12px;
+    text-align: right;
+}
+
+.empty-state {
+    background: var(--background-secondary, #f8f9fa);
+    border-radius: 12px;
+    border: 1px solid var(--border-color, #e0e0e0);
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.empty-state .text-6xl {
+    font-size: 4rem;
+}
+
+.empty-state .text-center {
+    text-align: center;
+}
+
+.empty-state .py-40 {
+    padding: 40px 0;
+}
+
+.empty-state .mb-16 {
+    margin-bottom: 16px;
+}
+
+.empty-state .mb-8 {
+    margin-bottom: 8px;
+}
+
+/* Кнопки */
+.button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.button-primary {
+    background: var(--primary-color, #007bff);
+    color: white;
+}
+
+.button-primary:hover:not(:disabled) {
+    background: var(--primary-dark, #0056b3);
+}
+
+.button-secondary {
+    background: var(--secondary-color, #6c757d);
+    color: white;
+}
+
+.button-secondary:hover:not(:disabled) {
+    background: var(--secondary-dark, #545b62);
+}
+
+.button-success {
+    background: var(--success-color, #28a745);
+    color: white;
+}
+
+.button-success:hover:not(:disabled) {
+    background: var(--success-dark, #1e7e34);
+}
+
+.button-danger {
+    background: var(--danger-color, #dc3545);
+    color: white;
+}
+
+.button-danger:hover:not(:disabled) {
+    background: var(--danger-dark, #c82333);
+}
+
+/* Утилиты */
+.flex {
+    display: flex;
+}
+
+.justify-space-between {
+    justify-content: space-between;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.items-start {
+    align-items: flex-start;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.relative {
+    position: relative;
+}
+
+/* Анимации */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Стили для формы поиска кланов */
+.clans-search-form {
+    border: 1px solid var(--border-color, #e0e0e0);
+    margin-bottom: 24px;
+}
+
+.search-form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: end;
+}
+
+.search-form-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 150px;
+    flex: 1;
+}
+
+.search-form-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main, #333);
+    margin-bottom: 6px;
+}
+
+.search-form-input {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 6px;
+    font-size: 14px;
+    background: var(--background-main, #fff);
+    color: var(--text-main, #333);
+    transition: border-color 0.2s ease;
+}
+
+.search-form-input:focus {
+    outline: none;
+    border-color: var(--primary-color, #007bff);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.search-form-actions {
+    display: flex;
+    gap: 8px;
+    align-items: end;
+}
+
+.search-form-actions .button {
+    white-space: nowrap;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .application-item .flex {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .application-item .gap-x-12 {
+        gap: 8px;
+    }
+    
+    .application-item .p-20 {
+        padding: 16px;
+    }
+    
+    .social-link {
+        margin-right: 4px;
+        margin-bottom: 4px;
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+    
+    .search-form-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .search-form-group {
+        min-width: 100%;
+    }
+    
+    .search-form-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .search-form-actions .button {
+        flex: 1;
+    }
+}
+
+/* Стили для страницы приглашений */
+.invite-creation-section .card {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.invite-creation-section .card-header {
+    background: var(--background-secondary);
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.invite-creation-section .card-body {
+    padding: 20px;
+}
+
+.invite-link-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.invite-link-display .form-label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+.input-group {
+    display: flex;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.input-group .form-control {
+    border: none;
+    border-radius: 0;
+    background: var(--background-primary);
+    color: var(--text-main);
+    padding: 12px 16px;
+    flex: 1;
+}
+
+.input-group .btn {
+    border: none;
+    border-left: 1px solid var(--border-color);
+    border-radius: 0;
+    padding: 12px 16px;
+    background: var(--background-secondary);
+    color: var(--text-main);
+    transition: all 0.2s ease;
+}
+
+.input-group .btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.invite-actions .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.invite-stats-section .card {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.invite-stats-section .card-header {
+    background: var(--background-secondary);
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.invite-stats-section .card-body {
+    padding: 20px;
+}
+
+.invite-stat-item {
+    background: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.invite-stat-item:last-child {
+    margin-bottom: 0;
+}
+
+.invite-stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.invite-creator {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.creator-avatar .avatar-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.creator-info .creator-name {
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 4px;
+}
+
+.creator-info .creator-date {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.invite-stats {
+    display: flex;
+    gap: 24px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.invited-users-list {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.invited-users-list .h5 {
+    margin-bottom: 12px;
+    color: var(--text-main);
+}
+
+.users-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    background: var(--background-primary);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.user-avatar .avatar-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.user-info .user-name {
+    font-weight: 500;
+    color: var(--text-main);
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.user-info .user-date {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.empty-state .empty-icon {
+    font-size: 48px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.empty-state .h3 {
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+/* Стили для страницы подтверждения приглашения */
+.invite-confirm-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: var(--background-main);
+}
+
+.invite-confirm-container {
+    width: 100%;
+    max-width: 700px;
+}
+
+/* Заголовок страницы */
+.invite-confirm-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.invite-confirm-icon {
+    font-size: 64px;
+    color: var(--primary-colors-main);
+    margin-bottom: 16px;
+    opacity: 0.9;
+}
+
+/* Основная карточка */
+.invite-confirm-card {
+    background: var(--background-secondary);
+    border: 1px solid var(--border-color-default);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+}
+
+/* Информация о клане */
+.clan-info-section {
+    display: flex;
+    gap: 24px;
+    padding: 32px;
+    background: var(--background-teritiary);
+    border-bottom: 1px solid var(--border-color-default);
+}
+
+.clan-logo {
+    flex-shrink: 0;
+}
+
+.clan-logo-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 2px solid var(--border-color-default);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.clan-details {
+    flex: 1;
+}
+
+.clan-stats {
+    display: flex;
+    gap: 32px;
+    margin-top: 16px;
+}
+
+.clan-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-colors-main);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-main);
+    font-size: 16px;
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Информация о приглашении */
+.invite-details-section {
+    padding: 32px;
+    border-bottom: 1px solid var(--border-color-default);
+}
+
+.invite-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.invite-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: var(--background-main);
+    border-radius: 8px;
+    border: 1px solid var(--border-color-default);
+}
+
+.info-label {
+    font-weight: 500;
+}
+
+.info-value {
+    font-weight: 600;
+}
+
+/* Предупреждение */
+.invite-warning-section {
+    display: flex;
+    gap: 16px;
+    padding: 24px 32px;
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    margin: 0 32px 32px;
+    border-radius: 8px;
+}
+
+.warning-icon {
+    color: #ffc107;
+    font-size: 24px;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.warning-content {
+    flex: 1;
+}
+
+/* Кнопки действий */
+.invite-confirm-actions {
+    display: flex;
+    gap: 16px;
+    padding: 32px;
+    justify-content: center;
+    background: var(--background-teritiary);
+}
+
+.invite-confirm-actions .button {
+    min-width: 160px;
+}
+
+/* Общая статистика */
+.overall-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: var(--background-main);
+    border: 1px solid var(--border-color-default);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+    border-color: var(--border-color-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card .stat-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--primary-colors-main);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-main);
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.stat-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.stat-value {
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+
+.stat-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+/* Стили для таблицы приглашенных пользователей */
+.invited-users-table {
+    overflow-x: auto;
+}
+
+.invited-users-table .table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--background-main);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.invited-users-table .table thead {
+    background: var(--background-teritiary);
+}
+
+.invited-users-table .table th {
+    padding: 16px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border-color-default);
+}
+
+.invited-users-table .table td {
+    padding: 16px 12px;
+    border-bottom: 1px solid var(--border-color-default);
+    vertical-align: middle;
+}
+
+.invited-users-table .table tbody tr:hover {
+    background: var(--background-teritiary);
+}
+
+.invited-users-table .table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.user-avatar-cell {
+    position: relative;
+    display: inline-block;
+}
+
+.avatar-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-color-default);
+}
+
+.avatar-mini {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--border-color-default);
+}
+
+.user-status {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--background-main);
+}
+
+.user-status.online {
+    background: var(--online);
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.inviter-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.inviter-avatar {
+    flex-shrink: 0;
+}
+
+.inviter-name {
+    font-size: 13px;
+}
+
+.join-date {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.join-date i {
+    width: 12px;
+    text-align: center;
+    opacity: 0.7;
+}
+
+/* Улучшенные стили для приглашенных пользователей */
+.invited-users-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color-default);
+}
+
+.users-count {
+    display: flex;
+    align-items: center;
+}
+
+.count-badge {
+    background: var(--primary-colors-main);
+    color: var(--text-main);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.users-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: var(--background-main);
+    border: 1px solid var(--border-color-default);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.user-item:hover {
+    border-color: var(--border-color-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.user-avatar {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.avatar-small {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-color-default);
+}
+
+.user-status {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--background-main);
+}
+
+.user-status.online {
+    background: var(--online);
+}
+
+.user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-name {
+    font-weight: 600;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.user-date,
+.user-role {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.user-date i,
+.user-role i {
+    width: 12px;
+    text-align: center;
+    opacity: 0.7;
+}
+
+.user-actions {
+    flex-shrink: 0;
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--background-teritiary);
+    border: 1px solid var(--border-color-default);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-secondary);
+}
+
+.action-btn:hover {
+    background: var(--primary-colors-main);
+    border-color: var(--primary-colors-main);
+    color: var(--text-main);
+    transform: scale(1.05);
+}
+
+.empty-invited-users {
+    text-align: center;
+    padding: 40px 20px;
+    background: var(--background-main);
+    border: 1px solid var(--border-color-default);
+    border-radius: 8px;
+    margin-top: 16px;
+}
+
+.empty-invited-users .empty-icon {
+    font-size: 48px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+/* Адаптивность для приглашений */
+@media (max-width: 768px) {
+    .invite-stat-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .invite-stats {
+        gap: 16px;
+    }
+    
+    .users-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .invite-confirm-page {
+        padding: 10px;
+    }
+    
+    .invite-confirm-container {
+        max-width: 100%;
+    }
+    
+    .clan-info-section {
+        flex-direction: column;
+        text-align: center;
+        gap: 16px;
+    }
+    
+    .clan-logo-img {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .clan-stats {
+        justify-content: center;
+        gap: 24px;
+    }
+    
+    .invite-details-section {
+        padding: 20px;
+    }
+    
+    .invite-info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        text-align: left;
+    }
+    
+    .invite-warning-section {
+        margin: 0 20px 20px;
+        padding: 20px;
+    }
+    
+    .invite-confirm-actions {
+        flex-direction: column;
+        padding: 20px;
+    }
+    
+    .invite-confirm-actions .button {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .user-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 8px;
+    }
+    
+    .user-info {
+        text-align: center;
+    }
+    
+    .user-details {
+        align-items: center;
+    }
+    
+    .overall-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .stat-card {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+    
+    .invited-users-table {
+        font-size: 12px;
+    }
+    
+    .invited-users-table .table th,
+    .invited-users-table .table td {
+        padding: 12px 8px;
+    }
+    
+    .avatar-small {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .avatar-mini {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .inviter-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .join-date {
+        font-size: 11px;
+    }
+}
+
+/* Стили для управления участниками */
+.members-table {
+    overflow-x: auto;
+}
+
+.members-table .table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--background-main);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.members-table .table thead {
+    background: var(--background-teritiary);
+}
+
+.members-table .table th {
+    padding: 16px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border-color-default);
+}
+
+.members-table .table td {
+    padding: 16px 12px;
+    border-bottom: 1px solid var(--border-color-default);
+    vertical-align: middle;
+}
+
+.members-table .table tbody tr:hover {
+    background: var(--background-teritiary);
+}
+
+.members-table .table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.member-avatar-cell {
+    position: relative;
+    display: inline-block;
+}
+
+.owner-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 16px;
+    height: 16px;
+    background: var(--system-colors-gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 8px;
+    border: 2px solid var(--background-main);
+}
+
+.member-name {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.member-role {
+    font-size: 12px;
+    color: var(--system-colors-gold);
+    font-weight: 500;
+}
+
+.member-roles {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.roles-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.roles-checkboxes .page-stats__show-statistics-block {
+    margin-bottom: 0;
+}
+
+.roles-checkboxes .mb-12 {
+    margin-bottom: 8px;
+}
+
+.roles-checkboxes .mb-12:last-child {
+    margin-bottom: 0;
+}
+
+/* ===== СТРАНИЦЫ КЛАНА ===== */
+
+.clan-pages-page,
+.clan-create-page,
+.clan-edit-page,
+.clan-page-view {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.pages-actions {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 16px;
+}
+
+.pages-count {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.page-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: var(--background-main);
+    border: 1px solid var(--border-color-default);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    cursor: move;
+}
+
+.page-item:hover {
+    background: var(--background-secondary);
+    border-color: var(--primary-colors-main);
+}
+
+.page-drag-handle {
+    color: var(--text-teritiary);
+    cursor: grab;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.page-drag-handle:hover {
+    color: var(--primary-colors-main);
+    background: var(--background-teritiary);
+}
+
+.page-drag-handle:active {
+    cursor: grabbing;
+}
+
+.page-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.page-title {
+    margin-bottom: 4px;
+    word-break: break-word;
+}
+
+.page-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-teritiary);
+}
+
+.page-sort {
+    background: var(--background-teritiary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.page-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color-default);
+    border-radius: 6px;
+    background: var(--background-main);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.action-btn:hover {
+    background: var(--background-secondary);
+    border-color: var(--primary-colors-main);
+    color: var(--primary-colors-main);
+}
+
+.action-btn.delete-btn:hover {
+    background: var(--system-colors-danger-color);
+    border-color: var(--system-colors-danger-color);
+    color: white;
+}
+
+/* ===== РЕДАКТОР СТРАНИЦ ===== */
+
+.editor-container {
+    border: 1px solid var(--border-color-default);
+    border-radius: 8px;
+    background: var(--background-main);
+    overflow: hidden;
+}
+
+.editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    background: var(--background-secondary);
+    border-bottom: 1px solid var(--border-color-default);
+    flex-wrap: wrap;
+}
+
+.toolbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.toolbar-btn:hover {
+    background: var(--background-teritiary);
+    border-color: var(--border-color-default);
+    color: var(--text-main);
+}
+
+.toolbar-btn:active {
+    background: var(--primary-colors-main);
+    border-color: var(--primary-colors-main);
+    color: white;
+}
+
+.toolbar-separator {
+    width: 1px;
+    height: 20px;
+    background: var(--border-color-default);
+    margin: 0 4px;
+}
+
+.editor-content {
+    min-height: 300px;
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-main);
+    outline: none;
+    overflow-y: auto;
+}
+
+.editor-content:empty:before {
+    content: attr(data-placeholder);
+    color: var(--text-teritiary);
+    font-style: italic;
+}
+
+.editor-content:focus {
+    outline: none;
+}
+
+.editor-content h1,
+.editor-content h2,
+.editor-content h3,
+.editor-content h4,
+.editor-content h5,
+.editor-content h6 {
+    margin: 16px 0 8px 0;
+    color: var(--text-main);
+}
+
+.editor-content h1:first-child,
+.editor-content h2:first-child,
+.editor-content h3:first-child,
+.editor-content h4:first-child,
+.editor-content h5:first-child,
+.editor-content h6:first-child {
+    margin-top: 0;
+}
+
+.editor-content p {
+    margin: 8px 0;
+}
+
+.editor-content ul,
+.editor-content ol {
+    margin: 8px 0;
+    padding-left: 24px;
+}
+
+.editor-content li {
+    margin: 4px 0;
+}
+
+.editor-content a {
+    color: var(--primary-colors-main);
+    text-decoration: none;
+}
+
+.editor-content a:hover {
+    text-decoration: underline;
+}
+
+.editor-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+.editor-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    background: var(--background-main);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.editor-content table th,
+.editor-content table td {
+    padding: 8px 12px;
+    text-align: left;
+    border: 1px solid var(--border-color-default);
+}
+
+.editor-content table th {
+    background: var(--background-secondary);
+    font-weight: 600;
+}
+
+.editor-content blockquote {
+    border-left: 4px solid var(--primary-colors-main);
+    padding-left: 16px;
+    margin: 8px 0;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.editor-content code {
+    background: var(--background-secondary);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+}
+
+.editor-content pre {
+    background: var(--background-secondary);
+    padding: 12px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.editor-content pre code {
+    background: none;
+    padding: 0;
+}
+
+/* ===== ФОРМЫ ===== */
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-main);
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color-default);
+    border-radius: 6px;
+    background: var(--background-main);
+    color: var(--text-main);
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-colors-main);
+    box-shadow: 0 0 0 3px rgba(var(--primary-colors-main-rgb), 0.1);
+}
+
+.form-control::placeholder {
+    color: var(--text-teritiary);
+}
+
+.form-error {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--system-colors-danger-color);
+}
+
+.form-help {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-teritiary);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color-default);
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+
+@media (max-width: 768px) {
+    .clan-pages-page,
+    .clan-create-page,
+    .clan-edit-page,
+    .clan-page-view {
+        padding: 0 16px;
+    }
+    
+    .page-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .page-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .editor-toolbar {
+        gap: 2px;
+        padding: 6px 8px;
+    }
+    
+    .toolbar-btn {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .editor-content {
+        min-height: 200px;
+        padding: 12px;
+        font-size: 13px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .form-actions .button {
+        width: 100%;
+    }
+}
+
+/* ===== СТРАНИЦЫ В ПРОФИЛЕ КЛАНА ===== */
+
+.clan-pages-section {
+    margin-top: 24px;
+}
+
+.clan-pages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.clan-page-card {
+    background: var(--background-main);
+    border: 1px solid var(--border-color-default);
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s ease;
+}
+
+.clan-page-card:hover {
+    border-color: var(--primary-colors-main);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.clan-page-card-header {
+    margin-bottom: 12px;
+}
+
+.clan-page-title {
+    margin-bottom: 8px;
+    color: var(--text-main);
+    word-break: break-word;
+}
+
+.clan-page-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-teritiary);
+}
+
+.clan-page-date {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.clan-page-card-content {
+    margin-bottom: 16px;
+}
+
+.clan-page-preview {
+    color: var(--text-secondary);
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+.clan-page-card-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.button-sm {
+    padding: 8px 16px;
+    font-size: 12px;
+}
+
+.button-sm .button__text {
+    font-size: 12px;
+}
+
+/* Адаптивность для страниц в профиле */
+@media (max-width: 768px) {
+    .clan-pages-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .clan-page-card {
+        padding: 12px;
+    }
+    
+    .clan-page-title {
+        font-size: 16px;
+    }
+    
+    .clan-page-preview {
+        font-size: 13px;
+    }
+}
+
+.role-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.role-member {
+    background: var(--background-teritiary);
+    color: var(--text-secondary);
+}
+
+.role-owner {
+    background: var(--system-colors-gold);
+    color: white;
+    font-weight: 600;
+}
+
+.role-edit_info {
+    background: rgba(0, 145, 54, 0.2);
+    color: var(--system-colors-success-color);
+}
+
+.role-question {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+}
+
+.role-edit_members {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+}
+
+.role-edit_pages {
+    background: rgba(13, 202, 240, 0.2);
+    color: #0dcaf0;
+}
+
+.role-invite {
+    background: rgba(111, 66, 193, 0.2);
+    color: #6f42c1;
+}
+
+.role-auth_cupboards {
+    background: rgba(255, 87, 34, 0.2);
+    color: #ff5722;
+}
+
+.role-auth_aa {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4caf50;
+}
+
+.role-auth_doors {
+    background: rgba(156, 39, 176, 0.2);
+    color: #9c27b0;
+}
+
+.role-auth_turrets {
+    background: rgba(255, 152, 0, 0.2);
+    color: #ff9800;
+}
+
+.member-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.action-group {
+    display: flex;
+    gap: 4px;
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--background-teritiary);
+    border: 1px solid var(--border-color-default);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-secondary);
+}
+
+.action-btn:hover {
+    transform: scale(1.05);
+}
+
+.assign-role-btn:hover {
+    background: var(--system-colors-success-color);
+    border-color: var(--system-colors-success-color);
+    color: white;
+}
+
+.remove-role-btn:hover {
+    background: #ffc107;
+    border-color: #ffc107;
+    color: white;
+}
+
+.kick-btn:hover {
+    background: var(--primary-colors-main);
+    border-color: var(--primary-colors-main);
+    color: white;
+}
+
+.owner-actions {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-style: italic;
+}
+
+.members-count {
+    display: flex;
+    align-items: center;
+}
+
+.count-badge {
+    background: var(--primary-colors-main);
+    color: var(--text-main);
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Модальные окна */
+.modal-content {
+    background: var(--background-secondary);
+    border: 1px solid var(--border-color-default);
+    border-radius: 8px;
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color-default);
+    padding: 20px;
+}
+
+.modal-title {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-color-default);
+    padding: 20px;
+}
+
+.btn-close {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.btn-close:hover {
+    opacity: 1;
+}
+
+/* Адаптивность для управления участниками */
+@media (max-width: 768px) {
+    .members-table {
+        font-size: 12px;
+    }
+    
+    .members-table .table th,
+    .members-table .table td {
+        padding: 12px 8px;
+    }
+    
+    .avatar-small {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .member-roles {
+        flex-direction: column;
+        gap: 4px;
+    }
+    
+    .roles-checkboxes {
+        gap: 2px;
+    }
+    
+    .roles-checkboxes .mb-12 {
+        margin-bottom: 4px;
+    }
+    
+    .role-badge {
+        font-size: 9px;
+        padding: 1px 6px;
+    }
+    
+    .action-group {
+        flex-direction: column;
+        gap: 2px;
+    }
+    
+    .action-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+}
+
+/* Настройки клана */
+.clan-settings-page {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.color-input-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.color-picker {
+    width: 50px;
+    height: 40px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.color-text-input {
+    flex: 1;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.checkbox-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+    .clan-settings-page {
+        padding: 16px;
+    }
+    
+    .color-input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .color-picker {
+        width: 100%;
+        height: 50px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+}
