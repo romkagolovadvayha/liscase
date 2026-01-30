@@ -143,6 +143,13 @@ $config = [
                 'v1/blog/<linkName>/comments' => 'v1/blog/comments',
                 'v1/blog/comments/<id:\d+>/like' => 'v1/blog/like-comment',
                 'v1/blog' => 'v1/blog/index',
+                
+                // Buildings
+                'v1/buildings' => 'v1/buildings/index',
+                'v1/buildings/upload-image' => 'v1/buildings/upload-image',
+                'v1/buildings/<id:\d+>/like' => 'v1/buildings/like',
+                'v1/buildings/<id:\d+>/likes' => 'v1/buildings/likes',
+                'v1/buildings/<id:\d+>' => 'v1/buildings/view',
             ],
         ],
         'request' => [
