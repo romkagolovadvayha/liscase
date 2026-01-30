@@ -15,7 +15,7 @@ use yii\web\ServerErrorHttpException;
 
 /**
  * Базовый контроллер для всех API контроллеров v1
- * 
+ *
  * Предоставляет:
  * - Единый формат ответов
  * - CORS настройки
@@ -64,18 +64,19 @@ abstract class BaseApiController extends Controller
 
     /**
      * Получение списка разрешенных origins для CORS
-     * 
+     *
      * @return array
      */
     protected function getAllowedOrigins()
     {
         // Получаем список из параметров, если указан
         $paramsOrigins = Yii::$app->params['allowedOrigins'] ?? [];
-        
+
         // Всегда добавляем localhost для разработки
         // ВАЖНО: Не используем '*' когда Access-Control-Allow-Credentials = true
         $devOrigins = [
             'http://localhost:3000',
+            'http://localhost:3001',
             'http://127.0.0.1:3000',
             'http://localhost',
             'http://127.0.0.1',
@@ -83,10 +84,10 @@ abstract class BaseApiController extends Controller
             'https://prostoj.store',
             'https://www.prostoj.store',
         ];
-        
+
         // Объединяем все origins
         $allOrigins = array_unique(array_merge($devOrigins, $paramsOrigins));
-        
+
         return $allOrigins;
     }
 
@@ -103,7 +104,7 @@ abstract class BaseApiController extends Controller
 
     /**
      * Успешный ответ API
-     * 
+     *
      * @param mixed $data Данные для ответа
      * @param array $meta Метаданные (пагинация, фильтры и т.д.)
      * @param int $statusCode HTTP статус код
@@ -130,7 +131,7 @@ abstract class BaseApiController extends Controller
 
     /**
      * Ответ с ошибкой
-     * 
+     *
      * @param string $code Код ошибки
      * @param string $message Сообщение об ошибке
      * @param array $details Детали ошибки
@@ -153,7 +154,7 @@ abstract class BaseApiController extends Controller
 
     /**
      * Ответ с ошибкой валидации
-     * 
+     *
      * @param \yii\base\Model $model Модель с ошибками валидации
      * @return array
      */
@@ -169,7 +170,7 @@ abstract class BaseApiController extends Controller
 
     /**
      * Обработка исключений
-     * 
+     *
      * @param \Exception $exception
      * @return array
      */
@@ -219,7 +220,7 @@ abstract class BaseApiController extends Controller
 
     /**
      * Проверка авторизации пользователя
-     * 
+     *
      * @throws UnauthorizedHttpException
      */
     protected function requireAuth()
@@ -231,7 +232,7 @@ abstract class BaseApiController extends Controller
 
     /**
      * Получение текущего авторизованного пользователя
-     * 
+     *
      * @return \common\models\user\User
      * @throws UnauthorizedHttpException
      */
@@ -243,7 +244,7 @@ abstract class BaseApiController extends Controller
 
     /**
      * Проверка прав доступа
-     * 
+     *
      * @param string $permission Разрешение
      * @param array $params Параметры для проверки
      * @throws ForbiddenHttpException
