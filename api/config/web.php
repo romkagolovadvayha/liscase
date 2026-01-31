@@ -144,12 +144,25 @@ $config = [
                 'v1/blog/comments/<id:\d+>/like' => 'v1/blog/like-comment',
                 'v1/blog' => 'v1/blog/index',
                 
+                // Wipe Calendar
+                'v1/wipe-calendar' => 'v1/wipe-calendar/index',
+                
+                // Maps
+                'v1/maps/vote' => 'v1/maps/vote',
+                'v1/maps' => 'v1/maps/index',
+                
                 // Buildings
                 'v1/buildings' => 'v1/buildings/index',
                 'v1/buildings/upload-image' => 'v1/buildings/upload-image',
                 'v1/buildings/<id:\d+>/like' => 'v1/buildings/like',
                 'v1/buildings/<id:\d+>/likes' => 'v1/buildings/likes',
                 'v1/buildings/<id:\d+>' => 'v1/buildings/view',
+                
+                // Custom Skins
+                'v1/custom-skins/categories' => 'v1/custom-skins/categories',
+                'v1/custom-skins/<id:\d+>/likes' => 'v1/custom-skins/likes',
+                'v1/custom-skins/<id:\d+>/like' => 'v1/custom-skins/like',
+                'v1/custom-skins' => 'v1/custom-skins/index',
             ],
         ],
         'request' => [
