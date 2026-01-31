@@ -21,7 +21,7 @@ use OpenApi\Annotations as OA;
 
 /**
  * Контроллер для работы с постройками
- * 
+ *
  * @package api\controllers\v1
  * @OA\Tag(name="Buildings")
  */
@@ -46,7 +46,7 @@ class BuildingsController extends BaseApiController
 
     /**
      * Получение списка построек с пагинацией
-     * 
+     *
      * @OA\Get(
      *     path="/v1/buildings",
      *     operationId="getBuildings",
@@ -146,6 +146,25 @@ class BuildingsController extends BaseApiController
             ],
         ]);
 
+        // Получаем текущего пользователя (если авторизован)
+        $currentUser = null;
+        try {
+            $currentUser = $this->getCurrentUser();
+        } catch (\Exception $e) {
+            // Пользователь не авторизован - это нормально для публичного списка
+        }
+
+        // Если пользователь авторизован, получаем все его лайки одним запросом
+        $userLikedBuildingIds = [];
+        if ($currentUser) {
+            $userLikes = BuildingLike::find()
+                ->select('building_id')
+                ->where(['user_id' => $currentUser->id])
+                ->asArray()
+                ->all();
+            $userLikedBuildingIds = array_column($userLikes, 'building_id');
+        }
+
         $buildings = [];
         foreach ($dataProvider->getModels() as $building) {
             // Получаем первое изображение с S3 URL
@@ -168,6 +187,9 @@ class BuildingsController extends BaseApiController
                 }
             }
 
+            // Проверяем, лайкнул ли текущий пользователь эту постройку
+            $isLiked = $currentUser && in_array($building->id, $userLikedBuildingIds);
+
             $buildings[] = [
                 'id' => $building->id,
                 'name' => $building->name,
@@ -175,6 +197,7 @@ class BuildingsController extends BaseApiController
                 'location' => $building->location,
                 'image' => $imageUrl,
                 'likes' => $building->likes ?? 0,
+                'is_liked' => $isLiked,
                 'wipe' => $building->wipe,
                 'server' => $building->server ? [
                     'tag' => $building->server->tag,
@@ -207,7 +230,7 @@ class BuildingsController extends BaseApiController
 
     /**
      * Получение детальной информации о постройке
-     * 
+     *
      * @OA\Get(
      *     path="/v1/buildings/{id}",
      *     operationId="getBuilding",
@@ -292,7 +315,7 @@ class BuildingsController extends BaseApiController
         $raids = [];
         $raidCount = 0;
         $uniqueExplosives = [];
-        
+
         if ($building->server && $building->location && $building->wipe) {
             // Получаем рейды по location, server_id и wipe
             $raidsQuery = UserRaid::find()
@@ -303,13 +326,13 @@ class BuildingsController extends BaseApiController
                 ->orderBy(['created_at' => SORT_DESC])
                 ->limit(10)
                 ->all();
-            
+
             $raidCount = UserRaid::find()
                 ->where(['location' => $building->location])
                 ->andWhere(['server_id' => $building->server->id])
                 ->andWhere(['wipe' => $building->wipe])
                 ->count();
-            
+
             // Подсчитываем уникальные взрывчатки
             $allExplosives = [];
             foreach ($raidsQuery as $raid) {
@@ -321,7 +344,7 @@ class BuildingsController extends BaseApiController
                 }
             }
             $uniqueExplosives = array_values(array_unique($allExplosives));
-            
+
             // Формируем массив рейдов для ответа
             foreach ($raidsQuery as $raid) {
                 $raidData = [
@@ -329,7 +352,7 @@ class BuildingsController extends BaseApiController
                     'type' => $raid->type,
                     'createdAt' => $raid->created_at,
                 ];
-                
+
                 if ($raid->user) {
                     $raidData['user'] = [
                         'id' => $raid->user->id,
@@ -338,14 +361,14 @@ class BuildingsController extends BaseApiController
                         'avatar' => $raid->user->getAvatar(),
                     ];
                 }
-                
+
                 if (!empty($raid->explosives)) {
                     $explosives = json_decode($raid->explosives, true);
                     if (is_array($explosives)) {
                         $raidData['explosives'] = $explosives;
                     }
                 }
-                
+
                 $raids[] = $raidData;
             }
         }
@@ -383,7 +406,7 @@ class BuildingsController extends BaseApiController
 
     /**
      * Получение списка пользователей, поставивших лайк постройке
-     * 
+     *
      * @OA\Get(
      *     path="/v1/buildings/{id}/likes",
      *     operationId="getBuildingLikes",
@@ -479,7 +502,7 @@ class BuildingsController extends BaseApiController
 
     /**
      * Постановка/снятие лайка постройке
-     * 
+     *
      * @OA\Post(
      *     path="/v1/buildings/{id}/like",
      *     operationId="likeBuilding",
@@ -533,7 +556,7 @@ class BuildingsController extends BaseApiController
             $like->building_id = $id;
             $like->type = BuildingLike::TYPE_LIKE;
             $like->created_at = date('Y-m-d H:i:s');
-            
+
             if ($like->save()) {
                 $building->likes += 1;
                 $building->save(false);
@@ -551,9 +574,9 @@ class BuildingsController extends BaseApiController
 
     /**
      * Создание новой постройки
-     * 
+     *
      * @OA\Post(
-     *     path="/v1/buildings",
+     *     path="/v1/buildings/create",
      *     operationId="createBuilding",
      *     tags={"Buildings"},
      *     summary="Создать новую постройку",
@@ -592,7 +615,7 @@ class BuildingsController extends BaseApiController
         $userBuildingsWait = Building::find()
             ->where(['user_id' => $user->id, 'status' => Building::STATUS_WAIT])
             ->exists();
-        
+
         if ($userBuildingsWait) {
             return $this->errorResponse('BUILDING_WAIT_EXISTS', 'Вы не можете добавить новую постройку, пока у вас есть постройки на модерации', [], 400);
         }
@@ -627,7 +650,7 @@ class BuildingsController extends BaseApiController
         $server = Servers::find()
             ->where(['tag' => $serverTag])
             ->one();
-        
+
         if (!$server) {
             return $this->errorResponse('SERVER_NOT_FOUND', 'Сервер не найден', [], 404);
         }
@@ -635,7 +658,7 @@ class BuildingsController extends BaseApiController
         // Получаем изображения - либо файлы, либо уже загруженные имена файлов
         $images = UploadedFile::getInstancesByName('images');
         $imageFileNames = $request->post('imageFileNames', []);
-        
+
         // Определяем количество новых изображений, которые будут загружены
         $newImagesCount = 0;
         if (!empty($imageFileNames) && is_array($imageFileNames)) {
@@ -656,32 +679,32 @@ class BuildingsController extends BaseApiController
                 $images = array_slice($images, 0, 4);
             }
         }
-        
+
         // Проверяем лимит загрузки изображений (не более 10 за час)
         $oneHourAgo = date('Y-m-d H:i:s', strtotime('-1 hour'));
         $oneHourAgoTimestamp = strtotime($oneHourAgo);
-        
+
         // Считаем изображения, привязанные к постройкам пользователя
         $imagesInBuildings = BuildingImage::find()
             ->joinWith('building')
             ->where(['building.user_id' => $user->id])
             ->andWhere(['>=', 'building_image.created_at', $oneHourAgo])
             ->count();
-        
+
         // Считаем загрузки через upload-image за последний час (из кеша)
         $cacheKey = 'building_image_uploads_' . $user->id;
         $uploadedImages = Yii::$app->cache->get($cacheKey);
         if ($uploadedImages === false) {
             $uploadedImages = [];
         }
-        
+
         // Фильтруем загрузки за последний час
         $recentUploads = array_filter($uploadedImages, function($timestamp) use ($oneHourAgoTimestamp) {
             return $timestamp >= $oneHourAgoTimestamp;
         });
-        
+
         $imagesCount = $imagesInBuildings + count($recentUploads);
-        
+
         // Проверяем, не превысит ли загрузка лимит
         if ($imagesCount + $newImagesCount > 10) {
             $remaining = 10 - $imagesCount;
@@ -717,7 +740,7 @@ class BuildingsController extends BaseApiController
             $residentsArray = array_map('intval', $residents);
             $residentsArray = array_filter($residentsArray);
         }
-        
+
         // Добавляем владельца в список жильцов, если его там нет
         if (!in_array($user->id, $residentsArray)) {
             $residentsArray[] = $user->id;
@@ -728,22 +751,41 @@ class BuildingsController extends BaseApiController
             return $this->errorResponse('TEAM_LIMIT_EXCEEDED', 'Нарушение лимита команды, этот сервер для ' . $server->team_limit . ' человек', ['residents' => 'Превышен лимит команды'], 400);
         }
 
+        // Очищаем данные от HTML тегов и опасных символов (без HTMLPurifier, чтобы избежать проблем с правами доступа)
+        $cleanName = strip_tags($name);
+        $cleanDescription = strip_tags($description);
+        // Location должен быть в формате "E14" (буква + цифры), очищаем от всего лишнего
+        $cleanLocation = preg_replace('/[^A-Za-z0-9]/', '', strtoupper(trim($location)));
+        
+        // Дополнительная проверка длины
+        if (mb_strlen($cleanName) > 255) {
+            $cleanName = mb_substr($cleanName, 0, 255);
+        }
+        if (mb_strlen($cleanDescription) > 512) {
+            $cleanDescription = mb_substr($cleanDescription, 0, 512);
+        }
+        if (mb_strlen($cleanLocation) > 3) {
+            $cleanLocation = mb_substr($cleanLocation, 0, 3);
+        }
+
         // Создаем постройку
         $building = new Building();
         $building->user_id = $user->id;
-        $building->name = $name;
-        $building->description = $description;
-        $building->location = $location;
+        $building->name = $cleanName;
+        $building->description = $cleanDescription;
+        $building->location = $cleanLocation;
         $building->server_tag = $serverTag;
         $building->status = Building::STATUS_WAIT;
         $building->likes = 0;
-        
+
         // Формируем строку вайпа
         $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
         $building->wipe = $wipeDate;
         $building->created_at = date('Y-m-d H:i:s');
 
-        if (!$building->save()) {
+        // Используем save(false) чтобы пропустить валидацию с HTMLPurifier
+        // Данные уже очищены выше
+        if (!$building->save(false)) {
             return $this->errorResponse('SAVE_ERROR', 'Ошибка при сохранении постройки', $building->errors, 500);
         }
 
@@ -758,21 +800,21 @@ class BuildingsController extends BaseApiController
         // Загружаем изображения в S3
         $s3Api = Yii::$app->s3Api;
         $uploadedImages = [];
-        
+
         // Если переданы имена уже загруженных файлов
         if (!empty($imageFileNames)) {
             foreach ($imageFileNames as $fileName) {
                 // Проверяем, что файл существует в S3
                 $s3KeyOriginal = 'uploads/buildings/' . $fileName;
                 $publicUrl = $s3Api->getPublicUrl($s3KeyOriginal);
-                
+
                 // Сохраняем информацию об изображении в БД
                 $buildingImage = new BuildingImage();
                 $buildingImage->building_id = $building->id;
                 $buildingImage->image = $fileName;
                 $buildingImage->created_at = date('Y-m-d H:i:s');
                 $buildingImage->save(false);
-                
+
                 $uploadedImages[] = $publicUrl;
             }
         } else {
@@ -787,15 +829,15 @@ class BuildingsController extends BaseApiController
                 $tempDir = sys_get_temp_dir();
                 $tempOriginal = $tempDir . '/' . uniqid('building_orig_') . '.png';
                 $tempPreview = $tempDir . '/' . uniqid('building_preview_') . '.png';
-                
+
                 $fileName = $building->id . "_" . md5(time() . $i) . ".png";
-                
+
                 // Сохраняем оригинал во временный файл
                 file_put_contents($tempOriginal, file_get_contents($image->tempName));
-                
+
                 // Оптимизируем оригинал через TinyPNG (не критично, если не получится)
                 $this->optimizeImageWithTinify($tempOriginal);
-                
+
                 // Создаем превью используя метод из DropImage (с оптимизацией)
                 if (!DropImage::resizeImage($tempOriginal, $tempPreview, 200)) {
                     // Если не получилось через DropImage, используем старый метод
@@ -807,7 +849,7 @@ class BuildingsController extends BaseApiController
                     $offsetY = 0;
                     $newWidth = 200;
                     $newHeight = 200;
-                    
+
                     if ($img->getSize()->getWidth() > $img->getSize()->getHeight()) {
                         $diffWidth = $img->getSize()->getWidth() / $img->getSize()->getHeight();
                         $newWidth = 200 * $diffWidth;
@@ -830,33 +872,33 @@ class BuildingsController extends BaseApiController
                         ->crop(new Point($offsetX, $offsetY), new Box(200, 200))
                         ->save($tempPreview, ['quality' => 70]);
                 }
-                
+
                 // Загружаем оригинал в S3
                 $s3KeyOriginal = 'uploads/buildings/' . $fileName;
                 $originalContent = file_get_contents($tempOriginal);
                 $s3ResultOriginal = $s3Api->putFile($s3KeyOriginal, $originalContent, 'image/png');
-                
+
                 // Загружаем превью в S3
                 $s3KeyPreview = 'uploads/buildings/preview_' . $fileName;
                 $previewContent = file_get_contents($tempPreview);
                 $s3ResultPreview = $s3Api->putFile($s3KeyPreview, $previewContent, 'image/png');
-                
+
                 // Удаляем временные файлы
                 @unlink($tempOriginal);
                 @unlink($tempPreview);
-                
+
                 if ($s3ResultOriginal === false || $s3ResultPreview === false) {
                     Yii::error('Error uploading building image to S3', __METHOD__);
                     continue;
                 }
-                
+
                 // Сохраняем информацию об изображении в БД
                 $buildingImage = new BuildingImage();
                 $buildingImage->building_id = $building->id;
                 $buildingImage->image = $fileName;
                 $buildingImage->created_at = date('Y-m-d H:i:s');
                 $buildingImage->save(false);
-                
+
                 $uploadedImages[] = $buildingImage->getPublicUrl();
             } catch (\Exception $e) {
                 Yii::error('Error processing building image: ' . $e->getMessage(), __METHOD__);
@@ -920,7 +962,7 @@ class BuildingsController extends BaseApiController
 
     /**
      * Загрузка изображения для постройки
-     * 
+     *
      * @OA\Post(
      *     path="/v1/buildings/upload-image",
      *     operationId="uploadBuildingImage",
@@ -953,29 +995,29 @@ class BuildingsController extends BaseApiController
 
         // Проверяем лимит загрузки изображений (не более 10 за час)
         $oneHourAgo = date('Y-m-d H:i:s', strtotime('-1 hour'));
-        
+
         // Считаем изображения, привязанные к постройкам пользователя
         $imagesInBuildings = BuildingImage::find()
             ->joinWith('building')
             ->where(['building.user_id' => $user->id])
             ->andWhere(['>=', 'building_image.created_at', $oneHourAgo])
             ->count();
-        
+
         // Считаем загрузки через upload-image за последний час (из кеша)
         $cacheKey = 'building_image_uploads_' . $user->id;
         $uploadedImages = Yii::$app->cache->get($cacheKey);
         if ($uploadedImages === false) {
             $uploadedImages = [];
         }
-        
+
         // Фильтруем загрузки за последний час
         $oneHourAgoTimestamp = strtotime($oneHourAgo);
         $recentUploads = array_filter($uploadedImages, function($timestamp) use ($oneHourAgoTimestamp) {
             return $timestamp >= $oneHourAgoTimestamp;
         });
-        
+
         $imagesCount = $imagesInBuildings + count($recentUploads);
-        
+
         if ($imagesCount >= 10) {
             return $this->errorResponse('UPLOAD_LIMIT_EXCEEDED', 'Превышен лимит загрузки изображений. Максимум 10 изображений в час', [
                 'limit' => 10,
@@ -986,7 +1028,7 @@ class BuildingsController extends BaseApiController
 
         // Получаем файл
         $file = UploadedFile::getInstanceByName('image');
-        
+
         if (!$file) {
             return $this->errorResponse('FILE_REQUIRED', 'Файл изображения обязателен', [], 400);
         }
@@ -1010,21 +1052,21 @@ class BuildingsController extends BaseApiController
 
         try {
             $s3Api = Yii::$app->s3Api;
-            
+
             // Создаем временные файлы для обработки
             $tempDir = sys_get_temp_dir();
             $tempOriginal = $tempDir . '/' . uniqid('building_orig_') . '.png';
             $tempPreview = $tempDir . '/' . uniqid('building_preview_') . '.png';
-            
+
             // Генерируем уникальное имя файла
             $fileName = uniqid('building_') . '_' . md5(time() . $user->id) . ".png";
-            
+
             // Сохраняем оригинал во временный файл
             file_put_contents($tempOriginal, file_get_contents($file->tempName));
-            
+
             // Оптимизируем оригинал через TinyPNG (не критично, если не получится)
             $this->optimizeImageWithTinify($tempOriginal);
-            
+
             // Создаем превью используя метод из DropImage (с оптимизацией)
             if (!DropImage::resizeImage($tempOriginal, $tempPreview, 200)) {
                 // Если не получилось через DropImage, используем старый метод
@@ -1036,7 +1078,7 @@ class BuildingsController extends BaseApiController
                 $offsetY = 0;
                 $newWidth = 200;
                 $newHeight = 200;
-                
+
                 if ($img->getSize()->getWidth() > $img->getSize()->getHeight()) {
                     $diffWidth = $img->getSize()->getWidth() / $img->getSize()->getHeight();
                     $newWidth = 200 * $diffWidth;
@@ -1059,26 +1101,26 @@ class BuildingsController extends BaseApiController
                     ->crop(new Point($offsetX, $offsetY), new Box(200, 200))
                     ->save($tempPreview, ['quality' => 70]);
             }
-            
+
             // Загружаем оригинал в S3
             $s3KeyOriginal = 'uploads/buildings/' . $fileName;
             $originalContent = file_get_contents($tempOriginal);
             $s3ResultOriginal = $s3Api->putFile($s3KeyOriginal, $originalContent, 'image/png');
-            
+
             // Загружаем превью в S3
             $s3KeyPreview = 'uploads/buildings/preview_' . $fileName;
             $previewContent = file_get_contents($tempPreview);
             $s3ResultPreview = $s3Api->putFile($s3KeyPreview, $previewContent, 'image/png');
-            
+
             // Удаляем временные файлы
             @unlink($tempOriginal);
             @unlink($tempPreview);
-            
+
             if ($s3ResultOriginal === false || $s3ResultPreview === false) {
                 Yii::error('Error uploading building image to S3', __METHOD__);
                 return $this->errorResponse('UPLOAD_ERROR', 'Ошибка при загрузке изображения в S3', [], 500);
             }
-            
+
             // Сохраняем информацию о загрузке в кеш для отслеживания лимита
             $cacheKey = 'building_image_uploads_' . $user->id;
             $uploadedImages = Yii::$app->cache->get($cacheKey);
@@ -1088,17 +1130,17 @@ class BuildingsController extends BaseApiController
             $uploadedImages[] = time();
             // Храним в кеше на 2 часа (чтобы покрыть окно в 1 час)
             Yii::$app->cache->set($cacheKey, $uploadedImages, 7200);
-            
+
             // Возвращаем URL изображения
             $imageUrl = $s3Api->getPublicUrl($s3KeyOriginal);
             $previewUrl = $s3Api->getPublicUrl($s3KeyPreview);
-            
+
             return $this->successResponse([
                 'url' => $imageUrl,
                 'previewUrl' => $previewUrl,
                 'fileName' => $fileName,
             ]);
-            
+
         } catch (\Exception $e) {
             Yii::error('Error processing building image: ' . $e->getMessage(), __METHOD__);
             return $this->errorResponse('PROCESSING_ERROR', 'Ошибка при обработке изображения: ' . $e->getMessage(), [], 500);
@@ -1107,7 +1149,7 @@ class BuildingsController extends BaseApiController
 
     /**
      * Оптимизация изображения через TinyPNG
-     * 
+     *
      * @param string $filePath Путь к файлу изображения
      * @return bool Успешность оптимизации
      */
@@ -1123,7 +1165,7 @@ class BuildingsController extends BaseApiController
                 "dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8",
                 "SQMyJN0ZNs1zQfzrwBjMcsRHCnpffCbl",
             ];
-            
+
             foreach ($keys as $key) {
                 try {
                     \Tinify\setKey($key);
@@ -1135,7 +1177,7 @@ class BuildingsController extends BaseApiController
                     continue;
                 }
             }
-            
+
             // Если все ключи не сработали, просто логируем
             Yii::info('Tinify compression skipped for building image', __METHOD__);
             return false;
