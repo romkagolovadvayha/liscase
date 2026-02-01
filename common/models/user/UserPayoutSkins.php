@@ -64,15 +64,12 @@ class UserPayoutSkins extends ActiveRecord
         /** @var UserPayoutSkins $payout */
         $payout = UserPayoutSkins::find()
                        ->andWhere(['status' => $status])
+                       ->andWhere(['>=', 'created_at', '2026-01-01 00:00:01'])
                        ->orderBy(['created_at' => SORT_ASC])
                        ->one();
         if (empty($payout)) {
             return;
         }
-        if (empty($date)) {
-            $date = (new \DateTime($payout->created_at))->format('d-m-Y');
-        }
-        echo $date . PHP_EOL;
         $items = Yii::$app->rustTm->history($date)['data'];
         UserPayoutSkins::checkRust($items, $status);
     }
