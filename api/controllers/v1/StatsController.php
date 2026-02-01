@@ -73,6 +73,11 @@ class StatsController extends BaseApiController
             throw new NotFoundHttpException('Сервер не найден');
         }
 
+        // Если wipe не передан, используем текущий вайп сервера
+        if ($wipe === null) {
+            $wipe = $server->wipe ?? null;
+        }
+
         $cacheKey = 'api_stats_' . $serverTag . '_' . ($wipe ?? 'current');
         $cached = Yii::$app->cache->get($cacheKey);
 

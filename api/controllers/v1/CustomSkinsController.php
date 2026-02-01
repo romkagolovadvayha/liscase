@@ -220,7 +220,7 @@ class CustomSkinsController extends BaseApiController
      * Создание нового скина
      * 
      * @OA\Post(
-     *     path="/v1/custom-skins",
+     *     path="/v1/custom-skins/create",
      *     operationId="createCustomSkin",
      *     tags={"CustomSkins"},
      *     summary="Создать новый скин",
