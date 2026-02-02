@@ -300,7 +300,18 @@ class GameStoresController extends Controller
             return $this->errorResponse('Предмет не найден', 107);
         }
 
-        $item = $this->formatItem($userDrop, $drop, true);
+        // Проверка, что rust_id не равен 0 (для предметов)
+        if (empty($drop->command) && (empty($drop->rust_id) || $drop->rust_id == 0)) {
+            Yii::error("GameStores: Drop {$drop->id} has invalid rust_id: {$drop->rust_id}", 'gamestores');
+            return $this->errorResponse('Предмет имеет неверный rust_id', 107);
+        }
+
+        // Получаем картинки для определения URL (если rust_id нет)
+        $images = Drop::productsImages();
+        $item = $this->formatItem($userDrop, $drop, $images, true);
+        
+        // Логирование для отладки
+        Yii::info("GameStores baskets.item response for basketId {$basketId}: " . json_encode($item, JSON_UNESCAPED_UNICODE), 'gamestores');
         
         return $this->successResponse($item);
     }
@@ -526,11 +537,12 @@ class GameStoresController extends Controller
     /**
      * Форматировать предмет для baskets.item
      */
-    private function formatItem($userDrop, $drop, $includeSubDrop = false)
+    private function formatItem($userDrop, $drop, $images = [], $includeSubDrop = false)
     {
         $item = [
             'id' => $userDrop->id,
             'basketId' => $userDrop->id, // Для совместимости
+            'productId' => (string)$drop->id, // ID продукта (drop)
             'amount' => $userDrop->count,
             'name' => $drop->name,
             'lvl_inspection' => 0,
@@ -538,6 +550,43 @@ class GameStoresController extends Controller
             'is_blocked_building' => $drop->is_blocked_building,
             'subDrop' => [],
         ];
+
+        // Плагин ожидает вложенную структуру data["data"] с itemId или commands
+        $data = [];
+        
+        if (!empty($drop->command)) {
+            // Команда - нет rust_id, используем картинку с сайта
+            $item['command'] = str_replace("\r", '', $drop->command);
+            $item['type'] = "command";
+            $item['item_id'] = 0;
+            
+            // Для команд плагин ожидает data["data"]["commands"] как массив
+            $commands = explode("\n", $drop->command);
+            $commands = array_filter(array_map('trim', $commands)); // Убираем пустые строки
+            $data['commands'] = array_values($commands); // Преобразуем в массив с числовыми ключами
+            
+            // Для команд используем картинку с сайта
+            $item['img'] = $images[$userDrop->drop_id]['64px'] ?? '';
+        } else {
+            // Предмет
+            $item['type'] = "item";
+            $item['item_id'] = $drop->rust_id;
+            
+            // Для предметов плагин ожидает data["data"]["itemId"]
+            $data['itemId'] = $drop->rust_id;
+            
+            // Если есть rust_id, используем его как идентификатор для получения картинки из игры
+            // Плагин проверяет: если img не содержит "http", то это rust_id
+            if (!empty($drop->rust_id) && $drop->rust_id > 0) {
+                $item['img'] = (string)$drop->rust_id;
+            } else {
+                // Если rust_id нет, используем картинку с сайта
+                $item['img'] = $images[$userDrop->drop_id]['64px'] ?? '';
+            }
+        }
+        
+        // Добавляем вложенную структуру data
+        $item['data'] = $data;
 
         if ($includeSubDrop && $drop->full_only) {
             foreach ($drop->subDrops as $subDrop) {
@@ -555,15 +604,6 @@ class GameStoresController extends Controller
             }
         }
 
-        if (!empty($drop->command)) {
-            $item['command'] = str_replace("\r", '', $drop->command);
-            $item['type'] = "command";
-            $item['item_id'] = 0;
-        } else {
-            $item['type'] = "item";
-            $item['item_id'] = $drop->rust_id;
-        }
-
         return $item;
     }
 
@@ -572,12 +612,27 @@ class GameStoresController extends Controller
      */
     private function formatBasketItem($userDrop, $drop, $images, $itemsBlocked)
     {
+        // Определяем картинку: если есть rust_id, используем его, иначе картинку с сайта
+        $img = '';
+        if (!empty($drop->command)) {
+            // Команда - нет rust_id, используем картинку с сайта
+            $img = $images[$userDrop->drop_id]['64px'] ?? '';
+        } else {
+            // Предмет: если есть rust_id, используем его как идентификатор
+            if (!empty($drop->rust_id) && $drop->rust_id > 0) {
+                $img = (string)$drop->rust_id;
+            } else {
+                // Если rust_id нет, используем картинку с сайта
+                $img = $images[$userDrop->drop_id]['64px'] ?? '';
+            }
+        }
+        
         $item = [
             'id' => $userDrop->id,
             'basketId' => $userDrop->id, // Для совместимости
             'amount' => $userDrop->count,
             'name' => $drop->name,
-            'img' => $images[$userDrop->drop_id]['64px'] ?? '',
+            'img' => $img,
             'blocked' => false,
             'block_date' => null,
             'kd' => false,
