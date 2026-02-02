@@ -50,7 +50,7 @@ $config = [
                 // Swagger
                 'swagger' => 'swagger/index/index',
                 'swagger/json' => 'swagger/index/json',
-                
+
                 // API v1 routes
                 // Auth
                 'v1/auth/oauth' => 'v1/auth/oauth',
@@ -59,7 +59,7 @@ $config = [
                 'v1/auth/refresh' => 'v1/auth/refresh',
                 'v1/auth/logout' => 'v1/auth/logout',
                 'v1/auth/me' => 'v1/auth/me',
-                
+
                 // User
                 'v1/user/profile' => 'v1/user/profile',
                 'v1/user/social-links' => 'v1/user/social-links',
@@ -78,21 +78,21 @@ $config = [
                 'v1/user/partner/promocode' => 'v1/user/partner-promocode',
                 'v1/user/partner-bonus' => 'v1/user/partner-bonus',
                 'v1/user/promocode' => 'v1/user/promocode',
-                
+
                 // Settings
                 'v1/settings' => 'v1/settings/index',
-                
+
                 // Skins
                 'v1/skins' => 'v1/skins/index',
                 'v1/skins/confirm/<id:\d+>' => 'v1/skins/confirm',
-                
+
                 // Products
             'v1/products' => 'v1/products/index',
             'v1/products/categories' => 'v1/products/categories',
             'v1/products/<id:\d+>' => 'v1/products/view',
             'v1/products/<id:\d+>/buy' => 'v1/products/buy',
             'v1/banlist' => 'v1/banlist/index',
-                
+
                 // Servers
                 'v1/servers' => 'v1/servers/index',
                 'v1/servers/<tag:[\w-]+>' => 'v1/servers/view',
@@ -100,7 +100,7 @@ $config = [
                 'v1/servers/<serverTag:[\w-]+>/rules' => 'v1/servers/rules',
                 'v1/servers/<serverTag:[\w-]+>/wipe-info' => 'v1/servers/wipe-info',
                 'v1/servers/wipe-block' => 'v1/servers/wipe-block',
-                
+
                 // Stats
                 'v1/stats' => 'v1/stats/stats',
                 'v1/stats/players' => 'v1/stats/players',
@@ -109,18 +109,18 @@ $config = [
                 'v1/stats/tops' => 'v1/stats/tops',
                 'v1/stats/personal' => 'v1/stats/personal',
                 'v1/stats/report/<serverTag:[\w-]+>/<steamId:\d+>' => 'v1/stats/report',
-                
+
                 // Tasks
                 'v1/tasks' => 'v1/tasks/index',
                 'v1/tasks/<id:\d+>' => 'v1/tasks/detail',
                 'v1/tasks/<id:\d+>/check' => 'v1/tasks/check',
-                
+
                 // Payment
                 'v1/payment/methods' => 'v1/payment/methods',
                 'v1/payment/create' => 'v1/payment/create',
                 'v1/payment/status/<id:\d+>' => 'v1/payment/status',
                 'v1/payment/callback/<payment:[\w-]+>' => 'v1/payment/callback',
-                
+
                 // Support
                 'v1/support/tickets' => 'v1/support/tickets',
                 'v1/support/tickets/create' => 'v1/support/create',
@@ -132,43 +132,42 @@ $config = [
                 'v1/support/users/<userId:\d+>/mute' => 'v1/support/mute',
                 'v1/support/users/<userId:\d+>/block-chat' => 'v1/support/block-chat',
                 'v1/support/users/<userId:\d+>/block-account' => 'v1/support/block-account',
-                
+
                 // Store
                 'v1/store/deliver' => 'v1/store/deliver',
                 'v1/store/return' => 'v1/store/return',
-                
+
                 // Blog
                 'v1/blog/categories' => 'v1/blog/categories',
                 'v1/blog/<linkName>/similar' => 'v1/blog/similar',
                 'v1/blog/<linkName>/comments' => 'v1/blog/comments',
                 'v1/blog/comments/<id:\d+>/like' => 'v1/blog/like-comment',
                 'v1/blog' => 'v1/blog/index',
-                
+
                 // Wipe Calendar
                 'v1/wipe-calendar' => 'v1/wipe-calendar/index',
-                
+
                 // Maps
                 'v1/maps/vote' => 'v1/maps/vote',
                 'v1/maps' => 'v1/maps/index',
-                
+
                 // Buildings
                 'v1/buildings' => 'v1/buildings/index',
                 'v1/buildings/upload-image' => 'v1/buildings/upload-image',
                 'v1/buildings/<id:\d+>/like' => 'v1/buildings/like',
                 'v1/buildings/<id:\d+>/likes' => 'v1/buildings/likes',
                 'v1/buildings/<id:\d+>' => 'v1/buildings/view',
-                
+
                 // Custom Skins
                 'v1/custom-skins/categories' => 'v1/custom-skins/categories',
                 'v1/custom-skins/<id:\d+>/likes' => 'v1/custom-skins/likes',
                 'v1/custom-skins/<id:\d+>/like' => 'v1/custom-skins/like',
                 'v1/custom-skins' => 'v1/custom-skins/index',
-                
+
                 // GameStores API (для плагина GameStoresRUST)
                 // Отдельный роутинг для store.pluginInfo (с точкой)
-                'v1/game-stores/store.pluginInfo' => 'v1/game-stores/index',
                 'v1/game-stores/<method:[\w\.-]+>' => 'v1/game-stores/index',
-                
+
                 // GameStores Payments API (для платежей через плагин)
                 'v1/integrations/payments/custom' => 'v1/game-stores/integrations-payments-custom',
             ],
