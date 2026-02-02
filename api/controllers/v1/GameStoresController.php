@@ -25,6 +25,11 @@ use yii\web\Response;
 class GameStoresController extends Controller
 {
     /**
+     * Отключить CSRF валидацию для API
+     */
+    public $enableCsrfValidation = false;
+
+    /**
      * {@inheritdoc}
      */
     public function actions()
@@ -56,15 +61,22 @@ class GameStoresController extends Controller
 
         // Получаем body параметры (POST)
         // GameStoresRUST отправляет данные как form-data через UnityWebRequest.Post
-        $bodyParams = Yii::$app->request->post();
+        // Для методов без body (например, store.pluginInfo) POST может быть пустым
+        $bodyParams = [];
         
-        // Если POST пустой, пробуем получить из raw body (JSON, если отправлено как JSON)
-        if (empty($bodyParams)) {
-            $rawBody = Yii::$app->request->getRawBody();
-            if (!empty($rawBody)) {
-                $decoded = json_decode($rawBody, true);
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    $bodyParams = $decoded;
+        // Пробуем получить POST данные только если это не GET запрос
+        if (Yii::$app->request->isPost) {
+            $postData = Yii::$app->request->post();
+            if (!empty($postData)) {
+                $bodyParams = $postData;
+            } else {
+                // Если POST пустой, пробуем получить из raw body (JSON, если отправлено как JSON)
+                $rawBody = Yii::$app->request->getRawBody();
+                if (!empty($rawBody)) {
+                    $decoded = json_decode($rawBody, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $bodyParams = $decoded;
+                    }
                 }
             }
         }
