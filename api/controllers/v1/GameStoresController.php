@@ -627,7 +627,7 @@ class GameStoresController extends Controller
             $img = $images[$userDrop->drop_id]['64px'] ?? '';
         } else {
             // Предмет: если есть rust_id, используем его как идентификатор
-            if (!empty($drop->rust_id) && $drop->rust_id > 0) {
+            if (!empty($drop->rust_id)) {
                 $img = (string)$drop->rust_id;
             } else {
                 // Если rust_id нет, используем картинку с сайта
@@ -703,7 +703,7 @@ class GameStoresController extends Controller
             $data['itemId'] = $rustId;
             
             // Также добавляем itemDefinition.itemid для совместимости (только если rust_id валидный)
-            if (!empty($drop->rust_id) && $drop->rust_id > 0) {
+            if (!empty($drop->rust_id)) {
                 $data['itemDefinition'] = [
                     'itemid' => $drop->rust_id
                 ];
