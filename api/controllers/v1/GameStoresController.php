@@ -637,6 +637,7 @@ class GameStoresController extends Controller
         $item = [
             'id' => $userDrop->id,
             'basketId' => $userDrop->id, // Для совместимости
+            'productId' => (string)$drop->id, // ID продукта (drop)
             'amount' => $userDrop->count,
             'name' => $drop->name,
             'img' => $img,
@@ -671,14 +672,35 @@ class GameStoresController extends Controller
             }
         }
 
+        // Плагин ожидает вложенную структуру data["data"] с itemId или commands
+        $data = [];
+        
         if (!empty($drop->command)) {
             $item['command'] = str_replace("\r", '', $drop->command);
             $item['type'] = "command";
             $item['item_id'] = 0;
+            
+            // Для команд плагин ожидает data["data"]["commands"] как массив
+            $commands = explode("\n", $drop->command);
+            $commands = array_filter(array_map('trim', $commands)); // Убираем пустые строки
+            $data['commands'] = array_values($commands); // Преобразуем в массив с числовыми ключами
         } else {
             $item['type'] = "item";
-            $item['item_id'] = $drop->rust_id;
+            $item['item_id'] = $drop->rust_id ?? 0;
+            
+            // Для предметов плагин ожидает data["data"]["itemId"]
+            // Добавляем только если rust_id валидный (не 0 и не null)
+            if (!empty($drop->rust_id) && $drop->rust_id > 0) {
+                $data['itemId'] = $drop->rust_id;
+            } else {
+                // Если rust_id нет или равен 0, все равно добавляем 0, чтобы плагин мог обработать
+                // Но плагин вернет IsValid = false, так как ItemID == 0
+                $data['itemId'] = 0;
+            }
         }
+        
+        // Добавляем вложенную структуру data
+        $item['data'] = $data;
 
         return $item;
     }
