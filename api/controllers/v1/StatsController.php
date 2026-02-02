@@ -457,8 +457,8 @@ class StatsController extends BaseApiController
                     // Позиция в UserTop::getUserTops начинается с 0 (0 = первое место, 1 = второе, 2 = третье)
                     // Но для отображения на фронтенде нужна позиция с 1
                     $position = isset($item['position']) ? $item['position'] + 1 : 1;
-                    
-                    return [
+        
+        return [
                         'position' => $position,
                         'color' => $item['color'] ?? 'bronze',
                         'amount' => $item['amount'] ?? 0,
@@ -480,7 +480,7 @@ class StatsController extends BaseApiController
                 $formattedTops[$apiKey] = [
                     'label' => ucfirst($apiKey),
                     'items' => [],
-                ];
+        ];
             }
         }
 

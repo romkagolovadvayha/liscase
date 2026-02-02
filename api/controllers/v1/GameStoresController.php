@@ -2,9 +2,11 @@
 
 namespace api\controllers\v1;
 
+use common\components\payments\PaymentApi;
 use common\components\queue\process\ActivatedDropJob;
 use common\models\box\Drop;
 use common\models\box\DropBlocked;
+use common\models\invoice\Deposit;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use common\models\user\User;
@@ -16,9 +18,9 @@ use yii\web\Response;
 /**
  * Контроллер для работы с GameStoresRUST плагином
  * Формат API: POST запросы с методами как путями
- * URL: /v1/{method}?store_id=XXX&server_id=YYY
+ * URL: /v1/{method}?server_ip=XXX&server_port=YYY
  * Body: JSON с параметрами
- * Headers: storeId, secretKey, serverId (опционально, для дополнительной проверки)
+ * Headers: serverIp, serverPort (IP и PORT берутся из ConVar.Server)
  */
 class GameStoresController extends Controller
 {
@@ -45,14 +47,10 @@ class GameStoresController extends Controller
         Yii::$app->response->format = Response::FORMAT_JSON;
 
         // Получаем параметры из query string
-        $storeId = Yii::$app->request->get('store_id');
-        $serverId = Yii::$app->request->get('server_id');
         $queryServerIp = Yii::$app->request->get('server_ip');
         $queryServerPort = Yii::$app->request->get('server_port');
 
         // Получаем параметры из headers (если есть)
-        $headerStoreId = Yii::$app->request->headers->get('storeId');
-        $headerServerId = Yii::$app->request->headers->get('serverId');
         $headerServerIp = Yii::$app->request->headers->get('serverIp');
         $headerServerPort = Yii::$app->request->headers->get('serverPort');
 
@@ -76,9 +74,15 @@ class GameStoresController extends Controller
         $serverIp = $headerServerIp ?: $queryServerIp;
         $serverPort = $headerServerPort ?: $queryServerPort;
         
-        $server = $this->findServer($storeId, $serverId, $serverIp, $serverPort, $headerServerId);
+        // Логирование для отладки
+        if (empty($serverIp) || empty($serverPort)) {
+            Yii::error("GameStores: Missing server IP or PORT. IP: {$serverIp}, PORT: {$serverPort}, Method: {$method}", 'gamestores');
+        }
+        
+        $server = $this->findServer($serverIp, $serverPort);
         
         if (!$server) {
+            Yii::error("GameStores: Server not found. IP: {$serverIp}, PORT: {$serverPort}, Method: {$method}", 'gamestores');
             return $this->errorResponse('Сервер с таким IP и PORT не найден', 103);
         }
 
@@ -101,6 +105,153 @@ class GameStoresController extends Controller
             
             default:
                 return $this->errorResponse('Метод не найден!', 105);
+        }
+    }
+
+    /**
+     * Обработка платежей через integrations/payments/custom
+     * Используется для консольной команды gs.createpayment
+     * 
+     * @return Response
+     */
+    public function actionIntegrationsPaymentsCustom()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        // Получаем параметры из query string
+        $queryServerIp = Yii::$app->request->get('server_ip');
+        $queryServerPort = Yii::$app->request->get('server_port');
+
+        // Получаем параметры из headers (если есть)
+        $headerServerIp = Yii::$app->request->headers->get('serverIp');
+        $headerServerPort = Yii::$app->request->headers->get('serverPort');
+
+        // Получаем body параметры (POST)
+        $bodyParams = Yii::$app->request->post();
+        
+        // Если POST пустой, пробуем получить из raw body (JSON, если отправлено как JSON)
+        if (empty($bodyParams)) {
+            $rawBody = Yii::$app->request->getRawBody();
+            if (!empty($rawBody)) {
+                $decoded = json_decode($rawBody, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $bodyParams = $decoded;
+                }
+            }
+        }
+
+        // Находим сервер по IP и PORT
+        $serverIp = $headerServerIp ?: $queryServerIp;
+        $serverPort = $headerServerPort ?: $queryServerPort;
+        
+        $server = $this->findServer($serverIp, $serverPort);
+        
+        if (!$server) {
+            return $this->errorResponse('Сервер с таким IP и PORT не найден', 103);
+        }
+
+        // Получаем параметры запроса
+        $steamId = $bodyParams['steam_id'] ?? Yii::$app->request->post('steam_id');
+        $amount = $bodyParams['amount'] ?? Yii::$app->request->post('amount');
+        $methodName = $bodyParams['method_name'] ?? Yii::$app->request->post('method_name', 'Custom');
+        $createPlayer = $bodyParams['create_player'] ?? Yii::$app->request->post('create_player', 'false');
+
+        // Валидация параметров
+        if (empty($steamId)) {
+            return $this->errorResponse('Отсутствует обязательный параметр: steam_id', 400);
+        }
+
+        if (empty($amount)) {
+            return $this->errorResponse('Отсутствует обязательный параметр: amount', 400);
+        }
+
+        $steamId = (string)$steamId;
+        $amount = (int)$amount;
+
+        // Проверка steam_id
+        if (strlen($steamId) !== 17 || !is_numeric($steamId)) {
+            return $this->errorResponse('Неверный формат steam_id', 400);
+        }
+
+        // Проверка суммы
+        if ($amount < 1 || $amount > 1000000) {
+            return $this->errorResponse('Сумма должна быть в диапазоне от 1 до 1000000', 400);
+        }
+
+        // Находим или создаем пользователя
+        $user = User::findBySteamId($steamId, true, 'gamestores_payment');
+        
+        if (!$user) {
+            return $this->errorResponse('Не удалось найти или создать пользователя', 400);
+        }
+
+        // Если create_player = true и пользователь только что создан, можно выполнить дополнительные действия
+        // (например, начислить стартовый баланс)
+
+        try {
+            // Используем TYPE_PAYMENT_CARD_TINKOFF, как на сайте
+            $paymentType = Deposit::TYPE_PAYMENT_CARD_TINKOFF;
+            
+            // Создаем операцию депозита
+            $deposit = Deposit::createOperation($user->id, $amount, $paymentType);
+            
+            if (!$deposit) {
+                return $this->errorResponse('Не удалось создать платеж', 500);
+            }
+
+            // Получаем API провайдера для Tinkoff и создаем платеж
+            $paymentApi = PaymentApi::getInstance($paymentType);
+            $response = $paymentApi->create($deposit);
+            
+            if (empty($response)) {
+                $deposit->status = Deposit::STATUS_CANCELED;
+                $deposit->save(false);
+                return $this->errorResponse('Не удалось создать платеж в системе оплаты', 500);
+            }
+
+            // Получаем текущий баланс пользователя
+            $user->refresh();
+            $playerBalance = $user->balance ?? 0;
+            
+            // Получаем баланс магазина (если есть такая концепция)
+            $storeBalance = 0; // TODO: реализовать получение баланса магазина, если необходимо
+
+            // Формируем ответ в формате, ожидаемом плагином
+            $result = [
+                'result' => 'success',
+                'data' => [
+                    'payment_id' => $deposit->id,
+                    'player_balance' => (string)$playerBalance,
+                    'store_balance' => (string)$storeBalance,
+                ],
+            ];
+            
+            // Добавляем ссылку на оплату, если она есть
+            if (!empty($response['paymentURL'])) {
+                $result['data']['payment_url'] = $response['paymentURL'];
+            }
+            
+            // Добавляем template данные, если они есть
+            if (!empty($response['template'])) {
+                $result['data']['template'] = $response['template'];
+                $result['data']['template_data'] = $response;
+            }
+
+            return $result;
+            
+        } catch (\Exception $e) {
+            Yii::error("Error creating payment for steam_id {$steamId}: " . $e->getMessage(), 'gamestores');
+            
+            // Проверяем, не недостаточно ли средств на балансе магазина
+            if (strpos($e->getMessage(), 'insufficient') !== false || strpos($e->getMessage(), 'баланс') !== false) {
+                return [
+                    'result' => 'fail',
+                    'code' => '102',
+                    'message' => 'Недостаточно средств на балансе магазина',
+                ];
+            }
+            
+            return $this->errorResponse('Ошибка при создании платежа: ' . $e->getMessage(), 500);
         }
     }
 
@@ -286,21 +437,30 @@ class GameStoresController extends Controller
      */
     private function actionStorePluginInfo($server)
     {
+        // Плагин ожидает формат: {"result": "success", "data": {...}}
         $data = [
             'link' => Yii::$app->settings->get('site_domain'),
-            'default_balance' => 50,
-            'servers' => [$server->id], // Список ID серверов для проверки
+            'defaultBalance' => 50, // camelCase, как ожидает плагин
+            'servers' => [(string)$server->id], // Список строк, как ожидает плагин
         ];
 
-        return $this->successResponse($data);
+        // Возвращаем в формате, который ожидает плагин
+        return [
+            'result' => 'success',
+            'data' => $data,
+        ];
     }
 
     /**
      * Найти сервер по IP и PORT
-     * Идентификация происходит по IP и PORT сервера
+     * Идентификация происходит только по IP и PORT сервера
      */
-    private function findServer($storeId, $serverId, $serverIp = null, $serverPort = null, $headerServerId = null)
+    private function findServer($serverIp = null, $serverPort = null)
     {
+        if (!$serverIp || !$serverPort) {
+            return null;
+        }
+
         /** @var Servers[] $servers */
         $servers = Servers::find()
             ->cache(60)
@@ -311,37 +471,21 @@ class GameStoresController extends Controller
         /** @var Servers $server */
         $server = null;
         
-        // Приоритет 1: IP и PORT из headers
-        if ($serverIp && $serverPort) {
-            foreach ($servers as $_server) {
-                // Сравниваем IP (может быть в разных форматах: с портом или без)
-                $serverIpClean = $this->cleanIpAddress($_server->ip);
-                $requestIpClean = $this->cleanIpAddress($serverIp);
-                
-                if ($serverIpClean == $requestIpClean && $_server->port == (int)$serverPort) {
-                    // Если передан serverId в headers, проверяем соответствие
-                    if ($headerServerId && $_server->id != $headerServerId) {
-                        continue;
-                    }
-                    // Если передан serverId в query, проверяем соответствие
-                    if ($serverId && $_server->id != $serverId) {
-                        continue;
-                    }
-                    $server = $_server;
-                    break;
-                }
-            }
-        }
-        
-        // Приоритет 2: storeId и serverId из query string (для обратной совместимости)
-        if (!$server && $storeId && $serverId) {
-            foreach ($servers as $_server) {
-                // storeId может быть ID магазина
-                // serverId должен совпадать с ID сервера
-                if ($_server->id == $storeId && $_server->id == $serverId) {
-                    $server = $_server;
-                    break;
-                }
+        // Поиск по IP и PORT
+        foreach ($servers as $_server) {
+            // Сравниваем IP (может быть в разных форматах: с портом или без)
+            $serverIpClean = $this->cleanIpAddress($_server->ip);
+            $requestIpClean = $this->cleanIpAddress($serverIp);
+            
+            // Также проверяем text_ip, если он есть
+            $serverTextIpClean = !empty($_server->text_ip) ? $this->cleanIpAddress($_server->text_ip) : null;
+            
+            $ipMatches = ($serverIpClean == $requestIpClean) || 
+                        ($serverTextIpClean && $serverTextIpClean == $requestIpClean);
+            
+            if ($ipMatches && $_server->port == (int)$serverPort) {
+                $server = $_server;
+                break;
             }
         }
 
