@@ -570,24 +570,25 @@ class GameStoresController extends Controller
         } else {
             // Предмет
             $item['type'] = "item";
-            $item['item_id'] = $drop->rust_id;
+            $item['item_id'] = $drop->rust_id ?? 0;
             
             // Для предметов плагин ожидает data["data"]["itemId"]
-            $data['itemId'] = $drop->rust_id;
+            // Всегда передаем itemId (даже если 0), чтобы плагин мог обработать
+            $rustId = $drop->rust_id ?? 0;
+            $data['itemId'] = $rustId;
             
-            // Также добавляем itemDefinition.itemid для совместимости
+            // Также добавляем itemDefinition.itemid для совместимости (только если rust_id валидный)
             if (!empty($drop->rust_id) && $drop->rust_id > 0) {
                 $data['itemDefinition'] = [
                     'itemid' => $drop->rust_id
                 ];
-            }
-            
-            // Если есть rust_id, используем его как идентификатор для получения картинки из игры
-            // Плагин проверяет: если img не содержит "http", то это rust_id
-            if (!empty($drop->rust_id) && $drop->rust_id > 0) {
+                
+                // Если есть rust_id, используем его как идентификатор для получения картинки из игры
+                // Плагин проверяет: если img не содержит "http", то это rust_id
                 $item['img'] = (string)$drop->rust_id;
             } else {
-                // Если rust_id нет, используем картинку с сайта
+                // Если rust_id нет или равен 0, используем картинку с сайта
+                // Плагин вернет IsValid = false, так как ItemID == 0
                 $item['img'] = $images[$userDrop->drop_id]['64px'] ?? '';
             }
         }
@@ -634,11 +635,19 @@ class GameStoresController extends Controller
             }
         }
         
+        // Убеждаемся, что img всегда строка (не null)
+        if ($img === null) {
+            $img = '';
+        }
+        
+        // Убеждаемся, что amount всегда число (не null)
+        $amount = $userDrop->count ?? 0;
+        
         $item = [
             'id' => $userDrop->id,
             'basketId' => $userDrop->id, // Для совместимости
             'productId' => (string)$drop->id, // ID продукта (drop)
-            'amount' => $userDrop->count,
+            'amount' => $amount,
             'name' => $drop->name,
             'img' => $img,
             'blocked' => false,
@@ -689,13 +698,15 @@ class GameStoresController extends Controller
             $item['item_id'] = $drop->rust_id ?? 0;
             
             // Для предметов плагин ожидает data["data"]["itemId"]
-            // Добавляем только если rust_id валидный (не 0 и не null)
+            // Всегда передаем itemId (даже если 0), чтобы плагин мог обработать
+            $rustId = $drop->rust_id ?? 0;
+            $data['itemId'] = $rustId;
+            
+            // Также добавляем itemDefinition.itemid для совместимости (только если rust_id валидный)
             if (!empty($drop->rust_id) && $drop->rust_id > 0) {
-                $data['itemId'] = $drop->rust_id;
-            } else {
-                // Если rust_id нет или равен 0, все равно добавляем 0, чтобы плагин мог обработать
-                // Но плагин вернет IsValid = false, так как ItemID == 0
-                $data['itemId'] = 0;
+                $data['itemDefinition'] = [
+                    'itemid' => $drop->rust_id
+                ];
             }
         }
         
