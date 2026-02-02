@@ -575,6 +575,13 @@ class GameStoresController extends Controller
             // Для предметов плагин ожидает data["data"]["itemId"]
             $data['itemId'] = $drop->rust_id;
             
+            // Также добавляем itemDefinition.itemid для совместимости
+            if (!empty($drop->rust_id) && $drop->rust_id > 0) {
+                $data['itemDefinition'] = [
+                    'itemid' => $drop->rust_id
+                ];
+            }
+            
             // Если есть rust_id, используем его как идентификатор для получения картинки из игры
             // Плагин проверяет: если img не содержит "http", то это rust_id
             if (!empty($drop->rust_id) && $drop->rust_id > 0) {
