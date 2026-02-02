@@ -24,6 +24,23 @@ use yii\web\Response;
 class ShopController extends Controller
 {
 
+     /**
+     * {@inheritdoc}
+     */
+    public function actions()
+    {
+        return [
+            'error' => [
+                'class' => 'yii\web\ErrorAction',
+            ],
+        ];
+    }
+
+//{
+//"result": "fail",
+//"message": "\u0418\u0433\u0440\u043e\u043a \u043d\u0435 \u0437\u0430\u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0438\u0440\u043e\u0432\u0430\u043d",
+//"code": 105
+//}
     public function actionIndex($secret, $method, $steam_id = null, $item_id = null, $id = null) {
         header('Content-type: application/json');
         /** @var Servers[] $servers */
@@ -98,7 +115,7 @@ class ShopController extends Controller
     private function methodGived($item_id, $server = null) {
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
-        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
+        if (empty($userDrop) || ($userDrop->status !== UserDrop::STATUS_WAIT && $userDrop->status !== UserDrop::STATUS_ACTIVE)) {
             return [
                 'result' => 'fail',
                 'message' => "Предмет уже получен/продан",
@@ -197,7 +214,7 @@ class ShopController extends Controller
     private function methodItem($item_id, $steam_id = null) {
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
-        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
+        if (empty($userDrop) || ($userDrop->status !== UserDrop::STATUS_WAIT && $userDrop->status !== UserDrop::STATUS_ACTIVE)) {
             return [
                 'result' => 'fail',
                 'message' => "Предмет уже получен/продан",
@@ -223,7 +240,25 @@ class ShopController extends Controller
             'amount' => $userDrop->count,
             'name' => $drop->name,
             'lvl_inspection' => 0,
+            'full_only' => $drop->full_only,
+            'is_blocked_building' => $drop->is_blocked_building,
+            'subDrop' => [],
         ];
+        if ($drop->full_only) {
+            foreach ($drop->subDrops as $subDrop) {
+                $_subDrop = [];
+                $_subDrop['count'] = $subDrop->count;
+                if (!empty($subDrop->drop->command)) {
+                    $_subDrop['command'] = str_replace("\r", '', $subDrop->drop->command);
+                    $_subDrop['type'] = "command";
+                    $_subDrop['item_id'] = 0;
+                } else {
+                    $_subDrop['type'] = "item";
+                    $_subDrop['item_id'] = $subDrop->drop->rust_id;
+                }
+                $item['subDrop'][] = $_subDrop;
+            }
+        }
         if (!empty($drop->command)) {
             $item['command'] = str_replace("\r", '', $drop->command);
             $item['type'] = "command";
@@ -243,7 +278,7 @@ class ShopController extends Controller
     private function methodTake($item_id) {
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($item_id);
-        if (empty($userDrop) || $userDrop->status !== UserDrop::STATUS_ACTIVE) {
+        if (empty($userDrop) || ($userDrop->status !== UserDrop::STATUS_WAIT && $userDrop->status !== UserDrop::STATUS_ACTIVE)) {
             return [
                 'result' => 'fail',
                 'message' => "Предмет уже получен/продан",
@@ -294,7 +329,7 @@ class ShopController extends Controller
 
         /** @var UserDrop[] $userDrops */
         $userDrops = $user->getUserDrop()
-                          ->andWhere(['status' => UserDrop::STATUS_ACTIVE])
+                          ->andWhere(['IN', 'status', [UserDrop::STATUS_ACTIVE, UserDrop::STATUS_WAIT]])
                           ->orderBy(['id' => SORT_DESC])
                           ->all();
 
@@ -313,6 +348,9 @@ class ShopController extends Controller
                 'blocked' => false,
                 'block_date' => null,
                 'kd' => false,
+                'full_only' => $drop->full_only,
+                'is_blocked_building' => $drop->is_blocked_building,
+                'subDrop' => [],
             ];
             if (!empty($drop->blocked_hour)) {
                 if (!empty($itemsBlocked[$userDrop->drop_id])) {
@@ -342,6 +380,20 @@ class ShopController extends Controller
 //                    $item['kd'] = true;
 //                }
 //            }
+            if ($drop->full_only) {
+                foreach ($drop->subDrops as $subDrop) {
+                    $_subDrop = [];
+                    if (!empty($subDrop->drop->command)) {
+                        $_subDrop['command'] = str_replace("\r", '', $subDrop->drop->command);
+                        $_subDrop['type'] = "command";
+                        $_subDrop['item_id'] = 0;
+                    } else {
+                        $_subDrop['type'] = "item";
+                        $_subDrop['item_id'] = $subDrop->drop->rust_id;
+                    }
+                    $item['subDrop'][] = $_subDrop;
+                }
+            }
             if (!empty($drop->command)) {
                 $item['command'] = str_replace("\r", '', $drop->command);
                 $item['type'] = "command";
@@ -369,284 +421,5 @@ class ShopController extends Controller
         $result['result'] = "fail";
         $result['code'] = 104;
         return $result;
-    }
-
-    public function actionWipeInfo($serverTag)
-    {
-        header('Content-type: application/json');
-        $color = Yii::$app->settings->get('colors_server-command');
-        /** @var Servers $server */
-        $server = Servers::find()
-            ->andWhere(['tag' => $serverTag])
-            ->one();
-        $result = [];
-        if (empty($server)) {
-            $result['message'] = "Данных нет";
-            $result['result'] = "fail";
-            $result['code'] = 104;
-            return json_encode($result,JSON_PRETTY_PRINT);
-        }
-        $lastWipe = (new \DateTime($server->wipe))->format('d.m.Y H:i');
-        $nextWipe = (new \DateTime($server->next_wipe))->format('d.m.Y H:i');
-        $result['ru'] = "Последний вайп: <color={$color}>{$lastWipe} МСК</color>\nСледующий вайп: <color={$color}>{$nextWipe} МСК</color>";
-        $result['en'] = "Last WIPE: <color={$color}>{$lastWipe} MSK</color>\nNext WIPE: <color={$color}>{$nextWipe} MSK</color>";
-        $result['code'] = 200;
-        return json_encode($result,JSON_PRETTY_PRINT);
-    }
-
-    public function actionWelcomeMessage($serverTag)
-    {
-        header('Content-type: application/json');
-        /** @var Servers $server */
-        $server = Servers::find()
-            ->andWhere(['tag' => $serverTag])
-            ->one();
-        $result = [];
-        if (empty($server)) {
-            $result['message'] = "Данных нет";
-            $result['result'] = "fail";
-            $result['code'] = 104;
-            return json_encode($result,JSON_PRETTY_PRINT);
-        }
-        $color = Yii::$app->settings->get('colors_server-command');
-        $colorPrimary = Yii::$app->settings->get('colors_server-command-primary');
-        $result['ru'] = "Добро пожаловать на сервер {0}!" . PHP_EOL;
-        $result['ru'] .= "<color={$color}><size=18>{$server->name}</size></color>" . PHP_EOL;
-        $result['ru'] .= "Для получения информации о командах на сервере введите в чат <color={$color}>/help</color>" . PHP_EOL;
-        $result['ru'] .= "Правила сервера и новости можно посмотреть в нашем Discord - <color={$colorPrimary}>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
-        $result['ru'] .= "Удачного выживания!";
-
-        $nameEn = Yii::t('database', $server->name, [], 'en-US');
-        $result['en'] = "Welcome to the server {0}!" . PHP_EOL;
-        $result['en'] .= "<color={$color}><size=18>{$nameEn}</size></color>" . PHP_EOL;
-        $result['en'] .= "To get information about commands on the server, enter into chat <color={$color}>/help</color>" . PHP_EOL;
-        $result['en'] .= "Server rules and news can be found on our website - <color={$colorPrimary}>en." . Yii::$app->settings->get('site_domain') . "</color>" . PHP_EOL;
-        $result['en'] .= "Happy survival!";
-        $result['code'] = 200;
-        return json_encode($result,JSON_PRETTY_PRINT);
-    }
-
-    public function actionRadioList()
-    {
-        Yii::$app->response->format = Response::FORMAT_JSON;
-        $list = [
-          [
-              'name' => 'Русское',
-              'url' => 'https://rusradio.hostingradio.ru/rusradio128.mp3',
-          ],
-          [
-              'name' => 'Маруся',
-              'url' => 'https://radio-holding.ru:9433/marusya_default',
-          ],
-          [
-              'name' => 'Новое',
-              'url' => 'https://stream.newradio.ru/novoe96.aacp',
-          ],
-          [
-              'name' => 'TNT',
-              'url' => 'https://tntradio.hostingradio.ru:8027/tntradio128.mp3',
-          ],
-          [
-              'name' => 'Авто',
-              'url' => 'https://pub0201.101.ru/stream/air/aac/64/100',
-          ],
-          [
-              'name' => 'Energy',
-              'url' => 'https://pub0201.101.ru/stream/air/aac/64/99',
-          ],
-          [
-              'name' => 'Попса',
-              'url' => 'https://pub0201.101.ru/stream/air/aac/64/99',
-          ],
-          [
-              'name' => 'Шансон',
-              'url' => 'https://chanson.hostingradio.ru:8041/chanson128.mp3',
-          ],
-          [
-              'name' => 'Романтический Шансон',
-              'url' => 'https://chanson.hostingradio.ru:8041/chanson-romantic256.mp3',
-          ],
-          [
-              'name' => 'Калина Красная',
-              'url' => 'https://icecast-studio21.cdnvideo.ru/KalynaK_1a',
-          ],
-          [
-              'name' => 'Спутник',
-              'url' => 'https://radio.mediacdn.ru/sputnik_fm.mp3',
-          ],
-          [
-              'name' => 'PROSTOJ ONE',
-              'url' => 'https://ws.prostoj.store/radio1/stream',
-          ],
-          [
-              'name' => 'PROSTOJ TWO',
-              'url' => 'https://myradio24.org/46527',
-          ],
-        ];
-
-        $str = "";
-        foreach ($list as $item) {
-            $str .= ',' . $item['name'] . ',' . $item['url'];
-        }
-
-        return [
-            'radioList' => substr($str, 1)
-        ];
-    }
-
-    public function actionHelpInfo($serverTag)
-    {
-        header('Content-type: application/json');
-        /** @var Servers $server */
-        $server = Servers::find()
-            ->andWhere(['tag' => $serverTag])
-            ->one();
-        $result = [];
-        if (empty($server)) {
-            $result['message'] = "Данных нет";
-            $result['result'] = "fail";
-            $result['code'] = 104;
-            return json_encode($result,JSON_PRETTY_PRINT);
-        }
-        $color = Yii::$app->settings->get('colors_server-command');
-        $colorPrimary = Yii::$app->settings->get('colors_server-command-primary');
-        $result['ru'] = "<color={$color}>/pop</color> - Текущий онлайн игроков" . PHP_EOL .
-        "<color={$color}>/wipe</color> - Информация о вайпе" . PHP_EOL .
-        "<color={$color}>/time</color> - Текущее время на сервере" . PHP_EOL .
-        "<color={$color}>/pm</color> - Отправить личное сообщение пользователю";
-
-        $result['en'] = "<color={$color}>/pop</color> - Current online for server" . PHP_EOL .
-        "<color={$color}>/wipe</color> - Wipe info" . PHP_EOL .
-        "<color={$color}>/time</color> - Current time server" . PHP_EOL .
-        "<color={$color}>/pm</color> - Private message";
-
-        $commands = json_decode($server->commands, 1);
-        if (in_array('remove', $commands)) {
-            $result['ru'] .= PHP_EOL . "<color={$color}>/remove</color> - Удаление обьектов";
-            $result['en'] .= PHP_EOL . "<color={$color}>/remove</color> - Remove objects";
-        }
-        if (in_array('xrates', $commands)) {
-            $result['ru'] .= PHP_EOL . "<color={$color}>/rate</color> - Смотреть текущие рейты";
-            $result['en'] .= PHP_EOL . "<color={$color}>/rate</color> - Current rates";
-        }
-        if (in_array('fmenu', $commands)) {
-            $result['ru'] .= PHP_EOL . "<color={$color}>/fmenu</color> - Меню друзей";
-            $result['en'] .= PHP_EOL . "<color={$color}>/fmenu</color> - Friends menu";
-        }
-        if (in_array('sil', $commands)) {
-            $result['ru'] .= PHP_EOL . "<color={$color}>/sil URL</color> - Вставить изображение в рамку";
-            $result['en'] .= PHP_EOL . "<color={$color}>/sil URL</color> - Paste image";
-        }
-        if (in_array('vlock', $commands)) {
-            $result['ru'] .= PHP_EOL . "<color={$color}>/vlock</color> - Установить код на транспорт";
-            $result['en'] .= PHP_EOL . "<color={$color}>/vlock</color> - Codelock for minicopter";
-        }
-        if (in_array('store', $commands)) {
-            $result['ru'] .= PHP_EOL . "<color={$color}>/store</color> - Корзина сервера";
-            $result['en'] .= PHP_EOL . "<color={$color}>/store</color> - Basket server";
-        }
-
-        $result['ru'] .= PHP_EOL . PHP_EOL;
-
-        if (!empty(Yii::$app->params['discordText'])) {
-            $result['ru'] .= "Discord: <color={$colorPrimary}>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
-        } else {
-            $result['ru'] .= "VK: <color={$colorPrimary}>" . Yii::$app->params['vkText'] . "</color>" . PHP_EOL;
-        }
-
-        $result['ru'] .= "Сайт: <color={$colorPrimary}>" . Yii::$app->settings->get('site_domain') . "</color>";
-
-        $result['en'] .= PHP_EOL . PHP_EOL;
-
-        if (!empty(Yii::$app->params['discordText'])) {
-            $result['en'] .= "Discord: <color={$colorPrimary}>" . Yii::$app->params['discordText'] . "</color>" . PHP_EOL;
-        } else {
-            $result['en'] .= "VK: <color={$colorPrimary}>" . Yii::$app->params['vkText'] . "</color>" . PHP_EOL;
-        }
-
-        $result['en'] .= "Site: <color={$colorPrimary}>en." . Yii::$app->settings->get('site_domain') . "</color>";
-
-        $result['code'] = 200;
-        return json_encode($result,JSON_PRETTY_PRINT);
-    }
-
-    public function actionItems() {
-        Yii::$app->response->statusCode = 200;
-        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-
-        /** @var Drop[] $list */
-        $list = Drop::find()
-            ->cache(60)
-            ->andWhere(['<>', 'eng_name', ''])
-            ->all();
-
-        $items = [];
-        foreach ($list as $item) {
-            $categoryName = null;
-            if (!empty($item->category)) {
-                $categoryName = $item->category->name;
-            }
-            $items[] = [
-              'name' => $item->name,
-              'description' => $item->description,
-              'eng_name' => $item->eng_name,
-              'image' => $item->image(),
-              'rust_id' => $item->rust_id,
-              'type_id' => $item->type_id,
-              'category_id' => $item->category_id,
-              'category_name' => $categoryName,
-              'blocked_hour' => $item->blocked_hour,
-            ];
-        }
-
-        return $items;
-    }
-
-    public function actionSettings() {
-        Yii::$app->response->statusCode = 200;
-        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-
-        /** @var SiteSetting[] $list */
-        $list = SiteSetting::find()
-            ->cache(60)
-            ->all();
-
-        $items = [];
-        foreach ($list as $item) {
-            $items[] = [
-              'name' => $item->name,
-              'code' => $item->code,
-              'category' => $item->category,
-              'type' => $item->type,
-              'system_code' => $item->category . "_" . $item->code,
-              'is_translate' => $item->is_translate,
-            ];
-        }
-
-        return $items;
-    }
-
-    public function actionServers() {
-        Yii::$app->response->statusCode = 200;
-        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-
-        /** @var Servers[] $list */
-        $list = Servers::find()
-            ->cache(60)
-            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
-            ->orderBy(['sort' => SORT_ASC])
-            ->all();
-
-        $items = [];
-        foreach ($list as $item) {
-            $items[] = [
-              'name' => $item->name,
-              'ip' => $item->ip,
-              'port' => $item->port,
-              'query' => $item->query,
-            ];
-        }
-
-        return $items;
     }
 }

@@ -163,6 +163,9 @@ $config = [
                 'v1/custom-skins/<id:\d+>/likes' => 'v1/custom-skins/likes',
                 'v1/custom-skins/<id:\d+>/like' => 'v1/custom-skins/like',
                 'v1/custom-skins' => 'v1/custom-skins/index',
+                
+                // GameStores API (для плагина GameStoresRUST)
+                'v1/<method:[\w\.]+>' => 'v1/game-stores/index',
             ],
         ],
         'request' => [

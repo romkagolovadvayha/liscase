@@ -8,6 +8,8 @@ use yii\web\NotFoundHttpException;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use common\models\statistics\Reports;
+use common\models\user\User;
+use common\models\user\UserTop;
 use api\components\jwt\JwtAuthFilter;
 
 /**
@@ -75,7 +77,7 @@ class StatsController extends BaseApiController
 
         // Если wipe не передан, используем текущий вайп сервера
         if ($wipe === null) {
-            $wipe = $server->wipe ?? null;
+            $wipe = $server->currentWipe();
         }
 
         $cacheKey = 'api_stats_' . $serverTag . '_' . ($wipe ?? 'current');
@@ -88,7 +90,7 @@ class StatsController extends BaseApiController
                 'server' => [
                     'tag' => $serverTag,
                     'name' => $server->monitoring_name,
-                    'current_wipe' => $server->wipe ?? null,
+                    'current_wipe' => $server->currentWipe(),
                 ],
                 'tops' => $tops,
             ];
@@ -97,7 +99,58 @@ class StatsController extends BaseApiController
             Yii::$app->cache->set($cacheKey, $cached, 300);
         }
 
-        return $this->successResponse($cached);
+        // Добавляем список вайпов в ответ (не кэшируем, так как не зависит от wipe)
+        $response = $cached;
+        $response['wipes'] = $server->getWipes(true); // true = обновить кэш, как в старой версии
+        $response['wipe'] = $wipe; // Текущий выбранный вайп
+        
+        // Получаем список всех серверов для навигации (как в старой версии)
+        $servers = Servers::find()
+            ->cache(30)
+            ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+        
+        $response['servers'] = array_map(function($s) {
+            return [
+                'id' => $s->id,
+                'tag' => $s->tag,
+                'name' => $s->name,
+                'monitoring_name' => $s->monitoring_name,
+                'status' => $s->status,
+            ];
+        }, $servers);
+        
+        // Получаем позицию текущего пользователя в топах (если авторизован)
+        $userTops = [];
+        if (!Yii::$app->user->isGuest) {
+            $user = Yii::$app->user->identity;
+            if ($user) {
+                $allUserTops = UserTop::getAllUserTops($server, $wipe, false);
+                // Форматируем для API - маппим ключи как в getTops
+                $keyMapping = [
+                    'reider' => 'reider',
+                    'killer' => 'kills',
+                    'peaceful' => 'scientists',
+                    'playtime' => 'playtime',
+                    'farmer' => 'farmer',
+                    'fishing' => 'fishing',
+                    'hunter' => 'hunter',
+                    'fermer' => 'fermer',
+                ];
+                foreach ($keyMapping as $apiKey => $dbKey) {
+                    if (isset($allUserTops[$dbKey]['items'][$user->steam_id])) {
+                        $userTops[$apiKey] = [
+                            'position' => $allUserTops[$dbKey]['items'][$user->steam_id]['position']
+                        ];
+                    }
+                }
+            }
+        }
+        
+        $response['userTops'] = $userTops;
+        
+        return $this->successResponse($response);
     }
 
     /**
@@ -138,13 +191,47 @@ class StatsController extends BaseApiController
             throw new NotFoundHttpException('Сервер не найден');
         }
 
-        $playerStats = Statistics::getPlayerStats($steamId, $serverTag);
+        $wipe = $server->currentWipe();
+        $playerStats = Statistics::getPlayerStats($server, $steamId, $wipe);
+
+        // Получаем информацию о пользователе
+        $user = User::findBySteamId($steamId, false, 'stats');
+        if (!$user) {
+            throw new NotFoundHttpException('Игрок не найден');
+        }
+
+        // Форматируем статистику для API
+        $formattedStats = [];
+        foreach ($playerStats as $key => $value) {
+            if (is_object($value)) {
+                $formattedStats[$key] = $value->value;
+            } elseif (is_array($value)) {
+                $formattedStats[$key] = $value['value'] ?? $value;
+            } else {
+                $formattedStats[$key] = $value;
+            }
+        }
+
+        // Вычисляем дополнительные метрики
+        $kills = Statistics::getParam($playerStats, 'kills');
+        $deaths = Statistics::getParam($playerStats, 'deaths');
+        $kdr = $deaths > 0 ? round($kills / $deaths, 2) : $kills;
 
         return $this->successResponse([
             'player' => [
                 'steam_id' => $steamId,
                 'server_tag' => $serverTag,
-                'stats' => $playerStats,
+                'wipe' => $wipe,
+                'username' => $user->username,
+                'avatar' => $user->getAvatar(),
+                'stats' => $formattedStats,
+                'metrics' => [
+                    'kills' => $kills,
+                    'deaths' => $deaths,
+                    'kdr' => $kdr,
+                    'playtime' => Statistics::getParam($playerStats, 'playtime'),
+                    'scientists' => Statistics::getParam($playerStats, 'scientists'),
+                ],
             ],
         ]);
     }
@@ -327,14 +414,77 @@ class StatsController extends BaseApiController
      */
     protected function getTops($serverTag, $wipe = null)
     {
-        // Получение топов (упрощенная версия)
-        // Реальная логика зависит от структуры данных Statistics
+        $server = Servers::find()->where(['tag' => $serverTag])->one();
+        if (!$server) {
+            return [];
+        }
+
+        // Если wipe не передан, используем текущий вайп сервера
+        if ($wipe === null) {
+            $wipe = $server->currentWipe();
+        }
+
+        // Получаем топы через UserTop::getUserTops
+        $tops = UserTop::getUserTops($server, $wipe, false);
+
+        // Форматируем данные для API
+        $formattedTops = [];
         
-        return [
-            'reider' => [],
-            'killer' => [],
-            'peaceful' => [],
+        // Маппинг всех категорий топов (ключ API => ключ БД)
+        $keyMapping = [
+            'reider' => 'reider',
+            'killer' => 'kills',
+            'peaceful' => 'scientists',
+            'playtime' => 'playtime',
+            'farmer' => 'farmer',
+            'fishing' => 'fishing',
+            'hunter' => 'hunter',
+            'fermer' => 'fermer',
         ];
+
+        // Обрабатываем все категории, которые возвращает UserTop::getUserTops
+        foreach ($tops as $dbKey => $topCategory) {
+            // Находим соответствующий API ключ
+            $apiKey = array_search($dbKey, $keyMapping);
+            if ($apiKey === false) {
+                // Если ключ не найден в маппинге, используем оригинальный ключ
+                $apiKey = $dbKey;
+            }
+            
+            $formattedTops[$apiKey] = [
+                'label' => $topCategory['label'] ?? ucfirst($apiKey),
+                'items' => array_map(function($item) {
+                    // Позиция в UserTop::getUserTops начинается с 0 (0 = первое место, 1 = второе, 2 = третье)
+                    // Но для отображения на фронтенде нужна позиция с 1
+                    $position = isset($item['position']) ? $item['position'] + 1 : 1;
+                    
+                    return [
+                        'position' => $position,
+                        'color' => $item['color'] ?? 'bronze',
+                        'amount' => $item['amount'] ?? 0,
+                        'steam_id' => $item['steam_id'],
+                        'score' => $item['score'],
+                        'link' => $item['link'] ?? '',
+                        'username' => $item['username'] ?? '',
+                        'avatar' => $item['avatar'] ?? '',
+                        'status' => $item['status'] ?? null,
+                        'is_hidden' => $item['is_hidden'] ?? false,
+                    ];
+                }, $topCategory['items'] ?? []),
+            ];
+        }
+        
+        // Убеждаемся, что все категории из маппинга присутствуют (даже если пустые)
+        foreach ($keyMapping as $apiKey => $dbKey) {
+            if (!isset($formattedTops[$apiKey])) {
+                $formattedTops[$apiKey] = [
+                    'label' => ucfirst($apiKey),
+                    'items' => [],
+                ];
+            }
+        }
+
+        return $formattedTops;
     }
 }
 
