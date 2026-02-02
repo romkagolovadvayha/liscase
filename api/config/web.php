@@ -162,7 +162,15 @@ $config = [
                 'v1/custom-skins/categories' => 'v1/custom-skins/categories',
                 'v1/custom-skins/<id:\d+>/likes' => 'v1/custom-skins/likes',
                 'v1/custom-skins/<id:\d+>/like' => 'v1/custom-skins/like',
-                'v1/custom-skins' => 'v1/custom-skins/index'
+                'v1/custom-skins' => 'v1/custom-skins/index',
+                
+                // GameStores API (для плагина GameStoresRUST)
+                // Отдельный роутинг для store.pluginInfo (с точкой)
+                'v1/game-stores/store.pluginInfo' => 'v1/game-stores/index',
+                'v1/game-stores/<method:[\w\.-]+>' => 'v1/game-stores/index',
+                
+                // GameStores Payments API (для платежей через плагин)
+                'v1/integrations/payments/custom' => 'v1/game-stores/integrations-payments-custom',
             ],
         ],
         'request' => [
