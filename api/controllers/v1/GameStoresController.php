@@ -12,8 +12,8 @@ use common\models\statistics\Statistics;
 use common\models\user\User;
 use common\models\user\UserDrop;
 use Yii;
-use yii\web\Controller;
-use yii\web\Response;
+use yii\web\UnauthorizedHttpException;
+use yii\web\ForbiddenHttpException;
 
 /**
  * Контроллер для работы с GameStoresRUST плагином
@@ -21,35 +21,84 @@ use yii\web\Response;
  * URL: /v1/{method}?server_ip=XXX&server_port=YYY
  * Body: JSON с параметрами
  * Headers: serverIp, serverPort (IP и PORT берутся из ConVar.Server)
+ * Авторизация: по steam_id из параметров запроса
  */
-class GameStoresController extends Controller
+class GameStoresController extends BaseApiController
 {
-    /**
-     * Отключить CSRF валидацию для API
-     */
-    public $enableCsrfValidation = false;
 
     /**
-     * {@inheritdoc}
+     * Настройка behaviors
      */
-    public function actions()
+    public function behaviors()
     {
-        return [
-            'error' => [
-                'class' => 'yii\web\ErrorAction',
-            ],
-        ];
+        $behaviors = parent::behaviors();
+
+        // Убираем JWT авторизацию, используем авторизацию по steam_id
+        // CORS и ContentNegotiator уже настроены в BaseApiController
+
+        return $behaviors;
+    }
+
+    /**
+     * Получить пользователя по steam_id из параметров запроса
+     * 
+     * @param array $bodyParams Параметры из body запроса
+     * @return User
+     * @throws UnauthorizedHttpException
+     */
+    protected function getUserBySteamId($bodyParams = [])
+    {
+        // Пробуем получить steam_id из разных источников
+        $steamId = null;
+        
+        // Из body параметров
+        if (!empty($bodyParams['steamId'])) {
+            $steamId = $bodyParams['steamId'];
+        } elseif (!empty($bodyParams['steam_id'])) {
+            $steamId = $bodyParams['steam_id'];
+        }
+        
+        // Из POST параметров
+        if (empty($steamId)) {
+            $steamId = Yii::$app->request->post('steamId') ?: Yii::$app->request->post('steam_id');
+        }
+        
+        // Из GET параметров
+        if (empty($steamId)) {
+            $steamId = Yii::$app->request->get('steamId') ?: Yii::$app->request->get('steam_id');
+        }
+        
+        if (empty($steamId)) {
+            throw new UnauthorizedHttpException('steam_id is required');
+        }
+        
+        $steamId = (string)$steamId;
+        
+        // Проверка формата steam_id
+        if (strlen($steamId) !== 17 || !is_numeric($steamId)) {
+            throw new UnauthorizedHttpException('Invalid steam_id format');
+        }
+        
+        /** @var User $user */
+        $user = User::find()
+            ->andWhere(['steam_id' => $steamId])
+            ->one();
+        
+        if (empty($user)) {
+            throw new UnauthorizedHttpException('User not found');
+        }
+        
+        return $user;
     }
 
     /**
      * Основной метод для обработки всех запросов GameStoresRUST
      * 
      * @param string $method Метод API (baskets.item, baskets.bySteamId, etc.)
-     * @return Response
+     * @return array
      */
     public function actionIndex($method)
     {
-        Yii::$app->response->format = Response::FORMAT_JSON;
 
         // Получаем параметры из query string
         $queryServerIp = Yii::$app->request->get('server_ip');
@@ -124,11 +173,10 @@ class GameStoresController extends Controller
      * Обработка платежей через integrations/payments/custom
      * Используется для консольной команды gs.createpayment
      * 
-     * @return Response
+     * @return array
      */
     public function actionIntegrationsPaymentsCustom()
     {
-        Yii::$app->response->format = Response::FORMAT_JSON;
 
         // Получаем параметры из query string
         $queryServerIp = Yii::$app->request->get('server_ip');
@@ -190,11 +238,17 @@ class GameStoresController extends Controller
             return $this->errorResponse('Сумма должна быть в диапазоне от 1 до 1000000', 400);
         }
 
-        // Находим или создаем пользователя
-        $user = User::findBySteamId($steamId, true, 'gamestores_payment');
-        
-        if (!$user) {
-            return $this->errorResponse('Не удалось найти или создать пользователя', 400);
+        // Пытаемся получить пользователя по steam_id (авторизация)
+        // Если пользователь не найден, создаем его (для платежей это допустимо)
+        try {
+            $user = $this->getUserBySteamId($bodyParams);
+        } catch (UnauthorizedHttpException $e) {
+            // Если пользователь не найден, создаем его
+            $user = User::findBySteamId($steamId, true, 'gamestores_payment');
+            
+            if (!$user) {
+                return $this->errorResponse('Не удалось найти или создать пользователя', 400);
+            }
         }
 
         // Если create_player = true и пользователь только что создан, можно выполнить дополнительные действия
@@ -252,7 +306,7 @@ class GameStoresController extends Controller
             return $result;
             
         } catch (\Exception $e) {
-            Yii::error("Error creating payment for steam_id {$steamId}: " . $e->getMessage(), 'gamestores');
+            Yii::error("Error creating payment for steam_id {$user->steam_id}: " . $e->getMessage(), 'gamestores');
             
             // Проверяем, не недостаточно ли средств на балансе магазина
             if (strpos($e->getMessage(), 'insufficient') !== false || strpos($e->getMessage(), 'баланс') !== false) {
@@ -270,10 +324,17 @@ class GameStoresController extends Controller
     /**
      * Получить информацию о предмете в корзине
      * baskets.item
-     * Body: {"basketId": 123}
+     * Body: {"basketId": 123, "steamId": "7656119..."}
      */
     private function actionBasketsItem($bodyParams, $server)
     {
+        // Авторизация по steam_id
+        try {
+            $user = $this->getUserBySteamId($bodyParams);
+        } catch (UnauthorizedHttpException $e) {
+            return $this->errorResponse($e->getMessage(), 105);
+        }
+        
         $basketId = $bodyParams['basketId'] ?? null;
         
         if (empty($basketId)) {
@@ -287,9 +348,8 @@ class GameStoresController extends Controller
             return $this->errorResponse('Предмет уже получен/продан', 107);
         }
 
-        // Проверка принадлежности предмета (если передан steamId в body)
-        $steamId = $bodyParams['steamId'] ?? null;
-        if (!empty($steamId) && $steamId != $userDrop->user->steam_id) {
+        // Проверка принадлежности предмета
+        if ($user->steam_id != $userDrop->user->steam_id) {
             return $this->errorResponse('Товар вам не принадлежит!', 107);
         }
 
@@ -323,19 +383,11 @@ class GameStoresController extends Controller
      */
     private function actionBasketsBySteamId($bodyParams, $server)
     {
-        $steamId = $bodyParams['steamId'] ?? null;
-        
-        if (empty($steamId)) {
-            return $this->errorResponse('Отсутствует параметр steamId', 105);
-        }
-
-        /** @var User $user */
-        $user = User::find()
-            ->andWhere(['steam_id' => $steamId])
-            ->one();
-
-        if (empty($user)) {
-            return $this->errorResponse('Игрок не зарегистрирован', 105);
+        // Авторизация по steam_id
+        try {
+            $user = $this->getUserBySteamId($bodyParams);
+        } catch (UnauthorizedHttpException $e) {
+            return $this->errorResponse($e->getMessage(), 105);
         }
 
         /** @var UserDrop[] $userDrops */
@@ -367,8 +419,14 @@ class GameStoresController extends Controller
      */
     private function actionBasketsMakeIssued($bodyParams, $server)
     {
+        // Авторизация по steam_id
+        try {
+            $user = $this->getUserBySteamId($bodyParams);
+        } catch (UnauthorizedHttpException $e) {
+            return $this->errorResponse($e->getMessage(), 105);
+        }
+        
         $basketId = $bodyParams['basketId'] ?? null;
-        $steamId = $bodyParams['steamId'] ?? null;
         
         if (empty($basketId)) {
             return $this->errorResponse('Отсутствует параметр basketId', 105);
@@ -382,7 +440,7 @@ class GameStoresController extends Controller
         }
 
         // Проверка принадлежности
-        if (!empty($steamId) && $steamId != $userDrop->user->steam_id) {
+        if ($user->steam_id != $userDrop->user->steam_id) {
             return $this->errorResponse('Товар вам не принадлежит!', 107);
         }
 
@@ -391,9 +449,8 @@ class GameStoresController extends Controller
 
         // Обработка статистики
         if (!empty($server) && !empty($userDrop->drop[0]->dropStat)) {
-            $steamId = $userDrop->user->steam_id;
             $statistics = Statistics::find()
-                ->andWhere(['steam_id' => $steamId])
+                ->andWhere(['steam_id' => $user->steam_id])
                 ->andWhere(['server_tag' => $server->tag])
                 ->andWhere(['wipe' => $server->currentWipe()])
                 ->indexBy('key')
@@ -408,7 +465,7 @@ class GameStoresController extends Controller
                     $statistics[$dropStat->stat_key]->save();
                 } else {
                     $model = new Statistics();
-                    $model->steam_id = $steamId;
+                    $model->steam_id = $user->steam_id;
                     $model->server_tag = $server->tag;
                     $model->key = $dropStat->stat_key;
                     $model->value = $userDrop->count * $dropStat->value;
@@ -717,7 +774,7 @@ class GameStoresController extends Controller
     }
 
     /**
-     * Успешный ответ
+     * Успешный ответ (совместимость со старым форматом плагина)
      */
     private function successResponse($data)
     {
@@ -729,7 +786,7 @@ class GameStoresController extends Controller
     }
 
     /**
-     * Ответ с ошибкой
+     * Ответ с ошибкой (совместимость со старым форматом плагина)
      */
     private function errorResponse($message, $code)
     {
