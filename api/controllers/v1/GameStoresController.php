@@ -144,7 +144,7 @@ class GameStoresController extends BaseApiController
         
         if (!$server) {
             Yii::error("GameStores: Server not found. IP: {$serverIp}, PORT: {$serverPort}, Method: {$method}", 'gamestores');
-            return $this->errorResponse('Сервер с таким IP и PORT не найден', 103);
+            return $this->errorResponseGameStores('Сервер с таким IP и PORT не найден', 103);
         }
 
         // Маршрутизация методов
@@ -165,7 +165,7 @@ class GameStoresController extends BaseApiController
                 return $this->actionStorePluginInfo($server);
             
             default:
-                return $this->errorResponse('Метод не найден!', 105);
+                return $this->errorResponseGameStores('Метод не найден!', 105);
         }
     }
 
@@ -207,7 +207,7 @@ class GameStoresController extends BaseApiController
         $server = $this->findServer($serverIp, $serverPort);
         
         if (!$server) {
-            return $this->errorResponse('Сервер с таким IP и PORT не найден', 103);
+            return $this->errorResponseGameStores('Сервер с таким IP и PORT не найден', 103);
         }
 
         // Получаем параметры запроса
@@ -218,11 +218,11 @@ class GameStoresController extends BaseApiController
 
         // Валидация параметров
         if (empty($steamId)) {
-            return $this->errorResponse('Отсутствует обязательный параметр: steam_id', 400);
+            return $this->errorResponseGameStores('Отсутствует обязательный параметр: steam_id', 400);
         }
 
         if (empty($amount)) {
-            return $this->errorResponse('Отсутствует обязательный параметр: amount', 400);
+            return $this->errorResponseGameStores('Отсутствует обязательный параметр: amount', 400);
         }
 
         $steamId = (string)$steamId;
@@ -230,12 +230,12 @@ class GameStoresController extends BaseApiController
 
         // Проверка steam_id
         if (strlen($steamId) !== 17 || !is_numeric($steamId)) {
-            return $this->errorResponse('Неверный формат steam_id', 400);
+            return $this->errorResponseGameStores('Неверный формат steam_id', 400);
         }
 
         // Проверка суммы
         if ($amount < 1 || $amount > 1000000) {
-            return $this->errorResponse('Сумма должна быть в диапазоне от 1 до 1000000', 400);
+            return $this->errorResponseGameStores('Сумма должна быть в диапазоне от 1 до 1000000', 400);
         }
 
         // Пытаемся получить пользователя по steam_id (авторизация)
@@ -247,7 +247,7 @@ class GameStoresController extends BaseApiController
             $user = User::findBySteamId($steamId, true, 'gamestores_payment');
             
             if (!$user) {
-                return $this->errorResponse('Не удалось найти или создать пользователя', 400);
+                return $this->errorResponseGameStores('Не удалось найти или создать пользователя', 400);
             }
         }
 
@@ -262,7 +262,7 @@ class GameStoresController extends BaseApiController
             $deposit = Deposit::createOperation($user->id, $amount, $paymentType);
             
             if (!$deposit) {
-                return $this->errorResponse('Не удалось создать платеж', 500);
+                return $this->errorResponseGameStores('Не удалось создать платеж', 500);
             }
 
             // Получаем API провайдера для Tinkoff и создаем платеж
@@ -272,7 +272,7 @@ class GameStoresController extends BaseApiController
             if (empty($response)) {
                 $deposit->status = Deposit::STATUS_CANCELED;
                 $deposit->save(false);
-                return $this->errorResponse('Не удалось создать платеж в системе оплаты', 500);
+                return $this->errorResponseGameStores('Не удалось создать платеж в системе оплаты', 500);
             }
 
             // Получаем текущий баланс пользователя
@@ -317,7 +317,7 @@ class GameStoresController extends BaseApiController
                 ];
             }
             
-            return $this->errorResponse('Ошибка при создании платежа: ' . $e->getMessage(), 500);
+            return $this->errorResponseGameStores('Ошибка при создании платежа: ' . $e->getMessage(), 500);
         }
     }
 
@@ -332,38 +332,38 @@ class GameStoresController extends BaseApiController
         try {
             $user = $this->getUserBySteamId($bodyParams);
         } catch (UnauthorizedHttpException $e) {
-            return $this->errorResponse($e->getMessage(), 105);
+            return $this->errorResponseGameStores($e->getMessage(), 105);
         }
         
         $basketId = $bodyParams['basketId'] ?? null;
         
         if (empty($basketId)) {
-            return $this->errorResponse('Отсутствует параметр basketId', 105);
+            return $this->errorResponseGameStores('Отсутствует параметр basketId', 105);
         }
 
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($basketId);
         
         if (empty($userDrop) || ($userDrop->status !== UserDrop::STATUS_WAIT && $userDrop->status !== UserDrop::STATUS_ACTIVE)) {
-            return $this->errorResponse('Предмет уже получен/продан', 107);
+            return $this->errorResponseGameStores('Предмет уже получен/продан', 107);
         }
 
         // Проверка принадлежности предмета
         if ($user->steam_id != $userDrop->user->steam_id) {
-            return $this->errorResponse('Товар вам не принадлежит!', 107);
+            return $this->errorResponseGameStores('Товар вам не принадлежит!', 107);
         }
 
         $drops = Drop::getDropListAll();
         $drop = $drops[$userDrop->drop_id] ?? null;
         
         if (!$drop) {
-            return $this->errorResponse('Предмет не найден', 107);
+            return $this->errorResponseGameStores('Предмет не найден', 107);
         }
 
         // Проверка, что rust_id не равен 0 (для предметов)
         if (empty($drop->command) && (empty($drop->rust_id) || $drop->rust_id == 0)) {
             Yii::error("GameStores: Drop {$drop->id} has invalid rust_id: {$drop->rust_id}", 'gamestores');
-            return $this->errorResponse('Предмет имеет неверный rust_id', 107);
+            return $this->errorResponseGameStores('Предмет имеет неверный rust_id', 107);
         }
 
         // Получаем картинки для определения URL (если rust_id нет)
@@ -373,7 +373,7 @@ class GameStoresController extends BaseApiController
         // Логирование для отладки
         Yii::info("GameStores baskets.item response for basketId {$basketId}: " . json_encode($item, JSON_UNESCAPED_UNICODE), 'gamestores');
         
-        return $this->successResponse($item);
+        return $this->successResponseGameStores($item);
     }
 
     /**
@@ -387,7 +387,7 @@ class GameStoresController extends BaseApiController
         try {
             $user = $this->getUserBySteamId($bodyParams);
         } catch (UnauthorizedHttpException $e) {
-            return $this->errorResponse($e->getMessage(), 105);
+            return $this->errorResponseGameStores($e->getMessage(), 105);
         }
 
         /** @var UserDrop[] $userDrops */
@@ -409,7 +409,7 @@ class GameStoresController extends BaseApiController
             $data[] = $item;
         }
 
-        return $this->successResponse($data);
+        return $this->successResponseGameStores($data);
     }
 
     /**
@@ -423,25 +423,25 @@ class GameStoresController extends BaseApiController
         try {
             $user = $this->getUserBySteamId($bodyParams);
         } catch (UnauthorizedHttpException $e) {
-            return $this->errorResponse($e->getMessage(), 105);
+            return $this->errorResponseGameStores($e->getMessage(), 105);
         }
         
         $basketId = $bodyParams['basketId'] ?? null;
         
         if (empty($basketId)) {
-            return $this->errorResponse('Отсутствует параметр basketId', 105);
+            return $this->errorResponseGameStores('Отсутствует параметр basketId', 105);
         }
 
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($basketId);
         
         if (empty($userDrop) || ($userDrop->status !== UserDrop::STATUS_WAIT && $userDrop->status !== UserDrop::STATUS_ACTIVE)) {
-            return $this->errorResponse('Предмет уже получен/продан', 107);
+            return $this->errorResponseGameStores('Предмет уже получен/продан', 107);
         }
 
         // Проверка принадлежности
         if ($user->steam_id != $userDrop->user->steam_id) {
-            return $this->errorResponse('Товар вам не принадлежит!', 107);
+            return $this->errorResponseGameStores('Товар вам не принадлежит!', 107);
         }
 
         $userDrop->sended_at = date('Y-m-d H:i:s');
@@ -495,7 +495,7 @@ class GameStoresController extends BaseApiController
 
         \Yii::$app->queueProcess->push(new ActivatedDropJob(['userDrop' => $userDrop]));
 
-        return $this->successResponse(null);
+        return $this->successResponseGameStores(null);
     }
 
     /**
@@ -507,7 +507,7 @@ class GameStoresController extends BaseApiController
     {
         // В текущей реализации всегда возвращаем пустой список
         // Можно добавить логику получения команд из очереди
-        return $this->successResponse([]);
+        return $this->successResponseGameStores([]);
     }
 
     /**
@@ -776,7 +776,7 @@ class GameStoresController extends BaseApiController
     /**
      * Успешный ответ (совместимость со старым форматом плагина)
      */
-    private function successResponse($data)
+    private function successResponseGameStores($data)
     {
         return [
             'result' => 'success',
@@ -788,7 +788,7 @@ class GameStoresController extends BaseApiController
     /**
      * Ответ с ошибкой (совместимость со старым форматом плагина)
      */
-    private function errorResponse($message, $code)
+    private function errorResponseGameStores($message, $code)
     {
         return [
             'result' => 'fail',
