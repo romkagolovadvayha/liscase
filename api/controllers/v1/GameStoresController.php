@@ -790,6 +790,16 @@ class GameStoresController extends BaseApiController
      */
     private function errorResponseGameStores($message, $code)
     {
+        // Устанавливаем HTTP статус код в зависимости от кода ошибки
+        if ($code == 105) {
+            // Ошибка авторизации или пользователь не найден
+            Yii::$app->response->statusCode = 401;
+        } elseif ($code >= 500) {
+            Yii::$app->response->statusCode = 500;
+        } else {
+            Yii::$app->response->statusCode = 400;
+        }
+        
         return [
             'result' => 'fail',
             'message' => $message,
