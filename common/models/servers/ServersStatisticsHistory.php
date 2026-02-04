@@ -102,10 +102,15 @@ class ServersStatisticsHistory extends ActiveRecord
             
             if ($model) {
                 // Обновляем существующую запись для текущего часа
-                $model->players = $players;
-                $model->joined = $joined;
-                $model->queued = $queued;
-                return $model->save(false);
+                // Но только если новые значения players и queued больше или равны текущим
+                if ($players >= $model->players && $queued >= $model->queued) {
+                    $model->players = $players;
+                    $model->joined = $joined;
+                    $model->queued = $queued;
+                    return $model->save(false);
+                }
+                // Если значения меньше, не обновляем
+                return true;
             } else {
                 // Создаем новую запись для текущего часа
                 $model = new self();
