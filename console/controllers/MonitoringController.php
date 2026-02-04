@@ -3,8 +3,10 @@
 namespace console\controllers;
 
 use common\models\servers\Servers;
+use common\models\servers\ServersStatisticsHistory;
 use common\models\stats\Info;
 use romkagolovadva\SourceQuery\SourceQuery;
+use Yii;
 use yii\console\Controller;
 use yii\console\Exception;
 
@@ -40,6 +42,19 @@ class MonitoringController extends Controller
                 $server->status = Servers::STATUS_NOACTIVE;
             }
             $server->save();
+
+            // Сохраняем статистику в историю (обновляем или создаем запись для текущего часа)
+            try {
+                ServersStatisticsHistory::saveOrUpdateHourlyStats(
+                    $server->id,
+                    $server->players,
+                    $server->joined,
+                    $server->queued,
+                    $server->max
+                );
+            } catch (\Exception $e) {
+                Yii::error("MonitoringController::saveOrUpdateHourlyStats error: " . $e->getMessage(), 'servers_statistics');
+            }
         }
     }
 }

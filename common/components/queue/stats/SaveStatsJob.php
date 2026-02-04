@@ -5,6 +5,7 @@ namespace common\components\queue\stats;
 use common\components\oauth\Steam;
 use common\models\rcon\RconTasks;
 use common\models\servers\Servers;
+use common\models\servers\ServersStatisticsHistory;
 use common\models\statistics\Chats;
 use common\models\statistics\Kills;
 use common\models\statistics\Reports;
@@ -13,6 +14,7 @@ use common\models\statistics\Teams;
 use common\models\team\Team;
 use common\models\user\User;
 use common\models\user\UserTop;
+//use common\components\queue\clan\UpdateClanStatisticsJob;
 use Yii;
 use yii\base\BaseObject;
 use yii\queue\JobInterface;
@@ -118,6 +120,29 @@ class SaveStatsJob extends BaseObject implements JobInterface
             $server->updated_at = date('Y-m-d H:i:s');
             $server->status = Servers::STATUS_ACTIVE;
             $server->save();
+
+            // Сохраняем статистику в историю (обновляем или создаем запись для текущего часа)
+            try {
+                ServersStatisticsHistory::saveOrUpdateHourlyStats(
+                    $server->id,
+                    $server->players,
+                    $server->joined,
+                    $server->queued,
+                    $server->max
+                );
+            } catch (\Exception $e) {
+                Yii::error("SaveStatsJob::saveOrUpdateHourlyStats error: " . $e->getMessage(), 'servers_statistics');
+            }
+
+            // Обновление статистики кланов
+//            try {
+//                Yii::$app->queue->push(new UpdateClanStatisticsJob([
+//                    'serverId' => $server->id,
+//                    'wipe' => $wipeDate,
+//                ]));
+//            } catch (\Exception $e) {
+//                Yii::error("SaveStatsJob::UpdateClanStatisticsJob: " . $e->getMessage(), 'clan');
+//            }
         } catch (\Exception $e) {
             Yii::error("SaveStatsJob: " . $e->getMessage(), 'error');
             Yii::$app->cache->delete('usersTop');

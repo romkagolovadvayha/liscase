@@ -322,6 +322,7 @@ class ServersController extends BaseApiController
             'joined' => (int)($server->joined ?? 0),
             'queued' => (int)($server->queued ?? 0),
             'ip' => $server->ip,
+            'text_ip' => $server->text_ip,
             'port' => (int)$server->port,
             'minMapSize' => (int)$server->min_map_size,
             'maxMapSize' => (int)$server->max_map_size,

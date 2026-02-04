@@ -126,6 +126,7 @@ class StatsController extends BaseApiController
                 'name' => $s->name,
                 'monitoring_name' => $s->monitoring_name,
                 'status' => $s->status,
+                'text_ip' => $s->text_ip,
             ];
         }, $servers);
         

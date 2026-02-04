@@ -325,6 +325,7 @@ class WipeCalendarController extends BaseApiController
                         'name'            => $s->name,
                         'monitoring_name' => $s->monitoring_name,
                         'link'            => $s->getLink('stats'), // /servers/{tag}
+                        'text_ip'         => $s->text_ip,
                         'wt'              => 7,
                     ];
                     $byDateTime[$key]['weekly7_count']++;
@@ -383,6 +384,7 @@ class WipeCalendarController extends BaseApiController
                         'name'            => $s->name,
                         'monitoring_name' => $s->monitoring_name,
                         'link'            => $s->getLink('stats'), // /servers/{tag}
+                        'text_ip'         => $s->text_ip,
                         'wt'              => 14,
                     ];
                     $byDateTime[$key]['biweekly14_count']++;

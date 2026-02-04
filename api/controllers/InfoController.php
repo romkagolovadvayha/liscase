@@ -227,6 +227,7 @@ class InfoController extends Controller
             $items[] = [
               'name' => $item->name,
               'ip' => $item->ip,
+              'text_ip' => $item->text_ip,
               'port' => $item->port,
               'query' => $item->query,
             ];
