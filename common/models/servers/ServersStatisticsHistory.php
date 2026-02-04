@@ -13,7 +13,6 @@ use Yii;
  * @property int $players
  * @property int $joined
  * @property int $queued
- * @property int $max
  * @property string $created_at
  *
  * @property Servers $server
@@ -34,8 +33,8 @@ class ServersStatisticsHistory extends ActiveRecord
     public function rules()
     {
         return [
-            [['server_id', 'players', 'joined', 'queued', 'max'], 'required'],
-            [['server_id', 'players', 'joined', 'queued', 'max'], 'integer'],
+            [['server_id', 'players', 'joined', 'queued'], 'required'],
+            [['server_id', 'players', 'joined', 'queued'], 'integer'],
             [['created_at'], 'safe'],
             [['server_id'], 'exist', 'skipOnError' => true, 'targetClass' => Servers::class, 'targetAttribute' => ['server_id' => 'id']],
         ];
@@ -52,7 +51,6 @@ class ServersStatisticsHistory extends ActiveRecord
             'players' => 'Текущий онлайн',
             'joined' => 'Игроки в очереди',
             'queued' => 'Подключающиеся',
-            'max' => 'Максимальный онлайн',
             'created_at' => 'Время записи',
         ];
     }
@@ -76,10 +74,9 @@ class ServersStatisticsHistory extends ActiveRecord
      * @param int $players Текущий онлайн
      * @param int $joined Игроки в очереди
      * @param int $queued Подключающиеся
-     * @param int $max Максимальный онлайн
      * @return bool
      */
-    public static function saveOrUpdateHourlyStats($serverId, $players, $joined, $queued, $max)
+    public static function saveOrUpdateHourlyStats($serverId, $players, $joined, $queued)
     {
         try {
             // Удаляем записи старше 30 дней (периодически, не каждый раз)
@@ -108,7 +105,6 @@ class ServersStatisticsHistory extends ActiveRecord
                 $model->players = $players;
                 $model->joined = $joined;
                 $model->queued = $queued;
-                $model->max = $max;
                 return $model->save(false);
             } else {
                 // Создаем новую запись для текущего часа
@@ -117,7 +113,6 @@ class ServersStatisticsHistory extends ActiveRecord
                 $model->players = $players;
                 $model->joined = $joined;
                 $model->queued = $queued;
-                $model->max = $max;
                 $model->created_at = date('Y-m-d H:i:s');
                 return $model->save(false);
             }

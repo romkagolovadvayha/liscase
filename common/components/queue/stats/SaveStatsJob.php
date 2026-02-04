@@ -127,8 +127,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     $server->id,
                     $server->players,
                     $server->joined,
-                    $server->queued,
-                    $server->max
+                    $server->queued
                 );
             } catch (\Exception $e) {
                 Yii::error("SaveStatsJob::saveOrUpdateHourlyStats error: " . $e->getMessage(), 'servers_statistics');

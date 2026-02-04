@@ -49,8 +49,7 @@ class MonitoringController extends Controller
                     $server->id,
                     $server->players,
                     $server->joined,
-                    $server->queued,
-                    $server->max
+                    $server->queued
                 );
             } catch (\Exception $e) {
                 Yii::error("MonitoringController::saveOrUpdateHourlyStats error: " . $e->getMessage(), 'servers_statistics');
