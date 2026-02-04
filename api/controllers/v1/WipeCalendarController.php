@@ -296,6 +296,258 @@ class WipeCalendarController extends BaseApiController
         ]);
     }
 
+    /**
+     * Получение календаря вайпов для конкретного сервера
+     * 
+     * @OA\Get(
+     *     path="/v1/wipe-calendar/server",
+     *     operationId="getServerWipeCalendar",
+     *     tags={"WipeCalendar"},
+     *     summary="Получить календарь вайпов для конкретного сервера",
+     *     description="Возвращает календарь вайпов для указанного сервера на указанный месяц и год",
+     *     @OA\Parameter(
+     *         name="server_id",
+     *         in="query",
+     *         required=true,
+     *         description="ID сервера",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="year",
+     *         in="query",
+     *         description="Год (например: 2024)",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="month",
+     *         in="query",
+     *         description="Месяц (1-12)",
+     *         required=false,
+     *         @OA\Schema(type="integer", minimum=1, maximum=12)
+     *     ),
+     *     @OA\Parameter(
+     *         name="months",
+     *         in="query",
+     *         description="Количество месяцев для отображения",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=1, minimum=1)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Календарь вайпов сервера (только даты с событиями)",
+     *         @OA\MediaType(
+     *             mediaType="application/json",
+     *             @OA\Schema(
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="events",
+     *                     type="object",
+     *                     description="Объект, где ключи - даты в формате Y-m-d, значения - массивы событий",
+     *                     additionalProperties={
+     *                         "type": "array",
+     *                         "items": {
+     *                             "type": "object",
+     *                             "properties": {
+     *                                 "name": {"type": "string"},
+     *                                 "link": {"type": "string", "nullable": true},
+     *                                 "time": {"type": "string"},
+     *                                 "is_official": {"type": "boolean"},
+     *                                 "is_global": {"type": "boolean"},
+     *                                 "badges": {"type": "array"},
+     *                                 "desc": {"type": "string", "nullable": true}
+     *                             }
+     *                         }
+     *                     }
+     *                 ),
+     *                 @OA\Property(property="currentYear", type="integer"),
+     *                 @OA\Property(property="currentMonth", type="integer"),
+     *                 @OA\Property(property="shownMonths", type="integer")
+     *             )
+     *         )
+     *     )
+     * )
+     */
+    public function actionServer($server_id, $year = null, $month = null, $months = 1)
+    {
+        if (!Yii::$app->settings->get('section_calendar')) {
+            return $this->errorResponse('CALENDAR_DISABLED', 'Календарь вайпов отключен', [], 404);
+        }
+
+        $server = Servers::findOne($server_id);
+        if (!$server) {
+            return $this->errorResponse('SERVER_NOT_FOUND', 'Сервер не найден', [], 404);
+        }
+
+        $tz  = new DateTimeZone(Yii::$app->timeZone ?: 'UTC');
+        $now = new DateTimeImmutable('now', $tz);
+
+        $year   = $year   ? (int)$year  : (int)$now->format('Y');
+        $month  = $month  ? (int)$month : (int)$now->format('n');
+        $months = (int)max(1, (int)$months);
+
+        // Время событий
+        $globalTime = '21:00:00'; // глобал (четверг)
+        $mapTime    = '16:00:00'; // карта (пятница)
+
+        // Диапазон месяцев
+        $firstMonthStart = new DateTimeImmutable(sprintf('%04d-%02d-01 00:00:00', $year, $month), $tz);
+        $monthStarts = [];
+        for ($i = 0; $i < $months; $i++) {
+            $monthStarts[] = $firstMonthStart->modify('+' . $i . ' month');
+        }
+        $afterLastMonth = $firstMonthStart->modify('+' . $months . ' month');
+
+        // === 1) Глобальные (первый четверг каждого месяца) ===
+        $globalByDateTime = [];
+        $blockedIsoWeeks  = [];
+        foreach ($monthStarts as $mStart) {
+            $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
+            $gDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
+            $gKey = $gDT->format('Y-m-d H:i:s');
+            $globalByDateTime[$gKey] = true;
+            $blockedIsoWeeks[$gDT->format('o-\WW')] = true;
+        }
+
+        // === 2) Слоты по точному времени ===
+        $byDateTime = [];
+
+        // Глобалы
+        foreach ($globalByDateTime as $dtStr => $_) {
+            $byDateTime[$dtStr] = [
+                'global'           => true,
+                'servers'          => [],
+                'title'            => Yii::t('common', 'Глобальный вайп на всех серверах'),
+                'link'             => '/servers',
+            ];
+        }
+
+        // Пятничные вайпы для конкретного сервера
+        if ((int)$server->wipe_type !== 30) {
+            $wt = (int)$server->wipe_type;
+            if ($wt === 7) {
+                // 7-дневные: каждая пятница, но пропускаем ISO-недели глобала
+                foreach ($monthStarts as $mStart) {
+                    $firstFri = $this->firstWeekdayOfMonth($mStart, 5); // Пт
+                    $dt = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $mapTime, $tz);
+                    
+                    while ($dt < $afterLastMonth) {
+                        $iso = $dt->format('o-\WW');
+                        if (!isset($blockedIsoWeeks[$iso])) {
+                            $key = $dt->format('Y-m-d H:i:s');
+                            if (!isset($byDateTime[$key])) {
+                                $byDateTime[$key] = [
+                                    'global' => false,
+                                    'servers' => [],
+                                ];
+                            }
+                            $byDateTime[$key]['servers'][] = [
+                                'id'              => (int)$server->id,
+                                'name'            => $server->name,
+                                'monitoring_name' => $server->monitoring_name,
+                                'link'            => $server->getLink('stats'),
+                                'wt'              => 7,
+                            ];
+                        }
+                        $dt = $dt->modify('+7 days');
+                    }
+                }
+            } elseif ($wt === 14) {
+                // 14-дневные: пятница после глобала, НО неделя глобала блокируется
+                foreach ($monthStarts as $mStart) {
+                    $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
+                    $globalDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
+                    
+                    $anchorFri = $globalDT->modify('+1 day');
+                    $firstAllowed = $anchorFri->modify('+14 days');
+                    $dt = new DateTimeImmutable($firstAllowed->format('Y-m-d') . ' ' . $mapTime, $tz);
+                    
+                    while ($dt < $afterLastMonth) {
+                        $iso = $dt->format('o-\WW');
+                        if (!isset($blockedIsoWeeks[$iso])) {
+                            $key = $dt->format('Y-m-d H:i:s');
+                            if (!isset($byDateTime[$key])) {
+                                $byDateTime[$key] = [
+                                    'global' => false,
+                                    'servers' => [],
+                                ];
+                            }
+                            $byDateTime[$key]['servers'][] = [
+                                'id'              => (int)$server->id,
+                                'name'            => $server->name,
+                                'monitoring_name' => $server->monitoring_name,
+                                'link'            => $server->getLink('stats'),
+                                'wt'              => 14,
+                            ];
+                        }
+                        $dt = $dt->modify('+14 days');
+                    }
+                }
+            }
+        }
+
+        // === 3) Events для API ===
+        $events = [];
+        foreach ($byDateTime as $dtStr => $bucket) {
+            $dt      = new DateTimeImmutable($dtStr, $tz);
+            $dayKey  = $dt->format('Y-m-d');
+            $timeTxt = $dt->format('H:i');
+
+            $badges = [];
+
+            if (!empty($bucket['global'])) {
+                $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'все сервера')];
+
+                $events[$dayKey][] = [
+                    'name'        => $bucket['title'],
+                    'link'        => $bucket['link'],
+                    'time'        => $timeTxt,
+                    'is_official' => true,
+                    'is_global'   => true,
+                    'badges'      => $badges,
+                    'desc'        => null,
+                ];
+                continue;
+            }
+
+            // По серверам отдельно
+            if (!empty($bucket['servers'])) {
+                foreach ($bucket['servers'] as $srv) {
+                    if ($srv['id'] == $server->id) {
+                        $badges = [
+                            ['class' => ($srv['wt'] === 7 ? 'badge-weekly7' : 'badge-biweekly14'),
+                             'text'  => $srv['monitoring_name'] ?: $srv['name']],
+                        ];
+                        $events[$dayKey][] = [
+                            'name'        => Yii::t('common', 'Вайп карты — {server}', ['server' => $srv['name']]),
+                            'link'        => $srv['link'],
+                            'time'        => $timeTxt,
+                            'is_official' => false,
+                            'is_global'   => false,
+                            'badges'      => $badges,
+                            'desc'        => null,
+                        ];
+                    }
+                }
+            }
+        }
+
+        // === 4) Формируем ответ только с датами, где есть события ===
+        $eventsByDate = [];
+        foreach ($events as $date => $dateEvents) {
+            if (!empty($dateEvents)) {
+                $eventsByDate[$date] = $dateEvents;
+            }
+        }
+
+        return $this->successResponse([
+            'events' => $eventsByDate,
+            'currentYear'  => $year,
+            'currentMonth' => $month,
+            'shownMonths'  => $months,
+        ]);
+    }
+
     /** 7-дневные: каждая пятница, но пропускаем ISO-недели глобала */
     private function addFridaysWeeklyBlockedByGlobal(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, array $blockedIsoWeeks, $mapTime, Servers $s, DateTimeZone $tz)
     {

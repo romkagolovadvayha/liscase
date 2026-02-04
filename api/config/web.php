@@ -110,6 +110,11 @@ $config = [
                 'v1/stats/personal' => 'v1/stats/personal',
                 'v1/stats/report/<serverTag:[\w-]+>/<steamId:\d+>' => 'v1/stats/report',
 
+                // Servers Statistics History
+                'v1/servers-statistics-history/month' => 'v1/servers-statistics-history/month',
+                'v1/servers-statistics-history/week' => 'v1/servers-statistics-history/week',
+                'v1/servers-statistics-history/day' => 'v1/servers-statistics-history/day',
+
                 // Tasks
                 'v1/tasks' => 'v1/tasks/index',
                 'v1/tasks/<id:\d+>' => 'v1/tasks/detail',
@@ -146,6 +151,7 @@ $config = [
 
                 // Wipe Calendar
                 'v1/wipe-calendar' => 'v1/wipe-calendar/index',
+                'v1/wipe-calendar/server' => 'v1/wipe-calendar/server',
 
                 // Maps
                 'v1/maps/vote' => 'v1/maps/vote',
