@@ -142,8 +142,12 @@ class MapsController extends BaseApiController
         // Получаем количество голосов для каждой карты
         $voteCounts = [];
         $userVotes = [];
+        $userVotedMapIds = [];
         $maxVotes = 0;
         $totalVotes = 0;
+
+        // Проверяем, авторизован ли пользователь
+        $currentUser = Yii::$app->user->identity;
 
         if (!empty($mapIds)) {
             $rawCounts = MapListVote::find()
@@ -183,6 +187,13 @@ class MapsController extends BaseApiController
                     'avatar' => $vote->user->getAvatar(),
                     'createdAt' => $vote->created_at,
                 ];
+
+                // Если это голос текущего пользователя, добавляем в список
+                if ($currentUser && $vote->user_id === $currentUser->id) {
+                    if (!in_array($mapIdKey, $userVotedMapIds)) {
+                        $userVotedMapIds[] = $mapIdKey;
+                    }
+                }
             }
         }
 
@@ -257,6 +268,7 @@ class MapsController extends BaseApiController
                 'createdAt' => $map->created_at,
                 'voteCount' => $voteCounts[$map->id] ?? 0,
                 'voters' => $userVotes[$map->id] ?? [],
+                'isVoted' => in_array($map->id, $userVotedMapIds),
             ];
         }
 
@@ -464,6 +476,154 @@ class MapsController extends BaseApiController
                 ? 'Ваш голос успешно учтен!' 
                 : 'Ваш голос снят!',
         ]);
+    }
+
+    /**
+     * Получение детальной информации о карте
+     * 
+     * @OA\Get(
+     *     path="/v1/maps/{id}",
+     *     operationId="getMapDetail",
+     *     tags={"Maps"},
+     *     summary="Получить детальную информацию о карте",
+     *     description="Возвращает подробную информацию о конкретной карте",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID карты",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="server_id",
+     *         in="query",
+     *         required=false,
+     *         description="ID сервера (для получения информации о голосах)",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Детальная информация о карте",
+     *         @OA\MediaType(mediaType="application/json")
+     *     ),
+     *     @OA\Response(response=404, description="Карта не найдена")
+     * )
+     */
+    public function actionDetail($id)
+    {
+        $map = MapList::findOne($id);
+        if (!$map) {
+            return $this->errorResponse('MAP_NOT_FOUND', 'Карта не найдена', [], 404);
+        }
+
+        $request = Yii::$app->request;
+        $serverId = $request->get('server_id');
+
+        $server = null;
+        if ($serverId) {
+            $server = Servers::findOne($serverId);
+        }
+
+        $details = $map->data_json ? json_decode($map->data_json, true) : [];
+        
+        $monumentsRaw = $details['monuments'] ?? json_decode($map->monuments_json ?? '[]', true);
+        if (!is_array($monumentsRaw)) {
+            $monumentsRaw = [];
+        }
+
+        $monuments = [];
+        foreach ($monumentsRaw as $monument) {
+            $type = $monument['type'] ?? '';
+            $monuments[] = [
+                'type' => $type,
+                'label' => MapLocalization::monument($type, Yii::$app->language),
+                'coordinates' => $monument['coordinates'] ?? null,
+            ];
+        }
+
+        $voteCount = 0;
+        $voters = [];
+        $userVotedMapIds = [];
+
+        if ($server) {
+            $voteCount = MapListVote::find()
+                ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
+                ->count();
+
+            $votes = MapListVote::find()
+                ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
+                ->with('user')
+                ->orderBy(['created_at' => SORT_DESC])
+                ->limit(50)
+                ->all();
+
+            foreach ($votes as $vote) {
+                if ($vote->user) {
+                    $voters[] = [
+                        'id' => $vote->user->id,
+                        'username' => $vote->user->username,
+                        'steamId' => $vote->user->steam_id,
+                        'avatar' => $vote->user->getAvatar(),
+                        'createdAt' => $vote->created_at,
+                    ];
+                }
+            }
+
+            // Проверяем, проголосовал ли текущий пользователь
+            $user = Yii::$app->user->identity;
+            if ($user) {
+                $userVote = MapListVote::find()
+                    ->where([
+                        'map_list_id' => $map->id,
+                        'server_id' => $server->id,
+                        'user_id' => $user->id,
+                    ])
+                    ->exists();
+                if ($userVote) {
+                    $userVotedMapIds[] = $map->id;
+                }
+            }
+        }
+
+        $language = Yii::$app->language;
+        $biomeLabels = MapLocalization::biomeLabels($language);
+
+        $mapData = [
+            'id' => (int)$map->id,
+            'hash' => $map->hash,
+            'type' => $map->map_type,
+            'seed' => $map->seed,
+            'size' => $map->size_int,
+            'saveVersion' => $map->save_version,
+            'downloadUrl' => $map->url,
+            'rustMapsUrl' => $map->hash ? 'https://rustmaps.com/map/' . $map->hash : null,
+            'image' => $this->getMapImageUrl($map->image ?: ($details['imageUrl'] ?? $map->image_url)),
+            'imagePreview' => $this->getMapImageUrl($map->image_preview ?: ($details['thumbnailUrl'] ?? $map->thumbnail_url)),
+            'rawImageUrl' => $this->getMapImageUrl($map->raw_image_url ?: ($details['rawImageUrl'] ?? null)),
+            'imageIconUrl' => $this->getMapImageUrl($map->image_icon_url ?: ($details['imageIconUrl'] ?? null)),
+            'isStaging' => (bool)$map->is_staging,
+            'isCustomMap' => (bool)$map->is_custom_map,
+            'canDownload' => (bool)$map->can_download,
+            'totalMonuments' => $map->total_monuments,
+            'monuments' => $monuments,
+            'landPercentage' => $map->land_percentage,
+            'biomePercentages' => $details['biomePercentages'] ?? json_decode($map->biome_percentages_json ?? '[]', true),
+            'biomeLabels' => $biomeLabels,
+            'islands' => $map->islands,
+            'mountains' => $map->mountains,
+            'iceLakes' => $map->ice_lakes,
+            'rivers' => $map->rivers,
+            'lakes' => $map->lakes,
+            'canyons' => $map->canyons,
+            'oases' => $map->oases,
+            'buildableRocks' => $map->buildable_rocks,
+            'createdAt' => $map->created_at,
+            'voteCount' => $voteCount,
+            'voters' => $voters,
+            'userVotedMapIds' => $userVotedMapIds,
+        ];
+
+        return $this->successResponse($mapData);
     }
 
     /**

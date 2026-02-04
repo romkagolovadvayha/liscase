@@ -30,11 +30,11 @@ class AuthController extends BaseApiController
     {
         $behaviors = parent::behaviors();
 
-        // JWT авторизация не требуется для OAuth и callback
-        // Но требуется для me, logout, refresh
+        // JWT авторизация не требуется для OAuth, callback и refresh
+        // Но требуется для me, logout
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
-            'except' => ['oauth', 'callback', 'login', 'options'],
+            'except' => ['oauth', 'callback', 'login', 'refresh', 'options'],
             'throwException' => false, // Не выбрасывать исключение, просто не авторизовывать
         ];
 
@@ -540,6 +540,19 @@ class AuthController extends BaseApiController
             ];
         } else {
             $data['activeVip'] = null;
+        }
+
+        // Добавляем информацию о сервере, на котором играет игрок
+        $server = $user->server;
+        if ($server) {
+            $data['server'] = [
+                'id' => $server->id,
+                'tag' => $server->tag,
+                'name' => $server->name,
+                'monitoring_name' => $server->monitoring_name,
+            ];
+        } else {
+            $data['server'] = null;
         }
 
         return $data;

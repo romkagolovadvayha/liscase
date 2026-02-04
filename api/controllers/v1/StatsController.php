@@ -11,6 +11,7 @@ use common\models\statistics\Reports;
 use common\models\user\User;
 use common\models\user\UserTop;
 use api\components\jwt\JwtAuthFilter;
+use api\components\jwt\JwtService;
 
 /**
  * Контроллер для работы со статистикой
@@ -32,6 +33,13 @@ class StatsController extends BaseApiController
             'class' => JwtAuthFilter::class,
             'only' => ['personal', 'report'],
             'except' => ['stats', 'player-new', 'search', 'tops', 'options'],
+        ];
+
+        // Опциональная авторизация для stats (инициализирует пользователя, если токен есть, но не требует его)
+        $behaviors['optionalAuth'] = [
+            'class' => JwtAuthFilter::class,
+            'only' => ['stats'],
+            'throwException' => false, // Не выбрасываем исключение, если токена нет
         ];
 
         return $behaviors;
@@ -123,32 +131,65 @@ class StatsController extends BaseApiController
         
         // Получаем позицию текущего пользователя в топах (если авторизован)
         $userTops = [];
-        if (!Yii::$app->user->isGuest) {
-            $user = Yii::$app->user->identity;
-            if ($user) {
-                $allUserTops = UserTop::getAllUserTops($server, $wipe, false);
-                // Форматируем для API - маппим ключи как в getTops
-                $keyMapping = [
-                    'reider' => 'reider',
-                    'killer' => 'kills',
-                    'peaceful' => 'scientists',
-                    'playtime' => 'playtime',
-                    'farmer' => 'farmer',
-                    'fishing' => 'fishing',
-                    'hunter' => 'hunter',
-                    'fermer' => 'fermer',
-                ];
-                foreach ($keyMapping as $apiKey => $dbKey) {
-                    if (isset($allUserTops[$dbKey]['items'][$user->steam_id])) {
-                        $userTops[$apiKey] = [
-                            'position' => $allUserTops[$dbKey]['items'][$user->steam_id]['position']
-                        ];
+        $userSteamId = null;
+        
+        // Пытаемся получить пользователя из JWT токена (опционально)
+        $user = null;
+        try {
+            if (!Yii::$app->user->isGuest) {
+                $user = Yii::$app->user->identity;
+            } else {
+                // Если пользователь не инициализирован через behavior, пытаемся получить из токена напрямую
+                $jwtService = Yii::$app->has('jwt') ? Yii::$app->get('jwt') : new JwtService();
+                $token = $jwtService->extractTokenFromRequest(Yii::$app->request);
+                if ($token) {
+                    try {
+                        $payload = $jwtService->validateToken($token);
+                        $userId = $jwtService->getUserId($payload);
+                        $steamId = $jwtService->getSteamId($payload);
+                        
+                        if ($userId) {
+                            $user = User::findIdentity($userId);
+                        } elseif ($steamId) {
+                            $user = User::find()->where(['steam_id' => $steamId])->one();
+                        }
+                    } catch (\Exception $e) {
+                        // Токен невалидный, игнорируем
                     }
+                }
+            }
+        } catch (\Exception $e) {
+            // Игнорируем ошибки авторизации для публичного метода
+        }
+        
+        if ($user) {
+            $userSteamId = $user->steam_id;
+            $allUserTops = UserTop::getAllUserTops($server, $wipe, false);
+            // Форматируем для API - маппим ключи как в getTops
+            $keyMapping = [
+                'reider' => 'reider',
+                'killer' => 'kills',
+                'peaceful' => 'scientists',
+                'playtime' => 'playtime',
+                'farmer' => 'farmer',
+                'fishing' => 'fishing',
+                'hunter' => 'hunter',
+                'fermer' => 'fermer',
+            ];
+            foreach ($keyMapping as $apiKey => $dbKey) {
+                if (isset($allUserTops[$dbKey]['items'][$user->steam_id])) {
+                    $userTops[$apiKey] = [
+                        'position' => $allUserTops[$dbKey]['items'][$user->steam_id]['position']
+                    ];
                 }
             }
         }
         
         $response['userTops'] = $userTops;
+        // Добавляем steam_id пользователя, если авторизован
+        if ($userSteamId) {
+            $response['userSteamId'] = $userSteamId;
+        }
         
         return $this->successResponse($response);
     }

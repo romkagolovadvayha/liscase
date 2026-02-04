@@ -323,7 +323,10 @@ class ServersController extends BaseApiController
             'queued' => (int)($server->queued ?? 0),
             'ip' => $server->ip,
             'port' => (int)$server->port,
-            'nextWipe' => $server->next_wipe ? (($timestamp = strtotime($server->next_wipe)) !== false ? $timestamp : null) : null,
+            'minMapSize' => (int)$server->min_map_size,
+            'maxMapSize' => (int)$server->max_map_size,
+            'nextWipe' => $server->next_wipe,
+            'nextWipeTimestamp' => $server->next_wipe ? (($timestamp = strtotime($server->next_wipe)) !== false ? $timestamp : null) : null,
             'wipeType' => $server->wipeTypeText() ?? 'Вайп',
             'monitoring' => [
                 'percentPlayers' => $monitoring['percentPlayers'] ?? 0,

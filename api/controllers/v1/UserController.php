@@ -41,10 +41,10 @@ class UserController extends BaseApiController
     {
         $behaviors = parent::behaviors();
 
-        // JWT авторизация требуется для всех методов
+        // JWT авторизация требуется для всех методов, кроме поиска
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
-            'except' => ['options'],
+            'except' => ['options', 'search'],
         ];
 
         return $behaviors;
@@ -1323,6 +1323,9 @@ class UserController extends BaseApiController
             $userStatsLink = $baseUrl . '/servers/' . $server->tag . '?steam_id=' . $user->steam_id;
         }
         
+        // Получаем статистику проекта
+        $projectStats = \common\models\statistics\Statistics::projectStats();
+        
         return $this->successResponse([
             'username' => $user->username,
             'userStats' => $userStats,
@@ -1333,6 +1336,140 @@ class UserController extends BaseApiController
             ],
             'userStatsLink' => $userStatsLink,
             'serverActiveTag' => $server ? $server->tag : null,
+            'projectStats' => [
+                'users' => $projectStats['users'] ?? 0,
+                'online' => $projectStats['online'] ?? 0,
+                'count' => $projectStats['count'] ?? 0,
+            ],
+        ]);
+    }
+
+    /**
+     * Поиск пользователей по нику или Steam ID
+     * 
+     * @OA\Get(
+     *     path="/v1/user/search",
+     *     operationId="searchUsers",
+     *     tags={"User"},
+     *     summary="Поиск пользователей по нику или Steam ID",
+     *     description="Публичный метод, авторизация не требуется. Возвращает список пользователей с полной информацией.",
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         required=true,
+     *         description="Поисковый запрос (ник или Steam ID)",
+     *         @OA\Schema(type="string", example="player123")
+     *     ),
+     *     @OA\Parameter(
+     *         name="serverId",
+     *         in="query",
+     *         required=false,
+     *         description="ID сервера для формирования ссылки на статистику",
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="serverTag",
+     *         in="query",
+     *         required=false,
+     *         description="Тег сервера для формирования ссылки на статистику",
+     *         @OA\Schema(type="string", example="max3")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Результаты поиска",
+     *         @OA\MediaType(mediaType="application/json")
+     *     ),
+     *     @OA\Response(response=400, description="Пустой запрос")
+     * )
+     */
+    public function actionSearch()
+    {
+        $q = Yii::$app->request->get('q');
+        $serverId = Yii::$app->request->get('serverId');
+        $serverTag = Yii::$app->request->get('serverTag');
+
+        if (empty($q)) {
+            return $this->errorResponse('INVALID_QUERY', 'Запрос не может быть пустым', [], 400);
+        }
+
+        // Ограничиваем поиск пользователями, которые заходили за последние 3 месяца
+        // Это значительно ускоряет поиск, так как не нужно сканировать всех пользователей
+        $threeMonthsAgo = date('Y-m-d H:i:s', strtotime('-3 months'));
+        
+        // Проверяем, является ли запрос числом (steam_id) или строкой (username)
+        $isNumeric = is_numeric($q);
+        
+        // Поиск пользователей по нику или steam_id, сортировка по дате последнего визита
+        // Ограничиваем только активными пользователями (за последние 3 месяца)
+        $query = User::find()
+            ->select(['id', 'username', 'steam_id', 'last_visit_server_at'])
+            ->andWhere([
+                'or',
+                ['>=', 'last_visit_server_at', $threeMonthsAgo],
+                ['IS', 'last_visit_server_at', null] // Включаем пользователей без даты (новые)
+            ]);
+        
+        if ($isNumeric) {
+            // Если запрос числовой, ищем по steam_id (точное совпадение быстрее)
+            $query->andWhere(['steam_id' => $q]);
+        } else {
+            // Если запрос строковый, ищем по username (LIKE)
+            $query->andWhere(['LIKE', 'username', $q]);
+        }
+        
+        $users = $query
+            ->orderBy(['last_visit_server_at' => SORT_DESC])
+            ->limit(10)
+            ->all();
+
+        $items = [];
+        $baseUrl = Yii::$app->params['baseUrl'] ?? (Yii::$app->params['homePage'] ?? 'http://localhost');
+        $baseUrl = str_replace('api.', '', $baseUrl);
+
+        foreach ($users as $user) {
+            try {
+                $avatar = $user->getAvatar();
+            } catch (\Throwable $e) {
+                $avatar = '';
+            }
+
+            // Формируем ссылку на статистику
+            $statsLink = null;
+            if ($serverTag) {
+                $statsLink = $baseUrl . '/servers/' . $serverTag . '/' . $user->steam_id;
+            } elseif ($serverId) {
+                $server = Servers::findOne($serverId);
+                if ($server) {
+                    $statsLink = $baseUrl . '/servers/' . $server->tag . '/' . $user->steam_id;
+                }
+            } else {
+                // Если serverTag не передан, формируем ссылку на профиль пользователя
+                $statsLink = $baseUrl . '/profile/' . $user->steam_id;
+            }
+
+            // Проверяем статус онлайн (если есть метод)
+            $status = false;
+            try {
+                if (method_exists($user, 'isOnline')) {
+                    $status = $user->isOnline();
+                }
+            } catch (\Throwable $e) {
+                // Игнорируем ошибку
+            }
+
+            $items[] = [
+                'id' => $user->id,
+                'steam_id' => $user->steam_id,
+                'name' => $user->username,
+                'username' => $user->username,
+                'avatar' => $avatar,
+                'status' => $status,
+                'statsLink' => $statsLink,
+            ];
+        }
+
+        return $this->successResponse([
+            'items' => $items,
         ]);
     }
 }

@@ -149,6 +149,7 @@ $config = [
 
                 // Maps
                 'v1/maps/vote' => 'v1/maps/vote',
+                'v1/maps/<id:\d+>' => 'v1/maps/detail',
                 'v1/maps' => 'v1/maps/index',
 
                 // Buildings
