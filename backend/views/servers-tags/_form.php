@@ -69,8 +69,17 @@ use common\models\servers\ServersTags;
             ]) ?>
         </div>
         <div class="col-md-4">
+            <?= $form->field($model, 'icon')->textInput([
+                'maxlength' => true,
+                'placeholder' => 'Например: star, heart, shield'
+            ])->hint('Название иконки из компонента Icon (например: star, heart, shield)') ?>
+        </div>
+        <div class="col-md-4">
             <?= $form->field($model, 'sort')->textInput(['type' => 'number']) ?>
         </div>
+    </div>
+
+    <div class="row">
         <div class="col-md-4">
             <?= $form->field($model, 'status')->dropDownList(ServersTags::getStatusList()) ?>
         </div>

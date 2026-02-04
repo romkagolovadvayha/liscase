@@ -355,6 +355,9 @@ class ServersController extends BaseApiController
                     'id' => $tag->id,
                     'name' => $tag->name,
                     'link' => $tag->link,
+                    'link_name' => $tag->link_name,
+                    'color' => $tag->color,
+                    'icon' => $tag->icon,
                 ];
             }
         }
