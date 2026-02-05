@@ -47,7 +47,7 @@ class Category extends ActiveRecord
         return [
             [['name'], 'required'],
             [['sort', 'show_main_block'], 'integer'],
-            [['name', 'tag', 'created_at'], 'string', 'max' => 255],
+            [['name', 'tag', 'created_at', 'image'], 'string', 'max' => 255],
         ];
     }
 
@@ -98,6 +98,32 @@ class Category extends ActiveRecord
                           ->all();
         Yii::$app->cache->set($cacheKey, $result, 7*24*60*60);
         return $result;
+    }
+
+    /**
+     * Получение публичного URL изображения категории из S3
+     * 
+     * @return string|null Публичный URL изображения или null, если изображение отсутствует
+     */
+    public function getImageUrl()
+    {
+        if (empty($this->image)) {
+            return null;
+        }
+
+        // Если изображение начинается с /images/, добавляем префикс uploads для S3
+        if (strpos($this->image, '/images/') === 0) {
+            // Формируем ключ для S3: /images/... -> uploads/images/...
+            $s3Key = 'uploads' . $this->image;
+            return Yii::$app->s3Api->getPublicUrl($s3Key);
+        } elseif (strpos($this->image, '/uploads/') === 0) {
+            // Если изображение уже начинается с /uploads/, используем как есть
+            $s3Key = ltrim($this->image, '/');
+            return Yii::$app->s3Api->getPublicUrl($s3Key);
+        } else {
+            // Если это уже полный URL, возвращаем как есть
+            return $this->image;
+        }
     }
 
 }
