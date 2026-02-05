@@ -33,7 +33,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
 ?>
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <a href="<?=Yii::$app->params['baseUrl']?>" class="brand-link" style="display: block; text-align: center">
-        <img src="<?=Yii::$app->params['baseUrl']?><?=Yii::$app->settings->get('design_logo')?>" alt="<?=Yii::$app->settings->get('site_title')?>" style="display: inline-block; width: 120px; max-width: 100%">
+        <img src="<?=Yii::$app->settings->get('design_logo')?>" alt="<?=Yii::$app->settings->get('site_title')?>" style="display: inline-block; width: 120px; max-width: 100%">
     </a>
 
     <!-- Sidebar -->
@@ -71,7 +71,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                        'label' => 'Сервера',
                        'icon' => 'fas fa-gamepad',
                        'url' => [''],
-                       'visibility' => $admin,
+                       'visibility' => $moder,
                        'active' => _checkActive('/servers') || _checkActive('/map-list') || _checkActive('/rust-plugin-config') || _checkActive('/servers-rules') || _checkActive('/servers-rules-category'),
                        'items' => [
                            [
@@ -91,14 +91,14 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                                'label' => 'Правила серверов',
                                'icon' => 'fas fa-gavel',
                                'url' => ['/servers-rules/index'],
-                               'visibility' => $admin,
+                               'visibility' => $moder,
                                'active' => _checkActive('/servers-rules'),
                            ],
                            [
                                'label' => 'Категории правил',
                                'icon' => 'fas fa-folder',
                                'url' => ['/servers-rules-category/index'],
-                               'visibility' => $admin,
+                               'visibility' => $moder,
                                'active' => _checkActive('/servers-rules-category'),
                            ],
                            [
@@ -253,7 +253,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                        'label'  => Yii::t('common', 'Предметы'),
                        'url'    => '/drop/index',
                        'icon'   => 'fa-solid fa-table-cells',
-                       'visibility' => $admin,
+                       'visibility' => $moder,
                        'active' => _checkActive('/drop/'),
                    ],
                    [

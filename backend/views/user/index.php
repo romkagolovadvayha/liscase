@@ -27,10 +27,11 @@ $this->title = Yii::t('common', 'Пользователи');
                         'format'    => 'raw',
                         'options'   => ['width' => '32'],
                         'value'     => function (UserSearch $model) {
-                            if (empty($model->userProfile)) {
+                            $avatar = $model->getAvatar();
+                            if (empty($avatar)) {
                                 return null;
                             }
-                            return Html::img($model->userProfile->avatar, [
+                            return Html::img($avatar, [
                                 'width' => '32px',
                                 'height' => '32px',
                                 'style' => 'border-radius: 50%; object-fit: cover;',
@@ -98,7 +99,10 @@ $this->title = Yii::t('common', 'Пользователи');
                         'options'  => ['width' => '90'],
                         'buttons'  => [
                             'switch' => function ($url, $model) {
-                                if ($model->status != UserSearch::STATUS_ACTIVE || !Yii::$app->user->can(Role::ROLE_ADMIN)) {
+                                $isAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
+                                $isModerator = Yii::$app->user->can(Role::ROLE_MODERATOR);
+                                
+                                if ($model->status != UserSearch::STATUS_ACTIVE || (!$isAdmin && !$isModerator)) {
                                     return null;
                                 }
 
