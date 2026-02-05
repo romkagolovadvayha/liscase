@@ -251,7 +251,7 @@ class SkinsController extends BaseApiController
             $recentDrops[] = [
                 'id' => $payout->id,
                 'name' => $payout->name,
-                'price' => (float)$payout->price,
+                'price' => (float)$payout->real_price,
                 'image' => $payout->image300 ?: $payout->image,
                 'user' => [
                     'id' => $user->id ?? null,
