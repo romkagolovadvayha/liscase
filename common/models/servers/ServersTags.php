@@ -14,6 +14,7 @@ use Yii;
  * @property string|null $short_description Краткое описание
  * @property string|null $description Полное описание
  * @property string|null $color Цвет тега (HEX)
+ * @property string|null $icon Иконка тега
  * @property int|null $sort Сортировка
  * @property int|null $status Статус (0-неактивен, 1-активен)
  * @property string $created_at
@@ -45,10 +46,12 @@ class ServersTags extends \common\components\base\ActiveRecord
             [['description'], 'string'],
             [['sort', 'status'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
-            [['name', 'title', 'link_name'], 'string', 'max' => 255],
+            [['name', 'title', 'link_name', 'icon'], 'string', 'max' => 255],
+            [['icon'], 'trim'],
+            [['icon'], 'default', 'value' => null],
             [['short_description'], 'string', 'max' => 500],
             [['color'], 'string', 'max' => 7],
-            [['color'], 'match', 'pattern' => '/^#[0-9A-Fa-f]{6}$/'],
+            [['color'], 'match', 'pattern' => '/^#[0-9A-Fa-f]{6}$/', 'skipOnEmpty' => true],
             [['link_name'], 'unique'],
             [['status'], 'default', 'value' => self::STATUS_ACTIVE],
             [['sort'], 'default', 'value' => 0],
@@ -69,6 +72,7 @@ class ServersTags extends \common\components\base\ActiveRecord
             'short_description' => Yii::t('common', 'Краткое описание'),
             'description' => Yii::t('common', 'Полное описание'),
             'color' => Yii::t('common', 'Цвет тега'),
+            'icon' => Yii::t('common', 'Иконка тега'),
             'sort' => Yii::t('common', 'Сортировка'),
             'status' => Yii::t('common', 'Статус'),
             'created_at' => Yii::t('common', 'Создан'),
@@ -143,7 +147,14 @@ class ServersTags extends \common\components\base\ActiveRecord
      */
     public function saveRecord()
     {
-        return $this->save();
+        // Отладка для icon
+        Yii::info('ServersTags::saveRecord - Icon value before save: ' . ($this->icon ?? 'NULL'), __METHOD__);
+        $result = $this->save();
+        if (!$result) {
+            print_r(print_r($this->getErrors(), true));exit;
+            Yii::error('ServersTags::saveRecord - Save failed. Errors: ' . print_r($this->getErrors(), true), __METHOD__);
+        }
+        return $result;
     }
 }
 

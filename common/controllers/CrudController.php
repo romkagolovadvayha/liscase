@@ -124,6 +124,12 @@ abstract class CrudController extends WebController
     protected function _saveForm($formModel, $view)
     {
         if ($formModel->load(Yii::$app->request->post())) {
+            // Отладка для ServersTags
+            if ($formModel instanceof \common\models\servers\ServersTags) {
+                Yii::info('ServersTags model loaded. Icon value: ' . ($formModel->icon ?? 'NULL'), __METHOD__);
+                Yii::info('POST data icon: ' . (Yii::$app->request->post('ServersTags')['icon'] ?? 'NOT SET'), __METHOD__);
+            }
+            
             if (Yii::$app->request->isAjax) {
                 Yii::$app->response->format = Response::FORMAT_JSON;
 
@@ -132,6 +138,12 @@ abstract class CrudController extends WebController
 
             if ($formModel->saveRecord()) {
                 return $this->redirect($this->getIndexUrl());
+            } else {
+                // Логируем ошибки сохранения
+                if ($formModel instanceof \common\models\servers\ServersTags) {
+                    Yii::error('ServersTags save failed. Errors: ' . print_r($formModel->getErrors(), true), __METHOD__);
+                    Yii::error('Model attributes: ' . print_r($formModel->attributes, true), __METHOD__);
+                }
             }
         }
 

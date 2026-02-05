@@ -94,6 +94,8 @@ class ServersTagsController extends CrudController
 
         if ($model->load(Yii::$app->request->post())) {
             Yii::info('Model loaded successfully', __METHOD__);
+            Yii::info('Icon value after load: ' . ($model->icon ?? 'NULL'), __METHOD__);
+            Yii::info('POST data: ' . print_r(Yii::$app->request->post(), true), __METHOD__);
             
             if ($model->save()) {
                 Yii::$app->session->setFlash('success', 'Тег успешно создан');
