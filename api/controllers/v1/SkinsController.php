@@ -32,7 +32,7 @@ class SkinsController extends BaseApiController
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
             'only' => ['confirm'],
-            'except' => ['index', 'giveaway', 'options'],
+            'except' => ['index', 'giveaway', 'skindrops', 'options'],
         ];
 
         return $behaviors;
@@ -315,6 +315,99 @@ class SkinsController extends BaseApiController
         }
 
         return $this->successResponse($data);
+    }
+
+    /**
+     * Получить данные для страницы skindrops
+     * 
+     * @OA\Get(
+     *     path="/v1/skins/skindrops",
+     *     operationId="getSkindropsPage",
+     *     tags={"Skins"},
+     *     summary="Получить данные для страницы skindrops",
+     *     description="Публичный метод, возвращает информацию о раздаче скинов, статус пользователя и последние выигрыши",
+     *     @OA\Response(response=200, description="Данные для страницы skindrops")
+     * )
+     */
+    public function actionSkindrops()
+    {
+        if (!Yii::$app->settings->get('section_skindrops')) {
+            throw new NotFoundHttpException('Страница не найдена');
+        }
+
+        // Кэшируем данные на 10 минут
+        $cacheKey = 'skindrops_page_data';
+        $cache = Yii::$app->cache;
+        $data = $cache->get($cacheKey);
+
+        if ($data === false) {
+            // Получаем последние 10 выигрышей
+            $lastPayouts = UserPayoutSkins::find()
+                ->alias('p')
+                ->joinWith(['user'])
+                ->where(['p.status' => UserPayoutSkins::STATUS_SUCCESS])
+                ->orderBy(['p.id' => SORT_DESC])
+                ->limit(10)
+                ->all();
+
+            $recentWins = [];
+            foreach ($lastPayouts as $payout) {
+                $user = $payout->user;
+                $recentWins[] = [
+                    'id' => $payout->id,
+                    'name' => $payout->name,
+                    'price' => (float)$payout->amount,
+                    'image' => $payout->image300 ?: $payout->image,
+                    'user' => [
+                        'id' => $user->id ?? null,
+                        'username' => $user->username ?? 'Неизвестный',
+                        'avatar' => $user->getAvatar() ?? null,
+                    ],
+                    'created_at' => $payout->created_at,
+                ];
+            }
+
+            $data = [
+                'recentWins' => $recentWins,
+                'prefix' => Yii::$app->settings->get('skindrops_prefix') ?? '',
+            ];
+
+            // Сохраняем в кэш на 10 минут (600 секунд)
+            $cache->set($cacheKey, $data, 600);
+        }
+
+        // Данные пользователя (если авторизован)
+        $userData = null;
+        $user = Yii::$app->user->identity;
+        if ($user && !Yii::$app->user->isGuest) {
+            $prefix = Yii::$app->settings->get('skindrops_prefix') ?? '';
+            $usernameCompleted = strpos(mb_strtolower($user->username), strtolower($prefix)) !== false;
+            $tradeLinkCompleted = !empty($user->userProfile->trade_link);
+            
+            $userData = [
+                'isAuthenticated' => true,
+                'usernameCompleted' => $usernameCompleted,
+                'tradeLinkCompleted' => $tradeLinkCompleted,
+                'tradeLink' => $user->userProfile->trade_link ?? null,
+                'allCompleted' => $usernameCompleted && $tradeLinkCompleted,
+            ];
+        }
+
+        if (!$userData) {
+            $userData = [
+                'isAuthenticated' => false,
+                'usernameCompleted' => false,
+                'tradeLinkCompleted' => false,
+                'tradeLink' => null,
+                'allCompleted' => false,
+            ];
+        }
+
+        return $this->successResponse([
+            'recentWins' => $data['recentWins'],
+            'prefix' => $data['prefix'],
+            'user' => $userData,
+        ]);
     }
 }
 
