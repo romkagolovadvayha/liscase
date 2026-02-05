@@ -267,7 +267,7 @@ class SkinsController extends BaseApiController
                 $data['rust']['recentDrops'][] = [
                     'id' => $payout->id,
                     'name' => $payout->name,
-                    'price' => (float)$payout->real_price,
+                    'price' => (float)$payout->amount,
                     'image' => $payout->image300 ?: $payout->image,
                     'user' => [
                         'id' => $user->id ?? null,
@@ -290,7 +290,7 @@ class SkinsController extends BaseApiController
                 $data['cs2']['recentDrops'][] = [
                     'id' => $payout->id,
                     'name' => $payout->name,
-                    'price' => (float)$payout->real_price,
+                    'price' => (float)$payout->amount,
                     'image' => $payout->image300 ?: $payout->image,
                     'user' => [
                         'id' => $user->id ?? null,
