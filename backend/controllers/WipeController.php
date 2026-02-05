@@ -418,7 +418,11 @@ class WipeController extends Controller
         }
 
         // Этап 3: Фиксация карты
+        // Сначала определяем, какую карту зафиксировать для какого сервера
         $results['step3_fix_map'] = [];
+        $serverMapMapping = []; // Массив соответствий server_id => map_id
+        
+        // Шаг 3.1: Определяем соответствия сервер-карта
         foreach ($servers as $server) {
             try {
                 if ($server->secret_map) {
@@ -429,20 +433,67 @@ class WipeController extends Controller
                     continue;
                 }
 
-                // Используем MapFixJob через очередь или напрямую
-                \Yii::$app->queueProcess->push(new MapFixJob(['serverId' => $server->id]));
+                // Определяем выигрышную карту для сервера (без фиксации)
+                $winningMap = MapList::getWinningMapForServer($server->id);
                 
-                // Также фиксируем напрямую для немедленного результата
-                MapList::fixWinningMapForServer($server->id);
-                
-                $results['step3_fix_map'][$server->id] = [
-                    'success' => true,
-                    'message' => 'Карта успешно зафиксирована',
-                ];
+                if ($winningMap) {
+                    $serverMapMapping[$server->id] = $winningMap->id;
+                } else {
+                    // Нет выигрышной карты для этого сервера
+                    $results['step3_fix_map'][$server->id] = [
+                        'success' => true,
+                        'message' => 'Пропущено (нет голосов за карты)',
+                    ];
+                }
             } catch (\Exception $e) {
                 $results['step3_fix_map'][$server->id] = [
                     'success' => false,
-                    'message' => 'Ошибка: ' . $e->getMessage(),
+                    'message' => 'Ошибка при определении карты: ' . $e->getMessage(),
+                ];
+                $overallSuccess = false;
+            }
+        }
+
+        // Шаг 3.2: Фиксируем карты для серверов, для которых определили карты
+        foreach ($serverMapMapping as $serverId => $mapId) {
+            // Пропускаем серверы, для которых уже установлен результат (например, "Пропущено")
+            if (isset($results['step3_fix_map'][$serverId])) {
+                continue;
+            }
+            
+            try {
+                $server = Servers::findOne($serverId);
+                if (!$server) {
+                    $results['step3_fix_map'][$serverId] = [
+                        'success' => false,
+                        'message' => 'Сервер не найден',
+                    ];
+                    $overallSuccess = false;
+                    continue;
+                }
+
+                // Используем MapFixJob через очередь
+                \Yii::$app->queueProcess->push(new MapFixJob(['serverId' => $serverId]));
+                
+                // Также фиксируем напрямую для немедленного результата
+                $fixedMap = MapList::fixWinningMapForServer($serverId);
+                
+                if ($fixedMap) {
+                    $results['step3_fix_map'][$serverId] = [
+                        'success' => true,
+                        'message' => "Карта '{$fixedMap->name}' (ID: {$fixedMap->id}) успешно зафиксирована",
+                    ];
+                } else {
+                    $results['step3_fix_map'][$serverId] = [
+                        'success' => false,
+                        'message' => 'Не удалось зафиксировать карту',
+                    ];
+                    $overallSuccess = false;
+                }
+            } catch (\Exception $e) {
+                $results['step3_fix_map'][$serverId] = [
+                    'success' => false,
+                    'message' => 'Ошибка при фиксации: ' . $e->getMessage(),
                 ];
                 $overallSuccess = false;
             }

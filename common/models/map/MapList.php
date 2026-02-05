@@ -153,13 +153,12 @@ class MapList extends \yii\db\ActiveRecord
     }
 
     /**
-     * Фиксирует карту с наибольшим количеством голосов для указанного сервера
-     * и обновляет поле map_list_id в таблице servers
+     * Определяет выигрышную карту для сервера на основе голосов (без фиксации)
      * 
      * @param int $serverId ID сервера
-     * @return MapList|null Карта с наибольшим количеством голосов или null, если голосов нет
+     * @return self|null Выигрышная карта или null
      */
-    public static function fixWinningMapForServer(int $serverId): ?self
+    public static function getWinningMapForServer(int $serverId): ?self
     {
         // Получаем количество голосов для каждой карты на данном сервере
         $voteCounts = MapListVote::find()
@@ -171,12 +170,6 @@ class MapList extends \yii\db\ActiveRecord
             ->all();
 
         if (empty($voteCounts)) {
-            // Нет голосов, можно сбросить map_list_id или оставить null
-            $server = \common\models\servers\Servers::findOne($serverId);
-            if ($server) {
-                $server->map_list_id = null;
-                $server->save(false);
-            }
             return null;
         }
 
@@ -194,12 +187,49 @@ class MapList extends \yii\db\ActiveRecord
         }
 
         // Если несколько карт с одинаковым количеством голосов, выбираем самую новую по created_at
-        $winningMap = self::find()
+        // И проверяем, что карта не зафиксирована на другом сервере
+        $winningMaps = self::find()
             ->where(['id' => $winningMapIds])
             ->orderBy(['created_at' => SORT_DESC])
-            ->one();
+            ->all();
+
+        // Ищем первую карту, которая не зафиксирована на другом сервере
+        foreach ($winningMaps as $map) {
+            // Проверяем, не используется ли эта карта на другом сервере
+            $isFixedOnOtherServer = \common\models\servers\Servers::find()
+                ->where(['map_list_id' => $map->id])
+                ->andWhere(['!=', 'id', $serverId])
+                ->exists();
+            
+            // Если карта не зафиксирована на другом сервере, возвращаем её
+            if (!$isFixedOnOtherServer) {
+                return $map;
+            }
+        }
+
+        // Если все карты зафиксированы на других серверах, возвращаем null
+        return null;
+    }
+
+    /**
+     * Фиксирует карту с наибольшим количеством голосов для указанного сервера
+     * и обновляет поле map_list_id в таблице servers
+     * 
+     * @param int $serverId ID сервера
+     * @return MapList|null Карта с наибольшим количеством голосов или null, если голосов нет
+     */
+    public static function fixWinningMapForServer(int $serverId): ?self
+    {
+        // Используем метод определения выигрышной карты
+        $winningMap = self::getWinningMapForServer($serverId);
 
         if (!$winningMap) {
+            // Нет голосов, можно сбросить map_list_id или оставить null
+            $server = \common\models\servers\Servers::findOne($serverId);
+            if ($server) {
+                $server->map_list_id = null;
+                $server->save(false);
+            }
             return null;
         }
 
