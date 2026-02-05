@@ -158,6 +158,9 @@ $config = [
                 'v1/maps/<id:\d+>' => 'v1/maps/detail',
                 'v1/maps' => 'v1/maps/index',
 
+                // Radio
+                'v1/radio/list' => 'radio/list',
+
                 // Buildings
                 'v1/buildings' => 'v1/buildings/index',
                 'v1/buildings/upload-image' => 'v1/buildings/upload-image',
