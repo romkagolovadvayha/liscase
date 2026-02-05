@@ -56,33 +56,45 @@ class TasksController extends BaseApiController
         $type = Yii::$app->request->get('type');
         $sort = Yii::$app->request->get('sort');
 
-        // Получаем только активные задания
-        $query = TaskV2::find()
-            ->where(['is_active' => 1]);
+        // Кэшируем список заданий на 5 минут (без пользовательских данных)
+        $cacheKey = 'api_tasks_list_' . md5(($type ?? '') . '_' . ($sort ?? ''));
+        $cache = Yii::$app->cache;
+        $cachedTasks = $cache->get($cacheKey);
+        
+        if ($cachedTasks === false) {
+            // Получаем только активные задания
+            $query = TaskV2::find()
+                ->where(['is_active' => 1]);
 
-        // Фильтр по типу (daily_reward всегда включен)
-        if ($type && in_array($type, [TaskV2::TYPE_ONE_TIME, TaskV2::TYPE_REPEATABLE])) {
-            $query->andWhere(['type' => $type]);
-            // daily_reward добавляем всегда
-            $query->orWhere(['type' => TaskV2::TYPE_DAILY_REWARD]);
+            // Фильтр по типу (daily_reward всегда включен)
+            if ($type && in_array($type, [TaskV2::TYPE_ONE_TIME, TaskV2::TYPE_REPEATABLE])) {
+                $query->andWhere(['type' => $type]);
+                // daily_reward добавляем всегда
+                $query->orWhere(['type' => TaskV2::TYPE_DAILY_REWARD]);
+            }
+
+            // Сортировка
+            switch ($sort) {
+                case 'popularity':
+                    $query->orderBy(['global_completed' => SORT_DESC, 'sort' => SORT_ASC]);
+                    break;
+                case 'reward':
+                    $query->orderBy(['reward_amount' => SORT_DESC, 'sort' => SORT_ASC]);
+                    break;
+                case 'newest':
+                    $query->orderBy(['created_at' => SORT_DESC, 'sort' => SORT_ASC]);
+                    break;
+                default:
+                    $query->orderBy(['sort' => SORT_ASC, 'created_at' => SORT_DESC]);
+            }
+
+            $allModels = $query->all();
+            
+            // Сохраняем в кэш только модели (без пользовательских данных)
+            $cache->set($cacheKey, $allModels, 300); // 5 минут
+        } else {
+            $allModels = $cachedTasks;
         }
-
-        // Сортировка
-        switch ($sort) {
-            case 'popularity':
-                $query->orderBy(['global_completed' => SORT_DESC, 'sort' => SORT_ASC]);
-                break;
-            case 'reward':
-                $query->orderBy(['reward_amount' => SORT_DESC, 'sort' => SORT_ASC]);
-                break;
-            case 'newest':
-                $query->orderBy(['created_at' => SORT_DESC, 'sort' => SORT_ASC]);
-                break;
-            default:
-                $query->orderBy(['sort' => SORT_ASC, 'created_at' => SORT_DESC]);
-        }
-
-        $allModels = $query->all();
 
         // Кастомная сортировка: ежедневная награда первая, затем новые, затем выполненные
         usort($allModels, function ($a, $b) use ($user) {

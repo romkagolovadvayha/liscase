@@ -112,120 +112,143 @@ class BuildingsController extends BaseApiController
         $sort = $request->get('sort', 'created_at');
         $order = $request->get('order', 'desc');
 
-        $query = Building::find()
-            ->alias('b')
-            ->where(['b.status' => Building::STATUS_ACTIVE])
-            ->with(['buildingImage', 'user', 'server']);
-
-        // Фильтр по серверу
-        if ($serverTag) {
-            $query->andWhere(['b.server_tag' => $serverTag]);
+        // Кэшируем только если нет фильтров (базовый список)
+        $hasFilters = !empty($serverTag) || !empty($search);
+        $cacheKey = null;
+        $cachedData = null;
+        
+        if (!$hasFilters && $page === 1) {
+            $cacheKey = 'api_buildings_list_' . $sort . '_' . $order;
+            $cache = Yii::$app->cache;
+            $cachedData = $cache->get($cacheKey);
         }
 
-        // Поиск по названию или описанию
-        if ($search) {
-            $query->andWhere(['or',
-                ['like', 'b.name', $search],
-                ['like', 'b.description', $search]
+        if ($cachedData === false || $hasFilters || $page > 1) {
+            $query = Building::find()
+                ->alias('b')
+                ->where(['b.status' => Building::STATUS_ACTIVE])
+                ->with(['buildingImage', 'user', 'server']);
+
+            // Фильтр по серверу
+            if ($serverTag) {
+                $query->andWhere(['b.server_tag' => $serverTag]);
+            }
+
+            // Поиск по названию или описанию
+            if ($search) {
+                $query->andWhere(['or',
+                    ['like', 'b.name', $search],
+                    ['like', 'b.description', $search]
+                ]);
+            }
+
+            // Сортировка
+            $allowedSorts = ['created_at', 'likes', 'name'];
+            if (!in_array($sort, $allowedSorts)) {
+                $sort = 'created_at';
+            }
+            $sortOrder = strtolower($order) === 'asc' ? SORT_ASC : SORT_DESC;
+            $query->orderBy(["b.{$sort}" => $sortOrder]);
+
+            $dataProvider = new ActiveDataProvider([
+                'query' => $query,
+                'pagination' => [
+                    'page' => $page - 1, // ActiveDataProvider использует 0-based индексацию
+                    'pageSize' => $limit,
+                ],
             ]);
-        }
 
-        // Сортировка
-        $allowedSorts = ['created_at', 'likes', 'name'];
-        if (!in_array($sort, $allowedSorts)) {
-            $sort = 'created_at';
-        }
-        $sortOrder = strtolower($order) === 'asc' ? SORT_ASC : SORT_DESC;
-        $query->orderBy(["b.{$sort}" => $sortOrder]);
+            // Получаем текущего пользователя (если авторизован)
+            $currentUser = null;
+            try {
+                $currentUser = $this->getCurrentUser();
+            } catch (\Exception $e) {
+                // Пользователь не авторизован - это нормально для публичного списка
+            }
 
-        $dataProvider = new ActiveDataProvider([
-            'query' => $query,
-            'pagination' => [
-                'page' => $page - 1, // ActiveDataProvider использует 0-based индексацию
-                'pageSize' => $limit,
-            ],
-        ]);
+            // Если пользователь авторизован, получаем все его лайки одним запросом
+            $userLikedBuildingIds = [];
+            if ($currentUser) {
+                $userLikes = BuildingLike::find()
+                    ->select('building_id')
+                    ->where(['user_id' => $currentUser->id])
+                    ->asArray()
+                    ->all();
+                $userLikedBuildingIds = array_column($userLikes, 'building_id');
+            }
 
-        // Получаем текущего пользователя (если авторизован)
-        $currentUser = null;
-        try {
-            $currentUser = $this->getCurrentUser();
-        } catch (\Exception $e) {
-            // Пользователь не авторизован - это нормально для публичного списка
-        }
-
-        // Если пользователь авторизован, получаем все его лайки одним запросом
-        $userLikedBuildingIds = [];
-        if ($currentUser) {
-            $userLikes = BuildingLike::find()
-                ->select('building_id')
-                ->where(['user_id' => $currentUser->id])
-                ->asArray()
-                ->all();
-            $userLikedBuildingIds = array_column($userLikes, 'building_id');
-        }
-
-        $buildings = [];
-        foreach ($dataProvider->getModels() as $building) {
-            // Получаем первое изображение с S3 URL
-            $imageUrl = null;
-            $buildingImages = $building->buildingImage;
-            if (!empty($buildingImages)) {
-                if (is_array($buildingImages) && count($buildingImages) > 0) {
-                    $firstImage = reset($buildingImages);
-                    if ($firstImage) {
-                        $imageUrl = $firstImage->getPublicUrl();
-                    }
-                } elseif (is_object($buildingImages)) {
-                    $images = $buildingImages->all();
-                    if (!empty($images)) {
-                        $firstImage = reset($images);
+            $buildings = [];
+            foreach ($dataProvider->getModels() as $building) {
+                // Получаем первое изображение с S3 URL
+                $imageUrl = null;
+                $buildingImages = $building->buildingImage;
+                if (!empty($buildingImages)) {
+                    if (is_array($buildingImages) && count($buildingImages) > 0) {
+                        $firstImage = reset($buildingImages);
                         if ($firstImage) {
                             $imageUrl = $firstImage->getPublicUrl();
                         }
+                    } elseif (is_object($buildingImages)) {
+                        $images = $buildingImages->all();
+                        if (!empty($images)) {
+                            $firstImage = reset($images);
+                            if ($firstImage) {
+                                $imageUrl = $firstImage->getPublicUrl();
+                            }
+                        }
                     }
                 }
+
+                // Проверяем, лайкнул ли текущий пользователь эту постройку
+                $isLiked = $currentUser && in_array($building->id, $userLikedBuildingIds);
+
+                $buildings[] = [
+                    'id' => $building->id,
+                    'name' => $building->name,
+                    'description' => $building->description,
+                    'location' => $building->location,
+                    'image' => $imageUrl,
+                    'likes' => $building->likes ?? 0,
+                    'is_liked' => $isLiked,
+                    'wipe' => $building->wipe,
+                    'server' => $building->server ? [
+                        'tag' => $building->server->tag,
+                        'name' => $building->server->monitoring_name ?? $building->server->tag,
+                    ] : null,
+                    'user' => $building->user ? [
+                        'id' => $building->user->id,
+                        'username' => $building->user->username,
+                        'steamId' => $building->user->steam_id,
+                        'avatar' => $building->user->getAvatar(),
+                    ] : null,
+                    'createdAt' => $building->created_at,
+                ];
             }
 
-            // Проверяем, лайкнул ли текущий пользователь эту постройку
-            $isLiked = $currentUser && in_array($building->id, $userLikedBuildingIds);
+            $pagination = $dataProvider->getPagination();
+            $totalPages = $pagination->getPageCount();
 
-            $buildings[] = [
-                'id' => $building->id,
-                'name' => $building->name,
-                'description' => $building->description,
-                'location' => $building->location,
-                'image' => $imageUrl,
-                'likes' => $building->likes ?? 0,
-                'is_liked' => $isLiked,
-                'wipe' => $building->wipe,
-                'server' => $building->server ? [
-                    'tag' => $building->server->tag,
-                    'name' => $building->server->monitoring_name ?? $building->server->tag,
-                ] : null,
-                'user' => $building->user ? [
-                    'id' => $building->user->id,
-                    'username' => $building->user->username,
-                    'steamId' => $building->user->steam_id,
-                    'avatar' => $building->user->getAvatar(),
-                ] : null,
-                'createdAt' => $building->created_at,
+            $responseData = [
+                'buildings' => $buildings,
+                'pagination' => [
+                    'currentPage' => $page,
+                    'totalPages' => $totalPages,
+                    'totalCount' => $dataProvider->getTotalCount(),
+                    'pageSize' => $limit,
+                    'hasMore' => $page < $totalPages,
+                ],
             ];
+
+            // Сохраняем в кэш только базовый список (без фильтров, первая страница)
+            if (!$hasFilters && $page === 1 && $cacheKey) {
+                $cache->set($cacheKey, $responseData, 300); // 5 минут
+            }
+
+            return $this->successResponse($responseData);
+        } else {
+            // Используем кэшированные данные
+            return $this->successResponse($cachedData);
         }
-
-        $pagination = $dataProvider->getPagination();
-        $totalPages = $pagination->getPageCount();
-
-        return $this->successResponse([
-            'buildings' => $buildings,
-            'pagination' => [
-                'currentPage' => $page,
-                'totalPages' => $totalPages,
-                'totalCount' => $dataProvider->getTotalCount(),
-                'pageSize' => $limit,
-                'hasMore' => $page < $totalPages,
-            ],
-        ]);
     }
 
     /**

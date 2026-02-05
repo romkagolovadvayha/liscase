@@ -238,39 +238,49 @@ class BlogController extends BaseApiController
      */
     public function actionCategories()
     {
-        // Получаем все родительские категории (без parent_id)
-        $parentCategories = BlogCategory::find()
-            ->where(['blog_category_id' => null])
-            ->andWhere(['status' => BlogCategory::STATUS_ACTIVE])
-            ->orderBy(['name' => SORT_ASC])
-            ->all();
+        // Кэшируем категории на 1 час
+        $cacheKey = 'api_blog_categories';
+        $cache = Yii::$app->cache;
+        $categories = $cache->get($cacheKey);
 
-        $categories = [];
-        foreach ($parentCategories as $parentCategory) {
-            // Получаем дочерние категории
-            $children = BlogCategory::find()
-                ->where(['blog_category_id' => $parentCategory->id])
+        if ($categories === false) {
+            // Получаем все родительские категории (без parent_id)
+            $parentCategories = BlogCategory::find()
+                ->where(['blog_category_id' => null])
                 ->andWhere(['status' => BlogCategory::STATUS_ACTIVE])
                 ->orderBy(['name' => SORT_ASC])
                 ->all();
 
-            $childrenData = [];
-            foreach ($children as $child) {
-                $childrenData[] = [
-                    'id' => $child->id,
-                    'name' => $child->name,
-                    'linkName' => $child->link_name,
-                    'description' => $child->description,
+            $categories = [];
+            foreach ($parentCategories as $parentCategory) {
+                // Получаем дочерние категории
+                $children = BlogCategory::find()
+                    ->where(['blog_category_id' => $parentCategory->id])
+                    ->andWhere(['status' => BlogCategory::STATUS_ACTIVE])
+                    ->orderBy(['name' => SORT_ASC])
+                    ->all();
+
+                $childrenData = [];
+                foreach ($children as $child) {
+                    $childrenData[] = [
+                        'id' => $child->id,
+                        'name' => $child->name,
+                        'linkName' => $child->link_name,
+                        'description' => $child->description,
+                    ];
+                }
+
+                $categories[] = [
+                    'id' => $parentCategory->id,
+                    'name' => $parentCategory->name,
+                    'linkName' => $parentCategory->link_name,
+                    'description' => $parentCategory->description,
+                    'children' => $childrenData,
                 ];
             }
 
-            $categories[] = [
-                'id' => $parentCategory->id,
-                'name' => $parentCategory->name,
-                'linkName' => $parentCategory->link_name,
-                'description' => $parentCategory->description,
-                'children' => $childrenData,
-            ];
+            // Сохраняем в кэш на 1 час (3600 секунд)
+            $cache->set($cacheKey, $categories, 3600);
         }
 
         return $this->successResponse($categories);

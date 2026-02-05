@@ -98,6 +98,7 @@ class ServersTagsController extends CrudController
             Yii::info('POST data: ' . print_r(Yii::$app->request->post(), true), __METHOD__);
             
             if ($model->save()) {
+                // Кэш сбрасывается в модели через afterSave
                 Yii::$app->session->setFlash('success', 'Тег успешно создан');
                 return $this->redirect(['view', 'id' => $model->id]);
             } else {
@@ -132,7 +133,10 @@ class ServersTagsController extends CrudController
      */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        $model = $this->findModel($id);
+        $linkName = $model->link_name; // Сохраняем link_name перед удалением
+        $model->delete(); // Кэш сбрасывается в модели через afterDelete
+        
         Yii::$app->session->setFlash('success', 'Тег успешно удален');
         return $this->redirect(['index']);
     }

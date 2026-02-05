@@ -68,6 +68,14 @@ class ServersController extends BackendController
                 // Сохраняем теги
                 $this->saveTags($model, Yii::$app->request->post('server_tags', []));
                 
+                // Сбрасываем кэш списка серверов и детальной информации
+                $this->clearServersCache($model->tag);
+                
+                // Сбрасываем кэш карт, если указан map_list_id
+                if (!empty($model->map_list_id)) {
+                    $this->clearMapsCache();
+                }
+                
                 Yii::$app->session->setFlash('success', 'Сервер успешно создан');
                 return $this->redirect(['index']);
             }
@@ -94,6 +102,17 @@ class ServersController extends BackendController
         if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
             // Сохраняем теги
             $this->saveTags($model, Yii::$app->request->post('server_tags', []));
+            
+            // Сбрасываем кэш списка серверов и детальной информации
+            $this->clearServersCache($model->tag);
+            
+            // Сбрасываем кэш календаря вайпов (все возможные комбинации)
+            $this->clearWipeCalendarCache();
+            
+            // Сбрасываем кэш карт, если изменился map_list_id
+            if (isset($model->oldAttributes['map_list_id']) && $model->oldAttributes['map_list_id'] != $model->map_list_id) {
+                $this->clearMapsCache();
+            }
             
             Yii::$app->session->setFlash('success', 'Сервер успешно обновлен');
             return $this->redirect(['index']);
@@ -140,6 +159,61 @@ class ServersController extends BackendController
 
         throw new NotFoundHttpException('The requested page does not exist.');
     }
+
+    /**
+     * Очистка кэша для конкретного сервера
+     * @param string $tag Тег сервера
+     */
+    protected function clearServersCache($tag)
+    {
+        Yii::$app->cache->delete('api_servers_index');
+        Yii::$app->cache->delete('api_servers_view_' . $tag);
+        Yii::$app->cache->delete('api_servers_rules_' . $tag);
+    }
+
+    /**
+     * Очистка кэша для всех серверов
+     */
+    protected function clearAllServersCache()
+    {
+        Yii::$app->cache->delete('api_servers_index');
+        
+        // Получаем все теги серверов и сбрасываем их кэш
+        $serverTags = Servers::find()->select('tag')->column();
+        foreach ($serverTags as $tag) {
+            Yii::$app->cache->delete('api_servers_view_' . $tag);
+            Yii::$app->cache->delete('api_servers_rules_' . $tag);
+        }
+        
+        // Сбрасываем кэш календаря вайпов
+        $this->clearWipeCalendarCache();
+    }
+
+    /**
+     * Очистка кэша календаря вайпов
+     * Удаляет все возможные комбинации year_month_months
+     */
+    protected function clearMapsCache()
+    {
+        // Очищаем кэш зафиксированных карт
+        Yii::$app->cache->delete('api_maps_fixed_ids');
+    }
+
+    protected function clearWipeCalendarCache()
+    {
+        // Удаляем кэш для текущего и ближайших месяцев (год назад и год вперед)
+        $now = new \DateTime();
+        $currentYear = (int)$now->format('Y');
+        
+        for ($year = $currentYear - 1; $year <= $currentYear + 1; $year++) {
+            for ($month = 1; $month <= 12; $month++) {
+                for ($months = 1; $months <= 3; $months++) {
+                    Yii::$app->cache->delete('api_wipe_calendar_' . $year . '_' . $month . '_' . $months);
+                }
+            }
+        }
+    }
+
     /**
      * @throws \yii\db\StaleObjectException
      * @throws \Throwable
@@ -154,6 +228,12 @@ class ServersController extends BackendController
                 $model->save();
                 $sort++;
             }
+            
+            // Сбрасываем кэш списка серверов
+            Yii::$app->cache->delete('api_servers_index');
+            
+            // Сбрасываем кэш для всех серверов (так как сортировка влияет на список)
+            $this->clearAllServersCache();
         }
 
         /** @var Servers[] $models */
@@ -267,6 +347,11 @@ class ServersController extends BackendController
                 }
 
                 if ($updated && $server->save(false)) {
+                    // Сбрасываем кэш календаря вайпов при изменении дат вайпов
+                    if (!empty($wipe) || !empty($nextWipe) || !empty($globalWipe)) {
+                        $this->clearWipeCalendarCache();
+                    }
+                    
                     $results[$server->id] = [
                         'success' => true,
                         'message' => 'Сервер успешно обновлен',

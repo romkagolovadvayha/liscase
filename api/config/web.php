@@ -163,6 +163,12 @@ $config = [
                 // Radio
                 'v1/radio/list' => 'v1/radio/list',
 
+                // Raid Table
+                'v1/raid-table' => 'v1/raid-table/index',
+
+                // Referral
+                'v1/referral' => 'v1/referral/index',
+
                 // Buildings
                 'v1/buildings' => 'v1/buildings/index',
                 'v1/buildings/upload-image' => 'v1/buildings/upload-image',

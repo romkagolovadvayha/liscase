@@ -43,25 +43,35 @@ class RadioController extends BaseApiController
      */
     public function actionList()
     {
-        // Получаем радиостанции из базы данных
-        $stations = ServersRadioStation::find()
-            ->where(['status' => ServersRadioStation::STATUS_ACTIVE])
-            ->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC])
-            ->all();
+        // Кэшируем список радиостанций на 10 минут
+        $cacheKey = 'api_radio_list';
+        $cache = Yii::$app->cache;
+        $list = $cache->get($cacheKey);
 
-        $list = [];
-        foreach ($stations as $station) {
-            $item = [
-                'name' => $station->name,
-                'url' => $station->url,
-            ];
-            
-            // Добавляем логотип, если есть
-            if ($station->logo) {
-                $item['logo'] = $station->getLogoUrl();
+        if ($list === false) {
+            // Получаем радиостанции из базы данных
+            $stations = ServersRadioStation::find()
+                ->where(['status' => ServersRadioStation::STATUS_ACTIVE])
+                ->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC])
+                ->all();
+
+            $list = [];
+            foreach ($stations as $station) {
+                $item = [
+                    'name' => $station->name,
+                    'url' => $station->url,
+                ];
+                
+                // Добавляем логотип, если есть
+                if ($station->logo) {
+                    $item['logo'] = $station->getLogoUrl();
+                }
+                
+                $list[] = $item;
             }
-            
-            $list[] = $item;
+
+            // Сохраняем в кэш на 10 минут (600 секунд)
+            $cache->set($cacheKey, $list, 600);
         }
 
         return $this->successResponse($list);

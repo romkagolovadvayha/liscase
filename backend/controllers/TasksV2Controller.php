@@ -81,6 +81,18 @@ class TasksV2Controller extends BackendController
      * Создание задания
      * @return string|\yii\web\Response
      */
+    protected function clearTasksCache()
+    {
+        // Очищаем все возможные комбинации кэша заданий
+        $types = ['', 'one_time', 'repeatable'];
+        $sorts = ['', 'popularity', 'reward', 'newest'];
+        foreach ($types as $type) {
+            foreach ($sorts as $sort) {
+                Yii::$app->cache->delete('api_tasks_list_' . md5($type . '_' . $sort));
+            }
+        }
+    }
+
     public function actionCreate()
     {
         $model = new TaskV2();
@@ -194,6 +206,7 @@ class TasksV2Controller extends BackendController
             }
             
             if ($model->save()) {
+                $this->clearTasksCache();
                 Yii::$app->session->setFlash('success', 'Задание успешно создано!');
                 return $this->redirect(['index']);
             }
@@ -326,6 +339,7 @@ class TasksV2Controller extends BackendController
             }
             
             if ($model->save()) {
+                $this->clearTasksCache();
                 Yii::$app->session->setFlash('success', 'Задание успешно обновлено!');
                 return $this->redirect(['index']);
             }
@@ -355,6 +369,7 @@ class TasksV2Controller extends BackendController
         }
         
         $model->delete();
+        $this->clearTasksCache();
         Yii::$app->session->setFlash('success', 'Задание успешно удалено!');
         
         return $this->redirect(['index']);

@@ -84,5 +84,39 @@ class ServersRulesCategory extends \common\components\base\ActiveRecord
             ],
         ];
     }
+
+    /**
+     * Сброс кэша после сохранения
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        $this->clearRulesCache();
+    }
+
+    /**
+     * Сброс кэша после удаления
+     */
+    public function afterDelete()
+    {
+        parent::afterDelete();
+        $this->clearRulesCache();
+    }
+
+    /**
+     * Очистка кэша правил для всех серверов
+     */
+    protected function clearRulesCache()
+    {
+        // Получаем все серверы
+        $allServers = \common\models\servers\Servers::find()
+            ->select('tag')
+            ->column();
+        
+        // Сбрасываем кэш для всех серверов
+        foreach ($allServers as $serverTag) {
+            Yii::$app->cache->delete('api_servers_rules_' . $serverTag);
+        }
+    }
 }
 

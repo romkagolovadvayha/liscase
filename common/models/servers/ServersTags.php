@@ -153,8 +153,43 @@ class ServersTags extends \common\components\base\ActiveRecord
         if (!$result) {
             print_r(print_r($this->getErrors(), true));exit;
             Yii::error('ServersTags::saveRecord - Save failed. Errors: ' . print_r($this->getErrors(), true), __METHOD__);
+        } else {
+            // Сбрасываем кэш после сохранения
+            $this->clearCache();
         }
         return $result;
+    }
+
+    /**
+     * Сброс кэша после сохранения/удаления
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        $this->clearCache();
+    }
+
+    /**
+     * Сброс кэша после удаления
+     */
+    public function afterDelete()
+    {
+        parent::afterDelete();
+        $this->clearCache();
+    }
+
+    /**
+     * Очистка связанных кэшей
+     */
+    protected function clearCache()
+    {
+        // Сбрасываем кэш списка серверов (теги используются в форматировании)
+        Yii::$app->cache->delete('api_servers_index');
+        
+        // Сбрасываем кэш для конкретного тега, если есть link
+        if ($this->link_name) {
+            Yii::$app->cache->delete('api_servers_tag_' . $this->link_name);
+        }
     }
 }
 

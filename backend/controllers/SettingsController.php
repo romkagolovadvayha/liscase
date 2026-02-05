@@ -88,6 +88,26 @@ class SettingsController extends BackendController
             Yii::$app->settings->getSettings(true);
             Yii::$app->session->setFlash('success', 'Настройки успешно сохранены!');
             Yii::$app->cache->delete('Settings_getSettings');
+            
+            // Сбрасываем кэш API настроек (все возможные комбинации категорий)
+            $this->clearApiSettingsCache();
+            
+            // Сбрасываем кэш реферальной системы, если изменялись настройки рефералов
+            $referralSettings = ['referral_percent', 'referral_bonus', 'referral_skin', 'referral_minSum', 'referral_maxSum', 'section_referral'];
+            $hasReferralChanges = false;
+            foreach ($referralSettings as $settingCode) {
+                if (isset($postSettings) && is_array($postSettings)) {
+                    foreach ($postSettings as $id => $value) {
+                        if (!empty($settings[$id]) && $settings[$id]->code === $settingCode) {
+                            $hasReferralChanges = true;
+                            break 2;
+                        }
+                    }
+                }
+            }
+            if ($hasReferralChanges) {
+                Yii::$app->cache->delete('api_referral_settings');
+            }
 
             $cur = (string)(Yii::$app->settings->get('site_version') ?: '0');
             if (function_exists('bcadd')) {
@@ -184,6 +204,9 @@ class SettingsController extends BackendController
         $model = new SiteSetting();
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            // Сбрасываем кэш API настроек
+            $this->clearApiSettingsCache();
+            
             Yii::$app->session->setFlash('success', 'Настройка добавлена');
             return $this->redirect(['index?category=' . $model->category]);
         }
@@ -199,6 +222,9 @@ class SettingsController extends BackendController
         $model = SiteSetting::findOne($id);
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            // Сбрасываем кэш API настроек
+            $this->clearApiSettingsCache();
+            
             Yii::$app->session->setFlash('success', 'Настройка сохранена');
             return $this->redirect(['index?category=' . $model->category]);
         }
@@ -206,5 +232,28 @@ class SettingsController extends BackendController
         return $this->render('create', [
             'model' => $model,
         ]);
+    }
+
+    /**
+     * Очистка кэша API настроек
+     * Удаляет все возможные комбинации категорий
+     */
+    protected function clearApiSettingsCache()
+    {
+        $categories = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip'];
+        
+        // Удаляем кэш для всех возможных комбинаций категорий
+        // Проще всего удалить все ключи, начинающиеся с 'api_settings_'
+        $cache = Yii::$app->cache;
+        
+        // Если используется Redis или Memcached, можно использовать паттерн
+        // Для простого кэша удаляем основные комбинации
+        foreach ($categories as $category) {
+            $cache->delete('api_settings_' . md5($category));
+        }
+        
+        // Удаляем кэш для всех категорий
+        $allCategories = implode(',', $categories);
+        $cache->delete('api_settings_' . md5($allCategories));
     }
 }

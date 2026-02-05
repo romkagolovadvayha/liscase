@@ -100,11 +100,18 @@ class MapsController extends BaseApiController
             return $this->errorResponse('SERVER_NOT_FOUND', 'Сервер не найден', [], 404);
         }
 
-        // Получаем ID карт, которые уже зафиксированы на любом из серверов
-        $fixedMapIds = Servers::find()
-            ->select('map_list_id')
-            ->andWhere(['IS NOT', 'map_list_id', null])
-            ->column();
+        // Получаем ID карт, которые уже зафиксированы на любом из серверов (кэшируем на 5 минут)
+        $cacheKey = 'api_maps_fixed_ids';
+        $cache = Yii::$app->cache;
+        $fixedMapIds = $cache->get($cacheKey);
+        
+        if ($fixedMapIds === false) {
+            $fixedMapIds = Servers::find()
+                ->select('map_list_id')
+                ->andWhere(['IS NOT', 'map_list_id', null])
+                ->column();
+            $cache->set($cacheKey, $fixedMapIds, 300); // 5 минут
+        }
 
         // Вычисляем дату через 3 суток от текущего момента
         $threeDaysFromNow = new \DateTime();

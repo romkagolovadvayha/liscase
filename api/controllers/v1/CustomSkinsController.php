@@ -200,17 +200,27 @@ class CustomSkinsController extends BaseApiController
      */
     public function actionCategories()
     {
-        $categories = ServerSkinCategory::find()
-            ->orderBy(['name' => SORT_ASC])
-            ->all();
+        // Кэшируем категории на 1 час
+        $cacheKey = 'api_custom_skins_categories';
+        $cache = Yii::$app->cache;
+        $categoriesData = $cache->get($cacheKey);
 
-        $categoriesData = [];
-        foreach ($categories as $category) {
-            $categoriesData[] = [
-                'id' => $category->id,
-                'name' => $category->name,
-                'key' => $category->key,
-            ];
+        if ($categoriesData === false) {
+            $categories = ServerSkinCategory::find()
+                ->orderBy(['name' => SORT_ASC])
+                ->all();
+
+            $categoriesData = [];
+            foreach ($categories as $category) {
+                $categoriesData[] = [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'key' => $category->key,
+                ];
+            }
+
+            // Сохраняем в кэш на 1 час (3600 секунд)
+            $cache->set($cacheKey, $categoriesData, 3600);
         }
 
         return $this->successResponse($categoriesData);

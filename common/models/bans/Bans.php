@@ -85,4 +85,26 @@ class Bans extends \yii\db\ActiveRecord
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        
+        // Инвалидируем кэш списка банов
+        Yii::$app->cache->delete('api_banlist_base');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterDelete()
+    {
+        parent::afterDelete();
+        
+        // Инвалидируем кэш списка банов
+        Yii::$app->cache->delete('api_banlist_base');
+    }
 }

@@ -102,94 +102,120 @@ class BanlistController extends BaseApiController
         try {
             $request = Yii::$app->request;
             
-            $query = Bans::find()
-                ->with(['user', 'server'])
-                ->andWhere([
-                    'OR',
-                    ['>=', 'unbanned_at', date('Y-m-d H:i:s')],
-                    ['IS', 'unbanned_at', null]
-                ]);
-
-            // Фильтр по Steam ID или нику
+            // Фильтры
             $steamId = $request->get('steam_id');
-            if (!empty($steamId)) {
-                $query->andWhere([
-                    'OR',
-                    ['LIKE', 'username', $steamId],
-                    ['LIKE', 'steam_id', $steamId]
-                ]);
-            }
-
-            // Фильтр по причине
             $reason = $request->get('reason');
-            if (!empty($reason)) {
-                $query->andWhere(['LIKE', 'reason', $reason]);
-            }
-
-            // Фильтр по серверу
             $serverId = $request->get('server_id');
-            if (!empty($serverId)) {
-                $query->andWhere(['server_id' => (int)$serverId]);
-            }
-
-            // Сортировка
             $sortField = $request->get('sort', 'banned_at');
             $sortOrder = $request->get('order', 'desc') === 'asc' ? SORT_ASC : SORT_DESC;
             
-            // Обработка сортировки
-            if ($sortField === 'server') {
-                $query->joinWith('server');
-                $query->orderBy([Servers::tableName() . '.monitoring_name' => $sortOrder]);
-            } elseif ($sortField === 'first_seen') {
-                // first_seen - это created_at пользователя, нужно join с user
-                $query->joinWith('user');
-                $query->orderBy([\common\models\user\User::tableName() . '.created_at' => $sortOrder]);
-            } else {
-                $allowedSortFields = ['username', 'banned_at', 'reason'];
-                if (!in_array($sortField, $allowedSortFields)) {
-                    $sortField = 'banned_at';
+            // Кэшируем только если нет фильтров (базовый список)
+            $hasFilters = !empty($steamId) || !empty($reason) || !empty($serverId);
+            $cacheKey = null;
+            $cachedData = null;
+            
+            if (!$hasFilters && $sortField === 'banned_at' && $sortOrder === SORT_DESC) {
+                $page = (int)$request->get('page', 1);
+                if ($page === 1) {
+                    $cacheKey = 'api_banlist_base';
+                    $cache = Yii::$app->cache;
+                    $cachedData = $cache->get($cacheKey);
                 }
-                $query->orderBy([Bans::tableName() . '.' . $sortField => $sortOrder]);
             }
+            
+            if ($cachedData === false || $hasFilters || $sortField !== 'banned_at' || $sortOrder !== SORT_DESC) {
+                $query = Bans::find()
+                    ->with(['user', 'server'])
+                    ->andWhere([
+                        'OR',
+                        ['>=', 'unbanned_at', date('Y-m-d H:i:s')],
+                        ['IS', 'unbanned_at', null]
+                    ]);
 
-            // Пагинация
-            $pageSize = 20;
-            $page = (int)$request->get('page', 1);
-            $offset = ($page - 1) * $pageSize;
-            
-            $total = (int)$query->count();
-            $totalPages = (int)ceil($total / $pageSize);
-            
-            $bans = $query->offset($offset)->limit($pageSize)->all();
-            
-            $data = [];
-            foreach ($bans as $ban) {
-                $user = $ban->user;
-                $server = $ban->server;
+                // Фильтр по Steam ID или нику
+                if (!empty($steamId)) {
+                    $query->andWhere([
+                        'OR',
+                        ['LIKE', 'username', $steamId],
+                        ['LIKE', 'steam_id', $steamId]
+                    ]);
+                }
+
+                // Фильтр по причине
+                if (!empty($reason)) {
+                    $query->andWhere(['LIKE', 'reason', $reason]);
+                }
+
+                // Фильтр по серверу
+                if (!empty($serverId)) {
+                    $query->andWhere(['server_id' => (int)$serverId]);
+                }
+
+                // Сортировка
+                // Обработка сортировки
+                if ($sortField === 'server') {
+                    $query->joinWith('server');
+                    $query->orderBy([Servers::tableName() . '.monitoring_name' => $sortOrder]);
+                } elseif ($sortField === 'first_seen') {
+                    // first_seen - это created_at пользователя, нужно join с user
+                    $query->joinWith('user');
+                    $query->orderBy([\common\models\user\User::tableName() . '.created_at' => $sortOrder]);
+                } else {
+                    $allowedSortFields = ['username', 'banned_at', 'reason'];
+                    if (!in_array($sortField, $allowedSortFields)) {
+                        $sortField = 'banned_at';
+                    }
+                    $query->orderBy([Bans::tableName() . '.' . $sortField => $sortOrder]);
+                }
+
+                // Пагинация
+                $pageSize = 20;
+                $page = (int)$request->get('page', 1);
+                $offset = ($page - 1) * $pageSize;
                 
-                $data[] = [
-                    'id' => $ban->id,
-                    'username' => $ban->username ?: ($user ? $user->username : ''),
-                    'steam_id' => $ban->steam_id,
-                    'avatar' => $user ? $user->getAvatar() : '',
-                    'reason' => $ban->reason ?: '',
-                    'banned_at' => $ban->banned_at,
-                    'unbanned_at' => $ban->unbanned_at,
-                    'server_id' => $ban->server_id,
-                    'server_name' => $server ? $server->monitoring_name : 'Все сервера',
-                    'server_tag' => $server ? $server->tag : null,
-                    'first_seen' => $user ? $user->created_at : null,
-                ];
-            }
+                $total = (int)$query->count();
+                $totalPages = (int)ceil($total / $pageSize);
+                
+                $bans = $query->offset($offset)->limit($pageSize)->all();
+                
+                $data = [];
+                foreach ($bans as $ban) {
+                    $user = $ban->user;
+                    $server = $ban->server;
+                    
+                    $data[] = [
+                        'id' => $ban->id,
+                        'username' => $ban->username ?: ($user ? $user->username : ''),
+                        'steam_id' => $ban->steam_id,
+                        'avatar' => $user ? $user->getAvatar() : '',
+                        'reason' => $ban->reason ?: '',
+                        'banned_at' => $ban->banned_at,
+                        'unbanned_at' => $ban->unbanned_at,
+                        'server_id' => $ban->server_id,
+                        'server_name' => $server ? $server->monitoring_name : 'Все сервера',
+                        'server_tag' => $server ? $server->tag : null,
+                        'first_seen' => $user ? $user->created_at : null,
+                    ];
+                }
 
-            $response = $this->successResponse($data);
-            $response['pagination'] = [
-                'page' => $page,
-                'totalPages' => $totalPages,
-                'total' => $total,
-                'pageSize' => $pageSize,
-            ];
-            return $response;
+                $response = $this->successResponse($data);
+                $response['pagination'] = [
+                    'page' => $page,
+                    'totalPages' => $totalPages,
+                    'total' => $total,
+                    'pageSize' => $pageSize,
+                ];
+                
+                // Сохраняем в кэш только базовый список (без фильтров, первая страница, стандартная сортировка)
+                if (!$hasFilters && $page === 1 && $sortField === 'banned_at' && $sortOrder === SORT_DESC && $cacheKey) {
+                    $cache->set($cacheKey, $response, 300); // 5 минут
+                }
+                
+                return $response;
+            } else {
+                // Используем кэшированные данные
+                return $cachedData;
+            }
         } catch (\Exception $e) {
             Yii::error('Banlist API error: ' . $e->getMessage(), 'api');
             return $this->errorResponse('INTERNAL_ERROR', 'Ошибка при получении списка банов', [], 500);

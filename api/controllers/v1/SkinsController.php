@@ -336,14 +336,15 @@ class SkinsController extends BaseApiController
             throw new NotFoundHttpException('Страница не найдена');
         }
 
-        // Кэшируем данные на 10 минут
-        $cacheKey = 'skindrops_page_data';
         $cache = Yii::$app->cache;
-        $data = $cache->get($cacheKey);
+        
+        // Кэшируем общие данные (выигрыши и префикс) на 10 минут
+        $commonCacheKey = 'skindrops_common_data';
+        $commonData = $cache->get($commonCacheKey);
 
         // Проверяем структуру данных (на случай старых данных в кэше)
-        if ($data === false || !isset($data['rust']) || !isset($data['cs2'])) {
-            $data = [
+        if ($commonData === false || !isset($commonData['rust']) || !isset($commonData['cs2'])) {
+            $commonData = [
                 'rust' => [
                     'recentWins' => [],
                 ],
@@ -353,18 +354,18 @@ class SkinsController extends BaseApiController
                 'prefix' => Yii::$app->settings->get('skindrops_prefix') ?? '',
             ];
 
-            // Получаем последние 20 выигрышей для Rust
+            // Получаем последние 40 выигрышей для Rust (для бесконечной карусели)
             $lastPayoutsRust = UserPayoutSkins::find()
                 ->alias('p')
                 ->joinWith(['user'])
                 ->where(['p.status' => UserPayoutSkins::STATUS_SUCCESS, 'p.type' => 'rust'])
                 ->orderBy(['p.id' => SORT_DESC])
-                ->limit(20)
+                ->limit(40)
                 ->all();
 
             foreach ($lastPayoutsRust as $payout) {
                 $user = $payout->user;
-                $data['rust']['recentWins'][] = [
+                $commonData['rust']['recentWins'][] = [
                     'id' => $payout->id,
                     'name' => $payout->name,
                     'price' => (float)$payout->amount,
@@ -378,18 +379,18 @@ class SkinsController extends BaseApiController
                 ];
             }
 
-            // Получаем последние 20 выигрышей для CS2
+            // Получаем последние 40 выигрышей для CS2 (для бесконечной карусели)
             $lastPayoutsCs2 = UserPayoutSkins::find()
                 ->alias('p')
                 ->joinWith(['user'])
                 ->where(['p.status' => UserPayoutSkins::STATUS_SUCCESS, 'p.type' => 'cs2'])
                 ->orderBy(['p.id' => SORT_DESC])
-                ->limit(20)
+                ->limit(40)
                 ->all();
 
             foreach ($lastPayoutsCs2 as $payout) {
                 $user = $payout->user;
-                $data['cs2']['recentWins'][] = [
+                $commonData['cs2']['recentWins'][] = [
                     'id' => $payout->id,
                     'name' => $payout->name,
                     'price' => (float)$payout->amount,
@@ -403,11 +404,11 @@ class SkinsController extends BaseApiController
                 ];
             }
 
-            // Сохраняем в кэш на 10 минут (600 секунд)
-            $cache->set($cacheKey, $data, 600);
+            // Сохраняем общие данные в кэш на 10 минут (600 секунд)
+            $cache->set($commonCacheKey, $commonData, 600);
         }
 
-        // Данные пользователя (если авторизован)
+        // Данные пользователя (если авторизован) - не кэшируем, так как они индивидуальны
         // Пытаемся получить пользователя из JWT токена, если он есть
         $user = $this->getUserFromToken();
         
@@ -422,7 +423,8 @@ class SkinsController extends BaseApiController
         $usernameCompleted = false;
         
         if ($user) {
-            $prefix = Yii::$app->settings->get('skindrops_prefix') ?? '';
+            // Используем префикс из кэшированных данных
+            $prefix = $commonData['prefix'];
             
             // Проверка Trade-URL
             if (!empty($user->userProfile->trade_link)) {
@@ -443,9 +445,7 @@ class SkinsController extends BaseApiController
                 'tradeLink' => $user->userProfile->trade_link ?? null,
                 'allCompleted' => $allCompleted,
             ];
-        }
-
-        if (!$userData) {
+        } else {
             $userData = [
                 'isAuthenticated' => false,
                 'usernameCompleted' => false,
@@ -456,9 +456,9 @@ class SkinsController extends BaseApiController
         }
 
         return $this->successResponse([
-            'rust' => $data['rust'],
-            'cs2' => $data['cs2'],
-            'prefix' => $data['prefix'],
+            'rust' => $commonData['rust'],
+            'cs2' => $commonData['cs2'],
+            'prefix' => $commonData['prefix'],
             'user' => $userData,
         ]);
     }

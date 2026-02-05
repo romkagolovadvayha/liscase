@@ -62,36 +62,46 @@ class ProductsController extends BaseApiController
     {
         $showMainBlock = Yii::$app->request->get('show_main_block');
         
-        $query = Category::find();
-        
-        if ($showMainBlock !== null) {
-            $query->andWhere(['show_main_block' => (int)$showMainBlock]);
-        }
-        
-        $query->orderBy(['sort' => SORT_ASC, 'name' => SORT_ASC]);
-        
-        $categories = $query->all();
-        
-        $formattedCategories = [];
-        foreach ($categories as $category) {
-            // Форматируем изображение категории для S3, если оно есть
-            $categoryImage = null;
-            if (!empty($category->image)) {
-                // Если изображение начинается с /uploads/, добавляем S3 URL
-                if (strpos($category->image, '/uploads/') === 0) {
-                    $s3PublicUrl = Yii::$app->settings->get('s3_publicUrl');
-                    $categoryImage = rtrim($s3PublicUrl, '/') . $category->image;
-                } else {
-                    $categoryImage = $category->image;
-                }
+        // Кэшируем категории на 1 час, с учетом параметра show_main_block
+        $cacheKey = 'api_products_categories_' . ($showMainBlock !== null ? (int)$showMainBlock : 'all');
+        $cache = Yii::$app->cache;
+        $formattedCategories = $cache->get($cacheKey);
+
+        if ($formattedCategories === false) {
+            $query = Category::find();
+            
+            if ($showMainBlock !== null) {
+                $query->andWhere(['show_main_block' => (int)$showMainBlock]);
             }
             
-            $formattedCategories[] = [
-                'id' => $category->id,
-                'name' => Yii::t('database', $category->name, [], 'ru-RU'),
-                'image' => $categoryImage,
-                'tag' => $category->tag ?? null,
-            ];
+            $query->orderBy(['sort' => SORT_ASC, 'name' => SORT_ASC]);
+            
+            $categories = $query->all();
+            
+            $formattedCategories = [];
+            foreach ($categories as $category) {
+                // Форматируем изображение категории для S3, если оно есть
+                $categoryImage = null;
+                if (!empty($category->image)) {
+                    // Если изображение начинается с /uploads/, добавляем S3 URL
+                    if (strpos($category->image, '/uploads/') === 0) {
+                        $s3PublicUrl = Yii::$app->settings->get('s3_publicUrl');
+                        $categoryImage = rtrim($s3PublicUrl, '/') . $category->image;
+                    } else {
+                        $categoryImage = $category->image;
+                    }
+                }
+                
+                $formattedCategories[] = [
+                    'id' => $category->id,
+                    'name' => Yii::t('database', $category->name, [], 'ru-RU'),
+                    'image' => $categoryImage,
+                    'tag' => $category->tag ?? null,
+                ];
+            }
+            
+            // Сохраняем в кэш на 1 час (3600 секунд)
+            $cache->set($cacheKey, $formattedCategories, 3600);
         }
         
         return $this->successResponse($formattedCategories);

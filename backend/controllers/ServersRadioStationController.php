@@ -110,6 +110,9 @@ class ServersRadioStationController extends CrudController
             }
 
             if ($model->save()) {
+                // Сбрасываем кэш списка радиостанций
+                Yii::$app->cache->delete('api_radio_list');
+                
                 Yii::$app->session->setFlash('success', 'Радиостанция успешно создана!');
                 return $this->redirect(['view', 'id' => $model->id]);
             }
@@ -173,6 +176,9 @@ class ServersRadioStationController extends CrudController
             }
 
             if ($model->save()) {
+                // Сбрасываем кэш списка радиостанций
+                Yii::$app->cache->delete('api_radio_list');
+                
                 Yii::$app->session->setFlash('success', 'Радиостанция успешно обновлена!');
                 return $this->redirect(['view', 'id' => $model->id]);
             }
@@ -210,6 +216,9 @@ class ServersRadioStationController extends CrudController
         }
 
         $model->delete();
+
+        // Сбрасываем кэш списка радиостанций
+        Yii::$app->cache->delete('api_radio_list');
 
         Yii::$app->session->setFlash('success', 'Радиостанция успешно удалена!');
         return $this->redirect(['index']);

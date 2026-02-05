@@ -105,6 +105,11 @@ class UserController extends CrudController
         ], $forms));
     }
 
+    protected function clearBanlistCache()
+    {
+        Yii::$app->cache->delete('api_banlist_base');
+    }
+
     public function actionUnban($userId)
     {
         $user = User::findOne($userId);
@@ -112,6 +117,7 @@ class UserController extends CrudController
             throw new \yii\web\NotFoundHttpException('Пользователь не найден');
         }
         $user->unban();
+        $this->clearBanlistCache();
         Yii::$app->session->addFlash('success', 'Бан успешно снят!');
         return $this->redirect(['profile', 'userId' => $userId]);
     }

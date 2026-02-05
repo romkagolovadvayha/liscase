@@ -137,6 +137,54 @@ class TaskV2 extends ActiveRecord
     /**
      * {@inheritdoc}
      */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        
+        // Инвалидируем кэш списка заданий
+        $cache = Yii::$app->cache;
+        // Удаляем все возможные комбинации кэша заданий
+        $cache->delete('api_tasks_list_' . md5(''));
+        $cache->delete('api_tasks_list_' . md5('one_time_'));
+        $cache->delete('api_tasks_list_' . md5('repeatable_'));
+        $cache->delete('api_tasks_list_' . md5('_popularity'));
+        $cache->delete('api_tasks_list_' . md5('_reward'));
+        $cache->delete('api_tasks_list_' . md5('_newest'));
+        $cache->delete('api_tasks_list_' . md5('one_time_popularity'));
+        $cache->delete('api_tasks_list_' . md5('one_time_reward'));
+        $cache->delete('api_tasks_list_' . md5('one_time_newest'));
+        $cache->delete('api_tasks_list_' . md5('repeatable_popularity'));
+        $cache->delete('api_tasks_list_' . md5('repeatable_reward'));
+        $cache->delete('api_tasks_list_' . md5('repeatable_newest'));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterDelete()
+    {
+        parent::afterDelete();
+        
+        // Инвалидируем кэш списка заданий
+        $cache = Yii::$app->cache;
+        // Удаляем все возможные комбинации кэша заданий
+        $cache->delete('api_tasks_list_' . md5(''));
+        $cache->delete('api_tasks_list_' . md5('one_time_'));
+        $cache->delete('api_tasks_list_' . md5('repeatable_'));
+        $cache->delete('api_tasks_list_' . md5('_popularity'));
+        $cache->delete('api_tasks_list_' . md5('_reward'));
+        $cache->delete('api_tasks_list_' . md5('_newest'));
+        $cache->delete('api_tasks_list_' . md5('one_time_popularity'));
+        $cache->delete('api_tasks_list_' . md5('one_time_reward'));
+        $cache->delete('api_tasks_list_' . md5('one_time_newest'));
+        $cache->delete('api_tasks_list_' . md5('repeatable_popularity'));
+        $cache->delete('api_tasks_list_' . md5('repeatable_reward'));
+        $cache->delete('api_tasks_list_' . md5('repeatable_newest'));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function beforeSave($insert)
     {
         if (parent::beforeSave($insert)) {

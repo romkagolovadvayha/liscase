@@ -81,6 +81,12 @@ class CategoryController extends BackendController
         if ($this->request->isPost) {
             if ($model->load($this->request->post()) && $model->save()) {
                 Drop::updateCache();
+                
+                // Сбрасываем кэш категорий товаров (все варианты)
+                Yii::$app->cache->delete('api_products_categories_all');
+                Yii::$app->cache->delete('api_products_categories_0');
+                Yii::$app->cache->delete('api_products_categories_1');
+                
                 return $this->redirect(['view', 'id' => $model->id]);
             }
         } else {
@@ -105,6 +111,12 @@ class CategoryController extends BackendController
 
         if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
             Drop::updateCache();
+            
+            // Сбрасываем кэш категорий товаров (все варианты)
+            Yii::$app->cache->delete('api_products_categories_all');
+            Yii::$app->cache->delete('api_products_categories_0');
+            Yii::$app->cache->delete('api_products_categories_1');
+            
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
@@ -123,6 +135,11 @@ class CategoryController extends BackendController
     public function actionDelete($id)
     {
         $this->findModel($id)->delete();
+
+        // Сбрасываем кэш категорий товаров (все варианты)
+        Yii::$app->cache->delete('api_products_categories_all');
+        Yii::$app->cache->delete('api_products_categories_0');
+        Yii::$app->cache->delete('api_products_categories_1');
 
         return $this->redirect(['index']);
     }

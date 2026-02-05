@@ -77,6 +77,18 @@ class BuildingController extends BackendController
      * If creation is successful, the browser will be redirected to the 'view' page.
      * @return string|\yii\web\Response
      */
+    protected function clearBuildingsCache()
+    {
+        // Очищаем все возможные комбинации кэша построек
+        $sorts = ['created_at', 'likes', 'name'];
+        $orders = ['asc', 'desc'];
+        foreach ($sorts as $sort) {
+            foreach ($orders as $order) {
+                Yii::$app->cache->delete('api_buildings_list_' . $sort . '_' . $order);
+            }
+        }
+    }
+
     public function actionCreate()
     {
         $model = new Building();
@@ -106,6 +118,7 @@ class BuildingController extends BackendController
         $model = $this->findModel($id);
 
         if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
+            $this->clearBuildingsCache();
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
@@ -120,6 +133,7 @@ class BuildingController extends BackendController
 
         $model->status = Building::STATUS_ACTIVE;
         if ($model->save()) {
+            $this->clearBuildingsCache();
             if (!empty($model->user->telegram_chat_id)) {
                 Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '🏠 Ваша постройка успешно прошла модерацию!');
             }
@@ -137,6 +151,7 @@ class BuildingController extends BackendController
 
         $model->status = Building::STATUS_REJECT;
         if ($model->save()) {
+            $this->clearBuildingsCache();
             if (!empty($model->user->telegram_chat_id)) {
                 Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '🏠 Ваша постройка не прошла модерацию!');
             }
@@ -177,6 +192,7 @@ class BuildingController extends BackendController
 
         $model->delete();
 
+        $this->clearBuildingsCache();
         Yii::$app->session->addFlash('success', Yii::t('common', 'Запись успешно удалена!'));
         return $this->redirect(['index']);
     }

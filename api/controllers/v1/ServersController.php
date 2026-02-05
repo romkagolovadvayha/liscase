@@ -100,16 +100,27 @@ class ServersController extends BaseApiController
      */
     public function actionView($tag)
     {
-        $server = Servers::find()
-            ->where(['tag' => $tag])
-            ->with(['serversTags', 'mapEntity', 'mapList'])
-            ->one();
+        // Кэшируем данные сервера на 3 минуты
+        $cacheKey = 'api_servers_view_' . $tag;
+        $cached = Yii::$app->cache->get($cacheKey);
 
-        if (!$server) {
-            throw new NotFoundHttpException('Сервер не найден');
+        if ($cached === false) {
+            $server = Servers::find()
+                ->where(['tag' => $tag])
+                ->with(['serversTags', 'mapEntity', 'mapList'])
+                ->one();
+
+            if (!$server) {
+                throw new NotFoundHttpException('Сервер не найден');
+            }
+
+            $cached = $this->formatServer($server, true);
+            
+            // Кэшируем на 180 секунд
+            Yii::$app->cache->set($cacheKey, $cached, 180);
         }
 
-        return $this->successResponse($this->formatServer($server, true));
+        return $this->successResponse($cached);
     }
 
     /**
@@ -138,31 +149,42 @@ class ServersController extends BaseApiController
      */
     public function actionTag($tagLink)
     {
-        $tag = ServersTags::find()->where(['link' => $tagLink])->one();
-        if (!$tag) {
-            throw new NotFoundHttpException('Тег не найден');
+        // Кэшируем данные на 3 минуты
+        $cacheKey = 'api_servers_tag_' . $tagLink;
+        $cached = Yii::$app->cache->get($cacheKey);
+
+        if ($cached === false) {
+            $tag = ServersTags::find()->where(['link' => $tagLink])->one();
+            if (!$tag) {
+                throw new NotFoundHttpException('Тег не найден');
+            }
+
+            $servers = Servers::find()
+                ->innerJoinWith('serversTags')
+                ->where(['servers_tags.id' => $tag->id])
+                ->andWhere(['IN', 'servers.status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT]])
+                ->orderBy(['sort' => SORT_ASC])
+                ->all();
+
+            $serversData = [];
+            foreach ($servers as $server) {
+                $serversData[] = $this->formatServer($server);
+            }
+
+            $cached = [
+                'tag' => [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'link' => $tag->link,
+                ],
+                'servers' => $serversData,
+            ];
+
+            // Кэшируем на 180 секунд
+            Yii::$app->cache->set($cacheKey, $cached, 180);
         }
 
-        $servers = Servers::find()
-            ->innerJoinWith('serversTags')
-            ->where(['servers_tags.id' => $tag->id])
-            ->andWhere(['IN', 'servers.status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT]])
-            ->orderBy(['sort' => SORT_ASC])
-            ->all();
-
-        $serversData = [];
-        foreach ($servers as $server) {
-            $serversData[] = $this->formatServer($server);
-        }
-
-        return $this->successResponse([
-            'tag' => [
-                'id' => $tag->id,
-                'name' => $tag->name,
-                'link' => $tag->link,
-            ],
-            'servers' => $serversData,
-        ]);
+        return $this->successResponse($cached);
     }
 
     /**
@@ -191,6 +213,14 @@ class ServersController extends BaseApiController
      */
     public function actionRules($serverTag)
     {
+        // Кэшируем правила на 10 минут
+        $cacheKey = 'api_servers_rules_' . $serverTag;
+        $cached = Yii::$app->cache->get($cacheKey);
+
+        if ($cached !== false) {
+            return $this->successResponse($cached);
+        }
+
         $server = Servers::find()->where(['tag' => $serverTag])->one();
         if (!$server) {
             throw new NotFoundHttpException('Сервер не найден');
@@ -237,11 +267,16 @@ class ServersController extends BaseApiController
         }
         unset($category);
 
-        return $this->successResponse([
+        $result = [
             'server_tag' => $serverTag,
             'server_id' => $server->id,
             'categories' => array_values($categories),
-        ]);
+        ];
+
+        // Сохраняем в кэш на 10 минут (600 секунд)
+        Yii::$app->cache->set($cacheKey, $result, 600);
+
+        return $this->successResponse($result);
     }
 
     /**
