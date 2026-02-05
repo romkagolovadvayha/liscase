@@ -108,6 +108,124 @@ class WipeController extends Controller
         return $this->redirect('index');
     }
 
+    /**
+     * Массовая фиксация карт для всех серверов
+     * Сначала определяет соответствия сервер-карта, затем фиксирует
+     */
+    public function actionMassFixMaps()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        if (empty($servers)) {
+            return [
+                'success' => false,
+                'message' => 'Серверы не найдены',
+            ];
+        }
+
+        $results = [];
+        $overallSuccess = true;
+        $serverMapMapping = []; // Массив соответствий server_id => map_id
+
+        // Шаг 1: Определяем соответствия сервер-карта
+        foreach ($servers as $server) {
+            try {
+                if ($server->secret_map) {
+                    $results[$server->id] = [
+                        'success' => true,
+                        'message' => 'Пропущено (секретная карта)',
+                    ];
+                    continue;
+                }
+
+                // Определяем выигрышную карту для сервера (без фиксации)
+                $winningMap = MapList::getWinningMapForServer($server->id);
+                
+                if ($winningMap) {
+                    $serverMapMapping[$server->id] = $winningMap->id;
+                } else {
+                    // Нет выигрышной карты для этого сервера
+                    $results[$server->id] = [
+                        'success' => true,
+                        'message' => 'Пропущено (нет голосов за карты)',
+                    ];
+                }
+            } catch (\Exception $e) {
+                $results[$server->id] = [
+                    'success' => false,
+                    'message' => 'Ошибка при определении карты: ' . $e->getMessage(),
+                ];
+                $overallSuccess = false;
+            }
+        }
+
+        // Шаг 2: Фиксируем карты для серверов, для которых определили карты
+        foreach ($serverMapMapping as $serverId => $mapId) {
+            // Пропускаем серверы, для которых уже установлен результат
+            if (isset($results[$serverId])) {
+                continue;
+            }
+            
+            try {
+                $server = Servers::findOne($serverId);
+                if (!$server) {
+                    $results[$serverId] = [
+                        'success' => false,
+                        'message' => 'Сервер не найден',
+                    ];
+                    $overallSuccess = false;
+                    continue;
+                }
+
+                // Используем MapFixJob через очередь
+                \Yii::$app->queueProcess->push(new MapFixJob(['serverId' => $serverId]));
+                
+                // Также фиксируем напрямую для немедленного результата
+                $fixedMap = MapList::fixWinningMapForServer($serverId);
+                
+                if ($fixedMap) {
+                    // Формируем описание карты из доступных полей
+                    $mapDescription = "Seed: {$fixedMap->seed}";
+                    if ($fixedMap->size) {
+                        $mapDescription .= ", Size: {$fixedMap->size}";
+                    }
+                    if ($fixedMap->size_int) {
+                        $mapDescription .= " ({$fixedMap->size_int})";
+                    }
+                    
+                    $results[$serverId] = [
+                        'success' => true,
+                        'message' => "Карта (ID: {$fixedMap->id}, {$mapDescription}) успешно зафиксирована",
+                    ];
+                } else {
+                    $results[$serverId] = [
+                        'success' => false,
+                        'message' => 'Не удалось зафиксировать карту',
+                    ];
+                    $overallSuccess = false;
+                }
+            } catch (\Exception $e) {
+                $results[$serverId] = [
+                    'success' => false,
+                    'message' => 'Ошибка при фиксации: ' . $e->getMessage(),
+                ];
+                $overallSuccess = false;
+            }
+        }
+
+        return [
+            'success' => $overallSuccess,
+            'message' => $overallSuccess ? 'Массовая фиксация карт выполнена успешно' : 'Массовая фиксация карт выполнена с ошибками',
+            'results' => $results,
+        ];
+    }
+
     public function actionTop($server, $wipe = null)
     {
         $cacheKey = "WIPE_actionTop_{$server}";

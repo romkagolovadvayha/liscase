@@ -262,6 +262,24 @@ $this->title = Yii::t('common', 'Вайп');
             </h5>
         </div>
         <div class="ds-card__body">
+            <!-- Кнопка массовой фиксации -->
+            <div class="mb-4">
+                <div class="ds-alert ds-alert--info mb-3">
+                    <i class="bi bi-info-circle"></i> <strong>Массовая фиксация:</strong> Сначала определяется соответствие сервер-карта, затем фиксируются карты для всех серверов одновременно.
+                </div>
+                <button 
+                    id="mass-fix-maps-btn" 
+                    class="ds-btn ds-btn--success"
+                    onclick="massFixMaps()"
+                >
+                    <i class="bi bi-pin-map-fill"></i> Зафиксировать карты для всех серверов
+                </button>
+                <div id="mass-fix-maps-result" class="mt-3" style="display: none;"></div>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid var(--ds-border-color); margin: 1.5rem 0;">
+            
+            <h6 class="mb-3">Индивидуальная фиксация:</h6>
             <div class="row">
                 <?php foreach ($serversNotSecret as $server): ?>
                     <div class="col-md-4 col-sm-6 mb-3">
@@ -304,6 +322,71 @@ $this->title = Yii::t('common', 'Вайп');
             </div>
         </div>
     </div>
+
+    <script>
+    function massFixMaps() {
+        const btn = document.getElementById('mass-fix-maps-btn');
+        const resultDiv = document.getElementById('mass-fix-maps-result');
+        
+        if (!confirm('Вы уверены, что хотите зафиксировать карты для всех серверов? Сначала будет определено соответствие сервер-карта, затем выполнена фиксация.')) {
+            return;
+        }
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Выполняется...';
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<div class="ds-alert ds-alert--info"><i class="bi bi-hourglass-split"></i> Выполняется массовая фиксация карт...</div>';
+        
+        // Получаем CSRF токен из формы или мета-тега
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
+                         document.querySelector('input[name="_csrf"]')?.value || 
+                         '';
+        
+        fetch('/wipe/mass-fix-maps', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-Token': csrfToken
+            },
+            body: '_csrf=' + encodeURIComponent(csrfToken)
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-pin-map-fill"></i> Зафиксировать карты для всех серверов';
+            
+            if (data.success) {
+                resultDiv.innerHTML = '<div class="ds-alert ds-alert--success"><i class="bi bi-check-circle"></i> <strong>Успешно!</strong> ' + data.message + '</div>';
+            } else {
+                resultDiv.innerHTML = '<div class="ds-alert ds-alert--danger"><i class="bi bi-exclamation-triangle"></i> <strong>Ошибка!</strong> ' + data.message + '</div>';
+            }
+            
+            if (data.results) {
+                let resultsHtml = '<div class="mt-3"><h6>Детали:</h6><ul class="list-group">';
+                for (const [serverId, result] of Object.entries(data.results)) {
+                    const statusClass = result.success ? 'list-group-item-success' : 'list-group-item-danger';
+                    const icon = result.success ? 'bi-check-circle' : 'bi-x-circle';
+                    resultsHtml += `<li class="list-group-item ${statusClass}"><i class="bi ${icon}"></i> Сервер ID ${serverId}: ${result.message}</li>`;
+                }
+                resultsHtml += '</ul></div>';
+                resultDiv.innerHTML += resultsHtml;
+            }
+            
+            // Обновляем страницу через 3 секунды, если успешно
+            if (data.success) {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 3000);
+            }
+        })
+        .catch(error => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-pin-map-fill"></i> Зафиксировать карты для всех серверов';
+            resultDiv.innerHTML = '<div class="ds-alert ds-alert--danger"><i class="bi bi-exclamation-triangle"></i> <strong>Ошибка!</strong> ' + error.message + '</div>';
+        });
+    }
+    </script>
 
     <!-- Удалить не зафиксированные карты -->
     <div class="ds-card mb-4">
