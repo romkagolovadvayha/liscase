@@ -116,7 +116,12 @@ class Statistics extends ActiveRecord
 
     public static function getStats(Servers $server, $steamId = null, $all = true, $wipeDate = null, $cache = true) {
         ini_set('memory_limit', '512M');
-        $cacheKey = "getStats_data_serverId{$server->id}_" . ($all ? 1 : 0);
+        // Если запрашивается статистика одного пользователя, используем отдельный кэш-ключ
+        if (!empty($steamId) && !$all) {
+            $cacheKey = "getStats_data_serverId{$server->id}_steamId{$steamId}_single";
+        } else {
+            $cacheKey = "getStats_data_serverId{$server->id}_" . ($all ? 1 : 0);
+        }
         $data = null;
         if ($cache) {
             $data = Yii::$app->cache->get($cacheKey);
@@ -129,12 +134,17 @@ class Statistics extends ActiveRecord
                         ))->format('Y-m-d');
                 }
                 /** @var Wipe[] $models */
-                $statistics = Statistics::find()
-                                        ->cache(3*60)
-                                        ->andWhere(['server_tag' => $server->tag])
-                                        ->andWhere(['wipe' => $wipeDate])
-                                        ->asArray()
-                                        ->all();
+                $query = Statistics::find()
+                    ->cache(3*60)
+                    ->andWhere(['server_tag' => $server->tag])
+                    ->andWhere(['wipe' => $wipeDate]);
+                
+                // Оптимизация: если нужна статистика только одного пользователя, фильтруем сразу в SQL
+                if (!empty($steamId) && !$all) {
+                    $query->andWhere(['steam_id' => $steamId]);
+                }
+                
+                $statistics = $query->asArray()->all();
 
                 $userList = [];
                 foreach ($statistics as $item) {
@@ -143,6 +153,8 @@ class Statistics extends ActiveRecord
 
                 $steamIds = array_keys($userList);
                 $models = [];
+                $isSingleUser = !empty($steamId) && !$all;
+                
                 foreach ($steamIds as $_steamId) {
                     $params = $userList[$_steamId];
                     if (!$all && Statistics::getParam($params, 'playtime') <= 60) {
@@ -201,18 +213,27 @@ class Statistics extends ActiveRecord
                         + Statistics::getParam($params, 'gathered_potato') * 0.4;
                     $models[] = $item;
                 }
-                $data = [
-                    'kills' => Statistics::getTopList($models, 'kills'),
-                    'scientists' => Statistics::getTopList($models, 'scientists'),
-                    'playtime' => Statistics::getTopList($models, 'playtime'),
-                    'reider' => Statistics::getTopList($models, 'reider'),
-                    'farmer' => Statistics::getTopList($models, 'farmer'),
-                    'fishing' => Statistics::getTopList($models, 'fishing'),
-                    'hunter' => Statistics::getTopList($models, 'hunter'),
-                    'fermer' => Statistics::getTopList($models, 'fermer'),
-                    'deaths' => Statistics::getTopList($models, 'deaths'),
-                    'models' => $models
-                ];
+                
+                // Если запрашивается статистика одного пользователя, не формируем топики (экономим время)
+                if ($isSingleUser) {
+                    $data = [
+                        'models' => $models
+                    ];
+                } else {
+                    $data = [
+                        'kills' => Statistics::getTopList($models, 'kills'),
+                        'scientists' => Statistics::getTopList($models, 'scientists'),
+                        'playtime' => Statistics::getTopList($models, 'playtime'),
+                        'reider' => Statistics::getTopList($models, 'reider'),
+                        'farmer' => Statistics::getTopList($models, 'farmer'),
+                        'fishing' => Statistics::getTopList($models, 'fishing'),
+                        'hunter' => Statistics::getTopList($models, 'hunter'),
+                        'fermer' => Statistics::getTopList($models, 'fermer'),
+                        'deaths' => Statistics::getTopList($models, 'deaths'),
+                        'models' => $models
+                    ];
+                }
+                
                 Yii::$app->cache->set($cacheKey, $data, 15 * 60);
             }
         } catch (\Exception $e) {
