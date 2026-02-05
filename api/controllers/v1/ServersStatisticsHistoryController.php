@@ -336,6 +336,11 @@ class ServersStatisticsHistoryController extends BaseApiController
             foreach ($result as &$item) {
                 unset($item['_sort_key']);
             }
+            
+            // Убираем первое значение (первый час)
+            if (!empty($result)) {
+                array_shift($result);
+            }
         } else {
             // Валидация формата даты
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
@@ -384,6 +389,11 @@ class ServersStatisticsHistoryController extends BaseApiController
             usort($result, function($a, $b) {
                 return $a['hour'] - $b['hour'];
             });
+            
+            // Убираем первое значение (первый час)
+            if (!empty($result)) {
+                array_shift($result);
+            }
         }
 
         return $this->successResponse($result);
