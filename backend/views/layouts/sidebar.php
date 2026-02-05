@@ -30,6 +30,7 @@ $usersBadge = \common\models\user\User::find()
 $moder = Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR);
 $admin = Yii::$app->user->can(Role::ROLE_ADMIN);
 $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
+$moderOrSupport = $moder || $support;
 ?>
 <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <a href="<?=Yii::$app->params['baseUrl']?>" class="brand-link" style="display: block; text-align: center">
@@ -71,7 +72,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                        'label' => 'Сервера',
                        'icon' => 'fas fa-gamepad',
                        'url' => [''],
-                       'visibility' => $moder,
+                       'visibility' => $moderOrSupport,
                        'active' => _checkActive('/servers') || _checkActive('/map-list') || _checkActive('/rust-plugin-config') || _checkActive('/servers-rules') || _checkActive('/servers-rules-category') || _checkActive('/servers-radio-station'),
                        'items' => [
                            [
@@ -91,14 +92,14 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                                'label' => 'Правила серверов',
                                'icon' => 'fas fa-gavel',
                                'url' => ['/servers-rules/index'],
-                               'visibility' => $moder,
+                               'visibility' => $moderOrSupport,
                                'active' => _checkActive('/servers-rules'),
                            ],
                            [
                                'label' => 'Категории правил',
                                'icon' => 'fas fa-folder',
                                'url' => ['/servers-rules-category/index'],
-                               'visibility' => $moder,
+                               'visibility' => $moderOrSupport,
                                'active' => _checkActive('/servers-rules-category'),
                            ],
                            [
