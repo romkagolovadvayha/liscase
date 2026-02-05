@@ -273,6 +273,11 @@ class SiteController extends WebController
         return $this->renderAjax('promocode');
     }
 
+    public function actionWipeCalendarPromo()
+    {
+        return $this->renderAjax('wipe-calendar-promo');
+    }
+
     public function actionMenu($page = null)
     {
         $this->layout = 'service';

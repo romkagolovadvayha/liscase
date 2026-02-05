@@ -79,6 +79,7 @@ use yii\web\JsExpression;
  * @property bool            $is_mirror_registration
  * @property bool            $is_mirror_returned
  * @property bool            $is_telegram_blocked
+ * @property bool            $is_wipe_calendar_visitor
  * @property int             $floating_price_percent
  *
  * @property UserProfile     $userProfile
@@ -222,6 +223,7 @@ class User extends ActiveRecord implements IdentityInterface
             [['auth_key', 'socket_room'], 'string', 'max' => 32],
             [['current_language', 'created_at'], 'safe'],
             ['floating_price_percent', 'integer', 'min' => 0, 'max' => 100],
+            [['is_wipe_calendar_visitor'], 'boolean'],
         ];
     }
 
@@ -338,6 +340,14 @@ class User extends ActiveRecord implements IdentityInterface
                     $user->generateAuthKey();
                     $user->generateRefCode();
                     $user->generateSocketRoom();
+                    
+                    // Проверяем, был ли пользователь на странице wipe-calendar
+                    $isWipeCalendarVisitor = false;
+                    if (isset($_COOKIE['wipe_calendar_visited']) && $_COOKIE['wipe_calendar_visited'] === '1') {
+                        $isWipeCalendarVisitor = true;
+                        $user->is_wipe_calendar_visitor = true;
+                    }
+                    
                     if ($user->save()) {
                         $user->user_id = $user->id;
                         $user->update(false, ['user_id']);
@@ -350,7 +360,14 @@ class User extends ActiveRecord implements IdentityInterface
                         );
                         $auth->save();
                         $dbTransaction->commit();
-                        Yii::$app->telegramChats->sendMessage('Новый пользователь на сайте (' . $source . '): ' . $user->username);
+                        
+                        // Отправляем сообщение в телеграмм
+                        $telegramMessage = 'Новый пользователь на сайте (' . $source . '): ' . $user->username;
+                        if ($isWipeCalendarVisitor) {
+                            $telegramMessage .= "\n🎁 Пользователь был на странице /wipe-calendar и видел промокод с выигрышем скина!";
+                        }
+                        Yii::$app->telegramChats->sendMessage($telegramMessage);
+                        
                         Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
                         UserTree::appendUser($user->id, 509);
                         UserProfile::createModel($user, $username);
@@ -370,6 +387,17 @@ class User extends ActiveRecord implements IdentityInterface
                 $infoUser       = Steam::getInfoUser($steamId);
                 $user->updated_at = date('Y-m-d H:i:s');
                 $user->username = HtmlPurifier::process($infoUser[0]['personaname']);
+                
+                // Проверяем, был ли пользователь на странице wipe-calendar (даже если он уже существовал)
+                $isWipeCalendarVisitor = false;
+                if (isset($_COOKIE['wipe_calendar_visited']) && $_COOKIE['wipe_calendar_visited'] === '1') {
+                    $isWipeCalendarVisitor = true;
+                    // Обновляем флаг, если его еще нет
+                    if (!$user->is_wipe_calendar_visitor) {
+                        $user->is_wipe_calendar_visitor = true;
+                    }
+                }
+                
                 $user->save();
                 // Сохраняем URL аватара из Steam вместо загрузки на сервер
                 if (!empty($infoUser[0]['avatarfull'])) {
@@ -377,6 +405,13 @@ class User extends ActiveRecord implements IdentityInterface
                 }
                 $user->userProfile->name = HtmlPurifier::process($infoUser[0]['personaname']);
                 $user->userProfile->save();
+                
+                // Отправляем уведомление в Telegram, если пользователь был на wipe-calendar
+                if ($isWipeCalendarVisitor) {
+                    $telegramMessage = 'Пользователь авторизовался на сайте (' . $source . '): ' . $user->username;
+                    $telegramMessage .= "\n🎁 Пользователь был на странице /wipe-calendar и видел промокод с выигрышем скина!";
+                    Yii::$app->telegramChats->sendMessage($telegramMessage);
+                }
             }
 
         return $user;

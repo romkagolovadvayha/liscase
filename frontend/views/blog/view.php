@@ -358,3 +358,5 @@ $breadcrumbLd = [
         }
     }
 </script>
+
+<?= $this->render('@frontend/views/layouts/_wipe-calendar-promo-script') ?>

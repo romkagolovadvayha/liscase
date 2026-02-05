@@ -59,3 +59,4 @@ class m260113_120000_create_support_sticker_table extends Migration
 
 
 
+

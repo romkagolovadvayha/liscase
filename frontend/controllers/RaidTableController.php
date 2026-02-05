@@ -29,11 +29,15 @@ class RaidTableController extends WebController
         $recipes = $this->recipes();                 // твои рецепты 1:1 (порох и сера считаются отдельно)
         $items   = $this->getRaidTableList($names, $images); // полный список целей/методов
 
+        // Подключаем скрипт для автоматического открытия модального окна с промокодом
+        $promoScript = $this->renderPartial('@frontend/views/layouts/_wipe-calendar-promo-script');
+        
         return $this->render('table.twig', [
             'ITEMS'       => $items,
             'RECIPES'     => $this->recipes(),
             'PROD_IMAGES' => Statistics::productsImages(), // ключ -> URL
             'PROD_NAMES'  => Statistics::productsNames(),  // ключ -> имя
+            'PROMO_SCRIPT' => $promoScript,
         ]);
     }
 

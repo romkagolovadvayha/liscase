@@ -312,8 +312,4 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
     }
 </style>
 
-<script>
-    document.addEventListener('pjax:end', function () {
-        // При необходимости можно добавить инициализацию после PJAX-подгрузки
-    });
-</script>
+<?= $this->render('@frontend/views/layouts/_wipe-calendar-promo-script') ?>
