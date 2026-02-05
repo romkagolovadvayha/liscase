@@ -20,29 +20,9 @@ class RadioController extends Controller
             ->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC])
             ->all();
 
-        $list = [];
-        foreach ($stations as $station) {
-            $item = [
-                'name' => $station->name,
-                'url' => $station->url,
-            ];
-            
-            // Добавляем логотип, если есть
-            if ($station->logo) {
-                $item['logo'] = $station->getLogoUrl();
-            }
-            
-            $list[] = $item;
-        }
-
         $str = "";
-        foreach ($list as $item) {
-            $str .= ',' . $item['name'] . ',' . $item['url'];
-            if (isset($item['logo'])) {
-                $str .= ',' . $item['logo'];
-            } else {
-                $str .= ',';
-            }
+        foreach ($stations as $station) {
+            $str .= ',' . $station->name . ',' . $station->url;
         }
 
         return [

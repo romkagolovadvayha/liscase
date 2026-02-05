@@ -159,7 +159,7 @@ $config = [
                 'v1/maps' => 'v1/maps/index',
 
                 // Radio
-                'v1/radio/list' => 'radio/list',
+                'v1/radio/list' => 'v1/radio/list',
 
                 // Buildings
                 'v1/buildings' => 'v1/buildings/index',
