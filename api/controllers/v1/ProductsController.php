@@ -83,9 +83,13 @@ class ProductsController extends BaseApiController
                 // Форматируем изображение категории для S3, если оно есть
                 $categoryImage = null;
                 if (!empty($category->image)) {
-                    // Если изображение начинается с /uploads/, используем S3 API для получения публичного URL
-                    if (strpos($category->image, '/uploads/') === 0) {
-                        // Формируем ключ для S3 (убираем начальный слэш)
+                    // Если изображение начинается с /images/, добавляем префикс uploads для S3
+                    if (strpos($category->image, '/images/') === 0) {
+                        // Формируем ключ для S3: /images/... -> uploads/images/...
+                        $s3Key = 'uploads' . $category->image;
+                        $categoryImage = Yii::$app->s3Api->getPublicUrl($s3Key);
+                    } elseif (strpos($category->image, '/uploads/') === 0) {
+                        // Если изображение уже начинается с /uploads/, используем как есть
                         $s3Key = ltrim($category->image, '/');
                         $categoryImage = Yii::$app->s3Api->getPublicUrl($s3Key);
                     } else {
