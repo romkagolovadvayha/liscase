@@ -119,125 +119,132 @@ class BlogController extends BaseApiController
             $cacheKey = 'api_blog_list_' . $limit;
             $cache = Yii::$app->cache;
             $cachedData = $cache->get($cacheKey);
+            
+            // Если есть кэшированные данные, возвращаем их
+            if ($cachedData !== false) {
+                return $this->successResponse($cachedData);
+            }
         }
 
-        if ($cachedData === false || $hasFilters || $page > 1 || !$isDefaultSort) {
+        // Если нет кэша или есть фильтры/пагинация/сортировка, строим запрос
+        if ($cachedData === false || $cachedData === null || $hasFilters || $page > 1 || !$isDefaultSort) {
             $query = Blog::find()
                 ->alias('b')
                 ->where(['b.status' => Blog::STATUS_ACTIVE])
                 ->with(['blogCategory', 'blogImages', 'comments']);
 
-        // Фильтр по категории
-        if ($categoryId) {
-            $query->andWhere(['b.blog_category_id' => (int)$categoryId]);
-        }
+            // Фильтр по категории
+            if ($categoryId) {
+                $query->andWhere(['b.blog_category_id' => (int)$categoryId]);
+            }
 
-        // Поиск по названию
-        if ($search) {
-            $query->andWhere(['like', 'b.name', $search]);
-        }
+            // Поиск по названию
+            if ($search) {
+                $query->andWhere(['like', 'b.name', $search]);
+            }
 
-        // Сортировка
-        $allowedSorts = ['created_at', 'views', 'name'];
-        if (!in_array($sort, $allowedSorts)) {
-            $sort = 'created_at';
-        }
-        $sortOrder = strtolower($order) === 'asc' ? SORT_ASC : SORT_DESC;
-        $query->orderBy(["b.{$sort}" => $sortOrder]);
+            // Сортировка
+            $allowedSorts = ['created_at', 'views', 'name'];
+            if (!in_array($sort, $allowedSorts)) {
+                $sort = 'created_at';
+            }
+            $sortOrder = strtolower($order) === 'asc' ? SORT_ASC : SORT_DESC;
+            $query->orderBy(["b.{$sort}" => $sortOrder]);
 
-        $dataProvider = new ActiveDataProvider([
-            'query' => $query,
-            'pagination' => [
-                'page' => $page - 1, // ActiveDataProvider использует 0-based индексацию
-                'pageSize' => $limit,
-            ],
-        ]);
+            $dataProvider = new ActiveDataProvider([
+                'query' => $query,
+                'pagination' => [
+                    'page' => $page - 1, // ActiveDataProvider использует 0-based индексацию
+                    'pageSize' => $limit,
+                ],
+            ]);
 
-        $posts = [];
-        foreach ($dataProvider->getModels() as $blog) {
-            $imageUrl = null;
-            $blogImages = $blog->blogImages; // Получаем коллекцию
-            if (!empty($blogImages) && is_array($blogImages) && count($blogImages) > 0) {
-                $firstImage = reset($blogImages);
-                if ($firstImage) {
-                    $imageUrl = $firstImage->getPublicUrl();
-                }
-            } elseif (!empty($blogImages) && is_object($blogImages)) {
-                // Если это ActiveQuery, получаем все записи
-                $images = $blogImages->all();
-                if (!empty($images)) {
-                    $firstImage = reset($images);
+            $posts = [];
+            foreach ($dataProvider->getModels() as $blog) {
+                $imageUrl = null;
+                $blogImages = $blog->blogImages; // Получаем коллекцию
+                if (!empty($blogImages) && is_array($blogImages) && count($blogImages) > 0) {
+                    $firstImage = reset($blogImages);
                     if ($firstImage) {
                         $imageUrl = $firstImage->getPublicUrl();
                     }
-                }
-            }
-
-            $categoryUrl = '';
-            if ($blog->blogCategory) {
-                $categoryUrl = $blog->blogCategory->link_name;
-                if ($blog->blogCategory->blog_category_id) {
-                    $parentCategory = BlogCategory::findOne($blog->blogCategory->blog_category_id);
-                    if ($parentCategory) {
-                        $categoryUrl = $parentCategory->link_name . '/' . $categoryUrl;
+                } elseif (!empty($blogImages) && is_object($blogImages)) {
+                    // Если это ActiveQuery, получаем все записи
+                    $images = $blogImages->all();
+                    if (!empty($images)) {
+                        $firstImage = reset($images);
+                        if ($firstImage) {
+                            $imageUrl = $firstImage->getPublicUrl();
+                        }
                     }
                 }
-            }
 
-            // Подсчитываем комментарии
-            $commentsCount = 0;
-            $comments = $blog->comments; // Получаем коллекцию
-            if (!empty($comments)) {
-                if (is_array($comments)) {
-                    $commentsCount = count($comments);
-                } elseif (is_object($comments)) {
-                    // Если это ActiveQuery, получаем количество
-                    $commentsCount = $comments->count();
+                $categoryUrl = '';
+                if ($blog->blogCategory) {
+                    $categoryUrl = $blog->blogCategory->link_name;
+                    if ($blog->blogCategory->blog_category_id) {
+                        $parentCategory = BlogCategory::findOne($blog->blogCategory->blog_category_id);
+                        if ($parentCategory) {
+                            $categoryUrl = $parentCategory->link_name . '/' . $categoryUrl;
+                        }
+                    }
                 }
+
+                // Подсчитываем комментарии
+                $commentsCount = 0;
+                $comments = $blog->comments; // Получаем коллекцию
+                if (!empty($comments)) {
+                    if (is_array($comments)) {
+                        $commentsCount = count($comments);
+                    } elseif (is_object($comments)) {
+                        // Если это ActiveQuery, получаем количество
+                        $commentsCount = $comments->count();
+                    }
+                }
+
+                // Обрабатываем контент для замены ссылок на изображения на S3 URL
+                $processedContent = $blog->processContentWithS3Images($blog->content);
+
+                $posts[] = [
+                    'id' => $blog->id,
+                    'title' => $blog->name,
+                    'description' => $blog->description,
+                    'content' => $processedContent,
+                    'image' => $imageUrl,
+                    'views' => $blog->views ?? 0,
+                    'commentsCount' => $commentsCount,
+                    'linkName' => $blog->link_name,
+                    'url' => $categoryUrl ? "/posts/{$categoryUrl}/post-{$blog->link_name}" : "/posts/post-{$blog->link_name}",
+                    'category' => $blog->blogCategory ? [
+                        'id' => $blog->blogCategory->id,
+                        'name' => $blog->blogCategory->name,
+                        'linkName' => $blog->blogCategory->link_name,
+                    ] : null,
+                    'createdAt' => $blog->created_at,
+                ];
             }
 
-            // Обрабатываем контент для замены ссылок на изображения на S3 URL
-            $processedContent = $blog->processContentWithS3Images($blog->content);
+            $pagination = $dataProvider->getPagination();
+            $totalPages = $pagination->getPageCount();
 
-            $posts[] = [
-                'id' => $blog->id,
-                'title' => $blog->name,
-                'description' => $blog->description,
-                'content' => $processedContent,
-                'image' => $imageUrl,
-                'views' => $blog->views ?? 0,
-                'commentsCount' => $commentsCount,
-                'linkName' => $blog->link_name,
-                'url' => $categoryUrl ? "/posts/{$categoryUrl}/post-{$blog->link_name}" : "/posts/post-{$blog->link_name}",
-                'category' => $blog->blogCategory ? [
-                    'id' => $blog->blogCategory->id,
-                    'name' => $blog->blogCategory->name,
-                    'linkName' => $blog->blogCategory->link_name,
-                ] : null,
-                'createdAt' => $blog->created_at,
+            $responseData = [
+                'posts' => $posts,
+                'pagination' => [
+                    'currentPage' => $page,
+                    'totalPages' => $totalPages,
+                    'totalCount' => $dataProvider->getTotalCount(),
+                    'pageSize' => $limit,
+                    'hasMore' => $page < $totalPages,
+                ],
             ];
+
+            // Сохраняем в кэш только базовый список (без фильтров, первая страница, дефолтная сортировка)
+            if (!$hasFilters && $page === 1 && $isDefaultSort && $cacheKey) {
+                $cache->set($cacheKey, $responseData, 300); // 5 минут
+            }
+
+            return $this->successResponse($responseData);
         }
-
-        $pagination = $dataProvider->getPagination();
-        $totalPages = $pagination->getPageCount();
-
-        $responseData = [
-            'posts' => $posts,
-            'pagination' => [
-                'currentPage' => $page,
-                'totalPages' => $totalPages,
-                'totalCount' => $dataProvider->getTotalCount(),
-                'pageSize' => $limit,
-                'hasMore' => $page < $totalPages,
-            ],
-        ];
-
-        // Сохраняем в кэш только базовый список (без фильтров, первая страница, дефолтная сортировка)
-        if (!$hasFilters && $page === 1 && $isDefaultSort && $cacheKey) {
-            $cache->set($cacheKey, $responseData, 300); // 5 минут
-        }
-
-        return $this->successResponse($responseData);
     }
 
     /**

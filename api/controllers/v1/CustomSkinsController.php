@@ -116,90 +116,97 @@ class CustomSkinsController extends BaseApiController
             $cacheKey = 'api_custom_skins_list_' . $limit;
             $cache = Yii::$app->cache;
             $cachedData = $cache->get($cacheKey);
+            
+            // Если есть кэшированные данные, возвращаем их
+            if ($cachedData !== false) {
+                return $this->successResponse($cachedData);
+            }
         }
 
-        if ($cachedData === false || $hasFilters || $page > 1 || !$isDefaultSort) {
+        // Если нет кэша или есть фильтры/пагинация/сортировка, строим запрос
+        if ($cachedData === false || $cachedData === null || $hasFilters || $page > 1 || !$isDefaultSort) {
             $query = ServerSkin::find()
                 ->alias('s')
                 ->where(['s.status' => ServerSkin::STATUS_ACTIVE])
                 ->with(['user', 'serverSkinCategory', 'creatorUser']);
 
-        // Фильтр по категории
-        if ($categoryId) {
-            $query->andWhere(['s.server_skin_category_id' => (int)$categoryId]);
-        }
+            // Фильтр по категории
+            if ($categoryId) {
+                $query->andWhere(['s.server_skin_category_id' => (int)$categoryId]);
+            }
 
-        // Поиск по названию
-        if ($search) {
-            $query->andWhere(['like', 's.name', $search]);
-        }
+            // Поиск по названию
+            if ($search) {
+                $query->andWhere(['like', 's.name', $search]);
+            }
 
-        // Сортировка
-        $allowedSorts = ['created_at', 'likes', 'name'];
-        if (!in_array($sort, $allowedSorts)) {
-            $sort = 'created_at';
-        }
-        $sortOrder = strtolower($order) === 'asc' ? SORT_ASC : SORT_DESC;
-        $query->orderBy(["s.{$sort}" => $sortOrder]);
+            // Сортировка
+            $allowedSorts = ['created_at', 'likes', 'name'];
+            if (!in_array($sort, $allowedSorts)) {
+                $sort = 'created_at';
+            }
+            $sortOrder = strtolower($order) === 'asc' ? SORT_ASC : SORT_DESC;
+            $query->orderBy(["s.{$sort}" => $sortOrder]);
 
-        $dataProvider = new ActiveDataProvider([
-            'query' => $query,
-            'pagination' => [
-                'page' => $page - 1, // ActiveDataProvider использует 0-based индексацию
-                'pageSize' => $limit,
-            ],
-        ]);
+            $dataProvider = new ActiveDataProvider([
+                'query' => $query,
+                'pagination' => [
+                    'page' => $page - 1, // ActiveDataProvider использует 0-based индексацию
+                    'pageSize' => $limit,
+                ],
+            ]);
 
-        $skins = [];
-        foreach ($dataProvider->getModels() as $skin) {
-            $skins[] = [
-                'id' => $skin->id,
-                'name' => $skin->name,
-                'skinId' => $skin->skin_id,
-                'image' => $skin->getImagePubUrl(),
-                'image64' => $skin->getImage64PubUrl(),
-                'image150' => $skin->getImage150PubUrl(),
-                'likes' => $skin->likes ?? 0,
-                'category' => $skin->serverSkinCategory ? [
-                    'id' => $skin->serverSkinCategory->id,
-                    'name' => $skin->serverSkinCategory->name,
-                ] : null,
-                'user' => $skin->user ? [
-                    'id' => $skin->user->id,
-                    'username' => $skin->user->username,
-                    'steamId' => $skin->user->steam_id,
-                    'avatar' => $skin->user->getAvatar(),
-                ] : null,
-                'creator' => $skin->creatorUser ? [
-                    'id' => $skin->creatorUser->id,
-                    'username' => $skin->creatorUser->username,
-                    'steamId' => $skin->creatorUser->steam_id,
-                    'avatar' => $skin->creatorUser->getAvatar(),
-                ] : null,
-                'createdAt' => $skin->created_at,
+            $skins = [];
+            foreach ($dataProvider->getModels() as $skin) {
+                $skins[] = [
+                    'id' => $skin->id,
+                    'name' => $skin->name,
+                    'skinId' => $skin->skin_id,
+                    'image' => $skin->getImagePubUrl(),
+                    'image64' => $skin->getImage64PubUrl(),
+                    'image150' => $skin->getImage150PubUrl(),
+                    'likes' => $skin->likes ?? 0,
+                    'category' => $skin->serverSkinCategory ? [
+                        'id' => $skin->serverSkinCategory->id,
+                        'name' => $skin->serverSkinCategory->name,
+                    ] : null,
+                    'user' => $skin->user ? [
+                        'id' => $skin->user->id,
+                        'username' => $skin->user->username,
+                        'steamId' => $skin->user->steam_id,
+                        'avatar' => $skin->user->getAvatar(),
+                    ] : null,
+                    'creator' => $skin->creatorUser ? [
+                        'id' => $skin->creatorUser->id,
+                        'username' => $skin->creatorUser->username,
+                        'steamId' => $skin->creatorUser->steam_id,
+                        'avatar' => $skin->creatorUser->getAvatar(),
+                    ] : null,
+                    'createdAt' => $skin->created_at,
+                ];
+            }
+
+            $pagination = $dataProvider->getPagination();
+            $totalPages = $pagination->getPageCount();
+
+            $responseData = [
+                'skins' => $skins,
+                'pagination' => [
+                    'currentPage' => $page,
+                    'totalPages' => $totalPages,
+                    'totalCount' => $dataProvider->getTotalCount(),
+                    'pageSize' => $limit,
+                    'hasMore' => $page < $totalPages,
+                ],
             ];
+
+            // Сохраняем в кэш только базовый список (без фильтров, первая страница, дефолтная сортировка)
+            if (!$hasFilters && $page === 1 && $isDefaultSort && $cacheKey) {
+                $cache->set($cacheKey, $responseData, 300); // 5 минут
+            }
+
+            return $this->successResponse($responseData);
         }
-
-        $pagination = $dataProvider->getPagination();
-        $totalPages = $pagination->getPageCount();
-
-        $responseData = [
-            'skins' => $skins,
-            'pagination' => [
-                'currentPage' => $page,
-                'totalPages' => $totalPages,
-                'totalCount' => $dataProvider->getTotalCount(),
-                'pageSize' => $limit,
-                'hasMore' => $page < $totalPages,
-            ],
-        ];
-
-        // Сохраняем в кэш только базовый список (без фильтров, первая страница, дефолтная сортировка)
-        if (!$hasFilters && $page === 1 && $isDefaultSort && $cacheKey) {
-            $cache->set($cacheKey, $responseData, 300); // 5 минут
-        }
-
-        return $this->successResponse($responseData);
     }
 
     /**

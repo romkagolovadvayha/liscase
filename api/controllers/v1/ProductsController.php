@@ -175,146 +175,156 @@ class ProductsController extends BaseApiController
             $cacheKey = 'api_products_list_' . $limit;
             $cache = Yii::$app->cache;
             $cachedData = $cache->get($cacheKey);
+            
+            // Если есть кэшированные данные, возвращаем их
+            if ($cachedData !== false && is_array($cachedData)) {
+                // Извлекаем данные и пагинацию из кэша
+                $cachedProducts = $cachedData['data'] ?? $cachedData;
+                $cachedPagination = $cachedData['pagination'] ?? [];
+                return $this->successResponse($cachedProducts, ['pagination' => $cachedPagination]);
+            }
         }
 
-        if ($cachedData === false || $hasFilters || $offset > 0 || !$isDefaultSort) {
+        // Если нет кэша или есть фильтры/пагинация/сортировка, строим запрос
+        if ($cachedData === false || $cachedData === null || $hasFilters || $offset > 0 || !$isDefaultSort) {
             $query = Drop::find()
                 ->where(['status' => Drop::STATUS_ACTIVE])
                 ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
                 ->with(['dropImages', 'subDrops.drop', 'subDrops.drop.dropImages']);
 
-        if ($categoryId) {
-            $query->andWhere(['category_id' => (int)$categoryId]);
-        }
-
-        if ($search) {
-            $query->andFilterWhere(['like', 'name', $search])
-                  ->orFilterWhere(['like', 'eng_name', $search]);
-        }
-
-        // Применяем сортировку
-        switch ($sort) {
-            case 'price_asc':
-                $query->orderBy(['price' => SORT_ASC]);
-                break;
-            case 'price_desc':
-                $query->orderBy(['price' => SORT_DESC]);
-                break;
-            case 'name_asc':
-                $query->orderBy(['name' => SORT_ASC]);
-                break;
-            case 'name_desc':
-                $query->orderBy(['name' => SORT_DESC]);
-                break;
-            case 'created_at_desc':
-                $query->orderBy(['created_at' => SORT_DESC]);
-                break;
-            default:
-                $query->orderBy(['sort' => SORT_ASC, 'created_at' => SORT_DESC]);
-                break;
-        }
-
-        $dataProvider = new ActiveDataProvider([
-            'query' => $query,
-            'pagination' => [
-                'pageSize' => $limit,
-                'page' => floor($offset / $limit),
-            ],
-        ]);
-
-        $products = [];
-        foreach ($dataProvider->getModels() as $drop) {
-            // Получаем первое изображение с S3 URL
-            $imageUrl = null;
-            $dropImages = $drop->dropImages;
-            if (!empty($dropImages)) {
-                $firstImage = reset($dropImages);
-                if ($firstImage) {
-                    $imageUrl = $firstImage->getImagePubUrl();
-                }
+            if ($categoryId) {
+                $query->andWhere(['category_id' => (int)$categoryId]);
             }
 
-            // Получаем субдропы (subDrops)
-            $subDrops = [];
-            $subDropsList = $drop->subDrops;
-            if (!empty($subDropsList)) {
-                foreach ($subDropsList as $subDropRelation) {
-                    // subDropRelation это DropDrop, нужно получить связанный Drop
-                    $subDrop = $subDropRelation->drop;
-                    if ($subDrop) {
-                        // Получаем изображение субдропа с S3 URL
-                        $subDropImage = null;
-                        $subDropImages = $subDrop->dropImages;
-                        if (!empty($subDropImages)) {
-                            $firstSubImage = reset($subDropImages);
-                            if ($firstSubImage) {
-                                $subDropImage = $firstSubImage->getImagePubUrl();
-                            }
-                        }
-                        
-                        $subDrops[] = [
-                            'id' => $subDropRelation->id,
-                            'drop_id' => $subDrop->id,
-                            'count' => $subDropRelation->count ?? 1,
-                            'name' => Yii::t('database', $subDrop->name ?? '', [], 'ru-RU'),
-                            'price' => (float)($subDrop->price ?? 0),
-                            'image' => $subDropImage,
-                        ];
+            if ($search) {
+                $query->andFilterWhere(['like', 'name', $search])
+                      ->orFilterWhere(['like', 'eng_name', $search]);
+            }
+
+            // Применяем сортировку
+            switch ($sort) {
+                case 'price_asc':
+                    $query->orderBy(['price' => SORT_ASC]);
+                    break;
+                case 'price_desc':
+                    $query->orderBy(['price' => SORT_DESC]);
+                    break;
+                case 'name_asc':
+                    $query->orderBy(['name' => SORT_ASC]);
+                    break;
+                case 'name_desc':
+                    $query->orderBy(['name' => SORT_DESC]);
+                    break;
+                case 'created_at_desc':
+                    $query->orderBy(['created_at' => SORT_DESC]);
+                    break;
+                default:
+                    $query->orderBy(['sort' => SORT_ASC, 'created_at' => SORT_DESC]);
+                    break;
+            }
+
+            $dataProvider = new ActiveDataProvider([
+                'query' => $query,
+                'pagination' => [
+                    'pageSize' => $limit,
+                    'page' => floor($offset / $limit),
+                ],
+            ]);
+
+            $products = [];
+            foreach ($dataProvider->getModels() as $drop) {
+                // Получаем первое изображение с S3 URL
+                $imageUrl = null;
+                $dropImages = $drop->dropImages;
+                if (!empty($dropImages)) {
+                    $firstImage = reset($dropImages);
+                    if ($firstImage) {
+                        $imageUrl = $firstImage->getImagePubUrl();
                     }
                 }
+
+                // Получаем субдропы (subDrops)
+                $subDrops = [];
+                $subDropsList = $drop->subDrops;
+                if (!empty($subDropsList)) {
+                    foreach ($subDropsList as $subDropRelation) {
+                        // subDropRelation это DropDrop, нужно получить связанный Drop
+                        $subDrop = $subDropRelation->drop;
+                        if ($subDrop) {
+                            // Получаем изображение субдропа с S3 URL
+                            $subDropImage = null;
+                            $subDropImages = $subDrop->dropImages;
+                            if (!empty($subDropImages)) {
+                                $firstSubImage = reset($subDropImages);
+                                if ($firstSubImage) {
+                                    $subDropImage = $firstSubImage->getImagePubUrl();
+                                }
+                            }
+                            
+                            $subDrops[] = [
+                                'id' => $subDropRelation->id,
+                                'drop_id' => $subDrop->id,
+                                'count' => $subDropRelation->count ?? 1,
+                                'name' => Yii::t('database', $subDrop->name ?? '', [], 'ru-RU'),
+                                'price' => (float)($subDrop->price ?? 0),
+                                'image' => $subDropImage,
+                            ];
+                        }
+                    }
+                }
+
+                // Вычисляем реальную цену с учетом скидки
+                // getRealPrice(false) вычисляет цену без floating, но может использовать Yii::$app->user
+                // Для публичного доступа используем простое вычисление
+                $basePrice = (float)$drop->price;
+                $priceReal = $drop->discount && $drop->discount > 0
+                    ? ceil($basePrice - ($basePrice * $drop->discount / 100))
+                    : $basePrice;
+                $price = $drop->discount && $drop->discount > 0
+                    ? round($priceReal * (1 + $drop->discount / 100))
+                    : $priceReal;
+
+                $products[] = [
+                    'id' => $drop->id,
+                    'name' => Yii::t('database', $drop->name, [], 'ru-RU'),
+                    'image' => $imageUrl,
+                    'price' => $price,
+                    'priceReal' => $priceReal,
+                    'discount' => $drop->discount ? (int)$drop->discount : null,
+                    'count' => $drop->count ? (int)$drop->count : null,
+                    'category_id' => $drop->category_id ? (int)$drop->category_id : null,
+                    'description' => $drop->description ? Yii::t('database', $drop->description, [], 'ru-RU') : null,
+                    'drop_type' => $drop->drop_type ? (int)$drop->drop_type : null,
+                    'subDrops' => !empty($subDrops) ? $subDrops : null,
+                    'floating_price_percent' => $drop->floating_price_percent ? (int)$drop->floating_price_percent : null,
+                ];
             }
 
-            // Вычисляем реальную цену с учетом скидки
-            // getRealPrice(false) вычисляет цену без floating, но может использовать Yii::$app->user
-            // Для публичного доступа используем простое вычисление
-            $basePrice = (float)$drop->price;
-            $priceReal = $drop->discount && $drop->discount > 0
-                ? ceil($basePrice - ($basePrice * $drop->discount / 100))
-                : $basePrice;
-            $price = $drop->discount && $drop->discount > 0
-                ? round($priceReal * (1 + $drop->discount / 100))
-                : $priceReal;
+            $pagination = $dataProvider->getPagination();
 
-            $products[] = [
-                'id' => $drop->id,
-                'name' => Yii::t('database', $drop->name, [], 'ru-RU'),
-                'image' => $imageUrl,
-                'price' => $price,
-                'priceReal' => $priceReal,
-                'discount' => $drop->discount ? (int)$drop->discount : null,
-                'count' => $drop->count ? (int)$drop->count : null,
-                'category_id' => $drop->category_id ? (int)$drop->category_id : null,
-                'description' => $drop->description ? Yii::t('database', $drop->description, [], 'ru-RU') : null,
-                'drop_type' => $drop->drop_type ? (int)$drop->drop_type : null,
-                'subDrops' => !empty($subDrops) ? $subDrops : null,
-                'floating_price_percent' => $drop->floating_price_percent ? (int)$drop->floating_price_percent : null,
-            ];
-        }
+            // Сохраняем в кэш только базовый список (без фильтров, первая страница, дефолтная сортировка)
+            if (!$hasFilters && $offset === 0 && $isDefaultSort && $cacheKey) {
+                $responseData = [
+                    'data' => $products,
+                    'pagination' => [
+                        'total' => $pagination->totalCount,
+                        'limit' => $limit,
+                        'offset' => $offset,
+                        'hasMore' => ($offset + count($products)) < $pagination->totalCount,
+                    ],
+                ];
+                $cache->set($cacheKey, $responseData, 300); // 5 минут
+            }
 
-        $pagination = $dataProvider->getPagination();
-
-        // Сохраняем в кэш только базовый список (без фильтров, первая страница, дефолтная сортировка)
-        if (!$hasFilters && $offset === 0 && $isDefaultSort && $cacheKey) {
-            $responseData = [
-                'data' => $products,
+            return $this->successResponse($products, [
                 'pagination' => [
                     'total' => $pagination->totalCount,
                     'limit' => $limit,
                     'offset' => $offset,
                     'hasMore' => ($offset + count($products)) < $pagination->totalCount,
                 ],
-            ];
-            $cache->set($cacheKey, $responseData, 300); // 5 минут
+            ]);
         }
-
-        return $this->successResponse($products, [
-            'pagination' => [
-                'total' => $pagination->totalCount,
-                'limit' => $limit,
-                'offset' => $offset,
-                'hasMore' => ($offset + count($products)) < $pagination->totalCount,
-            ],
-        ]);
     }
 
     /**
