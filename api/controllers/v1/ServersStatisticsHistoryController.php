@@ -277,14 +277,22 @@ class ServersStatisticsHistoryController extends BaseApiController
 
         $date = Yii::$app->request->get('date');
         
-        // Если дата не указана, используем последние 24 часа
+        // Если дата не указана, используем последние 24 часа начиная с того же часа вчера
         if ($date === null) {
-            $time24HoursAgo = date('Y-m-d H:i:s', strtotime('-24 hours'));
+            // Получаем текущий час (0-23)
+            $currentHour = (int)date('H');
+            $currentMinute = (int)date('i');
+            $currentSecond = (int)date('s');
+            
+            // Время начала: вчера в этот же час (00 минут, 00 секунд)
+            $timeStart = date('Y-m-d', strtotime('-1 day')) . ' ' . str_pad($currentHour, 2, '0', STR_PAD_LEFT) . ':00:00';
+            
+            // Текущее время
             $now = date('Y-m-d H:i:s');
             
             $records = ServersStatisticsHistory::find()
                 ->where(['server_id' => $serverId])
-                ->andWhere(['>=', 'created_at', $time24HoursAgo])
+                ->andWhere(['>=', 'created_at', $timeStart])
                 ->andWhere(['<=', 'created_at', $now])
                 ->orderBy(['created_at' => SORT_ASC])
                 ->all();
