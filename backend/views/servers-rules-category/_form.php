@@ -39,6 +39,12 @@ use common\models\servers\ServersRulesCategory;
         </div>
     </div>
 
+    <div class="row">
+        <div class="col-md-12">
+            <?= $form->field($model, 'no_numbering')->checkbox()->hint('Если включено, правила в этой категории не будут иметь нумерацию (например, для категории "Команды на сервере")') ?>
+        </div>
+    </div>
+
     <div class="form-group">
         <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
         <?= Html::a('Отмена', ['index'], ['class' => 'btn btn-default']) ?>

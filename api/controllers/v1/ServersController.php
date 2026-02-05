@@ -210,6 +210,7 @@ class ServersController extends BaseApiController
                     'name' => $category->name,
                     'icon' => $category->icon,
                     'sort' => $category->sort,
+                    'no_numbering' => (bool)$category->no_numbering,
                     'rules' => [],
                 ];
             }
