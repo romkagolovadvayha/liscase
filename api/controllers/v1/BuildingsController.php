@@ -121,9 +121,15 @@ class BuildingsController extends BaseApiController
             $cacheKey = 'api_buildings_list_' . $sort . '_' . $order;
             $cache = Yii::$app->cache;
             $cachedData = $cache->get($cacheKey);
+            
+            // Если есть кэшированные данные, возвращаем их
+            if ($cachedData !== false) {
+                return $this->successResponse($cachedData);
+            }
         }
 
-        if ($cachedData === false || $hasFilters || $page > 1) {
+        // Если нет кэша или есть фильтры/пагинация, строим запрос
+        if ($cachedData === false || $cachedData === null || $hasFilters || $page > 1) {
             $query = Building::find()
                 ->alias('b')
                 ->where(['b.status' => Building::STATUS_ACTIVE])
@@ -245,9 +251,6 @@ class BuildingsController extends BaseApiController
             }
 
             return $this->successResponse($responseData);
-        } else {
-            // Используем кэшированные данные
-            return $this->successResponse($cachedData);
         }
     }
 
@@ -293,114 +296,114 @@ class BuildingsController extends BaseApiController
             }
 
             // Получаем все изображения с S3 URL
-        $images = [];
-        $buildingImages = $building->buildingImage;
-        if (!empty($buildingImages)) {
-            if (is_array($buildingImages)) {
-                foreach ($buildingImages as $buildingImage) {
-                    $images[] = $buildingImage->getPublicUrl();
-                }
-            } elseif (is_object($buildingImages)) {
-                $imagesList = $buildingImages->all();
-                foreach ($imagesList as $buildingImage) {
-                    $images[] = $buildingImage->getPublicUrl();
-                }
-            }
-        }
-
-        // Получаем информацию о жителях
-        $residents = [];
-        $buildingResidents = $building->buildingResident;
-        if (!empty($buildingResidents)) {
-            if (is_array($buildingResidents)) {
-                foreach ($buildingResidents as $resident) {
-                    $user = $resident->user ?? null;
-                    if ($user) {
-                        $residents[] = [
-                            'id' => $user->id,
-                            'username' => $user->username,
-                            'steamId' => $user->steam_id,
-                            'avatar' => $user->getAvatar(),
-                        ];
+            $images = [];
+            $buildingImages = $building->buildingImage;
+            if (!empty($buildingImages)) {
+                if (is_array($buildingImages)) {
+                    foreach ($buildingImages as $buildingImage) {
+                        $images[] = $buildingImage->getPublicUrl();
                     }
-                }
-            } elseif (is_object($buildingResidents)) {
-                $residentsList = $buildingResidents->all();
-                foreach ($residentsList as $resident) {
-                    $user = $resident->user ?? null;
-                    if ($user) {
-                        $residents[] = [
-                            'id' => $user->id,
-                            'username' => $user->username,
-                            'steamId' => $user->steam_id,
-                            'avatar' => $user->getAvatar(),
-                        ];
+                } elseif (is_object($buildingImages)) {
+                    $imagesList = $buildingImages->all();
+                    foreach ($imagesList as $buildingImage) {
+                        $images[] = $buildingImage->getPublicUrl();
                     }
                 }
             }
-        }
 
-        // Получаем информацию о рейдах постройки
-        $raids = [];
-        $raidCount = 0;
-        $uniqueExplosives = [];
-
-        if ($building->server && $building->location && $building->wipe) {
-            // Получаем рейды по location, server_id и wipe
-            $raidsQuery = UserRaid::find()
-                ->where(['location' => $building->location])
-                ->andWhere(['server_id' => $building->server->id])
-                ->andWhere(['wipe' => $building->wipe])
-                ->with('user')
-                ->orderBy(['created_at' => SORT_DESC])
-                ->limit(10)
-                ->all();
-
-            $raidCount = UserRaid::find()
-                ->where(['location' => $building->location])
-                ->andWhere(['server_id' => $building->server->id])
-                ->andWhere(['wipe' => $building->wipe])
-                ->count();
-
-            // Подсчитываем уникальные взрывчатки
-            $allExplosives = [];
-            foreach ($raidsQuery as $raid) {
-                if (!empty($raid->explosives)) {
-                    $explosives = json_decode($raid->explosives, true);
-                    if (is_array($explosives)) {
-                        $allExplosives = array_merge($allExplosives, $explosives);
+            // Получаем информацию о жителях
+            $residents = [];
+            $buildingResidents = $building->buildingResident;
+            if (!empty($buildingResidents)) {
+                if (is_array($buildingResidents)) {
+                    foreach ($buildingResidents as $resident) {
+                        $user = $resident->user ?? null;
+                        if ($user) {
+                            $residents[] = [
+                                'id' => $user->id,
+                                'username' => $user->username,
+                                'steamId' => $user->steam_id,
+                                'avatar' => $user->getAvatar(),
+                            ];
+                        }
+                    }
+                } elseif (is_object($buildingResidents)) {
+                    $residentsList = $buildingResidents->all();
+                    foreach ($residentsList as $resident) {
+                        $user = $resident->user ?? null;
+                        if ($user) {
+                            $residents[] = [
+                                'id' => $user->id,
+                                'username' => $user->username,
+                                'steamId' => $user->steam_id,
+                                'avatar' => $user->getAvatar(),
+                            ];
+                        }
                     }
                 }
             }
-            $uniqueExplosives = array_values(array_unique($allExplosives));
 
-            // Формируем массив рейдов для ответа
-            foreach ($raidsQuery as $raid) {
-                $raidData = [
-                    'id' => $raid->id,
-                    'type' => $raid->type,
-                    'createdAt' => $raid->created_at,
-                ];
+            // Получаем информацию о рейдах постройки
+            $raids = [];
+            $raidCount = 0;
+            $uniqueExplosives = [];
 
-                if ($raid->user) {
-                    $raidData['user'] = [
-                        'id' => $raid->user->id,
-                        'username' => $raid->user->username,
-                        'steamId' => $raid->user->steam_id,
-                        'avatar' => $raid->user->getAvatar(),
+            if ($building->server && $building->location && $building->wipe) {
+                // Получаем рейды по location, server_id и wipe
+                $raidsQuery = UserRaid::find()
+                    ->where(['location' => $building->location])
+                    ->andWhere(['server_id' => $building->server->id])
+                    ->andWhere(['wipe' => $building->wipe])
+                    ->with('user')
+                    ->orderBy(['created_at' => SORT_DESC])
+                    ->limit(10)
+                    ->all();
+
+                $raidCount = UserRaid::find()
+                    ->where(['location' => $building->location])
+                    ->andWhere(['server_id' => $building->server->id])
+                    ->andWhere(['wipe' => $building->wipe])
+                    ->count();
+
+                // Подсчитываем уникальные взрывчатки
+                $allExplosives = [];
+                foreach ($raidsQuery as $raid) {
+                    if (!empty($raid->explosives)) {
+                        $explosives = json_decode($raid->explosives, true);
+                        if (is_array($explosives)) {
+                            $allExplosives = array_merge($allExplosives, $explosives);
+                        }
+                    }
+                }
+                $uniqueExplosives = array_values(array_unique($allExplosives));
+
+                // Формируем массив рейдов для ответа
+                foreach ($raidsQuery as $raid) {
+                    $raidData = [
+                        'id' => $raid->id,
+                        'type' => $raid->type,
+                        'createdAt' => $raid->created_at,
                     ];
-                }
 
-                if (!empty($raid->explosives)) {
-                    $explosives = json_decode($raid->explosives, true);
-                    if (is_array($explosives)) {
-                        $raidData['explosives'] = $explosives;
+                    if ($raid->user) {
+                        $raidData['user'] = [
+                            'id' => $raid->user->id,
+                            'username' => $raid->user->username,
+                            'steamId' => $raid->user->steam_id,
+                            'avatar' => $raid->user->getAvatar(),
+                        ];
                     }
-                }
 
-                $raids[] = $raidData;
+                    if (!empty($raid->explosives)) {
+                        $explosives = json_decode($raid->explosives, true);
+                        if (is_array($explosives)) {
+                            $raidData['explosives'] = $explosives;
+                        }
+                    }
+
+                    $raids[] = $raidData;
+                }
             }
-        }
 
             $buildingData = [
                 'id' => $building->id,

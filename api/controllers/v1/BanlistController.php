@@ -120,10 +120,16 @@ class BanlistController extends BaseApiController
                     $cacheKey = 'api_banlist_base';
                     $cache = Yii::$app->cache;
                     $cachedData = $cache->get($cacheKey);
+                    
+                    // Если есть кэшированные данные, возвращаем их
+                    if ($cachedData !== false) {
+                        return $cachedData;
+                    }
                 }
             }
             
-            if ($cachedData === false || $hasFilters || $sortField !== 'banned_at' || $sortOrder !== SORT_DESC) {
+            // Если нет кэша или есть фильтры/сортировка, строим запрос
+            if ($cachedData === false || $cachedData === null || $hasFilters || $sortField !== 'banned_at' || $sortOrder !== SORT_DESC) {
                 $query = Bans::find()
                     ->with(['user', 'server'])
                     ->andWhere([
@@ -212,9 +218,6 @@ class BanlistController extends BaseApiController
                 }
                 
                 return $response;
-            } else {
-                // Используем кэшированные данные
-                return $cachedData;
             }
         } catch (\Exception $e) {
             Yii::error('Banlist API error: ' . $e->getMessage(), 'api');
