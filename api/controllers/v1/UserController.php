@@ -1176,73 +1176,93 @@ class UserController extends BaseApiController
     {
         $user = $this->getCurrentUser();
         
-        // Получаем активный сервер - сначала проверяем текущий сервер пользователя
-        $server = null;
+        // Получаем активный сервер (кэшируем для пользователя на 1 минуту)
+        $serverCacheKey = 'homepage_server_user_' . $user->id;
+        $server = Yii::$app->cache->get($serverCacheKey);
         
-        // Пытаемся получить текущий сервер пользователя
-        if (!empty($user->server_tag)) {
-            $server = Servers::find()
-                ->where(['tag' => $user->server_tag, 'status' => 1])
-                ->one();
-        }
-        
-        // Если у пользователя нет сервера или сервер не найден, используем getCurrentServer()
-        if (!$server) {
-            $userServer = $user->getCurrentServer();
-            if ($userServer && $userServer->status == 1) {
-                $server = $userServer;
-            }
-        }
-        
-        // Если все еще нет сервера, берем дефолтный
-        if (!$server) {
-            $cacheKey = 'homepage_server_' . (Yii::$app->params['statisticsServerDefault'] ?? 'max3');
-            $server = Yii::$app->cache->get($cacheKey);
+        if ($server === false) {
+            $server = null;
             
-            if ($server === false) {
-                $defaultServerTag = Yii::$app->params['statisticsServerDefault'] ?? 'max3';
+            // Пытаемся получить текущий сервер пользователя
+            if (!empty($user->server_tag)) {
                 $server = Servers::find()
-                    ->where(['tag' => $defaultServerTag, 'status' => 1])
+                    ->where(['tag' => $user->server_tag, 'status' => 1])
                     ->one();
+            }
+            
+            // Если у пользователя нет сервера или сервер не найден, используем getCurrentServer()
+            if (!$server) {
+                $userServer = $user->getCurrentServer();
+                if ($userServer && $userServer->status == 1) {
+                    $server = $userServer;
+                }
+            }
+            
+            // Если все еще нет сервера, берем дефолтный
+            if (!$server) {
+                $defaultCacheKey = 'homepage_server_' . (Yii::$app->params['statisticsServerDefault'] ?? 'max3');
+                $server = Yii::$app->cache->get($defaultCacheKey);
                 
-                if (!$server) {
-                    // Если сервер не найден, берем первый активный
+                if ($server === false) {
+                    $defaultServerTag = Yii::$app->params['statisticsServerDefault'] ?? 'max3';
                     $server = Servers::find()
-                        ->where(['status' => 1])
-                        ->orderBy(['sort' => SORT_ASC])
+                        ->where(['tag' => $defaultServerTag, 'status' => 1])
                         ->one();
+                    
+                    if (!$server) {
+                        // Если сервер не найден, берем первый активный
+                        $server = Servers::find()
+                            ->where(['status' => 1])
+                            ->orderBy(['sort' => SORT_ASC])
+                            ->one();
+                    }
+                    
+                    // Кэшируем дефолтный сервер на 5 минут
+                    if ($server) {
+                        Yii::$app->cache->set($defaultCacheKey, $server, 5 * 60);
+                    }
                 }
-                
-                // Кэшируем на 5 минут
-                if ($server) {
-                    Yii::$app->cache->set($cacheKey, $server, 5 * 60);
-                }
+            }
+            
+            // Кэшируем сервер для пользователя на 1 минуту
+            if ($server) {
+                Yii::$app->cache->set($serverCacheKey, $server, 60);
             }
         }
         
-        // Получаем статистику пользователя (как в старой версии - используем getStats)
+        // Получаем статистику пользователя (кэшируем на 2 минуты)
         $userStats = [];
         if ($server) {
-            // Используем getStats как в старой версии для получения статистики пользователя
-            $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
-            $stats = Statistics::getStats($server, $user->steam_id, false, $wipeDate);
+            $userStatsCacheKey = 'homepage_user_stats_' . $user->steam_id . '_' . $server->id . '_' . $server->wipe;
+            $userStats = Yii::$app->cache->get($userStatsCacheKey);
             
-            if (!empty($stats) && !empty($stats['player'])) {
-                $player = $stats['player'];
-                $kills = isset($player['kills']) ? (int)$player['kills'] : 0;
-                $deaths = isset($player['deaths']) ? (int)$player['deaths'] : 0;
-                $kd = $deaths > 0 ? round($kills / $deaths, 2) : ($kills > 0 ? $kills : 0);
+            if ($userStats === false) {
+                // Используем getStats как в старой версии для получения статистики пользователя
+                $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
+                $stats = Statistics::getStats($server, $user->steam_id, false, $wipeDate);
                 
-                $userStats = [
-                    'kills' => $kills,
-                    'deaths' => $deaths,
-                    'kd' => $kd,
-                    'scientists' => isset($player['scientists']) ? (int)$player['scientists'] : 0,
-                    'sulfur.ore' => isset($player['sulfur.ore']) ? (int)$player['sulfur.ore'] : 0,
-                    'metal.ore' => isset($player['metal.ore']) ? (int)$player['metal.ore'] : 0,
-                    'stones' => isset($player['stones']) ? (int)$player['stones'] : 0,
-                    'wood' => isset($player['wood']) ? (int)$player['wood'] : 0,
-                ];
+                if (!empty($stats) && !empty($stats['player'])) {
+                    $player = $stats['player'];
+                    $kills = isset($player['kills']) ? (int)$player['kills'] : 0;
+                    $deaths = isset($player['deaths']) ? (int)$player['deaths'] : 0;
+                    $kd = $deaths > 0 ? round($kills / $deaths, 2) : ($kills > 0 ? $kills : 0);
+                    
+                    $userStats = [
+                        'kills' => $kills,
+                        'deaths' => $deaths,
+                        'kd' => $kd,
+                        'scientists' => isset($player['scientists']) ? (int)$player['scientists'] : 0,
+                        'sulfur.ore' => isset($player['sulfur.ore']) ? (int)$player['sulfur.ore'] : 0,
+                        'metal.ore' => isset($player['metal.ore']) ? (int)$player['metal.ore'] : 0,
+                        'stones' => isset($player['stones']) ? (int)$player['stones'] : 0,
+                        'wood' => isset($player['wood']) ? (int)$player['wood'] : 0,
+                    ];
+                } else {
+                    $userStats = [];
+                }
+                
+                // Кэшируем на 2 минуты
+                Yii::$app->cache->set($userStatsCacheKey, $userStats, 2 * 60);
             }
         }
         
@@ -1323,8 +1343,15 @@ class UserController extends BaseApiController
             $userStatsLink = $baseUrl . '/servers/' . $server->tag . '?steam_id=' . $user->steam_id;
         }
         
-        // Получаем статистику проекта
-        $projectStats = \common\models\statistics\Statistics::projectStats();
+        // Получаем статистику проекта (кэшируется внутри метода на 7 дней)
+        $projectStatsCacheKey = 'homepage_project_stats';
+        $projectStats = Yii::$app->cache->get($projectStatsCacheKey);
+        
+        if ($projectStats === false) {
+            $projectStats = \common\models\statistics\Statistics::projectStats();
+            // Кэшируем на 5 минут (внутри projectStats кэш на 7 дней, но для homepage делаем короче)
+            Yii::$app->cache->set($projectStatsCacheKey, $projectStats, 5 * 60);
+        }
         
         return $this->successResponse([
             'username' => $user->username,
