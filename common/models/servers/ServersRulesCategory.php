@@ -11,6 +11,7 @@ use Yii;
  * @property string $name Название категории
  * @property string|null $icon Иконка категории
  * @property int $sort Порядок сортировки
+ * @property bool $no_numbering Отключить нумерацию правил в категории
  * @property int $created_at
  * @property int $updated_at
  *
@@ -34,10 +35,12 @@ class ServersRulesCategory extends \common\components\base\ActiveRecord
         return [
             [['name'], 'required'],
             [['sort', 'created_at', 'updated_at'], 'integer'],
+            [['no_numbering'], 'boolean'],
             [['name', 'icon'], 'string', 'max' => 255],
             [['icon'], 'trim'],
             [['icon'], 'default', 'value' => null],
             [['sort'], 'default', 'value' => 0],
+            [['no_numbering'], 'default', 'value' => 0],
         ];
     }
 
@@ -51,6 +54,7 @@ class ServersRulesCategory extends \common\components\base\ActiveRecord
             'name' => Yii::t('common', 'Название категории'),
             'icon' => Yii::t('common', 'Иконка категории'),
             'sort' => Yii::t('common', 'Порядок сортировки'),
+            'no_numbering' => Yii::t('common', 'Отключить нумерацию правил'),
             'created_at' => Yii::t('common', 'Создан'),
             'updated_at' => Yii::t('common', 'Обновлен'),
         ];

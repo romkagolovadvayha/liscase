@@ -72,7 +72,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                        'icon' => 'fas fa-gamepad',
                        'url' => [''],
                        'visibility' => $moder,
-                       'active' => _checkActive('/servers') || _checkActive('/map-list') || _checkActive('/rust-plugin-config') || _checkActive('/servers-rules') || _checkActive('/servers-rules-category'),
+                       'active' => _checkActive('/servers') || _checkActive('/map-list') || _checkActive('/rust-plugin-config') || _checkActive('/servers-rules') || _checkActive('/servers-rules-category') || _checkActive('/servers-radio-station'),
                        'items' => [
                            [
                                'label' => 'Список серверов',
@@ -100,6 +100,13 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                                'url' => ['/servers-rules-category/index'],
                                'visibility' => $moder,
                                'active' => _checkActive('/servers-rules-category'),
+                           ],
+                           [
+                               'label' => 'Радиостанции',
+                               'icon' => 'fas fa-radio',
+                               'url' => ['/servers-radio-station/index'],
+                               'visibility' => $moder,
+                               'active' => _checkActive('/servers-radio-station'),
                            ],
                            [
                                'label' => 'Сортировка',
