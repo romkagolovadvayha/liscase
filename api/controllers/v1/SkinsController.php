@@ -282,7 +282,7 @@ class SkinsController extends BaseApiController
             $lastPayoutsCs2 = UserPayoutSkins::find()
                 ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'cs2'])
                 ->orderBy(['created_at' => SORT_DESC])
-                ->limit(4)
+                ->limit(5)
                 ->all();
 
             foreach ($lastPayoutsCs2 as $payout) {
