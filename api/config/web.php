@@ -84,6 +84,7 @@ $config = [
 
                 // Skins
                 'v1/skins' => 'v1/skins/index',
+                'v1/skins/giveaway' => 'v1/skins/giveaway',
                 'v1/skins/confirm/<id:\d+>' => 'v1/skins/confirm',
 
                 // Products

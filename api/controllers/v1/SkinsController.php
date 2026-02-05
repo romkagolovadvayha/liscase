@@ -7,6 +7,8 @@ use OpenApi\Annotations as OA;
 use yii\web\NotFoundHttpException;
 use yii\web\BadRequestHttpException;
 use common\models\user\User;
+use common\models\user\UserPayoutSkins;
+use common\models\skindrops\Skindrops;
 use frontend\modules\user\SkinsSearch;
 use frontend\forms\user\SkinsForm;
 use api\components\jwt\JwtAuthFilter;
@@ -30,7 +32,7 @@ class SkinsController extends BaseApiController
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
             'only' => ['confirm'],
-            'except' => ['index', 'options'],
+            'except' => ['index', 'giveaway', 'options'],
         ];
 
         return $behaviors;
@@ -215,6 +217,64 @@ class SkinsController extends BaseApiController
             ],
             'balance' => (float)$balance->balance,
             'can_buy' => $item['price'] <= $balance->balance,
+        ]);
+    }
+
+    /**
+     * Получить данные о раздаче скинов
+     * 
+     * @OA\Get(
+     *     path="/v1/skins/giveaway",
+     *     operationId="getSkinGiveaway",
+     *     tags={"Skins"},
+     *     summary="Получить данные о раздаче скинов",
+     *     description="Публичный метод, возвращает последние раздачи скинов и общую сумму",
+     *     @OA\Response(response=200, description="Данные о раздаче скинов")
+     * )
+     */
+    public function actionGiveaway()
+    {
+        if (!Yii::$app->settings->get('section_skindrops')) {
+            throw new NotFoundHttpException('Страница не найдена');
+        }
+
+        // Получаем последние 4 раздачи скинов из user_payout_skins
+        $lastPayouts = UserPayoutSkins::find()
+            ->where(['status' => UserPayoutSkins::STATUS_SUCCESS])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->limit(4)
+            ->all();
+
+        $recentDrops = [];
+        foreach ($lastPayouts as $payout) {
+            $user = $payout->user;
+            $recentDrops[] = [
+                'id' => $payout->id,
+                'name' => $payout->name,
+                'price' => (float)$payout->price,
+                'image' => $payout->image300 ?: $payout->image,
+                'user' => [
+                    'id' => $user->id ?? null,
+                    'username' => $user->username ?? 'Неизвестный',
+                    'avatar' => $user->getAvatar() ?? null,
+                ],
+                'created_at' => $payout->created_at,
+            ];
+        }
+
+        // Получаем общую сумму из skindrops
+        $totalAmount = (float)Skindrops::find()
+            ->sum('real_price') ?: 0;
+
+        // Получаем количество разыгранных скинов
+        $totalCount = (int)UserPayoutSkins::find()
+            ->where(['status' => UserPayoutSkins::STATUS_SUCCESS])
+            ->count();
+
+        return $this->successResponse([
+            'recentDrops' => $recentDrops,
+            'totalAmount' => $totalAmount,
+            'totalCount' => $totalCount,
         ]);
     }
 }
