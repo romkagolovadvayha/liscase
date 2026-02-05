@@ -12,6 +12,7 @@ use common\models\skindrops\Skindrops;
 use frontend\modules\user\SkinsSearch;
 use frontend\forms\user\SkinsForm;
 use api\components\jwt\JwtAuthFilter;
+use api\components\jwt\JwtService;
 
 /**
  * Контроллер для работы с каталогом скинов
@@ -407,15 +408,20 @@ class SkinsController extends BaseApiController
         }
 
         // Данные пользователя (если авторизован)
-        $userData = null;
-        $user = Yii::$app->user->identity;
+        // Пытаемся получить пользователя из JWT токена, если он есть
+        $user = $this->getUserFromToken();
+        
+        // Если пользователь не найден через JWT, проверяем стандартную авторизацию
+        if (!$user) {
+            $user = Yii::$app->user->identity;
+        }
         
         // Логика как в старой версии: проверяем все условия
-        $authCompleted = !Yii::$app->user->isGuest;
+        $authCompleted = !empty($user);
         $tradeLinkCompleted = false;
         $usernameCompleted = false;
         
-        if ($user && !Yii::$app->user->isGuest) {
+        if ($user) {
             $prefix = Yii::$app->settings->get('skindrops_prefix') ?? '';
             
             // Проверка Trade-URL
@@ -455,6 +461,59 @@ class SkinsController extends BaseApiController
             'prefix' => $data['prefix'],
             'user' => $userData,
         ]);
+    }
+
+    /**
+     * Получение пользователя из JWT токена (без обязательной авторизации)
+     * 
+     * @return User|null
+     */
+    protected function getUserFromToken()
+    {
+        try {
+            $jwtService = Yii::$app->has('jwt') ? Yii::$app->get('jwt') : new JwtService();
+            $token = $jwtService->extractTokenFromRequest(Yii::$app->request);
+            
+            if (empty($token)) {
+                return null;
+            }
+            
+            // Валидация токена
+            $payload = $jwtService->validateToken($token);
+            
+            // Проверка blacklist
+            $jti = $jwtService->getJti($payload);
+            if (!empty($jti)) {
+                $cacheKey = 'jwt_blacklist_' . $jti;
+                $blacklisted = Yii::$app->cache->get($cacheKey);
+                if ($blacklisted !== false) {
+                    return null;
+                }
+            }
+            
+            // Поиск пользователя
+            $userId = $jwtService->getUserId($payload);
+            $steamId = $jwtService->getSteamId($payload);
+            
+            if ($userId) {
+                $user = User::findIdentity($userId);
+                if ($user) {
+                    return $user;
+                }
+            }
+            
+            if ($steamId) {
+                $user = User::find()->where(['steam_id' => $steamId])->one();
+                if ($user) {
+                    return $user;
+                }
+            }
+            
+            return null;
+        } catch (\Exception $e) {
+            // Если токен невалидный, просто возвращаем null
+            return null;
+        }
     }
 }
 
