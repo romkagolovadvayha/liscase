@@ -281,8 +281,6 @@ class ServersStatisticsHistoryController extends BaseApiController
         if ($date === null) {
             // Получаем текущий час (0-23)
             $currentHour = (int)date('H');
-            $currentMinute = (int)date('i');
-            $currentSecond = (int)date('s');
             
             // Время начала: вчера в этот же час (00 минут, 00 секунд)
             $timeStart = date('Y-m-d', strtotime('-1 day')) . ' ' . str_pad($currentHour, 2, '0', STR_PAD_LEFT) . ':00:00';
@@ -296,6 +294,48 @@ class ServersStatisticsHistoryController extends BaseApiController
                 ->andWhere(['<=', 'created_at', $now])
                 ->orderBy(['created_at' => SORT_ASC])
                 ->all();
+            
+            // Группируем по дате+часу и находим максимальные значения
+            // Ключ: "Y-m-d H" для правильной группировки часов из разных дней
+            $groupedByDateTime = [];
+            foreach ($records as $record) {
+                $recordTimestamp = strtotime($record->created_at);
+                $dateTimeKey = date('Y-m-d H', $recordTimestamp);
+                $hour = (int)date('H', $recordTimestamp);
+                
+                if (!isset($groupedByDateTime[$dateTimeKey])) {
+                    $groupedByDateTime[$dateTimeKey] = [
+                        'date' => date('Y-m-d', $recordTimestamp),
+                        'hour' => $hour,
+                        'players' => $record->players,
+                        'joined' => $record->joined,
+                        'queued' => $record->queued,
+                        '_sort_key' => $dateTimeKey, // Для сортировки
+                    ];
+                } else {
+                    // Обновляем только если значения больше
+                    if ($record->players > $groupedByDateTime[$dateTimeKey]['players']) {
+                        $groupedByDateTime[$dateTimeKey]['players'] = $record->players;
+                    }
+                    if ($record->joined > $groupedByDateTime[$dateTimeKey]['joined']) {
+                        $groupedByDateTime[$dateTimeKey]['joined'] = $record->joined;
+                    }
+                    if ($record->queued > $groupedByDateTime[$dateTimeKey]['queued']) {
+                        $groupedByDateTime[$dateTimeKey]['queued'] = $record->queued;
+                    }
+                }
+            }
+
+            // Преобразуем в массив и сортируем по дате и времени
+            $result = array_values($groupedByDateTime);
+            usort($result, function($a, $b) {
+                return strcmp($a['_sort_key'], $b['_sort_key']);
+            });
+            
+            // Удаляем служебное поле _sort_key
+            foreach ($result as &$item) {
+                unset($item['_sort_key']);
+            }
         } else {
             // Валидация формата даты
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
@@ -312,39 +352,39 @@ class ServersStatisticsHistoryController extends BaseApiController
                 ->andWhere(['<=', 'created_at', $dayEnd])
                 ->orderBy(['created_at' => SORT_ASC])
                 ->all();
-        }
 
-        // Группируем по часам и находим максимальные значения
-        $groupedByHour = [];
-        foreach ($records as $record) {
-            $hour = (int)date('H', strtotime($record->created_at));
-            
-            if (!isset($groupedByHour[$hour])) {
-                $groupedByHour[$hour] = [
-                    'hour' => $hour,
-                    'players' => $record->players,
-                    'joined' => $record->joined,
-                    'queued' => $record->queued,
-                ];
-            } else {
-                // Обновляем только если значения больше
-                if ($record->players > $groupedByHour[$hour]['players']) {
-                    $groupedByHour[$hour]['players'] = $record->players;
-                }
-                if ($record->joined > $groupedByHour[$hour]['joined']) {
-                    $groupedByHour[$hour]['joined'] = $record->joined;
-                }
-                if ($record->queued > $groupedByHour[$hour]['queued']) {
-                    $groupedByHour[$hour]['queued'] = $record->queued;
+            // Группируем по часам и находим максимальные значения
+            $groupedByHour = [];
+            foreach ($records as $record) {
+                $hour = (int)date('H', strtotime($record->created_at));
+                
+                if (!isset($groupedByHour[$hour])) {
+                    $groupedByHour[$hour] = [
+                        'hour' => $hour,
+                        'players' => $record->players,
+                        'joined' => $record->joined,
+                        'queued' => $record->queued,
+                    ];
+                } else {
+                    // Обновляем только если значения больше
+                    if ($record->players > $groupedByHour[$hour]['players']) {
+                        $groupedByHour[$hour]['players'] = $record->players;
+                    }
+                    if ($record->joined > $groupedByHour[$hour]['joined']) {
+                        $groupedByHour[$hour]['joined'] = $record->joined;
+                    }
+                    if ($record->queued > $groupedByHour[$hour]['queued']) {
+                        $groupedByHour[$hour]['queued'] = $record->queued;
+                    }
                 }
             }
-        }
 
-        // Преобразуем в массив и сортируем по часу
-        $result = array_values($groupedByHour);
-        usort($result, function($a, $b) {
-            return $a['hour'] - $b['hour'];
-        });
+            // Преобразуем в массив и сортируем по часу
+            $result = array_values($groupedByHour);
+            usort($result, function($a, $b) {
+                return $a['hour'] - $b['hour'];
+            });
+        }
 
         return $this->successResponse($result);
     }
