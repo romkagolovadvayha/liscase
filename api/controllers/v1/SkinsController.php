@@ -341,19 +341,28 @@ class SkinsController extends BaseApiController
         $data = $cache->get($cacheKey);
 
         if ($data === false) {
-            // Получаем последние 10 выигрышей
-            $lastPayouts = UserPayoutSkins::find()
+            $data = [
+                'rust' => [
+                    'recentWins' => [],
+                ],
+                'cs2' => [
+                    'recentWins' => [],
+                ],
+                'prefix' => Yii::$app->settings->get('skindrops_prefix') ?? '',
+            ];
+
+            // Получаем последние 20 выигрышей для Rust
+            $lastPayoutsRust = UserPayoutSkins::find()
                 ->alias('p')
                 ->joinWith(['user'])
-                ->where(['p.status' => UserPayoutSkins::STATUS_SUCCESS])
+                ->where(['p.status' => UserPayoutSkins::STATUS_SUCCESS, 'p.type' => 'rust'])
                 ->orderBy(['p.id' => SORT_DESC])
-                ->limit(10)
+                ->limit(20)
                 ->all();
 
-            $recentWins = [];
-            foreach ($lastPayouts as $payout) {
+            foreach ($lastPayoutsRust as $payout) {
                 $user = $payout->user;
-                $recentWins[] = [
+                $data['rust']['recentWins'][] = [
                     'id' => $payout->id,
                     'name' => $payout->name,
                     'price' => (float)$payout->amount,
@@ -367,10 +376,30 @@ class SkinsController extends BaseApiController
                 ];
             }
 
-            $data = [
-                'recentWins' => $recentWins,
-                'prefix' => Yii::$app->settings->get('skindrops_prefix') ?? '',
-            ];
+            // Получаем последние 20 выигрышей для CS2
+            $lastPayoutsCs2 = UserPayoutSkins::find()
+                ->alias('p')
+                ->joinWith(['user'])
+                ->where(['p.status' => UserPayoutSkins::STATUS_SUCCESS, 'p.type' => 'cs2'])
+                ->orderBy(['p.id' => SORT_DESC])
+                ->limit(20)
+                ->all();
+
+            foreach ($lastPayoutsCs2 as $payout) {
+                $user = $payout->user;
+                $data['cs2']['recentWins'][] = [
+                    'id' => $payout->id,
+                    'name' => $payout->name,
+                    'price' => (float)$payout->amount,
+                    'image' => $payout->image300 ?: $payout->image,
+                    'user' => [
+                        'id' => $user->id ?? null,
+                        'username' => $user->username ?? 'Неизвестный',
+                        'avatar' => $user->getAvatar() ?? null,
+                    ],
+                    'created_at' => $payout->created_at,
+                ];
+            }
 
             // Сохраняем в кэш на 10 минут (600 секунд)
             $cache->set($cacheKey, $data, 600);
@@ -404,7 +433,8 @@ class SkinsController extends BaseApiController
         }
 
         return $this->successResponse([
-            'recentWins' => $data['recentWins'],
+            'rust' => $data['rust'],
+            'cs2' => $data['cs2'],
             'prefix' => $data['prefix'],
             'user' => $userData,
         ]);
