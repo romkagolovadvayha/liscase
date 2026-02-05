@@ -340,7 +340,8 @@ class SkinsController extends BaseApiController
         $cache = Yii::$app->cache;
         $data = $cache->get($cacheKey);
 
-        if ($data === false) {
+        // Проверяем структуру данных (на случай старых данных в кэше)
+        if ($data === false || !isset($data['rust']) || !isset($data['cs2'])) {
             $data = [
                 'rust' => [
                     'recentWins' => [],
