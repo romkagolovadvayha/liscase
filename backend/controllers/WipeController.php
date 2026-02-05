@@ -479,9 +479,18 @@ class WipeController extends Controller
                 $fixedMap = MapList::fixWinningMapForServer($serverId);
                 
                 if ($fixedMap) {
+                    // Формируем описание карты из доступных полей
+                    $mapDescription = "Seed: {$fixedMap->seed}";
+                    if ($fixedMap->size) {
+                        $mapDescription .= ", Size: {$fixedMap->size}";
+                    }
+                    if ($fixedMap->size_int) {
+                        $mapDescription .= " ({$fixedMap->size_int})";
+                    }
+                    
                     $results['step3_fix_map'][$serverId] = [
                         'success' => true,
-                        'message' => "Карта '{$fixedMap->name}' (ID: {$fixedMap->id}) успешно зафиксирована",
+                        'message' => "Карта (ID: {$fixedMap->id}, {$mapDescription}) успешно зафиксирована",
                     ];
                 } else {
                     $results['step3_fix_map'][$serverId] = [
