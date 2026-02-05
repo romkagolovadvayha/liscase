@@ -238,44 +238,83 @@ class SkinsController extends BaseApiController
             throw new NotFoundHttpException('Страница не найдена');
         }
 
-        // Получаем последние 4 раздачи скинов из user_payout_skins
-        $lastPayouts = UserPayoutSkins::find()
-            ->where(['status' => UserPayoutSkins::STATUS_SUCCESS])
-            ->orderBy(['created_at' => SORT_DESC])
-            ->limit(4)
-            ->all();
+        // Кэшируем данные на 10 минут
+        $cacheKey = 'skin_giveaway_data';
+        $cache = Yii::$app->cache;
+        $data = $cache->get($cacheKey);
 
-        $recentDrops = [];
-        foreach ($lastPayouts as $payout) {
-            $user = $payout->user;
-            $recentDrops[] = [
-                'id' => $payout->id,
-                'name' => $payout->name,
-                'price' => (float)$payout->real_price,
-                'image' => $payout->image300 ?: $payout->image,
-                'user' => [
-                    'id' => $user->id ?? null,
-                    'username' => $user->username ?? 'Неизвестный',
-                    'avatar' => $user->getAvatar() ?? null,
+        if ($data === false) {
+            $data = [
+                'rust' => [
+                    'recentDrops' => [],
+                    'totalCount' => 0,
                 ],
-                'created_at' => $payout->created_at,
+                'cs2' => [
+                    'recentDrops' => [],
+                    'totalCount' => 0,
+                ],
             ];
+
+            // Получаем последние 4 раздачи скинов для Rust
+            $lastPayoutsRust = UserPayoutSkins::find()
+                ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'rust'])
+                ->orderBy(['created_at' => SORT_DESC])
+                ->limit(5)
+                ->all();
+
+            foreach ($lastPayoutsRust as $payout) {
+                $user = $payout->user;
+                $data['rust']['recentDrops'][] = [
+                    'id' => $payout->id,
+                    'name' => $payout->name,
+                    'price' => (float)$payout->real_price,
+                    'image' => $payout->image300 ?: $payout->image,
+                    'user' => [
+                        'id' => $user->id ?? null,
+                        'username' => $user->username ?? 'Неизвестный',
+                        'avatar' => $user->getAvatar() ?? null,
+                    ],
+                    'created_at' => $payout->created_at,
+                ];
+            }
+
+            // Получаем последние 4 раздачи скинов для CS2
+            $lastPayoutsCs2 = UserPayoutSkins::find()
+                ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'cs2'])
+                ->orderBy(['created_at' => SORT_DESC])
+                ->limit(4)
+                ->all();
+
+            foreach ($lastPayoutsCs2 as $payout) {
+                $user = $payout->user;
+                $data['cs2']['recentDrops'][] = [
+                    'id' => $payout->id,
+                    'name' => $payout->name,
+                    'price' => (float)$payout->real_price,
+                    'image' => $payout->image300 ?: $payout->image,
+                    'user' => [
+                        'id' => $user->id ?? null,
+                        'username' => $user->username ?? 'Неизвестный',
+                        'avatar' => $user->getAvatar() ?? null,
+                    ],
+                    'created_at' => $payout->created_at,
+                ];
+            }
+
+            // Получаем количество разыгранных скинов для каждого типа
+            $data['rust']['totalCount'] = (int)UserPayoutSkins::find()
+                ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'rust'])
+                ->count();
+
+            $data['cs2']['totalCount'] = (int)UserPayoutSkins::find()
+                ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'cs2'])
+                ->count();
+
+            // Сохраняем в кэш на 10 минут (600 секунд)
+            $cache->set($cacheKey, $data, 600);
         }
 
-        // Получаем общую сумму из skindrops
-        $totalAmount = (float)Skindrops::find()
-            ->sum('real_price') ?: 0;
-
-        // Получаем количество разыгранных скинов
-        $totalCount = (int)UserPayoutSkins::find()
-            ->where(['status' => UserPayoutSkins::STATUS_SUCCESS])
-            ->count();
-
-        return $this->successResponse([
-            'recentDrops' => $recentDrops,
-            'totalAmount' => $totalAmount,
-            'totalCount' => $totalCount,
-        ]);
+        return $this->successResponse($data);
     }
 }
 
