@@ -1,15 +1,15 @@
 <?php
 
-namespace backend\models\support;
+namespace backend\models;
 
-use common\models\support\SupportSticker;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
+use common\models\servers\ServersRulesCategory;
 
 /**
- * SupportStickerSearch represents the model behind the search form of `common\models\support\SupportSticker`.
+ * ServersRulesCategorySearch represents the model behind the search form of `common\models\servers\ServersRulesCategory`.
  */
-class SupportStickerSearch extends SupportSticker
+class ServersRulesCategorySearch extends ServersRulesCategory
 {
     /**
      * {@inheritdoc}
@@ -17,8 +17,8 @@ class SupportStickerSearch extends SupportSticker
     public function rules()
     {
         return [
-            [['id', 'width', 'height', 'sort', 'status', 'created_at', 'updated_at'], 'integer'],
-            [['code', 'name', 'file', 'type'], 'safe'],
+            [['id', 'sort', 'created_at', 'updated_at'], 'integer'],
+            [['name', 'icon'], 'safe'],
         ];
     }
 
@@ -27,7 +27,6 @@ class SupportStickerSearch extends SupportSticker
      */
     public function scenarios()
     {
-        // bypass scenarios() implementation in the parent class
         return Model::scenarios();
     }
 
@@ -40,15 +39,18 @@ class SupportStickerSearch extends SupportSticker
      */
     public function search($params)
     {
-        $query = SupportSticker::find();
+        $query = ServersRulesCategory::find();
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'sort' => [
-                'defaultOrder' => ['sort' => SORT_ASC, 'id' => SORT_DESC],
+                'defaultOrder' => [
+                    'sort' => SORT_ASC,
+                    'id' => SORT_DESC,
+                ]
             ],
             'pagination' => [
-                'pageSize' => 20,
+                'pageSize' => 50,
             ],
         ]);
 
@@ -58,41 +60,17 @@ class SupportStickerSearch extends SupportSticker
             return $dataProvider;
         }
 
-        // grid filtering conditions
         $query->andFilterWhere([
             'id' => $this->id,
-            'width' => $this->width,
-            'height' => $this->height,
             'sort' => $this->sort,
-            'status' => $this->status,
-            'type' => $this->type,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ]);
 
-        $query->andFilterWhere(['like', 'code', $this->code])
-              ->andFilterWhere(['like', 'name', $this->name])
-              ->andFilterWhere(['like', 'file', $this->file]);
+        $query->andFilterWhere(['like', 'name', $this->name])
+            ->andFilterWhere(['like', 'icon', $this->icon]);
 
         return $dataProvider;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -1,15 +1,15 @@
 <?php
 
-namespace backend\models\support;
+namespace backend\models;
 
-use common\models\support\SupportSticker;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
+use common\models\servers\ServersRules;
 
 /**
- * SupportStickerSearch represents the model behind the search form of `common\models\support\SupportSticker`.
+ * ServersRulesSearch represents the model behind the search form of `common\models\servers\ServersRules`.
  */
-class SupportStickerSearch extends SupportSticker
+class ServersRulesSearch extends ServersRules
 {
     /**
      * {@inheritdoc}
@@ -17,8 +17,8 @@ class SupportStickerSearch extends SupportSticker
     public function rules()
     {
         return [
-            [['id', 'width', 'height', 'sort', 'status', 'created_at', 'updated_at'], 'integer'],
-            [['code', 'name', 'file', 'type'], 'safe'],
+            [['id', 'category_id', 'sort', 'created_at', 'updated_at'], 'integer'],
+            [['title', 'content', 'punishment'], 'safe'],
         ];
     }
 
@@ -27,7 +27,6 @@ class SupportStickerSearch extends SupportSticker
      */
     public function scenarios()
     {
-        // bypass scenarios() implementation in the parent class
         return Model::scenarios();
     }
 
@@ -40,15 +39,19 @@ class SupportStickerSearch extends SupportSticker
      */
     public function search($params)
     {
-        $query = SupportSticker::find();
+        $query = ServersRules::find()->with(['category', 'servers']);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'sort' => [
-                'defaultOrder' => ['sort' => SORT_ASC, 'id' => SORT_DESC],
+                'defaultOrder' => [
+                    'category_id' => SORT_ASC,
+                    'sort' => SORT_ASC,
+                    'id' => SORT_DESC,
+                ]
             ],
             'pagination' => [
-                'pageSize' => 20,
+                'pageSize' => 50,
             ],
         ]);
 
@@ -58,41 +61,19 @@ class SupportStickerSearch extends SupportSticker
             return $dataProvider;
         }
 
-        // grid filtering conditions
         $query->andFilterWhere([
             'id' => $this->id,
-            'width' => $this->width,
-            'height' => $this->height,
+            'category_id' => $this->category_id,
             'sort' => $this->sort,
-            'status' => $this->status,
-            'type' => $this->type,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ]);
 
-        $query->andFilterWhere(['like', 'code', $this->code])
-              ->andFilterWhere(['like', 'name', $this->name])
-              ->andFilterWhere(['like', 'file', $this->file]);
+        $query->andFilterWhere(['like', 'title', $this->title])
+            ->andFilterWhere(['like', 'content', $this->content])
+            ->andFilterWhere(['like', 'punishment', $this->punishment]);
 
         return $dataProvider;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

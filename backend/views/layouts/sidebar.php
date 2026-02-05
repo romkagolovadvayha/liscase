@@ -72,7 +72,7 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                        'icon' => 'fas fa-gamepad',
                        'url' => [''],
                        'visibility' => $admin,
-                       'active' => _checkActive('/servers') || _checkActive('/map-list') || _checkActive('/rust-plugin-config'),
+                       'active' => _checkActive('/servers') || _checkActive('/map-list') || _checkActive('/rust-plugin-config') || _checkActive('/servers-rules') || _checkActive('/servers-rules-category'),
                        'items' => [
                            [
                                'label' => 'Список серверов',
@@ -86,6 +86,20 @@ $support = Yii::$app->user->can(Role::ROLE_SUPPORT);
                                'url' => ['/servers-tags/index'],
                                'visibility' => $admin,
                                'active' => _checkActive('/servers-tags'),
+                           ],
+                           [
+                               'label' => 'Правила серверов',
+                               'icon' => 'fas fa-gavel',
+                               'url' => ['/servers-rules/index'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/servers-rules'),
+                           ],
+                           [
+                               'label' => 'Категории правил',
+                               'icon' => 'fas fa-folder',
+                               'url' => ['/servers-rules-category/index'],
+                               'visibility' => $admin,
+                               'active' => _checkActive('/servers-rules-category'),
                            ],
                            [
                                'label' => 'Сортировка',

@@ -196,12 +196,50 @@ class ServersController extends BaseApiController
             throw new NotFoundHttpException('Сервер не найден');
         }
 
-        // Правила обычно хранятся в JSON формате
-        $rules = $server->rules ?? [];
+        // Получаем правила из новой таблицы
+        $rules = \common\models\servers\ServersRules::getRulesForServer($server->id);
+        
+        // Группируем по категориям
+        $categories = [];
+        foreach ($rules as $rule) {
+            $categoryId = $rule->category_id;
+            if (!isset($categories[$categoryId])) {
+                $category = $rule->category;
+                $categories[$categoryId] = [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'icon' => $category->icon,
+                    'sort' => $category->sort,
+                    'rules' => [],
+                ];
+            }
+            
+            $categories[$categoryId]['rules'][] = [
+                'id' => $rule->id,
+                'title' => $rule->title,
+                'content' => $rule->content,
+                'punishment' => $rule->punishment,
+                'sort' => $rule->sort,
+            ];
+        }
+        
+        // Сортируем категории по sort
+        usort($categories, function($a, $b) {
+            return $a['sort'] <=> $b['sort'];
+        });
+        
+        // Сортируем правила внутри каждой категории по sort
+        foreach ($categories as &$category) {
+            usort($category['rules'], function($a, $b) {
+                return $a['sort'] <=> $b['sort'];
+            });
+        }
+        unset($category);
 
         return $this->successResponse([
             'server_tag' => $serverTag,
-            'rules' => is_string($rules) ? json_decode($rules, true) : $rules,
+            'server_id' => $server->id,
+            'categories' => array_values($categories),
         ]);
     }
 
@@ -316,6 +354,7 @@ class ServersController extends BaseApiController
             'name' => $server->monitoring_name,
             'monitoring_name' => $server->monitoring_name,
             'description' => $server->monitoring_description ?? '',
+            'monitoring_description' => $server->monitoring_description ?? '',
             'status' => $statusNumber, // Число для совместимости с фронтендом
             'players' => (int)$server->players,
             'max' => (int)$server->max,
