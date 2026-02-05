@@ -126,6 +126,15 @@ class ServersRules extends \common\components\base\ActiveRecord
     }
 
     /**
+     * Сохранение записи (для совместимости с CrudController)
+     * @return bool
+     */
+    public function saveRecord()
+    {
+        return $this->save();
+    }
+
+    /**
      * Сохранение связей с серверами
      */
     public function afterSave($insert, $changedAttributes)
