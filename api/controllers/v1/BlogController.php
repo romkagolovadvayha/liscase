@@ -109,10 +109,23 @@ class BlogController extends BaseApiController
         $sort = $request->get('sort', 'created_at');
         $order = $request->get('order', 'desc');
 
-        $query = Blog::find()
-            ->alias('b')
-            ->where(['b.status' => Blog::STATUS_ACTIVE])
-            ->with(['blogCategory', 'blogImages', 'comments']);
+        // Кэшируем только базовый список (без фильтров, первая страница, дефолтная сортировка)
+        $hasFilters = !empty($categoryId) || !empty($search);
+        $isDefaultSort = $sort === 'created_at' && $order === 'desc';
+        $cacheKey = null;
+        $cachedData = null;
+        
+        if (!$hasFilters && $page === 1 && $isDefaultSort) {
+            $cacheKey = 'api_blog_list_' . $limit;
+            $cache = Yii::$app->cache;
+            $cachedData = $cache->get($cacheKey);
+        }
+
+        if ($cachedData === false || $hasFilters || $page > 1 || !$isDefaultSort) {
+            $query = Blog::find()
+                ->alias('b')
+                ->where(['b.status' => Blog::STATUS_ACTIVE])
+                ->with(['blogCategory', 'blogImages', 'comments']);
 
         // Фильтр по категории
         if ($categoryId) {
@@ -208,7 +221,7 @@ class BlogController extends BaseApiController
         $pagination = $dataProvider->getPagination();
         $totalPages = $pagination->getPageCount();
 
-        return $this->successResponse([
+        $responseData = [
             'posts' => $posts,
             'pagination' => [
                 'currentPage' => $page,
@@ -217,7 +230,14 @@ class BlogController extends BaseApiController
                 'pageSize' => $limit,
                 'hasMore' => $page < $totalPages,
             ],
-        ]);
+        ];
+
+        // Сохраняем в кэш только базовый список (без фильтров, первая страница, дефолтная сортировка)
+        if (!$hasFilters && $page === 1 && $isDefaultSort && $cacheKey) {
+            $cache->set($cacheKey, $responseData, 300); // 5 минут
+        }
+
+        return $this->successResponse($responseData);
     }
 
     /**

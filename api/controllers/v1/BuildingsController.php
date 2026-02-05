@@ -277,16 +277,22 @@ class BuildingsController extends BaseApiController
      */
     public function actionView($id)
     {
-        $building = Building::find()
-            ->where(['id' => $id, 'status' => Building::STATUS_ACTIVE])
-            ->with(['buildingImage', 'user', 'server', 'buildingResident.user'])
-            ->one();
+        // Кэшируем детальную информацию о постройке на 10 минут
+        $cacheKey = 'api_buildings_view_' . $id;
+        $cache = Yii::$app->cache;
+        $cachedBuilding = $cache->get($cacheKey);
 
-        if (!$building) {
-            return $this->errorResponse('BUILDING_NOT_FOUND', 'Постройка не найдена', [], 404);
-        }
+        if ($cachedBuilding === false) {
+            $building = Building::find()
+                ->where(['id' => $id, 'status' => Building::STATUS_ACTIVE])
+                ->with(['buildingImage', 'user', 'server', 'buildingResident.user'])
+                ->one();
 
-        // Получаем все изображения с S3 URL
+            if (!$building) {
+                return $this->errorResponse('BUILDING_NOT_FOUND', 'Постройка не найдена', [], 404);
+            }
+
+            // Получаем все изображения с S3 URL
         $images = [];
         $buildingImages = $building->buildingImage;
         if (!empty($buildingImages)) {
@@ -396,33 +402,39 @@ class BuildingsController extends BaseApiController
             }
         }
 
-        $buildingData = [
-            'id' => $building->id,
-            'name' => $building->name,
-            'description' => $building->description,
-            'location' => $building->location,
-            'images' => $images,
-            'image' => !empty($images) ? $images[0] : null,
-            'likes' => $building->likes ?? 0,
-            'wipe' => $building->wipe,
-            'server' => $building->server ? [
-                'tag' => $building->server->tag,
-                'name' => $building->server->monitoring_name ?? $building->server->tag,
-            ] : null,
-            'user' => $building->user ? [
-                'id' => $building->user->id,
-                'username' => $building->user->username,
-                'steamId' => $building->user->steam_id,
-                'avatar' => $building->user->getAvatar(),
-            ] : null,
-            'residents' => $residents,
-            'createdAt' => $building->created_at,
-            'raids' => [
-                'count' => $raidCount,
-                'list' => $raids,
-                'uniqueExplosives' => $uniqueExplosives,
-            ],
-        ];
+            $buildingData = [
+                'id' => $building->id,
+                'name' => $building->name,
+                'description' => $building->description,
+                'location' => $building->location,
+                'images' => $images,
+                'image' => !empty($images) ? $images[0] : null,
+                'likes' => $building->likes ?? 0,
+                'wipe' => $building->wipe,
+                'server' => $building->server ? [
+                    'tag' => $building->server->tag,
+                    'name' => $building->server->monitoring_name ?? $building->server->tag,
+                ] : null,
+                'user' => $building->user ? [
+                    'id' => $building->user->id,
+                    'username' => $building->user->username,
+                    'steamId' => $building->user->steam_id,
+                    'avatar' => $building->user->getAvatar(),
+                ] : null,
+                'residents' => $residents,
+                'createdAt' => $building->created_at,
+                'raids' => [
+                    'count' => $raidCount,
+                    'list' => $raids,
+                    'uniqueExplosives' => $uniqueExplosives,
+                ],
+            ];
+
+            // Сохраняем в кэш на 10 минут
+            $cache->set($cacheKey, $buildingData, 600);
+        } else {
+            $buildingData = $cachedBuilding;
+        }
 
         return $this->successResponse($buildingData);
     }

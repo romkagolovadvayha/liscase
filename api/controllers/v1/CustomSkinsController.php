@@ -106,10 +106,23 @@ class CustomSkinsController extends BaseApiController
         $sort = $request->get('sort', 'created_at');
         $order = $request->get('order', 'desc');
 
-        $query = ServerSkin::find()
-            ->alias('s')
-            ->where(['s.status' => ServerSkin::STATUS_ACTIVE])
-            ->with(['user', 'serverSkinCategory', 'creatorUser']);
+        // Кэшируем только базовый список (без фильтров, первая страница, дефолтная сортировка)
+        $hasFilters = !empty($categoryId) || !empty($search);
+        $isDefaultSort = $sort === 'created_at' && $order === 'desc';
+        $cacheKey = null;
+        $cachedData = null;
+        
+        if (!$hasFilters && $page === 1 && $isDefaultSort) {
+            $cacheKey = 'api_custom_skins_list_' . $limit;
+            $cache = Yii::$app->cache;
+            $cachedData = $cache->get($cacheKey);
+        }
+
+        if ($cachedData === false || $hasFilters || $page > 1 || !$isDefaultSort) {
+            $query = ServerSkin::find()
+                ->alias('s')
+                ->where(['s.status' => ServerSkin::STATUS_ACTIVE])
+                ->with(['user', 'serverSkinCategory', 'creatorUser']);
 
         // Фильтр по категории
         if ($categoryId) {
@@ -170,7 +183,7 @@ class CustomSkinsController extends BaseApiController
         $pagination = $dataProvider->getPagination();
         $totalPages = $pagination->getPageCount();
 
-        return $this->successResponse([
+        $responseData = [
             'skins' => $skins,
             'pagination' => [
                 'currentPage' => $page,
@@ -179,7 +192,14 @@ class CustomSkinsController extends BaseApiController
                 'pageSize' => $limit,
                 'hasMore' => $page < $totalPages,
             ],
-        ]);
+        ];
+
+        // Сохраняем в кэш только базовый список (без фильтров, первая страница, дефолтная сортировка)
+        if (!$hasFilters && $page === 1 && $isDefaultSort && $cacheKey) {
+            $cache->set($cacheKey, $responseData, 300); // 5 минут
+        }
+
+        return $this->successResponse($responseData);
     }
 
     /**

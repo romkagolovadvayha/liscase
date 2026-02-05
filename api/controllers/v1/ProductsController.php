@@ -165,10 +165,23 @@ class ProductsController extends BaseApiController
         $search = Yii::$app->request->get('search');
         $sort = Yii::$app->request->get('sort', 'sort');
 
-        $query = Drop::find()
-            ->where(['status' => Drop::STATUS_ACTIVE])
-            ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
-            ->with(['dropImages', 'subDrops.drop', 'subDrops.drop.dropImages']);
+        // Кэшируем только базовый список (без фильтров, первая страница, дефолтная сортировка)
+        $hasFilters = !empty($categoryId) || !empty($search);
+        $isDefaultSort = $sort === 'sort';
+        $cacheKey = null;
+        $cachedData = null;
+        
+        if (!$hasFilters && $offset === 0 && $isDefaultSort) {
+            $cacheKey = 'api_products_list_' . $limit;
+            $cache = Yii::$app->cache;
+            $cachedData = $cache->get($cacheKey);
+        }
+
+        if ($cachedData === false || $hasFilters || $offset > 0 || !$isDefaultSort) {
+            $query = Drop::find()
+                ->where(['status' => Drop::STATUS_ACTIVE])
+                ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
+                ->with(['dropImages', 'subDrops.drop', 'subDrops.drop.dropImages']);
 
         if ($categoryId) {
             $query->andWhere(['category_id' => (int)$categoryId]);
@@ -280,6 +293,20 @@ class ProductsController extends BaseApiController
 
         $pagination = $dataProvider->getPagination();
 
+        // Сохраняем в кэш только базовый список (без фильтров, первая страница, дефолтная сортировка)
+        if (!$hasFilters && $offset === 0 && $isDefaultSort && $cacheKey) {
+            $responseData = [
+                'data' => $products,
+                'pagination' => [
+                    'total' => $pagination->totalCount,
+                    'limit' => $limit,
+                    'offset' => $offset,
+                    'hasMore' => ($offset + count($products)) < $pagination->totalCount,
+                ],
+            ];
+            $cache->set($cacheKey, $responseData, 300); // 5 минут
+        }
+
         return $this->successResponse($products, [
             'pagination' => [
                 'total' => $pagination->totalCount,
@@ -315,32 +342,38 @@ class ProductsController extends BaseApiController
      */
     public function actionView($id)
     {
-        $drop = Drop::find()
-            ->where(['id' => $id, 'status' => Drop::STATUS_ACTIVE])
-            ->with(['dropImages', 'subDrops.drop', 'subDrops.drop.dropImages', 'category'])
-            ->one();
+        // Кэшируем детальную информацию о товаре на 10 минут
+        $cacheKey = 'api_products_view_' . $id;
+        $cache = Yii::$app->cache;
+        $cachedProduct = $cache->get($cacheKey);
 
-        if (!$drop) {
-            return $this->errorResponse('Товар не найден', 404);
-        }
+        if ($cachedProduct === false) {
+            $drop = Drop::find()
+                ->where(['id' => $id, 'status' => Drop::STATUS_ACTIVE])
+                ->with(['dropImages', 'subDrops.drop', 'subDrops.drop.dropImages', 'category'])
+                ->one();
 
-        // Получаем все изображения с S3 URL
-        $images = [];
-        $dropImages = $drop->dropImages;
-        if (!empty($dropImages)) {
-            foreach ($dropImages as $dropImage) {
-                $images[] = $dropImage->getImagePubUrl();
+            if (!$drop) {
+                return $this->errorResponse('Товар не найден', 404);
             }
-        }
 
-        // Получаем субдропы
-        $subDrops = [];
-        $subDropsList = $drop->subDrops;
-        if (!empty($subDropsList)) {
-            foreach ($subDropsList as $subDropRelation) {
-                // subDropRelation это DropDrop, нужно получить связанный Drop
-                $subDrop = $subDropRelation->drop;
-                if ($subDrop) {
+            // Получаем все изображения с S3 URL
+            $images = [];
+            $dropImages = $drop->dropImages;
+            if (!empty($dropImages)) {
+                foreach ($dropImages as $dropImage) {
+                    $images[] = $dropImage->getImagePubUrl();
+                }
+            }
+
+            // Получаем субдропы
+            $subDrops = [];
+            $subDropsList = $drop->subDrops;
+            if (!empty($subDropsList)) {
+                foreach ($subDropsList as $subDropRelation) {
+                    // subDropRelation это DropDrop, нужно получить связанный Drop
+                    $subDrop = $subDropRelation->drop;
+                    if ($subDrop) {
                         // Получаем изображение субдропа с S3 URL
                         $subDropImage = null;
                         $subDropImages = $subDrop->dropImages;
@@ -350,49 +383,55 @@ class ProductsController extends BaseApiController
                                 $subDropImage = $firstSubImage->getImagePubUrl();
                             }
                         }
-                    
-                    $subDrops[] = [
-                        'id' => $subDropRelation->id,
-                        'drop_id' => $subDrop->id,
-                        'count' => $subDropRelation->count ?? 1,
-                        'name' => Yii::t('database', $subDrop->name ?? '', [], 'ru-RU'),
-                        'price' => (float)($subDrop->price ?? 0),
-                        'image' => $subDropImage,
-                    ];
+                        
+                        $subDrops[] = [
+                            'id' => $subDropRelation->id,
+                            'drop_id' => $subDrop->id,
+                            'count' => $subDropRelation->count ?? 1,
+                            'name' => Yii::t('database', $subDrop->name ?? '', [], 'ru-RU'),
+                            'price' => (float)($subDrop->price ?? 0),
+                            'image' => $subDropImage,
+                        ];
+                    }
                 }
             }
+
+            // Вычисляем реальную цену с учетом скидки
+            $basePrice = (float)$drop->price;
+            $priceReal = $drop->discount && $drop->discount > 0
+                ? ceil($basePrice - ($basePrice * $drop->discount / 100))
+                : $basePrice;
+            $price = $drop->discount && $drop->discount > 0
+                ? round($priceReal * (1 + $drop->discount / 100))
+                : $priceReal;
+
+            $product = [
+                'id' => $drop->id,
+                'name' => Yii::t('database', $drop->name, [], 'ru-RU'),
+                'images' => $images,
+                'image' => !empty($images) ? $images[0] : null,
+                'price' => $price,
+                'priceReal' => $priceReal,
+                'discount' => $drop->discount ? (int)$drop->discount : null,
+                'count' => $drop->count ? (int)$drop->count : null,
+                'category_id' => $drop->category_id ? (int)$drop->category_id : null,
+                'category' => $drop->category ? [
+                    'id' => $drop->category->id,
+                    'name' => Yii::t('database', $drop->category->name, [], 'ru-RU'),
+                ] : null,
+                'description' => $drop->description ? Yii::t('database', $drop->description, [], 'ru-RU') : null,
+                'drop_type' => $drop->drop_type ? (int)$drop->drop_type : null,
+                'subDrops' => !empty($subDrops) ? $subDrops : null,
+                'floating_price_percent' => $drop->floating_price_percent ? (int)$drop->floating_price_percent : null,
+                'quality' => $drop->quality ?? null,
+                'command' => $drop->command ?? null,
+            ];
+
+            // Сохраняем в кэш на 10 минут
+            $cache->set($cacheKey, $product, 600);
+        } else {
+            $product = $cachedProduct;
         }
-
-        // Вычисляем реальную цену с учетом скидки
-        $basePrice = (float)$drop->price;
-        $priceReal = $drop->discount && $drop->discount > 0
-            ? ceil($basePrice - ($basePrice * $drop->discount / 100))
-            : $basePrice;
-        $price = $drop->discount && $drop->discount > 0
-            ? round($priceReal * (1 + $drop->discount / 100))
-            : $priceReal;
-
-        $product = [
-            'id' => $drop->id,
-            'name' => Yii::t('database', $drop->name, [], 'ru-RU'),
-            'images' => $images,
-            'image' => !empty($images) ? $images[0] : null,
-            'price' => $price,
-            'priceReal' => $priceReal,
-            'discount' => $drop->discount ? (int)$drop->discount : null,
-            'count' => $drop->count ? (int)$drop->count : null,
-            'category_id' => $drop->category_id ? (int)$drop->category_id : null,
-            'category' => $drop->category ? [
-                'id' => $drop->category->id,
-                'name' => Yii::t('database', $drop->category->name, [], 'ru-RU'),
-            ] : null,
-            'description' => $drop->description ? Yii::t('database', $drop->description, [], 'ru-RU') : null,
-            'drop_type' => $drop->drop_type ? (int)$drop->drop_type : null,
-            'subDrops' => !empty($subDrops) ? $subDrops : null,
-            'floating_price_percent' => $drop->floating_price_percent ? (int)$drop->floating_price_percent : null,
-            'quality' => $drop->quality ?? null,
-            'command' => $drop->command ?? null,
-        ];
 
         return $this->successResponse($product);
     }

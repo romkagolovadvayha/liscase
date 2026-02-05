@@ -83,6 +83,7 @@ abstract class BaseApiController extends Controller
             'http://45.129.128.211:3000',
             'https://prostoj.store',
             'https://www.prostoj.store',
+            'https://new.prostoj.store',
         ];
 
         // Объединяем все origins

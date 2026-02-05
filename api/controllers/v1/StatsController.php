@@ -234,48 +234,60 @@ class StatsController extends BaseApiController
         }
 
         $wipe = $server->currentWipe();
-        $playerStats = Statistics::getPlayerStats($server, $steamId, $wipe);
+        
+        // Кэшируем статистику игрока на 5 минут
+        $cacheKey = 'api_stats_player_' . $serverTag . '_' . $steamId . '_' . ($wipe ?? 'current');
+        $cached = Yii::$app->cache->get($cacheKey);
+        
+        if ($cached === false) {
+            $playerStats = Statistics::getPlayerStats($server, $steamId, $wipe);
 
-        // Получаем информацию о пользователе
-        $user = User::findBySteamId($steamId, false, 'stats');
-        if (!$user) {
-            throw new NotFoundHttpException('Игрок не найден');
-        }
-
-        // Форматируем статистику для API
-        $formattedStats = [];
-        foreach ($playerStats as $key => $value) {
-            if (is_object($value)) {
-                $formattedStats[$key] = $value->value;
-            } elseif (is_array($value)) {
-                $formattedStats[$key] = $value['value'] ?? $value;
-            } else {
-                $formattedStats[$key] = $value;
+            // Получаем информацию о пользователе
+            $user = User::findBySteamId($steamId, false, 'stats');
+            if (!$user) {
+                throw new NotFoundHttpException('Игрок не найден');
             }
+
+            // Форматируем статистику для API
+            $formattedStats = [];
+            foreach ($playerStats as $key => $value) {
+                if (is_object($value)) {
+                    $formattedStats[$key] = $value->value;
+                } elseif (is_array($value)) {
+                    $formattedStats[$key] = $value['value'] ?? $value;
+                } else {
+                    $formattedStats[$key] = $value;
+                }
+            }
+
+            // Вычисляем дополнительные метрики
+            $kills = Statistics::getParam($playerStats, 'kills');
+            $deaths = Statistics::getParam($playerStats, 'deaths');
+            $kdr = $deaths > 0 ? round($kills / $deaths, 2) : $kills;
+
+            $cached = [
+                'player' => [
+                    'steam_id' => $steamId,
+                    'server_tag' => $serverTag,
+                    'wipe' => $wipe,
+                    'username' => $user->username,
+                    'avatar' => $user->getAvatar(),
+                    'stats' => $formattedStats,
+                    'metrics' => [
+                        'kills' => $kills,
+                        'deaths' => $deaths,
+                        'kdr' => $kdr,
+                        'playtime' => Statistics::getParam($playerStats, 'playtime'),
+                        'scientists' => Statistics::getParam($playerStats, 'scientists'),
+                    ],
+                ],
+            ];
+
+            // Сохраняем в кэш на 5 минут
+            Yii::$app->cache->set($cacheKey, $cached, 300);
         }
 
-        // Вычисляем дополнительные метрики
-        $kills = Statistics::getParam($playerStats, 'kills');
-        $deaths = Statistics::getParam($playerStats, 'deaths');
-        $kdr = $deaths > 0 ? round($kills / $deaths, 2) : $kills;
-
-        return $this->successResponse([
-            'player' => [
-                'steam_id' => $steamId,
-                'server_tag' => $serverTag,
-                'wipe' => $wipe,
-                'username' => $user->username,
-                'avatar' => $user->getAvatar(),
-                'stats' => $formattedStats,
-                'metrics' => [
-                    'kills' => $kills,
-                    'deaths' => $deaths,
-                    'kdr' => $kdr,
-                    'playtime' => Statistics::getParam($playerStats, 'playtime'),
-                    'scientists' => Statistics::getParam($playerStats, 'scientists'),
-                ],
-            ],
-        ]);
+        return $this->successResponse($cached);
     }
 
     /**
