@@ -79,6 +79,15 @@ class BuildingController extends BackendController
      */
     protected function clearBuildingsCache()
     {
+        // Очищаем кэш списка построек (все возможные варианты limit и сортировки)
+        for ($limit = 10; $limit <= 50; $limit += 10) {
+            Yii::$app->cache->delete('api_buildings_list_created_at_desc_' . $limit);
+            Yii::$app->cache->delete('api_buildings_list_created_at_asc_' . $limit);
+            Yii::$app->cache->delete('api_buildings_list_likes_desc_' . $limit);
+            Yii::$app->cache->delete('api_buildings_list_likes_asc_' . $limit);
+            Yii::$app->cache->delete('api_buildings_list_name_desc_' . $limit);
+            Yii::$app->cache->delete('api_buildings_list_name_asc_' . $limit);
+        }
         // Очищаем все возможные комбинации кэша построек
         $sorts = ['created_at', 'likes', 'name'];
         $orders = ['asc', 'desc'];
@@ -95,6 +104,9 @@ class BuildingController extends BackendController
 
         if ($this->request->isPost) {
             if ($model->load($this->request->post()) && $model->save()) {
+                // Очищаем кэш построек
+                $this->clearBuildingsCache();
+                Yii::$app->cache->delete('api_buildings_view_' . $model->id);
                 return $this->redirect(['view', 'id' => $model->id]);
             }
         } else {
@@ -119,6 +131,7 @@ class BuildingController extends BackendController
 
         if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
             $this->clearBuildingsCache();
+            Yii::$app->cache->delete('api_buildings_view_' . $model->id);
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
@@ -134,6 +147,7 @@ class BuildingController extends BackendController
         $model->status = Building::STATUS_ACTIVE;
         if ($model->save()) {
             $this->clearBuildingsCache();
+            Yii::$app->cache->delete('api_buildings_view_' . $model->id);
             if (!empty($model->user->telegram_chat_id)) {
                 Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '🏠 Ваша постройка успешно прошла модерацию!');
             }
@@ -152,6 +166,7 @@ class BuildingController extends BackendController
         $model->status = Building::STATUS_REJECT;
         if ($model->save()) {
             $this->clearBuildingsCache();
+            Yii::$app->cache->delete('api_buildings_view_' . $model->id);
             if (!empty($model->user->telegram_chat_id)) {
                 Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '🏠 Ваша постройка не прошла модерацию!');
             }
@@ -173,6 +188,10 @@ class BuildingController extends BackendController
     public function actionDelete($id)
     {
         $model = $this->findModel($id);
+        
+        // Очищаем кэш перед удалением
+        $this->clearBuildingsCache();
+        Yii::$app->cache->delete('api_buildings_view_' . $id);
 
         foreach ($model->buildingResident as $resident) {
             $resident->delete();

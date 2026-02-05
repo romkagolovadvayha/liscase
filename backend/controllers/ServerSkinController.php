@@ -85,6 +85,8 @@ class ServerSkinController extends Controller
 
         if ($this->request->isPost) {
             if ($model->load($this->request->post()) && $model->save()) {
+                // Очищаем кэш API скинов
+                $this->clearCustomSkinsCache();
                 return $this->redirect(['view', 'id' => $model->id]);
             }
         } else {
@@ -108,6 +110,8 @@ class ServerSkinController extends Controller
         $model = $this->findModel($id);
 
         if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
+            // Очищаем кэш API скинов
+            $this->clearCustomSkinsCache();
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
@@ -122,6 +126,8 @@ class ServerSkinController extends Controller
 
         $model->status = ServerSkin::STATUS_ACTIVE;
         if ($model->save()) {
+            // Очищаем кэш API скинов
+            $this->clearCustomSkinsCache();
             if (!empty($model->user->telegram_chat_id)) {
                 Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '👕 Ваш скин успешно прошел модерацию и добавлен на сервера!');
             }
@@ -145,6 +151,8 @@ class ServerSkinController extends Controller
 
         $model->status = ServerSkin::STATUS_REJECT;
         if ($model->save()) {
+            // Очищаем кэш API скинов
+            $this->clearCustomSkinsCache();
             if (!empty($model->user->telegram_chat_id) && $push) {
                 Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '👕 Ваш скин не прошел модерацию!');
             }
@@ -168,6 +176,9 @@ class ServerSkinController extends Controller
     {
         $model = $this->findModel($id);
         
+        // Очищаем кэш API скинов перед удалением
+        $this->clearCustomSkinsCache();
+        
         // Удаляем изображения из S3
         $s3Api = Yii::$app->s3Api;
         if (!empty($model->image)) {
@@ -190,6 +201,17 @@ class ServerSkinController extends Controller
 
         Yii::$app->session->addFlash('success', Yii::t('common', 'Запись успешно удалена!'));
         return $this->redirect(['index']);
+    }
+
+    /**
+     * Очистка кэша API скинов
+     */
+    protected function clearCustomSkinsCache()
+    {
+        // Очищаем кэш списка скинов (все возможные варианты limit)
+        for ($limit = 10; $limit <= 50; $limit += 10) {
+            Yii::$app->cache->delete('api_custom_skins_list_' . $limit);
+        }
     }
 
     /**

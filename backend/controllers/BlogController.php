@@ -134,6 +134,8 @@ class BlogController extends BackendController
 
         if ($this->request->isPost) {
             if ($model->load($this->request->post()) && $model->saveRecord()) {
+                // Очищаем кэш списка блога
+                $this->clearBlogCache();
                 return $this->redirect(['view', 'id' => $model->id]);
             }
         } else {
@@ -157,6 +159,8 @@ class BlogController extends BackendController
         $model = $this->findModel($id);
 
         if ($this->request->isPost && $model->load($this->request->post()) && $model->saveRecord()) {
+            // Очищаем кэш списка блога
+            $this->clearBlogCache();
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
@@ -175,8 +179,22 @@ class BlogController extends BackendController
     public function actionDelete($id)
     {
         $this->findModel($id)->delete();
+        
+        // Очищаем кэш списка блога
+        $this->clearBlogCache();
 
         return $this->redirect(['index']);
+    }
+
+    /**
+     * Очистка кэша блога
+     */
+    protected function clearBlogCache()
+    {
+        // Очищаем кэш списка блога (все возможные варианты limit)
+        for ($limit = 10; $limit <= 50; $limit += 10) {
+            Yii::$app->cache->delete('api_blog_list_' . $limit);
+        }
     }
 
     /**

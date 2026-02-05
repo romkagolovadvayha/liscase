@@ -58,6 +58,8 @@ class DropController extends \backend\components\CrudController
             }
             if ($formModel->saveRecord()) {
                 Drop::updateCache();
+                // Очищаем кэш API продуктов
+                $this->clearProductsCache($formModel->id ?? null);
                 return $this->redirect($this->getIndexUrl());
             }
         }
@@ -74,12 +76,29 @@ class DropController extends \backend\components\CrudController
     {
         $formModel = Drop::findOne($id);
         if ($formModel !== null) {
+            // Очищаем кэш API продуктов перед удалением
+            $this->clearProductsCache($id);
             $formModel->delete();
         }
 
         $this->_setSearchModel();
         $this->_rememberIndexUrl();
         return $this->_renderIndex($this->_getSearchDataProvider());
+    }
+
+    /**
+     * Очистка кэша продуктов API
+     */
+    protected function clearProductsCache($productId = null)
+    {
+        // Очищаем кэш списка продуктов (все возможные варианты limit)
+        for ($limit = 20; $limit <= 100; $limit += 20) {
+            Yii::$app->cache->delete('api_products_list_' . $limit);
+        }
+        // Очищаем кэш конкретного продукта, если указан ID
+        if ($productId) {
+            Yii::$app->cache->delete('api_products_view_' . $productId);
+        }
     }
 
     /**
@@ -123,6 +142,9 @@ class DropController extends \backend\components\CrudController
             ->all();
 
         Drop::updateCache();
+        
+        // Очищаем кэш API продуктов после изменения сортировки
+        $this->clearProductsCache();
 
         return $this->render('sort', [
             'items' => $drops
