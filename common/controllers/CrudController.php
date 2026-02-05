@@ -182,4 +182,23 @@ abstract class CrudController extends WebController
 
         return $this->_saveForm($formModel, 'update');
     }
+
+    /**
+     * Deletes an existing model.
+     * If deletion is successful, the browser will be redirected to the 'index' page.
+     * @param int $id ID
+     * @return \yii\web\Response
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    public function actionDelete($id)
+    {
+        $model = $this->_getFormModel($id);
+        if (!$model) {
+            throw new NotFoundHttpException('The requested page does not exist.');
+        }
+        
+        $model->delete();
+
+        return $this->redirect($this->getIndexUrl());
+    }
 }
