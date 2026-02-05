@@ -225,7 +225,7 @@ class ServersStatisticsHistoryController extends BaseApiController
      *     operationId="getServersStatisticsDay",
      *     tags={"Servers Statistics History"},
      *     summary="Получить статистику за день (максимальные значения по часам)",
-     *     description="Публичный метод, авторизация не требуется. Возвращает максимальные значения players, joined, queued по часам за указанный день",
+     *     description="Публичный метод, авторизация не требуется. Возвращает максимальные значения players, joined, queued по часам. Если date не указан, возвращает данные за последние 24 часа. Если date указан, возвращает данные за указанный день",
      *     @OA\Parameter(
      *         name="server_id",
      *         in="query",
@@ -237,7 +237,7 @@ class ServersStatisticsHistoryController extends BaseApiController
      *         name="date",
      *         in="query",
      *         required=false,
-     *         description="Дата (формат: Y-m-d). Если не указана, используется сегодняшняя дата",
+     *         description="Дата (формат: Y-m-d). Если не указана, возвращаются данные за последние 24 часа",
      *         @OA\Schema(type="string", format="date", example="2024-01-01")
      *     ),
      *     @OA\Response(
@@ -275,27 +275,36 @@ class ServersStatisticsHistoryController extends BaseApiController
             throw new NotFoundHttpException('Сервер не найден');
         }
 
-        // Если дата не указана, используем сегодняшнюю
         $date = Yii::$app->request->get('date');
-        if ($date === null) {
-            $date = date('Y-m-d');
-        }
-
-        // Валидация формата даты
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-            throw new BadRequestHttpException('Неверный формат даты. Используйте формат Y-m-d (например, 2024-01-01)');
-        }
-
-        // Получаем данные за указанный день
-        $dayStart = $date . ' 00:00:00';
-        $dayEnd = $date . ' 23:59:59';
         
-        $records = ServersStatisticsHistory::find()
-            ->where(['server_id' => $serverId])
-            ->andWhere(['>=', 'created_at', $dayStart])
-            ->andWhere(['<=', 'created_at', $dayEnd])
-            ->orderBy(['created_at' => SORT_ASC])
-            ->all();
+        // Если дата не указана, используем последние 24 часа
+        if ($date === null) {
+            $time24HoursAgo = date('Y-m-d H:i:s', strtotime('-24 hours'));
+            $now = date('Y-m-d H:i:s');
+            
+            $records = ServersStatisticsHistory::find()
+                ->where(['server_id' => $serverId])
+                ->andWhere(['>=', 'created_at', $time24HoursAgo])
+                ->andWhere(['<=', 'created_at', $now])
+                ->orderBy(['created_at' => SORT_ASC])
+                ->all();
+        } else {
+            // Валидация формата даты
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+                throw new BadRequestHttpException('Неверный формат даты. Используйте формат Y-m-d (например, 2024-01-01)');
+            }
+
+            // Получаем данные за указанный день
+            $dayStart = $date . ' 00:00:00';
+            $dayEnd = $date . ' 23:59:59';
+            
+            $records = ServersStatisticsHistory::find()
+                ->where(['server_id' => $serverId])
+                ->andWhere(['>=', 'created_at', $dayStart])
+                ->andWhere(['<=', 'created_at', $dayEnd])
+                ->orderBy(['created_at' => SORT_ASC])
+                ->all();
+        }
 
         // Группируем по часам и находим максимальные значения
         $groupedByHour = [];

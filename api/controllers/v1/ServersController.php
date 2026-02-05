@@ -354,6 +354,7 @@ class ServersController extends BaseApiController
                 $data['tags'][] = [
                     'id' => $tag->id,
                     'name' => $tag->name,
+                    'title' => $tag->title,
                     'link' => $tag->link,
                     'link_name' => $tag->link_name,
                     'color' => $tag->color,
