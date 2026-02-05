@@ -409,17 +409,33 @@ class SkinsController extends BaseApiController
         // Данные пользователя (если авторизован)
         $userData = null;
         $user = Yii::$app->user->identity;
+        
+        // Логика как в старой версии: проверяем все условия
+        $authCompleted = !Yii::$app->user->isGuest;
+        $tradeLinkCompleted = false;
+        $usernameCompleted = false;
+        
         if ($user && !Yii::$app->user->isGuest) {
             $prefix = Yii::$app->settings->get('skindrops_prefix') ?? '';
-            $usernameCompleted = strpos(mb_strtolower($user->username), strtolower($prefix)) !== false;
-            $tradeLinkCompleted = !empty($user->userProfile->trade_link);
+            
+            // Проверка Trade-URL
+            if (!empty($user->userProfile->trade_link)) {
+                $tradeLinkCompleted = true;
+            }
+            
+            // Проверка префикса в нике (как в старой версии)
+            if (!empty($prefix) && strpos(mb_strtolower($user->username), strtolower($prefix)) !== false) {
+                $usernameCompleted = true;
+            }
+            
+            $allCompleted = $usernameCompleted && $tradeLinkCompleted && $authCompleted;
             
             $userData = [
                 'isAuthenticated' => true,
                 'usernameCompleted' => $usernameCompleted,
                 'tradeLinkCompleted' => $tradeLinkCompleted,
                 'tradeLink' => $user->userProfile->trade_link ?? null,
-                'allCompleted' => $usernameCompleted && $tradeLinkCompleted,
+                'allCompleted' => $allCompleted,
             ];
         }
 
