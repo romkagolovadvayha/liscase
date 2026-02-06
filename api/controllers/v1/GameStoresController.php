@@ -552,7 +552,9 @@ class GameStoresController extends BaseApiController
             try {
                 $user = $this->getUserBySteamId($bodyParams);
                 $user->refresh();
-                $result['balance'] = (string)($user->balance ?? 0);
+                $balance = $user->getPersonalBalance()->balance ?? 0;
+                // Форматируем баланс в денежном формате (с пробелами для тысяч)
+                $result['balance'] = number_format($balance, 0, '.', ' ');
             } catch (UnauthorizedHttpException $e) {
                 // Если пользователь не найден, баланс остается null
                 $result['balance'] = "0";
@@ -561,7 +563,7 @@ class GameStoresController extends BaseApiController
             $result['balance'] = "0";
         }
         
-        // 3. Команды сервера
+        // 3. Команды сервера (возвращаем напрямую массив, не оборачивая в successResponseGameStores)
         $result['commands'] = $this->getServerCommands($server);
         
         return $this->successResponseGameStores($result);
@@ -685,7 +687,8 @@ class GameStoresController extends BaseApiController
             ];
         }
         
-        return $this->successResponseGameStores($data);
+        // Возвращаем напрямую массив, не оборачивая в successResponseGameStores
+        return $data;
     }
     
     /**
