@@ -664,7 +664,7 @@ class GameStoresController extends BaseApiController
         
         // Ищем категорию "Команды сервера"
         $commandsCategory = \common\models\servers\ServersRulesCategory::find()
-            ->where(['name' => 'Команды сервера'])
+            ->where(['name' => 'Команды на сервере'])
             ->one();
         
         if ($commandsCategory) {
