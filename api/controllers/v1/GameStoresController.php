@@ -575,69 +575,44 @@ class GameStoresController extends BaseApiController
     private function getWipeInfo($server)
     {
         $tz = new \DateTimeZone(Yii::$app->timeZone ?: 'UTC');
-        $now = new \DateTimeImmutable('now', $tz);
         
-        // Получаем текущий вайп
-        $currentWipe = $server->currentWipe();
-        
-        // Получаем дату последнего вайпа (если есть)
+        // Получаем дату последнего вайпа из поля wipe сервера
         $lastWipeDate = null;
-        if ($currentWipe > 0) {
-            // Предполагаем, что вайп был в начале текущего цикла
-            // Для 7-дневных: каждую пятницу в 16:00
-            // Для 14-дневных: каждые 14 дней после глобала
-            // Для глобала: первый четверг месяца в 21:00
-            $wipeType = (int)$server->wipe_type;
-            $globalTime = '21:00:00';
-            $mapTime = '16:00:00';
-            
-            if ($wipeType === 7) {
-                // 7-дневные: последняя пятница
-                $lastFriday = $now->modify('last friday');
-                $lastWipeDate = new \DateTimeImmutable($lastFriday->format('Y-m-d') . ' ' . $mapTime, $tz);
-            } elseif ($wipeType === 14) {
-                // 14-дневные: последний вайп после глобала
-                $firstThu = $this->firstWeekdayOfMonth($now, 4);
-                $globalDT = new \DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
-                if ($globalDT > $now) {
-                    $globalDT = $globalDT->modify('-1 month');
+        if (!empty($server->wipe)) {
+            try {
+                $wipeTimestamp = strtotime($server->wipe);
+                if ($wipeTimestamp !== false) {
+                    $lastWipeDate = new \DateTimeImmutable('@' . $wipeTimestamp, $tz);
                 }
-                $anchorFri = $globalDT->modify('+1 day');
-                $lastWipeDate = $anchorFri->modify('+14 days');
-                while ($lastWipeDate > $now) {
-                    $lastWipeDate = $lastWipeDate->modify('-14 days');
-                }
+            } catch (\Exception $e) {
+                // Если не удалось распарсить, оставляем null
             }
         }
         
-        // Получаем следующий вайп
+        // Получаем следующий вайп из поля next_wipe сервера
         $nextWipeDate = null;
-        $nextGlobalWipeDate = null;
-        
-        $wipeType = (int)$server->wipe_type;
-        $globalTime = '21:00:00';
-        $mapTime = '16:00:00';
-        
-        // Следующий глобал вайп (первый четверг следующего месяца)
-        $nextMonth = $now->modify('first day of next month');
-        $firstThu = $this->firstWeekdayOfMonth($nextMonth, 4);
-        $nextGlobalWipeDate = new \DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
-        
-        if ($wipeType === 7) {
-            // 7-дневные: следующая пятница
-            $nextFriday = $now->modify('next friday');
-            $nextWipeDate = new \DateTimeImmutable($nextFriday->format('Y-m-d') . ' ' . $mapTime, $tz);
-        } elseif ($wipeType === 14) {
-            // 14-дневные: следующая пятница после глобала
-            $firstThu = $this->firstWeekdayOfMonth($now, 4);
-            $globalDT = new \DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
-            if ($globalDT <= $now) {
-                $globalDT = $globalDT->modify('+1 month');
-                $firstThu = $this->firstWeekdayOfMonth($globalDT, 4);
-                $globalDT = new \DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
+        if (!empty($server->next_wipe)) {
+            try {
+                $nextWipeTimestamp = strtotime($server->next_wipe);
+                if ($nextWipeTimestamp !== false) {
+                    $nextWipeDate = new \DateTimeImmutable('@' . $nextWipeTimestamp, $tz);
+                }
+            } catch (\Exception $e) {
+                // Если не удалось распарсить, оставляем null
             }
-            $anchorFri = $globalDT->modify('+1 day');
-            $nextWipeDate = $anchorFri->modify('+14 days');
+        }
+        
+        // Получаем глобальный вайп из поля global_wipe сервера
+        $nextGlobalWipeDate = null;
+        if (!empty($server->global_wipe)) {
+            try {
+                $globalWipeTimestamp = strtotime($server->global_wipe);
+                if ($globalWipeTimestamp !== false) {
+                    $nextGlobalWipeDate = new \DateTimeImmutable('@' . $globalWipeTimestamp, $tz);
+                }
+            } catch (\Exception $e) {
+                // Если не удалось распарсить, оставляем null
+            }
         }
         
         // Форматируем даты в формат 01.12.2025 16:00 МСК
