@@ -660,15 +660,42 @@ class GameStoresController extends BaseApiController
      */
     private function getServerCommands($server)
     {
-        // Получаем правила сервера (предполагаем, что они хранятся в поле rules или description)
-        // Если правил нет в модели Servers, нужно будет добавить их получение из другой таблицы
         $commands = [];
         
-        // Попробуем получить из описания сервера или правил
-        // Это нужно будет адаптировать под реальную структуру БД
-        if (!empty($server->description)) {
-            // Парсим команды из описания (если они там есть)
-            // В реальности команды могут быть в отдельной таблице
+        // Ищем категорию "Команды сервера"
+        $commandsCategory = \common\models\servers\ServersRulesCategory::find()
+            ->where(['name' => 'Команды сервера'])
+            ->one();
+        
+        if ($commandsCategory) {
+            // Получаем все правила для сервера
+            $rules = \common\models\servers\ServersRules::getRulesForServer($server->id);
+            
+            // Фильтруем правила по категории "Команды сервера"
+            foreach ($rules as $rule) {
+                if ($rule->category_id == $commandsCategory->id) {
+                    // Извлекаем команды из content (может быть HTML)
+                    $content = strip_tags($rule->content); // Убираем HTML теги
+                    $content = trim($content);
+                    
+                    if (!empty($content)) {
+                        // Если content содержит несколько строк, разбиваем их
+                        $lines = explode("\n", $content);
+                        foreach ($lines as $line) {
+                            $line = trim($line);
+                            if (!empty($line)) {
+                                // Если строка содержит ":", используем формат "команда: описание"
+                                if (strpos($line, ':') !== false) {
+                                    $commands[] = ['command' => $line];
+                                } else {
+                                    // Иначе просто команда
+                                    $commands[] = ['command' => $line];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
         
         // Добавляем категорию "Команды сервера"
