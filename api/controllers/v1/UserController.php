@@ -1181,46 +1181,46 @@ class UserController extends BaseApiController
         $server = Yii::$app->cache->get($serverCacheKey);
         
         if ($server === false) {
-            $server = null;
-            
-            // Пытаемся получить текущий сервер пользователя
-            if (!empty($user->server_tag)) {
-                $server = Servers::find()
-                    ->where(['tag' => $user->server_tag, 'status' => 1])
-                    ->one();
+        $server = null;
+        
+        // Пытаемся получить текущий сервер пользователя
+        if (!empty($user->server_tag)) {
+            $server = Servers::find()
+                ->where(['tag' => $user->server_tag, 'status' => 1])
+                ->one();
+        }
+        
+        // Если у пользователя нет сервера или сервер не найден, используем getCurrentServer()
+        if (!$server) {
+            $userServer = $user->getCurrentServer();
+            if ($userServer && $userServer->status == 1) {
+                $server = $userServer;
             }
-            
-            // Если у пользователя нет сервера или сервер не найден, используем getCurrentServer()
-            if (!$server) {
-                $userServer = $user->getCurrentServer();
-                if ($userServer && $userServer->status == 1) {
-                    $server = $userServer;
-                }
-            }
-            
-            // Если все еще нет сервера, берем дефолтный
-            if (!$server) {
+        }
+        
+        // Если все еще нет сервера, берем дефолтный
+        if (!$server) {
                 $defaultCacheKey = 'homepage_server_' . (Yii::$app->params['statisticsServerDefault'] ?? 'max3');
                 $server = Yii::$app->cache->get($defaultCacheKey);
+            
+            if ($server === false) {
+                $defaultServerTag = Yii::$app->params['statisticsServerDefault'] ?? 'max3';
+                $server = Servers::find()
+                    ->where(['tag' => $defaultServerTag, 'status' => 1])
+                    ->one();
                 
-                if ($server === false) {
-                    $defaultServerTag = Yii::$app->params['statisticsServerDefault'] ?? 'max3';
+                if (!$server) {
+                    // Если сервер не найден, берем первый активный
                     $server = Servers::find()
-                        ->where(['tag' => $defaultServerTag, 'status' => 1])
+                        ->where(['status' => 1])
+                        ->orderBy(['sort' => SORT_ASC])
                         ->one();
-                    
-                    if (!$server) {
-                        // Если сервер не найден, берем первый активный
-                        $server = Servers::find()
-                            ->where(['status' => 1])
-                            ->orderBy(['sort' => SORT_ASC])
-                            ->one();
-                    }
-                    
+                }
+                
                     // Кэшируем дефолтный сервер на 5 минут
-                    if ($server) {
+                if ($server) {
                         Yii::$app->cache->set($defaultCacheKey, $server, 5 * 60);
-                    }
+                }
                 }
             }
             
@@ -1237,26 +1237,26 @@ class UserController extends BaseApiController
             $userStats = Yii::$app->cache->get($userStatsCacheKey);
             
             if ($userStats === false) {
-                // Используем getStats как в старой версии для получения статистики пользователя
-                $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
-                $stats = Statistics::getStats($server, $user->steam_id, false, $wipeDate);
+            // Используем getStats как в старой версии для получения статистики пользователя
+            $wipeDate = (new \DateTime($server->wipe))->format('Y-m-d') . "/" . (new \DateTime($server->next_wipe))->format('Y-m-d');
+            $stats = Statistics::getStats($server, $user->steam_id, false, $wipeDate);
+            
+            if (!empty($stats) && !empty($stats['player'])) {
+                $player = $stats['player'];
+                $kills = isset($player['kills']) ? (int)$player['kills'] : 0;
+                $deaths = isset($player['deaths']) ? (int)$player['deaths'] : 0;
+                $kd = $deaths > 0 ? round($kills / $deaths, 2) : ($kills > 0 ? $kills : 0);
                 
-                if (!empty($stats) && !empty($stats['player'])) {
-                    $player = $stats['player'];
-                    $kills = isset($player['kills']) ? (int)$player['kills'] : 0;
-                    $deaths = isset($player['deaths']) ? (int)$player['deaths'] : 0;
-                    $kd = $deaths > 0 ? round($kills / $deaths, 2) : ($kills > 0 ? $kills : 0);
-                    
-                    $userStats = [
-                        'kills' => $kills,
-                        'deaths' => $deaths,
-                        'kd' => $kd,
-                        'scientists' => isset($player['scientists']) ? (int)$player['scientists'] : 0,
-                        'sulfur.ore' => isset($player['sulfur.ore']) ? (int)$player['sulfur.ore'] : 0,
-                        'metal.ore' => isset($player['metal.ore']) ? (int)$player['metal.ore'] : 0,
-                        'stones' => isset($player['stones']) ? (int)$player['stones'] : 0,
-                        'wood' => isset($player['wood']) ? (int)$player['wood'] : 0,
-                    ];
+                $userStats = [
+                    'kills' => $kills,
+                    'deaths' => $deaths,
+                    'kd' => $kd,
+                    'scientists' => isset($player['scientists']) ? (int)$player['scientists'] : 0,
+                    'sulfur.ore' => isset($player['sulfur.ore']) ? (int)$player['sulfur.ore'] : 0,
+                    'metal.ore' => isset($player['metal.ore']) ? (int)$player['metal.ore'] : 0,
+                    'stones' => isset($player['stones']) ? (int)$player['stones'] : 0,
+                    'wood' => isset($player['wood']) ? (int)$player['wood'] : 0,
+                ];
                 } else {
                     $userStats = [];
                 }
@@ -1348,7 +1348,7 @@ class UserController extends BaseApiController
         $projectStats = Yii::$app->cache->get($projectStatsCacheKey);
         
         if ($projectStats === false) {
-            $projectStats = \common\models\statistics\Statistics::projectStats();
+        $projectStats = \common\models\statistics\Statistics::projectStats();
             // Кэшируем на 5 минут (внутри projectStats кэш на 7 дней, но для homepage делаем короче)
             Yii::$app->cache->set($projectStatsCacheKey, $projectStats, 5 * 60);
         }

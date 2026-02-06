@@ -164,6 +164,9 @@ class GameStoresController extends BaseApiController
             case 'store.pluginInfo':
                 return $this->actionStorePluginInfo($server);
             
+            case 'server.helpInfo':
+                return $this->actionServerHelpInfo($bodyParams, $server);
+            
             default:
                 return $this->errorResponseGameStores('Метод не найден!', 105);
         }
@@ -529,6 +532,171 @@ class GameStoresController extends BaseApiController
             'result' => 'success',
             'data' => $data,
         ];
+    }
+
+    /**
+     * Получить всю информацию для раздела помощи (вайпы, баланс, команды)
+     * server.helpInfo
+     * Body: {"steamId": "7656119..."} (опционально, для получения баланса)
+     */
+    private function actionServerHelpInfo($bodyParams, $server)
+    {
+        $result = [];
+        
+        // 1. Информация о вайпах
+        $result['wipeInfo'] = $this->getWipeInfo($server);
+        
+        // 2. Баланс игрока (если передан steamId)
+        $result['balance'] = null;
+        if (!empty($bodyParams['steamId']) || !empty($bodyParams['steam_id'])) {
+            try {
+                $user = $this->getUserBySteamId($bodyParams);
+                $user->refresh();
+                $result['balance'] = (string)($user->balance ?? 0);
+            } catch (UnauthorizedHttpException $e) {
+                // Если пользователь не найден, баланс остается null
+                $result['balance'] = "0";
+            }
+        } else {
+            $result['balance'] = "0";
+        }
+        
+        // 3. Команды сервера
+        $result['commands'] = $this->getServerCommands($server);
+        
+        return $this->successResponseGameStores($result);
+    }
+
+    /**
+     * Получить информацию о вайпах сервера (вспомогательный метод)
+     */
+    private function getWipeInfo($server)
+    {
+        $tz = new \DateTimeZone(Yii::$app->timeZone ?: 'UTC');
+        $now = new \DateTimeImmutable('now', $tz);
+        
+        // Получаем текущий вайп
+        $currentWipe = $server->currentWipe();
+        
+        // Получаем дату последнего вайпа (если есть)
+        $lastWipeDate = null;
+        if ($currentWipe > 0) {
+            // Предполагаем, что вайп был в начале текущего цикла
+            // Для 7-дневных: каждую пятницу в 16:00
+            // Для 14-дневных: каждые 14 дней после глобала
+            // Для глобала: первый четверг месяца в 21:00
+            $wipeType = (int)$server->wipe_type;
+            $globalTime = '21:00:00';
+            $mapTime = '16:00:00';
+            
+            if ($wipeType === 7) {
+                // 7-дневные: последняя пятница
+                $lastFriday = $now->modify('last friday');
+                $lastWipeDate = new \DateTimeImmutable($lastFriday->format('Y-m-d') . ' ' . $mapTime, $tz);
+            } elseif ($wipeType === 14) {
+                // 14-дневные: последний вайп после глобала
+                $firstThu = $this->firstWeekdayOfMonth($now, 4);
+                $globalDT = new \DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
+                if ($globalDT > $now) {
+                    $globalDT = $globalDT->modify('-1 month');
+                }
+                $anchorFri = $globalDT->modify('+1 day');
+                $lastWipeDate = $anchorFri->modify('+14 days');
+                while ($lastWipeDate > $now) {
+                    $lastWipeDate = $lastWipeDate->modify('-14 days');
+                }
+            }
+        }
+        
+        // Получаем следующий вайп
+        $nextWipeDate = null;
+        $nextGlobalWipeDate = null;
+        
+        $wipeType = (int)$server->wipe_type;
+        $globalTime = '21:00:00';
+        $mapTime = '16:00:00';
+        
+        // Следующий глобал вайп (первый четверг следующего месяца)
+        $nextMonth = $now->modify('first day of next month');
+        $firstThu = $this->firstWeekdayOfMonth($nextMonth, 4);
+        $nextGlobalWipeDate = new \DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
+        
+        if ($wipeType === 7) {
+            // 7-дневные: следующая пятница
+            $nextFriday = $now->modify('next friday');
+            $nextWipeDate = new \DateTimeImmutable($nextFriday->format('Y-m-d') . ' ' . $mapTime, $tz);
+        } elseif ($wipeType === 14) {
+            // 14-дневные: следующая пятница после глобала
+            $firstThu = $this->firstWeekdayOfMonth($now, 4);
+            $globalDT = new \DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
+            if ($globalDT <= $now) {
+                $globalDT = $globalDT->modify('+1 month');
+                $firstThu = $this->firstWeekdayOfMonth($globalDT, 4);
+                $globalDT = new \DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
+            }
+            $anchorFri = $globalDT->modify('+1 day');
+            $nextWipeDate = $anchorFri->modify('+14 days');
+        }
+        
+        // Форматируем даты в формат 01.12.2025 16:00 МСК
+        $formatDate = function($date) use ($tz) {
+            if (!$date) return null;
+            $moscowTz = new \DateTimeZone('Europe/Moscow');
+            $dateMoscow = $date->setTimezone($moscowTz);
+            return $dateMoscow->format('d.m.Y H:i') . ' МСК';
+        };
+        
+        return [
+            'lastWipe' => $formatDate($lastWipeDate),
+            'nextWipe' => $formatDate($nextWipeDate),
+            'nextGlobalWipe' => $formatDate($nextGlobalWipeDate),
+        ];
+    }
+    
+    /**
+     * Получить команды сервера из раздела правил (вспомогательный метод)
+     */
+    private function getServerCommands($server)
+    {
+        // Получаем правила сервера (предполагаем, что они хранятся в поле rules или description)
+        // Если правил нет в модели Servers, нужно будет добавить их получение из другой таблицы
+        $commands = [];
+        
+        // Попробуем получить из описания сервера или правил
+        // Это нужно будет адаптировать под реальную структуру БД
+        if (!empty($server->description)) {
+            // Парсим команды из описания (если они там есть)
+            // В реальности команды могут быть в отдельной таблице
+        }
+        
+        // Добавляем категорию "Команды сервера"
+        $data = [
+            [
+                'category' => 'Команды сервера',
+                'commands' => $commands,
+            ],
+        ];
+        
+        // Если есть админка, добавляем её тоже
+        if (!empty($server->admin_url)) {
+            $data[] = [
+                'category' => 'Админка',
+                'url' => $server->admin_url,
+            ];
+        }
+        
+        return $this->successResponseGameStores($data);
+    }
+    
+    /**
+     * Первый N-й день недели месяца: $weekday 1=Пн..7=Вс
+     */
+    private function firstWeekdayOfMonth(\DateTimeImmutable $monthStart, $weekday)
+    {
+        $firstN = (int)$monthStart->format('N');
+        $delta  = (int)$weekday - $firstN;
+        if ($delta < 0) $delta += 7;
+        return $monthStart->modify('+' . $delta . ' day');
     }
 
     /**
