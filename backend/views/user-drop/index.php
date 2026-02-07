@@ -48,7 +48,6 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'format' => 'raw',
                         'value' => function (UserDrop $model) {
                             // Загружаем связь, если она не загружена
-                            print_r($model);exit;
                             if (!$model->user && $model->user_id) {
                                 $model->user = \common\models\user\User::findOne($model->user_id);
                             }
@@ -92,15 +91,15 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'label' => Yii::t('common', 'Предмет'),
                         'format' => 'raw',
                         'value' => function (UserDrop $model) {
-                            // Загружаем drop напрямую по drop_id
-                            if (!$model->drop_id) {
-                                return null;
+                            // Используем предзагруженный drop из контроллера или загружаем
+                            $drop = $model->getAttribute('_drop');
+                            
+                            if (!$drop && $model->drop_id) {
+                                $drop = \common\models\box\Drop::findOne($model->drop_id);
                             }
 
-                            $drop = \common\models\box\Drop::findOne($model->drop_id);
-
                             if (!$drop) {
-                                return 'ID: ' . $model->drop_id;
+                                return $model->drop_id ? 'ID: ' . $model->drop_id : null;
                             }
 
                             $image = '';

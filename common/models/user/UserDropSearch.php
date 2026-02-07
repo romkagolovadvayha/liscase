@@ -46,15 +46,15 @@ class UserDropSearch extends UserDrop
     {
         $this->load($params);
 
+        $userTable = User::tableName();
+        $serverTable = Servers::tableName();
         $dropTable = Drop::tableName();
 
         $query = self::find()
             ->alias('ud')
-            ->joinWith('user')
-            ->joinWith('user.server')
-            ->leftJoin("{$dropTable} d", 'ud.drop_id = d.id')
-            ->with('user')
-            ->with('user.server');
+            ->leftJoin("{$userTable} u", 'ud.user_id = u.id')
+            ->leftJoin("{$serverTable} s", 'u.server_id = s.id')
+            ->leftJoin("{$dropTable} d", 'ud.drop_id = d.id');
 
         if (is_callable($filter)) {
             call_user_func($filter, $query);
@@ -67,13 +67,9 @@ class UserDropSearch extends UserDrop
                 'ud.drop_id' => $this->drop_id,
                 'ud.status' => $this->status,
             ])
-            ->andFilterWhere(['LIKE', 'user.username', $this->user_username])
-            ->andFilterWhere(['LIKE', 'd.name', $this->drop_name]);
-
-        // Фильтр по server_id
-        if ($this->server_id !== null && $this->server_id !== '') {
-            $query->andWhere(['user.server_id' => $this->server_id]);
-        }
+            ->andFilterWhere(['LIKE', 'u.username', $this->user_username])
+            ->andFilterWhere(['LIKE', 'd.name', $this->drop_name])
+            ->andFilterWhere(['u.server_id' => $this->server_id]);
 
         return new ActiveDataProvider([
             'query' => $query,
@@ -100,8 +96,8 @@ class UserDropSearch extends UserDrop
                         'desc' => ['ud.status' => SORT_DESC],
                     ],
                     'user_username' => [
-                        'asc' => ['user.username' => SORT_ASC],
-                        'desc' => ['user.username' => SORT_DESC],
+                        'asc' => ['u.username' => SORT_ASC],
+                        'desc' => ['u.username' => SORT_DESC],
                     ],
                     'drop_name' => [
                         'asc' => ['d.name' => SORT_ASC],
