@@ -12,6 +12,7 @@ use common\models\statistics\Kills;
 use common\models\statistics\Statistics;
 use common\models\statistics\Teams;
 use common\models\user\User;
+use common\models\user\UserDrop;
 use common\models\user\UserTop;
 use Yii;
 use common\models\box\Box;
@@ -131,7 +132,27 @@ class StorageController extends Controller
         Yii::$app->cache->set($cacheKey, 1, 5*60);
         ini_set('memory_limit', '512M');
         Drop::updateCache();
+        $this->updateUserDropStatus();
         Yii::$app->cache->delete($cacheKey);
+    }
+
+    /**
+     * Обновление статуса user_drop с 4 (STATUS_WAIT) на 1 (STATUS_ACTIVE)
+     */
+    protected function updateUserDropStatus()
+    {
+        try {
+            $count = UserDrop::updateAll(
+                ['status' => UserDrop::STATUS_ACTIVE],
+                ['status' => UserDrop::STATUS_WAIT]
+            );
+            
+            if ($count > 0) {
+                Yii::info("Updated {$count} UserDrop records from STATUS_WAIT to STATUS_ACTIVE", __METHOD__);
+            }
+        } catch (\Exception $e) {
+            Yii::error("Error updating UserDrop status: " . $e->getMessage(), __METHOD__);
+        }
     }
 
     /**
