@@ -265,6 +265,13 @@ $moderOrSupport = $moder || $support;
                        'active' => _checkActive('/drop/'),
                    ],
                    [
+                       'label'  => Yii::t('common', 'Предметы пользователей'),
+                       'url'    => '/user-drop/index',
+                       'icon'   => 'fa-solid fa-user-tag',
+                       'visibility' => $moder,
+                       'active' => _checkActive('/user-drop/'),
+                   ],
+                   [
                        'label'  => Yii::t('common', 'Категории'),
                        'url'    => '/category/index',
                        'icon'   => 'fa-solid fa-table-cells',
