@@ -50,7 +50,10 @@ class UserDropSearch extends UserDrop
             ->alias('ud')
             ->joinWith('user', true)
             ->joinWith('user.server', true)
-            ->joinWith('dropOne', true);
+            ->joinWith('dropOne', true)
+            ->with('user')
+            ->with('user.server')
+            ->with('dropOne');
 
         if (is_callable($filter)) {
             call_user_func($filter, $query);
