@@ -48,7 +48,7 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'format' => 'raw',
                         'value' => function (UserDrop $model) {
                             // Загружаем связь, если она не загружена
-                            print_r($model->user_id);exit;
+                            print_r($model);exit;
                             if (!$model->user && $model->user_id) {
                                 $model->user = \common\models\user\User::findOne($model->user_id);
                             }
@@ -96,7 +96,7 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                             if (!$model->drop_id) {
                                 return null;
                             }
-                            
+
                             $drop = \common\models\box\Drop::findOne($model->drop_id);
 
                             if (!$drop) {
