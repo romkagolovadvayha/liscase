@@ -48,12 +48,8 @@ class UserDropSearch extends UserDrop
 
         $query = self::find()
             ->alias('ud')
-            ->joinWith('user', true)
-            ->joinWith('user.server', true)
-            ->joinWith('dropOne', true)
             ->with('user')
-            ->with('user.server')
-            ->with('dropOne');
+            ->with('user.server');
 
         if (is_callable($filter)) {
             call_user_func($filter, $query);
@@ -66,8 +62,7 @@ class UserDropSearch extends UserDrop
                 'ud.drop_id' => $this->drop_id,
                 'ud.status' => $this->status,
             ])
-            ->andFilterWhere(['LIKE', 'user.username', $this->user_username])
-            ->andFilterWhere(['LIKE', 'dropOne.name', $this->drop_name]);
+            ->andFilterWhere(['LIKE', 'user.username', $this->user_username]);
 
         // Фильтр по server_id
         if ($this->server_id !== null && $this->server_id !== '') {
