@@ -24,8 +24,17 @@ $this->title = Yii::t('common', 'Предпросмотр начисления �
                 Сумма бонуса: <strong><?= Html::encode($amount) ?> руб.</strong><br>
                 Комментарий: <strong><?= Html::encode($comment) ?></strong><br>
                 Найдено пользователей: <strong><?= $count ?></strong><br>
+                <?php if (!empty($skippedCount) && $skippedCount > 0): ?>
+                    Пропущено (уже начислен сегодня): <strong><?= $skippedCount ?></strong><br>
+                <?php endif; ?>
                 Общая сумма: <strong><?= number_format($totalAmount, 2, '.', ' ') ?> руб.</strong>
             </div>
+            
+            <?php if (!empty($skippedCount) && $skippedCount > 0): ?>
+                <div class="alert alert-warning">
+                    <strong>Внимание!</strong> <?= $skippedCount ?> пользователей будут пропущены, так как им уже был начислен бонус сегодня на эту сумму.
+                </div>
+            <?php endif; ?>
 
             <?php if ($count > 0): ?>
                 <p class="text-warning">

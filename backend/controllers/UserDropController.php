@@ -379,16 +379,45 @@ class UserDropController extends CrudController
                 'amount' => $amount,
                 'comment' => $comment,
                 'users' => [],
+                'skippedUsers' => [],
                 'count' => 0,
+                'skippedCount' => 0,
                 'totalAmount' => 0,
             ]);
         }
         
         // Получаем пользователей
-        $users = User::find()
+        $allUsers = User::find()
             ->where(['id' => $userIds])
             ->orderBy(['username' => SORT_ASC])
             ->all();
+        
+        // Исключаем пользователей, которым уже был начислен бонус сегодня на эту сумму
+        $todayStart = date('Y-m-d 00:00:00');
+        $todayEnd = date('Y-m-d 23:59:59');
+        
+        $users = [];
+        $skippedUsers = [];
+        
+        foreach ($allUsers as $user) {
+            // Проверяем, не был ли уже начислен бонус сегодня на эту сумму
+            $existingProfit = Profit::find()
+                ->innerJoin('user_balance ub', 'profit.user_balance_id = ub.id')
+                ->where([
+                    'ub.user_id' => $user->id,
+                    'profit.type' => Profit::TYPE_BONUS,
+                    'profit.amount' => $amount,
+                ])
+                ->andWhere(['>=', 'profit.created_at', $todayStart])
+                ->andWhere(['<=', 'profit.created_at', $todayEnd])
+                ->one();
+            
+            if ($existingProfit) {
+                $skippedUsers[] = $user;
+            } else {
+                $users[] = $user;
+            }
+        }
         
         $totalAmount = $amount * count($users);
         
@@ -397,7 +426,9 @@ class UserDropController extends CrudController
             'amount' => $amount,
             'comment' => $comment,
             'users' => $users,
+            'skippedUsers' => $skippedUsers,
             'count' => count($users),
+            'skippedCount' => count($skippedUsers),
             'totalAmount' => $totalAmount,
         ]);
     }
