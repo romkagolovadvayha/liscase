@@ -16,6 +16,12 @@ $this->title = Yii::t('common', 'Предметы пользователей');
     <div class="content-header">
         <div class="ds-flex ds-flex--between">
             <h1><?= Html::encode($this->title) ?></h1>
+            <div>
+                <?= Html::a('Массовое изменение по серверу', ['bulk-change-by-server'], [
+                    'class' => 'ds-btn ds-btn--primary',
+                    'style' => 'margin-left: 10px;'
+                ]) ?>
+            </div>
         </div>
     </div>
 
