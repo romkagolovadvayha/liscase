@@ -167,7 +167,8 @@ class UserDropController extends CrudController
         // Находим пользователей, которые играли на этом сервере с таким wipe
         $userTable = User::tableName();
         $userIds = Statistics::find()
-            ->select("DISTINCT {$userTable}.id")
+            ->select("{$userTable}.id")
+            ->distinct()
             ->innerJoin($userTable, "statistics.steam_id = {$userTable}.steam_id")
             ->where([
                 'statistics.server_tag' => $server->tag,
@@ -243,7 +244,8 @@ class UserDropController extends CrudController
         // Находим пользователей, которые играли на этом сервере с таким wipe
         $userTable = User::tableName();
         $userIds = Statistics::find()
-            ->select("DISTINCT {$userTable}.id")
+            ->select("{$userTable}.id")
+            ->distinct()
             ->innerJoin($userTable, "statistics.steam_id = {$userTable}.steam_id")
             ->where([
                 'statistics.server_tag' => $server->tag,
