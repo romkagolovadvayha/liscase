@@ -480,6 +480,22 @@ class UserDropController extends CrudController
                     // Баланс пересчитывается автоматически через afterSave() в модели Profit
                     // Но для надежности можно явно вызвать пересчет
                     $personalBalance->recalculateBalance();
+                    
+                    // Отправляем уведомление в телеграм
+                    if (!empty($user->telegram_chat_id)) {
+                        $message = "🎁 Вам начислен бонус: <b>{$amount} РУБ</b>" . PHP_EOL . PHP_EOL;
+                        $message .= "📦 Все покупки на вайп возвращены в корзину" . PHP_EOL . PHP_EOL;
+                        $message .= "⚠️ Завтра 08.02 будет перевайп из-за бага на сервере #6 в 11:00 МСК" . PHP_EOL;
+                        $message .= "🗺️ Карта останется прежней" . PHP_EOL;
+                        $message .= "📚 Изучения стираются";
+                        
+                        try {
+                            Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message);
+                        } catch (\Exception $e) {
+                            Yii::warning("Failed to send telegram message to user ID: {$user->id}, error: " . $e->getMessage(), __METHOD__);
+                        }
+                    }
+                    
                     $successCount++;
                 } else {
                     Yii::warning("Failed to save profit for user ID: {$user->id}, errors: " . json_encode($profit->getErrors()), __METHOD__);
