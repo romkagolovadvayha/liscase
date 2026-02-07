@@ -37,6 +37,76 @@ class UserDropController extends CrudController
     }
 
     /**
+     * Переопределяем метод для загрузки связей
+     */
+    protected function _getSearchDataProvider()
+    {
+        $dataProvider = $this->_searchModel->search(Yii::$app->request->queryParams);
+        
+        // Загружаем связи для всех моделей сразу (batch loading)
+        $models = $dataProvider->getModels();
+        $userIds = [];
+        $dropIds = [];
+        
+        foreach ($models as $model) {
+            if ($model->user_id) {
+                $userIds[] = $model->user_id;
+            }
+            if ($model->drop_id) {
+                $dropIds[] = $model->drop_id;
+            }
+        }
+        
+        // Загружаем всех пользователей одним запросом
+        $users = [];
+        if (!empty($userIds)) {
+            $users = \common\models\user\User::find()
+                ->where(['id' => array_unique($userIds)])
+                ->indexBy('id')
+                ->all();
+        }
+        
+        // Загружаем все серверы одним запросом
+        $serverIds = [];
+        foreach ($users as $user) {
+            if ($user->server_id) {
+                $serverIds[] = $user->server_id;
+            }
+        }
+        $servers = [];
+        if (!empty($serverIds)) {
+            $servers = \common\models\servers\Servers::find()
+                ->where(['id' => array_unique($serverIds)])
+                ->indexBy('id')
+                ->all();
+        }
+        
+        // Загружаем все предметы одним запросом
+        $drops = [];
+        if (!empty($dropIds)) {
+            $drops = \common\models\box\Drop::find()
+                ->where(['id' => array_unique($dropIds)])
+                ->indexBy('id')
+                ->all();
+        }
+        
+        // Присваиваем связи к моделям
+        foreach ($models as $model) {
+            if ($model->user_id && isset($users[$model->user_id])) {
+                $model->populateRelation('user', $users[$model->user_id]);
+                if ($users[$model->user_id]->server_id && isset($servers[$users[$model->user_id]->server_id])) {
+                    $users[$model->user_id]->populateRelation('server', $servers[$users[$model->user_id]->server_id]);
+                }
+            }
+            if ($model->drop_id && isset($drops[$model->drop_id])) {
+                $model->populateRelation('dropOne', $drops[$model->drop_id]);
+            }
+        }
+        
+        return $dataProvider;
+    }
+
+    /**
      * Изменение статуса одного предмета
      * @param int $id
      * @return Response
