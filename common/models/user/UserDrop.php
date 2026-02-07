@@ -96,6 +96,16 @@ class UserDrop extends ActiveRecord
     }
 
     /**
+     * Gets query for single [[Drop]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getDropOne(): \yii\db\ActiveQuery
+    {
+        return $this->hasOne(Drop::class, ['id' => 'drop_id']);
+    }
+
+    /**
      * Gets query for [[ParentDrop]].
      *
      * @return \yii\db\ActiveQuery

@@ -142,6 +142,12 @@ class MainMenu
                         'icon'   => 'bi bi-dropbox',
                         'active' => $this->_checkActive('/drop/'),
                     ],
+                    [
+                        'label'  => Yii::t('common', 'Предметы пользователей'),
+                        'url'    => '/user-drop/index',
+                        'icon'   => 'bi bi-person-badge',
+                        'active' => $this->_checkActive('/user-drop/'),
+                    ],
                 ],
             ],
             [
