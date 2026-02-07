@@ -47,15 +47,23 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'label' => Yii::t('common', 'Пользователь'),
                         'format' => 'raw',
                         'value' => function (UserDrop $model) {
-                            // Пробуем загрузить связь, если она не загружена
-                            if (!$model->user && $model->user_id) {
-                                $model->user = \common\models\user\User::findOne($model->user_id);
+                            // Используем данные из join или загружаем связь
+                            $username = null;
+                            if (isset($model->user_username)) {
+                                $username = $model->user_username;
+                            } elseif ($model->user) {
+                                $username = $model->user->username;
+                            } elseif ($model->user_id) {
+                                $user = \common\models\user\User::findOne($model->user_id);
+                                $username = $user ? $user->username : null;
                             }
-                            if (!$model->user) {
+                            
+                            if (!$username) {
                                 return $model->user_id ? 'ID: ' . $model->user_id : null;
                             }
+                            
                             return Html::a(
-                                Html::encode($model->user->username),
+                                Html::encode($username),
                                 ['/user/profile', 'userId' => $model->user_id],
                                 ['class' => 'ds-text--primary', 'style' => 'text-decoration: none;']
                             );
@@ -68,17 +76,18 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'filter' => ArrayHelper::merge(['' => 'Все'], $serversList),
                         'options' => ['width' => '150'],
                         'value' => function (UserDrop $model) {
-                            // Пробуем загрузить связи, если они не загружены
-                            if (!$model->user && $model->user_id) {
-                                $model->user = \common\models\user\User::findOne($model->user_id);
+                            // Используем данные из join или загружаем связь
+                            $serverName = null;
+                            if (isset($model->server_name)) {
+                                $serverName = $model->server_name;
+                            } elseif ($model->user && $model->user->server) {
+                                $serverName = $model->user->server->name;
+                            } elseif ($model->user && $model->user->server_id) {
+                                $server = \common\models\servers\Servers::findOne($model->user->server_id);
+                                $serverName = $server ? $server->name : null;
                             }
-                            if ($model->user && !$model->user->server && $model->user->server_id) {
-                                $model->user->server = \common\models\servers\Servers::findOne($model->user->server_id);
-                            }
-                            if (!$model->user || !$model->user->server) {
-                                return null;
-                            }
-                            return Html::encode($model->user->server->name);
+                            
+                            return $serverName ? Html::encode($serverName) : null;
                         },
                     ],
                     [
@@ -86,16 +95,29 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'label' => Yii::t('common', 'Предмет'),
                         'format' => 'raw',
                         'value' => function (UserDrop $model) {
-                            // Пробуем загрузить связь, если она не загружена
-                            if (!$model->dropOne && $model->drop_id) {
-                                $model->dropOne = \common\models\box\Drop::findOne($model->drop_id);
+                            // Используем данные из join или загружаем связь
+                            $dropName = null;
+                            $drop = null;
+                            
+                            if (isset($model->drop_name_value)) {
+                                $dropName = $model->drop_name_value;
+                                if ($model->drop_id) {
+                                    $drop = \common\models\box\Drop::findOne($model->drop_id);
+                                }
+                            } elseif ($model->dropOne) {
+                                $drop = $model->dropOne;
+                                $dropName = $drop->name;
+                            } elseif ($model->drop_id) {
+                                $drop = \common\models\box\Drop::findOne($model->drop_id);
+                                $dropName = $drop ? $drop->name : null;
                             }
-                            $drop = $model->dropOne;
-                            if (!$drop) {
+                            
+                            if (!$dropName) {
                                 return $model->drop_id ? 'ID: ' . $model->drop_id : null;
                             }
+                            
                             $image = '';
-                            if ($drop->imageOrig) {
+                            if ($drop && $drop->imageOrig) {
                                 $image = Html::img($drop->imageOrig->getImagePubUrl(false), [
                                     'width' => '32px',
                                     'height' => '32px',
@@ -103,7 +125,7 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                                     'alt' => Html::encode($drop->name ?? ''),
                                 ]);
                             }
-                            return $image . Html::encode($drop->name);
+                            return $image . Html::encode($dropName);
                         },
                     ],
                     [

@@ -52,15 +52,17 @@ class UserDropSearch extends UserDrop
         
         $query = self::find()
             ->alias('ud')
-            ->joinWith(['user' => function($q) {
-                $q->alias('u');
-            }], true)
-            ->joinWith(['user.server' => function($q) {
-                $q->alias('s');
-            }], true)
-            ->joinWith(['dropOne' => function($q) {
-                $q->alias('d');
-            }], true)
+            ->select([
+                'ud.*',
+                'u.username as user_username',
+                's.name as server_name',
+                's.id as server_id_value',
+                'd.name as drop_name_value',
+            ])
+            ->leftJoin("{$userTable} u", 'ud.user_id = u.id')
+            ->leftJoin("{$serverTable} s", 'u.server_id = s.id')
+            ->leftJoin("{$dropTable} d", 'ud.drop_id = d.id')
+            ->distinct()
             ->with('user')
             ->with('user.server')
             ->with('dropOne');

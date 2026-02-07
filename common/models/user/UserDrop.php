@@ -19,6 +19,10 @@ use Yii;
  * @property int                 $auto
  * @property string              $created_at
  * @property string              $sended_at
+ * @property string              $user_username
+ * @property string              $server_name
+ * @property int                 $server_id_value
+ * @property string              $drop_name_value
  *
  * @property Drop[] $drop
  * @property Drop $parentDrop
