@@ -46,8 +46,13 @@ class UserDropSearch extends UserDrop
     {
         $this->load($params);
 
+        $dropTable = Drop::tableName();
+
         $query = self::find()
             ->alias('ud')
+            ->joinWith('user')
+            ->joinWith('user.server')
+            ->leftJoin("{$dropTable} d", 'ud.drop_id = d.id')
             ->with('user')
             ->with('user.server');
 
@@ -62,7 +67,8 @@ class UserDropSearch extends UserDrop
                 'ud.drop_id' => $this->drop_id,
                 'ud.status' => $this->status,
             ])
-            ->andFilterWhere(['LIKE', 'user.username', $this->user_username]);
+            ->andFilterWhere(['LIKE', 'user.username', $this->user_username])
+            ->andFilterWhere(['LIKE', 'd.name', $this->drop_name]);
 
         // Фильтр по server_id
         if ($this->server_id !== null && $this->server_id !== '') {
@@ -98,8 +104,8 @@ class UserDropSearch extends UserDrop
                         'desc' => ['user.username' => SORT_DESC],
                     ],
                     'drop_name' => [
-                        'asc' => ['dropOne.name' => SORT_ASC],
-                        'desc' => ['dropOne.name' => SORT_DESC],
+                        'asc' => ['d.name' => SORT_ASC],
+                        'desc' => ['d.name' => SORT_DESC],
                     ],
                 ],
             ],

@@ -98,9 +98,7 @@ class UserDropController extends CrudController
                     $users[$model->user_id]->populateRelation('server', $servers[$users[$model->user_id]->server_id]);
                 }
             }
-            if ($model->drop_id && isset($drops[$model->drop_id])) {
-                $model->populateRelation('dropOne', $drops[$model->drop_id]);
-            }
+            // Drop загружается напрямую в view, не нужно populateRelation
         }
         
         return $dataProvider;
