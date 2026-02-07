@@ -47,15 +47,13 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'label' => Yii::t('common', 'Пользователь'),
                         'format' => 'raw',
                         'value' => function (UserDrop $model) {
-                            // Используем геттер или прямой доступ к данным
-                            $username = $model->getUserUsername();
-                            
-                            if (!$username) {
+                            // Используем связь user
+                            if (!$model->user) {
                                 return $model->user_id ? 'ID: ' . $model->user_id : null;
                             }
                             
                             return Html::a(
-                                Html::encode($username),
+                                Html::encode($model->user->username),
                                 ['/user/profile', 'userId' => $model->user_id],
                                 ['class' => 'ds-text--primary', 'style' => 'text-decoration: none;']
                             );
@@ -68,10 +66,12 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'filter' => ArrayHelper::merge(['' => 'Все'], $serversList),
                         'options' => ['width' => '150'],
                         'value' => function (UserDrop $model) {
-                            // Используем геттер для доступа к данным из join
-                            $serverName = $model->getServerName();
+                            // Используем связь user->server
+                            if (!$model->user || !$model->user->server) {
+                                return null;
+                            }
                             
-                            return $serverName ? Html::encode($serverName) : null;
+                            return Html::encode($model->user->server->name);
                         },
                     ],
                     [
@@ -79,24 +79,15 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'label' => Yii::t('common', 'Предмет'),
                         'format' => 'raw',
                         'value' => function (UserDrop $model) {
-                            // Используем геттер для доступа к данным из join
-                            $dropName = $model->getDropNameValue();
-                            $drop = null;
+                            // Используем связь dropOne
+                            $drop = $model->dropOne;
                             
-                            if ($dropName && $model->drop_id) {
-                                // Загружаем drop только для получения изображения
-                                $drop = \common\models\box\Drop::findOne($model->drop_id);
-                            } elseif (!$dropName && $model->drop_id) {
-                                $drop = \common\models\box\Drop::findOne($model->drop_id);
-                                $dropName = $drop ? $drop->name : null;
-                            }
-                            
-                            if (!$dropName) {
+                            if (!$drop) {
                                 return $model->drop_id ? 'ID: ' . $model->drop_id : null;
                             }
                             
                             $image = '';
-                            if ($drop && $drop->imageOrig) {
+                            if ($drop->imageOrig) {
                                 $image = Html::img($drop->imageOrig->getImagePubUrl(false), [
                                     'width' => '32px',
                                     'height' => '32px',
@@ -104,7 +95,7 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                                     'alt' => Html::encode($drop->name ?? ''),
                                 ]);
                             }
-                            return $image . Html::encode($dropName);
+                            return $image . Html::encode($drop->name);
                         },
                     ],
                     [
