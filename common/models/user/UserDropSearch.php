@@ -52,9 +52,18 @@ class UserDropSearch extends UserDrop
         
         $query = self::find()
             ->alias('ud')
-            ->joinWith('user', true)
-            ->joinWith('user.server', true)
-            ->joinWith('dropOne', true);
+            ->joinWith(['user' => function($q) {
+                $q->alias('u');
+            }], true)
+            ->joinWith(['user.server' => function($q) {
+                $q->alias('s');
+            }], true)
+            ->joinWith(['dropOne' => function($q) {
+                $q->alias('d');
+            }], true)
+            ->with('user')
+            ->with('user.server')
+            ->with('dropOne');
 
         if (is_callable($filter)) {
             call_user_func($filter, $query);
@@ -66,14 +75,10 @@ class UserDropSearch extends UserDrop
                 'ud.user_id' => $this->user_id,
                 'ud.drop_id' => $this->drop_id,
                 'ud.status' => $this->status,
+                'u.server_id' => $this->server_id,
             ])
-            ->andFilterWhere(['LIKE', 'user.username', $this->user_username])
-            ->andFilterWhere(['LIKE', 'dropOne.name', $this->drop_name]);
-        
-        // Фильтр по server_id через связь user
-        if ($this->server_id !== null && $this->server_id !== '') {
-            $query->andWhere(['user.server_id' => $this->server_id]);
-        }
+            ->andFilterWhere(['LIKE', 'u.username', $this->user_username])
+            ->andFilterWhere(['LIKE', 'd.name', $this->drop_name]);
 
         return new ActiveDataProvider([
             'query' => $query,
@@ -100,12 +105,12 @@ class UserDropSearch extends UserDrop
                         'desc' => ['ud.status' => SORT_DESC],
                     ],
                     'user_username' => [
-                        'asc' => ['user.username' => SORT_ASC],
-                        'desc' => ['user.username' => SORT_DESC],
+                        'asc' => ['u.username' => SORT_ASC],
+                        'desc' => ['u.username' => SORT_DESC],
                     ],
                     'drop_name' => [
-                        'asc' => ['dropOne.name' => SORT_ASC],
-                        'desc' => ['dropOne.name' => SORT_DESC],
+                        'asc' => ['d.name' => SORT_ASC],
+                        'desc' => ['d.name' => SORT_DESC],
                     ],
                 ],
             ],

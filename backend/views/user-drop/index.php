@@ -47,8 +47,12 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'label' => Yii::t('common', 'Пользователь'),
                         'format' => 'raw',
                         'value' => function (UserDrop $model) {
+                            // Пробуем загрузить связь, если она не загружена
+                            if (!$model->user && $model->user_id) {
+                                $model->user = \common\models\user\User::findOne($model->user_id);
+                            }
                             if (!$model->user) {
-                                return null;
+                                return $model->user_id ? 'ID: ' . $model->user_id : null;
                             }
                             return Html::a(
                                 Html::encode($model->user->username),
@@ -64,6 +68,13 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'filter' => ArrayHelper::merge(['' => 'Все'], $serversList),
                         'options' => ['width' => '150'],
                         'value' => function (UserDrop $model) {
+                            // Пробуем загрузить связи, если они не загружены
+                            if (!$model->user && $model->user_id) {
+                                $model->user = \common\models\user\User::findOne($model->user_id);
+                            }
+                            if ($model->user && !$model->user->server && $model->user->server_id) {
+                                $model->user->server = \common\models\servers\Servers::findOne($model->user->server_id);
+                            }
                             if (!$model->user || !$model->user->server) {
                                 return null;
                             }
@@ -75,9 +86,13 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'label' => Yii::t('common', 'Предмет'),
                         'format' => 'raw',
                         'value' => function (UserDrop $model) {
+                            // Пробуем загрузить связь, если она не загружена
+                            if (!$model->dropOne && $model->drop_id) {
+                                $model->dropOne = \common\models\box\Drop::findOne($model->drop_id);
+                            }
                             $drop = $model->dropOne;
                             if (!$drop) {
-                                return null;
+                                return $model->drop_id ? 'ID: ' . $model->drop_id : null;
                             }
                             $image = '';
                             if ($drop->imageOrig) {
