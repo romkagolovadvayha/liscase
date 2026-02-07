@@ -46,15 +46,8 @@ class UserDropSearch extends UserDrop
     {
         $this->load($params);
 
-        $userTable = User::tableName();
-        $serverTable = Servers::tableName();
-        $dropTable = Drop::tableName();
-
         $query = self::find()
-            ->alias('ud')
-            ->leftJoin("{$userTable} u", 'ud.user_id = u.id')
-            ->leftJoin("{$serverTable} s", 'u.server_id = s.id')
-            ->leftJoin("{$dropTable} d", 'ud.drop_id = d.id');
+            ->with(['user', 'user.server']);
 
         if (is_callable($filter)) {
             call_user_func($filter, $query);
@@ -62,14 +55,50 @@ class UserDropSearch extends UserDrop
 
         $query
             ->andFilterWhere([
-                'ud.id' => $this->id,
-                'ud.user_id' => $this->user_id,
-                'ud.drop_id' => $this->drop_id,
-                'ud.status' => $this->status,
-            ])
-            ->andFilterWhere(['LIKE', 'u.username', $this->user_username])
-            ->andFilterWhere(['LIKE', 'd.name', $this->drop_name])
-            ->andFilterWhere(['u.server_id' => $this->server_id]);
+                'id' => $this->id,
+                'user_id' => $this->user_id,
+                'drop_id' => $this->drop_id,
+                'status' => $this->status,
+            ]);
+        
+        // Фильтр по username через подзапрос
+        if (!empty($this->user_username)) {
+            $userIds = User::find()
+                ->select('id')
+                ->where(['LIKE', 'username', $this->user_username])
+                ->column();
+            if (!empty($userIds)) {
+                $query->andWhere(['user_id' => $userIds]);
+            } else {
+                $query->andWhere('1=0'); // Нет результатов
+            }
+        }
+        
+        // Фильтр по server_id через подзапрос
+        if (!empty($this->server_id)) {
+            $userIds = User::find()
+                ->select('id')
+                ->where(['server_id' => $this->server_id])
+                ->column();
+            if (!empty($userIds)) {
+                $query->andWhere(['user_id' => $userIds]);
+            } else {
+                $query->andWhere('1=0'); // Нет результатов
+            }
+        }
+        
+        // Фильтр по drop_name через подзапрос
+        if (!empty($this->drop_name)) {
+            $dropIds = Drop::find()
+                ->select('id')
+                ->where(['LIKE', 'name', $this->drop_name])
+                ->column();
+            if (!empty($dropIds)) {
+                $query->andWhere(['drop_id' => $dropIds]);
+            } else {
+                $query->andWhere('1=0'); // Нет результатов
+            }
+        }
 
         return new ActiveDataProvider([
             'query' => $query,
@@ -96,12 +125,12 @@ class UserDropSearch extends UserDrop
                         'desc' => ['ud.status' => SORT_DESC],
                     ],
                     'user_username' => [
-                        'asc' => ['u.username' => SORT_ASC],
-                        'desc' => ['u.username' => SORT_DESC],
+                        'asc' => ['user_id' => SORT_ASC],
+                        'desc' => ['user_id' => SORT_DESC],
                     ],
                     'drop_name' => [
-                        'asc' => ['d.name' => SORT_ASC],
-                        'desc' => ['d.name' => SORT_DESC],
+                        'asc' => ['drop_id' => SORT_ASC],
+                        'desc' => ['drop_id' => SORT_DESC],
                     ],
                 ],
             ],
