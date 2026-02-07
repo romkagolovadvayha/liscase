@@ -3,6 +3,8 @@
 namespace common\models\user;
 
 use common\components\base\query\DateQuery;
+use common\models\box\Drop;
+use common\models\servers\Servers;
 use yii\data\ActiveDataProvider;
 use Yii;
 
@@ -44,11 +46,20 @@ class UserDropSearch extends UserDrop
     {
         $this->load($params);
 
+        $userTable = User::tableName();
+        $serverTable = Servers::tableName();
+        $dropTable = Drop::tableName();
+        
         $query = self::find()
             ->alias('ud')
-            ->joinWith(['user u'])
-            ->joinWith(['user.server s'])
-            ->joinWith(['dropOne d']);
+            ->select(['ud.*'])
+            ->leftJoin("{$userTable} u", 'ud.user_id = u.id')
+            ->leftJoin("{$serverTable} s", 'u.server_id = s.id')
+            ->leftJoin("{$dropTable} d", 'ud.drop_id = d.id')
+            ->distinct()
+            ->with('user')
+            ->with('user.server')
+            ->with('dropOne');
 
         if (is_callable($filter)) {
             call_user_func($filter, $query);
