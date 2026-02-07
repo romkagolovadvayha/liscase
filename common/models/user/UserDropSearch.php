@@ -68,12 +68,12 @@ class UserDropSearch extends UserDrop
             ])
             ->andFilterWhere(['LIKE', 'user.username', $this->user_username])
             ->andFilterWhere(['LIKE', 'dropOne.name', $this->drop_name]);
-        
+
         // Фильтр по server_id
         if ($this->server_id !== null && $this->server_id !== '') {
             $query->andWhere(['user.server_id' => $this->server_id]);
         }
-
+print_r($query->limit(10)->all());exit;
         return new ActiveDataProvider([
             'query' => $query,
             'sort' => [
