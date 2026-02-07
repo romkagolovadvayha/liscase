@@ -69,8 +69,8 @@ class UserDropSearch extends UserDrop
             'query' => $query,
             'sort' => [
                 'defaultOrder' => [
-                    'ud.sended_at' => SORT_DESC,
-                    'ud.created_at' => SORT_DESC,
+                    'sended_at' => SORT_DESC,
+                    'created_at' => SORT_DESC,
                 ],
                 'attributes' => [
                     'id' => [
