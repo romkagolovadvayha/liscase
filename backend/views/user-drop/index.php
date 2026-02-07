@@ -47,16 +47,8 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'label' => Yii::t('common', 'Пользователь'),
                         'format' => 'raw',
                         'value' => function (UserDrop $model) {
-                            // Используем данные из join или загружаем связь
-                            $username = null;
-                            if (isset($model->user_username)) {
-                                $username = $model->user_username;
-                            } elseif ($model->user) {
-                                $username = $model->user->username;
-                            } elseif ($model->user_id) {
-                                $user = \common\models\user\User::findOne($model->user_id);
-                                $username = $user ? $user->username : null;
-                            }
+                            // Используем геттер или прямой доступ к данным
+                            $username = $model->getUserUsername();
                             
                             if (!$username) {
                                 return $model->user_id ? 'ID: ' . $model->user_id : null;
@@ -76,16 +68,8 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'filter' => ArrayHelper::merge(['' => 'Все'], $serversList),
                         'options' => ['width' => '150'],
                         'value' => function (UserDrop $model) {
-                            // Используем данные из join или загружаем связь
-                            $serverName = null;
-                            if (isset($model->server_name)) {
-                                $serverName = $model->server_name;
-                            } elseif ($model->user && $model->user->server) {
-                                $serverName = $model->user->server->name;
-                            } elseif ($model->user && $model->user->server_id) {
-                                $server = \common\models\servers\Servers::findOne($model->user->server_id);
-                                $serverName = $server ? $server->name : null;
-                            }
+                            // Используем геттер для доступа к данным из join
+                            $serverName = $model->getServerName();
                             
                             return $serverName ? Html::encode($serverName) : null;
                         },
@@ -95,19 +79,14 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'label' => Yii::t('common', 'Предмет'),
                         'format' => 'raw',
                         'value' => function (UserDrop $model) {
-                            // Используем данные из join или загружаем связь
-                            $dropName = null;
+                            // Используем геттер для доступа к данным из join
+                            $dropName = $model->getDropNameValue();
                             $drop = null;
                             
-                            if (isset($model->drop_name_value)) {
-                                $dropName = $model->drop_name_value;
-                                if ($model->drop_id) {
-                                    $drop = \common\models\box\Drop::findOne($model->drop_id);
-                                }
-                            } elseif ($model->dropOne) {
-                                $drop = $model->dropOne;
-                                $dropName = $drop->name;
-                            } elseif ($model->drop_id) {
+                            if ($dropName && $model->drop_id) {
+                                // Загружаем drop только для получения изображения
+                                $drop = \common\models\box\Drop::findOne($model->drop_id);
+                            } elseif (!$dropName && $model->drop_id) {
                                 $drop = \common\models\box\Drop::findOne($model->drop_id);
                                 $dropName = $drop ? $drop->name : null;
                             }

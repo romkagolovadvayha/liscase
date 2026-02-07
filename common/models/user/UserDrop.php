@@ -120,6 +120,36 @@ class UserDrop extends ActiveRecord
     }
 
     /**
+     * Получить username пользователя из join
+     * @return string|null
+     */
+    public function getUserUsername()
+    {
+        // Прямой доступ к данным из результата запроса
+        return isset($this->_attributes['user_username']) ? $this->_attributes['user_username'] : null;
+    }
+
+    /**
+     * Получить название сервера из join
+     * @return string|null
+     */
+    public function getServerName()
+    {
+        // Прямой доступ к данным из результата запроса
+        return isset($this->_attributes['server_name']) ? $this->_attributes['server_name'] : null;
+    }
+
+    /**
+     * Получить название предмета из join
+     * @return string|null
+     */
+    public function getDropNameValue()
+    {
+        // Прямой доступ к данным из результата запроса
+        return isset($this->_attributes['drop_name_value']) ? $this->_attributes['drop_name_value'] : null;
+    }
+
+    /**
      * @return UserDrop[]
      */
     public static function getUsersDropLast() {

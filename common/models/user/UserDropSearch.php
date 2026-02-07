@@ -62,10 +62,7 @@ class UserDropSearch extends UserDrop
             ->leftJoin("{$userTable} u", 'ud.user_id = u.id')
             ->leftJoin("{$serverTable} s", 'u.server_id = s.id')
             ->leftJoin("{$dropTable} d", 'ud.drop_id = d.id')
-            ->distinct()
-            ->with('user')
-            ->with('user.server')
-            ->with('dropOne');
+            ->distinct();
 
         if (is_callable($filter)) {
             call_user_func($filter, $query);
