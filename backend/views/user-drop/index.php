@@ -75,7 +75,7 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'label' => Yii::t('common', 'Предмет'),
                         'format' => 'raw',
                         'value' => function (UserDrop $model) {
-                            $drop = \common\models\box\Drop::findOne($model->drop_id);
+                            $drop = $model->dropOne;
                             if (empty($drop)) {
                                 return $model->drop_id ? 'ID: ' . $model->drop_id : null;
                             }

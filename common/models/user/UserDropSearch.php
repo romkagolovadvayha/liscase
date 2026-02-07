@@ -2,9 +2,7 @@
 
 namespace common\models\user;
 
-use common\components\base\query\DateQuery;
 use common\models\box\Drop;
-use common\models\servers\Servers;
 use yii\data\ActiveDataProvider;
 use Yii;
 
@@ -47,7 +45,7 @@ class UserDropSearch extends UserDrop
         $this->load($params);
 
         $query = self::find()
-            ->with(['user', 'user.server']);
+            ->with(['user', 'user.server', 'dropOne']);
 
         if (is_callable($filter)) {
             call_user_func($filter, $query);
@@ -106,8 +104,8 @@ class UserDropSearch extends UserDrop
             'query' => $query,
             'sort' => [
                 'defaultOrder' => [
-                    $tableName . '.sended_at' => SORT_DESC,
-                    $tableName . '.created_at' => SORT_DESC,
+                    'sended_at' => SORT_DESC,
+                    'created_at' => SORT_DESC,
                 ],
                 'attributes' => [
                     'id' => [
