@@ -21,6 +21,10 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                     'class' => 'ds-btn ds-btn--primary',
                     'style' => 'margin-left: 10px;'
                 ]) ?>
+                <?= Html::a('Начислить бонус', ['bonus-by-server'], [
+                    'class' => 'ds-btn ds-btn--success',
+                    'style' => 'margin-left: 10px;'
+                ]) ?>
             </div>
         </div>
     </div>

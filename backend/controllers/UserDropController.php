@@ -7,6 +7,8 @@ use common\components\helpers\Role;
 use common\models\user\UserDrop;
 use common\models\user\UserDropSearch;
 use common\models\user\User;
+use common\models\user\UserBalance;
+use common\models\profit\Profit;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use Yii;
@@ -296,6 +298,207 @@ class UserDropController extends CrudController
             throw new NotFoundHttpException('Запись не найдена.');
         }
         return $model;
+    }
+    
+    /**
+     * Форма для начисления бонуса игрокам сервера
+     * @return string|Response
+     */
+    public function actionBonusByServer()
+    {
+        $serverId = Yii::$app->request->get('server_id');
+        $amount = Yii::$app->request->get('amount');
+        $comment = Yii::$app->request->get('comment');
+        
+        if (Yii::$app->request->isPost) {
+            $serverId = Yii::$app->request->post('server_id');
+            $amount = Yii::$app->request->post('amount');
+            $comment = Yii::$app->request->post('comment');
+            
+            if (empty($serverId) || empty($amount) || $amount <= 0) {
+                Yii::$app->session->setFlash('error', 'Заполните все обязательные поля!');
+            } else {
+                return $this->redirect(['preview-bonus', 'server_id' => $serverId, 'amount' => $amount, 'comment' => $comment]);
+            }
+        }
+        
+        $serversList = ArrayHelper::map(
+            Servers::find()->orderBy(['name' => SORT_ASC])->all(),
+            'id',
+            'name'
+        );
+        
+        return $this->render('bonus-by-server', [
+            'serversList' => $serversList,
+            'serverId' => $serverId,
+            'amount' => $amount,
+            'comment' => $comment ?? 'Бонус за игру на сервере',
+        ]);
+    }
+    
+    /**
+     * Предпросмотр списка пользователей для начисления бонуса
+     * @return string
+     */
+    public function actionPreviewBonus()
+    {
+        $serverId = Yii::$app->request->get('server_id');
+        $amount = Yii::$app->request->get('amount');
+        $comment = Yii::$app->request->get('comment');
+        
+        if (empty($serverId) || empty($amount) || $amount <= 0) {
+            Yii::$app->session->setFlash('error', 'Не указаны параметры!');
+            return $this->redirect(['bonus-by-server']);
+        }
+        
+        $server = Servers::findOne($serverId);
+        if (!$server) {
+            Yii::$app->session->setFlash('error', 'Сервер не найден!');
+            return $this->redirect(['bonus-by-server']);
+        }
+        
+        // Получаем wipe сервера
+        $serverWipe = $server->currentWipe();
+        
+        // Находим пользователей, которые играли на этом сервере с таким wipe
+        $userTable = User::tableName();
+        $userIds = Statistics::find()
+            ->select("{$userTable}.id")
+            ->distinct()
+            ->innerJoin($userTable, "statistics.steam_id = {$userTable}.steam_id")
+            ->where([
+                'statistics.server_tag' => $server->tag,
+                'statistics.wipe' => $serverWipe,
+            ])
+            ->andWhere(['IS NOT', "{$userTable}.id", null])
+            ->column();
+        
+        if (empty($userIds)) {
+            return $this->render('preview-bonus', [
+                'server' => $server,
+                'amount' => $amount,
+                'comment' => $comment,
+                'users' => [],
+                'count' => 0,
+                'totalAmount' => 0,
+            ]);
+        }
+        
+        // Получаем пользователей
+        $users = User::find()
+            ->where(['id' => $userIds])
+            ->orderBy(['username' => SORT_ASC])
+            ->all();
+        
+        $totalAmount = $amount * count($users);
+        
+        return $this->render('preview-bonus', [
+            'server' => $server,
+            'amount' => $amount,
+            'comment' => $comment,
+            'users' => $users,
+            'count' => count($users),
+            'totalAmount' => $totalAmount,
+        ]);
+    }
+    
+    /**
+     * Подтверждение и выполнение начисления бонуса
+     * @return Response
+     */
+    public function actionConfirmBonus()
+    {
+        if (!Yii::$app->request->isPost) {
+            Yii::$app->session->setFlash('error', 'Некорректный запрос!');
+            return $this->redirect(['bonus-by-server']);
+        }
+        
+        $serverId = Yii::$app->request->post('server_id');
+        $amount = Yii::$app->request->post('amount');
+        $comment = Yii::$app->request->post('comment');
+        
+        if (empty($serverId) || empty($amount) || $amount <= 0) {
+            Yii::$app->session->setFlash('error', 'Не указаны параметры!');
+            return $this->redirect(['bonus-by-server']);
+        }
+        
+        $server = Servers::findOne($serverId);
+        if (!$server) {
+            Yii::$app->session->setFlash('error', 'Сервер не найден!');
+            return $this->redirect(['bonus-by-server']);
+        }
+        
+        // Получаем wipe сервера
+        $serverWipe = $server->currentWipe();
+        
+        // Находим пользователей, которые играли на этом сервере с таким wipe
+        $userTable = User::tableName();
+        $userIds = Statistics::find()
+            ->select("{$userTable}.id")
+            ->distinct()
+            ->innerJoin($userTable, "statistics.steam_id = {$userTable}.steam_id")
+            ->where([
+                'statistics.server_tag' => $server->tag,
+                'statistics.wipe' => $serverWipe,
+            ])
+            ->andWhere(['IS NOT', "{$userTable}.id", null])
+            ->column();
+        
+        if (empty($userIds)) {
+            Yii::$app->session->setFlash('error', 'Не найдено пользователей, игравших на этом сервере!');
+            return $this->redirect(['bonus-by-server']);
+        }
+        
+        // Получаем пользователей
+        $users = User::find()
+            ->where(['id' => $userIds])
+            ->all();
+        
+        $successCount = 0;
+        $errorCount = 0;
+        
+        foreach ($users as $user) {
+            try {
+                // Получаем или создаем баланс пользователя
+                $personalBalance = $user->getPersonalBalance();
+                if (empty($personalBalance) || empty($personalBalance->id)) {
+                    Yii::warning("Personal balance not found for user ID: {$user->id}", __METHOD__);
+                    $errorCount++;
+                    continue;
+                }
+                
+                // Создаем запись о начислении
+                $profit = new Profit();
+                $profit->status = 1;
+                $profit->type = Profit::TYPE_BONUS;
+                $profit->amount = $amount;
+                $profit->user_balance_id = $personalBalance->id;
+                // Комментарий: введенный пользователем текст + название сервера
+                $profit->comment = trim($comment) . ' (' . $server->name . ')';
+                
+                if ($profit->save()) {
+                    // Баланс пересчитывается автоматически через afterSave() в модели Profit
+                    // Но для надежности можно явно вызвать пересчет
+                    $personalBalance->recalculateBalance();
+                    $successCount++;
+                } else {
+                    Yii::warning("Failed to save profit for user ID: {$user->id}, errors: " . json_encode($profit->getErrors()), __METHOD__);
+                    $errorCount++;
+                }
+            } catch (\Exception $e) {
+                Yii::error("Error adding bonus for user ID: {$user->id}, error: " . $e->getMessage(), __METHOD__);
+                $errorCount++;
+            }
+        }
+        
+        if ($successCount > 0) {
+            Yii::$app->session->setFlash('success', "Бонус успешно начислен {$successCount} пользователям на общую сумму " . ($amount * $successCount) . " руб.");
+        }
+        if ($errorCount > 0) {
+            Yii::$app->session->setFlash('warning', "Не удалось начислить бонус {$errorCount} пользователям.");
+        }
+        
+        return $this->redirect(['index']);
     }
 }
 
