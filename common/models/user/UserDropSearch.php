@@ -100,37 +100,39 @@ class UserDropSearch extends UserDrop
             }
         }
 
+        $tableName = self::tableName();
+        
         return new ActiveDataProvider([
             'query' => $query,
             'sort' => [
                 'defaultOrder' => [
-                    'sended_at' => SORT_DESC,
-                    'created_at' => SORT_DESC,
+                    $tableName . '.sended_at' => SORT_DESC,
+                    $tableName . '.created_at' => SORT_DESC,
                 ],
                 'attributes' => [
                     'id' => [
-                        'asc' => ['ud.id' => SORT_ASC],
-                        'desc' => ['ud.id' => SORT_DESC],
+                        'asc' => [$tableName . '.id' => SORT_ASC],
+                        'desc' => [$tableName . '.id' => SORT_DESC],
                     ],
                     'sended_at' => [
-                        'asc' => ['ud.sended_at' => SORT_ASC],
-                        'desc' => ['ud.sended_at' => SORT_DESC],
+                        'asc' => [$tableName . '.sended_at' => SORT_ASC],
+                        'desc' => [$tableName . '.sended_at' => SORT_DESC],
                     ],
                     'created_at' => [
-                        'asc' => ['ud.created_at' => SORT_ASC],
-                        'desc' => ['ud.created_at' => SORT_DESC],
+                        'asc' => [$tableName . '.created_at' => SORT_ASC],
+                        'desc' => [$tableName . '.created_at' => SORT_DESC],
                     ],
                     'status' => [
-                        'asc' => ['ud.status' => SORT_ASC],
-                        'desc' => ['ud.status' => SORT_DESC],
+                        'asc' => [$tableName . '.status' => SORT_ASC],
+                        'desc' => [$tableName . '.status' => SORT_DESC],
                     ],
                     'user_username' => [
-                        'asc' => ['user_id' => SORT_ASC],
-                        'desc' => ['user_id' => SORT_DESC],
+                        'asc' => [$tableName . '.user_id' => SORT_ASC],
+                        'desc' => [$tableName . '.user_id' => SORT_DESC],
                     ],
                     'drop_name' => [
-                        'asc' => ['drop_id' => SORT_ASC],
-                        'desc' => ['drop_id' => SORT_DESC],
+                        'asc' => [$tableName . '.drop_id' => SORT_ASC],
+                        'desc' => [$tableName . '.drop_id' => SORT_DESC],
                     ],
                 ],
             ],
