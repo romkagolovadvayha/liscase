@@ -456,9 +456,31 @@ class UserDropController extends CrudController
         
         $successCount = 0;
         $errorCount = 0;
+        $skippedCount = 0;
+        
+        // Дата начала сегодняшнего дня
+        $todayStart = date('Y-m-d 00:00:00');
+        $todayEnd = date('Y-m-d 23:59:59');
         
         foreach ($users as $user) {
             try {
+                // Проверяем, не был ли уже начислен бонус сегодня на эту сумму
+                $existingProfit = Profit::find()
+                    ->innerJoin('user_balance ub', 'profit.user_balance_id = ub.id')
+                    ->where([
+                        'ub.user_id' => $user->id,
+                        'profit.type' => Profit::TYPE_BONUS,
+                        'profit.amount' => $amount,
+                    ])
+                    ->andWhere(['>=', 'profit.created_at', $todayStart])
+                    ->andWhere(['<=', 'profit.created_at', $todayEnd])
+                    ->one();
+                
+                if ($existingProfit) {
+                    $skippedCount++;
+                    continue;
+                }
+                
                 // Получаем или создаем баланс пользователя
                 $personalBalance = $user->getPersonalBalance();
                 if (empty($personalBalance) || empty($personalBalance->id)) {
@@ -509,6 +531,9 @@ class UserDropController extends CrudController
         
         if ($successCount > 0) {
             Yii::$app->session->setFlash('success', "Бонус успешно начислен {$successCount} пользователям на общую сумму " . ($amount * $successCount) . " руб.");
+        }
+        if ($skippedCount > 0) {
+            Yii::$app->session->setFlash('info', "Пропущено {$skippedCount} пользователей, которым уже был начислен бонус сегодня.");
         }
         if ($errorCount > 0) {
             Yii::$app->session->setFlash('warning', "Не удалось начислить бонус {$errorCount} пользователям.");
