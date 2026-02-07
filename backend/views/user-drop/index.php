@@ -11,6 +11,70 @@ use yii\helpers\Url;
 /** @var $searchModel \common\models\user\UserDropSearch */
 
 $this->title = Yii::t('common', 'Предметы пользователей');
+
+// Batch loading связей для оптимизации
+$models = $dataProvider->getModels();
+$userIds = [];
+$dropIds = [];
+
+foreach ($models as $model) {
+    if ($model->user_id) {
+        $userIds[] = $model->user_id;
+    }
+    if ($model->drop_id) {
+        $dropIds[] = $model->drop_id;
+    }
+}
+
+// Загружаем всех пользователей одним запросом
+$users = [];
+if (!empty($userIds)) {
+    $users = \common\models\user\User::find()
+        ->where(['id' => array_unique($userIds)])
+        ->indexBy('id')
+        ->all();
+}
+
+// Загружаем все серверы одним запросом
+$serverIds = [];
+foreach ($users as $user) {
+    if ($user->server_id) {
+        $serverIds[] = $user->server_id;
+    }
+}
+$servers = [];
+if (!empty($serverIds)) {
+    $servers = \common\models\servers\Servers::find()
+        ->where(['id' => array_unique($serverIds)])
+        ->indexBy('id')
+        ->all();
+}
+
+// Загружаем все предметы одним запросом
+$drops = [];
+if (!empty($dropIds)) {
+    $drops = \common\models\box\Drop::find()
+        ->where(['id' => array_unique($dropIds)])
+        ->indexBy('id')
+        ->all();
+}
+
+// Создаем массивы для быстрого доступа в view
+$usersMap = [];
+$serversMap = [];
+$dropsMap = [];
+
+foreach ($models as $model) {
+    if ($model->user_id && isset($users[$model->user_id])) {
+        $usersMap[$model->id] = $users[$model->user_id];
+        if ($users[$model->user_id]->server_id && isset($servers[$users[$model->user_id]->server_id])) {
+            $serversMap[$model->id] = $servers[$users[$model->user_id]->server_id];
+        }
+    }
+    if ($model->drop_id && isset($drops[$model->drop_id])) {
+        $dropsMap[$model->id] = $drops[$model->drop_id];
+    }
+}
 ?>
 <div class="user-drop-index-page">
     <div class="content-header">
@@ -46,19 +110,20 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'attribute' => 'user_username',
                         'label' => Yii::t('common', 'Пользователь'),
                         'format' => 'raw',
-                        'value' => function (UserDrop $model) {
-                            // Загружаем связь, если она не загружена
-                            print_r($model);exit;
-                            if (!$model->user && $model->user_id) {
-                                $model->user = \common\models\user\User::findOne($model->user_id);
+                        'value' => function (UserDrop $model) use ($usersMap) {
+                            // Используем предзагруженного пользователя
+                            $user = $usersMap[$model->id] ?? null;
+                            
+                            if (!$user && $model->user_id) {
+                                $user = \common\models\user\User::findOne($model->user_id);
                             }
 
-                            if (!$model->user) {
+                            if (!$user) {
                                 return $model->user_id ? 'ID: ' . $model->user_id : null;
                             }
 
                             return Html::a(
-                                Html::encode($model->user->username),
+                                Html::encode($user->username),
                                 ['/user/profile', 'userId' => $model->user_id],
                                 ['class' => 'ds-text--primary', 'style' => 'text-decoration: none;']
                             );
@@ -70,30 +135,24 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'filterType' => GridView::FILTER_SELECT2,
                         'filter' => ArrayHelper::merge(['' => 'Все'], $serversList),
                         'options' => ['width' => '150'],
-                        'value' => function (UserDrop $model) {
-                            // Загружаем связи, если они не загружены
-                            if (!$model->user && $model->user_id) {
-                                $model->user = \common\models\user\User::findOne($model->user_id);
-                            }
+                        'value' => function (UserDrop $model) use ($serversMap) {
+                            // Используем предзагруженный сервер
+                            $server = $serversMap[$model->id] ?? null;
 
-                            if ($model->user && !$model->user->server && $model->user->server_id) {
-                                $model->user->server = \common\models\servers\Servers::findOne($model->user->server_id);
-                            }
-
-                            if (!$model->user || !$model->user->server) {
+                            if (!$server) {
                                 return null;
                             }
 
-                            return Html::encode($model->user->server->name);
+                            return Html::encode($server->name);
                         },
                     ],
                     [
                         'attribute' => 'drop_name',
                         'label' => Yii::t('common', 'Предмет'),
                         'format' => 'raw',
-                        'value' => function (UserDrop $model) {
-                            // Используем предзагруженный drop из контроллера или загружаем
-                            $drop = $model->getAttribute('_drop');
+                        'value' => function (UserDrop $model) use ($dropsMap) {
+                            // Используем предзагруженный drop
+                            $drop = $dropsMap[$model->id] ?? null;
 
                             if (!$drop && $model->drop_id) {
                                 $drop = \common\models\box\Drop::findOne($model->drop_id);

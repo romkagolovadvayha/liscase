@@ -95,18 +95,23 @@ class UserDropController extends CrudController
             if ($model->user_id && isset($users[$model->user_id])) {
                 $user = $users[$model->user_id];
                 
-                // Используем прямое присваивание через _related
-                $model->_related['user'] = $user;
+                // Используем populateRelation для правильного присваивания связи
+                $model->populateRelation('user', $user);
                 
                 // Присваиваем сервер к пользователю
                 if ($user->server_id && isset($servers[$user->server_id])) {
-                    $user->_related['server'] = $servers[$user->server_id];
+                    $user->populateRelation('server', $servers[$user->server_id]);
                 }
             }
             
-            // Сохраняем drop в отдельном свойстве для быстрого доступа
+            // Сохраняем drop в отдельном свойстве для быстрого доступа через Reflection
             if ($model->drop_id && isset($drops[$model->drop_id])) {
-                $model->_attributes['_drop'] = $drops[$model->drop_id];
+                $reflection = new \ReflectionClass($model);
+                $attributesProperty = $reflection->getProperty('_attributes');
+                $attributesProperty->setAccessible(true);
+                $attributes = $attributesProperty->getValue($model);
+                $attributes['_drop'] = $drops[$model->drop_id];
+                $attributesProperty->setValue($model, $attributes);
             }
         }
         
