@@ -73,7 +73,7 @@ class UserDropSearch extends UserDrop
         if ($this->server_id !== null && $this->server_id !== '') {
             $query->andWhere(['user.server_id' => $this->server_id]);
         }
-print_r($query->limit(10)->all());exit;
+
         return new ActiveDataProvider([
             'query' => $query,
             'sort' => [

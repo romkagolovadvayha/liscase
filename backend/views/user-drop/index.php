@@ -28,7 +28,7 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                 'name'
             );
             ?>
-            
+
             <?= GridView::widget([
                 'dataProvider' => $dataProvider,
                 'filterModel'  => $searchModel,
@@ -48,14 +48,15 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'format' => 'raw',
                         'value' => function (UserDrop $model) {
                             // Загружаем связь, если она не загружена
+                            print_r($model->user_id);exit;
                             if (!$model->user && $model->user_id) {
                                 $model->user = \common\models\user\User::findOne($model->user_id);
                             }
-                            
+
                             if (!$model->user) {
                                 return $model->user_id ? 'ID: ' . $model->user_id : null;
                             }
-                            
+
                             return Html::a(
                                 Html::encode($model->user->username),
                                 ['/user/profile', 'userId' => $model->user_id],
@@ -74,15 +75,15 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                             if (!$model->user && $model->user_id) {
                                 $model->user = \common\models\user\User::findOne($model->user_id);
                             }
-                            
+
                             if ($model->user && !$model->user->server && $model->user->server_id) {
                                 $model->user->server = \common\models\servers\Servers::findOne($model->user->server_id);
                             }
-                            
+
                             if (!$model->user || !$model->user->server) {
                                 return null;
                             }
-                            
+
                             return Html::encode($model->user->server->name);
                         },
                     ],
@@ -95,13 +96,13 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                             if (!$model->dropOne && $model->drop_id) {
                                 $model->dropOne = \common\models\box\Drop::findOne($model->drop_id);
                             }
-                            
+
                             $drop = $model->dropOne;
-                            
+
                             if (!$drop) {
                                 return $model->drop_id ? 'ID: ' . $model->drop_id : null;
                             }
-                            
+
                             $image = '';
                             if ($drop->imageOrig) {
                                 $image = Html::img($drop->imageOrig->getImagePubUrl(false), [
@@ -205,25 +206,25 @@ $(document).on('change', '.status-select', function() {
     var select = $(this);
     var id = select.data('id');
     var status = select.val();
-    
+
     if (confirm('Изменить статус?')) {
         var form = $('<form>', {
             'method': 'POST',
             'action': '{$updateStatusUrl}?id=' + id
         });
-        
+
         form.append($('<input>', {
             'type': 'hidden',
             'name': 'status',
             'value': status
         }));
-        
+
         form.append($('<input>', {
             'type': 'hidden',
             'name': '{$csrfParam}',
             'value': '{$csrfToken}'
         }));
-        
+
         $('body').append(form);
         form.submit();
     } else {
@@ -242,12 +243,12 @@ function bulkUpdateStatus() {
     $('input[name="selection[]"]:checked').each(function() {
         selectedIds.push($(this).val());
     });
-    
+
     if (selectedIds.length === 0) {
         alert('Выберите элементы для изменения');
         return;
     }
-    
+
     var statusList = {
         0: 'Временно блокирован',
         1: 'Доступен',
@@ -255,42 +256,42 @@ function bulkUpdateStatus() {
         3: 'Продан',
         4: 'Отправляется'
     };
-    
+
     var statusSelect = $('<select>', {
         id: 'bulk-status-select',
         style: 'width: 100%; margin: 10px 0; padding: 5px;',
         html: '<option value="">Выберите статус</option>'
     });
-    
+
     for (var key in statusList) {
         statusSelect.append($('<option>', {
             value: key,
             text: statusList[key]
         }));
     }
-    
+
     var dialog = $('<div>', {
         title: 'Изменение статуса',
         html: '<p>Выберите новый статус для ' + selectedIds.length + ' элементов:</p>'
     }).append(statusSelect);
-    
+
     if (confirm('Изменить статус для ' + selectedIds.length + ' элементов?')) {
         var status = prompt('Введите номер статуса (0-4):\\n0 - Временно блокирован\\n1 - Доступен\\n2 - Отправлен\\n3 - Продан\\n4 - Отправляется');
-        
+
         if (status === null || status === '') {
             return;
         }
-        
+
         if (!statusList[status]) {
             alert('Неверный статус');
             return;
         }
-        
+
         var form = $('<form>', {
             'method': 'POST',
             'action': '{$bulkUpdateUrl}'
         });
-        
+
         selectedIds.forEach(function(id) {
             form.append($('<input>', {
                 'type': 'hidden',
@@ -298,19 +299,19 @@ function bulkUpdateStatus() {
                 'value': id
             }));
         });
-        
+
         form.append($('<input>', {
             'type': 'hidden',
             'name': 'status',
             'value': status
         }));
-        
+
         form.append($('<input>', {
             'type': 'hidden',
             'name': '{$csrfParam}',
             'value': '{$csrfToken}'
         }));
-        
+
         $('body').append(form);
         form.submit();
     }
