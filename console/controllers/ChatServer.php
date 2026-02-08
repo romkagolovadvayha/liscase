@@ -318,51 +318,260 @@ class ChatServer extends WebSocketServer
 
         if ($request) {
             try {
-                // Check X-Real-IP header (priority header from Nginx)
-                $xRealIp = $request->getHeader('X-Real-IP');
-                if (!empty($xRealIp) && is_array($xRealIp) && !empty($xRealIp[0])) {
-                    $candidateIp = trim($xRealIp[0]);
+                $requestClass = get_class($request);
+                $this->log("onOpen: Request object class: {$requestClass}");
+                
+                // Helper function to extract header value from various formats
+                $extractHeaderValue = function($headerValue) use (&$realIp, $conn) {
+                    if (empty($headerValue)) {
+                        return null;
+                    }
+                    
+                    // If it's an array, get first element
+                    if (is_array($headerValue)) {
+                        if (!empty($headerValue[0])) {
+                            return trim($headerValue[0]);
+                        }
+                        return null;
+                    }
+                    
+                    // If it's a string, use it directly
+                    if (is_string($headerValue)) {
+                        return trim($headerValue);
+                    }
+                    
+                    // If it's an object, try to convert to string
+                    if (is_object($headerValue)) {
+                        // Try __toString() method
+                        if (method_exists($headerValue, '__toString')) {
+                            return trim((string)$headerValue);
+                        }
+                        
+                        // Try to access value property
+                        if (property_exists($headerValue, 'value')) {
+                            $value = $headerValue->value;
+                            if (is_string($value)) {
+                                return trim($value);
+                            }
+                            if (is_array($value) && !empty($value[0])) {
+                                return trim($value[0]);
+                            }
+                        }
+                        
+                        // Try to get first element if it's iterable
+                        if (is_iterable($headerValue)) {
+                            foreach ($headerValue as $val) {
+                                if (is_string($val)) {
+                                    return trim($val);
+                                }
+                            }
+                        }
+                        
+                        // Try reflection to access internal properties
+                        try {
+                            $headerReflection = new \ReflectionObject($headerValue);
+                            $props = $headerReflection->getProperties();
+                            foreach ($props as $prop) {
+                                $prop->setAccessible(true);
+                                $propValue = $prop->getValue($headerValue);
+                                if (is_string($propValue)) {
+                                    return trim($propValue);
+                                }
+                                if (is_array($propValue) && !empty($propValue[0])) {
+                                    return trim($propValue[0]);
+                                }
+                            }
+                        } catch (\Throwable $refEx) {
+                            // Ignore reflection errors
+                        }
+                        
+                        // Last resort: try to serialize and extract
+                        $serialized = serialize($headerValue);
+                        if (preg_match('/s:\d+:"([^"]+)"/', $serialized, $matches)) {
+                            return trim($matches[1]);
+                        }
+                    }
+                    
+                    return null;
+                };
+                
+                // Try getHeaderLine() first (returns string, PSR-7 standard)
+                $xRealIpValue = null;
+                if (method_exists($request, 'getHeaderLine')) {
+                    try {
+                        $xRealIpValue = $request->getHeaderLine('X-Real-IP');
+                        if (!empty($xRealIpValue)) {
+                            $xRealIpValue = trim($xRealIpValue);
+                        }
+                    } catch (\Throwable $e) {
+                        $this->log("onOpen: getHeaderLine('X-Real-IP') failed: " . $e->getMessage());
+                    }
+                }
+                
+                // If getHeaderLine didn't work, try getHeader()
+                if (empty($xRealIpValue)) {
+                    try {
+                        $xRealIp = $request->getHeader('X-Real-IP');
+                        $this->log("onOpen: X-Real-IP header type: " . gettype($xRealIp) . (is_object($xRealIp) ? " (" . get_class($xRealIp) . ")" : ""));
+                        $xRealIpValue = $extractHeaderValue($xRealIp);
+                    } catch (\Throwable $e) {
+                        $this->log("onOpen: getHeader('X-Real-IP') failed: " . $e->getMessage());
+                    }
+                }
+                
+                // Process X-Real-IP value
+                if (!empty($xRealIpValue)) {
+                    $candidateIp = $xRealIpValue;
                     if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
                         $realIp = $candidateIp;
                         $this->log("onOpen: Got real IP from X-Real-IP header: {$realIp} (was: {$conn->remoteAddress})");
                     } else {
                         $this->log("onOpen: X-Real-IP was loopback: {$candidateIp}");
                     }
-                } elseif (!empty($xRealIp)) {
-                    $this->log("onOpen: X-Real-IP header exists but is not array or empty: " . gettype($xRealIp));
                 }
 
                 // If X-Real-IP not found, check X-Forwarded-For
                 if ($realIp === $conn->remoteAddress || $realIp === '127.0.0.1') {
-                    $xForwardedFor = $request->getHeader('X-Forwarded-For');
-                    if (!empty($xForwardedFor) && is_array($xForwardedFor) && !empty($xForwardedFor[0])) {
-                        $forwardedFor = trim($xForwardedFor[0]);
-                        $ips = explode(',', $forwardedFor);
-                        if (!empty($ips[0])) {
-                            $candidateIp = trim($ips[0]);
-                            if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
-                                $realIp = $candidateIp;
-                                $this->log("onOpen: Got real IP from X-Forwarded-For header: {$realIp} (was: {$conn->remoteAddress})");
+                    $xForwardedForValue = null;
+                    
+                    // Try getHeaderLine() first
+                    if (method_exists($request, 'getHeaderLine')) {
+                        try {
+                            $xForwardedForValue = $request->getHeaderLine('X-Forwarded-For');
+                            if (!empty($xForwardedForValue)) {
+                                $xForwardedForValue = trim($xForwardedForValue);
+                            }
+                        } catch (\Throwable $e) {
+                            $this->log("onOpen: getHeaderLine('X-Forwarded-For') failed: " . $e->getMessage());
+                        }
+                    }
+                    
+                    // If getHeaderLine didn't work, try getHeader()
+                    if (empty($xForwardedForValue)) {
+                        try {
+                            $xForwardedFor = $request->getHeader('X-Forwarded-For');
+                            $this->log("onOpen: X-Forwarded-For header type: " . gettype($xForwardedFor) . (is_object($xForwardedFor) ? " (" . get_class($xForwardedFor) . ")" : ""));
+                            $xForwardedForValue = $extractHeaderValue($xForwardedFor);
+                        } catch (\Throwable $e) {
+                            $this->log("onOpen: getHeader('X-Forwarded-For') failed: " . $e->getMessage());
+                        }
+                    }
+                    
+                    // Process X-Forwarded-For value
+                    if (!empty($xForwardedForValue)) {
+                        $ips = explode(',', $xForwardedForValue);
+                        // Берем последний IP в цепочке (реальный IP клиента)
+                        // Формат: "DDoS-Guard-IP, Real-Client-IP" или "Real-Client-IP"
+                        $lastIp = trim(end($ips));
+                        if (!empty($lastIp) && $lastIp !== '127.0.0.1' && $lastIp !== '::1') {
+                            $realIp = $lastIp;
+                            $this->log("onOpen: Got real IP from X-Forwarded-For header (last in chain): {$realIp} (was: {$conn->remoteAddress})");
+                        } else {
+                            // Если последний IP loopback, пробуем первый
+                            $firstIp = trim($ips[0]);
+                            if (!empty($firstIp) && $firstIp !== '127.0.0.1' && $firstIp !== '::1') {
+                                $realIp = $firstIp;
+                                $this->log("onOpen: Got real IP from X-Forwarded-For header (first in chain): {$realIp} (was: {$conn->remoteAddress})");
                             } else {
-                                $this->log("onOpen: X-Forwarded-For first IP was loopback: {$candidateIp}");
+                                $this->log("onOpen: X-Forwarded-For IPs were loopback: " . $xForwardedForValue);
                             }
                         }
-                    } elseif (!empty($xForwardedFor)) {
-                        $this->log("onOpen: X-Forwarded-For header exists but is not array or empty: " . gettype($xForwardedFor));
+                    }
+                }
+                
+                // If still localhost, check original headers from DDoS-Guard (X-Forwarded-For-Original, X-Real-IP-Original)
+                if ($realIp === $conn->remoteAddress || $realIp === '127.0.0.1') {
+                    // Try X-Real-IP-Original (original header from DDoS-Guard)
+                    $xRealIpOriginalValue = null;
+                    if (method_exists($request, 'getHeaderLine')) {
+                        try {
+                            $xRealIpOriginalValue = $request->getHeaderLine('X-Real-IP-Original');
+                            if (!empty($xRealIpOriginalValue)) {
+                                $xRealIpOriginalValue = trim($xRealIpOriginalValue);
+                            }
+                        } catch (\Throwable $e) {
+                            // Ignore
+                        }
+                    }
+                    if (empty($xRealIpOriginalValue)) {
+                        try {
+                            $xRealIpOriginal = $request->getHeader('X-Real-IP-Original');
+                            $xRealIpOriginalValue = $extractHeaderValue($xRealIpOriginal);
+                        } catch (\Throwable $e) {
+                            // Ignore
+                        }
+                    }
+                    if (!empty($xRealIpOriginalValue) && $xRealIpOriginalValue !== '127.0.0.1' && $xRealIpOriginalValue !== '::1') {
+                        $realIp = $xRealIpOriginalValue;
+                        $this->log("onOpen: Got real IP from X-Real-IP-Original header (from DDoS-Guard): {$realIp} (was: {$conn->remoteAddress})");
+                    }
+                    
+                    // Try X-Forwarded-For-Original (original header from DDoS-Guard)
+                    if ($realIp === $conn->remoteAddress || $realIp === '127.0.0.1') {
+                        $xForwardedForOriginalValue = null;
+                        if (method_exists($request, 'getHeaderLine')) {
+                            try {
+                                $xForwardedForOriginalValue = $request->getHeaderLine('X-Forwarded-For-Original');
+                                if (!empty($xForwardedForOriginalValue)) {
+                                    $xForwardedForOriginalValue = trim($xForwardedForOriginalValue);
+                                }
+                            } catch (\Throwable $e) {
+                                // Ignore
+                            }
+                        }
+                        if (empty($xForwardedForOriginalValue)) {
+                            try {
+                                $xForwardedForOriginal = $request->getHeader('X-Forwarded-For-Original');
+                                $xForwardedForOriginalValue = $extractHeaderValue($xForwardedForOriginal);
+                            } catch (\Throwable $e) {
+                                // Ignore
+                            }
+                        }
+                        if (!empty($xForwardedForOriginalValue)) {
+                            $ips = explode(',', $xForwardedForOriginalValue);
+                            // Берем первый IP (реальный IP клиента от DDoS-Guard)
+                            $firstIp = trim($ips[0]);
+                            if (!empty($firstIp) && $firstIp !== '127.0.0.1' && $firstIp !== '::1') {
+                                $realIp = $firstIp;
+                                $this->log("onOpen: Got real IP from X-Forwarded-For-Original header (from DDoS-Guard): {$realIp} (was: {$conn->remoteAddress})");
+                            }
+                        }
                     }
                 }
 
                 // Log all headers for debugging (only if IP is still localhost)
                 if ($realIp === '127.0.0.1' || $realIp === '::1') {
                     try {
-                        $allHeaders = $request->getHeaders();
-                        $this->log("onOpen: All headers: " . json_encode($allHeaders));
+                        // Try getHeaders() method
+                        if (method_exists($request, 'getHeaders')) {
+                            $allHeaders = $request->getHeaders();
+                            $this->log("onOpen: All headers (getHeaders): " . json_encode($allHeaders));
+                        }
+                        
+                        // For Guzzle, try to access headers via reflection
+                        try {
+                            $requestReflection = new \ReflectionObject($request);
+                            $headerProps = ['headers', '_headers', 'header', '_header'];
+                            foreach ($headerProps as $headerProp) {
+                                if ($requestReflection->hasProperty($headerProp)) {
+                                    $prop = $requestReflection->getProperty($headerProp);
+                                    $prop->setAccessible(true);
+                                    $headerValue = $prop->getValue($request);
+                                    $this->log("onOpen: Request->{$headerProp} type: " . gettype($headerValue) . (is_object($headerValue) ? " (" . get_class($headerValue) . ")" : ""));
+                                    if (is_array($headerValue)) {
+                                        $this->log("onOpen: Request->{$headerProp} content: " . json_encode($headerValue));
+                                    }
+                                }
+                            }
+                        } catch (\Throwable $refEx) {
+                            $this->log("onOpen: Reflection on request headers failed: " . $refEx->getMessage());
+                        }
                     } catch (\Throwable $e) {
                         $this->log("onOpen: Could not get all headers: " . $e->getMessage());
                     }
                 }
             } catch (\Throwable $e) {
-                $this->log("onOpen: Error processing headers: " . $e->getMessage());
+                $this->log("onOpen: Error processing headers: " . $e->getMessage() . " | Trace: " . $e->getTraceAsString());
             }
         } else {
             $this->log("onOpen: Request object not available");
@@ -371,8 +580,31 @@ class ChatServer extends WebSocketServer
         // Fallback: try to get IP from $_SERVER (if available in this context)
         if (($realIp === '127.0.0.1' || $realIp === '::1') && isset($_SERVER)) {
             try {
-                // Check X-Real-IP from $_SERVER
-                if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+                // Check original headers from DDoS-Guard first (X-Real-IP-Original, X-Forwarded-For-Original)
+                if (!empty($_SERVER['HTTP_X_REAL_IP_ORIGINAL'])) {
+                    $candidateIp = trim($_SERVER['HTTP_X_REAL_IP_ORIGINAL']);
+                    if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
+                        $realIp = $candidateIp;
+                        $this->log("onOpen: Got real IP from \$_SERVER['HTTP_X_REAL_IP_ORIGINAL'] (from DDoS-Guard): {$realIp} (was: {$conn->remoteAddress})");
+                    }
+                }
+                
+                // Check X-Forwarded-For-Original from DDoS-Guard
+                if (($realIp === '127.0.0.1' || $realIp === '::1') && !empty($_SERVER['HTTP_X_FORWARDED_FOR_ORIGINAL'])) {
+                    $forwardedFor = trim($_SERVER['HTTP_X_FORWARDED_FOR_ORIGINAL']);
+                    $ips = explode(',', $forwardedFor);
+                    // Берем первый IP (реальный IP клиента от DDoS-Guard)
+                    if (!empty($ips[0])) {
+                        $candidateIp = trim($ips[0]);
+                        if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
+                            $realIp = $candidateIp;
+                            $this->log("onOpen: Got real IP from \$_SERVER['HTTP_X_FORWARDED_FOR_ORIGINAL'] (from DDoS-Guard): {$realIp} (was: {$conn->remoteAddress})");
+                        }
+                    }
+                }
+                
+                // Check X-Real-IP from $_SERVER (processed by Nginx)
+                if (($realIp === '127.0.0.1' || $realIp === '::1') && !empty($_SERVER['HTTP_X_REAL_IP'])) {
                     $candidateIp = trim($_SERVER['HTTP_X_REAL_IP']);
                     if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
                         $realIp = $candidateIp;
@@ -380,15 +612,22 @@ class ChatServer extends WebSocketServer
                     }
                 }
 
-                // If still localhost, check X-Forwarded-For from $_SERVER
+                // If still localhost, check X-Forwarded-For from $_SERVER (processed by Nginx)
                 if (($realIp === '127.0.0.1' || $realIp === '::1') && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
                     $forwardedFor = trim($_SERVER['HTTP_X_FORWARDED_FOR']);
                     $ips = explode(',', $forwardedFor);
-                    if (!empty($ips[0])) {
-                        $candidateIp = trim($ips[0]);
-                        if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
-                            $realIp = $candidateIp;
-                            $this->log("onOpen: Got real IP from \$_SERVER['HTTP_X_FORWARDED_FOR']: {$realIp} (was: {$conn->remoteAddress})");
+                    // Берем последний IP в цепочке (реальный IP клиента)
+                    // Формат: "DDoS-Guard-IP, Real-Client-IP" или "Real-Client-IP"
+                    $lastIp = trim(end($ips));
+                    if (!empty($lastIp) && $lastIp !== '127.0.0.1' && $lastIp !== '::1') {
+                        $realIp = $lastIp;
+                        $this->log("onOpen: Got real IP from \$_SERVER['HTTP_X_FORWARDED_FOR'] (last in chain): {$realIp} (was: {$conn->remoteAddress})");
+                    } else {
+                        // Если последний IP loopback, пробуем первый
+                        $firstIp = trim($ips[0]);
+                        if (!empty($firstIp) && $firstIp !== '127.0.0.1' && $firstIp !== '::1') {
+                            $realIp = $firstIp;
+                            $this->log("onOpen: Got real IP from \$_SERVER['HTTP_X_FORWARDED_FOR'] (first in chain): {$realIp} (was: {$conn->remoteAddress})");
                         }
                     }
                 }
@@ -399,6 +638,13 @@ class ChatServer extends WebSocketServer
                         return strpos($key, 'HTTP_') === 0 || strpos($key, 'REMOTE_') === 0;
                     });
                     $this->log("onOpen: Available \$_SERVER keys: " . implode(', ', $serverKeys));
+                    // Log specific header values for debugging
+                    $debugHeaders = ['HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP_ORIGINAL', 'HTTP_X_FORWARDED_FOR_ORIGINAL', 'REMOTE_ADDR'];
+                    foreach ($debugHeaders as $header) {
+                        if (isset($_SERVER[$header])) {
+                            $this->log("onOpen: \$_SERVER['{$header}'] = " . $_SERVER[$header]);
+                        }
+                    }
                 }
             } catch (\Throwable $e) {
                 $this->log("onOpen: Error checking \$_SERVER: " . $e->getMessage());
