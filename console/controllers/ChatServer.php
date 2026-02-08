@@ -33,6 +33,18 @@ class ChatServer extends WebSocketServer
     
     /** @var int секунд на авторизацию после подключения */
     private $authTimeoutSeconds = 30; // NEW
+    
+    /** @var int Максимальное количество подключений с одного IP */
+    private $maxConnectionsPerIp = 10; // NEW
+    
+    /** @var int Максимальное количество подключений в секунду с одного IP */
+    private $maxConnectionsPerSecond = 3; // NEW
+    
+    /** @var array Счетчик подключений по IP */
+    private $connectionsByIp = []; // NEW
+    
+    /** @var array Время последнего подключения по IP */
+    private $lastConnectionTimeByIp = []; // NEW
 
     /** @var array Индекс клиентов по user_id для быстрого поиска */
     private $clientsByUserId = [];
@@ -164,7 +176,65 @@ class ChatServer extends WebSocketServer
         self::$instance = $this;
 
             $this->on(self::EVENT_CLIENT_CONNECTED, function(WSClientEvent $e) {
-            $this->log("Client connected: " . $e->client->remoteAddress);
+            $ip = $e->client->remoteAddress;
+            $now = time();
+            
+            // Rate limiting: проверяем количество подключений с одного IP
+            if (!isset($this->connectionsByIp[$ip])) {
+                $this->connectionsByIp[$ip] = [];
+                $this->lastConnectionTimeByIp[$ip] = [];
+            }
+            
+            // Подсчитываем активные подключения с этого IP
+            $activeConnectionsFromIp = 0;
+            foreach ($this->clients as $client) {
+                if ($client->remoteAddress === $ip) {
+                    $activeConnectionsFromIp++;
+                }
+            }
+            
+            // Проверяем лимит одновременных подключений
+            if ($activeConnectionsFromIp >= $this->maxConnectionsPerIp) {
+                $this->log("Rejecting connection from {$ip}: too many connections ({$activeConnectionsFromIp})");
+                try {
+                    $e->client->close(1008, 'Too many connections from this IP');
+                } catch (\Throwable $ex) {
+                    // Игнорируем ошибки при закрытии
+                }
+                return;
+            }
+            
+            // Проверяем rate limiting (подключений в секунду)
+            $recentConnections = 0;
+            foreach ($this->lastConnectionTimeByIp[$ip] as $connectionTime) {
+                if (($now - $connectionTime) < 1) {
+                    $recentConnections++;
+                }
+            }
+            
+            if ($recentConnections >= $this->maxConnectionsPerSecond) {
+                $this->log("Rejecting connection from {$ip}: rate limit exceeded ({$recentConnections} connections in last second)");
+                try {
+                    $e->client->close(1008, 'Connection rate limit exceeded');
+                } catch (\Throwable $ex) {
+                    // Игнорируем ошибки при закрытии
+                }
+                return;
+            }
+            
+            // Регистрируем подключение
+            $this->connectionsByIp[$ip][] = $now;
+            $this->lastConnectionTimeByIp[$ip][] = $now;
+            
+            // Очищаем старые записи (старше 60 секунд)
+            $this->connectionsByIp[$ip] = array_filter($this->connectionsByIp[$ip], function($time) use ($now) {
+                return ($now - $time) < 60;
+            });
+            $this->lastConnectionTimeByIp[$ip] = array_filter($this->lastConnectionTimeByIp[$ip], function($time) use ($now) {
+                return ($now - $time) < 60;
+            });
+            
+            $this->log("Client connected: {$ip} (active from IP: {$activeConnectionsFromIp})");
             $e->client->user = null;
             $e->client->chat = null;
             $e->client->launcher = false;
@@ -180,7 +250,21 @@ class ChatServer extends WebSocketServer
             $userId = !empty($e->client->user) ? $e->client->user->id : 'anonymous';
             $reason = isset($e->client->disconnectReason) ? $e->client->disconnectReason : 'unknown';
             $idleTime = isset($e->client->lastPong) ? (time() - $e->client->lastPong) : 'N/A';
-            $this->log("Client disconnected: {$userId} from " . $e->client->remoteAddress . " (reason: {$reason}, idle: {$idleTime}s)");
+            $ip = $e->client->remoteAddress;
+            $this->log("Client disconnected: {$userId} from {$ip} (reason: {$reason}, idle: {$idleTime}s)");
+            
+            // Очищаем счетчики подключений для этого IP (если нет активных подключений)
+            $activeFromIp = 0;
+            foreach ($this->clients as $client) {
+                if ($client->remoteAddress === $ip) {
+                    $activeFromIp++;
+                }
+            }
+            if ($activeFromIp === 0 && isset($this->connectionsByIp[$ip])) {
+                // Нет активных подключений с этого IP - очищаем счетчики
+                unset($this->connectionsByIp[$ip]);
+                unset($this->lastConnectionTimeByIp[$ip]);
+            }
             
             // Удаляем из индексов
             if (!empty($e->client->user)) {
