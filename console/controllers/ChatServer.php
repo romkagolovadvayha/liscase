@@ -22,6 +22,7 @@ use yii\base\BaseObject;
 use Ratchet\WebSocket\Version\RFC6455\Frame;
 use yii\db\Exception as DbException;
 use PDOException;
+use Psr\Http\Message\RequestInterface;
 
 class ChatServer extends WebSocketServer
 {
@@ -62,6 +63,94 @@ class ChatServer extends WebSocketServer
 
     private function log($m) { // NEW
         echo date('Y-m-d H:i:s') . " [WS] {$m}" . PHP_EOL;
+    }
+    
+    /**
+     * Переопределяем onOpen для получения реального IP из HTTP заголовков
+     * @param ConnectionInterface $conn
+     */
+    public function onOpen(ConnectionInterface $conn)
+    {
+        // Пытаемся получить реальный IP из HTTP заголовков через рефлексию
+        // В Ratchet, request может быть сохранен в соединении или доступен через родительский класс
+        try {
+            $realIp = $conn->remoteAddress;
+            $request = null;
+            
+            // Пытаемся получить request из соединения через рефлексию
+            try {
+                $reflection = new \ReflectionObject($conn);
+                $possibleProperties = ['httpRequest', '_httpRequest', 'request', '_request'];
+                foreach ($possibleProperties as $propName) {
+                    if ($reflection->hasProperty($propName)) {
+                        $prop = $reflection->getProperty($propName);
+                        $prop->setAccessible(true);
+                        $value = $prop->getValue($conn);
+                        if ($value && ($value instanceof RequestInterface || method_exists($value, 'getHeader'))) {
+                            $request = $value;
+                            break;
+                        }
+                    }
+                }
+            } catch (\Throwable $reflectionEx) {
+                // Игнорируем ошибки рефлексии
+            }
+            
+            // Если нашли request, пытаемся получить IP из заголовков
+            if ($request) {
+                try {
+                    // Проверяем X-Real-IP (приоритетный заголовок от Nginx)
+                    $xRealIp = method_exists($request, 'getHeader') ? $request->getHeader('X-Real-IP') : null;
+                    if (!empty($xRealIp)) {
+                        $xRealIpValue = is_array($xRealIp) ? (isset($xRealIp[0]) ? $xRealIp[0] : '') : $xRealIp;
+                        if (!empty($xRealIpValue)) {
+                            $candidateIp = trim($xRealIpValue);
+                            if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
+                                $realIp = $candidateIp;
+                                $this->log("Got real IP from X-Real-IP header in onOpen: {$realIp} (was: {$conn->remoteAddress})");
+                            }
+                        }
+                    }
+                    // Если X-Real-IP нет, проверяем X-Forwarded-For
+                    if ($realIp === $conn->remoteAddress || $realIp === '127.0.0.1') {
+                        $xForwardedFor = method_exists($request, 'getHeader') ? $request->getHeader('X-Forwarded-For') : null;
+                        if (!empty($xForwardedFor)) {
+                            $xForwardedForValue = is_array($xForwardedFor) ? (isset($xForwardedFor[0]) ? $xForwardedFor[0] : '') : $xForwardedFor;
+                            if (!empty($xForwardedForValue)) {
+                                $forwardedFor = trim($xForwardedForValue);
+                                $ips = explode(',', $forwardedFor);
+                                if (!empty($ips[0])) {
+                                    $candidateIp = trim($ips[0]);
+                                    if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
+                                        $realIp = $candidateIp;
+                                        $this->log("Got real IP from X-Forwarded-For header in onOpen: {$realIp} (was: {$conn->remoteAddress})");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (\Throwable $headerEx) {
+                    // Игнорируем ошибки получения заголовков
+                }
+            }
+            
+            // Сохраняем реальный IP в свойство соединения для дальнейшего использования
+            $conn->realIp = $realIp;
+            
+            // Если IP всё ещё localhost, логируем предупреждение
+            if ($realIp === '127.0.0.1' || $realIp === '::1') {
+                $this->log("Warning: Could not get real IP in onOpen, using remoteAddress: {$realIp}");
+            }
+        } catch (\Throwable $e) {
+            // Если произошла ошибка, используем remoteAddress
+            $conn->realIp = $conn->remoteAddress;
+            if ($conn->remoteAddress === '127.0.0.1') {
+                $this->log("Error getting real IP in onOpen: " . $e->getMessage());
+            }
+        }
+        
+        // Вызываем родительский метод
+        parent::onOpen($conn);
     }
     
     /**
@@ -294,26 +383,33 @@ class ChatServer extends WebSocketServer
         self::$instance = $this;
 
             $this->on(self::EVENT_CLIENT_CONNECTED, function(WSClientEvent $e) {
-            // Получаем реальный IP клиента из HTTP заголовков (если доступен)
-            // Передаем событие, чтобы получить доступ к HTTP запросу
-            $originalRemoteAddress = $e->client->remoteAddress;
-            $ip = $this->getClientRealIp($e->client, $e);
-            
-            // Если получили localhost IP, это означает, что заголовки недоступны
-            // В этом случае используем уникальный идентификатор соединения для rate limiting
-            // чтобы не блокировать всех клиентов как одного
-            $isLocalhost = ($ip === '127.0.0.1' || $ip === '::1' || $ip === 'localhost' || strpos($ip, '127.') === 0);
-            if ($isLocalhost) {
-                // Генерируем уникальный идентификатор на основе resourceId соединения
-                try {
-                    $resourceId = method_exists($e->client, 'resourceId') ? $e->client->resourceId : spl_object_hash($e->client);
-                    $ip = 'proxy_' . $resourceId;
-                    $this->log("Using proxy identifier for connection: {$ip} (real IP unavailable, remoteAddress was: {$originalRemoteAddress})");
-                } catch (\Throwable $ex) {
-                    // Если не удалось получить resourceId, используем хеш объекта
-                    $ip = 'proxy_' . md5(spl_object_hash($e->client) . microtime(true));
-                    $this->log("Using fallback proxy identifier: {$ip}");
+            // Используем реальный IP, который был сохранен в onOpen
+            // Если realIp не установлен, пытаемся получить его через getClientRealIp
+            if (isset($e->client->realIp)) {
+                $ip = $e->client->realIp;
+            } else {
+                // Fallback: пытаемся получить IP через заголовки (на случай, если onOpen не сработал)
+                $originalRemoteAddress = $e->client->remoteAddress;
+                $ip = $this->getClientRealIp($e->client, $e);
+                
+                // Если получили localhost IP, это означает, что заголовки недоступны
+                // В этом случае используем уникальный идентификатор соединения для rate limiting
+                $isLocalhost = ($ip === '127.0.0.1' || $ip === '::1' || $ip === 'localhost' || strpos($ip, '127.') === 0);
+                if ($isLocalhost) {
+                    // Генерируем уникальный идентификатор на основе resourceId соединения
+                    try {
+                        $resourceId = method_exists($e->client, 'resourceId') ? $e->client->resourceId : spl_object_hash($e->client);
+                        $ip = 'proxy_' . $resourceId;
+                        $this->log("Using proxy identifier for connection: {$ip} (real IP unavailable, remoteAddress was: {$originalRemoteAddress})");
+                    } catch (\Throwable $ex) {
+                        // Если не удалось получить resourceId, используем хеш объекта
+                        $ip = 'proxy_' . md5(spl_object_hash($e->client) . microtime(true));
+                        $this->log("Using fallback proxy identifier: {$ip}");
+                    }
                 }
+                
+                // Сохраняем IP для дальнейшего использования
+                $e->client->realIp = $ip;
             }
             
             // Сохраняем реальный IP в свойство клиента для дальнейшего использования
