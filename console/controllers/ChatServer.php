@@ -180,6 +180,74 @@ class ChatServer extends WebSocketServer
                                             try {
                                                 $nestedReflection = new \ReflectionObject($wrappedValue);
                                                 $nestedProps = $nestedReflection->getProperties();
+                                                
+                                                // Если это WebSocket объект, сначала проверяем свойство 'request'
+                                                if ($wrappedPropName === 'WebSocket') {
+                                                    // Пытаемся получить request через рефлексию
+                                                    $requestPropNames = ['request', 'httpRequest', '_request', '_httpRequest'];
+                                                    foreach ($requestPropNames as $reqPropName) {
+                                                        if ($nestedReflection->hasProperty($reqPropName)) {
+                                                            $reqProp = $nestedReflection->getProperty($reqPropName);
+                                                            $reqProp->setAccessible(true);
+                                                            $reqValue = $reqProp->getValue($wrappedValue);
+                                                            if ($reqValue instanceof RequestInterface) {
+                                                                $request = $reqValue;
+                                                                $this->log("onOpen: Found request via wrappedConn->WebSocket->{$reqPropName} (reflection)");
+                                                                break 3;
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    // Если это stdClass, используем get_object_vars
+                                                    if ($wrappedValue instanceof \stdClass) {
+                                                        // Пытаемся получить заголовки из свойств WebSocket объекта
+                                                        $wsProps = get_object_vars($wrappedValue);
+                                                        $this->log("onOpen: WebSocket object properties: " . json_encode(array_keys($wsProps)));
+                                                        
+                                                        // Проверяем свойство 'request' (приоритетное)
+                                                        if (isset($wsProps['request']) && $wsProps['request'] instanceof RequestInterface) {
+                                                            $request = $wsProps['request'];
+                                                            $this->log("onOpen: Found request via wrappedConn->WebSocket->request");
+                                                            break 2;
+                                                        }
+                                                        
+                                                        // Проверяем свойство 'httpRequest' (fallback)
+                                                        if (isset($wsProps['httpRequest']) && $wsProps['httpRequest'] instanceof RequestInterface) {
+                                                            $request = $wsProps['httpRequest'];
+                                                            $this->log("onOpen: Found request via wrappedConn->WebSocket->httpRequest");
+                                                            break 2;
+                                                        }
+                                                        
+                                                        // Проверяем другие возможные свойства
+                                                        foreach ($wsProps as $wsPropName => $wsPropValue) {
+                                                            if ($wsPropValue instanceof RequestInterface) {
+                                                                $request = $wsPropValue;
+                                                                $this->log("onOpen: Found request via wrappedConn->WebSocket->{$wsPropName}");
+                                                                break 3;
+                                                            }
+                                                            // Если это объект, проверяем его свойства
+                                                            if (is_object($wsPropValue)) {
+                                                                try {
+                                                                    $wsNestedReflection = new \ReflectionObject($wsPropValue);
+                                                                    $wsNestedProps = $wsNestedReflection->getProperties();
+                                                                    foreach ($wsNestedProps as $wsNestedProp) {
+                                                                        $wsNestedProp->setAccessible(true);
+                                                                        $wsNestedPropValue = $wsNestedProp->getValue($wsPropValue);
+                                                                        if ($wsNestedPropValue instanceof RequestInterface) {
+                                                                            $request = $wsNestedPropValue;
+                                                                            $this->log("onOpen: Found request via wrappedConn->WebSocket->{$wsPropName}->{$wsNestedProp->getName()}");
+                                                                            break 4;
+                                                                        }
+                                                                    }
+                                                                } catch (\Throwable $wsNestedEx) {
+                                                                    // Игнорируем ошибки
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                
+                                                // Проверяем все свойства вложенного объекта (не только WebSocket)
                                                 foreach ($nestedProps as $nestedProp) {
                                                     $nestedProp->setAccessible(true);
                                                     $nestedValue = $nestedProp->getValue($wrappedValue);
@@ -187,44 +255,6 @@ class ChatServer extends WebSocketServer
                                                         $request = $nestedValue;
                                                         $this->log("onOpen: Found request via wrappedConn->{$wrappedPropName}->{$nestedProp->getName()}");
                                                         break 3;
-                                                    }
-                                                }
-                                                
-                                                // Если это WebSocket объект (stdClass), пытаемся получить заголовки напрямую
-                                                if ($wrappedPropName === 'WebSocket' && $wrappedValue instanceof \stdClass) {
-                                                    // Пытаемся получить заголовки из свойств WebSocket объекта
-                                                    $wsProps = get_object_vars($wrappedValue);
-                                                    $this->log("onOpen: WebSocket object properties: " . json_encode(array_keys($wsProps)));
-                                                    if (isset($wsProps['httpRequest']) && $wsProps['httpRequest'] instanceof RequestInterface) {
-                                                        $request = $wsProps['httpRequest'];
-                                                        $this->log("onOpen: Found request via wrappedConn->WebSocket->httpRequest");
-                                                        break 2;
-                                                    }
-                                                    // Проверяем другие возможные свойства
-                                                    foreach ($wsProps as $wsPropName => $wsPropValue) {
-                                                        if ($wsPropValue instanceof RequestInterface) {
-                                                            $request = $wsPropValue;
-                                                            $this->log("onOpen: Found request via wrappedConn->WebSocket->{$wsPropName}");
-                                                            break 3;
-                                                        }
-                                                        // Если это объект, проверяем его свойства
-                                                        if (is_object($wsPropValue)) {
-                                                            try {
-                                                                $wsNestedReflection = new \ReflectionObject($wsPropValue);
-                                                                $wsNestedProps = $wsNestedReflection->getProperties();
-                                                                foreach ($wsNestedProps as $wsNestedProp) {
-                                                                    $wsNestedProp->setAccessible(true);
-                                                                    $wsNestedPropValue = $wsNestedProp->getValue($wsPropValue);
-                                                                    if ($wsNestedPropValue instanceof RequestInterface) {
-                                                                        $request = $wsNestedPropValue;
-                                                                        $this->log("onOpen: Found request via wrappedConn->WebSocket->{$wsPropName}->{$wsNestedProp->getName()}");
-                                                                        break 4;
-                                                                    }
-                                                                }
-                                                            } catch (\Throwable $wsNestedEx) {
-                                                                // Игнорируем ошибки
-                                                            }
-                                                        }
                                                     }
                                                 }
                                             } catch (\Throwable $nestedEx) {
