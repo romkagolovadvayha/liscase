@@ -36,10 +36,10 @@ class ChatServer extends WebSocketServer
     private $authTimeoutSeconds = 30; // NEW
 
     /** @var int Максимальное количество подключений с одного IP */
-    private $maxConnectionsPerIp = 10; // NEW
+    private $maxConnectionsPerIp = 100; // NEW
 
     /** @var int Максимальное количество подключений в секунду с одного IP */
-    private $maxConnectionsPerSecond = 3; // NEW
+    private $maxConnectionsPerSecond = 30; // NEW
 
     /** @var array Счетчик подключений по IP */
     private $connectionsByIp = []; // NEW
@@ -791,7 +791,8 @@ class ChatServer extends WebSocketServer
             }
 
             // Проверяем лимит одновременных подключений
-            if ($activeConnectionsFromIp >= $this->maxConnectionsPerIp) {
+            // Используем > вместо >=, так как текущее соединение уже учтено в подсчёте
+            if ($activeConnectionsFromIp > $this->maxConnectionsPerIp) {
                 $this->log("Rejecting connection from {$ip}: too many connections ({$activeConnectionsFromIp})");
                 try {
                     $e->client->close(1008, 'Too many connections from this IP');
@@ -809,7 +810,8 @@ class ChatServer extends WebSocketServer
                 }
             }
 
-            if ($recentConnections >= $this->maxConnectionsPerSecond) {
+            // Используем > вместо >=, чтобы разрешить точно maxConnectionsPerSecond подключений в секунду
+            if ($recentConnections > $this->maxConnectionsPerSecond) {
                 $this->log("Rejecting connection from {$ip}: rate limit exceeded ({$recentConnections} connections in last second)");
                 try {
                     $e->client->close(1008, 'Connection rate limit exceeded');
