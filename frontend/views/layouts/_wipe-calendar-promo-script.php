@@ -25,11 +25,7 @@ $isGuest = Yii::$app->user->isGuest;
         // Проверяем, пришел ли пользователь из поиска (referrer содержит поисковые системы)
         const referrer = document.referrer || '';
         const isFromSearch = referrer && (
-            referrer.indexOf('google.') !== -1 ||
-            referrer.indexOf('yandex.') !== -1 ||
-            referrer.indexOf('bing.') !== -1 ||
-            referrer.indexOf('yahoo.') !== -1 ||
-            referrer.indexOf('duckduckgo.') !== -1
+            referrer.indexOf('prostoj.') === -1
         );
         
         // Проверяем, был ли пользователь на сайте ранее (общая cookie)
