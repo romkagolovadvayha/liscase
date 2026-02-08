@@ -68,88 +68,168 @@ class ChatServer extends WebSocketServer
     /**
      * Переопределяем onOpen для получения реального IP из HTTP заголовков
      * @param ConnectionInterface $conn
+     * @param RequestInterface|null $request HTTP запрос (может быть null в некоторых случаях)
      */
-    public function onOpen(ConnectionInterface $conn)
+    public function onOpen(ConnectionInterface $conn, RequestInterface $request = null)
     {
-        // Пытаемся получить реальный IP из HTTP заголовков через рефлексию
-        // В Ratchet, request может быть сохранен в соединении или доступен через родительский класс
-        try {
-            $realIp = $conn->remoteAddress;
-            $request = null;
-            
-            // Пытаемся получить request из соединения через рефлексию
+        $realIp = $conn->remoteAddress;
+        $this->log("onOpen: Initial remoteAddress: {$realIp}");
+        
+        // Attempt to get RequestInterface if not directly passed (e.g., from parent class)
+        if (!$request) {
             try {
                 $reflection = new \ReflectionObject($conn);
-                $possibleProperties = ['httpRequest', '_httpRequest', 'request', '_request'];
+                
+                // Try to find request in connection object properties
+                $possibleProperties = ['httpRequest', '_httpRequest', 'request', '_request', 'WebSocket', 'ws'];
                 foreach ($possibleProperties as $propName) {
                     if ($reflection->hasProperty($propName)) {
                         $prop = $reflection->getProperty($propName);
                         $prop->setAccessible(true);
                         $value = $prop->getValue($conn);
-                        if ($value && ($value instanceof RequestInterface || method_exists($value, 'getHeader'))) {
+                        
+                        // Check if it's a RequestInterface
+                        if ($value instanceof RequestInterface) {
                             $request = $value;
+                            $this->log("onOpen: Found request via property '{$propName}'");
+                            break;
+                        }
+                        
+                        // Check if it's an object with httpRequest property
+                        if (is_object($value)) {
+                            $valueReflection = new \ReflectionObject($value);
+                            if ($valueReflection->hasProperty('httpRequest')) {
+                                $httpRequestProp = $valueReflection->getProperty('httpRequest');
+                                $httpRequestProp->setAccessible(true);
+                                $httpRequestValue = $httpRequestProp->getValue($value);
+                                if ($httpRequestValue instanceof RequestInterface) {
+                                    $request = $httpRequestValue;
+                                    $this->log("onOpen: Found request via nested property '{$propName}->httpRequest'");
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // If still not found, try to get all properties and search recursively
+                if (!$request) {
+                    $properties = $reflection->getProperties();
+                    foreach ($properties as $prop) {
+                        $prop->setAccessible(true);
+                        $value = $prop->getValue($conn);
+                        if ($value instanceof RequestInterface) {
+                            $request = $value;
+                            $this->log("onOpen: Found request via property '{$prop->getName()}'");
                             break;
                         }
                     }
                 }
             } catch (\Throwable $reflectionEx) {
-                // Игнорируем ошибки рефлексии
+                $this->log("onOpen: Reflection failed: " . $reflectionEx->getMessage());
             }
-            
-            // Если нашли request, пытаемся получить IP из заголовков
-            if ($request) {
-                try {
-                    // Проверяем X-Real-IP (приоритетный заголовок от Nginx)
-                    $xRealIp = method_exists($request, 'getHeader') ? $request->getHeader('X-Real-IP') : null;
-                    if (!empty($xRealIp)) {
-                        $xRealIpValue = is_array($xRealIp) ? (isset($xRealIp[0]) ? $xRealIp[0] : '') : $xRealIp;
-                        if (!empty($xRealIpValue)) {
-                            $candidateIp = trim($xRealIpValue);
+        } else {
+            $this->log("onOpen: Request passed directly as parameter");
+        }
+        
+        if ($request) {
+            try {
+                // Check X-Real-IP header (priority header from Nginx)
+                $xRealIp = $request->getHeader('X-Real-IP');
+                if (!empty($xRealIp) && is_array($xRealIp) && !empty($xRealIp[0])) {
+                    $candidateIp = trim($xRealIp[0]);
+                    if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
+                        $realIp = $candidateIp;
+                        $this->log("onOpen: Got real IP from X-Real-IP header: {$realIp} (was: {$conn->remoteAddress})");
+                    } else {
+                        $this->log("onOpen: X-Real-IP was loopback: {$candidateIp}");
+                    }
+                } elseif (!empty($xRealIp)) {
+                    $this->log("onOpen: X-Real-IP header exists but is not array or empty: " . gettype($xRealIp));
+                }
+                
+                // If X-Real-IP not found, check X-Forwarded-For
+                if ($realIp === $conn->remoteAddress || $realIp === '127.0.0.1') {
+                    $xForwardedFor = $request->getHeader('X-Forwarded-For');
+                    if (!empty($xForwardedFor) && is_array($xForwardedFor) && !empty($xForwardedFor[0])) {
+                        $forwardedFor = trim($xForwardedFor[0]);
+                        $ips = explode(',', $forwardedFor);
+                        if (!empty($ips[0])) {
+                            $candidateIp = trim($ips[0]);
                             if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
                                 $realIp = $candidateIp;
-                                $this->log("Got real IP from X-Real-IP header in onOpen: {$realIp} (was: {$conn->remoteAddress})");
+                                $this->log("onOpen: Got real IP from X-Forwarded-For header: {$realIp} (was: {$conn->remoteAddress})");
+                            } else {
+                                $this->log("onOpen: X-Forwarded-For first IP was loopback: {$candidateIp}");
                             }
                         }
+                    } elseif (!empty($xForwardedFor)) {
+                        $this->log("onOpen: X-Forwarded-For header exists but is not array or empty: " . gettype($xForwardedFor));
                     }
-                    // Если X-Real-IP нет, проверяем X-Forwarded-For
-                    if ($realIp === $conn->remoteAddress || $realIp === '127.0.0.1') {
-                        $xForwardedFor = method_exists($request, 'getHeader') ? $request->getHeader('X-Forwarded-For') : null;
-                        if (!empty($xForwardedFor)) {
-                            $xForwardedForValue = is_array($xForwardedFor) ? (isset($xForwardedFor[0]) ? $xForwardedFor[0] : '') : $xForwardedFor;
-                            if (!empty($xForwardedForValue)) {
-                                $forwardedFor = trim($xForwardedForValue);
-                                $ips = explode(',', $forwardedFor);
-                                if (!empty($ips[0])) {
-                                    $candidateIp = trim($ips[0]);
-                                    if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
-                                        $realIp = $candidateIp;
-                                        $this->log("Got real IP from X-Forwarded-For header in onOpen: {$realIp} (was: {$conn->remoteAddress})");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (\Throwable $headerEx) {
-                    // Игнорируем ошибки получения заголовков
                 }
+                
+                // Log all headers for debugging (only if IP is still localhost)
+                if ($realIp === '127.0.0.1' || $realIp === '::1') {
+                    try {
+                        $allHeaders = $request->getHeaders();
+                        $this->log("onOpen: All headers: " . json_encode($allHeaders));
+                    } catch (\Throwable $e) {
+                        $this->log("onOpen: Could not get all headers: " . $e->getMessage());
+                    }
+                }
+            } catch (\Throwable $e) {
+                $this->log("onOpen: Error processing headers: " . $e->getMessage());
             }
-            
-            // Сохраняем реальный IP в свойство соединения для дальнейшего использования
-            $conn->realIp = $realIp;
-            
-            // Если IP всё ещё localhost, логируем предупреждение
-            if ($realIp === '127.0.0.1' || $realIp === '::1') {
-                $this->log("Warning: Could not get real IP in onOpen, using remoteAddress: {$realIp}");
-            }
-        } catch (\Throwable $e) {
-            // Если произошла ошибка, используем remoteAddress
-            $conn->realIp = $conn->remoteAddress;
-            if ($conn->remoteAddress === '127.0.0.1') {
-                $this->log("Error getting real IP in onOpen: " . $e->getMessage());
+        } else {
+            $this->log("onOpen: Request object not available");
+        }
+        
+        // Fallback: try to get IP from $_SERVER (if available in this context)
+        if (($realIp === '127.0.0.1' || $realIp === '::1') && isset($_SERVER)) {
+            try {
+                // Check X-Real-IP from $_SERVER
+                if (!empty($_SERVER['HTTP_X_REAL_IP'])) {
+                    $candidateIp = trim($_SERVER['HTTP_X_REAL_IP']);
+                    if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
+                        $realIp = $candidateIp;
+                        $this->log("onOpen: Got real IP from \$_SERVER['HTTP_X_REAL_IP']: {$realIp} (was: {$conn->remoteAddress})");
+                    }
+                }
+                
+                // If still localhost, check X-Forwarded-For from $_SERVER
+                if (($realIp === '127.0.0.1' || $realIp === '::1') && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                    $forwardedFor = trim($_SERVER['HTTP_X_FORWARDED_FOR']);
+                    $ips = explode(',', $forwardedFor);
+                    if (!empty($ips[0])) {
+                        $candidateIp = trim($ips[0]);
+                        if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
+                            $realIp = $candidateIp;
+                            $this->log("onOpen: Got real IP from \$_SERVER['HTTP_X_FORWARDED_FOR']: {$realIp} (was: {$conn->remoteAddress})");
+                        }
+                    }
+                }
+                
+                // Log $_SERVER keys for debugging if still localhost
+                if ($realIp === '127.0.0.1' || $realIp === '::1') {
+                    $serverKeys = array_filter(array_keys($_SERVER), function($key) {
+                        return strpos($key, 'HTTP_') === 0 || strpos($key, 'REMOTE_') === 0;
+                    });
+                    $this->log("onOpen: Available \$_SERVER keys: " . implode(', ', $serverKeys));
+                }
+            } catch (\Throwable $e) {
+                $this->log("onOpen: Error checking \$_SERVER: " . $e->getMessage());
             }
         }
         
-        // Вызываем родительский метод
+        // Save real IP to connection property for later use
+        $conn->realIp = $realIp;
+        
+        // If IP is still localhost, log warning
+        if ($realIp === '127.0.0.1' || $realIp === '::1') {
+            $this->log("Warning: Could not get real IP in onOpen, using remoteAddress: {$realIp}");
+        }
+        
+        // Call parent method
         parent::onOpen($conn);
     }
     
