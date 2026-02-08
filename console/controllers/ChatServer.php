@@ -79,35 +79,79 @@ class ChatServer extends WebSocketServer
             $httpRequest = null;
             
             // Пытаемся получить httpRequest из события (если передано)
-            if ($event && property_exists($event, 'httpRequest') && $event->httpRequest) {
-                $httpRequest = $event->httpRequest;
+            if ($event) {
+                try {
+                    $eventReflection = new \ReflectionObject($event);
+                    if ($eventReflection->hasProperty('httpRequest')) {
+                        $eventProp = $eventReflection->getProperty('httpRequest');
+                        $eventProp->setAccessible(true);
+                        $httpRequest = $eventProp->getValue($event);
+                    }
+                } catch (\Throwable $e) {
+                    // Игнорируем
+                }
             }
-            // Или пытаемся получить напрямую из клиента
-            elseif (property_exists($client, 'httpRequest') && $client->httpRequest) {
-                $httpRequest = $client->httpRequest;
-            }
-            // Или через рефлексию (если свойство защищено)
-            else {
+            
+            // Пытаемся получить напрямую из клиента через рефлексию
+            if (!$httpRequest) {
                 try {
                     $reflection = new \ReflectionObject($client);
-                    if ($reflection->hasProperty('httpRequest')) {
-                        $prop = $reflection->getProperty('httpRequest');
-                        $prop->setAccessible(true);
-                        $httpRequest = $prop->getValue($client);
+                    
+                    // Пробуем разные возможные имена свойств
+                    $possibleProperties = ['httpRequest', '_httpRequest', 'request', '_request'];
+                    foreach ($possibleProperties as $propName) {
+                        if ($reflection->hasProperty($propName)) {
+                            $prop = $reflection->getProperty($propName);
+                            $prop->setAccessible(true);
+                            $value = $prop->getValue($client);
+                            if ($value && (method_exists($value, 'getHeaders') || method_exists($value, 'getHeader'))) {
+                                $httpRequest = $value;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Если не нашли напрямую, ищем во всех свойствах
+                    if (!$httpRequest) {
+                        $properties = $reflection->getProperties();
+                        foreach ($properties as $prop) {
+                            $prop->setAccessible(true);
+                            $value = $prop->getValue($client);
+                            if ($value && is_object($value) && (method_exists($value, 'getHeaders') || method_exists($value, 'getHeader'))) {
+                                $httpRequest = $value;
+                                break;
+                            }
+                        }
                     }
                 } catch (\Throwable $reflectionEx) {
                     // Игнорируем ошибки рефлексии
                 }
             }
             
-            if ($httpRequest && method_exists($httpRequest, 'getHeaders')) {
-                $headers = $httpRequest->getHeaders();
+            if ($httpRequest) {
+                $headers = [];
+                
+                // Пробуем разные методы получения заголовков
+                if (method_exists($httpRequest, 'getHeaders')) {
+                    $headers = $httpRequest->getHeaders();
+                } elseif (method_exists($httpRequest, 'getHeader')) {
+                    // Если есть метод getHeader, получаем заголовки по одному
+                    $xRealIp = $httpRequest->getHeader('X-Real-IP');
+                    $xForwardedFor = $httpRequest->getHeader('X-Forwarded-For');
+                    if ($xRealIp) {
+                        $headers['X-Real-IP'] = is_array($xRealIp) ? $xRealIp : [$xRealIp];
+                    }
+                    if ($xForwardedFor) {
+                        $headers['X-Forwarded-For'] = is_array($xForwardedFor) ? $xForwardedFor : [$xForwardedFor];
+                    }
+                }
                 
                 // Проверяем X-Real-IP (приоритетный заголовок от Nginx)
                 if (isset($headers['X-Real-IP'])) {
                     $xRealIp = is_array($headers['X-Real-IP']) ? $headers['X-Real-IP'][0] : $headers['X-Real-IP'];
-                    if (!empty($xRealIp)) {
+                    if (!empty($xRealIp) && $xRealIp !== '127.0.0.1') {
                         $realIp = trim($xRealIp);
+                        $this->log("Got real IP from X-Real-IP: {$realIp} (was: {$client->remoteAddress})");
                     }
                 }
                 // Если X-Real-IP нет, проверяем X-Forwarded-For
@@ -118,7 +162,11 @@ class ChatServer extends WebSocketServer
                         $forwardedFor = trim($xForwardedFor);
                         $ips = explode(',', $forwardedFor);
                         if (!empty($ips[0])) {
-                            $realIp = trim($ips[0]);
+                            $candidateIp = trim($ips[0]);
+                            if ($candidateIp !== '127.0.0.1') {
+                                $realIp = $candidateIp;
+                                $this->log("Got real IP from X-Forwarded-For: {$realIp} (was: {$client->remoteAddress})");
+                            }
                         }
                     }
                 }
@@ -248,7 +296,26 @@ class ChatServer extends WebSocketServer
             $this->on(self::EVENT_CLIENT_CONNECTED, function(WSClientEvent $e) {
             // Получаем реальный IP клиента из HTTP заголовков (если доступен)
             // Передаем событие, чтобы получить доступ к HTTP запросу
+            $originalRemoteAddress = $e->client->remoteAddress;
             $ip = $this->getClientRealIp($e->client, $e);
+            
+            // Если получили localhost IP, это означает, что заголовки недоступны
+            // В этом случае используем уникальный идентификатор соединения для rate limiting
+            // чтобы не блокировать всех клиентов как одного
+            $isLocalhost = ($ip === '127.0.0.1' || $ip === '::1' || $ip === 'localhost' || strpos($ip, '127.') === 0);
+            if ($isLocalhost) {
+                // Генерируем уникальный идентификатор на основе resourceId соединения
+                try {
+                    $resourceId = method_exists($e->client, 'resourceId') ? $e->client->resourceId : spl_object_hash($e->client);
+                    $ip = 'proxy_' . $resourceId;
+                    $this->log("Using proxy identifier for connection: {$ip} (real IP unavailable, remoteAddress was: {$originalRemoteAddress})");
+                } catch (\Throwable $ex) {
+                    // Если не удалось получить resourceId, используем хеш объекта
+                    $ip = 'proxy_' . md5(spl_object_hash($e->client) . microtime(true));
+                    $this->log("Using fallback proxy identifier: {$ip}");
+                }
+            }
+            
             // Сохраняем реальный IP в свойство клиента для дальнейшего использования
             $e->client->realIp = $ip;
             $now = time();
