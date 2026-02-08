@@ -30,6 +30,9 @@ class ChatServer extends WebSocketServer
     
     /** @var int секунд без активности до закрытия */
     private $idleCloseSeconds = 45; // NEW
+    
+    /** @var int секунд на авторизацию после подключения */
+    private $authTimeoutSeconds = 30; // NEW
 
     /** @var array Индекс клиентов по user_id для быстрого поиска */
     private $clientsByUserId = [];
@@ -50,15 +53,54 @@ class ChatServer extends WebSocketServer
     }
     
     /**
+     * Безопасная отправка сообщения клиенту с обработкой ошибок
+     * @param ConnectionInterface $client
+     * @param mixed $data Данные для отправки (будут закодированы в JSON)
+     * @return bool Успешно ли отправлено
+     */
+    private function safeSend(ConnectionInterface $client, $data)
+    {
+        try {
+            $message = is_string($data) ? $data : json_encode($data);
+            $client->send($message);
+            
+            // Сбрасываем счетчик ошибок при успешной отправке
+            if (isset($client->sendErrors) && $client->sendErrors > 0) {
+                $client->sendErrors = 0;
+            }
+            
+            return true;
+        } catch (\Throwable $e) {
+            // Увеличиваем счетчик ошибок
+            if (!isset($client->sendErrors)) {
+                $client->sendErrors = 0;
+            }
+            $client->sendErrors++;
+            
+            $userId = !empty($client->user) ? $client->user->id : 'anonymous';
+            $this->log("Error sending message to client {$userId}: " . $e->getMessage() . " (errors: {$client->sendErrors})");
+            
+            // Закрываем соединение только после нескольких последовательных ошибок
+            if ($client->sendErrors >= 5) {
+                $this->log("Closing client {$userId} after {$client->sendErrors} consecutive send errors");
+                $client->disconnectReason = 'send_failed';
+                try {
+                    $client->close(1011, 'send failed');
+                } catch (\Throwable $e2) {
+                    // Игнорируем ошибки при закрытии
+                }
+            }
+            
+            return false;
+        }
+    }
+    
+    /**
      * Обработка отложенных сообщений из кеша
      */
     private function processQueuedMessage($client, $data)
     {
-        try {
-            $client->send(json_encode($data));
-        } catch (\Throwable $e) {
-            $this->log("Error sending queued message: " . $e->getMessage());
-        }
+        $this->safeSend($client, $data);
     }
     
 
@@ -121,7 +163,7 @@ class ChatServer extends WebSocketServer
         // Устанавливаем singleton instance
         self::$instance = $this;
 
-        $this->on(self::EVENT_CLIENT_CONNECTED, function(WSClientEvent $e) {
+            $this->on(self::EVENT_CLIENT_CONNECTED, function(WSClientEvent $e) {
             $this->log("Client connected: " . $e->client->remoteAddress);
             $e->client->user = null;
             $e->client->chat = null;
@@ -129,11 +171,16 @@ class ChatServer extends WebSocketServer
 
             // heartbeat state
             $e->client->lastPong = time();
+            $e->client->connectedAt = time(); // Время подключения для проверки таймаута авторизации
             $e->client->alive = true;
+            $e->client->sendErrors = 0; // Счетчик ошибок отправки
+            $e->client->disconnectReason = 'client_close'; // Причина отключения по умолчанию
         });
         $this->on(self::EVENT_CLIENT_DISCONNECTED, function(WSClientEvent $e) {
             $userId = !empty($e->client->user) ? $e->client->user->id : 'anonymous';
-            $this->log("Client disconnected: {$userId} from " . $e->client->remoteAddress);
+            $reason = isset($e->client->disconnectReason) ? $e->client->disconnectReason : 'unknown';
+            $idleTime = isset($e->client->lastPong) ? (time() - $e->client->lastPong) : 'N/A';
+            $this->log("Client disconnected: {$userId} from " . $e->client->remoteAddress . " (reason: {$reason}, idle: {$idleTime}s)");
             
             // Удаляем из индексов
             if (!empty($e->client->user)) {
@@ -191,9 +238,28 @@ class ChatServer extends WebSocketServer
             $loop->addPeriodicTimer($interval, function () {
                 $now = time();
                 foreach ($this->clients as $client) {
+                    // Инициализируем счетчик ошибок, если его нет
+                    if (!isset($client->sendErrors)) {
+                        $client->sendErrors = 0;
+                    }
+                    
+                    // Проверяем таймаут авторизации для неавторизованных клиентов
+                    if (empty($client->user) && isset($client->connectedAt)) {
+                        $timeSinceConnect = $now - $client->connectedAt;
+                        if ($timeSinceConnect >= $this->authTimeoutSeconds) {
+                            $this->log("Closing unauthenticated client from " . $client->remoteAddress . " (auth timeout: {$timeSinceConnect}s)");
+                            $client->disconnectReason = 'auth_timeout';
+                            try { $client->close(1008, 'authentication timeout'); } catch (\Throwable $e) {}
+                            continue;
+                        }
+                    }
+                    
                     // Закрываем по реальному idle-таймауту (не по счётчику) // CHANGED
                     $idle = $now - (isset($client->lastPong) ? $client->lastPong : 0);
                     if ($idle >= $this->idleCloseSeconds) {
+                        $userId = !empty($client->user) ? $client->user->id : 'anonymous';
+                        $this->log("Closing client {$userId} due to heartbeat timeout (idle: {$idle}s)");
+                        $client->disconnectReason = 'heartbeat_timeout';
                         try { $client->close(1000, 'heartbeat timeout'); } catch (\Throwable $e) {}
                         continue;
                     }
@@ -201,18 +267,40 @@ class ChatServer extends WebSocketServer
                     // Пробуем WS-ping фрейм (браузер авто-ответит pong) // NEW
                     try {
                         $client->send(new Frame('', true, Frame::OP_PING));
+                        // Сбрасываем счетчик ошибок при успешной отправке
+                        $client->sendErrors = 0;
                     } catch (\Throwable $e) {
-                        $this->log("ping frame send failed: " . $e->getMessage());
-                        try { $client->close(1011, 'send failed'); } catch (\Throwable $e2) {}
-                        continue;
+                        $client->sendErrors++;
+                        $userId = !empty($client->user) ? $client->user->id : 'anonymous';
+                        $this->log("ping frame send failed for client {$userId}: " . $e->getMessage() . " (errors: {$client->sendErrors})");
+                        
+                        // Закрываем только после нескольких последовательных ошибок
+                        if ($client->sendErrors >= 3) {
+                            $this->log("Closing client {$userId} after {$client->sendErrors} consecutive send errors");
+                            $client->disconnectReason = 'send_failed';
+                            try { $client->close(1011, 'send failed'); } catch (\Throwable $e2) {}
+                            continue;
+                        }
                     }
 
                     // Оставляем и app-уровень ping (на случай не-браузерных клиентов) // NEW
                     try {
                         $client->send(json_encode(['type' => 'ping', 'ts' => $now]));
+                        // Сбрасываем счетчик ошибок при успешной отправке
+                        if (isset($client->sendErrors) && $client->sendErrors > 0) {
+                            $client->sendErrors = max(0, $client->sendErrors - 1);
+                        }
                     } catch (\Throwable $e) {
-                        $this->log("app ping send failed: " . $e->getMessage());
-                        try { $client->close(1011, 'send failed'); } catch (\Throwable $e2) {}
+                        $client->sendErrors = isset($client->sendErrors) ? $client->sendErrors + 1 : 1;
+                        $userId = !empty($client->user) ? $client->user->id : 'anonymous';
+                        $this->log("app ping send failed for client {$userId}: " . $e->getMessage() . " (errors: {$client->sendErrors})");
+                        
+                        // Закрываем только после нескольких последовательных ошибок
+                        if ($client->sendErrors >= 3) {
+                            $this->log("Closing client {$userId} after {$client->sendErrors} consecutive send errors");
+                            $client->disconnectReason = 'send_failed';
+                            try { $client->close(1011, 'send failed'); } catch (\Throwable $e2) {}
+                        }
                     }
                 }
             });
@@ -416,6 +504,11 @@ class ChatServer extends WebSocketServer
         // Любое входящее — клиент «жив»
         $from->lastPong = time(); // CHANGED (оставляем)
         $from->alive = true;
+        
+        // Сбрасываем счетчик ошибок при получении любого сообщения
+        if (isset($from->sendErrors) && $from->sendErrors > 0) {
+            $from->sendErrors = 0;
+        }
 
         $request = json_decode($msg, true);
         
@@ -1576,7 +1669,8 @@ class ChatServer extends WebSocketServer
             // Валидация входных данных
             if (empty($request['token']) || empty($request['steam_id'])) {
                 $result['message'] = 'Invalid token';
-                $client->send(json_encode($result));
+                $this->log("Auth failed: missing token or steam_id from " . $client->remoteAddress);
+                $this->safeSend($client, $result);
                 return;
             }
 
@@ -1618,10 +1712,13 @@ class ChatServer extends WebSocketServer
                 
                 // Добавляем в индекс для быстрого поиска
                 $this->indexClientByUserId($client);
+                
+                $this->log("User {$user->id} authenticated successfully from " . $client->remoteAddress);
 
             } else {
                 $result['message'] = 'Invalid token';
-                $client->send(json_encode($result));
+                $this->log("Auth failed for token/steam_id from " . $client->remoteAddress);
+                $this->safeSend($client, $result);
             }
         } catch (\Exception $ex) {
             $this->log("Auth error: " . $ex->getMessage());
