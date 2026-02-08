@@ -189,6 +189,44 @@ class ChatServer extends WebSocketServer
                                                         break 3;
                                                     }
                                                 }
+                                                
+                                                // Если это WebSocket объект (stdClass), пытаемся получить заголовки напрямую
+                                                if ($wrappedPropName === 'WebSocket' && $wrappedValue instanceof \stdClass) {
+                                                    // Пытаемся получить заголовки из свойств WebSocket объекта
+                                                    $wsProps = get_object_vars($wrappedValue);
+                                                    $this->log("onOpen: WebSocket object properties: " . json_encode(array_keys($wsProps)));
+                                                    if (isset($wsProps['httpRequest']) && $wsProps['httpRequest'] instanceof RequestInterface) {
+                                                        $request = $wsProps['httpRequest'];
+                                                        $this->log("onOpen: Found request via wrappedConn->WebSocket->httpRequest");
+                                                        break 2;
+                                                    }
+                                                    // Проверяем другие возможные свойства
+                                                    foreach ($wsProps as $wsPropName => $wsPropValue) {
+                                                        if ($wsPropValue instanceof RequestInterface) {
+                                                            $request = $wsPropValue;
+                                                            $this->log("onOpen: Found request via wrappedConn->WebSocket->{$wsPropName}");
+                                                            break 3;
+                                                        }
+                                                        // Если это объект, проверяем его свойства
+                                                        if (is_object($wsPropValue)) {
+                                                            try {
+                                                                $wsNestedReflection = new \ReflectionObject($wsPropValue);
+                                                                $wsNestedProps = $wsNestedReflection->getProperties();
+                                                                foreach ($wsNestedProps as $wsNestedProp) {
+                                                                    $wsNestedProp->setAccessible(true);
+                                                                    $wsNestedPropValue = $wsNestedProp->getValue($wsPropValue);
+                                                                    if ($wsNestedPropValue instanceof RequestInterface) {
+                                                                        $request = $wsNestedPropValue;
+                                                                        $this->log("onOpen: Found request via wrappedConn->WebSocket->{$wsPropName}->{$wsNestedProp->getName()}");
+                                                                        break 4;
+                                                                    }
+                                                                }
+                                                            } catch (\Throwable $wsNestedEx) {
+                                                                // Игнорируем ошибки
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             } catch (\Throwable $nestedEx) {
                                                 // Игнорируем ошибки при проверке вложенных объектов
                                             }
