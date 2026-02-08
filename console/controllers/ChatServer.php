@@ -157,6 +157,48 @@ class ChatServer extends WebSocketServer
                             $propName = $prop->getName();
                             $propValue = $prop->getValue($conn);
                             $allProps[$propName] = is_object($propValue) ? get_class($propValue) : gettype($propValue);
+                            
+                            // Если это объект, проверяем его свойства на наличие RequestInterface
+                            if (is_object($propValue) && $propName === 'wrappedConn') {
+                                try {
+                                    $wrappedReflection = new \ReflectionObject($propValue);
+                                    $wrappedProps = $wrappedReflection->getProperties();
+                                    $wrappedPropsInfo = [];
+                                    foreach ($wrappedProps as $wrappedProp) {
+                                        $wrappedProp->setAccessible(true);
+                                        $wrappedPropName = $wrappedProp->getName();
+                                        $wrappedValue = $wrappedProp->getValue($propValue);
+                                        $wrappedPropsInfo[$wrappedPropName] = is_object($wrappedValue) ? get_class($wrappedValue) : gettype($wrappedValue);
+                                        
+                                        if ($wrappedValue instanceof RequestInterface) {
+                                            $request = $wrappedValue;
+                                            $this->log("onOpen: Found request via wrappedConn->{$wrappedPropName}");
+                                            break 2;
+                                        }
+                                        // Также проверяем вложенные объекты
+                                        if (is_object($wrappedValue)) {
+                                            try {
+                                                $nestedReflection = new \ReflectionObject($wrappedValue);
+                                                $nestedProps = $nestedReflection->getProperties();
+                                                foreach ($nestedProps as $nestedProp) {
+                                                    $nestedProp->setAccessible(true);
+                                                    $nestedValue = $nestedProp->getValue($wrappedValue);
+                                                    if ($nestedValue instanceof RequestInterface) {
+                                                        $request = $nestedValue;
+                                                        $this->log("onOpen: Found request via wrappedConn->{$wrappedPropName}->{$nestedProp->getName()}");
+                                                        break 3;
+                                                    }
+                                                }
+                                            } catch (\Throwable $nestedEx) {
+                                                // Игнорируем ошибки при проверке вложенных объектов
+                                            }
+                                        }
+                                    }
+                                    $this->log("onOpen: wrappedConn properties: " . json_encode($wrappedPropsInfo));
+                                } catch (\Throwable $wrappedEx) {
+                                    $this->log("onOpen: Error inspecting wrappedConn: " . $wrappedEx->getMessage());
+                                }
+                            }
                         }
                         $this->log("onOpen: All connection properties: " . json_encode($allProps));
                     } catch (\Throwable $dumpEx) {
