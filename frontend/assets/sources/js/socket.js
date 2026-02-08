@@ -1,8 +1,42 @@
 var chat;
+var reconnectTimeout = null;
+var reconnectAttempts = 0;
+var maxReconnectAttempts = 5;
+var reconnectDelay = 5000;
+var isConnecting = false;
+
 function connectWs() {
+    // Защита от множественных подключений
+    if (isConnecting) {
+        console.log('WebSocket: Уже идет подключение, пропускаем...');
+        return;
+    }
+    
+    // Проверяем, не подключены ли мы уже
+    if (chat && (chat.readyState === WebSocket.OPEN || chat.readyState === WebSocket.CONNECTING)) {
+        console.log('WebSocket: Уже подключен или идет подключение, пропускаем...', { readyState: chat.readyState });
+        return;
+    }
+    
+    // Закрываем предыдущее соединение, если оно есть
+    if (chat && chat.readyState !== WebSocket.CLOSED) {
+        try {
+            chat.close();
+        } catch (err) {
+            console.warn('WebSocket: Ошибка при закрытии предыдущего соединения:', err);
+        }
+    }
+    
+    isConnecting = true;
     chat = new WebSocket(ws);
 
     chat.onmessage = function(e) {
+        // Обработка WS-level ping фреймов (бинарные данные)
+        if (typeof e.data === 'string' && e.data.length === 0) {
+            // Это может быть WS-level ping фрейм, браузер автоматически ответит pong
+            return;
+        }
+        
         var response;
         try {
             response = JSON.parse(e.data);
@@ -10,9 +44,14 @@ function connectWs() {
             console.error('Ошибка разбора JSON:', err, e.data);
             return;
         }
-        if (response.type === 'ping') {
-            // ответ app-level pong (ВАЖНО: используем ваш протокол команд)
-            chat.send(JSON.stringify({ action: 'Pong', ts: response.ts }));
+        
+        if (response.type === 'ping' || response.action === 'ping') {
+            // Ответ app-level pong (используем строчные буквы, как ожидает сервер)
+            try {
+                chat.send(JSON.stringify({ action: 'pong', type: 'pong', ts: response.ts }));
+            } catch (err) {
+                console.error('WebSocket: Ошибка отправки pong:', err);
+            }
             return;
         }
         if (response.type && response.type === 'chat') {
@@ -82,25 +121,64 @@ function connectWs() {
     };
 
     chat.onclose = function(e) {
-        console.warn('WebSocket соединение закрыто. Причина:', e.reason || e.code);
-        // Попробовать переподключиться через 2 секунд
-        setTimeout(() => reconnectWebSocket(), 5000);
+        isConnecting = false;
+        console.warn('WebSocket соединение закрыто. Причина:', e.reason || e.code, 'Код:', e.code, 'Было чистое закрытие:', e.wasClean);
+        
+        // Переподключаемся только если:
+        // 1. Это не было нормальное закрытие (код 1000) ИЛИ это был таймаут (код 1008)
+        // 2. Не превышен лимит попыток
+        var shouldReconnect = (!e.wasClean || e.code === 1008 || e.code === 1000) && reconnectAttempts < maxReconnectAttempts;
+        
+        if (shouldReconnect) {
+            reconnectAttempts++;
+            console.log('WebSocket: Попытка переподключения (' + reconnectAttempts + '/' + maxReconnectAttempts + ')...');
+            if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
+            }
+            reconnectTimeout = setTimeout(function() {
+                reconnectWebSocket();
+            }, reconnectDelay);
+        } else if (reconnectAttempts >= maxReconnectAttempts) {
+            console.error('WebSocket: Достигнут лимит попыток переподключения');
+        } else {
+            console.log('WebSocket: Переподключение не требуется');
+        }
     };
 
     chat.onopen = function(e) {
+        isConnecting = false;
+        reconnectAttempts = 0; // Сбрасываем счетчик при успешном подключении
+        console.log('WebSocket: Соединение установлено');
+        
         if (token !== undefined) {
             var item = {'action' : 'auth', 'token' : token, 'steam_id' : steam_id};
             item.launcher = $('.store_launcher').length > 0;
-            chat.send(JSON.stringify(item));
+            try {
+                chat.send(JSON.stringify(item));
+                console.log('WebSocket: Отправлен запрос авторизации');
+            } catch (err) {
+                console.error('WebSocket: Ошибка отправки авторизации:', err);
+            }
             if ($('#supportMessage').length) {
                 initChat();
             }
         }
     };
 }
-connectWs();
+
+// Инициализация подключения
+if (typeof ws !== 'undefined' && ws) {
+    connectWs();
+} else {
+    console.error('WebSocket: URL не определен');
+}
+
 function reconnectWebSocket() {
-    console.log('Попытка переподключения...');
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+    }
+    console.log('WebSocket: Попытка переподключения...');
     connectWs();
 }
 function supportNotification(response) {

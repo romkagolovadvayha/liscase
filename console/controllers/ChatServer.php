@@ -591,24 +591,24 @@ class ChatServer extends WebSocketServer
 
               $model = UserDrop::findOne($request['id']);
               if ($client->user->id != $model->user->id) {
-                  $client->send(json_encode([
+                  $this->safeSend($client, [
                                                 'type' => 'store.take',
                                                 'code' => 500,
                                                 'message' => Yii::t('common', "Товар вам не принадлежит!", [], $client->user->current_language),
                                                 'id' => $model->id,
-                                            ]));
+                                            ]);
                   return;
               }
               
               // Атомарная блокировка предмета на время обработки (используем общий ключ для getDrop и returnDrop)
               $lockKey = 'userDrop_lock_' . $model->id;
               if (Yii::$app->cache->get($lockKey)) {
-                  $client->send(json_encode([
+                  $this->safeSend($client, [
                                                 'type' => 'store.take',
                                                 'code' => 500,
                                                 'message' => Yii::t('common', "Предмет уже обрабатывается, подождите немного!", [], $client->user->current_language),
                                                 'id' => $model->id,
-                                            ]));
+                                            ]);
                   return;
               }
               Yii::$app->cache->set($lockKey, true, 10); // Блокируем на 10 секунд
@@ -620,33 +620,33 @@ class ChatServer extends WebSocketServer
               if ($model->status != UserDrop::STATUS_ACTIVE) {
                   Yii::$app->cache->delete($lockKey); // Снимаем блокировку
                   $statusText = UserDrop::getStatusList()[$model->status] ?? 'Недоступен';
-                  $client->send(json_encode([
+                  $this->safeSend($client, [
                                                 'type' => 'store.take',
                                                 'code' => 500,
                                                 'message' => Yii::t('common', "Товар уже был выведен или недоступен! Статус: {status}", ['status' => $statusText], $client->user->current_language),
                                                 'id' => $model->id,
-                                            ]));
+                                            ]);
                   return;
               }
               
               if (empty($model->user->server)) {
                   Yii::$app->cache->delete($lockKey); // Снимаем блокировку
-                  $client->send(json_encode([
+                  $this->safeSend($client, [
                                                 'type' => 'store.take',
                                                 'code' => 500,
                                                 'message' => Yii::t('common', "Мы не нашли вас на сервере!", [], $client->user->current_language),
                                                 'id' => $model->id,
-                                            ]));
+                                            ]);
                   return;
               }
               if (DropBlocked::getBlocked($model->drop_id, $model->user->server->id, true)) {
                   Yii::$app->cache->delete($lockKey); // Снимаем блокировку
-                  $client->send(json_encode([
+                  $this->safeSend($client, [
                                                 'type' => 'store.take',
                                                 'code' => 500,
                                                 'message' => Yii::t('common', "Товар в вайп-блоке!", [], $client->user->current_language),
                                                 'id' => $model->id,
-                                            ]));
+                                            ]);
                   return;
               }
 
@@ -654,12 +654,12 @@ class ChatServer extends WebSocketServer
               $count = Yii::$app->cache->get($cacheKey) ?? 0;
               if ($count > 5) {
                   Yii::$app->cache->delete($lockKey); // Снимаем блокировку
-                  $client->send(json_encode([
+                  $this->safeSend($client, [
                                                 'type' => 'store.take',
                                                 'code' => 500,
                                                 'message' => Yii::t('common', "Нельзя выполнять действия слишком часто! Подождите 30 секунд.", [], $client->user->current_language),
                                                 'id' => $model->id,
-                                            ]));
+                                            ]);
                   return;
               }
               Yii::$app->cache->set($cacheKey, $count + 1, 30);
@@ -672,12 +672,12 @@ class ChatServer extends WebSocketServer
                   }
                   if (empty($drop)) {
                       Yii::$app->cache->delete($lockKey); // Снимаем блокировку
-                      $client->send(json_encode([
+                      $this->safeSend($client, [
                           'type' => 'store.take',
                           'code' => 500,
                           'message' => Yii::t('common', "Предмет не найден!", [], $client->user->current_language),
                           'id' => $model->id,
-                      ]));
+                      ]);
                       return;
                   }
                   
@@ -701,71 +701,83 @@ class ChatServer extends WebSocketServer
                   try {
                       if (empty($response)) {
                           Yii::$app->cache->delete($lockKey); // Снимаем блокировку при ошибке
-                          $client->send(json_encode([
+                          $model->status = UserDrop::STATUS_ACTIVE;
+                          $model->save(false);
+                          $this->safeSend($client, [
                                                         'type' => 'store.take',
                                                         'code' => 500,
                                                         'message' => Yii::t('common', "Произошла ошибка, попробуйте позже!", [], $client->user->current_language),
                                                         'id' => $model->id,
-                                                    ]));
-                            $model->status = UserDrop::STATUS_ACTIVE;
-                            $model->save(false);                        
+                                                    ]);
                           return;
                       }
                       $data = json_decode(json_decode($response, 1)['result'], 1);
                       if (!isset($data['success'])) {
                           Yii::$app->cache->delete($lockKey); // Снимаем блокировку при ошибке
-                          $client->send(json_encode([
+                          $model->status = UserDrop::STATUS_ACTIVE;
+                          $model->save(false);
+                          $this->safeSend($client, [
                                                         'type' => 'store.take',
                                                         'code' => 500,
                                                         'message' => Yii::t('common', "Произошла ошибка, попробуйте позже!", [], $client->user->current_language),
                                                         'id' => $model->id,
-                                                    ]));
-                          $model->status = UserDrop::STATUS_ACTIVE;
-                          $model->save(false);        
+                                                    ]);
                           return;
                       }
                       if (!$data['success']) {
                           Yii::$app->cache->delete($lockKey); // Снимаем блокировку при ошибке
-                          $client->send(json_encode([
+                          $model->status = UserDrop::STATUS_ACTIVE;
+                          $model->save(false);
+                          $this->safeSend($client, [
                                                         'type' => 'store.take',
                                                         'code' => 500,
                                                         'message' => $data['error'],
                                                         'id' => $model->id,
-                                                    ]));
-                            $model->status = UserDrop::STATUS_ACTIVE;
-                            $model->save(false);        
+                                                    ]);
                           return;
                       }
                       if ($data['success']) {
                           // Успешная выдача - меняем статус предмета на "Отправлен"
                           Yii::$app->cache->delete($lockKey); // Снимаем блокировку
-                          $client->send(json_encode([
+                          $this->safeSend($client, [
                                                         'type' => 'store.take',
                                                         'code' => 200,
                                                         'message' => Yii::t('common', "Товар успешно получен!", [], $client->user->current_language),
                                                         'id' => $model->id,
-                                                    ]));
+                                                    ]);
                           return;
                       }
                   } catch (\Exception $e) {
                       Yii::$app->cache->delete($lockKey); // Снимаем блокировку при исключении
+                      $model->status = UserDrop::STATUS_ACTIVE;
+                      $model->save(false);
                       Yii::$app->telegramChats->sendMessage($e->getFile() . ":" . $e->getLine() . "; " . $e->getMessage() . "; " . $model->id . "; " . $model->user->steam_id . "; " . $command . "; " . $response);
-                      $client->send(json_encode([
+                      $this->safeSend($client, [
                                                     'type' => 'store.take',
                                                     'code' => 500,
                                                     'message' => Yii::t('common', "Произошла ошибка, попробуйте позже!", [], $client->user->current_language),
                                                     'id' => $model->id,
-                                                ]));
+                                                ]);
                   }
 
                   return;
               }
           }
 
-          $client->send( json_encode($result) );
+          $this->safeSend($client, $result);
       } catch (\Exception $e) {
           Yii::$app->telegramChats->sendMessage('commandGetDrop: ' . $e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
           echo "commandGetDrop:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
+          // Пытаемся отправить ошибку клиенту
+          try {
+              $this->safeSend($client, [
+                  'type' => 'store.take',
+                  'code' => 500,
+                  'message' => Yii::t('common', "Произошла ошибка, попробуйте позже!", [], !empty($client->user) ? $client->user->current_language : 'ru-RU'),
+              ]);
+          } catch (\Exception $sendEx) {
+              // Игнорируем ошибки отправки при общей ошибке
+          }
       }
     }
 
@@ -896,7 +908,7 @@ class ChatServer extends WebSocketServer
                 }
             }
         }
-        $client->send(json_encode($result));
+        $this->safeSend($client, $result);
     }
 
     public function commandReturnDrop(ConnectionInterface $client, $msg)
@@ -909,34 +921,34 @@ class ChatServer extends WebSocketServer
                 $model = UserDrop::findOne($request['id']);
                 
                 if (!$model) {
-                    $client->send(json_encode([
+                    $this->safeSend($client, [
                         'type' => 'store.return.item',
                         'code' => 500,
                         'message' => Yii::t('common', "Товар не найден!", [], $client->user->current_language),
                         'id' => $request['id'],
-                    ]));
+                    ]);
                     return;
                 }
 
                 if ($client->user->id != $model->user->id) {
-                    $client->send(json_encode([
+                    $this->safeSend($client, [
                         'type' => 'store.return.item',
                         'code' => 500,
                         'message' => Yii::t('common', "Товар вам не принадлежит!", [], $client->user->current_language),
                         'id' => $model->id,
-                    ]));
+                    ]);
                     return;
                 }
 
                 // Атомарная блокировка предмета на время обработки (используем общий ключ для getDrop и returnDrop)
                 $lockKey = 'userDrop_lock_' . $model->id;
                 if (Yii::$app->cache->get($lockKey)) {
-                    $client->send(json_encode([
+                    $this->safeSend($client, [
                         'type' => 'store.return.item',
                         'code' => 500,
                         'message' => Yii::t('common', "Предмет уже обрабатывается, подождите немного!", [], $client->user->current_language),
                         'id' => $model->id,
-                    ]));
+                    ]);
                     return;
                 }
                 Yii::$app->cache->set($lockKey, true, 10); // Блокируем на 10 секунд
@@ -946,23 +958,23 @@ class ChatServer extends WebSocketServer
 
                 if (!empty($model->box_id) || !empty($model->sets_id) || !empty($model->parent_drop_id)) {
                     Yii::$app->cache->delete($lockKey); // Снимаем блокировку
-                    $client->send(json_encode([
+                    $this->safeSend($client, [
                         'type' => 'store.return.item',
                         'code' => 500,
                         'message' => Yii::t('common', "Не подлежит возврату!", [], $client->user->current_language),
                         'id' => $model->id,
-                    ]));
+                    ]);
                     return;
                 }
 
                 if ($model->status !== UserDrop::STATUS_ACTIVE) {
                     Yii::$app->cache->delete($lockKey); // Снимаем блокировку
-                    $client->send(json_encode([
+                    $this->safeSend($client, [
                         'type' => 'store.return.item',
                         'code' => 500,
                         'message' => Yii::t('common', "Не найдена вещь в корзине!", [], $client->user->current_language),
                         'id' => $model->id,
-                    ]));
+                    ]);
                     return;
                 }
 
@@ -981,12 +993,12 @@ class ChatServer extends WebSocketServer
 
                     Yii::$app->cache->delete($lockKey); // Снимаем блокировку после успешного возврата
                     
-                    $client->send(json_encode([
+                    $this->safeSend($client, [
                         'type' => 'store.return.item',
                         'code' => 200,
                         'message' => Yii::t('common', "Предмет успешно возвращен!", [], $client->user->current_language),
                         'id' => $model->id,
-                    ]));
+                    ]);
                 } catch (\Exception $e) {
                     Yii::$app->cache->delete($lockKey); // Снимаем блокировку при ошибке
                     throw $e;
@@ -995,12 +1007,12 @@ class ChatServer extends WebSocketServer
         } catch (\Exception $ex) {
             $this->log("ReturnDrop error: " . $ex->getMessage());
             if (!empty($request['id'])) {
-                $client->send(json_encode([
+                $this->safeSend($client, [
                     'type' => 'store.return.item',
                     'code' => 500,
-                    'message' => Yii::t('common', "Произошла ошибка при возврате товара!", [], $client->user->current_language ?? 'ru-RU'),
+                    'message' => Yii::t('common', "Произошла ошибка при возврате товара!", [], !empty($client->user) ? $client->user->current_language : 'ru-RU'),
                     'id' => $request['id'],
-                ]));
+                ]);
             }
         }
     }
@@ -1739,12 +1751,8 @@ class ChatServer extends WebSocketServer
             }
             
             // Отправляем ответ клиенту
-            try {
-                $result['message'] = 'Invalid token';
-                $client->send(json_encode($result));
-            } catch (\Exception $sendEx) {
-                $this->log("Error sending auth error response: " . $sendEx->getMessage());
-            }
+            $result['message'] = 'Invalid token';
+            $this->safeSend($client, $result);
         }
     }
     public function commandPong(ConnectionInterface $client, $msg)
