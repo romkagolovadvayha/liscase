@@ -65,6 +65,76 @@ class ChatServer extends WebSocketServer
     }
     
     /**
+     * Получить реальный IP клиента из HTTP заголовков (для случая, когда сервер за прокси)
+     * @param ConnectionInterface $client
+     * @param WSClientEvent|null $event Событие подключения (может содержать доступ к HTTP запросу)
+     * @return string IP адрес клиента
+     */
+    private function getClientRealIp(ConnectionInterface $client, WSClientEvent $event = null)
+    {
+        $realIp = $client->remoteAddress;
+        
+        // Пытаемся получить IP из HTTP заголовков (если доступны)
+        try {
+            $httpRequest = null;
+            
+            // Пытаемся получить httpRequest из события (если передано)
+            if ($event && property_exists($event, 'httpRequest') && $event->httpRequest) {
+                $httpRequest = $event->httpRequest;
+            }
+            // Или пытаемся получить напрямую из клиента
+            elseif (property_exists($client, 'httpRequest') && $client->httpRequest) {
+                $httpRequest = $client->httpRequest;
+            }
+            // Или через рефлексию (если свойство защищено)
+            else {
+                try {
+                    $reflection = new \ReflectionObject($client);
+                    if ($reflection->hasProperty('httpRequest')) {
+                        $prop = $reflection->getProperty('httpRequest');
+                        $prop->setAccessible(true);
+                        $httpRequest = $prop->getValue($client);
+                    }
+                } catch (\Throwable $reflectionEx) {
+                    // Игнорируем ошибки рефлексии
+                }
+            }
+            
+            if ($httpRequest && method_exists($httpRequest, 'getHeaders')) {
+                $headers = $httpRequest->getHeaders();
+                
+                // Проверяем X-Real-IP (приоритетный заголовок от Nginx)
+                if (isset($headers['X-Real-IP'])) {
+                    $xRealIp = is_array($headers['X-Real-IP']) ? $headers['X-Real-IP'][0] : $headers['X-Real-IP'];
+                    if (!empty($xRealIp)) {
+                        $realIp = trim($xRealIp);
+                    }
+                }
+                // Если X-Real-IP нет, проверяем X-Forwarded-For
+                elseif (isset($headers['X-Forwarded-For'])) {
+                    $xForwardedFor = is_array($headers['X-Forwarded-For']) ? $headers['X-Forwarded-For'][0] : $headers['X-Forwarded-For'];
+                    if (!empty($xForwardedFor)) {
+                        // X-Forwarded-For может содержать несколько IP через запятую
+                        $forwardedFor = trim($xForwardedFor);
+                        $ips = explode(',', $forwardedFor);
+                        if (!empty($ips[0])) {
+                            $realIp = trim($ips[0]);
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Если не удалось получить заголовки, используем remoteAddress
+            // Логируем только если это не 127.0.0.1 (чтобы не засорять логи)
+            if ($realIp === '127.0.0.1') {
+                $this->log("Warning: Could not get real IP from headers, using remoteAddress: {$realIp} (" . $e->getMessage() . ")");
+            }
+        }
+        
+        return $realIp;
+    }
+    
+    /**
      * Безопасная отправка сообщения клиенту с обработкой ошибок
      * @param ConnectionInterface $client
      * @param mixed $data Данные для отправки (будут закодированы в JSON)
@@ -176,7 +246,11 @@ class ChatServer extends WebSocketServer
         self::$instance = $this;
 
             $this->on(self::EVENT_CLIENT_CONNECTED, function(WSClientEvent $e) {
-            $ip = $e->client->remoteAddress;
+            // Получаем реальный IP клиента из HTTP заголовков (если доступен)
+            // Передаем событие, чтобы получить доступ к HTTP запросу
+            $ip = $this->getClientRealIp($e->client, $e);
+            // Сохраняем реальный IP в свойство клиента для дальнейшего использования
+            $e->client->realIp = $ip;
             $now = time();
             
             // Rate limiting: проверяем количество подключений с одного IP
@@ -188,7 +262,8 @@ class ChatServer extends WebSocketServer
             // Подсчитываем активные подключения с этого IP
             $activeConnectionsFromIp = 0;
             foreach ($this->clients as $client) {
-                if ($client->remoteAddress === $ip) {
+                $clientIp = isset($client->realIp) ? $client->realIp : $client->remoteAddress;
+                if ($clientIp === $ip) {
                     $activeConnectionsFromIp++;
                 }
             }
@@ -250,13 +325,14 @@ class ChatServer extends WebSocketServer
             $userId = !empty($e->client->user) ? $e->client->user->id : 'anonymous';
             $reason = isset($e->client->disconnectReason) ? $e->client->disconnectReason : 'unknown';
             $idleTime = isset($e->client->lastPong) ? (time() - $e->client->lastPong) : 'N/A';
-            $ip = $e->client->remoteAddress;
+            $ip = isset($e->client->realIp) ? $e->client->realIp : $e->client->remoteAddress;
             $this->log("Client disconnected: {$userId} from {$ip} (reason: {$reason}, idle: {$idleTime}s)");
             
             // Очищаем счетчики подключений для этого IP (если нет активных подключений)
             $activeFromIp = 0;
             foreach ($this->clients as $client) {
-                if ($client->remoteAddress === $ip) {
+                $clientIp = isset($client->realIp) ? $client->realIp : $client->remoteAddress;
+                if ($clientIp === $ip) {
                     $activeFromIp++;
                 }
             }
@@ -331,7 +407,8 @@ class ChatServer extends WebSocketServer
                     if (empty($client->user) && isset($client->connectedAt)) {
                         $timeSinceConnect = $now - $client->connectedAt;
                         if ($timeSinceConnect >= $this->authTimeoutSeconds) {
-                            $this->log("Closing unauthenticated client from " . $client->remoteAddress . " (auth timeout: {$timeSinceConnect}s)");
+                            $clientIp = isset($client->realIp) ? $client->realIp : $client->remoteAddress;
+                            $this->log("Closing unauthenticated client from " . $clientIp . " (auth timeout: {$timeSinceConnect}s)");
                             $client->disconnectReason = 'auth_timeout';
                             try { $client->close(1008, 'authentication timeout'); } catch (\Throwable $e) {}
                             continue;
@@ -1765,7 +1842,8 @@ class ChatServer extends WebSocketServer
             // Валидация входных данных
             if (empty($request['token']) || empty($request['steam_id'])) {
                 $result['message'] = 'Invalid token';
-                $this->log("Auth failed: missing token or steam_id from " . $client->remoteAddress);
+                $clientIp = isset($client->realIp) ? $client->realIp : $client->remoteAddress;
+                $this->log("Auth failed: missing token or steam_id from " . $clientIp);
                 $this->safeSend($client, $result);
                 return;
             }
@@ -1809,11 +1887,13 @@ class ChatServer extends WebSocketServer
                 // Добавляем в индекс для быстрого поиска
                 $this->indexClientByUserId($client);
                 
-                $this->log("User {$user->id} authenticated successfully from " . $client->remoteAddress);
+                $clientIp = isset($client->realIp) ? $client->realIp : $client->remoteAddress;
+                $this->log("User {$user->id} authenticated successfully from " . $clientIp);
 
             } else {
                 $result['message'] = 'Invalid token';
-                $this->log("Auth failed for token/steam_id from " . $client->remoteAddress);
+                $clientIp = isset($client->realIp) ? $client->realIp : $client->remoteAddress;
+                $this->log("Auth failed for token/steam_id from " . $clientIp);
                 $this->safeSend($client, $result);
             }
         } catch (\Exception $ex) {
