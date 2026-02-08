@@ -36,10 +36,10 @@ class ChatServer extends WebSocketServer
     private $authTimeoutSeconds = 30; // NEW
 
     /** @var int Максимальное количество подключений с одного IP */
-    private $maxConnectionsPerIp = 100; // NEW
+    private $maxConnectionsPerIp = 10; // NEW
 
     /** @var int Максимальное количество подключений в секунду с одного IP */
-    private $maxConnectionsPerSecond = 30; // NEW
+    private $maxConnectionsPerSecond = 3; // NEW
 
     /** @var array Счетчик подключений по IP */
     private $connectionsByIp = []; // NEW
@@ -73,7 +73,6 @@ class ChatServer extends WebSocketServer
     public function onOpen(ConnectionInterface $conn, RequestInterface $request = null)
     {
         $realIp = $conn->remoteAddress;
-        $this->log("onOpen: Initial remoteAddress: {$realIp}");
 
         // Attempt to get RequestInterface if not directly passed (e.g., from parent class)
         if (!$request) {
@@ -91,7 +90,6 @@ class ChatServer extends WebSocketServer
                         // Check if it's a RequestInterface
                         if ($value instanceof RequestInterface) {
                             $request = $value;
-                            $this->log("onOpen: Found request via property '{$propName}'");
                             break;
                         }
 
@@ -104,7 +102,6 @@ class ChatServer extends WebSocketServer
                                 $httpRequestValue = $httpRequestProp->getValue($value);
                                 if ($httpRequestValue instanceof RequestInterface) {
                                     $request = $httpRequestValue;
-                                    $this->log("onOpen: Found request via nested property '{$propName}->httpRequest'");
                                     break;
                                 }
                             }
@@ -120,7 +117,6 @@ class ChatServer extends WebSocketServer
                         $value = $prop->getValue($conn);
                         if ($value instanceof RequestInterface) {
                             $request = $value;
-                            $this->log("onOpen: Found request via property '{$prop->getName()}'");
                             break;
                         }
                     }
@@ -137,192 +133,111 @@ class ChatServer extends WebSocketServer
                                 $value = $prop->getValue($conn);
                                 if ($value instanceof RequestInterface) {
                                     $request = $value;
-                                    $this->log("onOpen: Found request via parent class property '{$prop->getName()}'");
                                     break;
                                 }
                             }
                         }
                     } catch (\Throwable $parentEx) {
-                        $this->log("onOpen: Parent class reflection failed: " . $parentEx->getMessage());
+                        // Ignore parent class reflection errors
                     }
                 }
 
-                // Try to dump all object properties for debugging
+                // Try to find request in wrappedConn->WebSocket->request (most common case)
                 if (!$request) {
                     try {
-                        $allProps = [];
                         $props = $reflection->getProperties();
                         foreach ($props as $prop) {
                             $prop->setAccessible(true);
                             $propName = $prop->getName();
                             $propValue = $prop->getValue($conn);
-                            $allProps[$propName] = is_object($propValue) ? get_class($propValue) : gettype($propValue);
                             
-                            // Если это объект, проверяем его свойства на наличие RequestInterface
                             if (is_object($propValue) && $propName === 'wrappedConn') {
                                 try {
                                     $wrappedReflection = new \ReflectionObject($propValue);
                                     $wrappedProps = $wrappedReflection->getProperties();
-                                    $wrappedPropsInfo = [];
                                     foreach ($wrappedProps as $wrappedProp) {
                                         $wrappedProp->setAccessible(true);
                                         $wrappedPropName = $wrappedProp->getName();
                                         $wrappedValue = $wrappedProp->getValue($propValue);
-                                        $wrappedPropsInfo[$wrappedPropName] = is_object($wrappedValue) ? get_class($wrappedValue) : gettype($wrappedValue);
                                         
                                         if ($wrappedValue instanceof RequestInterface) {
                                             $request = $wrappedValue;
-                                            $this->log("onOpen: Found request via wrappedConn->{$wrappedPropName}");
                                             break 2;
                                         }
-                                        // Также проверяем вложенные объекты
-                                        if (is_object($wrappedValue)) {
+                                        
+                                        // Check WebSocket object
+                                        if (is_object($wrappedValue) && $wrappedPropName === 'WebSocket') {
                                             try {
                                                 $nestedReflection = new \ReflectionObject($wrappedValue);
-                                                $nestedProps = $nestedReflection->getProperties();
-                                                
-                                                // Если это WebSocket объект, сначала проверяем свойство 'request'
-                                                if ($wrappedPropName === 'WebSocket') {
-                                                    // Пытаемся получить request через рефлексию
-                                                    $requestPropNames = ['request', 'httpRequest', '_request', '_httpRequest'];
-                                                    foreach ($requestPropNames as $reqPropName) {
-                                                        if ($nestedReflection->hasProperty($reqPropName)) {
-                                                            $reqProp = $nestedReflection->getProperty($reqPropName);
-                                                            $reqProp->setAccessible(true);
-                                                            $reqValue = $reqProp->getValue($wrappedValue);
-                                                            $reqValueType = is_object($reqValue) ? get_class($reqValue) : gettype($reqValue);
-                                                            $this->log("onOpen: WebSocket->{$reqPropName} type (reflection): {$reqValueType}");
-                                                            
-                                                            if ($reqValue instanceof RequestInterface) {
-                                                                $request = $reqValue;
-                                                                $this->log("onOpen: Found request via wrappedConn->WebSocket->{$reqPropName} (reflection)");
-                                                                break 3;
-                                                            } elseif (is_object($reqValue)) {
-                                                                // Проверяем, есть ли метод getHeader
-                                                                try {
-                                                                    $reqValueReflection = new \ReflectionObject($reqValue);
-                                                                    if ($reqValueReflection->hasMethod('getHeader')) {
-                                                                        $request = $reqValue;
-                                                                        $this->log("onOpen: Using request object with getHeader method via wrappedConn->WebSocket->{$reqPropName} (reflection)");
-                                                                        break 3;
-                                                                    }
-                                                                } catch (\Throwable $reqValueEx) {
-                                                                    // Игнорируем ошибки
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                    
-                                                    // Если это stdClass, используем get_object_vars
-                                                    if ($wrappedValue instanceof \stdClass) {
-                                                        // Пытаемся получить заголовки из свойств WebSocket объекта
-                                                        $wsProps = get_object_vars($wrappedValue);
-                                                        $this->log("onOpen: WebSocket object properties: " . json_encode(array_keys($wsProps)));
+                                                $requestPropNames = ['request', 'httpRequest', '_request', '_httpRequest'];
+                                                foreach ($requestPropNames as $reqPropName) {
+                                                    if ($nestedReflection->hasProperty($reqPropName)) {
+                                                        $reqProp = $nestedReflection->getProperty($reqPropName);
+                                                        $reqProp->setAccessible(true);
+                                                        $reqValue = $reqProp->getValue($wrappedValue);
                                                         
-                                                        // Проверяем свойство 'request' (приоритетное)
-                                                        if (isset($wsProps['request'])) {
-                                                            $requestValue = $wsProps['request'];
-                                                            $requestType = is_object($requestValue) ? get_class($requestValue) : gettype($requestValue);
-                                                            $this->log("onOpen: WebSocket->request type: {$requestType}");
-                                                            
-                                                            if ($requestValue instanceof RequestInterface) {
-                                                                $request = $requestValue;
-                                                                $this->log("onOpen: Found request via wrappedConn->WebSocket->request");
-                                                                break 2;
-                                                            } else {
-                                                                // Пытаемся получить заголовки из объекта request, даже если это не RequestInterface
-                                                                if (is_object($requestValue)) {
-                                                                    try {
-                                                                        $requestReflection = new \ReflectionObject($requestValue);
-                                                                        // Проверяем, есть ли метод getHeader
-                                                                        if ($requestReflection->hasMethod('getHeader')) {
-                                                                            $request = $requestValue;
-                                                                            $this->log("onOpen: Using request object with getHeader method (not RequestInterface)");
-                                                                            break 2;
-                                                                        }
-                                                                    } catch (\Throwable $reqEx) {
-                                                                        $this->log("onOpen: Error checking request object: " . $reqEx->getMessage());
-                                                                    }
+                                                        if ($reqValue instanceof RequestInterface) {
+                                                            $request = $reqValue;
+                                                            break 3;
+                                                        } elseif (is_object($reqValue)) {
+                                                            // Check if it has getHeader method (e.g., Guzzle\Http\Message\EntityEnclosingRequest)
+                                                            try {
+                                                                $reqValueReflection = new \ReflectionObject($reqValue);
+                                                                if ($reqValueReflection->hasMethod('getHeader')) {
+                                                                    $request = $reqValue;
+                                                                    break 3;
                                                                 }
-                                                            }
-                                                        }
-                                                        
-                                                        // Проверяем свойство 'httpRequest' (fallback)
-                                                        if (isset($wsProps['httpRequest']) && $wsProps['httpRequest'] instanceof RequestInterface) {
-                                                            $request = $wsProps['httpRequest'];
-                                                            $this->log("onOpen: Found request via wrappedConn->WebSocket->httpRequest");
-                                                            break 2;
-                                                        }
-                                                        
-                                                        // Проверяем другие возможные свойства
-                                                        foreach ($wsProps as $wsPropName => $wsPropValue) {
-                                                            if ($wsPropValue instanceof RequestInterface) {
-                                                                $request = $wsPropValue;
-                                                                $this->log("onOpen: Found request via wrappedConn->WebSocket->{$wsPropName}");
-                                                                break 3;
-                                                            }
-                                                            // Если это объект, проверяем его свойства
-                                                            if (is_object($wsPropValue)) {
-                                                                try {
-                                                                    $wsNestedReflection = new \ReflectionObject($wsPropValue);
-                                                                    $wsNestedProps = $wsNestedReflection->getProperties();
-                                                                    foreach ($wsNestedProps as $wsNestedProp) {
-                                                                        $wsNestedProp->setAccessible(true);
-                                                                        $wsNestedPropValue = $wsNestedProp->getValue($wsPropValue);
-                                                                        if ($wsNestedPropValue instanceof RequestInterface) {
-                                                                            $request = $wsNestedPropValue;
-                                                                            $this->log("onOpen: Found request via wrappedConn->WebSocket->{$wsPropName}->{$wsNestedProp->getName()}");
-                                                                            break 4;
-                                                                        }
-                                                                    }
-                                                                } catch (\Throwable $wsNestedEx) {
-                                                                    // Игнорируем ошибки
-                                                                }
+                                                            } catch (\Throwable $reqValueEx) {
+                                                                // Ignore
                                                             }
                                                         }
                                                     }
                                                 }
                                                 
-                                                // Проверяем все свойства вложенного объекта (не только WebSocket)
-                                                foreach ($nestedProps as $nestedProp) {
-                                                    $nestedProp->setAccessible(true);
-                                                    $nestedValue = $nestedProp->getValue($wrappedValue);
-                                                    if ($nestedValue instanceof RequestInterface) {
-                                                        $request = $nestedValue;
-                                                        $this->log("onOpen: Found request via wrappedConn->{$wrappedPropName}->{$nestedProp->getName()}");
-                                                        break 3;
+                                                // If it's stdClass, use get_object_vars
+                                                if ($wrappedValue instanceof \stdClass) {
+                                                    $wsProps = get_object_vars($wrappedValue);
+                                                    if (isset($wsProps['request'])) {
+                                                        $requestValue = $wsProps['request'];
+                                                        if ($requestValue instanceof RequestInterface) {
+                                                            $request = $requestValue;
+                                                            break 2;
+                                                        } elseif (is_object($requestValue)) {
+                                                            try {
+                                                                $requestReflection = new \ReflectionObject($requestValue);
+                                                                if ($requestReflection->hasMethod('getHeader')) {
+                                                                    $request = $requestValue;
+                                                                    break 2;
+                                                                }
+                                                            } catch (\Throwable $reqEx) {
+                                                                // Ignore
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             } catch (\Throwable $nestedEx) {
-                                                // Игнорируем ошибки при проверке вложенных объектов
+                                                // Ignore nested reflection errors
                                             }
                                         }
                                     }
-                                    $this->log("onOpen: wrappedConn properties: " . json_encode($wrappedPropsInfo));
                                 } catch (\Throwable $wrappedEx) {
-                                    $this->log("onOpen: Error inspecting wrappedConn: " . $wrappedEx->getMessage());
+                                    // Ignore wrapped reflection errors
                                 }
                             }
                         }
-                        $this->log("onOpen: All connection properties: " . json_encode($allProps));
                     } catch (\Throwable $dumpEx) {
-                        $this->log("onOpen: Failed to dump properties: " . $dumpEx->getMessage());
+                        // Ignore property dump errors
                     }
                 }
             } catch (\Throwable $reflectionEx) {
-                $this->log("onOpen: Reflection failed: " . $reflectionEx->getMessage());
+                // Ignore reflection errors
             }
-        } else {
-            $this->log("onOpen: Request passed directly as parameter");
         }
 
         if ($request) {
             try {
-                $requestClass = get_class($request);
-                $this->log("onOpen: Request object class: {$requestClass}");
-                
                 // Helper function to extract header value from various formats
-                $extractHeaderValue = function($headerValue) use (&$realIp, $conn) {
+                $extractHeaderValue = function($headerValue) {
                     if (empty($headerValue)) {
                         return null;
                     }
@@ -404,7 +319,7 @@ class ChatServer extends WebSocketServer
                             $xRealIpValue = trim($xRealIpValue);
                         }
                     } catch (\Throwable $e) {
-                        $this->log("onOpen: getHeaderLine('X-Real-IP') failed: " . $e->getMessage());
+                        // Ignore
                     }
                 }
                 
@@ -412,10 +327,9 @@ class ChatServer extends WebSocketServer
                 if (empty($xRealIpValue)) {
                     try {
                         $xRealIp = $request->getHeader('X-Real-IP');
-                        $this->log("onOpen: X-Real-IP header type: " . gettype($xRealIp) . (is_object($xRealIp) ? " (" . get_class($xRealIp) . ")" : ""));
                         $xRealIpValue = $extractHeaderValue($xRealIp);
                     } catch (\Throwable $e) {
-                        $this->log("onOpen: getHeader('X-Real-IP') failed: " . $e->getMessage());
+                        // Ignore
                     }
                 }
                 
@@ -424,9 +338,6 @@ class ChatServer extends WebSocketServer
                     $candidateIp = $xRealIpValue;
                     if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
                         $realIp = $candidateIp;
-                        $this->log("onOpen: Got real IP from X-Real-IP header: {$realIp} (was: {$conn->remoteAddress})");
-                    } else {
-                        $this->log("onOpen: X-Real-IP was loopback: {$candidateIp}");
                     }
                 }
 
@@ -442,7 +353,7 @@ class ChatServer extends WebSocketServer
                                 $xForwardedForValue = trim($xForwardedForValue);
                             }
                         } catch (\Throwable $e) {
-                            $this->log("onOpen: getHeaderLine('X-Forwarded-For') failed: " . $e->getMessage());
+                            // Ignore
                         }
                     }
                     
@@ -450,30 +361,24 @@ class ChatServer extends WebSocketServer
                     if (empty($xForwardedForValue)) {
                         try {
                             $xForwardedFor = $request->getHeader('X-Forwarded-For');
-                            $this->log("onOpen: X-Forwarded-For header type: " . gettype($xForwardedFor) . (is_object($xForwardedFor) ? " (" . get_class($xForwardedFor) . ")" : ""));
                             $xForwardedForValue = $extractHeaderValue($xForwardedFor);
                         } catch (\Throwable $e) {
-                            $this->log("onOpen: getHeader('X-Forwarded-For') failed: " . $e->getMessage());
+                            // Ignore
                         }
                     }
                     
                     // Process X-Forwarded-For value
                     if (!empty($xForwardedForValue)) {
-                        $ips = explode(',', $xForwardedForValue);
+                        $ips = array_map('trim', explode(',', $xForwardedForValue));
                         // Берем последний IP в цепочке (реальный IP клиента)
-                        // Формат: "DDoS-Guard-IP, Real-Client-IP" или "Real-Client-IP"
-                        $lastIp = trim(end($ips));
+                        $lastIp = end($ips);
                         if (!empty($lastIp) && $lastIp !== '127.0.0.1' && $lastIp !== '::1') {
                             $realIp = $lastIp;
-                            $this->log("onOpen: Got real IP from X-Forwarded-For header (last in chain): {$realIp} (was: {$conn->remoteAddress})");
                         } else {
                             // Если последний IP loopback, пробуем первый
-                            $firstIp = trim($ips[0]);
+                            $firstIp = reset($ips);
                             if (!empty($firstIp) && $firstIp !== '127.0.0.1' && $firstIp !== '::1') {
                                 $realIp = $firstIp;
-                                $this->log("onOpen: Got real IP from X-Forwarded-For header (first in chain): {$realIp} (was: {$conn->remoteAddress})");
-                            } else {
-                                $this->log("onOpen: X-Forwarded-For IPs were loopback: " . $xForwardedForValue);
                             }
                         }
                     }
@@ -503,7 +408,6 @@ class ChatServer extends WebSocketServer
                     }
                     if (!empty($xRealIpOriginalValue) && $xRealIpOriginalValue !== '127.0.0.1' && $xRealIpOriginalValue !== '::1') {
                         $realIp = $xRealIpOriginalValue;
-                        $this->log("onOpen: Got real IP from X-Real-IP-Original header (from DDoS-Guard): {$realIp} (was: {$conn->remoteAddress})");
                     }
                     
                     // Try X-Forwarded-For-Original (original header from DDoS-Guard)
@@ -528,53 +432,21 @@ class ChatServer extends WebSocketServer
                             }
                         }
                         if (!empty($xForwardedForOriginalValue)) {
-                            $ips = explode(',', $xForwardedForOriginalValue);
+                            $ips = array_map('trim', explode(',', $xForwardedForOriginalValue));
                             // Берем первый IP (реальный IP клиента от DDoS-Guard)
-                            $firstIp = trim($ips[0]);
+                            $firstIp = reset($ips);
                             if (!empty($firstIp) && $firstIp !== '127.0.0.1' && $firstIp !== '::1') {
                                 $realIp = $firstIp;
-                                $this->log("onOpen: Got real IP from X-Forwarded-For-Original header (from DDoS-Guard): {$realIp} (was: {$conn->remoteAddress})");
                             }
                         }
-                    }
-                }
-
-                // Log all headers for debugging (only if IP is still localhost)
-                if ($realIp === '127.0.0.1' || $realIp === '::1') {
-                    try {
-                        // Try getHeaders() method
-                        if (method_exists($request, 'getHeaders')) {
-                            $allHeaders = $request->getHeaders();
-                            $this->log("onOpen: All headers (getHeaders): " . json_encode($allHeaders));
-                        }
-                        
-                        // For Guzzle, try to access headers via reflection
-                        try {
-                            $requestReflection = new \ReflectionObject($request);
-                            $headerProps = ['headers', '_headers', 'header', '_header'];
-                            foreach ($headerProps as $headerProp) {
-                                if ($requestReflection->hasProperty($headerProp)) {
-                                    $prop = $requestReflection->getProperty($headerProp);
-                                    $prop->setAccessible(true);
-                                    $headerValue = $prop->getValue($request);
-                                    $this->log("onOpen: Request->{$headerProp} type: " . gettype($headerValue) . (is_object($headerValue) ? " (" . get_class($headerValue) . ")" : ""));
-                                    if (is_array($headerValue)) {
-                                        $this->log("onOpen: Request->{$headerProp} content: " . json_encode($headerValue));
-                                    }
-                                }
-                            }
-                        } catch (\Throwable $refEx) {
-                            $this->log("onOpen: Reflection on request headers failed: " . $refEx->getMessage());
-                        }
-                    } catch (\Throwable $e) {
-                        $this->log("onOpen: Could not get all headers: " . $e->getMessage());
                     }
                 }
             } catch (\Throwable $e) {
-                $this->log("onOpen: Error processing headers: " . $e->getMessage() . " | Trace: " . $e->getTraceAsString());
+                // Log only critical errors
+                if ($realIp === '127.0.0.1' || $realIp === '::1') {
+                    $this->log("onOpen: Error processing headers: " . $e->getMessage());
+                }
             }
-        } else {
-            $this->log("onOpen: Request object not available");
         }
 
         // Fallback: try to get IP from $_SERVER (if available in this context)
@@ -585,21 +457,17 @@ class ChatServer extends WebSocketServer
                     $candidateIp = trim($_SERVER['HTTP_X_REAL_IP_ORIGINAL']);
                     if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
                         $realIp = $candidateIp;
-                        $this->log("onOpen: Got real IP from \$_SERVER['HTTP_X_REAL_IP_ORIGINAL'] (from DDoS-Guard): {$realIp} (was: {$conn->remoteAddress})");
                     }
                 }
                 
                 // Check X-Forwarded-For-Original from DDoS-Guard
                 if (($realIp === '127.0.0.1' || $realIp === '::1') && !empty($_SERVER['HTTP_X_FORWARDED_FOR_ORIGINAL'])) {
                     $forwardedFor = trim($_SERVER['HTTP_X_FORWARDED_FOR_ORIGINAL']);
-                    $ips = explode(',', $forwardedFor);
+                    $ips = array_map('trim', explode(',', $forwardedFor));
                     // Берем первый IP (реальный IP клиента от DDoS-Guard)
-                    if (!empty($ips[0])) {
-                        $candidateIp = trim($ips[0]);
-                        if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
-                            $realIp = $candidateIp;
-                            $this->log("onOpen: Got real IP from \$_SERVER['HTTP_X_FORWARDED_FOR_ORIGINAL'] (from DDoS-Guard): {$realIp} (was: {$conn->remoteAddress})");
-                        }
+                    $firstIp = reset($ips);
+                    if (!empty($firstIp) && $firstIp !== '127.0.0.1' && $firstIp !== '::1') {
+                        $realIp = $firstIp;
                     }
                 }
                 
@@ -608,46 +476,27 @@ class ChatServer extends WebSocketServer
                     $candidateIp = trim($_SERVER['HTTP_X_REAL_IP']);
                     if ($candidateIp !== '127.0.0.1' && $candidateIp !== '::1') {
                         $realIp = $candidateIp;
-                        $this->log("onOpen: Got real IP from \$_SERVER['HTTP_X_REAL_IP']: {$realIp} (was: {$conn->remoteAddress})");
                     }
                 }
 
                 // If still localhost, check X-Forwarded-For from $_SERVER (processed by Nginx)
                 if (($realIp === '127.0.0.1' || $realIp === '::1') && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
                     $forwardedFor = trim($_SERVER['HTTP_X_FORWARDED_FOR']);
-                    $ips = explode(',', $forwardedFor);
+                    $ips = array_map('trim', explode(',', $forwardedFor));
                     // Берем последний IP в цепочке (реальный IP клиента)
-                    // Формат: "DDoS-Guard-IP, Real-Client-IP" или "Real-Client-IP"
-                    $lastIp = trim(end($ips));
+                    $lastIp = end($ips);
                     if (!empty($lastIp) && $lastIp !== '127.0.0.1' && $lastIp !== '::1') {
                         $realIp = $lastIp;
-                        $this->log("onOpen: Got real IP from \$_SERVER['HTTP_X_FORWARDED_FOR'] (last in chain): {$realIp} (was: {$conn->remoteAddress})");
                     } else {
                         // Если последний IP loopback, пробуем первый
-                        $firstIp = trim($ips[0]);
+                        $firstIp = reset($ips);
                         if (!empty($firstIp) && $firstIp !== '127.0.0.1' && $firstIp !== '::1') {
                             $realIp = $firstIp;
-                            $this->log("onOpen: Got real IP from \$_SERVER['HTTP_X_FORWARDED_FOR'] (first in chain): {$realIp} (was: {$conn->remoteAddress})");
-                        }
-                    }
-                }
-
-                // Log $_SERVER keys for debugging if still localhost
-                if ($realIp === '127.0.0.1' || $realIp === '::1') {
-                    $serverKeys = array_filter(array_keys($_SERVER), function($key) {
-                        return strpos($key, 'HTTP_') === 0 || strpos($key, 'REMOTE_') === 0;
-                    });
-                    $this->log("onOpen: Available \$_SERVER keys: " . implode(', ', $serverKeys));
-                    // Log specific header values for debugging
-                    $debugHeaders = ['HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP_ORIGINAL', 'HTTP_X_FORWARDED_FOR_ORIGINAL', 'REMOTE_ADDR'];
-                    foreach ($debugHeaders as $header) {
-                        if (isset($_SERVER[$header])) {
-                            $this->log("onOpen: \$_SERVER['{$header}'] = " . $_SERVER[$header]);
                         }
                     }
                 }
             } catch (\Throwable $e) {
-                $this->log("onOpen: Error checking \$_SERVER: " . $e->getMessage());
+                // Ignore $_SERVER errors
             }
         }
 
