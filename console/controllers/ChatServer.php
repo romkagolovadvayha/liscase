@@ -28,31 +28,31 @@ class ChatServer extends WebSocketServer
 {
     /** @var ChatServer Singleton instance */
     private static $instance = null;
-    
+
     /** @var int секунд без активности до закрытия */
     private $idleCloseSeconds = 45; // NEW
-    
+
     /** @var int секунд на авторизацию после подключения */
     private $authTimeoutSeconds = 30; // NEW
-    
+
     /** @var int Максимальное количество подключений с одного IP */
-    private $maxConnectionsPerIp = 10; // NEW
-    
+    private $maxConnectionsPerIp = 100; // NEW
+
     /** @var int Максимальное количество подключений в секунду с одного IP */
-    private $maxConnectionsPerSecond = 3; // NEW
-    
+    private $maxConnectionsPerSecond = 30; // NEW
+
     /** @var array Счетчик подключений по IP */
     private $connectionsByIp = []; // NEW
-    
+
     /** @var array Время последнего подключения по IP */
     private $lastConnectionTimeByIp = []; // NEW
 
     /** @var array Индекс клиентов по user_id для быстрого поиска */
     private $clientsByUserId = [];
-    
+
     /** @var array Индекс клиентов по chat для быстрого поиска */
     private $clientsByChat = [];
-    
+
     /**
      * Получить singleton инстанс сервера
      */
@@ -64,7 +64,7 @@ class ChatServer extends WebSocketServer
     private function log($m) { // NEW
         echo date('Y-m-d H:i:s') . " [WS] {$m}" . PHP_EOL;
     }
-    
+
     /**
      * Переопределяем onOpen для получения реального IP из HTTP заголовков
      * @param ConnectionInterface $conn
@@ -74,12 +74,12 @@ class ChatServer extends WebSocketServer
     {
         $realIp = $conn->remoteAddress;
         $this->log("onOpen: Initial remoteAddress: {$realIp}");
-        
+
         // Attempt to get RequestInterface if not directly passed (e.g., from parent class)
         if (!$request) {
             try {
                 $reflection = new \ReflectionObject($conn);
-                
+
                 // Try to find request in connection object properties
                 $possibleProperties = ['httpRequest', '_httpRequest', 'request', '_request', 'WebSocket', 'ws'];
                 foreach ($possibleProperties as $propName) {
@@ -87,14 +87,14 @@ class ChatServer extends WebSocketServer
                         $prop = $reflection->getProperty($propName);
                         $prop->setAccessible(true);
                         $value = $prop->getValue($conn);
-                        
+
                         // Check if it's a RequestInterface
                         if ($value instanceof RequestInterface) {
                             $request = $value;
                             $this->log("onOpen: Found request via property '{$propName}'");
                             break;
                         }
-                        
+
                         // Check if it's an object with httpRequest property
                         if (is_object($value)) {
                             $valueReflection = new \ReflectionObject($value);
@@ -111,7 +111,7 @@ class ChatServer extends WebSocketServer
                         }
                     }
                 }
-                
+
                 // If still not found, try to get all properties and search recursively
                 if (!$request) {
                     $properties = $reflection->getProperties();
@@ -125,13 +125,51 @@ class ChatServer extends WebSocketServer
                         }
                     }
                 }
+
+                // Try to get from parent class properties
+                if (!$request) {
+                    try {
+                        $parentClass = $reflection->getParentClass();
+                        if ($parentClass) {
+                            $parentProps = $parentClass->getProperties();
+                            foreach ($parentProps as $prop) {
+                                $prop->setAccessible(true);
+                                $value = $prop->getValue($conn);
+                                if ($value instanceof RequestInterface) {
+                                    $request = $value;
+                                    $this->log("onOpen: Found request via parent class property '{$prop->getName()}'");
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (\Throwable $parentEx) {
+                        $this->log("onOpen: Parent class reflection failed: " . $parentEx->getMessage());
+                    }
+                }
+
+                // Try to dump all object properties for debugging
+                if (!$request) {
+                    try {
+                        $allProps = [];
+                        $props = $reflection->getProperties();
+                        foreach ($props as $prop) {
+                            $prop->setAccessible(true);
+                            $propName = $prop->getName();
+                            $propValue = $prop->getValue($conn);
+                            $allProps[$propName] = is_object($propValue) ? get_class($propValue) : gettype($propValue);
+                        }
+                        $this->log("onOpen: All connection properties: " . json_encode($allProps));
+                    } catch (\Throwable $dumpEx) {
+                        $this->log("onOpen: Failed to dump properties: " . $dumpEx->getMessage());
+                    }
+                }
             } catch (\Throwable $reflectionEx) {
                 $this->log("onOpen: Reflection failed: " . $reflectionEx->getMessage());
             }
         } else {
             $this->log("onOpen: Request passed directly as parameter");
         }
-        
+
         if ($request) {
             try {
                 // Check X-Real-IP header (priority header from Nginx)
@@ -147,7 +185,7 @@ class ChatServer extends WebSocketServer
                 } elseif (!empty($xRealIp)) {
                     $this->log("onOpen: X-Real-IP header exists but is not array or empty: " . gettype($xRealIp));
                 }
-                
+
                 // If X-Real-IP not found, check X-Forwarded-For
                 if ($realIp === $conn->remoteAddress || $realIp === '127.0.0.1') {
                     $xForwardedFor = $request->getHeader('X-Forwarded-For');
@@ -167,7 +205,7 @@ class ChatServer extends WebSocketServer
                         $this->log("onOpen: X-Forwarded-For header exists but is not array or empty: " . gettype($xForwardedFor));
                     }
                 }
-                
+
                 // Log all headers for debugging (only if IP is still localhost)
                 if ($realIp === '127.0.0.1' || $realIp === '::1') {
                     try {
@@ -183,7 +221,7 @@ class ChatServer extends WebSocketServer
         } else {
             $this->log("onOpen: Request object not available");
         }
-        
+
         // Fallback: try to get IP from $_SERVER (if available in this context)
         if (($realIp === '127.0.0.1' || $realIp === '::1') && isset($_SERVER)) {
             try {
@@ -195,7 +233,7 @@ class ChatServer extends WebSocketServer
                         $this->log("onOpen: Got real IP from \$_SERVER['HTTP_X_REAL_IP']: {$realIp} (was: {$conn->remoteAddress})");
                     }
                 }
-                
+
                 // If still localhost, check X-Forwarded-For from $_SERVER
                 if (($realIp === '127.0.0.1' || $realIp === '::1') && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
                     $forwardedFor = trim($_SERVER['HTTP_X_FORWARDED_FOR']);
@@ -208,7 +246,7 @@ class ChatServer extends WebSocketServer
                         }
                     }
                 }
-                
+
                 // Log $_SERVER keys for debugging if still localhost
                 if ($realIp === '127.0.0.1' || $realIp === '::1') {
                     $serverKeys = array_filter(array_keys($_SERVER), function($key) {
@@ -220,19 +258,19 @@ class ChatServer extends WebSocketServer
                 $this->log("onOpen: Error checking \$_SERVER: " . $e->getMessage());
             }
         }
-        
+
         // Save real IP to connection property for later use
         $conn->realIp = $realIp;
-        
+
         // If IP is still localhost, log warning
         if ($realIp === '127.0.0.1' || $realIp === '::1') {
             $this->log("Warning: Could not get real IP in onOpen, using remoteAddress: {$realIp}");
         }
-        
+
         // Call parent method
         parent::onOpen($conn);
     }
-    
+
     /**
      * Получить реальный IP клиента из HTTP заголовков (для случая, когда сервер за прокси)
      * @param ConnectionInterface $client
@@ -242,11 +280,11 @@ class ChatServer extends WebSocketServer
     private function getClientRealIp(ConnectionInterface $client, WSClientEvent $event = null)
     {
         $realIp = $client->remoteAddress;
-        
+
         // Пытаемся получить IP из HTTP заголовков (если доступны)
         try {
             $httpRequest = null;
-            
+
             // Пытаемся получить httpRequest из события (если передано)
             if ($event) {
                 try {
@@ -260,12 +298,12 @@ class ChatServer extends WebSocketServer
                     // Игнорируем
                 }
             }
-            
+
             // Пытаемся получить напрямую из клиента через рефлексию
             if (!$httpRequest) {
                 try {
                     $reflection = new \ReflectionObject($client);
-                    
+
                     // Пробуем разные возможные имена свойств
                     $possibleProperties = ['httpRequest', '_httpRequest', 'request', '_request'];
                     foreach ($possibleProperties as $propName) {
@@ -279,7 +317,7 @@ class ChatServer extends WebSocketServer
                             }
                         }
                     }
-                    
+
                     // Если не нашли напрямую, ищем во всех свойствах
                     if (!$httpRequest) {
                         $properties = $reflection->getProperties();
@@ -296,10 +334,10 @@ class ChatServer extends WebSocketServer
                     // Игнорируем ошибки рефлексии
                 }
             }
-            
+
             if ($httpRequest) {
                 $headers = [];
-                
+
                 // Пробуем разные методы получения заголовков
                 if (method_exists($httpRequest, 'getHeaders')) {
                     $headers = $httpRequest->getHeaders();
@@ -314,7 +352,7 @@ class ChatServer extends WebSocketServer
                         $headers['X-Forwarded-For'] = is_array($xForwardedFor) ? $xForwardedFor : [$xForwardedFor];
                     }
                 }
-                
+
                 // Проверяем X-Real-IP (приоритетный заголовок от Nginx)
                 if (isset($headers['X-Real-IP'])) {
                     $xRealIp = is_array($headers['X-Real-IP']) ? $headers['X-Real-IP'][0] : $headers['X-Real-IP'];
@@ -347,10 +385,10 @@ class ChatServer extends WebSocketServer
                 $this->log("Warning: Could not get real IP from headers, using remoteAddress: {$realIp} (" . $e->getMessage() . ")");
             }
         }
-        
+
         return $realIp;
     }
-    
+
     /**
      * Безопасная отправка сообщения клиенту с обработкой ошибок
      * @param ConnectionInterface $client
@@ -362,12 +400,12 @@ class ChatServer extends WebSocketServer
         try {
             $message = is_string($data) ? $data : json_encode($data);
             $client->send($message);
-            
+
             // Сбрасываем счетчик ошибок при успешной отправке
             if (isset($client->sendErrors) && $client->sendErrors > 0) {
                 $client->sendErrors = 0;
             }
-            
+
             return true;
         } catch (\Throwable $e) {
             // Увеличиваем счетчик ошибок
@@ -375,10 +413,10 @@ class ChatServer extends WebSocketServer
                 $client->sendErrors = 0;
             }
             $client->sendErrors++;
-            
+
             $userId = !empty($client->user) ? $client->user->id : 'anonymous';
             $this->log("Error sending message to client {$userId}: " . $e->getMessage() . " (errors: {$client->sendErrors})");
-            
+
             // Закрываем соединение только после нескольких последовательных ошибок
             if ($client->sendErrors >= 5) {
                 $this->log("Closing client {$userId} after {$client->sendErrors} consecutive send errors");
@@ -389,11 +427,11 @@ class ChatServer extends WebSocketServer
                     // Игнорируем ошибки при закрытии
                 }
             }
-            
+
             return false;
         }
     }
-    
+
     /**
      * Обработка отложенных сообщений из кеша
      */
@@ -401,7 +439,7 @@ class ChatServer extends WebSocketServer
     {
         $this->safeSend($client, $data);
     }
-    
+
 
     /**
      * Получить клиентов по user_id
@@ -458,7 +496,7 @@ class ChatServer extends WebSocketServer
     public function init()
     {
         parent::init();
-        
+
         // Устанавливаем singleton instance
         self::$instance = $this;
 
@@ -471,7 +509,7 @@ class ChatServer extends WebSocketServer
                 // Fallback: пытаемся получить IP через заголовки (на случай, если onOpen не сработал)
                 $originalRemoteAddress = $e->client->remoteAddress;
                 $ip = $this->getClientRealIp($e->client, $e);
-                
+
                 // Если получили localhost IP, это означает, что заголовки недоступны
                 // В этом случае используем уникальный идентификатор соединения для rate limiting
                 $isLocalhost = ($ip === '127.0.0.1' || $ip === '::1' || $ip === 'localhost' || strpos($ip, '127.') === 0);
@@ -487,21 +525,21 @@ class ChatServer extends WebSocketServer
                         $this->log("Using fallback proxy identifier: {$ip}");
                     }
                 }
-                
+
                 // Сохраняем IP для дальнейшего использования
                 $e->client->realIp = $ip;
             }
-            
+
             // Сохраняем реальный IP в свойство клиента для дальнейшего использования
             $e->client->realIp = $ip;
             $now = time();
-            
+
             // Rate limiting: проверяем количество подключений с одного IP
             if (!isset($this->connectionsByIp[$ip])) {
                 $this->connectionsByIp[$ip] = [];
                 $this->lastConnectionTimeByIp[$ip] = [];
             }
-            
+
             // Подсчитываем активные подключения с этого IP
             $activeConnectionsFromIp = 0;
             foreach ($this->clients as $client) {
@@ -510,7 +548,7 @@ class ChatServer extends WebSocketServer
                     $activeConnectionsFromIp++;
                 }
             }
-            
+
             // Проверяем лимит одновременных подключений
             if ($activeConnectionsFromIp >= $this->maxConnectionsPerIp) {
                 $this->log("Rejecting connection from {$ip}: too many connections ({$activeConnectionsFromIp})");
@@ -521,7 +559,7 @@ class ChatServer extends WebSocketServer
                 }
                 return;
             }
-            
+
             // Проверяем rate limiting (подключений в секунду)
             $recentConnections = 0;
             foreach ($this->lastConnectionTimeByIp[$ip] as $connectionTime) {
@@ -529,7 +567,7 @@ class ChatServer extends WebSocketServer
                     $recentConnections++;
                 }
             }
-            
+
             if ($recentConnections >= $this->maxConnectionsPerSecond) {
                 $this->log("Rejecting connection from {$ip}: rate limit exceeded ({$recentConnections} connections in last second)");
                 try {
@@ -539,11 +577,11 @@ class ChatServer extends WebSocketServer
                 }
                 return;
             }
-            
+
             // Регистрируем подключение
             $this->connectionsByIp[$ip][] = $now;
             $this->lastConnectionTimeByIp[$ip][] = $now;
-            
+
             // Очищаем старые записи (старше 60 секунд)
             $this->connectionsByIp[$ip] = array_filter($this->connectionsByIp[$ip], function($time) use ($now) {
                 return ($now - $time) < 60;
@@ -551,7 +589,7 @@ class ChatServer extends WebSocketServer
             $this->lastConnectionTimeByIp[$ip] = array_filter($this->lastConnectionTimeByIp[$ip], function($time) use ($now) {
                 return ($now - $time) < 60;
             });
-            
+
             $this->log("Client connected: {$ip} (active from IP: {$activeConnectionsFromIp})");
             $e->client->user = null;
             $e->client->chat = null;
@@ -570,7 +608,7 @@ class ChatServer extends WebSocketServer
             $idleTime = isset($e->client->lastPong) ? (time() - $e->client->lastPong) : 'N/A';
             $ip = isset($e->client->realIp) ? $e->client->realIp : $e->client->remoteAddress;
             $this->log("Client disconnected: {$userId} from {$ip} (reason: {$reason}, idle: {$idleTime}s)");
-            
+
             // Очищаем счетчики подключений для этого IP (если нет активных подключений)
             $activeFromIp = 0;
             foreach ($this->clients as $client) {
@@ -584,7 +622,7 @@ class ChatServer extends WebSocketServer
                 unset($this->connectionsByIp[$ip]);
                 unset($this->lastConnectionTimeByIp[$ip]);
             }
-            
+
             // Удаляем из индексов
             if (!empty($e->client->user)) {
                 $userId = $e->client->user->id;
@@ -645,7 +683,7 @@ class ChatServer extends WebSocketServer
                     if (!isset($client->sendErrors)) {
                         $client->sendErrors = 0;
                     }
-                    
+
                     // Проверяем таймаут авторизации для неавторизованных клиентов
                     if (empty($client->user) && isset($client->connectedAt)) {
                         $timeSinceConnect = $now - $client->connectedAt;
@@ -657,7 +695,7 @@ class ChatServer extends WebSocketServer
                             continue;
                         }
                     }
-                    
+
                     // Закрываем по реальному idle-таймауту (не по счётчику) // CHANGED
                     $idle = $now - (isset($client->lastPong) ? $client->lastPong : 0);
                     if ($idle >= $this->idleCloseSeconds) {
@@ -677,7 +715,7 @@ class ChatServer extends WebSocketServer
                         $client->sendErrors++;
                         $userId = !empty($client->user) ? $client->user->id : 'anonymous';
                         $this->log("ping frame send failed for client {$userId}: " . $e->getMessage() . " (errors: {$client->sendErrors})");
-                        
+
                         // Закрываем только после нескольких последовательных ошибок
                         if ($client->sendErrors >= 3) {
                             $this->log("Closing client {$userId} after {$client->sendErrors} consecutive send errors");
@@ -698,7 +736,7 @@ class ChatServer extends WebSocketServer
                         $client->sendErrors = isset($client->sendErrors) ? $client->sendErrors + 1 : 1;
                         $userId = !empty($client->user) ? $client->user->id : 'anonymous';
                         $this->log("app ping send failed for client {$userId}: " . $e->getMessage() . " (errors: {$client->sendErrors})");
-                        
+
                         // Закрываем только после нескольких последовательных ошибок
                         if ($client->sendErrors >= 3) {
                             $this->log("Closing client {$userId} after {$client->sendErrors} consecutive send errors");
@@ -708,13 +746,13 @@ class ChatServer extends WebSocketServer
                     }
                 }
             });
-            
+
             // Отправка обновлений онлайна из кеша каждые 5 секунд
             $loop->addPeriodicTimer(5, function () {
                 try {
                     $cacheKey = 'ws_online_data';
                     $data = Yii::$app->cache->get($cacheKey);
-                    
+
                     if ($data && (time() - $data['timestamp']) < 10) {
                         $response = json_encode([
                             'type'    => 'update.online',
@@ -722,7 +760,7 @@ class ChatServer extends WebSocketServer
                             'servers' => $data['servers'],
                             'total'   => $data['total'],
                         ]);
-                        
+
                         // Отправляем всем клиентам
                         foreach ($this->clients as $client) {
                             try {
@@ -736,11 +774,11 @@ class ChatServer extends WebSocketServer
                     $this->log("Error broadcasting online update: " . $e->getMessage());
                 }
             });
-            
+
             // Обработка support событий из кеша каждую секунду
             $loop->addPeriodicTimer(1, function () {
                 try {
-                    
+
                     // Обрабатываем через commandSupportStatus, commandTicketUpdate, commandChatUpdate
                     foreach ($this->clients as $client) {
                         try {
@@ -750,7 +788,7 @@ class ChatServer extends WebSocketServer
                                 'ws_ticket_update',
                                 'ws_chat_update'
                             ];
-                            
+
                             // Для каждого клиента проверяем есть ли для него сообщения
                             if (!empty($client->chat)) {
                                 $statusKey = 'ws_support_status_' . $client->chat;
@@ -766,7 +804,7 @@ class ChatServer extends WebSocketServer
                                         Yii::$app->cache->set($statusKey, $statusData, 5);
                                     }
                                 }
-                                
+
                                 // Chat updates для конкретного чата
                                 $chatKey = 'ws_chat_update_' . $client->chat;
                                 $chatData = Yii::$app->cache->get($chatKey);
@@ -790,7 +828,7 @@ class ChatServer extends WebSocketServer
                                     }
                                 }
                             }
-                            
+
                             // Ticket updates для конкретного пользователя
                             if (!empty($client->user)) {
                                 $ticketKey = 'ws_ticket_update_' . $client->user->id;
@@ -806,7 +844,7 @@ class ChatServer extends WebSocketServer
                                         Yii::$app->cache->set($ticketKey, $ticketData, 5);
                                     }
                                 }
-                                
+
                                 // Balance updates для конкретного пользователя
                                 $balanceKey = 'ws_balance_update_' . $client->user->id;
                                 $balanceData = Yii::$app->cache->get($balanceKey);
@@ -823,13 +861,13 @@ class ChatServer extends WebSocketServer
                                         Yii::$app->cache->set($balanceKey, $balanceData, 5);
                                     }
                                 }
-                                
+
                                 // Buy/Activated drop updates - используем список дропов
                                 $listKey = 'ws_drops_list_' . $client->user->id;
                                 $dropsList = Yii::$app->cache->get($listKey);
                                 if ($dropsList && is_array($dropsList) && count($dropsList) > 0) {
                                     $userClients = $this->getClientsByUserId($client->user->id);
-                                    
+
                                     foreach ($dropsList as $dropId) {
                                         // Проверяем buy drop
                                         $buyKey = 'ws_buy_drop_' . $client->user->id . '_' . $dropId;
@@ -844,7 +882,7 @@ class ChatServer extends WebSocketServer
                                                 Yii::$app->cache->set($buyKey, $buyData, 5);
                                             }
                                         }
-                                        
+
                                         // Проверяем activated drop
                                         $activatedKey = 'ws_activated_drop_' . $client->user->id . '_' . $dropId;
                                         $activatedData = Yii::$app->cache->get($activatedKey);
@@ -860,7 +898,7 @@ class ChatServer extends WebSocketServer
                                                 Yii::$app->cache->set($activatedKey, $activatedData, 5);
                                             }
                                         }
-                                        
+
                                         // Проверяем return drop
                                         $returnKey = 'ws_return_drop_' . $client->user->id . '_' . $dropId;
                                         $returnData = Yii::$app->cache->get($returnKey);
@@ -879,7 +917,7 @@ class ChatServer extends WebSocketServer
                                     }
                                 }
                             }
-                            
+
                             // Launcher updates
                             if (!empty($client->launcher)) {
                                 // Проверяем launcher updates (они с timestamp в ключе, проверяем последние)
@@ -908,14 +946,14 @@ class ChatServer extends WebSocketServer
         // Любое входящее — клиент «жив»
         $from->lastPong = time(); // CHANGED (оставляем)
         $from->alive = true;
-        
+
         // Сбрасываем счетчик ошибок при получении любого сообщения
         if (isset($from->sendErrors) && $from->sendErrors > 0) {
             $from->sendErrors = 0;
         }
 
         $request = json_decode($msg, true);
-        
+
         // Логируем ошибки парсинга JSON
         if ($request === null && json_last_error() !== JSON_ERROR_NONE) {
             $this->log("JSON parse error: " . json_last_error_msg() . " | Message: " . substr($msg, 0, 200));
@@ -932,7 +970,7 @@ class ChatServer extends WebSocketServer
         }
 
         $action = !empty($request['action']) ? $request['action'] : parent::getCommand($from, $msg);
-        
+
         // Логируем команды (кроме pong, чтобы не засорять логи)
         if ($action !== 'pong' && $action !== 'Pong') {
             $userId = !empty($from->user) ? $from->user->id : 'anonymous';
@@ -951,7 +989,7 @@ class ChatServer extends WebSocketServer
             if (!empty($client->user) && !empty($request['chat'])) {
                 // Нормализуем chat ID (приводим к строке для единообразия)
                 $chatId = (string)$request['chat'];
-                
+
                 // Кешируем поиск тикета на 30 секунд
                 $cacheKey = 'ws_ticket_' . $chatId;
                 $ticket = Yii::$app->cache->getOrSet($cacheKey, function() use ($chatId) {
@@ -960,25 +998,25 @@ class ChatServer extends WebSocketServer
 
                 // Если тикет существует - проверяем права доступа
                 if ($ticket) {
-                    if ($client->user->canRoles([Role::ROLE_ADMIN]) || 
-                        $client->user->canRoles([Role::ROLE_MODERATOR]) || 
-                        $client->user->canRoles([Role::ROLE_SUPPORT]) || 
+                    if ($client->user->canRoles([Role::ROLE_ADMIN]) ||
+                        $client->user->canRoles([Role::ROLE_MODERATOR]) ||
+                        $client->user->canRoles([Role::ROLE_SUPPORT]) ||
                         $ticket->user_id == $client->user->id
                     ) {
                         $client->chat = $chatId;
-                        
+
                         // Добавляем в индекс для быстрого поиска
                         $this->indexClientByChat($client);
                     }
                 } else {
                     // Если тикета нет - разрешаем подписку (тикет создастся при первом сообщении)
                     $client->chat = $chatId;
-                    
+
                     // Добавляем в индекс для быстрого поиска
                     $this->indexClientByChat($client);
                 }
             }
-            
+
             $client->send(json_encode($result));
         } catch (\Exception $ex) {
             $this->log("Subscription error: " . $ex->getMessage());
@@ -1003,7 +1041,7 @@ class ChatServer extends WebSocketServer
                                             ]);
                   return;
               }
-              
+
               // Атомарная блокировка предмета на время обработки (используем общий ключ для getDrop и returnDrop)
               $lockKey = 'userDrop_lock_' . $model->id;
               if (Yii::$app->cache->get($lockKey)) {
@@ -1016,10 +1054,10 @@ class ChatServer extends WebSocketServer
                   return;
               }
               Yii::$app->cache->set($lockKey, true, 10); // Блокируем на 10 секунд
-              
+
               // Перезагружаем модель после блокировки для проверки актуального статуса
               $model->refresh();
-              
+
               // Защита от повторного вывода: проверяем статус предмета после блокировки
               if ($model->status != UserDrop::STATUS_ACTIVE) {
                   Yii::$app->cache->delete($lockKey); // Снимаем блокировку
@@ -1032,7 +1070,7 @@ class ChatServer extends WebSocketServer
                                             ]);
                   return;
               }
-              
+
               if (empty($model->user->server)) {
                   Yii::$app->cache->delete($lockKey); // Снимаем блокировку
                   $this->safeSend($client, [
@@ -1084,7 +1122,7 @@ class ChatServer extends WebSocketServer
                       ]);
                       return;
                   }
-                  
+
                   // Меняем статус на WAIT только после всех проверок и перед отправкой на сервер
                   $model->status = UserDrop::STATUS_WAIT;
                   $model->save(false);
@@ -1193,7 +1231,7 @@ class ChatServer extends WebSocketServer
             $chatClients = $this->getClientsByChat($request['id']);
             $model = new Support();
             $response = json_encode(['type' => 'redirect', 'url' => $model->getUrl()]);
-            
+
             foreach ($chatClients as $chatClient) {
                 try {
                     $chatClient->send($response);
@@ -1211,7 +1249,7 @@ class ChatServer extends WebSocketServer
             // Сначала отправляем конкретному пользователю
             $userClients = $this->getClientsByUserId($request['user_id']);
             $response = json_encode(['type' => 'ticketsUpdate']);
-            
+
             foreach ($userClients as $chatClient) {
                 if (!empty($chatClient->chat)) {
                     try {
@@ -1221,7 +1259,7 @@ class ChatServer extends WebSocketServer
                     }
                 }
             }
-            
+
             // Затем отправляем админам/модераторам (перебираем всех, но это редкий случай)
             foreach ($this->clients as $chatClient) {
                 if (empty($chatClient->chat) || empty($chatClient->user)) {
@@ -1260,7 +1298,7 @@ class ChatServer extends WebSocketServer
             // Используем индекс для быстрого поиска клиентов по chat
             $chatClients = $this->getClientsByChat($request['id']);
             $response = json_encode(['type' => 'chat', 'messageId' => $request['messageId']]);
-            
+
             foreach ($chatClients as $chatClient) {
                 try {
                     $chatClient->send($response);
@@ -1268,7 +1306,7 @@ class ChatServer extends WebSocketServer
                     $this->log("Error sending chat update: " . $ex->getMessage());
                 }
             }
-            
+
             $this->commandTicketUpdate($client, json_encode(['user_id' => $request['user_id']]));
         }
     }
@@ -1283,10 +1321,10 @@ class ChatServer extends WebSocketServer
             if (empty($model->user->server_id)) {
                 return;
             }
-            
+
             // Используем индекс для быстрого поиска клиентов пользователя
             $userClients = $this->getClientsByUserId($model->user->id);
-            
+
             if ($request['code'] == 200) {
                 try {
                     $response = json_encode([
@@ -1299,7 +1337,7 @@ class ChatServer extends WebSocketServer
                             'userDrop' => $model,
                         ]),
                     ]);
-                    
+
                     foreach ($userClients as $chatClient) {
                         try {
                             $chatClient->send($response);
@@ -1323,7 +1361,7 @@ class ChatServer extends WebSocketServer
 
             if (!empty($client->user) && !empty($request['id'])) {
                 $model = UserDrop::findOne($request['id']);
-                
+
                 if (!$model) {
                     $this->safeSend($client, [
                         'type' => 'store.return.item',
@@ -1356,7 +1394,7 @@ class ChatServer extends WebSocketServer
                     return;
                 }
                 Yii::$app->cache->set($lockKey, true, 10); // Блокируем на 10 секунд
-                
+
                 // Перезагружаем модель после блокировки для проверки актуального статуса
                 $model->refresh();
 
@@ -1396,7 +1434,7 @@ class ChatServer extends WebSocketServer
                     }
 
                     Yii::$app->cache->delete($lockKey); // Снимаем блокировку после успешного возврата
-                    
+
                     $this->safeSend($client, [
                         'type' => 'store.return.item',
                         'code' => 200,
@@ -1430,17 +1468,17 @@ class ChatServer extends WebSocketServer
     {
         // Используем dropOne для получения одного предмета
         $drop = $userDrop->dropOne;
-        
+
         if (empty($drop)) {
             // Если dropOne не найден, пытаемся загрузить через drop_id
             $drop = \common\models\box\Drop::findOne($userDrop->drop_id);
         }
-        
+
         if (empty($drop)) {
             $this->log("Drop not found for UserDrop ID: {$userDrop->id}, drop_id: {$userDrop->drop_id}");
             throw new \Exception('Предмет не найден');
         }
-        
+
         $profit = new Profit();
         $profit->status = 1;
         $profit->type = Profit::TYPE_SELL_DROP;
@@ -1450,12 +1488,12 @@ class ChatServer extends WebSocketServer
             'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
         ], 'ru-RU');
         $profit->created_at = date('Y-m-d H:i:s');
-        
+
         if (!$profit->save(false)) {
             $this->log("Failed to save profit for UserDrop ID: {$userDrop->id}, errors: " . json_encode($profit->getErrors()));
             throw new \Exception('Ошибка при сохранении возврата');
         }
-        
+
         $userDrop->status = UserDrop::STATUS_SELL;
         if (!$userDrop->save(false)) {
             $this->log("Failed to save UserDrop ID: {$userDrop->id}, errors: " . json_encode($userDrop->getErrors()));
@@ -1475,10 +1513,10 @@ class ChatServer extends WebSocketServer
                $client->send(json_encode($result));
                return;
            }
-           
+
            // Используем индекс для быстрого поиска клиентов пользователя
            $userClients = $this->getClientsByUserId($model->user->id);
-           
+
            if ($request['code'] == 200) {
                $response = json_encode([
                    'type'    => 'store.get.items',
@@ -1494,7 +1532,7 @@ class ChatServer extends WebSocketServer
                    'id'      => $request['id'],
                ]);
            }
-           
+
            foreach ($userClients as $chatClient) {
                try {
                    $chatClient->send($response);
@@ -1514,7 +1552,7 @@ class ChatServer extends WebSocketServer
 
         if (!empty($request['user_id']) && $request['code'] == 200) {
            $hash = md5(time());
-           
+
            // Используем индекс для быстрого поиска клиентов пользователя
            $userClients = $this->getClientsByUserId($request['user_id']);
            $response = json_encode([
@@ -1524,7 +1562,7 @@ class ChatServer extends WebSocketServer
                'balance'    => $request['balance'],
                'hash'       => $hash,
            ]);
-           
+
            foreach ($userClients as $chatClient) {
                try {
                    $chatClient->send($response);
@@ -1549,7 +1587,7 @@ class ChatServer extends WebSocketServer
                 'servers' => $request['servers'],
                 'total'   => $request['total'],
             ]);
-            
+
             // Отправляем всем клиентам (broadcast)
             foreach ($this->clients as $chatClient) {
                 try {
@@ -1562,7 +1600,7 @@ class ChatServer extends WebSocketServer
 
         $client->send( json_encode($result) );
     }
-    
+
     /**
      * Статический метод для отправки обновлений онлайна без создания WebSocket клиента
      * Используется в Servers::notify() для избежания rate limiting
@@ -1576,13 +1614,13 @@ class ChatServer extends WebSocketServer
                 'total' => $total,
                 'timestamp' => time(),
             ], 10);
-            
+
             return true;
         } catch (\Exception $ex) {
             return false;
         }
     }
-    
+
     /**
      * Отправка supportStatus без создания WebSocket клиента
      */
@@ -1596,13 +1634,13 @@ class ChatServer extends WebSocketServer
                 'id' => $ticketNumber,
                 'timestamp' => time(),
             ], 10);
-            
+
             return true;
         } catch (\Exception $ex) {
             return false;
         }
     }
-    
+
     /**
      * Отправка ticketUpdate без создания WebSocket клиента
      */
@@ -1616,13 +1654,13 @@ class ChatServer extends WebSocketServer
                 'user_id' => $userId,
                 'timestamp' => time(),
             ], 10);
-            
+
             return true;
         } catch (\Exception $ex) {
             return false;
         }
     }
-    
+
     /**
      * Отправка chatUpdate без создания WebSocket клиента
      */
@@ -1639,7 +1677,7 @@ class ChatServer extends WebSocketServer
                 'messageId' => $messageId,
                 'timestamp' => time(),
             ], 10);
-            
+
             // Также сохраняем с messageId для обратной совместимости
             $cacheKeyWithId = 'ws_chat_update_' . $ticketNumber . '_' . $messageId;
             Yii::$app->cache->set($cacheKeyWithId, [
@@ -1650,15 +1688,15 @@ class ChatServer extends WebSocketServer
                 'messageId' => $messageId,
                 'timestamp' => time(),
             ], 10);
-            
+
             return true;
         } catch (\Exception $ex) {
             return false;
         }
     }
-    
-    
-    
+
+
+
     /**
      * Отправка launcherUpdate без создания WebSocket клиента
      */
@@ -1671,7 +1709,7 @@ class ChatServer extends WebSocketServer
                 'code' => 200,
                 'timestamp' => time(),
             ], 10);
-            
+
             return true;
         } catch (\Exception $ex) {
             return false;
@@ -1687,7 +1725,7 @@ class ChatServer extends WebSocketServer
             $client->send(json_encode($result));
             return;
         }
-        
+
         try {
             // Используем индекс для быстрого поиска клиентов по chat
             $chatClients = $this->getClientsByChat($request['chatId']);
@@ -1695,7 +1733,7 @@ class ChatServer extends WebSocketServer
                 'type' => 'chatFocus',
                 'content' => "Пользователь {$client->user->username} печатает сообщение...",
             ]);
-            
+
             foreach ($chatClients as $chatClient) {
                 if ($chatClient !== $client && !empty($chatClient->user)) {
                     try {
@@ -1708,7 +1746,7 @@ class ChatServer extends WebSocketServer
         } catch (\Exception $e) {
             $this->log("commandChatFocus error: " . $e->getLine() . ":" . $e->getMessage());
         }
-        
+
         $client->send(json_encode($result));
     }
 
@@ -1721,12 +1759,12 @@ class ChatServer extends WebSocketServer
             $client->send(json_encode($result));
             return;
         }
-        
+
         try {
             // Используем индекс для быстрого поиска клиентов по chat
             $chatClients = $this->getClientsByChat($request['chatId']);
             $response = json_encode(['type' => 'chatBlur']);
-            
+
             foreach ($chatClients as $chatClient) {
                 if ($chatClient !== $client && !empty($chatClient->user)) {
                     try {
@@ -1739,7 +1777,7 @@ class ChatServer extends WebSocketServer
         } catch (\Exception $e) {
             $this->log("commandChatBlur error: " . $e->getLine() . ":" . $e->getMessage());
         }
-        
+
         $client->send(json_encode($result));
     }
 
@@ -1764,7 +1802,7 @@ class ChatServer extends WebSocketServer
                 $client->chat = (string)$request['chatId'];
                 $this->indexClientByChat($client);
             }
-            
+
             if (empty($client->chat)) {
                 $errorResponse = ['type' => 'error', 'error' => 'Chat not subscribed'];
                 if (!empty($request['tempId'])) {
@@ -1773,7 +1811,7 @@ class ChatServer extends WebSocketServer
                 $client->send(json_encode($errorResponse));
                 return;
             }
-            
+
             // Нормализуем chatId из запроса для сравнения
             $requestChatId = !empty($request['chatId']) ? (string)$request['chatId'] : (string)$client->chat;
 
@@ -1826,7 +1864,7 @@ class ChatServer extends WebSocketServer
                 }
                 // Проверяем, является ли сообщение стикером
                 $isSticker = preg_match('/^<(img|video)[^>]*class="[^"]*support_sticker[^"]*"[^>]*>.*<\/(img|video)>$/', trim($message));
-                
+
                 if ($isSticker) {
                     // Для стикеров не применяем htmlspecialchars и HtmlPurifier
                     $message = trim($message);
@@ -1839,12 +1877,12 @@ class ChatServer extends WebSocketServer
                 $model->message = trim($message);
                 $model->support_id = $chat->id;
                 $model->created_at = date('Y-m-d H:i:s');
-                
+
                 // Убеждаемся, что id не установлен (должен быть AUTO_INCREMENT)
                 if (isset($model->id)) {
                     unset($model->id);
                 }
-                
+
                 // Сохраняем сообщение с обработкой ошибок
                 try {
                     if (!$model->save()) {
@@ -1877,10 +1915,10 @@ class ChatServer extends WebSocketServer
                 SupportRead::createRecord($chat->user_id, $user->id, $model->id, $chat->id);
                 $this->commandTicketUpdate($client, json_encode(['user_id' => $chat->user_id]));
                 $hash = md5(time());
-                
+
                 // Получаем tempId из запроса, если он был передан
                 $tempId = !empty($request['tempId']) ? $request['tempId'] : null;
-                
+
                 // Формируем ответ с messageId и tempId (если был передан)
                 $chatResponse = [
                     'type' => 'chat',
@@ -1890,7 +1928,7 @@ class ChatServer extends WebSocketServer
                     $chatResponse['tempId'] = $tempId;
                 }
                 $chatResponseJson = json_encode($chatResponse);
-                
+
                 foreach ($this->clients as $chatClient) {
                     if (empty($chatClient)) {
                         continue;
@@ -1921,7 +1959,7 @@ class ChatServer extends WebSocketServer
                         continue;
                     }
                     SupportRead::readedAll($model->support_id, $chatClient->user->id);
-                    
+
                     // Отправляем ответ клиенту
                     try {
                         $chatClient->send($chatResponseJson);
@@ -1948,10 +1986,10 @@ class ChatServer extends WebSocketServer
     {
         $message = $e->getMessage();
         $code = $e->getCode();
-        
+
         // Проверяем код ошибки 2006 или текст сообщения
-        return $code == 2006 || 
-               strpos($message, '2006') !== false || 
+        return $code == 2006 ||
+               strpos($message, '2006') !== false ||
                strpos($message, 'MySQL server has gone away') !== false ||
                strpos($message, 'server has gone away') !== false ||
                strpos($message, 'HY000') !== false && strpos($message, '2006') !== false ||
@@ -1970,19 +2008,19 @@ class ChatServer extends WebSocketServer
             if (Yii::$app->db->isActive) {
                 Yii::$app->db->close();
             }
-            
+
             // Небольшая задержка перед переподключением
             usleep(50000); // 0.05 секунды
-            
+
             // Переподключаемся
             Yii::$app->db->open();
-            
+
             // Проверяем, что соединение действительно установлено
             if (Yii::$app->db->isActive) {
                 $this->log("Database reconnected successfully");
                 return true;
             }
-            
+
             return false;
         } catch (\Exception $e) {
             $this->log("Failed to reconnect: " . $e->getMessage());
@@ -2001,18 +2039,18 @@ class ChatServer extends WebSocketServer
     {
         $attempt = 0;
         $lastException = null;
-        
+
         while ($attempt < $maxRetries) {
             try {
                 return $callback();
             } catch (DbException $e) {
                 $lastException = $e;
                 $attempt++;
-                
+
                 // Проверяем, является ли это ошибкой "MySQL server has gone away"
                 if ($this->isGoneAwayError($e)) {
                     $this->log("Database connection lost (attempt {$attempt}/{$maxRetries}): " . $e->getMessage());
-                    
+
                     // Пытаемся переподключиться
                     if ($this->reconnectDatabase()) {
                         // Если переподключились успешно, пробуем снова
@@ -2025,17 +2063,17 @@ class ChatServer extends WebSocketServer
                         }
                     }
                 }
-                
+
                 // Если это не ошибка переподключения или попытки закончились, пробрасываем исключение
                 throw $e;
             } catch (PDOException $e) {
                 $lastException = $e;
                 $attempt++;
-                
+
                 // Проверяем, является ли это ошибкой "MySQL server has gone away"
                 if ($this->isGoneAwayError($e)) {
                     $this->log("Database connection lost (PDO, attempt {$attempt}/{$maxRetries}): " . $e->getMessage());
-                    
+
                     // Пытаемся переподключиться
                     if ($this->reconnectDatabase()) {
                         // Если переподключились успешно, пробуем снова
@@ -2048,7 +2086,7 @@ class ChatServer extends WebSocketServer
                         }
                     }
                 }
-                
+
                 // Если это не ошибка переподключения или попытки закончились, пробрасываем исключение
                 throw $e;
             } catch (\Exception $e) {
@@ -2057,22 +2095,22 @@ class ChatServer extends WebSocketServer
                     $lastException = $e;
                     $attempt++;
                     $this->log("Database connection lost (generic, attempt {$attempt}/{$maxRetries}): " . $e->getMessage());
-                    
+
                     if ($this->reconnectDatabase() && $attempt < $maxRetries) {
                         continue;
                     }
                 }
-                
+
                 // Для всех остальных исключений пробрасываем сразу
                 throw $e;
             }
         }
-        
+
         // Если все попытки исчерпаны, бросаем последнее исключение
         if ($lastException) {
             throw $lastException;
         }
-        
+
         throw new \Exception("Failed to execute database query after {$maxRetries} attempts");
     }
 
@@ -2093,7 +2131,7 @@ class ChatServer extends WebSocketServer
 
             // Кешируем запрос пользователя на 60 секунд
             $cacheKey = 'ws_auth_' . md5($request['token'] . $request['steam_id']);
-            
+
             try {
                 $user = Yii::$app->cache->getOrSet($cacheKey, function() use ($request) {
                     // Используем безопасный запрос с автоматическим переподключением
@@ -2126,10 +2164,10 @@ class ChatServer extends WebSocketServer
                 if (isset($request['launcher'])) {
                     $client->launcher = $request['launcher'];
                 }
-                
+
                 // Добавляем в индекс для быстрого поиска
                 $this->indexClientByUserId($client);
-                
+
                 $clientIp = isset($client->realIp) ? $client->realIp : $client->remoteAddress;
                 $this->log("User {$user->id} authenticated successfully from " . $clientIp);
 
@@ -2142,12 +2180,12 @@ class ChatServer extends WebSocketServer
         } catch (\Exception $ex) {
             $this->log("Auth error: " . $ex->getMessage());
             $errorMessage = 'commandAuth: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage();
-            
+
             // Если это ошибка БД, пытаемся переподключиться
             if ($this->isGoneAwayError($ex)) {
                 $this->reconnectDatabase();
             }
-            
+
             // Отправляем ошибку в Telegram только если это не ошибка переподключения
             if (!$this->isGoneAwayError($ex)) {
                 try {
@@ -2156,7 +2194,7 @@ class ChatServer extends WebSocketServer
                     $this->log("Failed to send error to Telegram: " . $telegramEx->getMessage());
                 }
             }
-            
+
             // Отправляем ответ клиенту
             $result['message'] = 'Invalid token';
             $this->safeSend($client, $result);
