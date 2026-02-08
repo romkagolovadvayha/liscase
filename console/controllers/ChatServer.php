@@ -190,10 +190,25 @@ class ChatServer extends WebSocketServer
                                                             $reqProp = $nestedReflection->getProperty($reqPropName);
                                                             $reqProp->setAccessible(true);
                                                             $reqValue = $reqProp->getValue($wrappedValue);
+                                                            $reqValueType = is_object($reqValue) ? get_class($reqValue) : gettype($reqValue);
+                                                            $this->log("onOpen: WebSocket->{$reqPropName} type (reflection): {$reqValueType}");
+                                                            
                                                             if ($reqValue instanceof RequestInterface) {
                                                                 $request = $reqValue;
                                                                 $this->log("onOpen: Found request via wrappedConn->WebSocket->{$reqPropName} (reflection)");
                                                                 break 3;
+                                                            } elseif (is_object($reqValue)) {
+                                                                // Проверяем, есть ли метод getHeader
+                                                                try {
+                                                                    $reqValueReflection = new \ReflectionObject($reqValue);
+                                                                    if ($reqValueReflection->hasMethod('getHeader')) {
+                                                                        $request = $reqValue;
+                                                                        $this->log("onOpen: Using request object with getHeader method via wrappedConn->WebSocket->{$reqPropName} (reflection)");
+                                                                        break 3;
+                                                                    }
+                                                                } catch (\Throwable $reqValueEx) {
+                                                                    // Игнорируем ошибки
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -205,10 +220,31 @@ class ChatServer extends WebSocketServer
                                                         $this->log("onOpen: WebSocket object properties: " . json_encode(array_keys($wsProps)));
                                                         
                                                         // Проверяем свойство 'request' (приоритетное)
-                                                        if (isset($wsProps['request']) && $wsProps['request'] instanceof RequestInterface) {
-                                                            $request = $wsProps['request'];
-                                                            $this->log("onOpen: Found request via wrappedConn->WebSocket->request");
-                                                            break 2;
+                                                        if (isset($wsProps['request'])) {
+                                                            $requestValue = $wsProps['request'];
+                                                            $requestType = is_object($requestValue) ? get_class($requestValue) : gettype($requestValue);
+                                                            $this->log("onOpen: WebSocket->request type: {$requestType}");
+                                                            
+                                                            if ($requestValue instanceof RequestInterface) {
+                                                                $request = $requestValue;
+                                                                $this->log("onOpen: Found request via wrappedConn->WebSocket->request");
+                                                                break 2;
+                                                            } else {
+                                                                // Пытаемся получить заголовки из объекта request, даже если это не RequestInterface
+                                                                if (is_object($requestValue)) {
+                                                                    try {
+                                                                        $requestReflection = new \ReflectionObject($requestValue);
+                                                                        // Проверяем, есть ли метод getHeader
+                                                                        if ($requestReflection->hasMethod('getHeader')) {
+                                                                            $request = $requestValue;
+                                                                            $this->log("onOpen: Using request object with getHeader method (not RequestInterface)");
+                                                                            break 2;
+                                                                        }
+                                                                    } catch (\Throwable $reqEx) {
+                                                                        $this->log("onOpen: Error checking request object: " . $reqEx->getMessage());
+                                                                    }
+                                                                }
+                                                            }
                                                         }
                                                         
                                                         // Проверяем свойство 'httpRequest' (fallback)
