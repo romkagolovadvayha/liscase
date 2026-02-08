@@ -109,20 +109,38 @@ class StoreController extends WebController
      */
     private function _sellUserDrop($userDrop, $userBalanceId)
     {
-        /** @var \common\models\box\Drop $drop */
-        foreach ($userDrop->drop as $drop) {
-            $profit = new Profit();
-            $profit->status = 1;
-            $profit->type = Profit::TYPE_SELL_DROP;
-            $profit->amount = $drop->getRealPrice(false);
-            $profit->user_balance_id = $userBalanceId;
-            $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
-                'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
-            ], 'ru-RU');
-            $profit->created_at = date('Y-m-d H:i:s');
-            $profit->save(false);
+        // Используем dropOne для получения одного предмета
+        $drop = $userDrop->dropOne;
+        
+        if (empty($drop)) {
+            // Если dropOne не найден, пытаемся загрузить через drop_id
+            $drop = \common\models\box\Drop::findOne($userDrop->drop_id);
         }
+        
+        if (empty($drop)) {
+            Yii::error("Drop not found for UserDrop ID: {$userDrop->id}, drop_id: {$userDrop->drop_id}", __METHOD__);
+            throw new \Exception('Предмет не найден');
+        }
+        
+        $profit = new Profit();
+        $profit->status = 1;
+        $profit->type = Profit::TYPE_SELL_DROP;
+        $profit->amount = $drop->getRealPrice(false);
+        $profit->user_balance_id = $userBalanceId;
+        $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
+            'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
+        ], 'ru-RU');
+        $profit->created_at = date('Y-m-d H:i:s');
+        
+        if (!$profit->save(false)) {
+            Yii::error("Failed to save profit for UserDrop ID: {$userDrop->id}, errors: " . json_encode($profit->getErrors()), __METHOD__);
+            throw new \Exception('Ошибка при сохранении возврата');
+        }
+        
         $userDrop->status = UserDrop::STATUS_SELL;
-        $userDrop->save(false);
+        if (!$userDrop->save(false)) {
+            Yii::error("Failed to save UserDrop ID: {$userDrop->id}, errors: " . json_encode($userDrop->getErrors()), __METHOD__);
+            throw new \Exception('Ошибка при обновлении статуса товара');
+        }
     }
 }

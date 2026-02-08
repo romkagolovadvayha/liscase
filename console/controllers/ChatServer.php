@@ -507,20 +507,8 @@ class ChatServer extends WebSocketServer
                   return;
               }
               
-              // Защита от повторного вывода: проверяем статус предмета
-              if ($model->status != UserDrop::STATUS_ACTIVE) {
-                  $statusText = UserDrop::getStatusList()[$model->status] ?? 'Недоступен';
-                  $client->send(json_encode([
-                                                'type' => 'store.take',
-                                                'code' => 500,
-                                                'message' => Yii::t('common', "Товар уже был выведен или недоступен! Статус: {status}", ['status' => $statusText], $client->user->current_language),
-                                                'id' => $model->id,
-                                            ]));
-                  return;
-              }
-              
-              // Атомарная блокировка предмета на время обработки
-              $lockKey = 'commandGetDrop_lock_' . $model->id;
+              // Атомарная блокировка предмета на время обработки (используем общий ключ для getDrop и returnDrop)
+              $lockKey = 'userDrop_lock_' . $model->id;
               if (Yii::$app->cache->get($lockKey)) {
                   $client->send(json_encode([
                                                 'type' => 'store.take',
@@ -531,6 +519,22 @@ class ChatServer extends WebSocketServer
                   return;
               }
               Yii::$app->cache->set($lockKey, true, 10); // Блокируем на 10 секунд
+              
+              // Перезагружаем модель после блокировки для проверки актуального статуса
+              $model->refresh();
+              
+              // Защита от повторного вывода: проверяем статус предмета после блокировки
+              if ($model->status != UserDrop::STATUS_ACTIVE) {
+                  Yii::$app->cache->delete($lockKey); // Снимаем блокировку
+                  $statusText = UserDrop::getStatusList()[$model->status] ?? 'Недоступен';
+                  $client->send(json_encode([
+                                                'type' => 'store.take',
+                                                'code' => 500,
+                                                'message' => Yii::t('common', "Товар уже был выведен или недоступен! Статус: {status}", ['status' => $statusText], $client->user->current_language),
+                                                'id' => $model->id,
+                                            ]));
+                  return;
+              }
               
               if (empty($model->user->server)) {
                   Yii::$app->cache->delete($lockKey); // Снимаем блокировку
@@ -568,9 +572,26 @@ class ChatServer extends WebSocketServer
               Yii::$app->cache->set($cacheKey, $count + 1, 30);
 
               if ($client->user->canRoles([Role::ROLE_ADMIN]) || $client->user->canRoles([Role::ROLE_MODERATOR]) || $client->user->canRoles([Role::ROLE_SUPPORT]) || $model->user_id == $client->user->id) {
+                  // Получаем drop для проверки is_blocked_building
+                  $drop = $model->dropOne;
+                  if (empty($drop)) {
+                      $drop = \common\models\box\Drop::findOne($model->drop_id);
+                  }
+                  if (empty($drop)) {
+                      Yii::$app->cache->delete($lockKey); // Снимаем блокировку
+                      $client->send(json_encode([
+                          'type' => 'store.take',
+                          'code' => 500,
+                          'message' => Yii::t('common', "Предмет не найден!", [], $client->user->current_language),
+                          'id' => $model->id,
+                      ]));
+                      return;
+                  }
+                  
+                  // Меняем статус на WAIT только после всех проверок и перед отправкой на сервер
                   $model->status = UserDrop::STATUS_WAIT;
                   $model->save(false);
-                  $isBlockedBuilding = $model->drop[0]->is_blocked_building ? 'true' : 'false';
+                  $isBlockedBuilding = $drop->is_blocked_building ? 'true' : 'false';
                   $command = "store.take {$model->user->steam_id} {$model->id} {$isBlockedBuilding}";
                   $response = (Yii::$app->curl)
                       ->setHeaders(['Content-Type' => 'application/json'])
@@ -814,7 +835,24 @@ class ChatServer extends WebSocketServer
                     return;
                 }
 
+                // Атомарная блокировка предмета на время обработки (используем общий ключ для getDrop и returnDrop)
+                $lockKey = 'userDrop_lock_' . $model->id;
+                if (Yii::$app->cache->get($lockKey)) {
+                    $client->send(json_encode([
+                        'type' => 'store.return.item',
+                        'code' => 500,
+                        'message' => Yii::t('common', "Предмет уже обрабатывается, подождите немного!", [], $client->user->current_language),
+                        'id' => $model->id,
+                    ]));
+                    return;
+                }
+                Yii::$app->cache->set($lockKey, true, 10); // Блокируем на 10 секунд
+                
+                // Перезагружаем модель после блокировки для проверки актуального статуса
+                $model->refresh();
+
                 if (!empty($model->box_id) || !empty($model->sets_id) || !empty($model->parent_drop_id)) {
+                    Yii::$app->cache->delete($lockKey); // Снимаем блокировку
                     $client->send(json_encode([
                         'type' => 'store.return.item',
                         'code' => 500,
@@ -825,6 +863,7 @@ class ChatServer extends WebSocketServer
                 }
 
                 if ($model->status !== UserDrop::STATUS_ACTIVE) {
+                    Yii::$app->cache->delete($lockKey); // Снимаем блокировку
                     $client->send(json_encode([
                         'type' => 'store.return.item',
                         'code' => 500,
@@ -835,23 +874,30 @@ class ChatServer extends WebSocketServer
                 }
 
                 // Выполняем возврат
-                $userBalance = $model->user->getPersonalBalance();
-                $this->_sellUserDrop($model, $userBalance->id);
-
-                // Отправляем через websocket
                 try {
-                    Yii::$app->queueProcess->push(new ReturnDropJob(['userDrop' => $model]));
-                } catch (\Throwable $e) {
-                    $this->log("Error pushing ReturnDropJob to queue: " . $e->getMessage());
-                    // Не прерываем выполнение, так как возврат уже выполнен
-                }
+                    $userBalance = $model->user->getPersonalBalance();
+                    $this->_sellUserDrop($model, $userBalance->id);
 
-                $client->send(json_encode([
-                    'type' => 'store.return.item',
-                    'code' => 200,
-                    'message' => Yii::t('common', "Предмет успешно возвращен!", [], $client->user->current_language),
-                    'id' => $model->id,
-                ]));
+                    // Отправляем через websocket
+                    try {
+                        Yii::$app->queueProcess->push(new ReturnDropJob(['userDrop' => $model]));
+                    } catch (\Throwable $e) {
+                        $this->log("Error pushing ReturnDropJob to queue: " . $e->getMessage());
+                        // Не прерываем выполнение, так как возврат уже выполнен
+                    }
+
+                    Yii::$app->cache->delete($lockKey); // Снимаем блокировку после успешного возврата
+                    
+                    $client->send(json_encode([
+                        'type' => 'store.return.item',
+                        'code' => 200,
+                        'message' => Yii::t('common', "Предмет успешно возвращен!", [], $client->user->current_language),
+                        'id' => $model->id,
+                    ]));
+                } catch (\Exception $e) {
+                    Yii::$app->cache->delete($lockKey); // Снимаем блокировку при ошибке
+                    throw $e;
+                }
             }
         } catch (\Exception $ex) {
             $this->log("ReturnDrop error: " . $ex->getMessage());
@@ -873,20 +919,39 @@ class ChatServer extends WebSocketServer
      */
     private function _sellUserDrop($userDrop, $userBalanceId)
     {
-        /** @var \common\models\box\Drop $drop */
-        foreach ($userDrop->drop as $drop) {
-            $profit = new Profit();
-            $profit->status = 1;
-            $profit->type = Profit::TYPE_SELL_DROP;
-            $profit->amount = $drop->getRealPrice(false);
-            $profit->user_balance_id = $userBalanceId;
-            $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
-                'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
-            ], 'ru-RU');
-            $profit->created_at = date('Y-m-d H:i:s');
-            $profit->save(false);
+        // Используем dropOne для получения одного предмета
+        $drop = $userDrop->dropOne;
+        
+        if (empty($drop)) {
+            // Если dropOne не найден, пытаемся загрузить через drop_id
+            $drop = \common\models\box\Drop::findOne($userDrop->drop_id);
         }
+        
+        if (empty($drop)) {
+            $this->log("Drop not found for UserDrop ID: {$userDrop->id}, drop_id: {$userDrop->drop_id}");
+            throw new \Exception('Предмет не найден');
+        }
+        
+        $profit = new Profit();
+        $profit->status = 1;
+        $profit->type = Profit::TYPE_SELL_DROP;
+        $profit->amount = $drop->getRealPrice(false);
+        $profit->user_balance_id = $userBalanceId;
+        $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
+            'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
+        ], 'ru-RU');
+        $profit->created_at = date('Y-m-d H:i:s');
+        
+        if (!$profit->save(false)) {
+            $this->log("Failed to save profit for UserDrop ID: {$userDrop->id}, errors: " . json_encode($profit->getErrors()));
+            throw new \Exception('Ошибка при сохранении возврата');
+        }
+        
         $userDrop->status = UserDrop::STATUS_SELL;
+        if (!$userDrop->save(false)) {
+            $this->log("Failed to save UserDrop ID: {$userDrop->id}, errors: " . json_encode($userDrop->getErrors()));
+            throw new \Exception('Ошибка при обновлении статуса товара');
+        }
         $userDrop->save(false);
     }
 
