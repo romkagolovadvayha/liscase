@@ -1,0 +1,482 @@
+<?php
+
+namespace api\controllers\v1;
+
+use common\models\support\Support;
+use common\models\support\SupportMessage;
+use common\models\support\SupportRead;
+use Yii;
+use yii\web\UnauthorizedHttpException;
+use yii\web\NotFoundHttpException;
+use yii\web\BadRequestHttpException;
+
+/**
+ * Контроллер для работы с поддержкой через GameStoresRUST плагин
+ * Авторизация: по steam_id из параметров запроса
+ */
+class SupportGameStoresController extends BaseApiController
+{
+    /**
+     * Настройка behaviors
+     */
+    public function behaviors()
+    {
+        $behaviors = parent::behaviors();
+
+        // Убираем JWT авторизацию, используем авторизацию по steam_id
+        // CORS и ContentNegotiator уже настроены в BaseApiController
+
+        return $behaviors;
+    }
+
+    /**
+     * Получить пользователя по steam_id из параметров запроса
+     * 
+     * @param array $bodyParams Параметры из body запроса
+     * @return \common\models\user\User
+     * @throws UnauthorizedHttpException
+     */
+    protected function getUserBySteamId($bodyParams = [])
+    {
+        // Пробуем получить steam_id из разных источников
+        $steamId = null;
+        
+        // Из body параметров
+        if (!empty($bodyParams['steamId'])) {
+            $steamId = $bodyParams['steamId'];
+        } elseif (!empty($bodyParams['steam_id'])) {
+            $steamId = $bodyParams['steam_id'];
+        }
+        
+        // Из POST параметров
+        if (empty($steamId)) {
+            $steamId = Yii::$app->request->post('steamId') ?: Yii::$app->request->post('steam_id');
+        }
+        
+        // Из GET параметров
+        if (empty($steamId)) {
+            $steamId = Yii::$app->request->get('steamId') ?: Yii::$app->request->get('steam_id');
+        }
+        
+        if (empty($steamId)) {
+            throw new UnauthorizedHttpException('steam_id is required');
+        }
+        
+        $steamId = (string)$steamId;
+        
+        // Проверка формата steam_id
+        if (strlen($steamId) !== 17 || !is_numeric($steamId)) {
+            throw new UnauthorizedHttpException('Invalid steam_id format');
+        }
+        
+        /** @var \common\models\user\User $user */
+        $user = \common\models\user\User::find()
+            ->andWhere(['steam_id' => $steamId])
+            ->one();
+        
+        if (empty($user)) {
+            throw new UnauthorizedHttpException('User not found');
+        }
+        
+        return $user;
+    }
+
+    /**
+     * Список тикетов
+     * GET /v1/support-game-stores/tickets?steam_id=XXX
+     * или POST /v1/support-game-stores/tickets с body: {"steamId": "XXX"}
+     */
+    public function actionTickets()
+    {
+        try {
+            $bodyParams = [];
+            if (Yii::$app->request->isPost) {
+                $rawBody = Yii::$app->request->getRawBody();
+                if (!empty($rawBody)) {
+                    $decoded = json_decode($rawBody, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $bodyParams = $decoded;
+                    }
+                }
+            }
+            
+            $user = $this->getUserBySteamId($bodyParams);
+        } catch (UnauthorizedHttpException $e) {
+            return $this->errorResponse('UNAUTHORIZED', $e->getMessage(), [], 401);
+        }
+
+        // Проверяем, не заблокирован ли пользователь
+        if ($user->blocked_support) {
+            return $this->errorResponse('BLOCKED', 'Ваш чат поддержки заблокирован', [], 403);
+        }
+
+        // Обычные пользователи видят только свои тикеты
+        $baseQuery = Support::find()
+            ->with(['user', 'user.userProfile'])
+            ->andWhere(['user_id' => $user->id]);
+
+        // Получаем 20 открытых тикетов
+        $openTicketsQuery = (clone $baseQuery)
+            ->andWhere(['status' => Support::STATUS_OPEN])
+            ->orderBy(['updated_at' => SORT_DESC])
+            ->limit(20);
+        $openTickets = $openTicketsQuery->all();
+
+        // Получаем 20 закрытых тикетов
+        $closedTicketsQuery = (clone $baseQuery)
+            ->andWhere(['status' => Support::STATUS_CLOSED])
+            ->orderBy(['updated_at' => SORT_DESC])
+            ->limit(20);
+        $closedTickets = $closedTicketsQuery->all();
+
+        // Объединяем тикеты (сначала открытые, потом закрытые)
+        $tickets = array_merge($openTickets, $closedTickets);
+
+        // Получаем количество непрочитанных сообщений
+        $unreadMessages = SupportRead::find()
+            ->select(['support_id', 'cnt' => new \yii\db\Expression('COUNT(*)')])
+            ->where(['user_id' => $user->id, 'status' => SupportRead::STATUS_UNREAD])
+            ->asArray()
+            ->groupBy('support_id')
+            ->indexBy('support_id')
+            ->all();
+
+        // Форматируем тикеты
+        $formattedTickets = [];
+        foreach ($tickets as $ticket) {
+            $formattedTickets[] = $this->formatTicket($ticket, $unreadMessages[$ticket->id]['cnt'] ?? 0);
+        }
+
+        return $this->successResponse([
+            'tickets' => $formattedTickets,
+        ]);
+    }
+
+    /**
+     * Детали тикета с сообщениями
+     * GET /v1/support-game-stores/tickets/{id}?steam_id=XXX
+     * или POST /v1/support-game-stores/tickets/{id} с body: {"steamId": "XXX"}
+     */
+    public function actionView($id)
+    {
+        try {
+            $bodyParams = [];
+            if (Yii::$app->request->isPost) {
+                $rawBody = Yii::$app->request->getRawBody();
+                if (!empty($rawBody)) {
+                    $decoded = json_decode($rawBody, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $bodyParams = $decoded;
+                    }
+                }
+            }
+            
+            $user = $this->getUserBySteamId($bodyParams);
+        } catch (UnauthorizedHttpException $e) {
+            return $this->errorResponse('UNAUTHORIZED', $e->getMessage(), [], 401);
+        }
+
+        if ($user->blocked_support) {
+            return $this->errorResponse('BLOCKED', 'Ваш чат поддержки заблокирован', [], 403);
+        }
+
+        $ticket = Support::findByNumber($id);
+        if (!$ticket) {
+            return $this->errorResponse('NOT_FOUND', 'Тикет не найден', [], 404);
+        }
+
+        // Проверка доступа (только владелец тикета)
+        if ($ticket->user_id !== $user->id) {
+            return $this->errorResponse('FORBIDDEN', 'Доступ запрещен', [], 403);
+        }
+
+        // Загружаем сообщения
+        $messages = SupportMessage::find()
+            ->where(['support_id' => $ticket->id])
+            ->with(['user', 'user.userProfile', 'supportFiles'])
+            ->orderBy(['created_at' => SORT_ASC])
+            ->all();
+
+        // Отмечаем сообщения как прочитанные
+        if (!empty($messages)) {
+            SupportRead::readedAll($ticket->id, $user->id);
+        }
+
+        // Форматируем сообщения
+        $formattedMessages = [];
+        foreach ($messages as $message) {
+            $formattedMessages[] = $this->formatMessage($message);
+        }
+
+        return $this->successResponse([
+            'ticket' => $this->formatTicketDetail($ticket),
+            'messages' => $formattedMessages,
+        ]);
+    }
+
+    /**
+     * Создание тикета
+     * POST /v1/support-game-stores/tickets/create
+     * Body: {"steamId": "XXX", "message": "текст сообщения"}
+     */
+    public function actionCreate()
+    {
+        try {
+            $bodyParams = [];
+            $rawBody = Yii::$app->request->getRawBody();
+            if (!empty($rawBody)) {
+                $decoded = json_decode($rawBody, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $bodyParams = $decoded;
+                }
+            }
+            
+            $user = $this->getUserBySteamId($bodyParams);
+        } catch (UnauthorizedHttpException $e) {
+            return $this->errorResponse('UNAUTHORIZED', $e->getMessage(), [], 401);
+        }
+
+        if ($user->blocked_support) {
+            return $this->errorResponse('BLOCKED', 'Ваш чат поддержки заблокирован', [], 403);
+        }
+
+        $message = $bodyParams['message'] ?? Yii::$app->request->post('message', '');
+        
+        // Проверяем, что есть сообщение
+        if (empty($message)) {
+            return $this->errorResponse('INVALID_REQUEST', 'Message is required', [], 400);
+        }
+
+        $serverTag = $bodyParams['server_tag'] ?? Yii::$app->request->post('server_tag');
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            // Создаем тикет
+            $ticket = new Support();
+            $ticket->user_id = $user->id;
+            $ticket->suspect_user_id = null;
+            $ticket->server_tag = $serverTag;
+            $ticket->status = Support::STATUS_OPEN;
+            $ticket->created_at = date('Y-m-d H:i:s');
+            $ticket->updated_at = date('Y-m-d H:i:s');
+
+            if (!$ticket->save()) {
+                $transaction->rollBack();
+                return $this->validationErrorResponse($ticket);
+            }
+
+            // Добавляем системное сообщение с информацией о пользователе
+            $systemMessage = new SupportMessage();
+            $systemMessage->user_id = null;
+            $systemMessage->message = "{USER_INFO}";
+            $systemMessage->support_id = $ticket->id;
+            $systemMessage->created_at = date('Y-m-d H:i:s');
+            $systemMessage->save(false);
+
+            // Добавляем системное сообщение с предупреждением
+            $alertMessage = new SupportMessage();
+            $alertMessage->user_id = null;
+            $alertMessage->message = "{ALERT_REPORT}";
+            $alertMessage->support_id = $ticket->id;
+            $alertMessage->created_at = date('Y-m-d H:i:s');
+            $alertMessage->save(false);
+
+            // Добавляем пользовательское сообщение
+            $userMessage = new SupportMessage();
+            $userMessage->user_id = $user->id;
+            $userMessage->message = $message;
+            $userMessage->support_id = $ticket->id;
+            $userMessage->created_at = date('Y-m-d H:i:s');
+            $userMessage->save(false);
+
+            $transaction->commit();
+
+            // Отправляем уведомления через WebSocket
+            try {
+                $ticketNumber = $ticket->getNumber();
+                \console\controllers\NotificationServer::broadcastNewTicket($ticketNumber, $user->id);
+            } catch (\Exception $ex) {
+                Yii::warning('WebSocket broadcast failed: ' . $ex->getMessage());
+            }
+
+            Yii::$app->response->statusCode = 201;
+            return $this->successResponse([
+                'ticket' => $this->formatTicketDetail($ticket),
+            ]);
+
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            Yii::error('Failed to create ticket: ' . $e->getMessage());
+            return $this->errorResponse('CREATION_FAILED', 'Failed to create ticket', [], 500);
+        }
+    }
+
+    /**
+     * Отправка сообщения в тикет
+     * POST /v1/support-game-stores/tickets/{id}/messages
+     * Body: {"steamId": "XXX", "message": "текст сообщения"}
+     */
+    public function actionSend($id)
+    {
+        try {
+            $bodyParams = [];
+            $rawBody = Yii::$app->request->getRawBody();
+            if (!empty($rawBody)) {
+                $decoded = json_decode($rawBody, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $bodyParams = $decoded;
+                }
+            }
+            
+            $user = $this->getUserBySteamId($bodyParams);
+        } catch (UnauthorizedHttpException $e) {
+            return $this->errorResponse('UNAUTHORIZED', $e->getMessage(), [], 401);
+        }
+
+        if ($user->blocked_support) {
+            return $this->errorResponse('BLOCKED', 'Ваш чат поддержки заблокирован', [], 403);
+        }
+
+        $ticket = Support::findByNumber($id);
+        if (!$ticket) {
+            return $this->errorResponse('NOT_FOUND', 'Тикет не найден', [], 404);
+        }
+
+        // Проверка доступа (только владелец тикета)
+        if ($ticket->user_id !== $user->id) {
+            return $this->errorResponse('FORBIDDEN', 'Доступ запрещен', [], 403);
+        }
+
+        // Запрещаем отправку сообщений в закрытые тикеты
+        if ($ticket->status === Support::STATUS_CLOSED) {
+            return $this->errorResponse('TICKET_CLOSED', 'Тикет закрыт. Нельзя отправлять сообщения в закрытые тикеты', [], 400);
+        }
+
+        $message = $bodyParams['message'] ?? Yii::$app->request->post('message', '');
+        
+        // Проверяем, что есть сообщение
+        if (empty($message)) {
+            return $this->errorResponse('INVALID_REQUEST', 'Message is required', [], 400);
+        }
+
+        try {
+            $supportMessage = new SupportMessage();
+            $supportMessage->user_id = $user->id;
+            $supportMessage->message = $message;
+            $supportMessage->support_id = $ticket->id;
+            $supportMessage->created_at = date('Y-m-d H:i:s');
+
+            if (!$supportMessage->save()) {
+                return $this->validationErrorResponse($supportMessage);
+            }
+
+            // Обновляем время обновления тикета
+            $ticket->updated_at = date('Y-m-d H:i:s');
+            $ticket->save(false);
+
+            // Отмечаем сообщение как прочитанное для отправителя
+            SupportRead::readedAll($ticket->id, $user->id);
+
+            // Отправляем уведомления через WebSocket
+            try {
+                $ticketNumber = $ticket->getNumber();
+                Yii::info("Calling broadcastNewSupportMessage: ticketNumber={$ticketNumber}, messageId={$supportMessage->id}, userId={$user->id}, ownerUserId={$ticket->user_id}");
+                \console\controllers\NotificationServer::broadcastNewSupportMessage($ticketNumber, $supportMessage->id, $user->id, $ticket->user_id);
+            } catch (\Exception $ex) {
+                Yii::warning('WebSocket broadcast failed: ' . $ex->getMessage());
+            }
+
+            Yii::$app->response->statusCode = 201;
+            return $this->successResponse([
+                'message' => $this->formatMessage($supportMessage),
+            ]);
+
+        } catch (\Exception $e) {
+            Yii::error('Failed to send message: ' . $e->getMessage());
+            return $this->errorResponse('SEND_FAILED', 'Failed to send message', [], 500);
+        }
+    }
+
+    /**
+     * Форматирование тикета для списка
+     */
+    protected function formatTicket($ticket, $unreadCount = 0)
+    {
+        return [
+            'id' => $ticket->getNumber(),
+            'number' => $ticket->getNumber(),
+            'status' => $ticket->status === Support::STATUS_OPEN ? 'open' : 'closed',
+            'status_name' => Support::getStatusList()[$ticket->status] ?? null,
+            'user' => $ticket->user ? [
+                'id' => $ticket->user->id,
+                'username' => $ticket->user->username,
+                'avatar' => $ticket->user->getAvatar(),
+            ] : null,
+            'created_at' => $ticket->created_at,
+            'updated_at' => $ticket->updated_at,
+            'unread_count' => $unreadCount,
+        ];
+    }
+
+    /**
+     * Форматирование тикета для детального просмотра
+     */
+    protected function formatTicketDetail($ticket)
+    {
+        return [
+            'id' => $ticket->getNumber(),
+            'number' => $ticket->getNumber(),
+            'user_id' => $ticket->user_id,
+            'status' => $ticket->status === Support::STATUS_OPEN ? 'open' : 'closed',
+            'status_name' => Support::getStatusList()[$ticket->status] ?? null,
+            'user' => $ticket->user ? [
+                'id' => $ticket->user->id,
+                'username' => $ticket->user->username,
+                'avatar' => $ticket->user->getAvatar(),
+            ] : null,
+            'server_tag' => $ticket->server_tag,
+            'created_at' => $ticket->created_at,
+            'updated_at' => $ticket->updated_at,
+            'unread_count' => 0,
+        ];
+    }
+
+    /**
+     * Форматирование сообщения
+     */
+    protected function formatMessage($message)
+    {
+        $files = [];
+        foreach ($message->supportFiles as $file) {
+            $files[] = [
+                'id' => $file->id,
+                'filename' => $file->filename,
+                'file' => $file->file,
+                'mimetype' => $file->mimetype,
+                'url' => $file->getPublicUrl(),
+            ];
+        }
+
+        return [
+            'id' => $message->id,
+            'support_id' => $message->support_id,
+            'user_id' => $message->user_id,
+            'message' => $message->message,
+            'user' => $message->user ? [
+                'id' => $message->user->id,
+                'username' => $message->user->username,
+                'avatar' => $message->user->getAvatar(),
+            ] : null,
+            'files' => $files,
+            'created_at' => $message->created_at,
+        ];
+    }
+}
+
+
+
+
+
+
+
+
