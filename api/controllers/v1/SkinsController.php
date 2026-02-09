@@ -54,20 +54,24 @@ class SkinsController extends BaseApiController
      *     @OA\Response(response=200, description="Каталог скинов")
      * )
      */
-    public function actionIndex($type = 'rust')
+    public function actionIndex()
     {
         if (!Yii::$app->settings->get('section_skindrops')) {
             throw new NotFoundHttpException('Страница не найдена');
         }
 
+        $params = Yii::$app->request->get();
+        
+        // Получаем тип из параметров запроса
+        $type = $params['type'] ?? 'rust';
+        
         // Валидация типа
         if (!in_array($type, ['rust', 'cs2'])) {
             $type = 'rust';
         }
 
         $searchModel = new SkinsSearch();
-        $params = Yii::$app->request->get();
-
+        
         // Устанавливаем параметры поиска
         $searchModel->name = $params['name'] ?? null;
         $searchModel->quality = $params['quality'] ?? null;
@@ -75,8 +79,16 @@ class SkinsController extends BaseApiController
         $searchModel->price_max = isset($params['price_max']) ? (int)$params['price_max'] : null;
         $searchModel->sort = $params['sort'] ?? 'price_asc';
 
-        // Получаем данные через поисковую модель
-        $dataProvider = $searchModel->search($params, $type);
+        // Получаем параметры пагинации
+        $page = isset($params['page']) ? (int)$params['page'] : 1;
+        $limit = isset($params['limit']) ? (int)$params['limit'] : 24;
+        
+        // Убеждаемся, что page >= 1 и limit > 0
+        $page = max(1, $page);
+        $limit = max(1, min(100, $limit)); // Ограничиваем limit от 1 до 100
+
+        // Получаем данные через поисковую модель с пагинацией
+        $dataProvider = $searchModel->search($params, $type, $page, $limit);
         $items = $dataProvider->getModels();
 
         // Форматируем данные для API
@@ -84,11 +96,26 @@ class SkinsController extends BaseApiController
         foreach ($items as $item) {
             $formattedItems[] = [
                 'id' => $item['id'] ?? null,
+                'class_id' => $item['class_id'] ?? null,
+                'instance_id' => $item['instance_id'] ?? null,
                 'name' => $item['name'] ?? '',
+                'ru_name' => $item['ru_name'] ?? $item['name'] ?? '',
+                'market_hash_name' => $item['market_hash_name'] ?? null,
+                'category' => $item['category'] ?? null,
+                'ru_quality' => $item['ru_quality'] ?? null,
+                'text_color' => $item['text_color'] ?? null,
+                'bg_color' => $item['bg_color'] ?? null,
                 'price' => (float)($item['price'] ?? 0),
-                'image' => $item['image'] ?? null,
-                'image300' => $item['image300'] ?? null,
-                'type' => $type,
+                'our_price' => isset($item['our_price']) ? (float)$item['our_price'] : (float)($item['price'] ?? 0),
+                'avg_price' => isset($item['avg_price']) ? (float)$item['avg_price'] : null,
+                'popularity_7d' => isset($item['popularity_7d']) ? (int)$item['popularity_7d'] : null,
+                'image' => $item['image'] ?? $item['image_url'] ?? null,
+                'image300' => $item['image300'] ?? $item['image300_url'] ?? null,
+                'image_url' => $item['image'] ?? $item['image_url'] ?? null, // для обратной совместимости
+                'image300_url' => $item['image300'] ?? $item['image300_url'] ?? null, // для обратной совместимости
+                'game_type' => $type,
+                'type' => $type, // альтернативное поле
+                'is_stat_trak' => isset($item['is_stat_trak']) ? (bool)$item['is_stat_trak'] : false,
                 'market_info' => [
                     'market_id' => $item['id'] ?? null,
                     'market_url' => $item['url'] ?? null,

@@ -106,12 +106,14 @@ class UserController extends BaseApiController
             $post = Yii::$app->request->post();
 
             if ($model->load($post, '') || $model->load($post)) {
-                // Обработка чекбоксов
+                // Обработка чекбоксов - API ожидает целые числа (0 или 1), а не булевы значения
                 if (isset($post['raid_notify'])) {
-                    $model->raid_notify = (bool)$post['raid_notify'];
+                    // Преобразуем в целое число: 0 или 1
+                    $model->raid_notify = (int)$post['raid_notify'];
                 }
                 if (isset($post['ban_notify'])) {
-                    $model->ban_notify = (bool)$post['ban_notify'];
+                    // Преобразуем в целое число: 0 или 1
+                    $model->ban_notify = (int)$post['ban_notify'];
                 }
                 if (isset($post['is_hide_online'])) {
                     $value = $post['is_hide_online'];
