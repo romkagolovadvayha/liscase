@@ -6,7 +6,9 @@ use common\components\payments\PaymentApi;
 use common\components\queue\process\ActivatedDropJob;
 use common\models\box\Drop;
 use common\models\box\DropBlocked;
+use common\models\box\DropDrop;
 use common\models\invoice\Deposit;
+use common\models\invoice\Invoice;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use common\models\user\User;
@@ -166,6 +168,12 @@ class GameStoresController extends BaseApiController
 
             case 'server.helpInfo':
                 return $this->actionServerHelpInfo($bodyParams, $server);
+
+            case 'store.popularItems':
+                return $this->actionStorePopularItems($bodyParams, $server);
+
+            case 'store.buyAndTake':
+                return $this->actionStoreBuyAndTake($bodyParams, $server);
 
             default:
                 return $this->errorResponseGameStores('Метод не найден!', 105);
@@ -535,9 +543,9 @@ class GameStoresController extends BaseApiController
     }
 
     /**
-     * Получить всю информацию для раздела помощи (вайпы, баланс, команды)
+     * Получить всю информацию для раздела помощи (вайпы, команды)
      * server.helpInfo
-     * Body: {"steamId": "7656119..."} (опционально, для получения баланса)
+     * Body: пустой (универсальный метод, не требует авторизации)
      */
     private function actionServerHelpInfo($bodyParams, $server)
     {
@@ -546,24 +554,7 @@ class GameStoresController extends BaseApiController
         // 1. Информация о вайпах
         $result['wipeInfo'] = $this->getWipeInfo($server);
 
-        // 2. Баланс игрока (если передан steamId)
-        $result['balance'] = null;
-        if (!empty($bodyParams['steamId']) || !empty($bodyParams['steam_id'])) {
-            try {
-                $user = $this->getUserBySteamId($bodyParams);
-                $user->refresh();
-                $balance = $user->getPersonalBalance()->balance ?? 0;
-                // Форматируем баланс в денежном формате (с пробелами для тысяч)
-                $result['balance'] = number_format($balance, 0, '.', ' ');
-            } catch (UnauthorizedHttpException $e) {
-                // Если пользователь не найден, баланс остается null
-                $result['balance'] = "0";
-            }
-        } else {
-            $result['balance'] = "0";
-        }
-
-        // 3. Команды сервера (возвращаем напрямую массив, не оборачивая в successResponseGameStores)
+        // 2. Команды сервера (возвращаем напрямую массив, не оборачивая в successResponseGameStores)
         $result['commands'] = $this->getServerCommands($server);
 
         return $this->successResponseGameStores($result);
@@ -978,6 +969,345 @@ class GameStoresController extends BaseApiController
             'message' => $message,
             'code' => $code,
         ];
+    }
+
+    /**
+     * Получить список популярных товаров для мгновенной покупки
+     * store.popularItems
+     * Body: {"dropIds": [1, 2, 3]} (опционально, если не указан - вернет 8 случайных товаров)
+     */
+    private function actionStorePopularItems($bodyParams, $server)
+    {
+        $dropIds = $bodyParams['dropIds'] ?? $bodyParams['drop_ids'] ?? null;
+        
+        $drops = Drop::getDropListAll();
+        $images = Drop::productsImages();
+        $itemsBlocked = DropBlocked::getBlockedList($server->id);
+        
+        $popularDrops = [];
+        
+        if (!empty($dropIds) && is_array($dropIds)) {
+            // Если указаны ID, возвращаем эти товары
+            foreach ($dropIds as $dropId) {
+                $drop = $drops[$dropId] ?? null;
+                if ($drop && $drop->status == Drop::STATUS_ACTIVE && $drop->market_status == Drop::MARKET_STATUS_ACTIVE) {
+                    // Форматируем как товар для корзины, но без UserDrop
+                    $item = $this->formatPopularItem($drop, $images, $itemsBlocked);
+                    $popularDrops[] = $item;
+                }
+            }
+        } else {
+            // Если ID не указаны, возвращаем 8 случайных активных товаров с market_status = 1
+            $activeDrops = [];
+            foreach ($drops as $drop) {
+                if ($drop->status == Drop::STATUS_ACTIVE && $drop->market_status == Drop::MARKET_STATUS_ACTIVE) {
+                    $activeDrops[] = $drop;
+                }
+            }
+            
+            // Перемешиваем и берем первые 8
+            shuffle($activeDrops);
+            $selectedDrops = array_slice($activeDrops, 0, 8);
+            
+            foreach ($selectedDrops as $drop) {
+                $item = $this->formatPopularItem($drop, $images, $itemsBlocked);
+                $popularDrops[] = $item;
+            }
+        }
+        
+        return $this->successResponseGameStores($popularDrops);
+    }
+
+    /**
+     * Купить и выдать товар (мгновенная покупка)
+     * store.buyAndTake
+     * Body: {"steamId": "7656119...", "dropId": 123, "quantity": 1}
+     */
+    private function actionStoreBuyAndTake($bodyParams, $server)
+    {
+        // Авторизация по steam_id
+        try {
+            $user = $this->getUserBySteamId($bodyParams);
+        } catch (UnauthorizedHttpException $e) {
+            return $this->errorResponseGameStores($e->getMessage(), 105);
+        }
+
+        $dropId = $bodyParams['dropId'] ?? $bodyParams['drop_id'] ?? null;
+        $quantity = isset($bodyParams['quantity']) ? (int)$bodyParams['quantity'] : 1;
+
+        if (empty($dropId)) {
+            return $this->errorResponseGameStores('Отсутствует параметр dropId', 105);
+        }
+
+        if ($quantity < 1 || $quantity > 100) {
+            return $this->errorResponseGameStores('Количество должно быть от 1 до 100', 105);
+        }
+
+        $drops = Drop::getDropListAll();
+        $drop = $drops[$dropId] ?? null;
+
+        if (!$drop || $drop->status != Drop::STATUS_ACTIVE || $drop->market_status != Drop::MARKET_STATUS_ACTIVE) {
+            return $this->errorResponseGameStores('Товар не найден или недоступен для покупки', 107);
+        }
+
+        // Рассчитываем цену
+        $basePrice = $drop->price - ($drop->price * ($drop->discount ?? 0) / 100);
+        $pricePerItem = ceil($basePrice);
+        $totalPrice = $pricePerItem * $quantity;
+
+        // Проверяем баланс
+        $balance = $user->getPersonalBalance();
+        if ($totalPrice > $balance->balanceCeil) {
+            return $this->errorResponseGameStores('Недостаточно средств на счете', 108);
+        }
+
+        // Начинаем транзакцию
+        $dbTransaction = Yii::$app->db->beginTransaction();
+        try {
+            // Создаем Invoice для списания средств
+            $comment = Yii::t('common', 'Мгновенная покупка предмета "{PARAMS_PREDNAME}"', [
+                'PARAMS_PREDNAME' => Yii::t('database', $drop->name, [], 'ru-RU')
+            ], 'ru-RU');
+            
+            Invoice::createRecord(
+                $user->id,
+                $totalPrice,
+                Invoice::TYPE_PAYMENT_MARKET_DROP,
+                null, // box_id
+                null, // sets_id
+                $drop->id, // drop_id
+                $comment
+            );
+
+            // Создаем UserDrop
+            $userDropIds = [];
+            if ($drop->drop_type == 2) {
+                // TYPE_SET - создаем записи для всех subDrops
+                $subDrops = DropDrop::find()
+                    ->where(['parent_drop_id' => $drop->id])
+                    ->with('drop')
+                    ->all();
+                
+                foreach ($subDrops as $subDropRelation) {
+                    if ($subDropRelation->drop) {
+                        $subDropCount = ($subDropRelation->count ?? 1) * $quantity;
+                        $userDropId = UserDrop::createRecord(
+                            $user->id,
+                            $subDropRelation->drop_id,
+                            null, // box_id
+                            null, // sets_id
+                            UserDrop::STATUS_ACTIVE,
+                            false, // auto
+                            $subDropCount, // count
+                            null, // created_at
+                            $drop->id // parent_drop_id
+                        );
+                        $userDropIds[] = $userDropId;
+                    }
+                }
+            } else {
+                // Обычный товар - создаем запись
+                $dropCount = ($drop->count ?? 1) * $quantity;
+                $userDropId = UserDrop::createRecord(
+                    $user->id,
+                    $drop->id,
+                    null, // box_id
+                    null, // sets_id
+                    UserDrop::STATUS_ACTIVE,
+                    false, // auto
+                    $dropCount, // count
+                    null, // created_at
+                    null // parent_drop_id
+                );
+                $userDropIds[] = $userDropId;
+            }
+
+            // Пересчитываем баланс
+            $balance->recalculateBalance();
+            $newBalance = $balance->balanceCeil;
+
+            // Коммитим транзакцию
+            $dbTransaction->commit();
+
+            // Получаем созданные UserDrop для выдачи
+            // Для наборов выдаем все созданные UserDrop, для обычных товаров - один
+            $userDrops = [];
+            foreach ($userDropIds as $id) {
+                $userDrop = UserDrop::findOne($id);
+                if ($userDrop) {
+                    $userDrops[] = $userDrop;
+                }
+            }
+
+            if (empty($userDrops)) {
+                return $this->errorResponseGameStores('Ошибка создания записи товара', 500);
+            }
+
+            // Выдаем все товары (для наборов - все subDrops, для обычных - один товар)
+            $items = [];
+            foreach ($userDrops as $userDrop) {
+                // Выдаем товар (как в baskets.makeIssued)
+                $userDrop->sended_at = date('Y-m-d H:i:s');
+                $userDrop->status = UserDrop::STATUS_SENDED;
+
+                // Обработка статистики (только для основного товара, не для subDrops)
+                if ($userDrop->parent_drop_id === null && !empty($server) && !empty($drop->dropStat)) {
+                    $statistics = Statistics::find()
+                        ->andWhere(['steam_id' => $user->steam_id])
+                        ->andWhere(['server_tag' => $server->tag])
+                        ->andWhere(['wipe' => $server->currentWipe()])
+                        ->indexBy('key')
+                        ->all();
+
+                    foreach ($drop->dropStat as $dropStat) {
+                        if (empty($dropStat->value)) {
+                            continue;
+                        }
+                        if (!empty($statistics[$dropStat->stat_key])) {
+                            $statistics[$dropStat->stat_key]->value += $userDrop->count * $dropStat->value;
+                            $statistics[$dropStat->stat_key]->save();
+                        } else {
+                            $model = new Statistics();
+                            $model->steam_id = $user->steam_id;
+                            $model->server_tag = $server->tag;
+                            $model->key = $dropStat->stat_key;
+                            $model->value = $userDrop->count * $dropStat->value;
+                            $model->wipe = $server->currentWipe();
+                            $model->save();
+                        }
+                    }
+                }
+
+                // Обработка VIP товара (только для основного товара)
+                if ($userDrop->parent_drop_id === null && $drop->drop_type === Drop::TYPE_VIP) {
+                    if ($server && $server->is_store == 1) {
+                        $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+                        \common\models\user\UserVip::createOrExtend($userDrop->user_id, $expiresAt);
+
+                        if (!empty($drop->command)) {
+                            $command = str_replace('%STEAMID%', $user->steam_id, $drop->command);
+                            \common\models\rcon\RconTasks::execute($command);
+                        }
+                    }
+                }
+
+                // Добавляем в очередь для обработки
+                \Yii::$app->queueProcess->push(new ActivatedDropJob(['userDrop' => $userDrop]));
+
+                // Форматируем ответ с информацией о выданном товаре
+                $images = Drop::productsImages();
+                $userDropDrop = $drops[$userDrop->drop_id] ?? $drop;
+                $item = $this->formatItem($userDrop, $userDropDrop, $images, true);
+                $items[] = $item;
+            }
+
+            return $this->successResponseGameStores([
+                'items' => $items,
+                'newBalance' => (string)$newBalance,
+            ]);
+
+        } catch (\Exception $e) {
+            $dbTransaction->rollBack();
+            Yii::error("Error in buyAndTake for steam_id {$user->steam_id}, drop_id {$dropId}: " . $e->getMessage(), 'gamestores');
+            return $this->errorResponseGameStores('Ошибка при покупке товара: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Форматировать товар для списка популярных товаров (без UserDrop)
+     */
+    private function formatPopularItem($drop, $images, $itemsBlocked)
+    {
+        // Определяем картинку
+        $img = '';
+        if (!empty($drop->command)) {
+            // Команда - используем картинку с сайта
+            $img = $images[$drop->id]['150px'] ?? '';
+        } else {
+            // Предмет: если есть rust_id, используем его как идентификатор
+            if (!empty($drop->rust_id)) {
+                $img = (string)$drop->rust_id;
+            } else {
+                // Если rust_id нет, используем картинку с сайта
+                $img = $images[$drop->id]['150px'] ?? '';
+            }
+        }
+
+        if ($img === null) {
+            $img = '';
+        }
+
+        // Рассчитываем цену
+        $basePrice = $drop->price - ($drop->price * ($drop->discount ?? 0) / 100);
+        $price = ceil($basePrice);
+
+        $item = [
+            'id' => $drop->id,
+            'productId' => (string)$drop->id,
+            'amount' => $drop->count ?? 1,
+            'name' => $drop->name,
+            'img' => $img,
+            'price' => $price,
+            'blocked' => false,
+            'block_date' => null,
+            'full_only' => $drop->full_only,
+            'is_blocked_building' => $drop->is_blocked_building,
+            'subDrop' => [],
+        ];
+
+        // Проверка блокировки
+        if (!empty($drop->blocked_hour)) {
+            if (!empty($itemsBlocked[$drop->id])) {
+                $item['blocked'] = true;
+                $item['block_date'] = strtotime($itemsBlocked[$drop->id]);
+            }
+        }
+
+        // Добавляем subDrop для наборов
+        if ($drop->full_only) {
+            foreach ($drop->subDrops as $subDrop) {
+                $_subDrop = [];
+                if (!empty($subDrop->drop->command)) {
+                    $_subDrop['command'] = str_replace("\r", '', $subDrop->drop->command);
+                    $_subDrop['type'] = "command";
+                    $_subDrop['item_id'] = 0;
+                } else {
+                    $_subDrop['type'] = "item";
+                    $_subDrop['item_id'] = $subDrop->drop->rust_id;
+                }
+                $_subDrop['count'] = $subDrop->count;
+                $item['subDrop'][] = $_subDrop;
+            }
+        }
+
+        // Плагин ожидает вложенную структуру data["data"] с itemId или commands
+        $data = [];
+
+        if (!empty($drop->command)) {
+            $item['command'] = str_replace("\r", '', $drop->command);
+            $item['type'] = "command";
+            $item['item_id'] = 0;
+
+            $commands = explode("\n", $drop->command);
+            $commands = array_filter(array_map('trim', $commands));
+            $data['commands'] = array_values($commands);
+        } else {
+            $item['type'] = "item";
+            $item['item_id'] = $drop->rust_id ?? 0;
+
+            $rustId = $drop->rust_id ?? 0;
+            $data['itemId'] = $rustId;
+
+            if (!empty($drop->rust_id)) {
+                $data['itemDefinition'] = [
+                    'itemid' => $drop->rust_id
+                ];
+            }
+        }
+
+        $item['data'] = $data;
+
+        return $item;
     }
 }
 
