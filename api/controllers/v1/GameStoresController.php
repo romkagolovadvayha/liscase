@@ -41,7 +41,7 @@ class GameStoresController extends BaseApiController
 
     /**
      * Получить пользователя по steam_id из параметров запроса
-     * 
+     *
      * @param array $bodyParams Параметры из body запроса
      * @return User
      * @throws UnauthorizedHttpException
@@ -50,50 +50,50 @@ class GameStoresController extends BaseApiController
     {
         // Пробуем получить steam_id из разных источников
         $steamId = null;
-        
+
         // Из body параметров
         if (!empty($bodyParams['steamId'])) {
             $steamId = $bodyParams['steamId'];
         } elseif (!empty($bodyParams['steam_id'])) {
             $steamId = $bodyParams['steam_id'];
         }
-        
+
         // Из POST параметров
         if (empty($steamId)) {
             $steamId = Yii::$app->request->post('steamId') ?: Yii::$app->request->post('steam_id');
         }
-        
+
         // Из GET параметров
         if (empty($steamId)) {
             $steamId = Yii::$app->request->get('steamId') ?: Yii::$app->request->get('steam_id');
         }
-        
+
         if (empty($steamId)) {
             throw new UnauthorizedHttpException('steam_id is required');
         }
-        
+
         $steamId = (string)$steamId;
-        
+
         // Проверка формата steam_id
         if (strlen($steamId) !== 17 || !is_numeric($steamId)) {
             throw new UnauthorizedHttpException('Invalid steam_id format');
         }
-        
+
         /** @var User $user */
         $user = User::find()
             ->andWhere(['steam_id' => $steamId])
             ->one();
-        
+
         if (empty($user)) {
             throw new UnauthorizedHttpException('User not found');
         }
-        
+
         return $user;
     }
 
     /**
      * Основной метод для обработки всех запросов GameStoresRUST
-     * 
+     *
      * @param string $method Метод API (baskets.item, baskets.bySteamId, etc.)
      * @return array
      */
@@ -112,7 +112,7 @@ class GameStoresController extends BaseApiController
         // GameStoresRUST отправляет данные как form-data через UnityWebRequest.Post
         // Для методов без body (например, store.pluginInfo) POST может быть пустым
         $bodyParams = [];
-        
+
         // Пробуем получить POST данные только если это не GET запрос
         if (Yii::$app->request->isPost) {
             $postData = Yii::$app->request->post();
@@ -134,14 +134,14 @@ class GameStoresController extends BaseApiController
         // Приоритет: headers > query string
         $serverIp = $headerServerIp ?: $queryServerIp;
         $serverPort = $headerServerPort ?: $queryServerPort;
-        
+
         // Логирование для отладки
         if (empty($serverIp) || empty($serverPort)) {
             Yii::error("GameStores: Missing server IP or PORT. IP: {$serverIp}, PORT: {$serverPort}, Method: {$method}", 'gamestores');
         }
-        
+
         $server = $this->findServer($serverIp, $serverPort);
-        
+
         if (!$server) {
             Yii::error("GameStores: Server not found. IP: {$serverIp}, PORT: {$serverPort}, Method: {$method}", 'gamestores');
             return $this->errorResponseGameStores('Сервер с таким IP и PORT не найден', 103);
@@ -151,22 +151,22 @@ class GameStoresController extends BaseApiController
         switch ($method) {
             case 'baskets.item':
                 return $this->actionBasketsItem($bodyParams, $server);
-            
+
             case 'baskets.bySteamId':
                 return $this->actionBasketsBySteamId($bodyParams, $server);
-            
+
             case 'baskets.makeIssued':
                 return $this->actionBasketsMakeIssued($bodyParams, $server);
-            
+
             case 'baskets.instantCommands':
                 return $this->actionBasketsInstantCommands($server);
-            
+
             case 'store.pluginInfo':
                 return $this->actionStorePluginInfo($server);
-            
+
             case 'server.helpInfo':
                 return $this->actionServerHelpInfo($bodyParams, $server);
-            
+
             default:
                 return $this->errorResponseGameStores('Метод не найден!', 105);
         }
@@ -175,7 +175,7 @@ class GameStoresController extends BaseApiController
     /**
      * Обработка платежей через integrations/payments/custom
      * Используется для консольной команды gs.createpayment
-     * 
+     *
      * @return array
      */
     public function actionIntegrationsPaymentsCustom()
@@ -191,7 +191,7 @@ class GameStoresController extends BaseApiController
 
         // Получаем body параметры (POST)
         $bodyParams = Yii::$app->request->post();
-        
+
         // Если POST пустой, пробуем получить из raw body (JSON, если отправлено как JSON)
         if (empty($bodyParams)) {
             $rawBody = Yii::$app->request->getRawBody();
@@ -206,9 +206,9 @@ class GameStoresController extends BaseApiController
         // Находим сервер по IP и PORT
         $serverIp = $headerServerIp ?: $queryServerIp;
         $serverPort = $headerServerPort ?: $queryServerPort;
-        
+
         $server = $this->findServer($serverIp, $serverPort);
-        
+
         if (!$server) {
             return $this->errorResponseGameStores('Сервер с таким IP и PORT не найден', 103);
         }
@@ -248,7 +248,7 @@ class GameStoresController extends BaseApiController
         } catch (UnauthorizedHttpException $e) {
             // Если пользователь не найден, создаем его
             $user = User::findBySteamId($steamId, true, 'gamestores_payment');
-            
+
             if (!$user) {
                 return $this->errorResponseGameStores('Не удалось найти или создать пользователя', 400);
             }
@@ -260,10 +260,10 @@ class GameStoresController extends BaseApiController
         try {
             // Используем TYPE_PAYMENT_CARD_TINKOFF, как на сайте
             $paymentType = Deposit::TYPE_PAYMENT_CARD_TINKOFF;
-            
+
             // Создаем операцию депозита
             $deposit = Deposit::createOperation($user->id, $amount, $paymentType);
-            
+
             if (!$deposit) {
                 return $this->errorResponseGameStores('Не удалось создать платеж', 500);
             }
@@ -271,7 +271,7 @@ class GameStoresController extends BaseApiController
             // Получаем API провайдера для Tinkoff и создаем платеж
             $paymentApi = PaymentApi::getInstance($paymentType);
             $response = $paymentApi->create($deposit);
-            
+
             if (empty($response)) {
                 $deposit->status = Deposit::STATUS_CANCELED;
                 $deposit->save(false);
@@ -281,7 +281,7 @@ class GameStoresController extends BaseApiController
             // Получаем текущий баланс пользователя
             $user->refresh();
             $playerBalance = $user->balance ?? 0;
-            
+
             // Получаем баланс магазина (если есть такая концепция)
             $storeBalance = 0; // TODO: реализовать получение баланса магазина, если необходимо
 
@@ -294,12 +294,12 @@ class GameStoresController extends BaseApiController
                     'store_balance' => (string)$storeBalance,
                 ],
             ];
-            
+
             // Добавляем ссылку на оплату, если она есть
             if (!empty($response['paymentURL'])) {
                 $result['data']['payment_url'] = $response['paymentURL'];
             }
-            
+
             // Добавляем template данные, если они есть
             if (!empty($response['template'])) {
                 $result['data']['template'] = $response['template'];
@@ -307,10 +307,10 @@ class GameStoresController extends BaseApiController
             }
 
             return $result;
-            
+
         } catch (\Exception $e) {
             Yii::error("Error creating payment for steam_id {$user->steam_id}: " . $e->getMessage(), 'gamestores');
-            
+
             // Проверяем, не недостаточно ли средств на балансе магазина
             if (strpos($e->getMessage(), 'insufficient') !== false || strpos($e->getMessage(), 'баланс') !== false) {
                 return [
@@ -319,7 +319,7 @@ class GameStoresController extends BaseApiController
                     'message' => 'Недостаточно средств на балансе магазина',
                 ];
             }
-            
+
             return $this->errorResponseGameStores('Ошибка при создании платежа: ' . $e->getMessage(), 500);
         }
     }
@@ -337,16 +337,16 @@ class GameStoresController extends BaseApiController
         } catch (UnauthorizedHttpException $e) {
             return $this->errorResponseGameStores($e->getMessage(), 105);
         }
-        
+
         $basketId = $bodyParams['basketId'] ?? null;
-        
+
         if (empty($basketId)) {
             return $this->errorResponseGameStores('Отсутствует параметр basketId', 105);
         }
 
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($basketId);
-        
+
         if (empty($userDrop) || ($userDrop->status !== UserDrop::STATUS_WAIT && $userDrop->status !== UserDrop::STATUS_ACTIVE)) {
             return $this->errorResponseGameStores('Предмет уже получен/продан', 107);
         }
@@ -358,7 +358,7 @@ class GameStoresController extends BaseApiController
 
         $drops = Drop::getDropListAll();
         $drop = $drops[$userDrop->drop_id] ?? null;
-        
+
         if (!$drop) {
             return $this->errorResponseGameStores('Предмет не найден', 107);
         }
@@ -372,10 +372,10 @@ class GameStoresController extends BaseApiController
         // Получаем картинки для определения URL (если rust_id нет)
         $images = Drop::productsImages();
         $item = $this->formatItem($userDrop, $drop, $images, true);
-        
+
         // Логирование для отладки
         Yii::info("GameStores baskets.item response for basketId {$basketId}: " . json_encode($item, JSON_UNESCAPED_UNICODE), 'gamestores');
-        
+
         return $this->successResponseGameStores($item);
     }
 
@@ -403,11 +403,11 @@ class GameStoresController extends BaseApiController
         $images = Drop::productsImages();
         $drops = Drop::getDropListAll();
         $itemsBlocked = DropBlocked::getBlockedList($server->id);
-        
+
         foreach ($userDrops as $userDrop) {
             $drop = $drops[$userDrop->drop_id] ?? null;
             if (!$drop) continue;
-            
+
             $item = $this->formatBasketItem($userDrop, $drop, $images, $itemsBlocked);
             $data[] = $item;
         }
@@ -428,16 +428,16 @@ class GameStoresController extends BaseApiController
         } catch (UnauthorizedHttpException $e) {
             return $this->errorResponseGameStores($e->getMessage(), 105);
         }
-        
+
         $basketId = $bodyParams['basketId'] ?? null;
-        
+
         if (empty($basketId)) {
             return $this->errorResponseGameStores('Отсутствует параметр basketId', 105);
         }
 
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($basketId);
-        
+
         if (empty($userDrop) || ($userDrop->status !== UserDrop::STATUS_WAIT && $userDrop->status !== UserDrop::STATUS_ACTIVE)) {
             return $this->errorResponseGameStores('Предмет уже получен/продан', 107);
         }
@@ -485,7 +485,7 @@ class GameStoresController extends BaseApiController
             if ($server && $server->is_store == 1) {
                 $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
                 \common\models\user\UserVip::createOrExtend($userDrop->user_id, $expiresAt);
-                
+
                 if (!empty($drop->command)) {
                     $user = $userDrop->user;
                     if ($user) {
@@ -542,10 +542,10 @@ class GameStoresController extends BaseApiController
     private function actionServerHelpInfo($bodyParams, $server)
     {
         $result = [];
-        
+
         // 1. Информация о вайпах
         $result['wipeInfo'] = $this->getWipeInfo($server);
-        
+
         // 2. Баланс игрока (если передан steamId)
         $result['balance'] = null;
         if (!empty($bodyParams['steamId']) || !empty($bodyParams['steam_id'])) {
@@ -562,10 +562,10 @@ class GameStoresController extends BaseApiController
         } else {
             $result['balance'] = "0";
         }
-        
+
         // 3. Команды сервера (возвращаем напрямую массив, не оборачивая в successResponseGameStores)
         $result['commands'] = $this->getServerCommands($server);
-        
+
         return $this->successResponseGameStores($result);
     }
 
@@ -575,7 +575,7 @@ class GameStoresController extends BaseApiController
     private function getWipeInfo($server)
     {
         $tz = new \DateTimeZone(Yii::$app->timeZone ?: 'UTC');
-        
+
         // Получаем дату последнего вайпа из поля wipe сервера
         $lastWipeDate = null;
         if (!empty($server->wipe)) {
@@ -588,7 +588,7 @@ class GameStoresController extends BaseApiController
                 // Если не удалось распарсить, оставляем null
             }
         }
-        
+
         // Получаем следующий вайп из поля next_wipe сервера
         $nextWipeDate = null;
         if (!empty($server->next_wipe)) {
@@ -601,7 +601,7 @@ class GameStoresController extends BaseApiController
                 // Если не удалось распарсить, оставляем null
             }
         }
-        
+
         // Получаем глобальный вайп из поля global_wipe сервера
         $nextGlobalWipeDate = null;
         if (!empty($server->global_wipe)) {
@@ -614,7 +614,7 @@ class GameStoresController extends BaseApiController
                 // Если не удалось распарсить, оставляем null
             }
         }
-        
+
         // Форматируем даты в формат 01.12.2025 16:00 МСК
         $formatDate = function($date) use ($tz) {
             if (!$date) return null;
@@ -622,37 +622,37 @@ class GameStoresController extends BaseApiController
             $dateMoscow = $date->setTimezone($moscowTz);
             return $dateMoscow->format('d.m.Y H:i') . ' МСК';
         };
-        
+
         return [
             'lastWipe' => $formatDate($lastWipeDate),
             'nextWipe' => $formatDate($nextWipeDate),
             'nextGlobalWipe' => $formatDate($nextGlobalWipeDate),
         ];
     }
-    
+
     /**
      * Получить команды сервера из раздела правил (вспомогательный метод)
      */
     private function getServerCommands($server)
     {
         $commands = [];
-        
+
         // Ищем категорию "Команды сервера"
         $commandsCategory = \common\models\servers\ServersRulesCategory::find()
             ->where(['name' => 'Команды на сервере'])
             ->one();
-        
+
         if ($commandsCategory) {
             // Получаем все правила для сервера
             $rules = \common\models\servers\ServersRules::getRulesForServer($server->id);
-            
+
             // Фильтруем правила по категории "Команды сервера"
             foreach ($rules as $rule) {
                 if ($rule->category_id == $commandsCategory->id) {
                     // Извлекаем команды из content (может быть HTML)
                     $content = strip_tags($rule->content); // Убираем HTML теги
                     $content = trim($content);
-                    
+
                     if (!empty($content)) {
                         // Если content содержит несколько строк, разбиваем их
                         $lines = explode("\n", $content);
@@ -672,7 +672,7 @@ class GameStoresController extends BaseApiController
                 }
             }
         }
-        
+
         // Добавляем категорию "Команды сервера"
         $data = [
             [
@@ -680,7 +680,7 @@ class GameStoresController extends BaseApiController
                 'commands' => $commands,
             ],
         ];
-        
+
         // Если есть админка, добавляем её тоже
         if (!empty($server->admin_url)) {
             $data[] = [
@@ -688,11 +688,11 @@ class GameStoresController extends BaseApiController
                 'url' => $server->admin_url,
             ];
         }
-        
+
         // Возвращаем напрямую массив, не оборачивая в successResponseGameStores
         return $data;
     }
-    
+
     /**
      * Первый N-й день недели месяца: $weekday 1=Пн..7=Вс
      */
@@ -723,19 +723,19 @@ class GameStoresController extends BaseApiController
 
         /** @var Servers $server */
         $server = null;
-        
+
         // Поиск по IP и PORT
         foreach ($servers as $_server) {
             // Сравниваем IP (может быть в разных форматах: с портом или без)
             $serverIpClean = $this->cleanIpAddress($_server->ip);
             $requestIpClean = $this->cleanIpAddress($serverIp);
-            
+
             // Также проверяем text_ip, если он есть
             $serverTextIpClean = !empty($_server->text_ip) ? $this->cleanIpAddress($_server->text_ip) : null;
-            
-            $ipMatches = ($serverIpClean == $requestIpClean) || 
+
+            $ipMatches = ($serverIpClean == $requestIpClean) ||
                         ($serverTextIpClean && $serverTextIpClean == $requestIpClean);
-            
+
             if ($ipMatches && $_server->port == (int)$serverPort) {
                 $server = $_server;
                 break;
@@ -744,7 +744,7 @@ class GameStoresController extends BaseApiController
 
         return $server;
     }
-    
+
     /**
      * Очистить IP адрес от порта и привести к единому формату
      */
@@ -753,14 +753,14 @@ class GameStoresController extends BaseApiController
         if (empty($ip)) {
             return '';
         }
-        
+
         // Убираем порт, если он есть (формат: ip:port)
         $parts = explode(':', $ip);
         $ipOnly = $parts[0];
-        
+
         // Убираем пробелы
         $ipOnly = trim($ipOnly);
-        
+
         return $ipOnly;
     }
 
@@ -783,46 +783,46 @@ class GameStoresController extends BaseApiController
 
         // Плагин ожидает вложенную структуру data["data"] с itemId или commands
         $data = [];
-        
+
         if (!empty($drop->command)) {
             // Команда - нет rust_id, используем картинку с сайта
             $item['command'] = str_replace("\r", '', $drop->command);
             $item['type'] = "command";
             $item['item_id'] = 0;
-            
+
             // Для команд плагин ожидает data["data"]["commands"] как массив
             $commands = explode("\n", $drop->command);
             $commands = array_filter(array_map('trim', $commands)); // Убираем пустые строки
             $data['commands'] = array_values($commands); // Преобразуем в массив с числовыми ключами
-            
+
             // Для команд используем картинку с сайта
-            $item['img'] = $images[$userDrop->drop_id]['64px'] ?? '';
+            $item['img'] = $images[$userDrop->drop_id]['150px'] ?? '';
         } else {
             // Предмет
             $item['type'] = "item";
             $item['item_id'] = $drop->rust_id ?? 0;
-            
+
             // Для предметов плагин ожидает data["data"]["itemId"]
             // Всегда передаем itemId (даже если 0), чтобы плагин мог обработать
             $rustId = $drop->rust_id ?? 0;
             $data['itemId'] = $rustId;
-            
+
             // Также добавляем itemDefinition.itemid для совместимости (только если rust_id валидный)
             if (!empty($drop->rust_id) && $drop->rust_id > 0) {
                 $data['itemDefinition'] = [
                     'itemid' => $drop->rust_id
                 ];
-                
+
                 // Если есть rust_id, используем его как идентификатор для получения картинки из игры
                 // Плагин проверяет: если img не содержит "http", то это rust_id
                 $item['img'] = (string)$drop->rust_id;
             } else {
                 // Если rust_id нет или равен 0, используем картинку с сайта
                 // Плагин вернет IsValid = false, так как ItemID == 0
-                $item['img'] = $images[$userDrop->drop_id]['64px'] ?? '';
+                $item['img'] = $images[$userDrop->drop_id]['150px'] ?? '';
             }
         }
-        
+
         // Добавляем вложенную структуру data
         $item['data'] = $data;
 
@@ -854,25 +854,25 @@ class GameStoresController extends BaseApiController
         $img = '';
         if (!empty($drop->command)) {
             // Команда - нет rust_id, используем картинку с сайта
-            $img = $images[$userDrop->drop_id]['64px'] ?? '';
+            $img = $images[$userDrop->drop_id]['150px'] ?? '';
         } else {
             // Предмет: если есть rust_id, используем его как идентификатор
             if (!empty($drop->rust_id)) {
                 $img = (string)$drop->rust_id;
             } else {
                 // Если rust_id нет, используем картинку с сайта
-                $img = $images[$userDrop->drop_id]['64px'] ?? '';
+                $img = $images[$userDrop->drop_id]['150px'] ?? '';
             }
         }
-        
+
         // Убеждаемся, что img всегда строка (не null)
         if ($img === null) {
             $img = '';
         }
-        
+
         // Убеждаемся, что amount всегда число (не null)
         $amount = $userDrop->count ?? 0;
-        
+
         $item = [
             'id' => $userDrop->id,
             'basketId' => $userDrop->id, // Для совместимости
@@ -913,12 +913,12 @@ class GameStoresController extends BaseApiController
 
         // Плагин ожидает вложенную структуру data["data"] с itemId или commands
         $data = [];
-        
+
         if (!empty($drop->command)) {
             $item['command'] = str_replace("\r", '', $drop->command);
             $item['type'] = "command";
             $item['item_id'] = 0;
-            
+
             // Для команд плагин ожидает data["data"]["commands"] как массив
             $commands = explode("\n", $drop->command);
             $commands = array_filter(array_map('trim', $commands)); // Убираем пустые строки
@@ -926,12 +926,12 @@ class GameStoresController extends BaseApiController
         } else {
             $item['type'] = "item";
             $item['item_id'] = $drop->rust_id ?? 0;
-            
+
             // Для предметов плагин ожидает data["data"]["itemId"]
             // Всегда передаем itemId (даже если 0), чтобы плагин мог обработать
             $rustId = $drop->rust_id ?? 0;
             $data['itemId'] = $rustId;
-            
+
             // Также добавляем itemDefinition.itemid для совместимости (только если rust_id валидный)
             if (!empty($drop->rust_id)) {
                 $data['itemDefinition'] = [
@@ -939,7 +939,7 @@ class GameStoresController extends BaseApiController
                 ];
             }
         }
-        
+
         // Добавляем вложенную структуру data
         $item['data'] = $data;
 
@@ -972,7 +972,7 @@ class GameStoresController extends BaseApiController
         } else {
             Yii::$app->response->statusCode = 400;
         }
-        
+
         return [
             'result' => 'fail',
             'message' => $message,
