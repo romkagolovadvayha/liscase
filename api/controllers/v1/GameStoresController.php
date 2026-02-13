@@ -457,6 +457,7 @@ class GameStoresController extends BaseApiController
 
         $userDrop->sended_at = date('Y-m-d H:i:s');
         $userDrop->status = UserDrop::STATUS_SENDED;
+        $userDrop->save(); // Сохраняем статус в базу данных
 
         // Обработка статистики
         if (!empty($server) && !empty($userDrop->drop[0]->dropStat)) {
@@ -1149,6 +1150,7 @@ class GameStoresController extends BaseApiController
                 // Выдаем товар (как в baskets.makeIssued)
                 $userDrop->sended_at = date('Y-m-d H:i:s');
                 $userDrop->status = UserDrop::STATUS_SENDED;
+                $userDrop->save(); // Сохраняем статус в базу данных
 
                 // Обработка статистики (только для основного товара, не для subDrops)
                 if ($userDrop->parent_drop_id === null && !empty($server) && !empty($drop->dropStat)) {
