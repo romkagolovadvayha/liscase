@@ -7,6 +7,7 @@ use common\components\queue\telegram\SendPhotoJob;
 use common\components\queue\telegram\TelegramJob;
 use common\components\queue\telegram\TelegramMassJob;
 use common\components\queue\vk\SendVkMessageJob;
+use common\components\queue\vk\SendVkMessageBatchJob;
 use common\components\telegram\TelegramPersonalBot;
 use common\components\vk\VkApiHelper;
 use common\components\helpers\Role;
@@ -248,6 +249,7 @@ class TelegramConstructor extends \yii\db\ActiveRecord
 
     /**
      * Отправка в личные сообщения участников группы ВКонтакте
+     * Использует батч-джоб для оптимизации массовой рассылки
      * @return bool
      */
     public function sendVkGroup()
@@ -277,37 +279,61 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             return false;
         }
 
-        // Отправляем сообщения через очередь VK
-        foreach ($recipients as $vkUserId) {
-            $photo = null;
-            if (!empty($imageLink)) {
-                // Для динамических ссылок нужно подставить user_id из базы данных, а не vk_user_id
-                // Ищем пользователя по vk_id
-                $user = User::find()
-                    ->where(['vk_id' => $vkUserId])
-                    ->one();
-                
-                // Если пользователь найден, используем его user_id, иначе используем vk_user_id
-                $userIdForUrl = $user ? $user->id : $vkUserId;
-                
-                if (!$user) {
-                    Yii::warning("VK: User not found for vk_id {$vkUserId}, using vk_user_id for URL", __METHOD__);
+        // Размер батча для отправки (оптимально 10-20 сообщений за раз для соблюдения rate limits VK API)
+        // VK API позволяет 3 запроса в секунду, поэтому батч из 10 сообщений займет ~3.5 секунды
+        $batchSize = 10;
+        
+        // Разбиваем получателей на батчи
+        $batches = array_chunk($recipients, $batchSize);
+        $totalBatches = count($batches);
+        
+        Yii::info("VK: Preparing to send messages to " . count($recipients) . " recipients in {$totalBatches} batches", __METHOD__);
+
+        // Для каждого батча создаем отдельную задачу
+        foreach ($batches as $batchIndex => $batch) {
+            $batchMessages = [];
+            
+            foreach ($batch as $vkUserId) {
+                $photo = null;
+                if (!empty($imageLink)) {
+                    // Для динамических ссылок нужно подставить user_id из базы данных, а не vk_user_id
+                    // Ищем пользователя по vk_id
+                    $user = User::find()
+                        ->where(['vk_id' => $vkUserId])
+                        ->one();
+                    
+                    // Если пользователь найден, используем его user_id, иначе используем vk_user_id
+                    $userIdForUrl = $user ? $user->id : $vkUserId;
+                    
+                    if (!$user) {
+                        Yii::warning("VK: User not found for vk_id {$vkUserId}, using vk_user_id for URL", __METHOD__);
+                    }
+                    
+                    $photo = $this->telegramConstructorMessage->getPubUrl('', $language, $userIdForUrl);
+                    
+                    if (empty($photo)) {
+                        Yii::warning("VK: Empty photo URL for vk_user_id {$vkUserId}, user_id {$userIdForUrl}", __METHOD__);
+                    }
                 }
                 
-                $photo = $this->telegramConstructorMessage->getPubUrl('', $language, $userIdForUrl);
-                
-                if (empty($photo)) {
-                    Yii::warning("VK: Empty photo URL for vk_user_id {$vkUserId}, user_id {$userIdForUrl}", __METHOD__);
-                }
+                $batchMessages[] = [
+                    'user_id' => $vkUserId,
+                    'message' => $message,
+                    'photo' => $photo,
+                ];
             }
             
-            Yii::$app->queueVk->push(new SendVkMessageJob([
-                'user_id' => $vkUserId,
-                'message' => $message,
-                'photo' => $photo,
+            // Добавляем батч в очередь с небольшой задержкой между батчами для распределения нагрузки
+            // Задержка между батчами: 1 секунда (чтобы не перегружать API)
+            $delay = $batchIndex * 1; // Каждый следующий батч с задержкой в 1 секунду
+            
+            Yii::$app->queueVk->delay($delay)->push(new SendVkMessageBatchJob([
+                'messages' => $batchMessages,
+                'delayBetweenMessages' => 350000, // 0.35 секунды между сообщениями в батче
             ]));
         }
 
+        Yii::info("VK: Added {$totalBatches} batch jobs to queue for " . count($recipients) . " recipients", __METHOD__);
         return true;
     }
 
