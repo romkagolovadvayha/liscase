@@ -1104,7 +1104,9 @@ class GameStoresController extends BaseApiController
                 $comment
             );
 
-            // Создаем UserDrop
+            // Создаем UserDrop сразу со статусом STATUS_SENDED, чтобы товар не попадал в корзину
+            // Для мгновенной покупки товар должен быть сразу выданным
+            $sendedAt = date('Y-m-d H:i:s');
             $userDropIds = [];
             if ($drop->drop_type == 2) {
                 // TYPE_SET - создаем записи для всех subDrops
@@ -1116,35 +1118,41 @@ class GameStoresController extends BaseApiController
                 foreach ($subDrops as $subDropRelation) {
                     if ($subDropRelation->drop) {
                         $subDropCount = ($subDropRelation->count ?? 1) * $quantity;
-                        $userDropId = UserDrop::createRecord(
+                        $userDrop = UserDrop::createRecord(
                             $user->id,
                             $subDropRelation->drop_id,
                             null, // box_id
                             null, // sets_id
-                            UserDrop::STATUS_ACTIVE,
+                            UserDrop::STATUS_SENDED, // Сразу выданный статус
                             false, // auto
                             $subDropCount, // count
                             null, // created_at
                             $drop->id // parent_drop_id
                         );
-                        $userDropIds[] = $userDropId;
+                        // Устанавливаем sended_at сразу после создания
+                        $userDrop->sended_at = $sendedAt;
+                        $userDrop->save(false);
+                        $userDropIds[] = $userDrop->id;
                     }
                 }
             } else {
                 // Обычный товар - создаем запись
                 $dropCount = ($drop->count ?? 1) * $quantity;
-                $userDropId = UserDrop::createRecord(
+                $userDrop = UserDrop::createRecord(
                     $user->id,
                     $drop->id,
                     null, // box_id
                     null, // sets_id
-                    UserDrop::STATUS_ACTIVE,
+                    UserDrop::STATUS_SENDED, // Сразу выданный статус
                     false, // auto
                     $dropCount, // count
                     null, // created_at
                     null // parent_drop_id
                 );
-                $userDropIds[] = $userDropId;
+                // Устанавливаем sended_at сразу после создания
+                $userDrop->sended_at = $sendedAt;
+                $userDrop->save(false);
+                $userDropIds[] = $userDrop->id;
             }
 
             // Пересчитываем баланс
@@ -1169,12 +1177,10 @@ class GameStoresController extends BaseApiController
             }
 
             // Выдаем все товары (для наборов - все subDrops, для обычных - один товар)
+            // Товары уже созданы со статусом STATUS_SENDED, поэтому они не попадут в корзину
             $items = [];
             foreach ($userDrops as $userDrop) {
-                // Выдаем товар (как в baskets.makeIssued)
-                $userDrop->sended_at = date('Y-m-d H:i:s');
-                $userDrop->status = UserDrop::STATUS_SENDED;
-                $userDrop->save(); // Сохраняем статус в базу данных
+                // Товар уже имеет статус STATUS_SENDED и sended_at установлен
 
                 // Обработка статистики (только для основного товара, не для subDrops)
                 if ($userDrop->parent_drop_id === null && !empty($server) && !empty($drop->dropStat)) {
