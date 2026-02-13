@@ -792,11 +792,12 @@ class GameStoresController extends BaseApiController
         } else {
             // Предмет
             $item['type'] = "item";
-            $item['item_id'] = $drop->rust_id ?? 0;
+            $rustId = $drop->rust_id ?? 0;
+            $item['item_id'] = $rustId;
+            $item['itemId'] = $rustId; // Добавляем itemId в корень для совместимости
 
             // Для предметов плагин ожидает data["data"]["itemId"]
             // Всегда передаем itemId (даже если 0), чтобы плагин мог обработать
-            $rustId = $drop->rust_id ?? 0;
             $data['itemId'] = $rustId;
 
             // Также добавляем itemDefinition.itemid для совместимости (только если rust_id валидный)
@@ -1295,9 +1296,10 @@ class GameStoresController extends BaseApiController
             $data['commands'] = array_values($commands);
         } else {
             $item['type'] = "item";
-            $item['item_id'] = $drop->rust_id ?? 0;
-
             $rustId = $drop->rust_id ?? 0;
+            $item['item_id'] = $rustId;
+            $item['itemId'] = $rustId; // Добавляем itemId в корень для совместимости
+
             $data['itemId'] = $rustId;
 
             if (!empty($drop->rust_id)) {
