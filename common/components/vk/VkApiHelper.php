@@ -117,9 +117,10 @@ class VkApiHelper extends \yii\base\Component
     /**
      * Получение информации о пользователях
      * @param array $userIds Массив ID пользователей
+     * @param bool $checkCanSendMessage Проверять ли возможность отправки сообщений
      * @return array|false Массив с данными пользователей
      */
-    public function getUsersInfo($userIds)
+    public function getUsersInfo($userIds, $checkCanSendMessage = false)
     {
         if (empty($userIds)) {
             return [];
@@ -130,11 +131,17 @@ class VkApiHelper extends \yii\base\Component
         $allUsers = [];
         $chunkIndex = 0;
 
+        // Поля для проверки возможности отправки сообщений
+        $fields = 'screen_name';
+        if ($checkCanSendMessage) {
+            $fields = 'screen_name,can_write_private_message,deactivated,is_closed';
+        }
+
         foreach ($chunks as $chunk) {
             $chunkIndex++;
             $params = [
                 'user_ids' => implode(',', $chunk),
-                'fields' => 'screen_name', // Получаем только screen_name, разрешение не проверяем
+                'fields' => $fields,
                 'v' => $this->apiVersion,
             ];
 
@@ -234,7 +241,7 @@ class VkApiHelper extends \yii\base\Component
 
     /**
      * Обновление аудитории ВКонтакте - получение участников группы, с которыми был диалог
-     * Если есть диалог, значит есть разрешение на отправку сообщений
+     * Согласно VK API, сообщество может отправлять сообщения только тем пользователям, которые написали сообществу
      * @param int|string $groupId ID группы
      * @return array Статистика: ['total' => int, 'saved' => int, 'with_conversation' => int, 'deleted' => int]
      */
@@ -248,6 +255,8 @@ class VkApiHelper extends \yii\base\Component
         ];
 
         // Получаем список пользователей, с которыми был диалог
+        // Согласно VK API, только этим пользователям можно отправлять сообщения от сообщества
+        $conversationUserIds = [];
         try {
             $conversationUserIds = $this->getConversationsUserIds($groupId);
         } catch (\Exception $e) {
@@ -272,18 +281,16 @@ class VkApiHelper extends \yii\base\Component
         $stats['with_conversation'] = count($conversationUserIds);
         $stats['total'] = count($conversationUserIds);
 
-        // Удаляем пользователей, которых нет в новом списке бесед
-        $deletedCount = \common\models\vk\VkUser::deleteAll(['NOT IN', 'vk_user_id', $conversationUserIds]);
-        $stats['deleted'] = $deletedCount;
-
-        // Получаем информацию о пользователях
+        // Получаем информацию о пользователях с проверкой возможности отправки сообщений
         // Обрабатываем по частям, чтобы не превысить лимиты API
         $chunks = array_chunk($conversationUserIds, 100);
+        
+        $validUserIds = []; // Пользователи, которым можно отправлять сообщения
         
         $chunkIndex = 0;
         foreach ($chunks as $chunk) {
             $chunkIndex++;
-            $usersInfo = $this->getUsersInfo($chunk);
+            $usersInfo = $this->getUsersInfo($chunk, true); // Проверяем возможность отправки
             
             if (empty($usersInfo)) {
                 continue;
@@ -296,14 +303,39 @@ class VkApiHelper extends \yii\base\Component
                 }
 
                 // Если есть диалог, значит есть разрешение на отправку сообщений
+                // Но нужно проверить, что пользователь не деактивирован и не закрыт
                 $canSendMessage = true;
                 
-                // Сохраняем в базу данных всех, с кем был диалог
-                try {
-                    \common\models\vk\VkUser::createOrUpdate($vkUserId, $userData, $canSendMessage);
-                    $stats['saved']++;
-                } catch (\Exception $e) {
-                    // Игнорируем ошибки сохранения отдельных пользователей
+                // Проверяем, что пользователь не деактивирован
+                $isDeactivated = !empty($userData['deactivated']);
+                if ($isDeactivated) {
+                    $canSendMessage = false;
+                    Yii::info("VK: User {$vkUserId} is deactivated, skipping", __METHOD__);
+                    continue;
+                }
+                
+                // Проверяем, что профиль не закрыт (для закрытых профилей могут быть ограничения)
+                $isClosed = !empty($userData['is_closed']);
+                if ($isClosed) {
+                    // Для закрытых профилей все равно можно отправлять, если есть диалог
+                    // Но проверяем дополнительно can_write_private_message
+                    if (isset($userData['can_write_private_message']) && !$userData['can_write_private_message']) {
+                        $canSendMessage = false;
+                        Yii::info("VK: User {$vkUserId} has closed profile and can't receive messages, skipping", __METHOD__);
+                        continue;
+                    }
+                }
+                
+                // Сохраняем только тех, кому можно отправлять сообщения
+                if ($canSendMessage) {
+                    $validUserIds[] = $vkUserId;
+                    try {
+                        \common\models\vk\VkUser::createOrUpdate($vkUserId, $userData, $canSendMessage);
+                        $stats['saved']++;
+                    } catch (\Exception $e) {
+                        // Игнорируем ошибки сохранения отдельных пользователей
+                        Yii::warning("VK: Error saving user {$vkUserId}: " . $e->getMessage(), __METHOD__);
+                    }
                 }
             }
 
@@ -313,8 +345,18 @@ class VkApiHelper extends \yii\base\Component
             }
         }
 
+        // Удаляем пользователей, которых нет в новом списке валидных пользователей
+        if (!empty($validUserIds)) {
+            $deletedCount = \common\models\vk\VkUser::deleteAll(['NOT IN', 'vk_user_id', $validUserIds]);
+            $stats['deleted'] = $deletedCount;
+        } else {
+            // Если нет валидных пользователей, удаляем всех
+            $deletedCount = \common\models\vk\VkUser::deleteAll();
+            $stats['deleted'] = $deletedCount;
+        }
+
         try {
-            Yii::$app->telegramChats->sendMessage("VK: Finished updating audience. Total conversations: {$stats['with_conversation']}, Saved: {$stats['saved']}, Deleted: {$stats['deleted']}");
+            Yii::$app->telegramChats->sendMessage("VK: Finished updating audience. Total conversations: {$stats['with_conversation']}, Saved (can send): {$stats['saved']}, Deleted: {$stats['deleted']}");
         } catch (\Exception $e) {}
         return $stats;
     }
