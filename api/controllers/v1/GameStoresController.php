@@ -761,6 +761,9 @@ class GameStoresController extends BaseApiController
      */
     private function formatItem($userDrop, $drop, $images = [], $includeSubDrop = false)
     {
+        // Логирование для отладки
+        Yii::info("formatItem: userDrop->drop_id={$userDrop->drop_id}, drop->id={$drop->id}, drop->rust_id={$drop->rust_id}, drop->name=" . Yii::t('database', $drop->name, [], 'ru-RU'), 'gamestores');
+        
         $item = [
             'id' => $userDrop->id,
             'basketId' => $userDrop->id, // Для совместимости
@@ -1046,11 +1049,27 @@ class GameStoresController extends BaseApiController
         }
 
         $drops = Drop::getDropListAll();
-        $drop = $drops[$dropId] ?? null;
-
+        
+        // Логирование для отладки - проверяем тип dropId и ключи в массиве
+        Yii::info("buyAndTake: Request dropId={$dropId} (type: " . gettype($dropId) . "), drops array keys sample: " . implode(', ', array_slice(array_keys($drops), 0, 10)), 'gamestores');
+        
+        // Пробуем найти drop по разным типам ключа
+        $drop = null;
+        if (isset($drops[$dropId])) {
+            $drop = $drops[$dropId];
+        } elseif (isset($drops[(int)$dropId])) {
+            $drop = $drops[(int)$dropId];
+        } elseif (isset($drops[(string)$dropId])) {
+            $drop = $drops[(string)$dropId];
+        }
+        
         if (!$drop || $drop->status != Drop::STATUS_ACTIVE || $drop->market_status != Drop::MARKET_STATUS_ACTIVE) {
+            Yii::error("buyAndTake: Drop not found or inactive. dropId={$dropId}, drop found: " . ($drop ? "yes (id={$drop->id})" : "no"), 'gamestores');
             return $this->errorResponseGameStores('Товар не найден или недоступен для покупки', 107);
         }
+        
+        // Логирование для отладки
+        Yii::info("buyAndTake: Request dropId={$dropId}, found drop->id={$drop->id}, drop->rust_id={$drop->rust_id}, drop->name=" . Yii::t('database', $drop->name, [], 'ru-RU'), 'gamestores');
 
         // Рассчитываем цену
         $basePrice = $drop->price - ($drop->price * ($drop->discount ?? 0) / 100);
@@ -1199,7 +1218,20 @@ class GameStoresController extends BaseApiController
 
                 // Форматируем ответ с информацией о выданном товаре
                 $images = Drop::productsImages();
-                $userDropDrop = $drops[$userDrop->drop_id] ?? $drop;
+                
+                // ВАЖНО: Для обычных товаров всегда используем $drop (который был куплен)
+                // Для наборов (subDrops) используем товар из $drops по userDrop->drop_id
+                if ($userDrop->parent_drop_id === null) {
+                    // Обычный товар - используем $drop, который был куплен
+                    $userDropDrop = $drop;
+                } else {
+                    // SubDrop из набора - используем товар из $drops
+                    $userDropDrop = $drops[$userDrop->drop_id] ?? $drop;
+                }
+                
+                // Логирование для отладки
+                Yii::info("buyAndTake: dropId={$dropId}, userDrop->drop_id={$userDrop->drop_id}, userDrop->parent_drop_id={$userDrop->parent_drop_id}, userDropDrop->id={$userDropDrop->id}, userDropDrop->rust_id={$userDropDrop->rust_id}, userDropDrop->name=" . Yii::t('database', $userDropDrop->name, [], 'ru-RU'), 'gamestores');
+                
                 $item = $this->formatItem($userDrop, $userDropDrop, $images, true);
                 $items[] = $item;
             }
