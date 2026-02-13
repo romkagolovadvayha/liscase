@@ -372,7 +372,11 @@ class GameStoresController extends BaseApiController
         }
 
         // Проверка, что rust_id не равен 0 (для предметов)
-        if (empty($drop->command) && (empty($drop->rust_id) || $drop->rust_id == 0)) {
+        // Для наборов (SET) и команд (COMMAND) rust_id может быть пустым
+        if (empty($drop->command) 
+            && $drop->drop_type !== Drop::TYPE_SET 
+            && $drop->drop_type !== Drop::TYPE_COMMAND
+            && (empty($drop->rust_id) || $drop->rust_id == 0)) {
             Yii::error("GameStores: Drop {$drop->id} has invalid rust_id: {$drop->rust_id}", 'gamestores');
             return $this->errorResponseGameStores('Предмет имеет неверный rust_id', 107);
         }
