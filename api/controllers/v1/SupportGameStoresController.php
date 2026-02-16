@@ -494,11 +494,21 @@ class SupportGameStoresController extends BaseApiController
         // Заменяем плейсхолдеры на текстовые сообщения
         $formattedMessage = $message->message;
         
+        // Проверяем, есть ли в сообщении стикеры (тег <img> с классом support_sticker или путь /stickers/)
+        $hasSticker = false;
+        if (!empty($formattedMessage)) {
+            // Проверяем наличие стикера по классу support_sticker или по пути /stickers/
+            if (preg_match('/class=["\']support_sticker["\']/i', $formattedMessage) || 
+                preg_match('/\/stickers\/[^"\'\s>]+\.(webp|png|jpg|jpeg|gif)/i', $formattedMessage)) {
+                $hasSticker = true;
+            }
+        }
+        
         // Проверяем, есть ли в сообщении ссылки на изображения (по расширениям файлов)
         $imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'ico'];
         $hasImageLink = false;
         
-        if (!empty($formattedMessage)) {
+        if (!empty($formattedMessage) && !$hasSticker) {
             // Ищем паттерны типа *.png, *.jpg и т.д. в тексте (URL или просто расширения)
             foreach ($imageExtensions as $ext) {
                 // Проверяем наличие расширения в тексте (может быть в URL или в имени файла)
@@ -509,8 +519,11 @@ class SupportGameStoresController extends BaseApiController
             }
         }
         
-        // Если сообщение содержит файлы ИЛИ ссылку на изображение, заменяем текст
-        if ($hasFiles || $hasImageLink) {
+        // Если сообщение содержит стикер, заменяем текст
+        if ($hasSticker) {
+            $formattedMessage = 'Вам отправлен стикер, чтобы увидеть зайдите на сайт';
+        } elseif ($hasFiles || $hasImageLink) {
+            // Если сообщение содержит файлы ИЛИ ссылку на изображение, заменяем текст
             $formattedMessage = 'Вам отправили файл, чтобы его посмотреть зайдите в раздел поддержки на сайте';
         } elseif ($formattedMessage === '{USER_INFO}') {
             $formattedMessage = $this->formatUserInfoMessage($message);
