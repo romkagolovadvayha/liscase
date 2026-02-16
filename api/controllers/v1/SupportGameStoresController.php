@@ -2,6 +2,7 @@
 
 namespace api\controllers\v1;
 
+use common\components\queue\support\BeforeMessageJob;
 use common\models\support\Support;
 use common\models\support\SupportMessage;
 use common\models\support\SupportRead;
@@ -291,6 +292,19 @@ class SupportGameStoresController extends BaseApiController
 
             $transaction->commit();
 
+            // Отправляем уведомление в телеграм для пользовательского сообщения (как в ChatServer)
+            try {
+                Yii::$app->queueProcess->push(new BeforeMessageJob([
+                    'chatId' => $userMessage->support_id,
+                    'userId' => $userMessage->user_id,
+                    'message' => $userMessage->message,
+                    'username' => $user->username,
+                    'chatNumber' => $ticket->getNumber(),
+                ]));
+            } catch (\Exception $ex) {
+                Yii::warning('Failed to push BeforeMessageJob for user message: ' . $ex->getMessage());
+            }
+
             // Отправляем уведомления через WebSocket
             try {
                 $ticketNumber = $ticket->getNumber();
@@ -408,6 +422,19 @@ class SupportGameStoresController extends BaseApiController
 
             // Отмечаем сообщение как прочитанное для отправителя
             SupportRead::readedAll($ticket->id, $user->id);
+
+            // Отправляем уведомление в телеграм (как в ChatServer)
+            try {
+                Yii::$app->queueProcess->push(new BeforeMessageJob([
+                    'chatId' => $supportMessage->support_id,
+                    'userId' => $supportMessage->user_id,
+                    'message' => $supportMessage->message,
+                    'username' => $user->username,
+                    'chatNumber' => $ticket->getNumber(),
+                ]));
+            } catch (\Exception $ex) {
+                Yii::warning('Failed to push BeforeMessageJob: ' . $ex->getMessage());
+            }
 
             // Отправляем уведомления через WebSocket
             try {
