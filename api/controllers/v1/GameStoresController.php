@@ -835,16 +835,30 @@ class GameStoresController extends BaseApiController
             // Blueprint имеет itemid = -1580979675 (ItemManager.blueprintBaseDef.itemid)
             $isBlueprint = ($drop->rust_id == -1580979675);
             
-            // Получаем время до разблокировки через кэш вайп блока
+            // Сначала проверяем кэш вайп блока (заполняется плагином GameStoresWipeBlock)
             $cacheKey = "wipe_block_left_time_{$server->id}_{$drop->id}_{$drop->rust_id}_" . ($isBlueprint ? '1' : '0');
             $leftTime = Yii::$app->cache->get($cacheKey);
             
-            Yii::info("checkWipeBlock: dropId={$drop->id}, rustId={$drop->rust_id}, isBlueprint=" . ($isBlueprint ? 'yes' : 'no') . ", cacheKey={$cacheKey}, leftTime=" . ($leftTime !== false ? $leftTime : 'not_in_cache'), 'gamestores');
-            
-            if ($leftTime === false) {
-                // Если нет в кэше, считаем что блокировки нет
-                $leftTime = 0;
+            // Если в кэше нет данных, проверяем таблицу drop_blocked (как во фронтенде)
+            if ($leftTime === false || $leftTime <= 0) {
+                $blockedAt = \common\models\box\DropBlocked::getBlocked($drop->id, $server->id);
+                if (!empty($blockedAt)) {
+                    $blockedTimestamp = strtotime($blockedAt);
+                    $currentTimestamp = time();
+                    if ($blockedTimestamp > $currentTimestamp) {
+                        // Предмет заблокирован, вычисляем оставшееся время в секундах
+                        $leftTime = $blockedTimestamp - $currentTimestamp;
+                        Yii::info("checkWipeBlock: Found in drop_blocked table. dropId={$drop->id}, rustId={$drop->rust_id}, blockedAt={$blockedAt}, leftTime={$leftTime}", 'gamestores');
+                    } else {
+                        // Блокировка истекла
+                        $leftTime = 0;
+                    }
+                } else {
+                    $leftTime = 0;
+                }
             }
+            
+            Yii::info("checkWipeBlock: dropId={$drop->id}, rustId={$drop->rust_id}, isBlueprint=" . ($isBlueprint ? 'yes' : 'no') . ", cacheKey={$cacheKey}, leftTime={$leftTime}", 'gamestores');
             
             if ($leftTime > 0) {
                 $result['isBlocked'] = true;
