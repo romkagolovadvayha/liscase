@@ -1006,21 +1006,16 @@ class GameStoresController extends BaseApiController
                 }
             }
         } else {
-            // Если ID не указаны, возвращаем 8 случайных активных товаров с market_status = 1
-            $activeDrops = [];
-            foreach ($drops as $drop) {
-                if ($drop->status == Drop::STATUS_ACTIVE && $drop->market_status == Drop::MARKET_STATUS_ACTIVE) {
-                    $activeDrops[] = $drop;
+            // Если ID не указаны, возвращаем товары с фиксированными drop ID для моментальной покупки
+            $defaultDropIds = [477, 599, 107, 320, 295, 305, 316, 148];
+            
+            foreach ($defaultDropIds as $dropId) {
+                $drop = $drops[$dropId] ?? null;
+                if ($drop && $drop->status == Drop::STATUS_ACTIVE && $drop->market_status == Drop::MARKET_STATUS_ACTIVE) {
+                    // Форматируем как товар для корзины, но без UserDrop
+                    $item = $this->formatPopularItem($drop, $images, $itemsBlocked);
+                    $popularDrops[] = $item;
                 }
-            }
-            
-            // Перемешиваем и берем первые 8
-            shuffle($activeDrops);
-            $selectedDrops = array_slice($activeDrops, 0, 8);
-            
-            foreach ($selectedDrops as $drop) {
-                $item = $this->formatPopularItem($drop, $images, $itemsBlocked);
-                $popularDrops[] = $item;
             }
         }
         
