@@ -503,7 +503,9 @@ class GameStoresController extends BaseApiController
             Yii::warning("makeIssued: Drop not found. basketId={$basketId}, dropId={$userDrop->drop_id}", 'gamestores');
         }
         
-        Yii::info("makeIssued: SUCCESS - Issuing item. basketId={$basketId}, dropId={$drop->id ?? 'unknown'}, dropName=" . ($drop ? Yii::t('database', $drop->name, [], 'ru-RU') : 'unknown'), 'gamestores');
+        $dropId = $drop ? $drop->id : 'unknown';
+        $dropName = $drop ? Yii::t('database', $drop->name, [], 'ru-RU') : 'unknown';
+        Yii::info("makeIssued: SUCCESS - Issuing item. basketId={$basketId}, dropId={$dropId}, dropName={$dropName}", 'gamestores');
 
         $userDrop->sended_at = date('Y-m-d H:i:s');
         $userDrop->status = UserDrop::STATUS_SENDED;
