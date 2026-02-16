@@ -436,13 +436,20 @@ class GameStoresController extends BaseApiController
         $drops = Drop::getDropListAll();
         $itemsBlocked = DropBlocked::getBlockedList($server->id);
 
+        Yii::info("actionBasketsBySteamId: Processing " . count($userDrops) . " items for user {$user->steam_id}, serverId={$server->id}, serverTag={$server->tag}", 'gamestores');
+
         foreach ($userDrops as $userDrop) {
             $drop = $drops[$userDrop->drop_id] ?? null;
-            if (!$drop) continue;
+            if (!$drop) {
+                Yii::warning("actionBasketsBySteamId: Drop not found for userDrop->drop_id={$userDrop->drop_id}", 'gamestores');
+                continue;
+            }
 
             $item = $this->formatBasketItem($userDrop, $drop, $images, $itemsBlocked, $server);
             $data[] = $item;
         }
+
+        Yii::info("actionBasketsBySteamId: Returning " . count($data) . " items for user {$user->steam_id}", 'gamestores');
 
         return $this->successResponseGameStores($data);
     }
@@ -951,6 +958,9 @@ class GameStoresController extends BaseApiController
      */
     private function formatBasketItem($userDrop, $drop, $images, $itemsBlocked, $server = null)
     {
+        // Логирование для отладки
+        Yii::info("formatBasketItem: basketId={$userDrop->id}, dropId={$drop->id}, rustId={$drop->rust_id}, hasCommand=" . (!empty($drop->command) ? 'yes' : 'no') . ", serverId=" . ($server ? $server->id : 'null'), 'gamestores');
+        
         // Определяем картинку: если есть rust_id, используем его, иначе картинку с сайта
         $img = '';
         if (!empty($drop->command)) {
@@ -1002,11 +1012,16 @@ class GameStoresController extends BaseApiController
             $item['isBlocked'] = $wipeBlockCheck['isBlocked'];
             if ($wipeBlockCheck['isBlocked']) {
                 $item['leftTime'] = $wipeBlockCheck['leftTime'];
+                Yii::info("formatBasketItem: ITEM IS BLOCKED. basketId={$userDrop->id}, dropId={$drop->id}, rustId={$drop->rust_id}, leftTime={$wipeBlockCheck['leftTime']}", 'gamestores');
             } else {
                 $item['isBlocked'] = false;
+                $item['leftTime'] = 0;
+                Yii::info("formatBasketItem: Item is NOT blocked. basketId={$userDrop->id}, dropId={$drop->id}, rustId={$drop->rust_id}", 'gamestores');
             }
         } else {
             $item['isBlocked'] = false;
+            $item['leftTime'] = 0;
+            Yii::warning("formatBasketItem: Server is NULL. basketId={$userDrop->id}, dropId={$drop->id}, rustId={$drop->rust_id}", 'gamestores');
         }
 
         if ($drop->full_only) {
