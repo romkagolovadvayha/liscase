@@ -294,7 +294,39 @@ class SupportGameStoresController extends BaseApiController
             // Отправляем уведомления через WebSocket
             try {
                 $ticketNumber = $ticket->getNumber();
+                // Отправляем уведомление о новом тикете
                 \console\controllers\NotificationServer::broadcastNewTicket($ticketNumber, $user->id);
+                
+                // Отправляем уведомления о системных сообщениях (как на сайте)
+                try {
+                    \console\controllers\NotificationServer::broadcastNewSupportMessage(
+                        $ticketNumber,
+                        $systemMessage->id,
+                        null, // user_id = null для системных сообщений
+                        $ticket->user_id
+                    );
+                } catch (\Exception $ex) {
+                    Yii::warning('WebSocket broadcast for USER_INFO message failed: ' . $ex->getMessage());
+                }
+                
+                try {
+                    \console\controllers\NotificationServer::broadcastNewSupportMessage(
+                        $ticketNumber,
+                        $alertMessage->id,
+                        null, // user_id = null для системных сообщений
+                        $ticket->user_id
+                    );
+                } catch (\Exception $ex) {
+                    Yii::warning('WebSocket broadcast for ALERT_REPORT message failed: ' . $ex->getMessage());
+                }
+                
+                // Отправляем уведомление о пользовательском сообщении (как на сайте)
+                try {
+                    Yii::info("Calling broadcastNewSupportMessage: ticketNumber={$ticketNumber}, messageId={$userMessage->id}, userId={$user->id}, ownerUserId={$ticket->user_id}");
+                    \console\controllers\NotificationServer::broadcastNewSupportMessage($ticketNumber, $userMessage->id, $user->id, $ticket->user_id);
+                } catch (\Exception $ex) {
+                    Yii::warning('WebSocket broadcast for user message failed: ' . $ex->getMessage());
+                }
             } catch (\Exception $ex) {
                 Yii::warning('WebSocket broadcast failed: ' . $ex->getMessage());
             }
