@@ -479,7 +479,7 @@ class SupportGameStoresController extends BaseApiController
     protected function formatMessage($message)
     {
         $files = [];
-        $hasImage = false;
+        $hasFiles = !empty($message->supportFiles);
         
         foreach ($message->supportFiles as $file) {
             $files[] = [
@@ -489,22 +489,29 @@ class SupportGameStoresController extends BaseApiController
                 'mimetype' => $file->mimetype,
                 'url' => $file->getPublicUrl(),
             ];
-            
-            // Проверяем, является ли файл изображением
-            if (!$hasImage && $file->mimetype) {
-                $imageMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml'];
-                if (in_array(strtolower($file->mimetype), $imageMimeTypes)) {
-                    $hasImage = true;
-                }
-            }
         }
 
         // Заменяем плейсхолдеры на текстовые сообщения
         $formattedMessage = $message->message;
         
-        // Если сообщение содержит изображение, заменяем текст
-        if ($hasImage) {
-            $formattedMessage = 'Сообщение содержит изображение, чтобы его посмотреть зайдите в раздел поддержки на сайте';
+        // Проверяем, есть ли в сообщении ссылки на изображения (по расширениям файлов)
+        $imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'ico'];
+        $hasImageLink = false;
+        
+        if (!empty($formattedMessage)) {
+            // Ищем паттерны типа *.png, *.jpg и т.д. в тексте (URL или просто расширения)
+            foreach ($imageExtensions as $ext) {
+                // Проверяем наличие расширения в тексте (может быть в URL или в имени файла)
+                if (preg_match('/\.' . preg_quote($ext, '/') . '(\?|#|"|\'|>|<\/|$|\s)/i', $formattedMessage)) {
+                    $hasImageLink = true;
+                    break;
+                }
+            }
+        }
+        
+        // Если сообщение содержит файлы ИЛИ ссылку на изображение, заменяем текст
+        if ($hasFiles || $hasImageLink) {
+            $formattedMessage = 'Вам отправили файл, чтобы его посмотреть зайдите в раздел поддержки на сайте';
         } elseif ($formattedMessage === '{USER_INFO}') {
             $formattedMessage = $this->formatUserInfoMessage($message);
         } elseif ($formattedMessage === '{ALERT_REPORT}') {
