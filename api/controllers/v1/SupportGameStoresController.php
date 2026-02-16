@@ -479,6 +479,8 @@ class SupportGameStoresController extends BaseApiController
     protected function formatMessage($message)
     {
         $files = [];
+        $hasImage = false;
+        
         foreach ($message->supportFiles as $file) {
             $files[] = [
                 'id' => $file->id,
@@ -487,12 +489,23 @@ class SupportGameStoresController extends BaseApiController
                 'mimetype' => $file->mimetype,
                 'url' => $file->getPublicUrl(),
             ];
+            
+            // Проверяем, является ли файл изображением
+            if (!$hasImage && $file->mimetype) {
+                $imageMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml'];
+                if (in_array(strtolower($file->mimetype), $imageMimeTypes)) {
+                    $hasImage = true;
+                }
+            }
         }
 
         // Заменяем плейсхолдеры на текстовые сообщения
         $formattedMessage = $message->message;
         
-        if ($formattedMessage === '{USER_INFO}') {
+        // Если сообщение содержит изображение, заменяем текст
+        if ($hasImage) {
+            $formattedMessage = 'Сообщение содержит изображение, чтобы его посмотреть зайдите в раздел поддержки на сайте';
+        } elseif ($formattedMessage === '{USER_INFO}') {
             $formattedMessage = $this->formatUserInfoMessage($message);
         } elseif ($formattedMessage === '{ALERT_REPORT}') {
             $formattedMessage = $this->formatAlertReportMessage();
