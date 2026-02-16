@@ -470,25 +470,40 @@ class GameStoresController extends BaseApiController
         /** @var UserDrop $userDrop */
         $userDrop = UserDrop::findOne($basketId);
 
+        // Логирование попытки выдачи предмета
+        Yii::info("makeIssued: Attempt to issue item. basketId={$basketId}, userId={$user->id}, steamId={$user->steam_id}, serverId={$server->id}, serverTag={$server->tag}", 'gamestores');
+
         if (empty($userDrop) || ($userDrop->status !== UserDrop::STATUS_WAIT && $userDrop->status !== UserDrop::STATUS_ACTIVE)) {
+            Yii::warning("makeIssued: Item already issued/sold. basketId={$basketId}, status={$userDrop->status}", 'gamestores');
             return $this->errorResponseGameStores('Предмет уже получен/продан', 107);
         }
 
         // Проверка принадлежности
         if ($user->steam_id != $userDrop->user->steam_id) {
+            Yii::warning("makeIssued: Item ownership mismatch. basketId={$basketId}, userSteamId={$user->steam_id}, ownerSteamId={$userDrop->user->steam_id}", 'gamestores');
             return $this->errorResponseGameStores('Товар вам не принадлежит!', 107);
         }
 
         // Проверяем вайп блок - не позволяем выдавать заблокированные предметы
         $drops = Drop::getDropListAll();
         $drop = $drops[$userDrop->drop_id] ?? null;
+        
         if ($drop) {
+            Yii::info("makeIssued: Checking wipe block. basketId={$basketId}, dropId={$drop->id}, dropName=" . Yii::t('database', $drop->name, [], 'ru-RU') . ", rustId={$drop->rust_id}, hasCommand=" . (!empty($drop->command) ? 'yes' : 'no'), 'gamestores');
+            
             $wipeBlockCheck = $this->checkWipeBlock($drop, $server);
+            
+            Yii::info("makeIssued: Wipe block check result. basketId={$basketId}, dropId={$drop->id}, isBlocked={$wipeBlockCheck['isBlocked']}, leftTime={$wipeBlockCheck['leftTime']}", 'gamestores');
+            
             if ($wipeBlockCheck['isBlocked']) {
-                Yii::warning("makeIssued: Attempt to issue blocked item. basketId={$basketId}, dropId={$drop->id}, leftTime={$wipeBlockCheck['leftTime']}", 'gamestores');
+                Yii::warning("makeIssued: BLOCKED - Attempt to issue blocked item. basketId={$basketId}, dropId={$drop->id}, dropName=" . Yii::t('database', $drop->name, [], 'ru-RU') . ", rustId={$drop->rust_id}, leftTime={$wipeBlockCheck['leftTime']}, serverId={$server->id}", 'gamestores');
                 return $this->errorResponseGameStores('Предмет временно заблокирован вайп блоком', 109);
             }
+        } else {
+            Yii::warning("makeIssued: Drop not found. basketId={$basketId}, dropId={$userDrop->drop_id}", 'gamestores');
         }
+        
+        Yii::info("makeIssued: SUCCESS - Issuing item. basketId={$basketId}, dropId={$drop->id ?? 'unknown'}, dropName=" . ($drop ? Yii::t('database', $drop->name, [], 'ru-RU') : 'unknown'), 'gamestores');
 
         $userDrop->sended_at = date('Y-m-d H:i:s');
         $userDrop->status = UserDrop::STATUS_SENDED;
@@ -815,6 +830,8 @@ class GameStoresController extends BaseApiController
             $cacheKey = "wipe_block_left_time_{$server->id}_{$drop->id}_{$drop->rust_id}_" . ($isBlueprint ? '1' : '0');
             $leftTime = Yii::$app->cache->get($cacheKey);
             
+            Yii::info("checkWipeBlock: dropId={$drop->id}, rustId={$drop->rust_id}, isBlueprint=" . ($isBlueprint ? 'yes' : 'no') . ", cacheKey={$cacheKey}, leftTime=" . ($leftTime !== false ? $leftTime : 'not_in_cache'), 'gamestores');
+            
             if ($leftTime === false) {
                 // Если нет в кэше, считаем что блокировки нет
                 $leftTime = 0;
@@ -823,7 +840,20 @@ class GameStoresController extends BaseApiController
             if ($leftTime > 0) {
                 $result['isBlocked'] = true;
                 $result['leftTime'] = $leftTime;
+                Yii::info("checkWipeBlock: ITEM IS BLOCKED. dropId={$drop->id}, rustId={$drop->rust_id}, leftTime={$leftTime}", 'gamestores');
+            } else {
+                Yii::info("checkWipeBlock: Item is NOT blocked. dropId={$drop->id}, rustId={$drop->rust_id}", 'gamestores');
             }
+        } else {
+            $reason = '';
+            if (!empty($drop->command)) {
+                $reason = 'is_command';
+            } elseif (empty($drop->rust_id) || $drop->rust_id <= 0) {
+                $reason = 'no_rust_id';
+            } elseif (!$server) {
+                $reason = 'no_server';
+            }
+            Yii::info("checkWipeBlock: Skipping wipe block check. dropId={$drop->id}, reason={$reason}", 'gamestores');
         }
 
         return $result;
