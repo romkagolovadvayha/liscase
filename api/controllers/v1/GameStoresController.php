@@ -440,7 +440,7 @@ class GameStoresController extends BaseApiController
             $drop = $drops[$userDrop->drop_id] ?? null;
             if (!$drop) continue;
 
-            $item = $this->formatBasketItem($userDrop, $drop, $images, $itemsBlocked);
+            $item = $this->formatBasketItem($userDrop, $drop, $images, $itemsBlocked, $server);
             $data[] = $item;
         }
 
@@ -477,6 +477,17 @@ class GameStoresController extends BaseApiController
         // Проверка принадлежности
         if ($user->steam_id != $userDrop->user->steam_id) {
             return $this->errorResponseGameStores('Товар вам не принадлежит!', 107);
+        }
+
+        // Проверяем вайп блок - не позволяем выдавать заблокированные предметы
+        $drops = Drop::getDropListAll();
+        $drop = $drops[$userDrop->drop_id] ?? null;
+        if ($drop) {
+            $wipeBlockCheck = $this->checkWipeBlock($drop, $server);
+            if ($wipeBlockCheck['isBlocked']) {
+                Yii::warning("makeIssued: Attempt to issue blocked item. basketId={$basketId}, dropId={$drop->id}, leftTime={$wipeBlockCheck['leftTime']}", 'gamestores');
+                return $this->errorResponseGameStores('Предмет временно заблокирован вайп блоком', 109);
+            }
         }
 
         $userDrop->sended_at = date('Y-m-d H:i:s');
@@ -781,6 +792,44 @@ class GameStoresController extends BaseApiController
     }
 
     /**
+     * Проверить, заблокирован ли предмет вайп блоком
+     * 
+     * @param Drop $drop Предмет
+     * @param Servers $server Сервер
+     * @return array ['isBlocked' => bool, 'leftTime' => float] Результат проверки
+     */
+    private function checkWipeBlock($drop, $server)
+    {
+        $result = [
+            'isBlocked' => false,
+            'leftTime' => 0,
+        ];
+
+        // Проверяем только для предметов (не команд) и только если есть rust_id
+        if (empty($drop->command) && !empty($drop->rust_id) && $drop->rust_id > 0 && $server) {
+            // Определяем, является ли предмет blueprint
+            // Blueprint имеет itemid = -1580979675 (ItemManager.blueprintBaseDef.itemid)
+            $isBlueprint = ($drop->rust_id == -1580979675);
+            
+            // Получаем время до разблокировки через кэш вайп блока
+            $cacheKey = "wipe_block_left_time_{$server->id}_{$drop->id}_{$drop->rust_id}_" . ($isBlueprint ? '1' : '0');
+            $leftTime = Yii::$app->cache->get($cacheKey);
+            
+            if ($leftTime === false) {
+                // Если нет в кэше, считаем что блокировки нет
+                $leftTime = 0;
+            }
+            
+            if ($leftTime > 0) {
+                $result['isBlocked'] = true;
+                $result['leftTime'] = $leftTime;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Форматировать предмет для baskets.item
      */
     private function formatItem($userDrop, $drop, $images = [], $includeSubDrop = false)
@@ -868,7 +917,7 @@ class GameStoresController extends BaseApiController
     /**
      * Форматировать предмет для baskets.bySteamId
      */
-    private function formatBasketItem($userDrop, $drop, $images, $itemsBlocked)
+    private function formatBasketItem($userDrop, $drop, $images, $itemsBlocked, $server = null)
     {
         // Определяем картинку: если есть rust_id, используем его, иначе картинку с сайта
         $img = '';
@@ -913,6 +962,19 @@ class GameStoresController extends BaseApiController
                 $item['blocked'] = true;
                 $item['block_date'] = strtotime($itemsBlocked[$userDrop->drop_id]);
             }
+        }
+
+        // Проверка вайп блока (как в плагине и на фронтенде)
+        if ($server) {
+            $wipeBlockCheck = $this->checkWipeBlock($drop, $server);
+            $item['isBlocked'] = $wipeBlockCheck['isBlocked'];
+            if ($wipeBlockCheck['isBlocked']) {
+                $item['leftTime'] = $wipeBlockCheck['leftTime'];
+            } else {
+                $item['isBlocked'] = false;
+            }
+        } else {
+            $item['isBlocked'] = false;
         }
 
         if ($drop->full_only) {
@@ -1020,6 +1082,12 @@ class GameStoresController extends BaseApiController
             foreach ($dropIds as $dropId) {
                 $drop = $drops[$dropId] ?? null;
                 if ($drop && $drop->status == Drop::STATUS_ACTIVE && $drop->market_status == Drop::MARKET_STATUS_ACTIVE) {
+                    // Проверяем вайп блок - не возвращаем заблокированные предметы
+                    $wipeBlockCheck = $this->checkWipeBlock($drop, $server);
+                    if ($wipeBlockCheck['isBlocked']) {
+                        continue; // Пропускаем заблокированные предметы
+                    }
+                    
                     // Форматируем как товар для корзины, но без UserDrop
                     $item = $this->formatPopularItem($drop, $images, $itemsBlocked, $server);
                     $popularDrops[] = $item;
@@ -1032,6 +1100,12 @@ class GameStoresController extends BaseApiController
             foreach ($defaultDropIds as $dropId) {
                 $drop = $drops[$dropId] ?? null;
                 if ($drop && $drop->status == Drop::STATUS_ACTIVE && $drop->market_status == Drop::MARKET_STATUS_ACTIVE) {
+                    // Проверяем вайп блок - не возвращаем заблокированные предметы
+                    $wipeBlockCheck = $this->checkWipeBlock($drop, $server);
+                    if ($wipeBlockCheck['isBlocked']) {
+                        continue; // Пропускаем заблокированные предметы
+                    }
+                    
                     // Форматируем как товар для корзины, но без UserDrop
                     $item = $this->formatPopularItem($drop, $images, $itemsBlocked, $server);
                     $popularDrops[] = $item;
@@ -1085,6 +1159,13 @@ class GameStoresController extends BaseApiController
         if (!$drop || $drop->status != Drop::STATUS_ACTIVE || $drop->market_status != Drop::MARKET_STATUS_ACTIVE) {
             Yii::error("buyAndTake: Drop not found or inactive. dropId={$dropId}, drop found: " . ($drop ? "yes (id={$drop->id})" : "no"), 'gamestores');
             return $this->errorResponseGameStores('Товар не найден или недоступен для покупки', 107);
+        }
+        
+        // Проверяем вайп блок - не позволяем покупать заблокированные предметы
+        $wipeBlockCheck = $this->checkWipeBlock($drop, $server);
+        if ($wipeBlockCheck['isBlocked']) {
+            Yii::warning("buyAndTake: Attempt to buy blocked item. dropId={$dropId}, leftTime={$wipeBlockCheck['leftTime']}", 'gamestores');
+            return $this->errorResponseGameStores('Предмет временно заблокирован вайп блоком', 109);
         }
         
         // Логирование для отладки
@@ -1324,32 +1405,10 @@ class GameStoresController extends BaseApiController
         }
         
         // Проверка вайп блока (как в плагине и на фронтенде)
-        // Проверяем только для предметов (не команд) и только если есть rust_id
-        if (empty($drop->command) && !empty($drop->rust_id) && $drop->rust_id > 0 && $server) {
-            // Определяем, является ли предмет blueprint
-            // Blueprint имеет itemid = -1580979675 (ItemManager.blueprintBaseDef.itemid)
-            $isBlueprint = ($drop->rust_id == -1580979675);
-            
-            // Получаем время до разблокировки через кэш вайп блока
-            $cacheKey = "wipe_block_left_time_{$server->id}_{$drop->id}_{$drop->rust_id}_" . ($isBlueprint ? '1' : '0');
-            $leftTime = Yii::$app->cache->get($cacheKey);
-            
-            if ($leftTime === false) {
-                // Если нет в кэше, проверяем через плагин GameStoresWipeBlock (если доступен)
-                // Или используем альтернативный способ проверки
-                // Пока оставляем проверку через кэш, который должен заполняться плагином
-                $leftTime = 0;
-            }
-            
-            if ($leftTime > 0) {
-                $item['isBlocked'] = true;
-                $item['leftTime'] = $leftTime;
-            } else {
-                $item['isBlocked'] = false;
-            }
-        } else {
-            // Для команд и товаров без itemId блокировка не применяется
-            $item['isBlocked'] = false;
+        $wipeBlockCheck = $this->checkWipeBlock($drop, $server);
+        $item['isBlocked'] = $wipeBlockCheck['isBlocked'];
+        if ($wipeBlockCheck['isBlocked']) {
+            $item['leftTime'] = $wipeBlockCheck['leftTime'];
         }
 
         // Добавляем subDrop для наборов
