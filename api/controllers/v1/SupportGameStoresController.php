@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use common\components\queue\support\BeforeMessageJob;
+use common\models\servers\Servers;
 use common\models\support\Support;
 use common\models\support\SupportMessage;
 use common\models\support\SupportRead;
@@ -34,10 +35,11 @@ class SupportGameStoresController extends BaseApiController
      * Получить пользователя по steam_id из параметров запроса
      * 
      * @param array $bodyParams Параметры из body запроса
+     * @param Servers|null $server Сервер, с которого вызван метод (для обновления server_id пользователя)
      * @return \common\models\user\User
      * @throws UnauthorizedHttpException
      */
-    protected function getUserBySteamId($bodyParams = [])
+    protected function getUserBySteamId($bodyParams = [], $server = null)
     {
         // Пробуем получить steam_id из разных источников
         $steamId = null;
@@ -79,6 +81,18 @@ class SupportGameStoresController extends BaseApiController
             throw new UnauthorizedHttpException('User not found');
         }
         
+        // Обновляем server_id пользователя, если он отличается от текущего сервера
+        if ($server && (empty($user->server_id) || $user->server_id != $server->id)) {
+            $oldServerId = $user->server_id;
+            $user->server_id = $server->id;
+            $user->server_tag = $server->tag;
+            if (!$user->save(false)) {
+                Yii::warning("Failed to update server_id for user {$user->id}: " . json_encode($user->getErrors()), 'support');
+            } else {
+                Yii::info("Updated server_id for user {$user->id} from " . ($oldServerId ?? 'null') . " to {$server->id}", 'support');
+            }
+        }
+        
         return $user;
     }
 
@@ -89,6 +103,20 @@ class SupportGameStoresController extends BaseApiController
      */
     public function actionTickets()
     {
+        // Определяем сервер по IP и port из query string или headers
+        $queryServerIp = Yii::$app->request->get('server_ip');
+        $queryServerPort = Yii::$app->request->get('server_port');
+        $headerServerIp = Yii::$app->request->headers->get('serverIp');
+        $headerServerPort = Yii::$app->request->headers->get('serverPort');
+        
+        $serverIp = $headerServerIp ?: $queryServerIp;
+        $serverPort = $headerServerPort ?: $queryServerPort;
+        
+        $server = null;
+        if ($serverIp && $serverPort) {
+            $server = $this->findServer($serverIp, $serverPort);
+        }
+        
         try {
             $bodyParams = [];
             if (Yii::$app->request->isPost) {
@@ -101,7 +129,7 @@ class SupportGameStoresController extends BaseApiController
                 }
             }
             
-            $user = $this->getUserBySteamId($bodyParams);
+            $user = $this->getUserBySteamId($bodyParams, $server);
         } catch (UnauthorizedHttpException $e) {
             return $this->errorResponse('UNAUTHORIZED', $e->getMessage(), [], 401);
         }
@@ -160,6 +188,20 @@ class SupportGameStoresController extends BaseApiController
      */
     public function actionView($id)
     {
+        // Определяем сервер по IP и port из query string или headers
+        $queryServerIp = Yii::$app->request->get('server_ip');
+        $queryServerPort = Yii::$app->request->get('server_port');
+        $headerServerIp = Yii::$app->request->headers->get('serverIp');
+        $headerServerPort = Yii::$app->request->headers->get('serverPort');
+        
+        $serverIp = $headerServerIp ?: $queryServerIp;
+        $serverPort = $headerServerPort ?: $queryServerPort;
+        
+        $server = null;
+        if ($serverIp && $serverPort) {
+            $server = $this->findServer($serverIp, $serverPort);
+        }
+        
         try {
             $bodyParams = [];
             if (Yii::$app->request->isPost) {
@@ -172,7 +214,7 @@ class SupportGameStoresController extends BaseApiController
                 }
             }
             
-            $user = $this->getUserBySteamId($bodyParams);
+            $user = $this->getUserBySteamId($bodyParams, $server);
         } catch (UnauthorizedHttpException $e) {
             return $this->errorResponse('UNAUTHORIZED', $e->getMessage(), [], 401);
         }
@@ -222,6 +264,20 @@ class SupportGameStoresController extends BaseApiController
      */
     public function actionCreate()
     {
+        // Определяем сервер по IP и port из query string или headers
+        $queryServerIp = Yii::$app->request->get('server_ip');
+        $queryServerPort = Yii::$app->request->get('server_port');
+        $headerServerIp = Yii::$app->request->headers->get('serverIp');
+        $headerServerPort = Yii::$app->request->headers->get('serverPort');
+        
+        $serverIp = $headerServerIp ?: $queryServerIp;
+        $serverPort = $headerServerPort ?: $queryServerPort;
+        
+        $server = null;
+        if ($serverIp && $serverPort) {
+            $server = $this->findServer($serverIp, $serverPort);
+        }
+        
         try {
             $bodyParams = [];
             $rawBody = Yii::$app->request->getRawBody();
@@ -232,7 +288,7 @@ class SupportGameStoresController extends BaseApiController
                 }
             }
             
-            $user = $this->getUserBySteamId($bodyParams);
+            $user = $this->getUserBySteamId($bodyParams, $server);
         } catch (UnauthorizedHttpException $e) {
             return $this->errorResponse('UNAUTHORIZED', $e->getMessage(), [], 401);
         }
@@ -248,7 +304,29 @@ class SupportGameStoresController extends BaseApiController
             return $this->errorResponse('INVALID_REQUEST', 'Message is required', [], 400);
         }
 
-        $serverTag = $bodyParams['server_tag'] ?? Yii::$app->request->post('server_tag');
+        // Определяем сервер по IP и port из query string или headers
+        $queryServerIp = Yii::$app->request->get('server_ip');
+        $queryServerPort = Yii::$app->request->get('server_port');
+        $headerServerIp = Yii::$app->request->headers->get('serverIp');
+        $headerServerPort = Yii::$app->request->headers->get('serverPort');
+        
+        $serverIp = $headerServerIp ?: $queryServerIp;
+        $serverPort = $headerServerPort ?: $queryServerPort;
+        
+        $server = null;
+        $serverTag = null;
+        
+        if ($serverIp && $serverPort) {
+            $server = $this->findServer($serverIp, $serverPort);
+            if ($server) {
+                $serverTag = $server->tag;
+            }
+        }
+        
+        // Если сервер не найден по IP/port, пробуем получить server_tag из body (для обратной совместимости)
+        if (empty($serverTag)) {
+            $serverTag = $bodyParams['server_tag'] ?? Yii::$app->request->post('server_tag');
+        }
 
         $transaction = Yii::$app->db->beginTransaction();
         try {
@@ -364,6 +442,20 @@ class SupportGameStoresController extends BaseApiController
      */
     public function actionSend($id)
     {
+        // Определяем сервер по IP и port из query string или headers
+        $queryServerIp = Yii::$app->request->get('server_ip');
+        $queryServerPort = Yii::$app->request->get('server_port');
+        $headerServerIp = Yii::$app->request->headers->get('serverIp');
+        $headerServerPort = Yii::$app->request->headers->get('serverPort');
+        
+        $serverIp = $headerServerIp ?: $queryServerIp;
+        $serverPort = $headerServerPort ?: $queryServerPort;
+        
+        $server = null;
+        if ($serverIp && $serverPort) {
+            $server = $this->findServer($serverIp, $serverPort);
+        }
+        
         try {
             $bodyParams = [];
             $rawBody = Yii::$app->request->getRawBody();
@@ -374,7 +466,7 @@ class SupportGameStoresController extends BaseApiController
                 }
             }
             
-            $user = $this->getUserBySteamId($bodyParams);
+            $user = $this->getUserBySteamId($bodyParams, $server);
         } catch (UnauthorizedHttpException $e) {
             return $this->errorResponse('UNAUTHORIZED', $e->getMessage(), [], 401);
         }
@@ -623,6 +715,72 @@ class SupportGameStoresController extends BaseApiController
         }
         
         return implode("\n", $lines);
+    }
+
+    /**
+     * Найти сервер по IP и PORT
+     * 
+     * @param string|null $serverIp
+     * @param string|null $serverPort
+     * @return Servers|null
+     */
+    private function findServer($serverIp = null, $serverPort = null)
+    {
+        if (!$serverIp || !$serverPort) {
+            return null;
+        }
+
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->cache(60)
+            ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        /** @var Servers $server */
+        $server = null;
+
+        // Поиск по IP и PORT
+        foreach ($servers as $_server) {
+            // Сравниваем IP (может быть в разных форматах: с портом или без)
+            $serverIpClean = $this->cleanIpAddress($_server->ip);
+            $requestIpClean = $this->cleanIpAddress($serverIp);
+
+            // Также проверяем text_ip, если он есть
+            $serverTextIpClean = !empty($_server->text_ip) ? $this->cleanIpAddress($_server->text_ip) : null;
+
+            $ipMatches = ($serverIpClean == $requestIpClean) ||
+                        ($serverTextIpClean && $serverTextIpClean == $requestIpClean);
+
+            if ($ipMatches && $_server->port == (int)$serverPort) {
+                $server = $_server;
+                break;
+            }
+        }
+
+        return $server;
+    }
+
+    /**
+     * Очистить IP адрес от порта и привести к единому формату
+     * 
+     * @param string $ip
+     * @return string
+     */
+    private function cleanIpAddress($ip)
+    {
+        if (empty($ip)) {
+            return '';
+        }
+
+        // Убираем порт, если он есть (формат: ip:port)
+        $parts = explode(':', $ip);
+        $ipOnly = $parts[0];
+
+        // Убираем пробелы
+        $ipOnly = trim($ipOnly);
+
+        return $ipOnly;
     }
 
     /**

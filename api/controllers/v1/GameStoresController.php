@@ -45,10 +45,11 @@ class GameStoresController extends BaseApiController
      * Получить пользователя по steam_id из параметров запроса
      *
      * @param array $bodyParams Параметры из body запроса
+     * @param Servers|null $server Сервер, с которого вызван метод (для обновления server_id пользователя)
      * @return User
      * @throws UnauthorizedHttpException
      */
-    protected function getUserBySteamId($bodyParams = [])
+    protected function getUserBySteamId($bodyParams = [], $server = null)
     {
         // Пробуем получить steam_id из разных источников
         $steamId = null;
@@ -88,6 +89,18 @@ class GameStoresController extends BaseApiController
 
         if (empty($user)) {
             throw new UnauthorizedHttpException('User not found');
+        }
+
+        // Обновляем server_id пользователя, если он отличается от текущего сервера
+        if ($server && (empty($user->server_id) || $user->server_id != $server->id)) {
+            $oldServerId = $user->server_id;
+            $user->server_id = $server->id;
+            $user->server_tag = $server->tag;
+            if (!$user->save(false)) {
+                Yii::warning("Failed to update server_id for user {$user->id}: " . json_encode($user->getErrors()), 'gamestores');
+            } else {
+                Yii::info("Updated server_id for user {$user->id} from " . ($oldServerId ?? 'null') . " to {$server->id}", 'gamestores');
+            }
         }
 
         return $user;
@@ -252,13 +265,20 @@ class GameStoresController extends BaseApiController
         // Пытаемся получить пользователя по steam_id (авторизация)
         // Если пользователь не найден, создаем его (для платежей это допустимо)
         try {
-            $user = $this->getUserBySteamId($bodyParams);
+            $user = $this->getUserBySteamId($bodyParams, $server);
         } catch (UnauthorizedHttpException $e) {
             // Если пользователь не найден, создаем его
             $user = User::findBySteamId($steamId, true, 'gamestores_payment');
 
             if (!$user) {
                 return $this->errorResponseGameStores('Не удалось найти или создать пользователя', 400);
+            }
+            
+            // Обновляем server_id для только что созданного пользователя
+            if ($server && $user->server_id != $server->id) {
+                $user->server_id = $server->id;
+                $user->server_tag = $server->tag;
+                $user->save(false);
             }
         }
 
@@ -341,7 +361,7 @@ class GameStoresController extends BaseApiController
     {
         // Авторизация по steam_id
         try {
-            $user = $this->getUserBySteamId($bodyParams);
+            $user = $this->getUserBySteamId($bodyParams, $server);
         } catch (UnauthorizedHttpException $e) {
             return $this->errorResponseGameStores($e->getMessage(), 105);
         }
@@ -400,7 +420,7 @@ class GameStoresController extends BaseApiController
     {
         // Авторизация по steam_id
         try {
-            $user = $this->getUserBySteamId($bodyParams);
+            $user = $this->getUserBySteamId($bodyParams, $server);
         } catch (UnauthorizedHttpException $e) {
             return $this->errorResponseGameStores($e->getMessage(), 105);
         }
@@ -436,7 +456,7 @@ class GameStoresController extends BaseApiController
     {
         // Авторизация по steam_id
         try {
-            $user = $this->getUserBySteamId($bodyParams);
+            $user = $this->getUserBySteamId($bodyParams, $server);
         } catch (UnauthorizedHttpException $e) {
             return $this->errorResponseGameStores($e->getMessage(), 105);
         }
@@ -1001,7 +1021,7 @@ class GameStoresController extends BaseApiController
                 $drop = $drops[$dropId] ?? null;
                 if ($drop && $drop->status == Drop::STATUS_ACTIVE && $drop->market_status == Drop::MARKET_STATUS_ACTIVE) {
                     // Форматируем как товар для корзины, но без UserDrop
-                    $item = $this->formatPopularItem($drop, $images, $itemsBlocked);
+                    $item = $this->formatPopularItem($drop, $images, $itemsBlocked, $server);
                     $popularDrops[] = $item;
                 }
             }
@@ -1013,7 +1033,7 @@ class GameStoresController extends BaseApiController
                 $drop = $drops[$dropId] ?? null;
                 if ($drop && $drop->status == Drop::STATUS_ACTIVE && $drop->market_status == Drop::MARKET_STATUS_ACTIVE) {
                     // Форматируем как товар для корзины, но без UserDrop
-                    $item = $this->formatPopularItem($drop, $images, $itemsBlocked);
+                    $item = $this->formatPopularItem($drop, $images, $itemsBlocked, $server);
                     $popularDrops[] = $item;
                 }
             }
@@ -1031,7 +1051,7 @@ class GameStoresController extends BaseApiController
     {
         // Авторизация по steam_id
         try {
-            $user = $this->getUserBySteamId($bodyParams);
+            $user = $this->getUserBySteamId($bodyParams, $server);
         } catch (UnauthorizedHttpException $e) {
             return $this->errorResponseGameStores($e->getMessage(), 105);
         }
@@ -1256,7 +1276,7 @@ class GameStoresController extends BaseApiController
     /**
      * Форматировать товар для списка популярных товаров (без UserDrop)
      */
-    private function formatPopularItem($drop, $images, $itemsBlocked)
+    private function formatPopularItem($drop, $images, $itemsBlocked, $server = null)
     {
         // Определяем картинку
         $img = '';
@@ -1295,12 +1315,41 @@ class GameStoresController extends BaseApiController
             'subDrop' => [],
         ];
 
-        // Проверка блокировки
+        // Проверка блокировки по часам
         if (!empty($drop->blocked_hour)) {
             if (!empty($itemsBlocked[$drop->id])) {
                 $item['blocked'] = true;
                 $item['block_date'] = strtotime($itemsBlocked[$drop->id]);
             }
+        }
+        
+        // Проверка вайп блока (как в плагине и на фронтенде)
+        // Проверяем только для предметов (не команд) и только если есть rust_id
+        if (empty($drop->command) && !empty($drop->rust_id) && $drop->rust_id > 0 && $server) {
+            // Определяем, является ли предмет blueprint
+            // Blueprint имеет itemid = -1580979675 (ItemManager.blueprintBaseDef.itemid)
+            $isBlueprint = ($drop->rust_id == -1580979675);
+            
+            // Получаем время до разблокировки через кэш вайп блока
+            $cacheKey = "wipe_block_left_time_{$server->id}_{$drop->id}_{$drop->rust_id}_" . ($isBlueprint ? '1' : '0');
+            $leftTime = Yii::$app->cache->get($cacheKey);
+            
+            if ($leftTime === false) {
+                // Если нет в кэше, проверяем через плагин GameStoresWipeBlock (если доступен)
+                // Или используем альтернативный способ проверки
+                // Пока оставляем проверку через кэш, который должен заполняться плагином
+                $leftTime = 0;
+            }
+            
+            if ($leftTime > 0) {
+                $item['isBlocked'] = true;
+                $item['leftTime'] = $leftTime;
+            } else {
+                $item['isBlocked'] = false;
+            }
+        } else {
+            // Для команд и товаров без itemId блокировка не применяется
+            $item['isBlocked'] = false;
         }
 
         // Добавляем subDrop для наборов
