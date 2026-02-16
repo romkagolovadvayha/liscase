@@ -140,6 +140,12 @@ $config = [
                 'v1/support/users/<userId:\d+>/block-chat' => 'v1/support/block-chat',
                 'v1/support/users/<userId:\d+>/block-account' => 'v1/support/block-account',
 
+                // Support GameStores (для плагина GameStoresRUST)
+                'v1/support-game-stores/tickets' => 'v1/support-game-stores/tickets',
+                'v1/support-game-stores/create' => 'v1/support-game-stores/create',
+                'v1/support-game-stores/tickets/<id:[\w-]+>' => 'v1/support-game-stores/view', // ID может быть не только числом
+                'v1/support-game-stores/tickets/<id:[\w-]+>/messages' => 'v1/support-game-stores/send',
+
                 // Store
                 'v1/store/deliver' => 'v1/store/deliver',
                 'v1/store/return' => 'v1/store/return',
