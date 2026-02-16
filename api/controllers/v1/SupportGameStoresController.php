@@ -193,7 +193,7 @@ class SupportGameStoresController extends BaseApiController
         // Загружаем сообщения
         $messages = SupportMessage::find()
             ->where(['support_id' => $ticket->id])
-            ->with(['user', 'user.userProfile', 'supportFiles'])
+            ->with(['user', 'user.userProfile', 'supportFiles', 'support', 'support.server', 'support.user'])
             ->orderBy(['created_at' => SORT_ASC])
             ->all();
 
@@ -457,21 +457,98 @@ class SupportGameStoresController extends BaseApiController
             ];
         }
 
+        // Заменяем плейсхолдеры на текстовые сообщения
+        $formattedMessage = $message->message;
+        
+        if ($formattedMessage === '{USER_INFO}') {
+            $formattedMessage = $this->formatUserInfoMessage($message);
+        } elseif ($formattedMessage === '{ALERT_REPORT}') {
+            $formattedMessage = $this->formatAlertReportMessage();
+        }
+
+        // Форматируем дату в формат дд.мм.гггг чч:мм
+        $formattedDate = '';
+        if ($message->created_at) {
+            $timestamp = strtotime($message->created_at);
+            $formattedDate = date('d.m.Y H:i', $timestamp);
+        }
+
         return [
             'id' => $message->id,
             'support_id' => $message->support_id,
             'user_id' => $message->user_id,
-            'message' => $message->message,
+            'message' => $formattedMessage,
             'user' => $message->user ? [
                 'id' => $message->user->id,
                 'username' => $message->user->username,
                 'avatar' => $message->user->getAvatar(),
             ] : null,
             'files' => $files,
-            'created_at' => $message->created_at,
+            'created_at' => $formattedDate,
         ];
     }
+
+    /**
+     * Форматирование сообщения USER_INFO
+     */
+    protected function formatUserInfoMessage($message)
+    {
+        $ticket = $message->support;
+        $ticketUser = $ticket ? $ticket->user : null;
+        
+        if (!$ticketUser) {
+            return 'Информация о пользователе недоступна';
+        }
+
+        $server = $ticket && $ticket->server ? $ticket->server : null;
+        $serverName = $server ? $server->name : 'неизвестно';
+        
+        $lines = [];
+        $lines[] = "Сервер игрока: {$serverName}";
+        
+        if ($ticketUser->userProfile && $ticketUser->userProfile->trade_link) {
+            $lines[] = "Трейд ссылка игрока: {$ticketUser->userProfile->trade_link}";
+        }
+        
+        $lines[] = "Steam ID: {$ticketUser->steam_id}";
+        
+        // Получаем последние репорты
+        $reports = \common\models\statistics\Reports::find()
+            ->andWhere(['steam_id' => $ticketUser->steam_id])
+            ->orderBy(['id' => SORT_DESC])
+            ->limit(3)
+            ->all();
+        
+        if (empty($reports)) {
+            $lines[] = "Последние репорты игрока: Игрок не отправил ни одного репорта!";
+        } else {
+            $lines[] = "Последние репорты игрока:";
+            foreach ($reports as $report) {
+                if ($report->user) {
+                    $lines[] = "- {$report->user->username} ({$report->user->steam_id}) - Причина: {$report->reason}";
+                }
+            }
+        }
+        
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Форматирование сообщения ALERT_REPORT
+     */
+    protected function formatAlertReportMessage()
+    {
+        return "Если вы хотите пожаловаться на игрока, нажмите в игре кнопку F7. Мы видим все ваши жалобы в игре, тикет в поддержку создавать не нужно. Если у вас есть доказательства и откаты вы можете приложить их по кнопке вложения файлов.";
+    }
 }
+
+
+
+
+
+
+
+
 
 
 
