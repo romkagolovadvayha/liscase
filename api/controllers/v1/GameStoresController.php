@@ -2126,9 +2126,9 @@ class GameStoresController extends BaseApiController
     }
 
     /**
-     * Получить информацию для MenuBase (вайпы, аватар пользователя)
+     * Получить информацию для MenuBase (вайпы, команды, правила, FAQ, помощь, описание)
      * menubase.info
-     * Body: {"steamId": "7656119..."} (опционально, для получения аватара)
+     * Body: пустой (универсальный метод, вызывается один раз при инициализации плагина)
      */
     private function actionMenuBaseInfo($bodyParams, $server)
     {
@@ -2164,18 +2164,237 @@ class GameStoresController extends BaseApiController
         $result['lastWipe'] = $lastWipeFormatted;
         $result['nextWipe'] = $nextWipeFormatted;
         
-        // Аватар пользователя (если передан steamId)
-        $steamId = $bodyParams['steamId'] ?? $bodyParams['steam_id'] ?? null;
-        if ($steamId) {
-            $user = \common\models\user\User::findOne(['steam_id' => $steamId]);
-            if ($user) {
-                $result['avatar'] = $user->getAvatar() ?? '';
-            } else {
-                $result['avatar'] = '';
+        // Команды сервера
+        $result['commands'] = $this->getMenuBaseCommands($server);
+        
+        // Правила сервера
+        $result['rules'] = $this->getMenuBaseRules($server);
+        
+        // FAQ (Часто задаваемые вопросы)
+        $result['faq'] = $this->getMenuBaseFAQ($server);
+        
+        // Помощь (Help sections)
+        $result['help'] = $this->getMenuBaseHelp($server);
+        
+        // Описание сервера (теги)
+        $result['description'] = $this->getMenuBaseDescription($server);
+        
+        return $this->successResponseGameStores($result);
+    }
+    
+    /**
+     * Получить команды для MenuBase в нужном формате
+     */
+    private function getMenuBaseCommands($server)
+    {
+        $commands = [];
+        
+        // Ищем категорию "Команды на сервере"
+        $commandsCategory = \common\models\servers\ServersRulesCategory::find()
+            ->where(['name' => 'Команды на сервере'])
+            ->one();
+        
+        if ($commandsCategory) {
+            // Получаем все правила для сервера
+            $rules = \common\models\servers\ServersRules::getRulesForServer($server->id);
+            
+            // Группируем команды по категориям
+            $commandsByCategory = [];
+            
+            foreach ($rules as $rule) {
+                if ($rule->category_id == $commandsCategory->id) {
+                    $categoryName = $rule->title ?? 'ОСНОВНЫЕ';
+                    
+                    if (!isset($commandsByCategory[$categoryName])) {
+                        $commandsByCategory[$categoryName] = [];
+                    }
+                    
+                    // Извлекаем команды из content
+                    $content = strip_tags($rule->content);
+                    $content = trim($content);
+                    
+                    if (!empty($content)) {
+                        // Разбиваем на строки
+                        $lines = explode("\n", $content);
+                        foreach ($lines as $line) {
+                            $line = trim($line);
+                            if (!empty($line)) {
+                                // Парсим команду: "описание: команда" или просто "команда"
+                                $parts = explode(':', $line, 2);
+                                if (count($parts) == 2) {
+                                    $commandsByCategory[$categoryName][] = [
+                                        'Description' => trim($parts[0]),
+                                        'Text' => trim($parts[1])
+                                    ];
+                                } else {
+                                    $commandsByCategory[$categoryName][] = [
+                                        'Description' => $line,
+                                        'Text' => $line
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Преобразуем в нужный формат
+            foreach ($commandsByCategory as $categoryName => $cmds) {
+                $commands[$categoryName] = $cmds;
             }
         }
         
-        return $this->successResponseGameStores($result);
+        return $commands;
+    }
+    
+    /**
+     * Получить правила для MenuBase
+     */
+    private function getMenuBaseRules($server)
+    {
+        $rulesStrings = [];
+        
+        // Получаем все правила для сервера
+        $rules = \common\models\servers\ServersRules::getRulesForServer($server->id);
+        
+        // Ищем категорию "Команды на сервере", чтобы исключить её
+        $commandsCategory = \common\models\servers\ServersRulesCategory::find()
+            ->where(['name' => 'Команды на сервере'])
+            ->one();
+        
+        $commandsCategoryId = $commandsCategory ? $commandsCategory->id : null;
+        
+        foreach ($rules as $rule) {
+            // Пропускаем команды
+            if ($rule->category_id == $commandsCategoryId) {
+                continue;
+            }
+            
+            // Получаем текст правила
+            $content = strip_tags($rule->content);
+            $content = trim($content);
+            
+            if (!empty($content)) {
+                $rulesStrings[] = $content;
+            }
+        }
+        
+        return $rulesStrings;
+    }
+    
+    /**
+     * Получить FAQ для MenuBase
+     */
+    private function getMenuBaseFAQ($server)
+    {
+        $faqSections = [];
+        
+        // Ищем категорию "FAQ" или "Часто задаваемые вопросы"
+        $faqCategory = \common\models\servers\ServersRulesCategory::find()
+            ->where(['or', ['name' => 'FAQ'], ['name' => 'Часто задаваемые вопросы']])
+            ->one();
+        
+        if ($faqCategory) {
+            $rules = \common\models\servers\ServersRules::getRulesForServer($server->id);
+            
+            foreach ($rules as $rule) {
+                if ($rule->category_id == $faqCategory->id) {
+                    $key = 'faq_' . $rule->id;
+                    $label = $rule->title ?? strip_tags($rule->content);
+                    $content = strip_tags($rule->content);
+                    
+                    // Вычисляем примерный offset на основе длины текста
+                    $textLength = mb_strlen(strip_tags($content));
+                    $panelDownOffset = max(-50, -($textLength / 10) * 2);
+                    
+                    $faqSections[$key] = [
+                        'Label' => $label,
+                        'InsideText' => $content,
+                        'PanelDownOffset' => $panelDownOffset
+                    ];
+                }
+            }
+        }
+        
+        return $faqSections;
+    }
+    
+    /**
+     * Получить Help секции для MenuBase
+     */
+    private function getMenuBaseHelp($server)
+    {
+        $helpSections = [];
+        
+        // Ищем категорию "Помощь" или "Help"
+        $helpCategory = \common\models\servers\ServersRulesCategory::find()
+            ->where(['or', ['name' => 'Помощь'], ['name' => 'Help']])
+            ->one();
+        
+        if ($helpCategory) {
+            $rules = \common\models\servers\ServersRules::getRulesForServer($server->id);
+            
+            // Группируем по title (основные секции)
+            $sectionsByTitle = [];
+            
+            foreach ($rules as $rule) {
+                if ($rule->category_id == $helpCategory->id) {
+                    $sectionKey = 'help_' . ($rule->title ? md5($rule->title) : $rule->id);
+                    $title = $rule->title ?? 'Помощь';
+                    
+                    if (!isset($sectionsByTitle[$sectionKey])) {
+                        $sectionsByTitle[$sectionKey] = [
+                            'TextOnButton' => $title,
+                            'DrawOrder' => $rule->sort ?? 0,
+                            'SubSections' => []
+                        ];
+                    }
+                    
+                    // Добавляем подраздел
+                    $content = strip_tags($rule->content);
+                    $textLength = mb_strlen($content);
+                    $downOffset = max(50, ($textLength / 10) * 2);
+                    
+                    // Для Help секций сохраняем HTML, так как там может быть разметка
+                    $sectionsByTitle[$sectionKey]['SubSections'][] = [
+                        'Label' => $rule->title ?? 'Информация',
+                        'InternalText' => $rule->content, // Сохраняем HTML для Help
+                        'DownOffset' => $downOffset
+                    ];
+                }
+            }
+            
+            $helpSections = $sectionsByTitle;
+        }
+        
+        return $helpSections;
+    }
+    
+    /**
+     * Получить описание сервера (теги)
+     */
+    private function getMenuBaseDescription($server)
+    {
+        $description = [];
+        
+        // Загружаем теги сервера с помощью связи
+        $tags = \common\models\servers\ServersTags::find()
+            ->innerJoin('servers_tags_relation', 'servers_tags_relation.tag_id = servers_tags.id')
+            ->where(['servers_tags_relation.server_id' => $server->id])
+            ->orderBy(['servers_tags.sort' => SORT_ASC])
+            ->all();
+        
+        foreach ($tags as $tag) {
+            if (!empty($tag->description)) {
+                $description[] = [
+                    'name' => $tag->name ?? '',
+                    'short_description' => $tag->short_description ?? '',
+                    'description' => $tag->description ?? ''
+                ];
+            }
+        }
+        
+        return $description;
     }
     
     /**
