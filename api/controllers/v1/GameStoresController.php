@@ -1684,6 +1684,16 @@ class GameStoresController extends BaseApiController
             ->all();
         
         $result = [];
+        
+        // Добавляем искусственную категорию "Популярное" в начало списка
+        $result[] = [
+            'id' => 0,
+            'name' => 'Популярное',
+            'tag' => 'popular',
+            'image' => '',
+            'sort' => -1, // Минимальный sort, чтобы была первой
+        ];
+        
         foreach ($allCategories as $category) {
             $result[] = [
                 'id' => $category->id,
@@ -1694,7 +1704,7 @@ class GameStoresController extends BaseApiController
             ];
         }
         
-        Yii::info("actionShopCategories: Returning " . count($result) . " categories for serverId={$server->id}", 'gamestores');
+        Yii::info("actionShopCategories: Returning " . count($result) . " categories (including Popular) for serverId={$server->id}", 'gamestores');
         
         return $this->successResponseGameStores($result);
     }
@@ -1718,6 +1728,77 @@ class GameStoresController extends BaseApiController
         $blockedList = DropBlocked::getBlockedList($server->id, true);
         
         $result = [];
+        
+        // Если выбрана категория "Популярное" (ID = 0), возвращаем первые 28 товаров
+        if ($categoryId === 0 || $categoryId === '0') {
+            $popularCount = 0;
+            foreach ($drops as $drop) {
+                // Пропускаем товары типа SELECT (Товар с выбором)
+                if ($drop->drop_type == Drop::TYPE_SELECT) {
+                    continue;
+                }
+                
+                // Пропускаем товары с full_only = true
+                if ($drop->full_only) {
+                    continue;
+                }
+                
+                // Ограничиваем количество до 28
+                if ($popularCount >= 28) {
+                    break;
+                }
+                
+                // Проверяем вайп-блок
+                $wipeBlockCheck = $this->checkWipeBlock($drop, $server);
+                
+                // Получаем изображение
+                $imageUrl = $images[$drop->id]['150px'] ?? '';
+                if (empty($imageUrl) && $drop->imageOrig) {
+                    $imageUrl = $drop->imageOrig->getImagePubUrl();
+                }
+                
+                // Получаем blocked_at из drop_blocked
+                $blockedAt = $blockedList[$drop->id] ?? null;
+                $blockedAtUtc = null;
+                if ($blockedAt) {
+                    try {
+                        $moscowTz = new \DateTimeZone('Europe/Moscow');
+                        $blockedAtMoscow = new \DateTime($blockedAt, $moscowTz);
+                        $blockedAtMoscow->setTimezone(new \DateTimeZone('UTC'));
+                        $blockedAtUtc = $blockedAtMoscow->format('Y-m-d H:i:s');
+                    } catch (\Exception $e) {
+                        $blockedAtUtc = $blockedAt;
+                    }
+                }
+                
+                // Получаем реальную цену с учетом скидки и плавающей цены
+                $realPrice = $drop->getRealPrice(true);
+                
+                $item = [
+                    'id' => $drop->id,
+                    'name' => Yii::t('database', $drop->name, [], 'ru-RU'),
+                    'price' => (float)$realPrice,
+                    'image' => $imageUrl,
+                    'rust_id' => $drop->rust_id ?? 0,
+                    'count' => $drop->count ?? 1,
+                    'drop_type' => $drop->drop_type ?? 0,
+                    'category_id' => $drop->category_id ?? 0,
+                    'is_blocked' => $wipeBlockCheck['isBlocked'],
+                    'left_time' => (float)$wipeBlockCheck['leftTime'],
+                ];
+                
+                if ($blockedAtUtc) {
+                    $item['blocked_at'] = $blockedAtUtc;
+                }
+                
+                $result[] = $item;
+                $popularCount++;
+            }
+            
+            return $this->successResponseGameStores($result);
+        }
+        
+        // Обычная обработка для остальных категорий
         foreach ($drops as $drop) {
             // Пропускаем товары типа SELECT (Товар с выбором)
             if ($drop->drop_type == Drop::TYPE_SELECT) {
