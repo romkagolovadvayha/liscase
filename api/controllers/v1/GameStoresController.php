@@ -207,6 +207,9 @@ class GameStoresController extends BaseApiController
             case 'shop.buy':
                 return $this->actionShopBuy($bodyParams, $server);
 
+            case 'shop.removeFromBasket':
+                return $this->actionShopRemoveFromBasket($bodyParams, $server);
+
             default:
                 return $this->errorResponseGameStores('Метод не найден!', 105);
         }
@@ -1724,6 +1727,11 @@ class GameStoresController extends BaseApiController
         
         $result = [];
         foreach ($drops as $drop) {
+            // Пропускаем товары с выбором (full_only)
+            if ($drop->full_only) {
+                continue;
+            }
+            
             // Фильтруем по категории, если указана
             if ($categoryId !== null && $drop->category_id != $categoryId) {
                 continue;
@@ -1992,6 +2000,52 @@ class GameStoresController extends BaseApiController
             Yii::error("Error in actionShopBuy: " . $e->getMessage(), 'gamestores');
             return $this->errorResponseGameStores('Ошибка при покупке товара: ' . $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Удалить товар из корзины
+     * shop.removeFromBasket
+     * Body: {"steamId": "7656119...", "basketId": 123}
+     */
+    private function actionShopRemoveFromBasket($bodyParams, $server)
+    {
+        // Авторизация по steam_id
+        try {
+            $user = $this->getUserBySteamId($bodyParams, $server);
+        } catch (UnauthorizedHttpException $e) {
+            return $this->errorResponseGameStores($e->getMessage(), 105);
+        }
+        
+        $basketId = $bodyParams['basketId'] ?? null;
+        
+        if (empty($basketId)) {
+            return $this->errorResponseGameStores('Отсутствует параметр basketId', 105);
+        }
+        
+        /** @var UserDrop $userDrop */
+        $userDrop = UserDrop::findOne($basketId);
+        
+        if (!$userDrop) {
+            return $this->errorResponseGameStores('Товар не найден в корзине', 107);
+        }
+        
+        // Проверка принадлежности
+        if ($user->id != $userDrop->user_id) {
+            return $this->errorResponseGameStores('Товар вам не принадлежит!', 107);
+        }
+        
+        // Проверяем, что товар в корзине (STATUS_ACTIVE или STATUS_WAIT)
+        if ($userDrop->status != UserDrop::STATUS_ACTIVE && $userDrop->status != UserDrop::STATUS_WAIT) {
+            return $this->errorResponseGameStores('Товар уже получен или удален', 107);
+        }
+        
+        // Удаляем товар из корзины
+        $userDrop->delete();
+        
+        return $this->successResponseGameStores([
+            'success' => true,
+            'message' => 'Товар удален из корзины'
+        ]);
     }
 }
 
