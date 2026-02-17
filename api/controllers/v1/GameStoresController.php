@@ -455,11 +455,11 @@ class GameStoresController extends BaseApiController
 
         // Поддержка пагинации: page и limit из параметров запроса
         $page = (int)(Yii::$app->request->get('page') ?: Yii::$app->request->post('page') ?: 0);
-        $limit = (int)(Yii::$app->request->get('limit') ?: Yii::$app->request->post('limit') ?: 36);
+        $limit = (int)(Yii::$app->request->get('limit') ?: Yii::$app->request->post('limit') ?: 49);
         
-        // Ограничиваем максимум до 36 предметов для оптимизации
-        if ($limit > 36) {
-            $limit = 36;
+        // Ограничиваем максимум до 49 предметов (7x7) для оптимизации
+        if ($limit > 49) {
+            $limit = 49;
         }
         
         $offset = $page * $limit;
