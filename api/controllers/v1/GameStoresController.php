@@ -1033,9 +1033,8 @@ class GameStoresController extends BaseApiController
         // Убеждаемся, что amount всегда число (не null)
         $amount = $userDrop->count ?? 0;
 
-        // Рассчитываем цену
-        $basePrice = $drop->price - ($drop->price * ($drop->discount ?? 0) / 100);
-        $pricePerItem = ceil($basePrice);
+        // Рассчитываем цену используя RealPrice
+        $realPrice = $drop->getRealPrice(true);
         
         $item = [
             'id' => $userDrop->id,
@@ -1044,7 +1043,7 @@ class GameStoresController extends BaseApiController
             'amount' => $amount,
             'quantity' => $amount, // Для совместимости с LShop
             'name' => $drop->name,
-            'price' => $pricePerItem, // Цена за единицу
+            'price' => $realPrice, // Используем RealPrice
             'img' => $img,
             'image' => $img, // Для совместимости с LShop
             'blocked' => false,
@@ -1760,10 +1759,13 @@ class GameStoresController extends BaseApiController
                 }
             }
             
+            // Получаем реальную цену с учетом скидки и плавающей цены
+            $realPrice = $drop->getRealPrice(true);
+            
             $item = [
                 'id' => $drop->id,
                 'name' => Yii::t('database', $drop->name, [], 'ru-RU'),
-                'price' => (float)$drop->price,
+                'price' => (float)$realPrice,
                 'image' => $imageUrl,
                 'rust_id' => $drop->rust_id ?? 0,
                 'count' => $drop->count ?? 1,
@@ -1902,9 +1904,8 @@ class GameStoresController extends BaseApiController
             return $this->errorResponseGameStores('Предмет временно заблокирован вайп блоком', 109);
         }
         
-        // Рассчитываем цену
-        $basePrice = $drop->price - ($drop->price * ($drop->discount ?? 0) / 100);
-        $pricePerItem = ceil($basePrice);
+        // Рассчитываем цену используя RealPrice
+        $pricePerItem = $drop->getRealPrice(true);
         $totalPrice = $pricePerItem * $quantity;
         
         // Проверяем баланс
