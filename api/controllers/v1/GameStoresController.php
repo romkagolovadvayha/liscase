@@ -2335,32 +2335,64 @@ class GameStoresController extends BaseApiController
             $rules = \common\models\servers\ServersRules::getRulesForServer($server->id);
             
             // Группируем по title (основные секции)
+            // Если у правила есть title, используем его как ключ секции
+            // Если нет title, создаем отдельную секцию для каждого правила
             $sectionsByTitle = [];
             
             foreach ($rules as $rule) {
                 if ($rule->category_id == $helpCategory->id) {
-                    $sectionKey = 'help_' . ($rule->title ? md5($rule->title) : $rule->id);
-                    $title = $rule->title ?? 'Помощь';
+                    // Если есть title, используем его как ключ секции
+                    // Если нет title, используем content как ключ
+                    $sectionKey = null;
+                    $title = $rule->title ?? null;
                     
-                    if (!isset($sectionsByTitle[$sectionKey])) {
+                    if ($title) {
+                        // Используем title как ключ секции
+                        $sectionKey = 'help_' . md5($title);
+                        
+                        if (!isset($sectionsByTitle[$sectionKey])) {
+                            $sectionsByTitle[$sectionKey] = [
+                                'TextOnButton' => $title,
+                                'DrawOrder' => $rule->sort ?? 0,
+                                'SubSections' => []
+                            ];
+                        }
+                        
+                        // Добавляем подраздел с content
+                        $content = $rule->content;
+                        $textLength = mb_strlen(strip_tags($content));
+                        $downOffset = max(50, ($textLength / 10) * 2);
+                        
+                        $sectionsByTitle[$sectionKey]['SubSections'][] = [
+                            'Label' => $title,
+                            'InternalText' => $content, // Сохраняем HTML для Help
+                            'DownOffset' => $downOffset
+                        ];
+                    } else {
+                        // Если нет title, создаем отдельную секцию для каждого правила
+                        $sectionKey = 'help_' . $rule->id;
+                        $content = $rule->content;
+                        $textLength = mb_strlen(strip_tags($content));
+                        $downOffset = max(50, ($textLength / 10) * 2);
+                        
+                        // Используем первые слова content как название секции
+                        $label = mb_substr(strip_tags($content), 0, 30);
+                        if (mb_strlen($label) >= 30) {
+                            $label .= '...';
+                        }
+                        
                         $sectionsByTitle[$sectionKey] = [
-                            'TextOnButton' => $title,
+                            'TextOnButton' => $label ?: 'Помощь',
                             'DrawOrder' => $rule->sort ?? 0,
-                            'SubSections' => []
+                            'SubSections' => [
+                                [
+                                    'Label' => $label ?: 'Информация',
+                                    'InternalText' => $content,
+                                    'DownOffset' => $downOffset
+                                ]
+                            ]
                         ];
                     }
-                    
-                    // Добавляем подраздел
-                    $content = strip_tags($rule->content);
-                    $textLength = mb_strlen($content);
-                    $downOffset = max(50, ($textLength / 10) * 2);
-                    
-                    // Для Help секций сохраняем HTML, так как там может быть разметка
-                    $sectionsByTitle[$sectionKey]['SubSections'][] = [
-                        'Label' => $rule->title ?? 'Информация',
-                        'InternalText' => $rule->content, // Сохраняем HTML для Help
-                        'DownOffset' => $downOffset
-                    ];
                 }
             }
             
