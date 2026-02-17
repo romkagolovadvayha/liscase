@@ -1716,7 +1716,7 @@ class GameStoresController extends BaseApiController
     {
         $categoryId = $bodyParams['categoryId'] ?? $bodyParams['category_id'] ?? null;
         
-        // Получаем все товары
+        // Получаем только товары с show_main_block=false (не из главного блока)
         $drops = Drop::getForMarket(false);
         
         // Получаем изображения размером 150px
@@ -1729,6 +1729,11 @@ class GameStoresController extends BaseApiController
         foreach ($drops as $drop) {
             // Пропускаем товары с выбором (full_only)
             if ($drop->full_only) {
+                continue;
+            }
+            
+            // Пропускаем товары типа SELECT (Товар с выбором)
+            if ($drop->drop_type == Drop::TYPE_SELECT) {
                 continue;
             }
             
@@ -1931,8 +1936,7 @@ class GameStoresController extends BaseApiController
                 $comment
             );
             
-            // Создаем UserDrop со статусом STATUS_SENDED (товар сразу выдан)
-            $sendedAt = date('Y-m-d H:i:s');
+            // Создаем UserDrop со статусом STATUS_ACTIVE (товар в корзине, еще не выдан)
             $userDropIds = [];
             
             if ($drop->drop_type == 2) {
@@ -1950,14 +1954,12 @@ class GameStoresController extends BaseApiController
                             $subDropRelation->drop_id,
                             null, // box_id
                             null, // sets_id
-                            UserDrop::STATUS_SENDED, // Сразу выданный статус
+                            UserDrop::STATUS_ACTIVE, // Товар в корзине (статус 1)
                             false, // auto
                             $subDropCount, // count
                             null, // created_at
                             $drop->id // parent_drop_id
                         );
-                        $userDrop->sended_at = $sendedAt;
-                        $userDrop->save(false);
                         $userDropIds[] = $userDrop->id;
                     }
                 }
@@ -1969,14 +1971,12 @@ class GameStoresController extends BaseApiController
                     $drop->id,
                     null, // box_id
                     null, // sets_id
-                    UserDrop::STATUS_SENDED, // Сразу выданный статус
+                    UserDrop::STATUS_ACTIVE, // Товар в корзине (статус 1)
                     false, // auto
                     $dropCount, // count
                     null, // created_at
                     null // parent_drop_id
                 );
-                $userDrop->sended_at = $sendedAt;
-                $userDrop->save(false);
                 $userDropIds[] = $userDrop->id;
             }
             
