@@ -1733,13 +1733,8 @@ class GameStoresController extends BaseApiController
         if ($categoryId === 0 || $categoryId === '0') {
             $popularCount = 0;
             foreach ($drops as $drop) {
-                // Пропускаем товары типа SELECT (Товар с выбором)
-                if ($drop->drop_type == Drop::TYPE_SELECT) {
-                    continue;
-                }
-                
-                // Пропускаем товары с full_only = true
-                if ($drop->full_only) {
+                // Возвращаем только товары типа TYPE_DROP (обычные предметы)
+                if ($drop->drop_type != Drop::TYPE_DROP) {
                     continue;
                 }
                 
