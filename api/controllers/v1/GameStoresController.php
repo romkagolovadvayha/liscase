@@ -1550,9 +1550,10 @@ class GameStoresController extends BaseApiController
                 'id' => $drop->id,
                 'productId' => (string)$drop->id,
                 'name' => $drop->name,
-                'rust_id' => $drop->rust_id ?? 0,
-                'item_id' => $drop->rust_id ?? 0,
+                'rust_id' => $drop->rust_id ?? '',
+                'item_id' => $drop->rust_id ?? '',
                 'blocked_hour' => $blockedHour,
+                'image' => $drop->imageOrig ? $drop->imageOrig->getImagePubUrl() : '',
             ];
             
             $results[$blockedHour][] = $item;
