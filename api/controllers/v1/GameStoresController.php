@@ -1561,14 +1561,6 @@ class GameStoresController extends BaseApiController
             
             // Получаем реальное время разблокировки из drop_blocked, если оно есть
             $blockedAt = $blockedList[$drop->id] ?? null;
-            $blockedAtTimestamp = $blockedAt ? strtotime($blockedAt) : null;
-            $currentTimestamp = time();
-            
-            // Вычисляем оставшееся время блокировки в секундах
-            $leftTime = null;
-            if ($blockedAtTimestamp && $blockedAtTimestamp > $currentTimestamp) {
-                $leftTime = $blockedAtTimestamp - $currentTimestamp;
-            }
             
             $item = [
                 'id' => $drop->id,
@@ -1580,10 +1572,9 @@ class GameStoresController extends BaseApiController
                 'image' => $imageUrl,
             ];
             
-            // Добавляем информацию о времени разблокировки, если предмет еще заблокирован
-            if ($leftTime !== null && $leftTime > 0) {
+            // Добавляем время окончания блокировки, если предмет заблокирован
+            if ($blockedAt) {
                 $item['blocked_at'] = $blockedAt;
-                $item['left_time'] = $leftTime;
             }
             
             $results[$blockedHour][] = $item;
@@ -1592,12 +1583,20 @@ class GameStoresController extends BaseApiController
         // Преобразуем в формат, удобный для плагина
         $formattedResults = [];
         foreach ($results as $blockedHour => $items) {
-            // Находим максимальное оставшееся время для группы (если есть заблокированные предметы)
-            $maxLeftTime = null;
+            // Находим максимальное время окончания блокировки для группы (если есть заблокированные предметы)
+            $maxBlockedAt = null;
+            $maxBlockedAtTimestamp = null;
+            $currentTimestamp = time();
+            
             foreach ($items as $item) {
-                if (isset($item['left_time']) && $item['left_time'] > 0) {
-                    if ($maxLeftTime === null || $item['left_time'] > $maxLeftTime) {
-                        $maxLeftTime = $item['left_time'];
+                if (isset($item['blocked_at'])) {
+                    $blockedAtTimestamp = strtotime($item['blocked_at']);
+                    // Берем только те, которые еще не прошли
+                    if ($blockedAtTimestamp > $currentTimestamp) {
+                        if ($maxBlockedAtTimestamp === null || $blockedAtTimestamp > $maxBlockedAtTimestamp) {
+                            $maxBlockedAtTimestamp = $blockedAtTimestamp;
+                            $maxBlockedAt = $item['blocked_at'];
+                        }
                     }
                 }
             }
@@ -1607,9 +1606,9 @@ class GameStoresController extends BaseApiController
                 'items' => $items
             ];
             
-            // Добавляем максимальное оставшееся время для группы
-            if ($maxLeftTime !== null && $maxLeftTime > 0) {
-                $groupData['left_time'] = $maxLeftTime;
+            // Добавляем максимальное время окончания блокировки для группы
+            if ($maxBlockedAt) {
+                $groupData['blocked_at'] = $maxBlockedAt;
             }
             
             $formattedResults[] = $groupData;
