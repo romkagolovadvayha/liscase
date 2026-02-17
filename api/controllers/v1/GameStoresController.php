@@ -210,6 +210,9 @@ class GameStoresController extends BaseApiController
             case 'shop.removeFromBasket':
                 return $this->actionShopRemoveFromBasket($bodyParams, $server);
 
+            case 'menubase.info':
+                return $this->actionMenuBaseInfo($bodyParams, $server);
+
             default:
                 return $this->errorResponseGameStores('Метод не найден!', 105);
         }
@@ -2120,6 +2123,79 @@ class GameStoresController extends BaseApiController
             'success' => true,
             'message' => 'Товар удален из корзины'
         ]);
+    }
+
+    /**
+     * Получить информацию для MenuBase (вайпы, аватар пользователя)
+     * menubase.info
+     * Body: {"steamId": "7656119..."} (опционально, для получения аватара)
+     */
+    private function actionMenuBaseInfo($bodyParams, $server)
+    {
+        $result = [];
+        
+        // Информация о вайпах
+        $moscowTz = new \DateTimeZone('Europe/Moscow');
+        
+        // Получаем дату последнего вайпа
+        $lastWipeFormatted = null;
+        if (!empty($server->wipe)) {
+            try {
+                $lastWipeDate = new \DateTime($server->wipe);
+                $lastWipeDate->setTimezone($moscowTz);
+                $lastWipeFormatted = $this->formatWipeDate($lastWipeDate);
+            } catch (\Exception $e) {
+                // Игнорируем ошибку
+            }
+        }
+        
+        // Получаем дату следующего вайпа
+        $nextWipeFormatted = null;
+        if (!empty($server->next_wipe)) {
+            try {
+                $nextWipeDate = new \DateTime($server->next_wipe);
+                $nextWipeDate->setTimezone($moscowTz);
+                $nextWipeFormatted = $this->formatWipeDate($nextWipeDate);
+            } catch (\Exception $e) {
+                // Игнорируем ошибку
+            }
+        }
+        
+        $result['lastWipe'] = $lastWipeFormatted;
+        $result['nextWipe'] = $nextWipeFormatted;
+        
+        // Аватар пользователя (если передан steamId)
+        $steamId = $bodyParams['steamId'] ?? $bodyParams['steam_id'] ?? null;
+        if ($steamId) {
+            $user = \common\models\user\User::findOne(['steam_id' => $steamId]);
+            if ($user) {
+                $result['avatar'] = $user->getAvatar() ?? '';
+            } else {
+                $result['avatar'] = '';
+            }
+        }
+        
+        return $this->successResponseGameStores($result);
+    }
+    
+    /**
+     * Форматировать дату вайпа в формат "5 февраля 16:00 МСК"
+     */
+    private function formatWipeDate(\DateTime $date)
+    {
+        $months = [
+            1 => 'января', 2 => 'февраля', 3 => 'марта', 4 => 'апреля',
+            5 => 'мая', 6 => 'июня', 7 => 'июля', 8 => 'августа',
+            9 => 'сентября', 10 => 'октября', 11 => 'ноября', 12 => 'декабря'
+        ];
+        
+        $day = (int)$date->format('d');
+        $month = (int)$date->format('m');
+        $time = $date->format('H:i');
+        
+        $monthName = $months[$month] ?? '';
+        
+        return "{$day} {$monthName} {$time} МСК";
     }
 }
 
