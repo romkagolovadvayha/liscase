@@ -1677,21 +1677,14 @@ class GameStoresController extends BaseApiController
      */
     private function actionShopCategories($bodyParams, $server)
     {
-        // Получаем все категории (и с show_main_block=true, и с show_main_block=false)
-        $categoriesMain = Category::getCategories(true);
-        $categoriesOther = Category::getCategories(false);
-        
-        // Объединяем категории
-        $allCategories = array_merge($categoriesMain ?: [], $categoriesOther ?: []);
-        
-        // Убираем дубликаты по ID
-        $uniqueCategories = [];
-        foreach ($allCategories as $category) {
-            $uniqueCategories[$category->id] = $category;
-        }
+        // Получаем все категории напрямую из базы (без фильтрации по show_main_block)
+        // Это гарантирует, что все категории, включая "прочее", будут возвращены
+        $allCategories = Category::find()
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
         
         $result = [];
-        foreach ($uniqueCategories as $category) {
+        foreach ($allCategories as $category) {
             $result[] = [
                 'id' => $category->id,
                 'name' => Yii::t('database', $category->name, [], 'ru-RU'),
