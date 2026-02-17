@@ -1531,7 +1531,9 @@ class GameStoresController extends BaseApiController
     private function actionWipeBlockItems($server)
     {
         // Получаем все предметы с blocked_hour, отсортированные по blocked_hour
+        // Загружаем dropImages для получения изображений размером 150px
         $drops = Drop::find()
+            ->with('dropImages')
             ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
             ->andWhere('blocked_hour IS NOT NULL')
             ->orderBy(['blocked_hour' => SORT_ASC])
@@ -1546,6 +1548,14 @@ class GameStoresController extends BaseApiController
             }
             
             // Формируем информацию о предмете
+            // Используем image150() для получения изображения размером drop150
+            $imageUrl = '';
+            if ($drop->image150()) {
+                $imageUrl = $drop->image150();
+            } elseif ($drop->imageOrig) {
+                $imageUrl = $drop->imageOrig->getImagePubUrl();
+            }
+            
             $item = [
                 'id' => $drop->id,
                 'productId' => (string)$drop->id,
@@ -1553,7 +1563,7 @@ class GameStoresController extends BaseApiController
                 'rust_id' => $drop->rust_id ?? '',
                 'item_id' => $drop->rust_id ?? '',
                 'blocked_hour' => $blockedHour,
-                'image' => $drop->imageOrig ? $drop->imageOrig->getImagePubUrl() : '',
+                'image' => $imageUrl,
             ];
             
             $results[$blockedHour][] = $item;
