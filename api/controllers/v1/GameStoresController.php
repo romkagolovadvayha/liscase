@@ -213,6 +213,9 @@ class GameStoresController extends BaseApiController
             case 'menubase.info':
                 return $this->actionMenuBaseInfo($bodyParams, $server);
 
+            case 'menubase.banners':
+                return $this->actionMenuBaseBanners($bodyParams, $server);
+
             default:
                 return $this->errorResponseGameStores('Метод не найден!', 105);
         }
@@ -2522,6 +2525,26 @@ class GameStoresController extends BaseApiController
         }
         
         return $description;
+    }
+    
+    /**
+     * Получить список баннеров для MenuBase
+     * Возвращает массив баннеров с URL изображений
+     * Формат: [{"id": 0, "image": "https://example.com/banner1.png"}, {"id": 1, "image": "https://example.com/banner2.png"}]
+     */
+    private function actionMenuBaseBanners($bodyParams, $server)
+    {
+        $result = [];
+        
+        // TODO: Получить баннеры из базы данных для сервера
+        // Пока возвращаем пустой массив - баннеры будут браться из конфига плагина как fallback
+        // Пример структуры:
+        // $result[] = [
+        //     'id' => 0,
+        //     'image' => 'https://yourdomain.com/images/banner1.png'
+        // ];
+        
+        return $this->successResponseGameStores($result);
     }
     
     /**
