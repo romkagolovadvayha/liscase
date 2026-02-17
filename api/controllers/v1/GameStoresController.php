@@ -1933,47 +1933,51 @@ class GameStoresController extends BaseApiController
             );
             
             // Создаем UserDrop со статусом STATUS_ACTIVE (товар в корзине, еще не выдан)
+            // Каждая единица товара создает отдельную запись в user_drop
             $userDropIds = [];
             
-            if ($drop->drop_type == 2) {
-                // TYPE_SET - создаем записи для всех subDrops
-                $subDrops = DropDrop::find()
-                    ->where(['parent_drop_id' => $drop->id])
-                    ->with('drop')
-                    ->all();
-                
-                foreach ($subDrops as $subDropRelation) {
-                    if ($subDropRelation->drop) {
-                        $subDropCount = ($subDropRelation->count ?? 1) * $quantity;
-                        $userDrop = UserDrop::createRecord(
-                            $user->id,
-                            $subDropRelation->drop_id,
-                            null, // box_id
-                            null, // sets_id
-                            UserDrop::STATUS_ACTIVE, // Товар в корзине (статус 1)
-                            false, // auto
-                            $subDropCount, // count
-                            null, // created_at
-                            $drop->id // parent_drop_id
-                        );
-                        $userDropIds[] = $userDrop->id;
+            // Создаем отдельную запись для каждой единицы товара
+            for ($i = 0; $i < $quantity; $i++) {
+                if ($drop->drop_type == 2) {
+                    // TYPE_SET - создаем записи для всех subDrops
+                    $subDrops = DropDrop::find()
+                        ->where(['parent_drop_id' => $drop->id])
+                        ->with('drop')
+                        ->all();
+                    
+                    foreach ($subDrops as $subDropRelation) {
+                        if ($subDropRelation->drop) {
+                            $subDropCount = $subDropRelation->count ?? 1;
+                            $userDrop = UserDrop::createRecord(
+                                $user->id,
+                                $subDropRelation->drop_id,
+                                null, // box_id
+                                null, // sets_id
+                                UserDrop::STATUS_ACTIVE, // Товар в корзине (статус 1)
+                                false, // auto
+                                $subDropCount, // count (без умножения на quantity)
+                                null, // created_at
+                                $drop->id // parent_drop_id
+                            );
+                            $userDropIds[] = $userDrop->id;
+                        }
                     }
+                } else {
+                    // Обычный товар - создаем отдельную запись для каждой единицы
+                    $dropCount = $drop->count ?? 1;
+                    $userDrop = UserDrop::createRecord(
+                        $user->id,
+                        $drop->id,
+                        null, // box_id
+                        null, // sets_id
+                        UserDrop::STATUS_ACTIVE, // Товар в корзине (статус 1)
+                        false, // auto
+                        $dropCount, // count (без умножения на quantity)
+                        null, // created_at
+                        null // parent_drop_id
+                    );
+                    $userDropIds[] = $userDrop->id;
                 }
-            } else {
-                // Обычный товар
-                $dropCount = ($drop->count ?? 1) * $quantity;
-                $userDrop = UserDrop::createRecord(
-                    $user->id,
-                    $drop->id,
-                    null, // box_id
-                    null, // sets_id
-                    UserDrop::STATUS_ACTIVE, // Товар в корзине (статус 1)
-                    false, // auto
-                    $dropCount, // count
-                    null, // created_at
-                    null // parent_drop_id
-                );
-                $userDropIds[] = $userDrop->id;
             }
             
             // Пересчитываем баланс
