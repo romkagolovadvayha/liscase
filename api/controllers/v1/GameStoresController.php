@@ -188,6 +188,9 @@ class GameStoresController extends BaseApiController
             case 'store.buyAndTake':
                 return $this->actionStoreBuyAndTake($bodyParams, $server);
 
+            case 'wipeBlock.items':
+                return $this->actionWipeBlockItems($server);
+
             default:
                 return $this->errorResponseGameStores('Метод не найден!', 105);
         }
@@ -1518,6 +1521,55 @@ class GameStoresController extends BaseApiController
         $item['data'] = $data;
 
         return $item;
+    }
+
+    /**
+     * Получить информацию о вайп-блоке предметов
+     * wipeBlock.items
+     * Возвращает предметы, сгруппированные по blocked_hour
+     */
+    private function actionWipeBlockItems($server)
+    {
+        // Получаем все предметы с blocked_hour, отсортированные по blocked_hour
+        $drops = Drop::find()
+            ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
+            ->andWhere('blocked_hour IS NOT NULL')
+            ->orderBy(['blocked_hour' => SORT_ASC])
+            ->all();
+
+        // Группируем по blocked_hour
+        $results = [];
+        foreach ($drops as $drop) {
+            $blockedHour = $drop->blocked_hour;
+            if (empty($results[$blockedHour])) {
+                $results[$blockedHour] = [];
+            }
+            
+            // Формируем информацию о предмете
+            $item = [
+                'id' => $drop->id,
+                'productId' => (string)$drop->id,
+                'name' => $drop->name,
+                'rust_id' => $drop->rust_id ?? 0,
+                'item_id' => $drop->rust_id ?? 0,
+                'blocked_hour' => $blockedHour,
+            ];
+            
+            $results[$blockedHour][] = $item;
+        }
+
+        // Преобразуем в формат, удобный для плагина
+        $formattedResults = [];
+        foreach ($results as $blockedHour => $items) {
+            $formattedResults[] = [
+                'blocked_hour' => $blockedHour,
+                'items' => $items
+            ];
+        }
+
+        Yii::info("actionWipeBlockItems: Returning " . count($formattedResults) . " groups with total " . count($drops) . " items for serverId={$server->id}", 'gamestores');
+
+        return $this->successResponseGameStores($formattedResults);
     }
 }
 
