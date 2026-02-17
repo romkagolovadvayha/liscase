@@ -1030,13 +1030,20 @@ class GameStoresController extends BaseApiController
         // Убеждаемся, что amount всегда число (не null)
         $amount = $userDrop->count ?? 0;
 
+        // Рассчитываем цену
+        $basePrice = $drop->price - ($drop->price * ($drop->discount ?? 0) / 100);
+        $pricePerItem = ceil($basePrice);
+        
         $item = [
             'id' => $userDrop->id,
             'basketId' => $userDrop->id, // Для совместимости
             'productId' => (string)$drop->id, // ID продукта (drop)
             'amount' => $amount,
+            'quantity' => $amount, // Для совместимости с LShop
             'name' => $drop->name,
+            'price' => $pricePerItem, // Цена за единицу
             'img' => $img,
+            'image' => $img, // Для совместимости с LShop
             'blocked' => false,
             'block_date' => null,
             'kd' => false,
@@ -1101,6 +1108,7 @@ class GameStoresController extends BaseApiController
         } else {
             $item['type'] = "item";
             $item['item_id'] = $drop->rust_id ?? 0;
+            $item['itemId'] = $drop->rust_id ?? 0; // Для совместимости с LShop
 
             // Для предметов плагин ожидает data["data"]["itemId"]
             // Всегда передаем itemId (даже если 0), чтобы плагин мог обработать
