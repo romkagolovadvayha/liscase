@@ -1539,6 +1539,9 @@ class GameStoresController extends BaseApiController
 
         // Получаем изображения размером 150px для всех предметов (как в других местах)
         $images = Drop::productsImages();
+        
+        // Получаем реальное время разблокировки из таблицы drop_blocked для этого сервера
+        $blockedList = \common\models\box\DropBlocked::getBlockedList($server->id, true);
 
         // Группируем по blocked_hour
         $results = [];
@@ -1556,6 +1559,17 @@ class GameStoresController extends BaseApiController
                 $imageUrl = $drop->imageOrig->getImagePubUrl();
             }
             
+            // Получаем реальное время разблокировки из drop_blocked, если оно есть
+            $blockedAt = $blockedList[$drop->id] ?? null;
+            $blockedAtTimestamp = $blockedAt ? strtotime($blockedAt) : null;
+            $currentTimestamp = time();
+            
+            // Вычисляем оставшееся время блокировки в секундах
+            $leftTime = null;
+            if ($blockedAtTimestamp && $blockedAtTimestamp > $currentTimestamp) {
+                $leftTime = $blockedAtTimestamp - $currentTimestamp;
+            }
+            
             $item = [
                 'id' => $drop->id,
                 'productId' => (string)$drop->id,
@@ -1566,16 +1580,39 @@ class GameStoresController extends BaseApiController
                 'image' => $imageUrl,
             ];
             
+            // Добавляем информацию о времени разблокировки, если предмет еще заблокирован
+            if ($leftTime !== null && $leftTime > 0) {
+                $item['blocked_at'] = $blockedAt;
+                $item['left_time'] = $leftTime;
+            }
+            
             $results[$blockedHour][] = $item;
         }
 
         // Преобразуем в формат, удобный для плагина
         $formattedResults = [];
         foreach ($results as $blockedHour => $items) {
-            $formattedResults[] = [
+            // Находим максимальное оставшееся время для группы (если есть заблокированные предметы)
+            $maxLeftTime = null;
+            foreach ($items as $item) {
+                if (isset($item['left_time']) && $item['left_time'] > 0) {
+                    if ($maxLeftTime === null || $item['left_time'] > $maxLeftTime) {
+                        $maxLeftTime = $item['left_time'];
+                    }
+                }
+            }
+            
+            $groupData = [
                 'blocked_hour' => $blockedHour,
                 'items' => $items
             ];
+            
+            // Добавляем максимальное оставшееся время для группы
+            if ($maxLeftTime !== null && $maxLeftTime > 0) {
+                $groupData['left_time'] = $maxLeftTime;
+            }
+            
+            $formattedResults[] = $groupData;
         }
 
         Yii::info("actionWipeBlockItems: Returning " . count($formattedResults) . " groups with total " . count($drops) . " items for serverId={$server->id}", 'gamestores');
