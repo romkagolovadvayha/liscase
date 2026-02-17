@@ -191,6 +191,13 @@ $config = [
                 // GameStores API (для плагина GameStoresRUST)
                 // Отдельный роутинг для store.pluginInfo (с точкой)
                 'v1/game-stores/<method:[\w\.-]+>' => 'v1/game-stores/index',
+                
+                // Прямые вызовы методов GameStores (для обратной совместимости)
+                // Поддерживаем форматы: baskets.item, baskets.bySteamId, store.pluginInfo и т.д.
+                // Используем паттерн который захватывает метод целиком включая точку
+                'v1/<method:baskets\.[\w]+>' => 'v1/game-stores/index',
+                'v1/<method:store\.[\w]+>' => 'v1/game-stores/index',
+                'v1/<method:server\.[\w]+>' => 'v1/game-stores/index',
 
                 // GameStores Payments API (для платежей через плагин)
                 'v1/integrations/payments/custom' => 'v1/game-stores/integrations-payments-custom',
