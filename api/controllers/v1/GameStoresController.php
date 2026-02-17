@@ -1573,8 +1573,20 @@ class GameStoresController extends BaseApiController
             ];
             
             // Добавляем время окончания блокировки, если предмет заблокирован
+            // Конвертируем из московского времени (MSK) в UTC для плагина
             if ($blockedAt) {
-                $item['blocked_at'] = $blockedAt;
+                try {
+                    // Парсим время как московское (MSK, UTC+3)
+                    $moscowTz = new \DateTimeZone('Europe/Moscow');
+                    $blockedAtMoscow = new \DateTime($blockedAt, $moscowTz);
+                    // Конвертируем в UTC
+                    $blockedAtMoscow->setTimezone(new \DateTimeZone('UTC'));
+                    $item['blocked_at'] = $blockedAtMoscow->format('Y-m-d H:i:s');
+                } catch (\Exception $e) {
+                    // Если не удалось распарсить, отправляем как есть
+                    $item['blocked_at'] = $blockedAt;
+                    Yii::warning("Failed to convert blocked_at to UTC: " . $e->getMessage(), 'gamestores');
+                }
             }
             
             $results[$blockedHour][] = $item;
