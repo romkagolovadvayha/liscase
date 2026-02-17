@@ -4,6 +4,7 @@ namespace api\controllers\v1;
 
 use common\components\payments\PaymentApi;
 use common\components\queue\process\ActivatedDropJob;
+use common\models\box\Category;
 use common\models\box\Drop;
 use common\models\box\DropBlocked;
 use common\models\box\DropDrop;
@@ -190,6 +191,21 @@ class GameStoresController extends BaseApiController
 
             case 'wipeBlock.items':
                 return $this->actionWipeBlockItems($server);
+
+            case 'shop.categories':
+                return $this->actionShopCategories($bodyParams, $server);
+
+            case 'shop.products':
+                return $this->actionShopProducts($bodyParams, $server);
+
+            case 'shop.balance':
+                return $this->actionShopBalance($bodyParams, $server);
+
+            case 'shop.addToBasket':
+                return $this->actionShopAddToBasket($bodyParams, $server);
+
+            case 'shop.buy':
+                return $this->actionShopBuy($bodyParams, $server);
 
             default:
                 return $this->errorResponseGameStores('Метод не найден!', 105);
@@ -1642,6 +1658,319 @@ class GameStoresController extends BaseApiController
         Yii::info("actionWipeBlockItems: Returning " . count($formattedResults) . " groups with total " . count($drops) . " items for serverId={$server->id}", 'gamestores');
 
         return $this->successResponseGameStores($formattedResults);
+    }
+
+    /**
+     * Получить категории товаров
+     * shop.categories
+     * Body: пустой (не требует авторизации)
+     */
+    private function actionShopCategories($bodyParams, $server)
+    {
+        $categories = Category::getCategories(false);
+        
+        $result = [];
+        foreach ($categories as $category) {
+            $result[] = [
+                'id' => $category->id,
+                'name' => Yii::t('database', $category->name, [], 'ru-RU'),
+                'tag' => $category->tag ?? '',
+                'image' => $category->getImageUrl() ?? '',
+                'sort' => $category->sort ?? 0,
+            ];
+        }
+        
+        return $this->successResponseGameStores($result);
+    }
+
+    /**
+     * Получить товары
+     * shop.products
+     * Body: {"categoryId": 123} (опционально, если не указан - вернуть все товары)
+     */
+    private function actionShopProducts($bodyParams, $server)
+    {
+        $categoryId = $bodyParams['categoryId'] ?? $bodyParams['category_id'] ?? null;
+        
+        // Получаем все товары
+        $drops = Drop::getForMarket(false);
+        
+        // Получаем изображения размером 150px
+        $images = Drop::productsImages();
+        
+        // Получаем информацию о вайп-блоке для этого сервера
+        $blockedList = DropBlocked::getBlockedList($server->id, true);
+        
+        $result = [];
+        foreach ($drops as $drop) {
+            // Фильтруем по категории, если указана
+            if ($categoryId !== null && $drop->category_id != $categoryId) {
+                continue;
+            }
+            
+            // Проверяем вайп-блок
+            $wipeBlockCheck = $this->checkWipeBlock($drop, $server);
+            
+            // Получаем изображение
+            $imageUrl = $images[$drop->id]['150px'] ?? '';
+            if (empty($imageUrl) && $drop->imageOrig) {
+                $imageUrl = $drop->imageOrig->getImagePubUrl();
+            }
+            
+            // Получаем blocked_at из drop_blocked
+            $blockedAt = $blockedList[$drop->id] ?? null;
+            $blockedAtUtc = null;
+            if ($blockedAt) {
+                try {
+                    $moscowTz = new \DateTimeZone('Europe/Moscow');
+                    $blockedAtMoscow = new \DateTime($blockedAt, $moscowTz);
+                    $blockedAtMoscow->setTimezone(new \DateTimeZone('UTC'));
+                    $blockedAtUtc = $blockedAtMoscow->format('Y-m-d H:i:s');
+                } catch (\Exception $e) {
+                    $blockedAtUtc = $blockedAt;
+                }
+            }
+            
+            $item = [
+                'id' => $drop->id,
+                'name' => Yii::t('database', $drop->name, [], 'ru-RU'),
+                'price' => (float)$drop->price,
+                'image' => $imageUrl,
+                'rust_id' => $drop->rust_id ?? 0,
+                'count' => $drop->count ?? 1,
+                'drop_type' => $drop->drop_type ?? 0,
+                'category_id' => $drop->category_id ?? 0,
+                'is_blocked' => $wipeBlockCheck['isBlocked'],
+                'left_time' => (float)$wipeBlockCheck['leftTime'],
+            ];
+            
+            if ($blockedAtUtc) {
+                $item['blocked_at'] = $blockedAtUtc;
+            }
+            
+            $result[] = $item;
+        }
+        
+        return $this->successResponseGameStores($result);
+    }
+
+    /**
+     * Получить баланс пользователя
+     * shop.balance
+     * Body: {"steamId": "7656119..."}
+     */
+    private function actionShopBalance($bodyParams, $server)
+    {
+        // Авторизация по steam_id
+        try {
+            $user = $this->getUserBySteamId($bodyParams, $server);
+        } catch (UnauthorizedHttpException $e) {
+            return $this->errorResponseGameStores($e->getMessage(), 105);
+        }
+        
+        $balance = $user->getPersonalBalance();
+        
+        return $this->successResponseGameStores([
+            'balance' => (float)$balance->balance,
+            'balanceCeil' => (int)ceil($balance->balance),
+            'balanceFormat' => $balance->getBalanceFormat(),
+        ]);
+    }
+
+    /**
+     * Добавить товар в корзину
+     * shop.addToBasket
+     * Body: {"steamId": "7656119...", "dropId": 123, "quantity": 1}
+     */
+    private function actionShopAddToBasket($bodyParams, $server)
+    {
+        // Авторизация по steam_id
+        try {
+            $user = $this->getUserBySteamId($bodyParams, $server);
+        } catch (UnauthorizedHttpException $e) {
+            return $this->errorResponseGameStores($e->getMessage(), 105);
+        }
+        
+        $dropId = $bodyParams['dropId'] ?? $bodyParams['drop_id'] ?? null;
+        $quantity = isset($bodyParams['quantity']) ? (int)$bodyParams['quantity'] : 1;
+        
+        if (empty($dropId)) {
+            return $this->errorResponseGameStores('Отсутствует параметр dropId', 105);
+        }
+        
+        if ($quantity < 1 || $quantity > 100) {
+            return $this->errorResponseGameStores('Количество должно быть от 1 до 100', 105);
+        }
+        
+        $drops = Drop::getDropListAll();
+        $drop = $drops[$dropId] ?? null;
+        
+        if (!$drop || $drop->status != Drop::STATUS_ACTIVE || $drop->market_status != Drop::MARKET_STATUS_ACTIVE) {
+            return $this->errorResponseGameStores('Товар не найден или недоступен для покупки', 107);
+        }
+        
+        // Проверяем вайп-блок
+        $wipeBlockCheck = $this->checkWipeBlock($drop, $server);
+        if ($wipeBlockCheck['isBlocked']) {
+            return $this->errorResponseGameStores('Предмет временно заблокирован вайп блоком', 109);
+        }
+        
+        // Создаем UserDrop со статусом STATUS_ACTIVE (товар в корзине)
+        $dropCount = ($drop->count ?? 1) * $quantity;
+        $userDrop = UserDrop::createRecord(
+            $user->id,
+            $drop->id,
+            null, // box_id
+            null, // sets_id
+            UserDrop::STATUS_ACTIVE, // Товар в корзине
+            false, // auto
+            $dropCount, // count
+            null, // created_at
+            null // parent_drop_id
+        );
+        
+        return $this->successResponseGameStores([
+            'success' => true,
+            'userDropId' => $userDrop->id,
+        ]);
+    }
+
+    /**
+     * Купить товар (мгновенная покупка)
+     * shop.buy
+     * Body: {"steamId": "7656119...", "dropId": 123, "quantity": 1}
+     */
+    private function actionShopBuy($bodyParams, $server)
+    {
+        // Авторизация по steam_id
+        try {
+            $user = $this->getUserBySteamId($bodyParams, $server);
+        } catch (UnauthorizedHttpException $e) {
+            return $this->errorResponseGameStores($e->getMessage(), 105);
+        }
+        
+        $dropId = $bodyParams['dropId'] ?? $bodyParams['drop_id'] ?? null;
+        $quantity = isset($bodyParams['quantity']) ? (int)$bodyParams['quantity'] : 1;
+        
+        if (empty($dropId)) {
+            return $this->errorResponseGameStores('Отсутствует параметр dropId', 105);
+        }
+        
+        if ($quantity < 1 || $quantity > 100) {
+            return $this->errorResponseGameStores('Количество должно быть от 1 до 100', 105);
+        }
+        
+        $drops = Drop::getDropListAll();
+        $drop = $drops[$dropId] ?? null;
+        
+        if (!$drop || $drop->status != Drop::STATUS_ACTIVE || $drop->market_status != Drop::MARKET_STATUS_ACTIVE) {
+            return $this->errorResponseGameStores('Товар не найден или недоступен для покупки', 107);
+        }
+        
+        // Проверяем вайп-блок
+        $wipeBlockCheck = $this->checkWipeBlock($drop, $server);
+        if ($wipeBlockCheck['isBlocked']) {
+            return $this->errorResponseGameStores('Предмет временно заблокирован вайп блоком', 109);
+        }
+        
+        // Рассчитываем цену
+        $basePrice = $drop->price - ($drop->price * ($drop->discount ?? 0) / 100);
+        $pricePerItem = ceil($basePrice);
+        $totalPrice = $pricePerItem * $quantity;
+        
+        // Проверяем баланс
+        $balance = $user->getPersonalBalance();
+        if ($totalPrice > $balance->balanceCeil) {
+            return $this->errorResponseGameStores('Недостаточно средств на счете', 108);
+        }
+        
+        // Начинаем транзакцию
+        $dbTransaction = Yii::$app->db->beginTransaction();
+        try {
+            // Создаем Invoice для списания средств
+            $comment = Yii::t('common', 'Мгновенная покупка предмета "{PARAMS_PREDNAME}"', [
+                'PARAMS_PREDNAME' => Yii::t('database', $drop->name, [], 'ru-RU')
+            ], 'ru-RU');
+            
+            Invoice::createRecord(
+                $user->id,
+                $totalPrice,
+                Invoice::TYPE_PAYMENT_MARKET_DROP,
+                null, // box_id
+                null, // sets_id
+                $drop->id, // drop_id
+                $comment
+            );
+            
+            // Создаем UserDrop со статусом STATUS_SENDED (товар сразу выдан)
+            $sendedAt = date('Y-m-d H:i:s');
+            $userDropIds = [];
+            
+            if ($drop->drop_type == 2) {
+                // TYPE_SET - создаем записи для всех subDrops
+                $subDrops = DropDrop::find()
+                    ->where(['parent_drop_id' => $drop->id])
+                    ->with('drop')
+                    ->all();
+                
+                foreach ($subDrops as $subDropRelation) {
+                    if ($subDropRelation->drop) {
+                        $subDropCount = ($subDropRelation->count ?? 1) * $quantity;
+                        $userDrop = UserDrop::createRecord(
+                            $user->id,
+                            $subDropRelation->drop_id,
+                            null, // box_id
+                            null, // sets_id
+                            UserDrop::STATUS_SENDED, // Сразу выданный статус
+                            false, // auto
+                            $subDropCount, // count
+                            null, // created_at
+                            $drop->id // parent_drop_id
+                        );
+                        $userDrop->sended_at = $sendedAt;
+                        $userDrop->save(false);
+                        $userDropIds[] = $userDrop->id;
+                    }
+                }
+            } else {
+                // Обычный товар
+                $dropCount = ($drop->count ?? 1) * $quantity;
+                $userDrop = UserDrop::createRecord(
+                    $user->id,
+                    $drop->id,
+                    null, // box_id
+                    null, // sets_id
+                    UserDrop::STATUS_SENDED, // Сразу выданный статус
+                    false, // auto
+                    $dropCount, // count
+                    null, // created_at
+                    null // parent_drop_id
+                );
+                $userDrop->sended_at = $sendedAt;
+                $userDrop->save(false);
+                $userDropIds[] = $userDrop->id;
+            }
+            
+            // Пересчитываем баланс
+            $balance->recalculateBalance();
+            $newBalance = $balance->balanceCeil;
+            
+            // Коммитим транзакцию
+            $dbTransaction->commit();
+            
+            return $this->successResponseGameStores([
+                'success' => true,
+                'newBalance' => (string)$newBalance,
+                'balanceCeil' => (int)$newBalance,
+                'balanceFormat' => $balance->getBalanceFormat(),
+                'userDropIds' => $userDropIds,
+            ]);
+            
+        } catch (\Exception $e) {
+            $dbTransaction->rollBack();
+            Yii::error("Error in actionShopBuy: " . $e->getMessage(), 'gamestores');
+            return $this->errorResponseGameStores('Ошибка при покупке товара: ' . $e->getMessage(), 500);
+        }
     }
 }
 
