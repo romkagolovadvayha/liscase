@@ -1667,10 +1667,21 @@ class GameStoresController extends BaseApiController
      */
     private function actionShopCategories($bodyParams, $server)
     {
-        $categories = Category::getCategories(false);
+        // Получаем все категории (и с show_main_block=true, и с show_main_block=false)
+        $categoriesMain = Category::getCategories(true);
+        $categoriesOther = Category::getCategories(false);
+        
+        // Объединяем категории
+        $allCategories = array_merge($categoriesMain ?: [], $categoriesOther ?: []);
+        
+        // Убираем дубликаты по ID
+        $uniqueCategories = [];
+        foreach ($allCategories as $category) {
+            $uniqueCategories[$category->id] = $category;
+        }
         
         $result = [];
-        foreach ($categories as $category) {
+        foreach ($uniqueCategories as $category) {
             $result[] = [
                 'id' => $category->id,
                 'name' => Yii::t('database', $category->name, [], 'ru-RU'),
@@ -1679,6 +1690,8 @@ class GameStoresController extends BaseApiController
                 'sort' => $category->sort ?? 0,
             ];
         }
+        
+        Yii::info("actionShopCategories: Returning " . count($result) . " categories for serverId={$server->id}", 'gamestores');
         
         return $this->successResponseGameStores($result);
     }
