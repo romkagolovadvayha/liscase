@@ -1695,15 +1695,14 @@ class GameStoresController extends BaseApiController
         ];
         
         foreach ($allCategories as $category) {
-            // Пропускаем категорию "Наборы"
-            $categoryName = Yii::t('database', $category->name, [], 'ru-RU');
-            if (stripos($categoryName, 'набор') !== false) {
+            // Пропускаем категорию "Наборы" (tag = "sets")
+            if (strtolower($category->tag ?? '') === 'sets') {
                 continue;
             }
             
             $result[] = [
                 'id' => $category->id,
-                'name' => $categoryName,
+                'name' => Yii::t('database', $category->name, [], 'ru-RU'),
                 'tag' => $category->tag ?? '',
                 'image' => $category->getImageUrl() ?? '',
                 'sort' => $category->sort ?? 0,
