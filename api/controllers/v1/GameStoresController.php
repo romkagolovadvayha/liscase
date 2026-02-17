@@ -2184,6 +2184,7 @@ class GameStoresController extends BaseApiController
     
     /**
      * Получить команды для MenuBase в нужном формате
+     * Всегда возвращает полную структуру с fallback значениями
      */
     private function getMenuBaseCommands($server)
     {
@@ -2244,11 +2245,38 @@ class GameStoresController extends BaseApiController
             }
         }
         
+        // Если нет команд из базы, возвращаем значения по умолчанию из изначального плагина
+        if (empty($commands)) {
+            $commands = [
+                'ОСНОВНЫЕ' => [
+                    [
+                        'Description' => 'Открыть раздел Menu',
+                        'Text' => 'bind <key> menu'
+                    ],
+                    [
+                        'Description' => 'Открыть раздел Menu #2',
+                        'Text' => 'bind <key> menu test'
+                    ]
+                ],
+                'ДРУЗЬЯ' => [
+                    [
+                        'Description' => 'Открыть раздел друзей',
+                        'Text' => 'bind <key> menu'
+                    ],
+                    [
+                        'Description' => 'Открыть раздел друзей #2',
+                        'Text' => 'bind <key> menu test'
+                    ]
+                ]
+            ];
+        }
+        
         return $commands;
     }
     
     /**
      * Получить правила для MenuBase
+     * Всегда возвращает полную структуру с fallback значениями
      */
     private function getMenuBaseRules($server)
     {
@@ -2279,11 +2307,23 @@ class GameStoresController extends BaseApiController
             }
         }
         
+        // Если нет правил из базы, возвращаем значения по умолчанию из изначального плагина
+        if (empty($rulesStrings)) {
+            $rulesStrings = [
+                '124124124',
+                '124124124',
+                '12354213525',
+                '12451235235',
+                '5235235'
+            ];
+        }
+        
         return $rulesStrings;
     }
     
     /**
      * Получить FAQ для MenuBase
+     * Всегда возвращает полную структуру с fallback значениями
      */
     private function getMenuBaseFAQ($server)
     {
@@ -2316,11 +2356,28 @@ class GameStoresController extends BaseApiController
             }
         }
         
+        // Если нет FAQ из базы, возвращаем значения по умолчанию из изначального плагина
+        if (empty($faqSections)) {
+            $faqSections = [
+                'promocodes' => [
+                    'Label' => 'ГДЕ МОЖНО НАЙТИ ПРОМОКОДЫ?',
+                    'InsideText' => 'Промокоды можно найти в наших социальных сетях. Там мы публикуем новости, акции и промокоды. Также, в закрытых чатах Discord, каждый вайп, мы выкладываем промокоды для бустеров сервера.',
+                    'PanelDownOffset' => -50
+                ],
+                'shitpost' => [
+                    'Label' => 'Ну пиздец он долгий, когда инфо?',
+                    'InsideText' => 'Да почти готово, ща правила доделаю и четенько',
+                    'PanelDownOffset' => -50
+                ]
+            ];
+        }
+        
         return $faqSections;
     }
     
     /**
      * Получить Help секции для MenuBase
+     * Всегда возвращает полную структуру с fallback значениями
      */
     private function getMenuBaseHelp($server)
     {
@@ -2397,6 +2454,44 @@ class GameStoresController extends BaseApiController
             }
             
             $helpSections = $sectionsByTitle;
+        }
+        
+        // Если нет Help секций из базы, возвращаем значения по умолчанию из изначального плагина
+        if (empty($helpSections)) {
+            $helpSections = [
+                'menu' => [
+                    'TextOnButton' => 'МЕНЮ',
+                    'DrawOrder' => 0,
+                    'SubSections' => [
+                        [
+                            'Label' => 'ЧТО ЭТО ТАКОЕ?',
+                            'InternalText' => 'Ивент "Спутник" - это главный ивент сервера, в котором можно получить ценный лут и Volt\'s молнии',
+                            'DownOffset' => 50
+                        ],
+                        [
+                            'Label' => 'ОПИСАНИЕ ИВЕНТА',
+                            'InternalText' => 'Два раза в день (12:00 и 18:00) автоматически запускается событие. Во время его начала на экране появляется уведомление о падении обломков "Спутника". Через некоторое время в чате появляется информация о квадратах, в которых упали обломки. Также, на G-MAP отображаются точки, выделенные красным кругом.',
+                            'DownOffset' => 0
+                        ]
+                    ]
+                ],
+                'friends' => [
+                    'TextOnButton' => 'ДРУЗЬЯ',
+                    'DrawOrder' => 1,
+                    'SubSections' => [
+                        [
+                            'Label' => 'Чё то про друзейВ',
+                            'InternalText' => 'эх шарик я как и ты жил на цепи\nрубал хозяйские харчи',
+                            'DownOffset' => 70
+                        ],
+                        [
+                            'Label' => '<color=red>оу</color>',
+                            'InternalText' => 'Какие пиздатые оффсеты для тонкой настройки текста ммммм\n<size=5>руки бы разработчику поотрывать нахуй за эту дрочь</size>',
+                            'DownOffset' => 0
+                        ]
+                    ]
+                ]
+            ];
         }
         
         return $helpSections;
