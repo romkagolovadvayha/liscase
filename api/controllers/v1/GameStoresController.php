@@ -428,10 +428,23 @@ class GameStoresController extends BaseApiController
             return $this->errorResponseGameStores($e->getMessage(), 105);
         }
 
+        // Поддержка пагинации: page и limit из параметров запроса
+        $page = (int)(Yii::$app->request->get('page') ?: Yii::$app->request->post('page') ?: 0);
+        $limit = (int)(Yii::$app->request->get('limit') ?: Yii::$app->request->post('limit') ?: 36);
+        
+        // Ограничиваем максимум до 36 предметов для оптимизации
+        if ($limit > 36) {
+            $limit = 36;
+        }
+        
+        $offset = $page * $limit;
+
         /** @var UserDrop[] $userDrops */
         $userDrops = $user->getUserDrop()
             ->andWhere(['IN', 'status', [UserDrop::STATUS_ACTIVE, UserDrop::STATUS_WAIT]])
             ->orderBy(['id' => SORT_DESC])
+            ->offset($offset)
+            ->limit($limit)
             ->all();
 
         $data = [];
@@ -439,7 +452,7 @@ class GameStoresController extends BaseApiController
         $drops = Drop::getDropListAll();
         $itemsBlocked = DropBlocked::getBlockedList($server->id);
 
-        Yii::info("actionBasketsBySteamId: Processing " . count($userDrops) . " items for user {$user->steam_id}, serverId={$server->id}, serverTag={$server->tag}", 'gamestores');
+        Yii::info("actionBasketsBySteamId: Processing " . count($userDrops) . " items (page={$page}, limit={$limit}) for user {$user->steam_id}, serverId={$server->id}, serverTag={$server->tag}", 'gamestores');
 
         foreach ($userDrops as $userDrop) {
             $drop = $drops[$userDrop->drop_id] ?? null;
@@ -452,7 +465,7 @@ class GameStoresController extends BaseApiController
             $data[] = $item;
         }
 
-        Yii::info("actionBasketsBySteamId: Returning " . count($data) . " items for user {$user->steam_id}", 'gamestores');
+        Yii::info("actionBasketsBySteamId: Returning " . count($data) . " items (page={$page}, limit={$limit}) for user {$user->steam_id}", 'gamestores');
 
         return $this->successResponseGameStores($data);
     }
