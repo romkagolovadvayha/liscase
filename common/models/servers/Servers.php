@@ -244,6 +244,38 @@ class Servers extends \common\components\base\ActiveRecord
         $this->validateMapSize('min_map_size', []);
         $this->validateWipeDates('wipe', []);
         
+        // Проверка на NULL для полей, которые могут вызвать проблемы
+        // Преобразуем пустые строки в NULL для числовых полей, которые могут быть NULL
+        if ($this->team_limit === '') {
+            $this->team_limit = null;
+        }
+        if ($this->wargm_id === '') {
+            $this->wargm_id = null;
+        }
+        if ($this->rust_app_id === '') {
+            $this->rust_app_id = null;
+        }
+        if ($this->map_list_id === '') {
+            $this->map_list_id = null;
+        }
+        
+        // Убеждаемся, что числовые поля имеют правильный тип
+        if ($this->min_map_size !== null) {
+            $this->min_map_size = (int)$this->min_map_size;
+        }
+        if ($this->max_map_size !== null) {
+            $this->max_map_size = (int)$this->max_map_size;
+        }
+        if ($this->status !== null) {
+            $this->status = (int)$this->status;
+        }
+        if ($this->wipe_type !== null) {
+            $this->wipe_type = (int)$this->wipe_type;
+        }
+        if ($this->max !== null) {
+            $this->max = (int)$this->max;
+        }
+        
         if ($this->hasErrors()) {
             Yii::warning('Обнаружены ошибки после дополнительной валидации: ' . json_encode($this->getErrors(), JSON_UNESCAPED_UNICODE), __METHOD__);
             return false;

@@ -79,18 +79,50 @@ class ServersController extends BackendController
                         
                         // Детальное логирование всех атрибутов перед сохранением
                         $attributes = $model->attributes;
-                        Yii::info('Атрибуты модели перед сохранением: ' . json_encode($attributes, JSON_UNESCAPED_UNICODE), __METHOD__);
+                        Yii::info('Атрибуты модели перед сохранением: ' . json_encode($attributes, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), __METHOD__);
                         
                         // Логируем конкретные поля, которые могут вызвать constraint violation
                         Yii::info(sprintf(
-                            'Проверка данных: wipe=%s, next_wipe=%s, global_wipe=%s, min_map_size=%s, max_map_size=%s, status=%s',
-                            $model->wipe,
-                            $model->next_wipe,
-                            $model->global_wipe,
-                            $model->min_map_size,
-                            $model->max_map_size,
-                            $model->status
+                            'Проверка данных: wipe=%s (%s), next_wipe=%s (%s), global_wipe=%s (%s), min_map_size=%s (%s), max_map_size=%s (%s), status=%s (%s), wipe_type=%s (%s)',
+                            $model->wipe, gettype($model->wipe),
+                            $model->next_wipe, gettype($model->next_wipe),
+                            $model->global_wipe, gettype($model->global_wipe),
+                            $model->min_map_size, gettype($model->min_map_size),
+                            $model->max_map_size, gettype($model->max_map_size),
+                            $model->status, gettype($model->status),
+                            $model->wipe_type, gettype($model->wipe_type)
                         ), __METHOD__);
+                        
+                        // Проверяем порядок дат перед сохранением
+                        if (!empty($model->wipe) && !empty($model->next_wipe) && !empty($model->global_wipe)) {
+                            try {
+                                $wipe = new \DateTime($model->wipe);
+                                $nextWipe = new \DateTime($model->next_wipe);
+                                $globalWipe = new \DateTime($model->global_wipe);
+                                
+                                $dateOrderOk = ($wipe <= $nextWipe) && ($nextWipe <= $globalWipe);
+                                Yii::info(sprintf(
+                                    'Порядок дат: wipe=%s, next_wipe=%s, global_wipe=%s, порядок корректен: %s',
+                                    $wipe->format('Y-m-d H:i:s'),
+                                    $nextWipe->format('Y-m-d H:i:s'),
+                                    $globalWipe->format('Y-m-d H:i:s'),
+                                    $dateOrderOk ? 'да' : 'нет'
+                                ), __METHOD__);
+                            } catch (\Exception $dateEx) {
+                                Yii::warning('Ошибка проверки дат: ' . $dateEx->getMessage(), __METHOD__);
+                            }
+                        }
+                        
+                        // Проверяем размеры карты
+                        if ($model->min_map_size !== null && $model->max_map_size !== null) {
+                            $mapSizeOk = $model->min_map_size <= $model->max_map_size;
+                            Yii::info(sprintf(
+                                'Размеры карты: min=%s, max=%s, размеры корректны: %s',
+                                $model->min_map_size,
+                                $model->max_map_size,
+                                $mapSizeOk ? 'да' : 'нет'
+                            ), __METHOD__);
+                        }
                         
                         if ($model->save()) {
                             // Сохраняем теги
@@ -118,32 +150,57 @@ class ServersController extends BackendController
                         
                         if (strpos($e->getMessage(), 'Check constraint') !== false || strpos($e->getMessage(), 'servers_chk_1') !== false) {
                             // Пытаемся получить определение constraint из базы данных
+                            $constraintDefinition = null;
                             try {
+                                // Способ 1: через INFORMATION_SCHEMA (MySQL 8.0.16+)
                                 $constraintInfo = Yii::$app->db->createCommand("
                                     SELECT CONSTRAINT_NAME, CHECK_CLAUSE 
                                     FROM INFORMATION_SCHEMA.CHECK_CONSTRAINTS 
-                                    WHERE CONSTRAINT_NAME = 'servers_chk_1' AND TABLE_SCHEMA = DATABASE()
+                                    WHERE CONSTRAINT_NAME = 'servers_chk_1' AND CONSTRAINT_SCHEMA = DATABASE()
                                 ")->queryOne();
                                 
-                                if ($constraintInfo) {
-                                    Yii::info('Check constraint definition: ' . json_encode($constraintInfo), __METHOD__);
+                                if ($constraintInfo && !empty($constraintInfo['CHECK_CLAUSE'])) {
+                                    $constraintDefinition = $constraintInfo['CHECK_CLAUSE'];
+                                    Yii::info('Check constraint definition from INFORMATION_SCHEMA: ' . $constraintDefinition, __METHOD__);
+                                }
+                                
+                                // Способ 2: через SHOW CREATE TABLE (работает в старых версиях MySQL)
+                                if (!$constraintDefinition) {
+                                    $createTable = Yii::$app->db->createCommand("SHOW CREATE TABLE `servers`")->queryOne();
+                                    if ($createTable && isset($createTable['Create Table'])) {
+                                        $createTableSql = $createTable['Create Table'];
+                                        // Ищем constraint в SQL
+                                        if (preg_match('/CONSTRAINT\s+`?servers_chk_1`?\s+CHECK\s*\((.*?)\)/i', $createTableSql, $matches)) {
+                                            $constraintDefinition = $matches[1];
+                                            Yii::info('Check constraint definition from SHOW CREATE TABLE: ' . $constraintDefinition, __METHOD__);
+                                        }
+                                    }
                                 }
                             } catch (\Exception $ex) {
                                 Yii::warning('Не удалось получить определение constraint: ' . $ex->getMessage(), __METHOD__);
                             }
                             
-                            $errorMessage .= 'Нарушение ограничений базы данных (servers_chk_1). Проверьте корректность введенных данных:';
+                            $errorMessage .= 'Нарушение ограничений базы данных (servers_chk_1). ';
+                            
+                            if ($constraintDefinition) {
+                                $errorMessage .= 'Определение constraint: ' . htmlspecialchars($constraintDefinition) . '<br>';
+                            }
+                            
+                            $errorMessage .= 'Проверьте корректность введенных данных:';
                             $errorMessage .= '<ul>';
                             $errorMessage .= '<li>Даты вайпов должны быть в правильном порядке (последний вайп ≤ следующий вайп ≤ глобальный вайп)</li>';
                             $errorMessage .= '<li>Минимальный размер карты не должен быть больше максимального</li>';
                             $errorMessage .= '<li>Все обязательные поля должны быть заполнены</li>';
+                            if ($constraintDefinition) {
+                                $errorMessage .= '<li>Проверьте соответствие constraint: ' . htmlspecialchars($constraintDefinition) . '</li>';
+                            }
                             $errorMessage .= '<li>Проверьте логи для детальной информации</li>';
                             $errorMessage .= '</ul>';
                             
                             // Добавляем ошибку к модели, чтобы она отобразилась в форме
                             $model->addError('name', $errorMessage);
                             
-                            Yii::error('Check constraint violation. Full error: ' . $fullError . "\nModel attributes: " . json_encode($model->attributes, JSON_UNESCAPED_UNICODE), __METHOD__);
+                            Yii::error('Check constraint violation. Constraint: ' . ($constraintDefinition ?: 'не удалось получить') . "\nFull error: " . $fullError . "\nModel attributes: " . json_encode($model->attributes, JSON_UNESCAPED_UNICODE), __METHOD__);
                         } else {
                             $errorMessage .= $e->getMessage();
                             $model->addError('name', $errorMessage);
