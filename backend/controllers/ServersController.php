@@ -65,34 +65,62 @@ class ServersController extends BackendController
 
         if ($this->request->isPost) {
             if ($model->load($this->request->post())) {
-                try {
-                    if ($model->save()) {
-                        // Сохраняем теги
-                        $this->saveTags($model, Yii::$app->request->post('server_tags', []));
+                // Логируем данные для отладки
+                Yii::info('Попытка создания сервера. Данные: ' . json_encode($model->attributes), __METHOD__);
+                
+                // Проверяем валидацию перед сохранением
+                if (!$model->validate()) {
+                    // Ошибки валидации уже добавлены к модели, форма их покажет
+                    $errors = $model->getErrors();
+                    Yii::warning('Ошибки валидации при создании сервера: ' . json_encode($errors), __METHOD__);
+                } else {
+                    try {
+                        Yii::info('Валидация прошла успешно, пытаемся сохранить модель', __METHOD__);
+                        if ($model->save()) {
+                            // Сохраняем теги
+                            $this->saveTags($model, Yii::$app->request->post('server_tags', []));
+                            
+                            // Сбрасываем кэш списка серверов и детальной информации
+                            $this->clearServersCache($model->tag);
+                            
+                            // Сбрасываем кэш карт, если указан map_list_id
+                            if (!empty($model->map_list_id)) {
+                                $this->clearMapsCache();
+                            }
+                            
+                            Yii::$app->session->setFlash('success', 'Сервер успешно создан');
+                            return $this->redirect(['index']);
+                        }
+                    } catch (\yii\db\Exception $e) {
+                        // Обработка ошибок базы данных, включая нарушение check constraint
+                        $errorMessage = 'Ошибка сохранения в базе данных. ';
                         
-                        // Сбрасываем кэш списка серверов и детальной информации
-                        $this->clearServersCache($model->tag);
-                        
-                        // Сбрасываем кэш карт, если указан map_list_id
-                        if (!empty($model->map_list_id)) {
-                            $this->clearMapsCache();
+                        if (strpos($e->getMessage(), 'Check constraint') !== false || strpos($e->getMessage(), 'servers_chk_1') !== false) {
+                            $errorMessage .= 'Нарушение ограничений базы данных. Проверьте корректность введенных данных:';
+                            $errorMessage .= '<ul>';
+                            $errorMessage .= '<li>Даты вайпов должны быть в правильном порядке (последний вайп ≤ следующий вайп ≤ глобальный вайп)</li>';
+                            $errorMessage .= '<li>Минимальный размер карты не должен быть больше максимального</li>';
+                            $errorMessage .= '<li>Проверьте другие ограничения базы данных</li>';
+                            $errorMessage .= '</ul>';
+                            
+                            // Добавляем ошибку к модели, чтобы она отобразилась в форме
+                            $model->addError('name', $errorMessage);
+                            
+                            Yii::error('Check constraint violation: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
+                        } else {
+                            $errorMessage .= $e->getMessage();
+                            $model->addError('name', $errorMessage);
+                            Yii::error('Database error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
                         }
                         
-                        Yii::$app->session->setFlash('success', 'Сервер успешно создан');
-                        return $this->redirect(['index']);
+                        // Также показываем flash сообщение
+                        Yii::$app->session->setFlash('error', $errorMessage);
+                    } catch (\Exception $e) {
+                        $errorMessage = 'Ошибка сохранения: ' . $e->getMessage();
+                        $model->addError('name', $errorMessage);
+                        Yii::$app->session->setFlash('error', $errorMessage);
+                        Yii::error('Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
                     }
-                } catch (\yii\db\Exception $e) {
-                    // Обработка ошибок базы данных, включая нарушение check constraint
-                    if (strpos($e->getMessage(), 'Check constraint') !== false || strpos($e->getMessage(), 'servers_chk_1') !== false) {
-                        Yii::$app->session->setFlash('error', 'Ошибка сохранения: нарушение ограничений базы данных. Проверьте корректность введенных данных (даты вайпов, размеры карты и т.д.).');
-                        Yii::error('Check constraint violation: ' . $e->getMessage(), __METHOD__);
-                    } else {
-                        Yii::$app->session->setFlash('error', 'Ошибка сохранения: ' . $e->getMessage());
-                        Yii::error('Database error: ' . $e->getMessage(), __METHOD__);
-                    }
-                } catch (\Exception $e) {
-                    Yii::$app->session->setFlash('error', 'Ошибка сохранения: ' . $e->getMessage());
-                    Yii::error('Error: ' . $e->getMessage(), __METHOD__);
                 }
             }
         } else {
@@ -116,37 +144,59 @@ class ServersController extends BackendController
         $model = $this->findModel($id);
 
         if ($this->request->isPost && $model->load($this->request->post())) {
-            try {
-                if ($model->save()) {
-                    // Сохраняем теги
-                    $this->saveTags($model, Yii::$app->request->post('server_tags', []));
+            // Проверяем валидацию перед сохранением
+            if (!$model->validate()) {
+                // Ошибки валидации уже добавлены к модели, форма их покажет
+            } else {
+                try {
+                    if ($model->save()) {
+                        // Сохраняем теги
+                        $this->saveTags($model, Yii::$app->request->post('server_tags', []));
+                        
+                        // Сбрасываем кэш списка серверов и детальной информации
+                        $this->clearServersCache($model->tag);
+                        
+                        // Сбрасываем кэш календаря вайпов (все возможные комбинации)
+                        $this->clearWipeCalendarCache();
+                        
+                        // Сбрасываем кэш карт, если изменился map_list_id
+                        if (isset($model->oldAttributes['map_list_id']) && $model->oldAttributes['map_list_id'] != $model->map_list_id) {
+                            $this->clearMapsCache();
+                        }
+                        
+                        Yii::$app->session->setFlash('success', 'Сервер успешно обновлен');
+                        return $this->redirect(['index']);
+                    }
+                } catch (\yii\db\Exception $e) {
+                    // Обработка ошибок базы данных, включая нарушение check constraint
+                    $errorMessage = 'Ошибка сохранения в базе данных. ';
                     
-                    // Сбрасываем кэш списка серверов и детальной информации
-                    $this->clearServersCache($model->tag);
-                    
-                    // Сбрасываем кэш календаря вайпов (все возможные комбинации)
-                    $this->clearWipeCalendarCache();
-                    
-                    // Сбрасываем кэш карт, если изменился map_list_id
-                    if (isset($model->oldAttributes['map_list_id']) && $model->oldAttributes['map_list_id'] != $model->map_list_id) {
-                        $this->clearMapsCache();
+                    if (strpos($e->getMessage(), 'Check constraint') !== false || strpos($e->getMessage(), 'servers_chk_1') !== false) {
+                        $errorMessage .= 'Нарушение ограничений базы данных. Проверьте корректность введенных данных:';
+                        $errorMessage .= '<ul>';
+                        $errorMessage .= '<li>Даты вайпов должны быть в правильном порядке (последний вайп ≤ следующий вайп ≤ глобальный вайп)</li>';
+                        $errorMessage .= '<li>Минимальный размер карты не должен быть больше максимального</li>';
+                        $errorMessage .= '<li>Проверьте другие ограничения базы данных</li>';
+                        $errorMessage .= '</ul>';
+                        
+                        // Добавляем ошибку к модели, чтобы она отобразилась в форме
+                        $model->addError('name', $errorMessage);
+                        
+                        Yii::error('Check constraint violation: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
+                    } else {
+                        $errorMessage .= $e->getMessage();
+                        $model->addError('name', $errorMessage);
+                        Yii::error('Database error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
                     }
                     
-                    Yii::$app->session->setFlash('success', 'Сервер успешно обновлен');
-                    return $this->redirect(['index']);
+                    // Также показываем flash сообщение
+                    Yii::$app->session->setFlash('error', $errorMessage);
+                } catch (\Exception $e) {
+                    $errorMessage = 'Ошибка сохранения: ' . $e->getMessage();
+                    $model->addError('name', $errorMessage);
+                    Yii::$app->session->setFlash('error', $errorMessage);
+                    Yii::error('Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
                 }
-            } catch (\yii\db\Exception $e) {
-                // Обработка ошибок базы данных, включая нарушение check constraint
-                if (strpos($e->getMessage(), 'Check constraint') !== false || strpos($e->getMessage(), 'servers_chk_1') !== false) {
-                    Yii::$app->session->setFlash('error', 'Ошибка сохранения: нарушение ограничений базы данных. Проверьте корректность введенных данных (даты вайпов, размеры карты и т.д.).');
-                    Yii::error('Check constraint violation: ' . $e->getMessage(), __METHOD__);
-                } else {
-                    Yii::$app->session->setFlash('error', 'Ошибка сохранения: ' . $e->getMessage());
-                    Yii::error('Database error: ' . $e->getMessage(), __METHOD__);
-                }
-            } catch (\Exception $e) {
-                Yii::$app->session->setFlash('error', 'Ошибка сохранения: ' . $e->getMessage());
-                Yii::error('Error: ' . $e->getMessage(), __METHOD__);
             }
         }
 

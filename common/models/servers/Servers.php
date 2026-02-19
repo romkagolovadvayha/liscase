@@ -184,6 +184,9 @@ class Servers extends \common\components\base\ActiveRecord
      */
     public function validateWipeDates($attribute, $params)
     {
+        // Проверяем все даты, даже если валидируется только одно поле
+        // Это нужно, чтобы валидация срабатывала при изменении любой даты
+        
         if (empty($this->wipe) || empty($this->next_wipe) || empty($this->global_wipe)) {
             return; // Пропускаем если даты не заполнены (required валидация сработает)
         }
@@ -210,7 +213,29 @@ class Servers extends \common\components\base\ActiveRecord
             }
         } catch (\Exception $e) {
             // Если дата невалидна, required валидация или другой валидатор обработает это
+            Yii::warning('Ошибка парсинга даты вайпа: ' . $e->getMessage(), __METHOD__);
         }
+    }
+    
+    /**
+     * Переопределяем beforeSave для дополнительной валидации перед сохранением
+     * @param bool $insert
+     * @return bool
+     */
+    public function beforeSave($insert)
+    {
+        if (!parent::beforeSave($insert)) {
+            return false;
+        }
+        
+        // Дополнительная проверка валидации перед сохранением
+        // Но не блокируем сохранение здесь, так как validate() уже вызывается в save()
+        // Это просто для логирования
+        if (!$this->validate()) {
+            Yii::warning('Модель не прошла валидацию перед сохранением. Ошибки: ' . json_encode($this->getErrors()), __METHOD__);
+        }
+        
+        return true;
     }
 
     public static function getPlayTime($minutes) {
