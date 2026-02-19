@@ -157,8 +157,11 @@ class Servers extends \common\components\base\ActiveRecord
             [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'game_mode', 'monitoring_tags', 'wipe_server_name', 'wipe_server_description', 'secret_key'], 'string'],
             [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id'], 'integer'],
             [['wipe', 'next_wipe', 'global_wipe', 'secret_map'], 'safe'],
+            [['tag'], 'unique', 'targetClass' => self::class, 'message' => Yii::t('common', 'Сервер с таким тегом уже существует')],
             [['min_map_size'], 'validateMapSize', 'skipOnError' => false],
-            [['wipe', 'next_wipe', 'global_wipe'], 'validateWipeDates', 'skipOnError' => false],
+            [['wipe'], 'validateWipeDates', 'skipOnError' => false],
+            [['next_wipe'], 'validateWipeDates', 'skipOnError' => false],
+            [['global_wipe'], 'validateWipeDates', 'skipOnError' => false],
         ];
     }
 
@@ -229,10 +232,21 @@ class Servers extends \common\components\base\ActiveRecord
         }
         
         // Дополнительная проверка валидации перед сохранением
-        // Но не блокируем сохранение здесь, так как validate() уже вызывается в save()
-        // Это просто для логирования
-        if (!$this->validate()) {
-            Yii::warning('Модель не прошла валидацию перед сохранением. Ошибки: ' . json_encode($this->getErrors()), __METHOD__);
+        // Вызываем валидацию явно для всех полей
+        if (!$this->validate(null, false)) {
+            $errors = $this->getErrors();
+            Yii::warning('Модель не прошла валидацию перед сохранением. Ошибки: ' . json_encode($errors, JSON_UNESCAPED_UNICODE), __METHOD__);
+            Yii::warning('Атрибуты модели: ' . json_encode($this->attributes, JSON_UNESCAPED_UNICODE), __METHOD__);
+            return false;
+        }
+        
+        // Дополнительная проверка дат и размеров карты
+        $this->validateMapSize('min_map_size', []);
+        $this->validateWipeDates('wipe', []);
+        
+        if ($this->hasErrors()) {
+            Yii::warning('Обнаружены ошибки после дополнительной валидации: ' . json_encode($this->getErrors(), JSON_UNESCAPED_UNICODE), __METHOD__);
+            return false;
         }
         
         return true;

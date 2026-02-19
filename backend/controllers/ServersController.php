@@ -76,6 +76,22 @@ class ServersController extends BackendController
                 } else {
                     try {
                         Yii::info('Валидация прошла успешно, пытаемся сохранить модель', __METHOD__);
+                        
+                        // Детальное логирование всех атрибутов перед сохранением
+                        $attributes = $model->attributes;
+                        Yii::info('Атрибуты модели перед сохранением: ' . json_encode($attributes, JSON_UNESCAPED_UNICODE), __METHOD__);
+                        
+                        // Логируем конкретные поля, которые могут вызвать constraint violation
+                        Yii::info(sprintf(
+                            'Проверка данных: wipe=%s, next_wipe=%s, global_wipe=%s, min_map_size=%s, max_map_size=%s, status=%s',
+                            $model->wipe,
+                            $model->next_wipe,
+                            $model->global_wipe,
+                            $model->min_map_size,
+                            $model->max_map_size,
+                            $model->status
+                        ), __METHOD__);
+                        
                         if ($model->save()) {
                             // Сохраняем теги
                             $this->saveTags($model, Yii::$app->request->post('server_tags', []));
@@ -95,22 +111,43 @@ class ServersController extends BackendController
                         // Обработка ошибок базы данных, включая нарушение check constraint
                         $errorMessage = 'Ошибка сохранения в базе данных. ';
                         
+                        // Логируем полную информацию об ошибке
+                        $fullError = $e->getMessage();
+                        $errorInfo = $e->errorInfo ?? [];
+                        Yii::error('Database exception: ' . $fullError . "\nError info: " . json_encode($errorInfo) . "\nTrace: " . $e->getTraceAsString(), __METHOD__);
+                        
                         if (strpos($e->getMessage(), 'Check constraint') !== false || strpos($e->getMessage(), 'servers_chk_1') !== false) {
-                            $errorMessage .= 'Нарушение ограничений базы данных. Проверьте корректность введенных данных:';
+                            // Пытаемся получить определение constraint из базы данных
+                            try {
+                                $constraintInfo = Yii::$app->db->createCommand("
+                                    SELECT CONSTRAINT_NAME, CHECK_CLAUSE 
+                                    FROM INFORMATION_SCHEMA.CHECK_CONSTRAINTS 
+                                    WHERE CONSTRAINT_NAME = 'servers_chk_1' AND TABLE_SCHEMA = DATABASE()
+                                ")->queryOne();
+                                
+                                if ($constraintInfo) {
+                                    Yii::info('Check constraint definition: ' . json_encode($constraintInfo), __METHOD__);
+                                }
+                            } catch (\Exception $ex) {
+                                Yii::warning('Не удалось получить определение constraint: ' . $ex->getMessage(), __METHOD__);
+                            }
+                            
+                            $errorMessage .= 'Нарушение ограничений базы данных (servers_chk_1). Проверьте корректность введенных данных:';
                             $errorMessage .= '<ul>';
                             $errorMessage .= '<li>Даты вайпов должны быть в правильном порядке (последний вайп ≤ следующий вайп ≤ глобальный вайп)</li>';
                             $errorMessage .= '<li>Минимальный размер карты не должен быть больше максимального</li>';
-                            $errorMessage .= '<li>Проверьте другие ограничения базы данных</li>';
+                            $errorMessage .= '<li>Все обязательные поля должны быть заполнены</li>';
+                            $errorMessage .= '<li>Проверьте логи для детальной информации</li>';
                             $errorMessage .= '</ul>';
                             
                             // Добавляем ошибку к модели, чтобы она отобразилась в форме
                             $model->addError('name', $errorMessage);
                             
-                            Yii::error('Check constraint violation: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
+                            Yii::error('Check constraint violation. Full error: ' . $fullError . "\nModel attributes: " . json_encode($model->attributes, JSON_UNESCAPED_UNICODE), __METHOD__);
                         } else {
                             $errorMessage .= $e->getMessage();
                             $model->addError('name', $errorMessage);
-                            Yii::error('Database error: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
+                            Yii::error('Database error: ' . $fullError . "\nModel attributes: " . json_encode($model->attributes, JSON_UNESCAPED_UNICODE), __METHOD__);
                         }
                         
                         // Также показываем flash сообщение
