@@ -157,7 +157,60 @@ class Servers extends \common\components\base\ActiveRecord
             [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'game_mode', 'monitoring_tags', 'wipe_server_name', 'wipe_server_description', 'secret_key'], 'string'],
             [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id'], 'integer'],
             [['wipe', 'next_wipe', 'global_wipe', 'secret_map'], 'safe'],
+            [['min_map_size'], 'validateMapSize', 'skipOnError' => false],
+            [['wipe', 'next_wipe', 'global_wipe'], 'validateWipeDates', 'skipOnError' => false],
         ];
+    }
+
+    /**
+     * Валидация размера карты
+     * @param string $attribute
+     * @param array $params
+     */
+    public function validateMapSize($attribute, $params)
+    {
+        if ($this->min_map_size !== null && $this->max_map_size !== null) {
+            if ($this->min_map_size > $this->max_map_size) {
+                $this->addError('min_map_size', Yii::t('common', 'Минимальный размер карты не может быть больше максимального'));
+                $this->addError('max_map_size', Yii::t('common', 'Максимальный размер карты не может быть меньше минимального'));
+            }
+        }
+    }
+
+    /**
+     * Валидация дат вайпов
+     * @param string $attribute
+     * @param array $params
+     */
+    public function validateWipeDates($attribute, $params)
+    {
+        if (empty($this->wipe) || empty($this->next_wipe) || empty($this->global_wipe)) {
+            return; // Пропускаем если даты не заполнены (required валидация сработает)
+        }
+
+        try {
+            $wipe = new \DateTime($this->wipe);
+            $nextWipe = new \DateTime($this->next_wipe);
+            $globalWipe = new \DateTime($this->global_wipe);
+
+            // Проверяем порядок дат: wipe <= next_wipe <= global_wipe
+            if ($wipe > $nextWipe) {
+                $this->addError('wipe', Yii::t('common', 'Дата последнего вайпа не может быть позже даты следующего вайпа'));
+                $this->addError('next_wipe', Yii::t('common', 'Дата следующего вайпа не может быть раньше даты последнего вайпа'));
+            }
+
+            if ($nextWipe > $globalWipe) {
+                $this->addError('next_wipe', Yii::t('common', 'Дата следующего вайпа не может быть позже даты глобального вайпа'));
+                $this->addError('global_wipe', Yii::t('common', 'Дата глобального вайпа не может быть раньше даты следующего вайпа'));
+            }
+
+            if ($wipe > $globalWipe) {
+                $this->addError('wipe', Yii::t('common', 'Дата последнего вайпа не может быть позже даты глобального вайпа'));
+                $this->addError('global_wipe', Yii::t('common', 'Дата глобального вайпа не может быть раньше даты последнего вайпа'));
+            }
+        } catch (\Exception $e) {
+            // Если дата невалидна, required валидация или другой валидатор обработает это
+        }
     }
 
     public static function getPlayTime($minutes) {
