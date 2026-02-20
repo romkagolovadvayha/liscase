@@ -9,6 +9,7 @@ use common\models\box\Drop;
 use common\models\box\DropBlocked;
 use common\models\map\Map;
 use common\models\map\MapList;
+use common\models\map\MapListVote;
 use common\models\profit\Profit;
 use common\models\promocode\Promocode;
 use common\models\rcon\RconTasks;
@@ -45,6 +46,23 @@ class WipeController extends Controller
 
     public function actionIndex()
     {
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="bi bi-play-circle"></i> ' . Yii::t('common', 'Вайп через RCON'),
+                'url' => ['/wipe/run-wipe'],
+                'class' => 'ds-btn ds-btn--danger ds-btn--sm',
+            ],
+            [
+                'label' => '<i class="bi bi-lightning-charge"></i> ' . Yii::t('common', 'Комплексный вайп'),
+                'url' => ['/wipe/wipe-servers'],
+                'class' => 'ds-btn ds-btn--success ds-btn--sm',
+            ],
+            [
+                'label' => '<i class="bi bi-pin-map-fill"></i> ' . Yii::t('common', 'Фиксация карт'),
+                'url' => ['/wipe/fix-map-form'],
+                'class' => 'ds-btn ds-btn--primary ds-btn--sm',
+            ],
+        ];
         return $this->render('index');
     }
 
@@ -224,6 +242,65 @@ class WipeController extends Controller
             'message' => $overallSuccess ? 'Массовая фиксация карт выполнена успешно' : 'Массовая фиксация карт выполнена с ошибками',
             'results' => $results,
         ];
+    }
+
+    /**
+     * Форма фиксации карт: для каждого сервера подставляется карта, которая
+     * выигрывает в голосовании и ещё не зафиксирована ни на одном сервере.
+     * Поля: ID карты (редактируемое), справочно seed и кол-во голосов.
+     */
+    public function actionFixMapForm()
+    {
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->andWhere(['secret_map' => 0])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        if (Yii::$app->request->isPost) {
+            $post = Yii::$app->request->post('map_list_id', []);
+            $fixed = 0;
+            foreach ($servers as $server) {
+                $mapId = isset($post[$server->id]) ? (int)$post[$server->id] : 0;
+                if ($mapId > 0 && MapList::find()->where(['id' => $mapId])->exists()) {
+                    $server->map_list_id = $mapId;
+                    $server->save(false);
+                    $fixed++;
+                }
+            }
+            Yii::$app->session->addFlash('success', 'Карты зафиксированы. Обработано серверов: ' . $fixed . '.');
+            return $this->redirect(['/wipe/fix-map-form']);
+        }
+
+        $rows = [];
+        foreach ($servers as $server) {
+            // Только карты, которые ещё не зафиксированы ни на одном сервере
+            $winningMap = MapList::getWinningMapForServerUnfixedOnly($server->id);
+            $voteCount = 0;
+            if ($winningMap) {
+                $voteCount = MapListVote::find()
+                    ->where(['server_id' => $server->id, 'map_list_id' => $winningMap->id])
+                    ->count();
+            }
+            $rows[] = [
+                'server' => $server,
+                'winningMap' => $winningMap,
+                'voteCount' => $voteCount,
+            ];
+        }
+
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="bi bi-arrow-left"></i> ' . Yii::t('common', 'Назад к вайпу'),
+                'url' => ['/wipe/index'],
+                'class' => 'ds-btn ds-btn--secondary ds-btn--sm',
+            ],
+        ];
+
+        return $this->render('fix-map-form', [
+            'rows' => $rows,
+        ]);
     }
 
     public function actionTop($server, $wipe = null)
@@ -535,108 +612,8 @@ class WipeController extends Controller
             ];
         }
 
-        // Этап 3: Фиксация карты
-        // Сначала определяем, какую карту зафиксировать для какого сервера
-        $results['step3_fix_map'] = [];
-        $serverMapMapping = []; // Массив соответствий server_id => map_id
-        
-        // Шаг 3.1: Определяем соответствия сервер-карта
-        foreach ($servers as $server) {
-            try {
-                if ($server->secret_map) {
-                    $results['step3_fix_map'][$server->id] = [
-                        'success' => true,
-                        'message' => 'Пропущено (секретная карта)',
-                    ];
-                    continue;
-                }
-
-                // Определяем выигрышную карту для сервера (без фиксации)
-                $winningMap = MapList::getWinningMapForServer($server->id);
-                
-                if ($winningMap) {
-                    $serverMapMapping[$server->id] = $winningMap->id;
-                } else {
-                    // Нет выигрышной карты для этого сервера
-                    $results['step3_fix_map'][$server->id] = [
-                        'success' => true,
-                        'message' => 'Пропущено (нет голосов за карты)',
-                    ];
-                }
-            } catch (\Exception $e) {
-                $results['step3_fix_map'][$server->id] = [
-                    'success' => false,
-                    'message' => 'Ошибка при определении карты: ' . $e->getMessage(),
-                ];
-                $overallSuccess = false;
-            }
-        }
-
-        // Шаг 3.2: Фиксируем карты для серверов, для которых определили карты
-        foreach ($serverMapMapping as $serverId => $mapId) {
-            // Пропускаем серверы, для которых уже установлен результат (например, "Пропущено")
-            if (isset($results['step3_fix_map'][$serverId])) {
-                continue;
-            }
-            
-            try {
-                $server = Servers::findOne($serverId);
-                if (!$server) {
-                    $results['step3_fix_map'][$serverId] = [
-                        'success' => false,
-                        'message' => 'Сервер не найден',
-                    ];
-                    $overallSuccess = false;
-                    continue;
-                }
-
-                // Используем MapFixJob через очередь
-                \Yii::$app->queueProcess->push(new MapFixJob(['serverId' => $serverId]));
-                
-                // Также фиксируем напрямую для немедленного результата
-                $fixedMap = MapList::fixWinningMapForServer($serverId);
-                
-                if ($fixedMap) {
-                    // Формируем описание карты из доступных полей
-                    $mapDescription = "Seed: {$fixedMap->seed}";
-                    if ($fixedMap->size) {
-                        $mapDescription .= ", Size: {$fixedMap->size}";
-                    }
-                    if ($fixedMap->size_int) {
-                        $mapDescription .= " ({$fixedMap->size_int})";
-                    }
-                    
-                    $results['step3_fix_map'][$serverId] = [
-                        'success' => true,
-                        'message' => "Карта (ID: {$fixedMap->id}, {$mapDescription}) успешно зафиксирована",
-                    ];
-                } else {
-                    $results['step3_fix_map'][$serverId] = [
-                        'success' => false,
-                        'message' => 'Не удалось зафиксировать карту',
-                    ];
-                    $overallSuccess = false;
-                }
-            } catch (\Exception $e) {
-                $results['step3_fix_map'][$serverId] = [
-                    'success' => false,
-                    'message' => 'Ошибка при фиксации: ' . $e->getMessage(),
-                ];
-                $overallSuccess = false;
-            }
-        }
-
-        // Если этап 3 не прошел, останавливаемся
-        if (!$overallSuccess) {
-            return [
-                'success' => false,
-                'message' => 'Ошибка на этапе 3: Фиксация карты',
-                'results' => $results,
-            ];
-        }
-
-        // Этап 4: Обнуление промокода WIPE
-        $results['step4_reset_promocode'] = [];
+        // Этап 3: Обнуление промокода WIPE
+        $results['step3_reset_promocode'] = [];
         try {
             /** @var UserPromocode[] $uPromocodes */
             $uPromocodes = UserPromocode::find()
@@ -649,29 +626,29 @@ class WipeController extends Controller
                 $deletedCount++;
             }
 
-            $results['step4_reset_promocode'] = [
+            $results['step3_reset_promocode'] = [
                 'success' => true,
                 'message' => "Промокод WIPE обнулен. Удалено записей: {$deletedCount}",
             ];
         } catch (\Exception $e) {
-            $results['step4_reset_promocode'] = [
+            $results['step3_reset_promocode'] = [
                 'success' => false,
                 'message' => 'Ошибка: ' . $e->getMessage(),
             ];
             $overallSuccess = false;
         }
 
-        // Если этап 4 не прошел, останавливаемся
+        // Если этап 3 не прошел, останавливаемся
         if (!$overallSuccess) {
             return [
                 'success' => false,
-                'message' => 'Ошибка на этапе 4: Обнуление промокода',
+                'message' => 'Ошибка на этапе 3: Обнуление промокода',
                 'results' => $results,
             ];
         }
 
-        // Этап 5: Выполнение RCON команды
-        $results['step5_rcon'] = [];
+        // Этап 4: Выполнение RCON команды
+        $results['step4_rcon'] = [];
         if (!empty($rconCommand)) {
             $serverTags = array_map(function($server) {
                 return $server->tag;
@@ -683,13 +660,13 @@ class WipeController extends Controller
                 foreach ($rconResults as $tag => $rconResult) {
                     $server = $rconResult['server'];
                     if (!empty($rconResult['error'])) {
-                        $results['step5_rcon'][$server->id] = [
+                        $results['step4_rcon'][$server->id] = [
                             'success' => false,
                             'message' => 'Ошибка RCON: ' . $rconResult['error'],
                         ];
                         $overallSuccess = false;
                     } else {
-                        $results['step5_rcon'][$server->id] = [
+                        $results['step4_rcon'][$server->id] = [
                             'success' => true,
                             'message' => 'RCON команда выполнена успешно',
                             'result' => $rconResult['result'],
@@ -698,7 +675,7 @@ class WipeController extends Controller
                 }
             } catch (\Exception $e) {
                 foreach ($servers as $server) {
-                    $results['step5_rcon'][$server->id] = [
+                    $results['step4_rcon'][$server->id] = [
                         'success' => false,
                         'message' => 'Ошибка: ' . $e->getMessage(),
                     ];
@@ -708,7 +685,7 @@ class WipeController extends Controller
         } else {
             // RCON команда не указана - пропускаем этап
             foreach ($servers as $server) {
-                $results['step5_rcon'][$server->id] = [
+                $results['step4_rcon'][$server->id] = [
                     'success' => true,
                     'message' => 'Пропущено (команда не указана)',
                 ];

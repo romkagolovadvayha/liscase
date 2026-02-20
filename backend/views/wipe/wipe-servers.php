@@ -193,9 +193,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const steps = [
             { id: 'step1', name: 'Этап 1: Блокировка предметов в магазине', status: 'pending' },
             { id: 'step2', name: 'Этап 2: Начисление наград за топы', status: 'pending' },
-            { id: 'step3', name: 'Этап 3: Фиксация карты', status: 'pending' },
-            { id: 'step4', name: 'Этап 4: Обнуление промокода WIPE', status: 'pending' },
-            { id: 'step5', name: 'Этап 5: Выполнение RCON команды', status: 'pending' },
+            { id: 'step3', name: 'Этап 3: Обнуление промокода WIPE', status: 'pending' },
+            { id: 'step4', name: 'Этап 4: Выполнение RCON команды', status: 'pending' },
         ];
         
         steps.forEach(step => {
@@ -235,9 +234,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.results) {
                 updateStepStatus('step1', data.results.step1_block_items, 'Блокировка предметов');
                 updateStepStatus('step2', data.results.step2_top_rewards, 'Начисление наград');
-                updateStepStatus('step3', data.results.step3_fix_map, 'Фиксация карты');
-                updateStepStatus('step4', data.results.step4_reset_promocode, 'Обнуление промокода');
-                updateStepStatus('step5', data.results.step5_rcon, 'RCON команда');
+                updateStepStatus('step3', data.results.step3_reset_promocode, 'Обнуление промокода');
+                updateStepStatus('step4', data.results.step4_rcon, 'RCON команда');
             }
             
             // Показываем общий результат

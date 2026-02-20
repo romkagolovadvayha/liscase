@@ -13,7 +13,6 @@ class AppAsset extends AssetBundle
     public $sourcePath = '@backend/assets/sources';
 
     public $css = [
-        'scss/tailwind.min.css?v=2.0',
         'scss/main.min.css?v=2.0',
     ];
 
@@ -25,5 +24,6 @@ class AppAsset extends AssetBundle
     public $depends = [
         BootstrapAsset::class,
         FontAwesomeAsset::class,
+        TailwindAsset::class,
     ];
 }
