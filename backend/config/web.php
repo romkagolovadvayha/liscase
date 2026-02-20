@@ -29,7 +29,7 @@ $config = [
         ],
         'assetManager' => [
             'class' => 'yii\web\AssetManager',
-            'forceCopy' => YII_DEBUG,
+            'forceCopy' => true,
             'appendTimestamp' => true, // Автоматически добавляет timestamp к ассетам для инвалидации кэша
         ],
         'view' => [
