@@ -62,6 +62,12 @@ class WipeController extends Controller
                 'url' => ['/wipe/fix-map-form'],
                 'class' => 'ds-btn ds-btn--primary ds-btn--sm',
             ],
+            [
+                'label' => '<i class="bi bi-trash"></i> ' . Yii::t('common', 'Удалить незафиксированные карты'),
+                'url' => ['/wipe/delete-unfixed-maps'],
+                'class' => 'ds-btn ds-btn--secondary ds-btn--sm',
+                'data' => ['confirm' => Yii::t('common', 'Удалить все незафиксированные карты?'), 'method' => 'post'],
+            ],
         ];
         return $this->render('index');
     }
