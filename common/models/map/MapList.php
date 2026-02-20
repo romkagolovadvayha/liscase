@@ -212,6 +212,56 @@ class MapList extends \yii\db\ActiveRecord
     }
 
     /**
+     * Выигрышная карта по голосам на сервере среди карт, которые ещё не зафиксированы ни на одном сервере.
+     * Для формы фиксации: не подставлять карту, которая уже назначена любому серверу.
+     *
+     * @param int $serverId ID сервера
+     * @return self|null Карта или null
+     */
+    public static function getWinningMapForServerUnfixedOnly(int $serverId): ?self
+    {
+        $fixedMapIds = \common\models\servers\Servers::find()
+            ->select('map_list_id')
+            ->andWhere(['IS NOT', 'map_list_id', null])
+            ->column();
+        if (!empty($fixedMapIds)) {
+            $fixedMapIds = array_map('intval', array_filter($fixedMapIds));
+        }
+
+        $query = MapListVote::find()
+            ->select(['map_list_id', 'vote_count' => 'COUNT(*)'])
+            ->where(['server_id' => $serverId])
+            ->groupBy('map_list_id')
+            ->orderBy(['vote_count' => SORT_DESC]);
+
+        if (!empty($fixedMapIds)) {
+            $query->andWhere(['NOT IN', 'map_list_id', $fixedMapIds]);
+        }
+
+        $voteCounts = $query->asArray()->all();
+        if (empty($voteCounts)) {
+            return null;
+        }
+
+        $maxVotes = (int)$voteCounts[0]['vote_count'];
+        $winningMapIds = [];
+        foreach ($voteCounts as $row) {
+            if ((int)$row['vote_count'] === $maxVotes) {
+                $winningMapIds[] = (int)$row['map_list_id'];
+            } else {
+                break;
+            }
+        }
+
+        $winningMaps = self::find()
+            ->where(['id' => $winningMapIds])
+            ->orderBy(['created_at' => SORT_DESC])
+            ->all();
+
+        return $winningMaps[0] ?? null;
+    }
+
+    /**
      * Фиксирует карту с наибольшим количеством голосов для указанного сервера
      * и обновляет поле map_list_id в таблице servers
      * 

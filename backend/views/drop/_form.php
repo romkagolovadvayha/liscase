@@ -104,11 +104,17 @@ JS
 
 <?php if (in_array($model->drop_type, [Drop::TYPE_SET, Drop::TYPE_SELECT])): ?>
 <div class="form-group mb-2">
-    <a href="/drop-drop/create?dropId=<?= (int)$model->id ?>" class="ds-btn ds-btn--primary ds-btn--sm show-modal-link" data-toggl="modal" data-target="modal-dialog" data-title="Добавить предмет" data-pjax="0"><i class="fas fa-plus"></i> Добавить предмет</a>
+    <?php if ($model->isNewRecord): ?>
+        <span class="ds-btn ds-btn--primary ds-btn--sm ds-btn--disabled" title="Сначала сохраните предмет" style="opacity:0.6; cursor:not-allowed; pointer-events:none;"><i class="fas fa-plus"></i> Добавить предмет</span>
+    <?php else: ?>
+        <a href="/drop-drop/create?dropId=<?= (int)$model->id ?>" class="ds-btn ds-btn--primary ds-btn--sm show-modal-link" data-toggl="modal" data-target="modal-dialog" data-title="Добавить предмет" data-pjax="0"><i class="fas fa-plus"></i> Добавить предмет</a>
+    <?php endif; ?>
 </div>
+<?php if (!$model->isNewRecord): ?>
 <div id="drop-items-container">
     <?= $this->render('_items_list', ['model' => $model]) ?>
 </div>
+<?php endif; ?>
 <?php endif; ?>
 
 <?= $this->render('list-drop-stat', ['dropId' => $model->id]) ?>

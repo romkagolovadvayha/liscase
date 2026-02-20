@@ -45,6 +45,11 @@ class DropDropController extends Controller
      */
     public function actionCreate($dropId)
     {
+        $dropId = (int) $dropId;
+        if ($dropId <= 0 || \common\models\box\Drop::findOne($dropId) === null) {
+            throw new NotFoundHttpException('Родительский предмет не найден. Сначала сохраните предмет.');
+        }
+
         $model = new DropDrop();
         $model->parent_drop_id = $dropId;
         $model->created_at = date('Y-m-d H:i:s');
