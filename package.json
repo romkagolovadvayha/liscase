@@ -1,0 +1,14 @@
+{
+  "name": "liscase",
+  "version": "1.0.0",
+  "description": "Liscase project",
+  "scripts": {
+    "build:tailwind": "tailwindcss -i ./backend/assets/sources/scss/tailwind.css -o ./backend/assets/sources/scss/tailwind.min.css --minify",
+    "watch:tailwind": "tailwindcss -i ./backend/assets/sources/scss/tailwind.css -o ./backend/assets/sources/scss/tailwind.min.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.1",
+    "autoprefixer": "^10.4.18",
+    "postcss": "^8.4.35"
+  }
+}

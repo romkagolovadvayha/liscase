@@ -43,6 +43,11 @@ package-lock.json
 madeline.php
 
 /common/config/web-local.php
+/common/config/params-local.php
+/common/config/db-local.php
+
+/backend/web/index.php
+/frontend/web/index.php
 
 frontend/web/uploads/
 
