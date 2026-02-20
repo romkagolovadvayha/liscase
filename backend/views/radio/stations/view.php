@@ -30,7 +30,10 @@ $this->params['breadcrumbs'][] = $this->title;
             <?= $form->field($model, 'stream_url')->textInput(['maxlength' => true])
                 ->hint(Yii::t('common', 'URL для потока (например, http://example.com:8081). Если не указан, будет использован localhost')) ?>
 
-            <?= $form->field($model, 'status')->dropDownList(\common\models\radio\RadioStation::getStatusList()) ?>
+            <div class="ds-select-wrapper">
+                <?= $form->field($model, 'status', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->dropDownList(\common\models\radio\RadioStation::getStatusList(), ['class' => 'ds-select form-control']) ?>
+                <i class="fas fa-chevron-down ds-select-arrow"></i>
+            </div>
 
             <div class="form-group">
                 <?= Html::submitButton(

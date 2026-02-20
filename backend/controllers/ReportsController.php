@@ -28,6 +28,16 @@ class ReportsController extends Controller
 
     public function actionIndex()
     {
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'К списку игроков'),
+                'url' => ['/user/index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+
         // Кэшируем результаты на 1 час
         $cacheKey = 'reports_index_data_v4';
         $data = Yii::$app->cache->get($cacheKey);

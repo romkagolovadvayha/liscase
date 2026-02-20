@@ -34,7 +34,10 @@ use common\models\support\SupportSticker;
 
     <?= $form->field($model, 'file')->fileInput(['accept' => 'image/*,video/*'])->hint($model->isNewRecord ? 'Загрузите файл стикера (изображение или видео)' : 'Оставьте пустым, чтобы не изменять файл') ?>
 
-    <?= $form->field($model, 'type')->dropDownList(SupportSticker::getTypeList(), ['prompt' => 'Выберите тип...'])->hint('Тип определяется автоматически при загрузке файла') ?>
+    <div class="ds-select-wrapper">
+        <?= $form->field($model, 'type', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{hint}{error}'])->dropDownList(SupportSticker::getTypeList(), ['class' => 'ds-select form-control', 'prompt' => 'Выберите тип...'])->hint('Тип определяется автоматически при загрузке файла') ?>
+        <i class="fas fa-chevron-down ds-select-arrow"></i>
+    </div>
 
     <div class="row">
         <div class="col-md-6">
@@ -47,7 +50,10 @@ use common\models\support\SupportSticker;
 
     <?= $form->field($model, 'sort')->textInput(['type' => 'number'])->hint('Порядок сортировки (меньше = выше в списке)') ?>
 
-    <?= $form->field($model, 'status')->dropDownList(SupportSticker::getStatusList()) ?>
+    <div class="ds-select-wrapper">
+        <?= $form->field($model, 'status', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->dropDownList(SupportSticker::getStatusList(), ['class' => 'ds-select form-control']) ?>
+        <i class="fas fa-chevron-down ds-select-arrow"></i>
+    </div>
 
     <div class="form-group">
         <?= Html::submitButton(Yii::t('common', 'Сохранить'), ['class' => 'btn btn-success']) ?>
@@ -61,6 +67,18 @@ use common\models\support\SupportSticker;
     <?php ActiveForm::end(); ?>
 
 </div>
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -88,6 +88,9 @@ class ReportController extends Controller
             $date->modify('-1 month');
         }
 
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+
         return $this->render('products', [
             'data' => $result
         ]);
@@ -220,6 +223,9 @@ class ReportController extends Controller
 
             $date->modify('-1 month');
         }
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
 
         return $this->render('deposits', [
             'data' => $data

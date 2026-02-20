@@ -3,16 +3,9 @@
 use yii\helpers\Html;
 
 /** @var yii\web\View $this */
-/** @var common\models\building\Building $model */
+/** @var common\models\serverskin\ServerSkin $model */
 
-$this->title = 'Update Building: ' . $model->name;
-$this->params['breadcrumbs'][] = ['label' => 'Buildings', 'url' => ['index']];
-$this->params['breadcrumbs'][] = ['label' => $model->name, 'url' => ['view', 'id' => $model->id]];
-$this->params['breadcrumbs'][] = 'Update';
-?>
-<div class="building-update">
-    <?= $this->render('_form', [
-        'model' => $model,
-    ]) ?>
+$this->title = Yii::t('common', 'Изменить скин');
+$this->params['contentClass'] = 'content-no-padding';
 
-</div>
+echo $this->render('_form', ['model' => $model]);

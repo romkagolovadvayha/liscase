@@ -1,7 +1,6 @@
 <?php
 
 use yii\helpers\Html;
-use yii\widgets\DetailView;
 use yii\helpers\ArrayHelper;
 use common\models\invoice\Deposit;
 
@@ -11,75 +10,61 @@ use common\models\invoice\Deposit;
 $this->title = 'Депозит #' . $model->id;
 $this->params['breadcrumbs'][] = ['label' => 'Депозиты', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
-\yii\web\YiiAsset::register($this);
-?>
-<div class="deposit-view-page">
-    <div class="content-header">
-        <div class="ds-flex ds-flex--between">
-            <h1><?= Html::encode($this->title) ?></h1>
-            <div class="ds-flex ds-flex--gap-md">
-                <?= Html::a('<i class="fas fa-edit"></i> Редактировать', ['update', 'id' => $model->id], ['class' => 'ds-btn ds-btn--primary']) ?>
-                <?php if ($model->status != Deposit::STATUS_SUCCESS): ?>
-                    <?= Html::a('<i class="fas fa-check"></i> Принять', ['accept', 'id' => $model->id], [
-                        'class' => 'ds-btn ds-btn--success',
-                        'data' => [
-                            'confirm' => 'Вы уверены, что хотите принять этот депозит?',
-                            'method' => 'post',
-                        ],
-                    ]) ?>
-                <?php endif; ?>
-                <?= Html::a('<i class="fas fa-trash"></i> Удалить', ['delete', 'id' => $model->id], [
-                    'class' => 'ds-btn ds-btn--danger',
-                    'data' => [
-                        'confirm' => 'Вы уверены, что хотите удалить этот депозит?',
-                        'method' => 'post',
-                    ],
-                ]) ?>
-            </div>
-        </div>
-    </div>
 
-    <div class="content">
-        <div class="ds-card">
-            <?= DetailView::widget([
-                'model' => $model,
-                'attributes' => [
-                    'id',
-                    [
-                        'attribute' => 'user_id',
-                        'format' => 'raw',
-                        'value' => function ($model) {
-                            return Html::a(
-                                Html::encode($model->user->username ?? 'N/A'),
-                                ['/user/profile', 'userId' => $model->user_id],
-                                ['class' => 'ds-text--primary', 'style' => 'text-decoration: none;']
-                            );
-                        },
-                    ],
-                    [
-                        'attribute' => 'payment_type',
-                        'value' => function ($model) {
-                            return ArrayHelper::getValue(Deposit::getTypeList(), $model->payment_type);
-                        },
-                    ],
-                    'amount',
-                    'payment_id:ntext',
-                    [
-                        'attribute' => 'status',
-                        'format' => 'raw',
-                        'value' => function ($model) {
-                            $status = ArrayHelper::getValue(Deposit::getStatusList(), $model->status);
-                            $badgeClass = $model->status == Deposit::STATUS_SUCCESS 
-                                ? 'ds-badge--success' 
-                                : ($model->status == Deposit::STATUS_WAIT_CONFIRM 
-                                    ? 'ds-badge--warning' 
-                                    : 'ds-badge--danger');
-                            return Html::tag('span', Html::encode($status), ['class' => 'ds-badge ' . $badgeClass]);
-                        },
-                    ],
-                    'created_at:datetime',
-                ],
-            ]) ?>
+$rowClass = 'flex flex-wrap gap-2 py-3 border-b border-[hsl(0_0%_15.3%_/_1)] last:border-b-0';
+$labelClass = 'text-xs text-gray-400 uppercase tracking-wide w-full md:w-32 flex-shrink-0';
+$valueClass = 'text-white flex-1 min-w-0';
+?>
+<div class="deposit-view-page w-full p-4 lg:p-6">
+    <div class="max-w-4xl">
+        <div class="bg-[hsl(0_0%_20.4%_/_1)] border border-[hsl(0_0%_15.3%_/_1)] rounded-lg overflow-hidden">
+            <div class="px-4 py-3 border-b border-[hsl(0_0%_15.3%_/_1)]">
+                <h1 class="text-sm font-semibold text-white uppercase tracking-wide m-0"><?= Html::encode($this->title) ?></h1>
+            </div>
+            <div class="p-4">
+                <div class="<?= $rowClass ?>">
+                    <div class="<?= $labelClass ?>">ID</div>
+                    <div class="<?= $valueClass ?>"><?= (int)$model->id ?></div>
+                </div>
+                <div class="<?= $rowClass ?>">
+                    <div class="<?= $labelClass ?>"><?= $model->getAttributeLabel('user_id') ?></div>
+                    <div class="<?= $valueClass ?>">
+                        <?= Html::a(
+                            Html::encode($model->user->username ?? 'N/A'),
+                            ['/user/profile', 'userId' => $model->user_id],
+                            ['class' => 'text-blue-400 hover:underline']
+                        ) ?>
+                    </div>
+                </div>
+                <div class="<?= $rowClass ?>">
+                    <div class="<?= $labelClass ?>"><?= $model->getAttributeLabel('payment_type') ?></div>
+                    <div class="<?= $valueClass ?>"><?= Html::encode(ArrayHelper::getValue(Deposit::getTypeList(), $model->payment_type)) ?></div>
+                </div>
+                <div class="<?= $rowClass ?>">
+                    <div class="<?= $labelClass ?>"><?= $model->getAttributeLabel('amount') ?></div>
+                    <div class="<?= $valueClass ?>"><?= Html::encode($model->amount) ?></div>
+                </div>
+                <div class="<?= $rowClass ?>">
+                    <div class="<?= $labelClass ?>"><?= $model->getAttributeLabel('payment_id') ?></div>
+                    <div class="<?= $valueClass ?>"><?= nl2br(Html::encode($model->payment_id)) ?></div>
+                </div>
+                <div class="<?= $rowClass ?>">
+                    <div class="<?= $labelClass ?>"><?= $model->getAttributeLabel('status') ?></div>
+                    <div class="<?= $valueClass ?>">
+                        <?php
+                        $status = ArrayHelper::getValue(Deposit::getStatusList(), $model->status);
+                        $badgeClass = $model->status == Deposit::STATUS_SUCCESS
+                            ? 'bg-green-600/80 text-white'
+                            : ($model->status == Deposit::STATUS_WAIT_CONFIRM ? 'bg-amber-600/80 text-white' : 'bg-red-600/80 text-white');
+                        ?>
+                        <span class="px-2 py-0.5 rounded text-xs font-medium <?= $badgeClass ?>"><?= Html::encode($status) ?></span>
+                    </div>
+                </div>
+                <div class="<?= $rowClass ?>">
+                    <div class="<?= $labelClass ?>"><?= $model->getAttributeLabel('created_at') ?></div>
+                    <div class="<?= $valueClass ?>"><?= Yii::$app->formatter->asDatetime($model->created_at) ?></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

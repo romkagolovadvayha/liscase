@@ -1,0 +1,274 @@
+// ============================================
+// GRID LAYOUT SYSTEM - Tailwind-style
+// ============================================
+
+@import 'design-system';
+
+// ============================================
+// MAIN ADMIN LAYOUT GRID
+// ============================================
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr 300px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "header header header"
+    "sidebar content filters";
+  min-height: 100vh;
+  background: $ds-bg-primary;
+  position: relative;
+
+  // Grid areas
+  .admin-header {
+    grid-area: header;
+    z-index: $ds-z-sticky;
+  }
+
+  .admin-sidebar {
+    grid-area: sidebar;
+    z-index: $ds-z-fixed;
+  }
+
+  .admin-content {
+    grid-area: content;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .admin-filters {
+    grid-area: filters;
+    z-index: $ds-z-sticky;
+  }
+}
+
+// ============================================
+// GRID UTILITIES (Tailwind-like)
+// ============================================
+
+// Grid containers
+.ds-grid {
+  display: grid;
+  
+  &-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  &-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  &-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  &-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  &-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  &-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  &-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  
+  &-auto { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
+  &-auto-fill { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  &-auto-fit { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+}
+
+// Gap utilities
+.ds-gap {
+  &-0 { gap: 0; }
+  &-1 { gap: $ds-spacing-1; }
+  &-2 { gap: $ds-spacing-2; }
+  &-3 { gap: $ds-spacing-3; }
+  &-4 { gap: $ds-spacing-4; }
+  &-5 { gap: $ds-spacing-5; }
+  &-6 { gap: $ds-spacing-6; }
+  &-8 { gap: $ds-spacing-8; }
+}
+
+// Grid column spans
+.ds-col-span {
+  &-1 { grid-column: span 1 / span 1; }
+  &-2 { grid-column: span 2 / span 2; }
+  &-3 { grid-column: span 3 / span 3; }
+  &-4 { grid-column: span 4 / span 4; }
+  &-5 { grid-column: span 5 / span 5; }
+  &-6 { grid-column: span 6 / span 6; }
+  &-12 { grid-column: span 12 / span 12; }
+  &-full { grid-column: 1 / -1; }
+}
+
+// Grid row spans
+.ds-row-span {
+  &-1 { grid-row: span 1 / span 1; }
+  &-2 { grid-row: span 2 / span 2; }
+  &-3 { grid-row: span 3 / span 3; }
+  &-4 { grid-row: span 4 / span 4; }
+  &-full { grid-row: 1 / -1; }
+}
+
+// Grid start/end
+.ds-col-start {
+  &-1 { grid-column-start: 1; }
+  &-2 { grid-column-start: 2; }
+  &-3 { grid-column-start: 3; }
+  &-4 { grid-column-start: 4; }
+  &-auto { grid-column-start: auto; }
+}
+
+.ds-col-end {
+  &-1 { grid-column-end: 1; }
+  &-2 { grid-column-end: 2; }
+  &-3 { grid-column-end: 3; }
+  &-4 { grid-column-end: 4; }
+  &-auto { grid-column-end: auto; }
+}
+
+// ============================================
+// RESPONSIVE GRID LAYOUT
+// ============================================
+
+@media (max-width: $ds-breakpoint-lg - 1px) {
+  .admin-layout {
+    grid-template-columns: 250px 1fr;
+    grid-template-areas:
+      "header header"
+      "sidebar content";
+    
+    .admin-filters {
+      display: none; // Скрываем filters на планшетах
+    }
+  }
+}
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "content";
+    
+    .admin-sidebar {
+      position: fixed;
+      left: -250px;
+      top: 0;
+      height: 100vh;
+      z-index: $ds-z-modal;
+      transition: left $ds-transition-base;
+      
+      &.sidebar-open {
+        left: 0;
+      }
+    }
+    
+    .admin-filters {
+      display: none; // Скрываем filters на мобильных
+    }
+  }
+}
+
+// ============================================
+// GRID FOR CONTENT AREAS
+// ============================================
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: $ds-spacing-md;
+  
+  &-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  &-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  
+  &-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+// ============================================
+// TABLE GRID LAYOUT
+// ============================================
+
+.table-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: $ds-spacing-sm;
+  padding: $ds-spacing-md;
+  background: $ds-bg-tertiary;
+  border-radius: $ds-radius-lg;
+  
+  &__header {
+    font-weight: $ds-font-weight-semibold;
+    color: $ds-text-primary;
+    padding: $ds-spacing-sm;
+    border-bottom: 1px solid $ds-border-color;
+  }
+  
+  &__cell {
+    padding: $ds-spacing-sm;
+    color: $ds-text-primary;
+    border-bottom: 1px solid $ds-border-color;
+  }
+}
+
+// ============================================
+// CARD GRID LAYOUT
+// ============================================
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: $ds-spacing-lg;
+  
+  &-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  &-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  
+  &-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+// ============================================
+// FORM GRID LAYOUT
+// ============================================
+
+.form-grid {
+  display: grid;
+  gap: $ds-spacing-md;
+  
+  &-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  &-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  
+  &-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+// ============================================
+// RESPONSIVE GRID UTILITIES
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-grid-cols-1-mobile { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .ds-grid-cols-2-mobile { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: $ds-breakpoint-md) and (max-width: $ds-breakpoint-lg - 1px) {
+  .ds-grid-cols-2-tablet { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ds-grid-cols-3-tablet { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

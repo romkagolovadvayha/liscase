@@ -131,22 +131,10 @@ class MainMenu
                 'badge' => 0,
                 'items' => [
                     [
-                        'label'  => Yii::t('common', 'Рулетки'),
-                        'url'    => '/box/index',
-                        'icon'   => 'bi bi-gift-fill',
-                        'active' => $this->_checkActive('/box/'),
-                    ],
-                    [
                         'label'  => Yii::t('common', 'Предметы'),
                         'url'    => '/drop/index',
                         'icon'   => 'bi bi-dropbox',
                         'active' => $this->_checkActive('/drop/'),
-                    ],
-                    [
-                        'label'  => Yii::t('common', 'Предметы пользователей'),
-                        'url'    => '/user-drop/index',
-                        'icon'   => 'bi bi-person-badge',
-                        'active' => $this->_checkActive('/user-drop/'),
                     ],
                 ],
             ],

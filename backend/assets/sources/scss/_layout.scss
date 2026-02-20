@@ -1,0 +1,395 @@
+// ============================================
+// СТИЛИ МАКЕТА - Grid Layout
+// ============================================
+
+@import 'design-system';
+@import 'grid-layout';
+
+// ============================================
+// ADMIN LAYOUT
+// ============================================
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr 300px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "header header header"
+    "sidebar content filters";
+  min-height: 100vh;
+  background: $ds-bg-primary;
+  position: relative;
+
+  // Grid areas
+  .admin-header {
+    grid-area: header;
+    z-index: $ds-z-sticky;
+  }
+
+  .admin-sidebar {
+    grid-area: sidebar;
+    z-index: $ds-z-fixed;
+  }
+
+  .admin-content {
+    grid-area: content;
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 100vh;
+  }
+
+  .admin-filters {
+    grid-area: filters;
+    z-index: $ds-z-sticky;
+    overflow-y: auto;
+    max-height: 100vh;
+  }
+}
+
+// ============================================
+// HEADER
+// ============================================
+
+.admin-header-content {
+  background: $ds-bg-tertiary;
+  border-bottom: 1px solid $ds-border-color;
+  position: sticky;
+  top: 0;
+  z-index: $ds-z-sticky;
+
+  @media (max-width: 767px) {
+    > div {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      min-height: 52px;
+      height: auto !important;
+      padding: 0.5rem 0.75rem;
+      align-content: center;
+    }
+    > div > div:nth-child(2) {
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+  }
+}
+
+// ============================================
+// SIDEBAR
+// ============================================
+
+.admin-sidebar-content {
+  background: $ds-bg-tertiary;
+  border-right: 1px solid $ds-border-color;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  // Search in sidebar
+  #sidebar-search {
+    font-size: $ds-font-size-sm;
+  }
+
+  // Menu sections
+  nav {
+    flex: 1;
+    overflow-y: auto;
+    // Scrollbar styling через Tailwind класс scrollbar-thin
+  }
+
+  // Menu items
+  .sidebar-menu-item {
+    margin: $ds-spacing-1 0;
+  }
+
+  .sidebar-menu-link {
+    display: flex;
+    align-items: center;
+    gap: $ds-spacing-3;
+    padding: $ds-spacing-2 $ds-spacing-3;
+    border-radius: $ds-radius-md;
+    color: $ds-text-secondary;
+    text-decoration: none;
+    transition: all $ds-transition-base;
+    font-size: $ds-font-size-sm;
+
+    i {
+      width: 1.25rem;
+      text-align: center;
+      font-size: $ds-font-size-base;
+    }
+
+    &:hover {
+      background: $ds-bg-hover;
+      color: $ds-text-primary;
+    }
+
+    &.sidebar-menu-link-active {
+      background: $ds-primary;
+      color: $ds-text-primary;
+      font-weight: $ds-font-weight-medium;
+    }
+  }
+
+  .sidebar-submenu {
+    margin-left: $ds-spacing-3;
+    padding-left: $ds-spacing-2;
+    margin-top: $ds-spacing-1;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+
+    .sidebar-menu-link {
+      padding: $ds-spacing-1_5 $ds-spacing-2 $ds-spacing-1_5 $ds-spacing-4;
+      padding-left: $ds-spacing-5;
+      position: relative;
+      font-size: $ds-font-size-xs;
+      min-height: auto;
+
+      i:first-of-type {
+        font-size: 0.7rem;
+        width: 1rem;
+      }
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: $ds-spacing-2;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: $ds-text-secondary;
+        opacity: 0.8;
+        transition: background $ds-transition-base;
+      }
+
+      &.sidebar-menu-link-active::before {
+        background: $ds-primary;
+        opacity: 1;
+      }
+    }
+  }
+
+  .sidebar-menu-arrow {
+    transition: transform $ds-transition-base;
+    font-size: $ds-font-size-xs;
+  }
+
+  .menu-open {
+    .sidebar-menu-arrow {
+      transform: rotate(-90deg);
+    }
+  }
+}
+
+// ============================================
+// CONTENT AREA
+// ============================================
+
+.admin-content-wrapper {
+  background: $ds-bg-primary;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-content {
+  .content {
+    flex: 1;
+    padding: $ds-spacing-lg;
+  }
+}
+
+.content-header {
+  border-bottom: 1px solid $ds-border-color;
+  padding: $ds-spacing-lg;
+  background: $ds-bg-tertiary;
+  margin-bottom: $ds-spacing-lg;
+
+  h1, h2, h3, h4, h5, h6 {
+    color: $ds-text-primary;
+    margin: 0;
+    font-weight: $ds-font-weight-semibold;
+  }
+
+  .ds-flex {
+    align-items: center;
+  }
+}
+
+// ============================================
+// FILTERS PANEL
+// ============================================
+
+.admin-filters-content {
+  background: $ds-bg-tertiary;
+  border-left: 1px solid $ds-border-color;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  // Scrollbar styling через Tailwind класс scrollbar-thin
+
+  h3 {
+    font-size: $ds-font-size-xs;
+    font-weight: $ds-font-weight-semibold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: $ds-text-muted;
+    margin-bottom: $ds-spacing-3;
+  }
+
+  .ds-space-y-3 > * + * {
+    margin-top: $ds-spacing-3;
+  }
+}
+
+// ============================================
+// BREADCRUMBS
+// ============================================
+
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  align-items: center;
+
+  .breadcrumb-item {
+    display: flex;
+    align-items: center;
+
+    a {
+      color: $ds-text-primary;
+      text-decoration: none;
+      transition: color $ds-transition-base;
+
+      &:hover {
+        color: $ds-primary-light;
+      }
+    }
+
+    &.active {
+      color: $ds-text-secondary;
+    }
+
+    & + .breadcrumb-item::before {
+      content: '/';
+      color: $ds-text-secondary;
+      padding: 0 $ds-spacing-sm;
+      margin: 0 $ds-spacing-xs;
+    }
+  }
+}
+
+// ============================================
+// SIDEBAR OVERLAY (Mobile)
+// ============================================
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: $ds-bg-overlay;
+  z-index: $ds-z-modal-backdrop;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity $ds-transition-base, visibility $ds-transition-base;
+
+  &.active {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+// ============================================
+// PAGE PRELOADER
+// ============================================
+
+.page-preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: $ds-bg-overlay;
+  z-index: $ds-z-modal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity $ds-transition-base, visibility $ds-transition-base;
+
+  &.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  &::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba($ds-text-primary, 0.2);
+    border-right-color: $ds-primary;
+    border-radius: 50%;
+    animation: ds-spin 0.6s linear infinite;
+  }
+}
+
+@keyframes ds-spin {
+  to { transform: rotate(360deg); }
+}
+
+// ============================================
+// RESPONSIVE ADJUSTMENTS
+// ============================================
+
+@media (max-width: $ds-breakpoint-lg - 1px) {
+  .admin-layout {
+    grid-template-columns: 250px 1fr;
+    grid-template-areas:
+      "header header"
+      "sidebar content";
+    
+    .admin-filters {
+      display: none;
+    }
+  }
+}
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "content";
+    
+    .admin-sidebar {
+      position: fixed;
+      left: -250px;
+      top: 0;
+      height: 100vh;
+      z-index: $ds-z-modal;
+      transition: left $ds-transition-base;
+      width: 250px;
+      
+      &.sidebar-open {
+        left: 0;
+      }
+    }
+    
+    .admin-filters {
+      display: none;
+    }
+  }
+
+  .admin-content-wrapper {
+    .content {
+      padding: $ds-spacing-md;
+    }
+  }
+}

@@ -1,22 +1,12 @@
 <?php
 
-use common\models\box\Drop;
-use kartik\grid\GridView;
-use yii\bootstrap5\Html;
 use common\models\tasks\Task;
-use yii\helpers\ArrayHelper;
+use yii\helpers\Html;
 
-/** @var $item Task */
+/** @var Task $item */
 
 ?>
-<style>
-    .sortable.grid li {
-        width: 100%;
-        text-align: left;
-        min-height: 0;
-    }
-</style>
-<div class="item_sort">
-    <?=$item->description?>
-    <input type="hidden" name="items[]" value="<?=$item->id?>">
+<div class="admin-sort-card" title="<?= Html::encode($item->description) ?>">
+    <div class="admin-sort-card__body"><?= Html::encode($item->description) ?></div>
+    <input type="hidden" name="items[]" value="<?= (int) $item->id ?>">
 </div>

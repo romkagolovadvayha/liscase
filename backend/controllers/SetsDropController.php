@@ -40,6 +40,17 @@ class SetsDropController extends \backend\components\CrudController
         return SetsDropForm::class;
     }
 
+    protected function getIndexHeaderActions()
+    {
+        return [
+            [
+                'label' => '<i class="fas fa-plus"></i> Добавить предмет',
+                'url' => ['create'],
+                'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+    }
+
     /**
      * @param Model $formModel
      * @param string $view

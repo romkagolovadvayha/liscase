@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom components that extend Tailwind */
+@layer components {
+  /* Keep custom design system components */
+}
+
+/* Custom Scrollbars - Tailwind Style */
+@layer utilities {
+  /* Webkit browsers (Chrome, Safari, Edge) */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 9999px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 35% / 1);
+    border-radius: 9999px;
+    transition: background 0.2s ease;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(0 0% 45% / 1);
+  }
+
+  /* Firefox */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(0 0% 35% / 1) transparent;
+  }
+
+  /* Dark theme scrollbar */
+  .scrollbar-dark::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-track {
+    background: hsl(0 0% 15% / 1);
+    border-radius: 9999px;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-thumb {
+    background: hsl(0 0% 30% / 1);
+    border-radius: 9999px;
+    border: 2px solid hsl(0 0% 15% / 1);
+    transition: background 0.2s ease;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-thumb:hover {
+    background: hsl(0 0% 40% / 1);
+  }
+
+  .scrollbar-dark {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(0 0% 30% / 1) hsl(0 0% 15% / 1);
+  }
+
+  /* Auto apply to overflow elements */
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-auto {
+    @apply scrollbar-thin;
+  }
+}
+

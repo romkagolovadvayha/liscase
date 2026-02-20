@@ -1,7 +1,6 @@
 <?php
 
 use yii\helpers\Html;
-use yii\widgets\DetailView;
 
 /** @var yii\web\View $this */
 /** @var common\models\rustplugin\RustPluginConfig $model */
@@ -9,49 +8,44 @@ use yii\widgets\DetailView;
 $this->title = $model->name;
 $this->params['breadcrumbs'][] = ['label' => 'Конфиги плагинов Rust', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
-\yii\web\YiiAsset::register($this);
-?>
-<div class="rust-plugin-config-view">
-    <div class="content-header">
-        <div class="ds-flex ds-flex--between">
-            <h1><?= Html::encode($this->title) ?></h1>
-            <div>
-                <?= Html::a('Изменить', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
-                <?= Html::a('Удалить', ['delete', 'id' => $model->id], [
-                    'class' => 'btn btn-danger',
-                    'data' => [
-                        'confirm' => 'Вы уверены, что хотите удалить этот конфиг?',
-                        'method' => 'post',
-                    ],
-                ]) ?>
-            </div>
-        </div>
-    </div>
 
-    <div class="content">
-        <div class="ds-card">
-            <?= DetailView::widget([
-                'model' => $model,
-                'attributes' => [
-                    'id',
-                    'name',
-                    [
-                        'attribute' => 'content',
-                        'format' => 'raw',
-                        'value' => function($model) {
-                            return '<div id="json-viewer" style="height: 500px; width: 100%; border: 1px solid #ddd; border-radius: 4px;"></div>';
-                        }
-                    ],
-                    'created_at:datetime',
-                    'updated_at:datetime',
-                ],
-            ]) ?>
+$rowClass = 'flex flex-wrap gap-2 py-3 border-b border-[hsl(0_0%_15.3%_/_1)] last:border-b-0';
+$labelClass = 'text-xs text-gray-400 uppercase tracking-wide w-full md:w-32 flex-shrink-0';
+$valueClass = 'text-white flex-1 min-w-0';
+?>
+<div class="rust-plugin-config-view w-full p-4 lg:p-6">
+    <div class="max-w-4xl">
+        <div class="bg-[hsl(0_0%_20.4%_/_1)] border border-[hsl(0_0%_15.3%_/_1)] rounded-lg overflow-hidden">
+            <div class="px-4 py-3 border-b border-[hsl(0_0%_15.3%_/_1)]">
+                <h1 class="text-sm font-semibold text-white uppercase tracking-wide m-0"><?= Html::encode($this->title) ?></h1>
+            </div>
+            <div class="p-4">
+                <div class="<?= $rowClass ?>">
+                    <div class="<?= $labelClass ?>">ID</div>
+                    <div class="<?= $valueClass ?>"><?= (int)$model->id ?></div>
+                </div>
+                <div class="<?= $rowClass ?>">
+                    <div class="<?= $labelClass ?>"><?= $model->getAttributeLabel('name') ?></div>
+                    <div class="<?= $valueClass ?>"><?= Html::encode($model->name) ?></div>
+                </div>
+                <div class="<?= $rowClass ?>">
+                    <div class="<?= $labelClass ?>"><?= $model->getAttributeLabel('created_at') ?></div>
+                    <div class="<?= $valueClass ?>"><?= Yii::$app->formatter->asDatetime($model->created_at) ?></div>
+                </div>
+                <div class="<?= $rowClass ?>">
+                    <div class="<?= $labelClass ?>"><?= $model->getAttributeLabel('updated_at') ?></div>
+                    <div class="<?= $valueClass ?>"><?= Yii::$app->formatter->asDatetime($model->updated_at) ?></div>
+                </div>
+                <div class="pt-3">
+                    <div class="text-xs text-gray-400 uppercase tracking-wide mb-2"><?= $model->getAttributeLabel('content') ?></div>
+                    <div id="json-viewer" class="min-h-[500px] w-full border border-[hsl(0_0%_15.3%_/_1)] rounded-lg overflow-hidden bg-[hsl(0_0%_12%_/_1)]"></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <?php
-// Ace Editor для просмотра JSON
 $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js', ['defer' => true]);
 $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/mode-json.min.js', ['defer' => true]);
 $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/theme-monokai.min.js', ['defer' => true]);
@@ -82,7 +76,5 @@ document.addEventListener('DOMContentLoaded', function() {
     editor.clearSelection();
 });
 JS;
-
 $this->registerJs($js);
 ?>
-

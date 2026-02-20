@@ -1,55 +1,138 @@
 // ============================================
-// DESIGN SYSTEM - Темная тема для админки
+// DESIGN SYSTEM - Современная темная тема для админки
 // ============================================
 
 // ============================================
 // ЦВЕТОВАЯ ПАЛИТРА
 // ============================================
 
-// Основные цвета
-$ds-bg-primary: hsl(0 0% 7.8% / 1);        // Основной фон
+// Основные фоны (расширенная палитра)
+$ds-bg-primary: hsl(0 0% 7.8% / 1);        // Основной фон страницы
 $ds-bg-secondary: hsl(0 0% 11.8% / 1);     // Вторичный фон (карточки, инпуты)
 $ds-bg-tertiary: hsl(0 0% 15.3% / 1);      // Третичный фон (модалки, таблицы)
 $ds-bg-hover: hsl(0 0% 20.4% / 1);         // Фон при наведении
+$ds-bg-active: hsl(0 0% 25% / 1);           // Фон активного элемента
+$ds-bg-overlay: rgba(0, 0, 0, 0.7);        // Оверлей для модалок
 
-// Текст
+// Текст (расширенная палитра)
 $ds-text-primary: hsl(0 0% 94.9% / 1);     // Основной текст
 $ds-text-secondary: hsl(0 0% 55.3% / 1);   // Вторичный текст
 $ds-text-muted: hsl(0 0% 40% / 1);         // Приглушенный текст
+$ds-text-disabled: hsl(0 0% 30% / 1);      // Отключенный текст
+$ds-text-inverse: hsl(0 0% 7.8% / 1);      // Инвертированный текст (для светлых фонов)
 
-// Акцентные цвета
+// Акцентные цвета (расширенная палитра с градациями)
+// Success (зеленый)
 $ds-success: #006c2e;
-$ds-success-light: lighten($ds-success, 15%);
-$ds-success-dark: darken($ds-success, 15%);
+$ds-success-50: lighten($ds-success, 45%);
+$ds-success-100: lighten($ds-success, 35%);
+$ds-success-200: lighten($ds-success, 25%);
+$ds-success-300: lighten($ds-success, 15%);
+$ds-success-400: lighten($ds-success, 8%);
+$ds-success-500: $ds-success;
+$ds-success-600: darken($ds-success, 8%);
+$ds-success-700: darken($ds-success, 15%);
+$ds-success-800: darken($ds-success, 25%);
+$ds-success-900: darken($ds-success, 35%);
+$ds-success-light: $ds-success-300;
+$ds-success-dark: $ds-success-700;
 
+// Primary (синий)
 $ds-primary: #00536c;
-$ds-primary-light: lighten($ds-primary, 15%);
-$ds-primary-dark: darken($ds-primary, 15%);
+$ds-primary-50: lighten($ds-primary, 45%);
+$ds-primary-100: lighten($ds-primary, 35%);
+$ds-primary-200: lighten($ds-primary, 25%);
+$ds-primary-300: lighten($ds-primary, 15%);
+$ds-primary-400: lighten($ds-primary, 8%);
+$ds-primary-500: $ds-primary;
+$ds-primary-600: darken($ds-primary, 8%);
+$ds-primary-700: darken($ds-primary, 15%);
+$ds-primary-800: darken($ds-primary, 25%);
+$ds-primary-900: darken($ds-primary, 35%);
+$ds-primary-light: $ds-primary-300;
+$ds-primary-dark: $ds-primary-700;
 
+// Danger (красный)
 $ds-danger: #6c0000;
-$ds-danger-light: lighten($ds-danger, 15%);
-$ds-danger-dark: darken($ds-danger, 15%);
+$ds-danger-50: lighten($ds-danger, 45%);
+$ds-danger-100: lighten($ds-danger, 35%);
+$ds-danger-200: lighten($ds-danger, 25%);
+$ds-danger-300: lighten($ds-danger, 15%);
+$ds-danger-400: lighten($ds-danger, 8%);
+$ds-danger-500: $ds-danger;
+$ds-danger-600: darken($ds-danger, 8%);
+$ds-danger-700: darken($ds-danger, 15%);
+$ds-danger-800: darken($ds-danger, 25%);
+$ds-danger-900: darken($ds-danger, 35%);
+$ds-danger-light: $ds-danger-300;
+$ds-danger-dark: $ds-danger-700;
 
+// Warning (желтый/оранжевый)
 $ds-warning: #856404;
-$ds-warning-light: lighten($ds-warning, 15%);
+$ds-warning-50: lighten($ds-warning, 45%);
+$ds-warning-100: lighten($ds-warning, 35%);
+$ds-warning-200: lighten($ds-warning, 25%);
+$ds-warning-300: lighten($ds-warning, 15%);
+$ds-warning-400: lighten($ds-warning, 8%);
+$ds-warning-500: $ds-warning;
+$ds-warning-600: darken($ds-warning, 8%);
+$ds-warning-700: darken($ds-warning, 15%);
+$ds-warning-800: darken($ds-warning, 25%);
+$ds-warning-900: darken($ds-warning, 35%);
+$ds-warning-light: $ds-warning-300;
+$ds-warning-dark: $ds-warning-700;
 
+// Info (голубой)
 $ds-info: #0c5460;
-$ds-info-light: lighten($ds-info, 15%);
+$ds-info-50: lighten($ds-info, 45%);
+$ds-info-100: lighten($ds-info, 35%);
+$ds-info-200: lighten($ds-info, 25%);
+$ds-info-300: lighten($ds-info, 15%);
+$ds-info-400: lighten($ds-info, 8%);
+$ds-info-500: $ds-info;
+$ds-info-600: darken($ds-info, 8%);
+$ds-info-700: darken($ds-info, 15%);
+$ds-info-800: darken($ds-info, 25%);
+$ds-info-900: darken($ds-info, 35%);
+$ds-info-light: $ds-info-300;
+$ds-info-dark: $ds-info-700;
 
 // Границы
 $ds-border-color: hsl(0 0% 15.3% / 1);
 $ds-border-color-light: hsl(0 0% 20% / 1);
+$ds-border-color-dark: hsl(0 0% 10% / 1);
+$ds-border-width: 1px;
+$ds-border-width-thick: 2px;
 
-// Тени
-$ds-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+// Тени (расширенная палитра)
+$ds-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+$ds-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
 $ds-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
 $ds-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+$ds-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+$ds-shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.7);
+$ds-shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+$ds-shadow-none: none;
+
+// Градиенты
+$ds-gradient-primary: linear-gradient(135deg, $ds-primary-500 0%, $ds-primary-700 100%);
+$ds-gradient-success: linear-gradient(135deg, $ds-success-500 0%, $ds-success-700 100%);
+$ds-gradient-danger: linear-gradient(135deg, $ds-danger-500 0%, $ds-danger-700 100%);
+$ds-gradient-warning: linear-gradient(135deg, $ds-warning-500 0%, $ds-warning-700 100%);
+
+// Размытие (для glassmorphism эффектов)
+$ds-blur-sm: blur(4px);
+$ds-blur-md: blur(8px);
+$ds-blur-lg: blur(16px);
 
 // ============================================
 // ТИПОГРАФИКА
 // ============================================
 
-$ds-font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$ds-font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$ds-font-family-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+
+// Размеры шрифтов
 $ds-font-size-xs: 0.75rem;    // 12px
 $ds-font-size-sm: 0.875rem;   // 14px
 $ds-font-size-base: 1rem;     // 16px
@@ -57,51 +140,125 @@ $ds-font-size-lg: 1.125rem;   // 18px
 $ds-font-size-xl: 1.25rem;    // 20px
 $ds-font-size-2xl: 1.5rem;    // 24px
 $ds-font-size-3xl: 1.875rem;  // 30px
+$ds-font-size-4xl: 2.25rem;   // 36px
+$ds-font-size-5xl: 3rem;      // 48px
 
+// Веса шрифтов
+$ds-font-weight-thin: 100;
 $ds-font-weight-light: 300;
 $ds-font-weight-normal: 400;
 $ds-font-weight-medium: 500;
 $ds-font-weight-semibold: 600;
 $ds-font-weight-bold: 700;
+$ds-font-weight-extrabold: 800;
+$ds-font-weight-black: 900;
 
+// Высота строк
+$ds-line-height-none: 1;
 $ds-line-height-tight: 1.25;
+$ds-line-height-snug: 1.375;
 $ds-line-height-normal: 1.5;
 $ds-line-height-relaxed: 1.75;
+$ds-line-height-loose: 2;
+
+// Межбуквенное расстояние
+$ds-letter-spacing-tighter: -0.05em;
+$ds-letter-spacing-tight: -0.025em;
+$ds-letter-spacing-normal: 0;
+$ds-letter-spacing-wide: 0.025em;
+$ds-letter-spacing-wider: 0.05em;
+$ds-letter-spacing-widest: 0.1em;
 
 // ============================================
-// ОТСТУПЫ
+// ОТСТУПЫ (Spacing System)
 // ============================================
 
-$ds-spacing-xs: 0.25rem;   // 4px
-$ds-spacing-sm: 0.5rem;    // 8px
-$ds-spacing-md: 1rem;      // 16px
-$ds-spacing-lg: 1.5rem;    // 24px
-$ds-spacing-xl: 2rem;      // 32px
-$ds-spacing-2xl: 3rem;     // 48px
+$ds-spacing-0: 0;
+$ds-spacing-px: 1px;
+$ds-spacing-0_5: 0.125rem;   // 2px
+$ds-spacing-1: 0.25rem;      // 4px
+$ds-spacing-1_5: 0.375rem;   // 6px
+$ds-spacing-2: 0.5rem;       // 8px
+$ds-spacing-2_5: 0.625rem;   // 10px
+$ds-spacing-3: 0.75rem;      // 12px
+$ds-spacing-3_5: 0.875rem;   // 14px
+$ds-spacing-4: 1rem;         // 16px
+$ds-spacing-5: 1.25rem;      // 20px
+$ds-spacing-6: 1.5rem;       // 24px
+$ds-spacing-7: 1.75rem;      // 28px
+$ds-spacing-8: 2rem;         // 32px
+$ds-spacing-9: 2.25rem;      // 36px
+$ds-spacing-10: 2.5rem;      // 40px
+$ds-spacing-11: 2.75rem;     // 44px
+$ds-spacing-12: 3rem;        // 48px
+$ds-spacing-14: 3.5rem;      // 56px
+$ds-spacing-16: 4rem;        // 64px
+$ds-spacing-20: 5rem;        // 80px
+$ds-spacing-24: 6rem;        // 96px
+$ds-spacing-28: 7rem;        // 112px
+$ds-spacing-32: 8rem;        // 128px
+
+// Алиасы для обратной совместимости
+$ds-spacing-xs: $ds-spacing-1;
+$ds-spacing-sm: $ds-spacing-2;
+$ds-spacing-md: $ds-spacing-4;
+$ds-spacing-lg: $ds-spacing-6;
+$ds-spacing-xl: $ds-spacing-8;
+$ds-spacing-2xl: $ds-spacing-12;
 
 // ============================================
 // РАДИУСЫ СКРУГЛЕНИЯ
 // ============================================
 
-$ds-radius-sm: 0.25rem;    // 4px
-$ds-radius-md: 0.375rem;   // 6px
-$ds-radius-lg: 0.5rem;     // 8px
-$ds-radius-xl: 0.75rem;    // 12px
-$ds-radius-2xl: 1rem;      // 16px
+$ds-radius-none: 0;
+$ds-radius-sm: 0.25rem;      // 4px
+$ds-radius-md: 0.375rem;     // 6px
+$ds-radius-lg: 0.5rem;       // 8px
+$ds-radius-xl: 0.75rem;      // 12px
+$ds-radius-2xl: 1rem;        // 16px
+$ds-radius-3xl: 1.5rem;       // 24px
 $ds-radius-full: 9999px;
 
 // ============================================
-// ПЕРЕХОДЫ
+// ПЕРЕХОДЫ И АНИМАЦИИ
 // ============================================
 
-$ds-transition-fast: 150ms ease-in-out;
-$ds-transition-base: 200ms ease-in-out;
-$ds-transition-slow: 300ms ease-in-out;
+$ds-transition-none: none;
+$ds-transition-all: all;
+$ds-transition-colors: background-color, border-color, color, fill, stroke;
+$ds-transition-opacity: opacity;
+$ds-transition-shadow: box-shadow;
+$ds-transition-transform: transform;
+
+$ds-duration-75: 75ms;
+$ds-duration-100: 100ms;
+$ds-duration-150: 150ms;
+$ds-duration-200: 200ms;
+$ds-duration-300: 300ms;
+$ds-duration-500: 500ms;
+$ds-duration-700: 700ms;
+$ds-duration-1000: 1000ms;
+
+$ds-ease-linear: linear;
+$ds-ease-in: cubic-bezier(0.4, 0, 1, 1);
+$ds-ease-out: cubic-bezier(0, 0, 0.2, 1);
+$ds-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+$ds-transition-fast: $ds-duration-150 $ds-ease-in-out;
+$ds-transition-base: $ds-duration-200 $ds-ease-in-out;
+$ds-transition-slow: $ds-duration-300 $ds-ease-in-out;
 
 // ============================================
 // Z-INDEX
 // ============================================
 
+$ds-z-0: 0;
+$ds-z-10: 10;
+$ds-z-20: 20;
+$ds-z-30: 30;
+$ds-z-40: 40;
+$ds-z-50: 50;
+$ds-z-auto: auto;
 $ds-z-dropdown: 1000;
 $ds-z-sticky: 1020;
 $ds-z-fixed: 1030;
@@ -110,3 +267,38 @@ $ds-z-modal: 1050;
 $ds-z-popover: 1060;
 $ds-z-tooltip: 1070;
 
+// ============================================
+// BREAKPOINTS (для медиа-запросов)
+// ============================================
+
+$ds-breakpoint-xs: 0;
+$ds-breakpoint-sm: 640px;
+$ds-breakpoint-md: 768px;
+$ds-breakpoint-lg: 1024px;
+$ds-breakpoint-xl: 1280px;
+$ds-breakpoint-2xl: 1536px;
+
+// ============================================
+// ДРУГИЕ ПЕРЕМЕННЫЕ
+// ============================================
+
+// Максимальные ширины контейнеров
+$ds-container-sm: 640px;
+$ds-container-md: 768px;
+$ds-container-lg: 1024px;
+$ds-container-xl: 1280px;
+$ds-container-2xl: 1536px;
+
+// Высота элементов
+$ds-height-xs: 1.5rem;      // 24px
+$ds-height-sm: 2rem;         // 32px
+$ds-height-md: 2.5rem;       // 40px
+$ds-height-lg: 3rem;         // 48px
+$ds-height-xl: 3.5rem;       // 56px
+
+// Ширина sidebar
+$ds-sidebar-width: 250px;
+$ds-sidebar-width-collapsed: 64px;
+
+// Высота navbar
+$ds-navbar-height: 57px;

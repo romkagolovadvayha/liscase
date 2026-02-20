@@ -51,7 +51,10 @@ $format = new JsExpression($format);
 <?= $form->field($model, 'description')->textarea(); ?>
 <?= $form->field($model, 'preview_file')->fileInput(); ?>
 <?= $form->field($model, 'preview_file_open')->fileInput(); ?>
-<?= $form->field($model, 'show_main_block')->dropDownList([0 => 'Нет', 1 => 'Да'], []); ?>
+<div class="ds-select-wrapper">
+        <?= $form->field($model, 'show_main_block', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->dropDownList([0 => 'Нет', 1 => 'Да'], ['class' => 'ds-select form-control']) ?>
+        <i class="fas fa-chevron-down ds-select-arrow"></i>
+    </div>
 <?= $form->field($model, 'drop')->widget(\kartik\select2\Select2::class, [
     'data'    => \common\models\box\Drop::getList(),
     'options' => [
@@ -66,7 +69,10 @@ $format = new JsExpression($format);
         'allowClear' => true,
     ],
 ]); ?>
-<?= $form->field($model, 'status')->dropDownList(Select::getStatusList(), []) ?>
+<div class="ds-select-wrapper">
+        <?= $form->field($model, 'status', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->dropDownList(Select::getStatusList(), ['class' => 'ds-select form-control']) ?>
+        <i class="fas fa-chevron-down ds-select-arrow"></i>
+    </div>
 <?= $this->context->getFormButtons(); ?>
 
 <?php ActiveForm::end(); ?>

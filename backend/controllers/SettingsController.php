@@ -11,6 +11,7 @@ use yii\filters\VerbFilter;
 use common\models\site\SiteSetting;
 use yii\web\UploadedFile;
 use yii\helpers\ArrayHelper;
+use yii\helpers\Html;
 
 class SettingsController extends BackendController
 {
@@ -36,15 +37,107 @@ class SettingsController extends BackendController
         ];
     }
 
-    // Страница отображения настроек
-    public function actionIndex($category)
+    /**
+     * Группы категорий настроек для вкладок в шапке (категория => заголовок).
+     * @return array[]
+     */
+    protected function getSettingsCategoryGroups(): array
     {
-        $template = 'pages/' . $category;
-        if (!file_exists(\Yii::getAlias('@backend/views/settings/pages/' . $category . '.php'))) {
-            $template = 'pages/default';
+        return [
+            [
+                'site' => Yii::t('common', 'Настройки сайта'),
+                'social' => Yii::t('common', 'Социальные сети'),
+                'section' => Yii::t('common', 'Разделы сайта'),
+                'banSystem' => Yii::t('common', 'Бан система'),
+                'metrics' => Yii::t('common', 'Счетчики'),
+            ],
+            [
+                'design' => Yii::t('common', 'Дизайн'),
+                'colors' => Yii::t('common', 'Настройки темы'),
+            ],
+            [
+                'tinkoffpay' => Yii::t('common', 'Тинькофф'),
+                'trc20' => Yii::t('common', 'TRC20'),
+                'ton' => Yii::t('common', 'TON COIN'),
+                'skinpay' => Yii::t('common', 'Оплата скинами'),
+                'telegrampay' => Yii::t('common', 'Оплата через TG'),
+                'funpay' => Yii::t('common', 'FunPay'),
+                'personal_info_ip' => Yii::t('common', 'Информация о вас'),
+            ],
+            [
+                'skindrops' => Yii::t('common', 'Раздача скинов'),
+                'rusttm' => Yii::t('common', 'Rust.Tm'),
+                'custom-skins' => Yii::t('common', 'Кастомные скины'),
+            ],
+            [
+                'tgbot' => Yii::t('common', 'Персональный бот'),
+                'tgbotRedFlag' => Yii::t('common', 'Важные оповещения'),
+                'tgbotReport' => Yii::t('common', 'Телеграм канал для репортов'),
+                'tgbotPaymentReport' => Yii::t('common', 'Финансовые отчеты'),
+                'tgbotPayments' => Yii::t('common', 'Оповещения о платежах'),
+                'tgbotAlert' => Yii::t('common', 'Прочие оповещения'),
+                'tgbotSupportAlert' => Yii::t('common', 'Поддержка, оповещения'),
+            ],
+        ];
+    }
+
+    /**
+     * Найти группу, в которую входит категория, и вернуть список категорий этой группы.
+     * @param string $category
+     * @return array [category => title, ...]
+     */
+    protected function getTabsForCategory(string $category): array
+    {
+        if ($category === 'bots') {
+            $category = 'tgbot';
         }
-        return $this->render($template, [
-            'category' => $category
+        if ($category === 'payments') {
+            $category = 'tinkoffpay';
+        }
+        foreach ($this->getSettingsCategoryGroups() as $group) {
+            if (isset($group[$category])) {
+                return $group;
+            }
+        }
+        return [$category => $category];
+    }
+
+    // Страница отображения настроек
+    public function actionIndex($category = null)
+    {
+        if ($category === null || $category === '') {
+            $category = 'site';
+        }
+        // Раньше bots и payments объединяли несколько категорий; переназначаем на первую в группе
+        if ($category === 'bots') {
+            $category = 'tgbot';
+        }
+        if ($category === 'payments') {
+            $category = 'tinkoffpay';
+        }
+        $tabs = $this->getTabsForCategory($category);
+        $baseButtonClass = 'px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5';
+        $headerActions = [];
+        foreach ($tabs as $cat => $title) {
+            $isActive = (string)$cat === (string)$category;
+            $headerActions[] = [
+                'label' => Html::encode($title),
+                'url' => ['index', 'category' => $cat],
+                'class' => $isActive
+                    ? 'bg-[hsl(0_0%_35%_/_1)] text-white ' . $baseButtonClass
+                    : 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white ' . $baseButtonClass,
+            ];
+        }
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['headerActions'] = $headerActions;
+
+        $pageTitle = $tabs[$category] ?? Yii::t('common', 'Настройки');
+        $this->view->title = $pageTitle;
+
+        return $this->render('pages/default', [
+            'category' => $category,
+            'pageTitle' => $pageTitle,
         ]);
     }
 
@@ -118,6 +211,7 @@ class SettingsController extends BackendController
             }
             Yii::$app->settings->set('site_version', $new);
 
+            return $this->redirect(['index', 'category' => $category]);
         }
 
         return $this->render('pages/form', [

@@ -133,7 +133,7 @@ class Servers extends \common\components\base\ActiveRecord
             'tag'          => Yii::t('common', 'Тег сервера'),
             'wargm_id'          => Yii::t('common', 'WarGM ID'),
             'is_store'          => Yii::t('common', 'Магазин на сервере'),
-            'updated_at'          => Yii::t('common', 'Последнее обновление'),
+            'updated_at'          => Yii::t('common', 'Обновлено'),
             'monitoring_name'          => Yii::t('common', 'Название сервера в мониторинге'),
             'monitoring_description'          => Yii::t('common', 'Описание сервера в мониторинге'),
             'game_mode'          => Yii::t('common', 'Режим игры'),

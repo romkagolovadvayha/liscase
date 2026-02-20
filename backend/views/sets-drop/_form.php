@@ -61,7 +61,10 @@ $format = new JsExpression($format);
         'allowClear' => true,
     ],
 ]); ?>
-<?= $form->field($model, 'sets_id')->dropDownList(\common\models\box\Sets::getList(), []) ?>
+<div class="ds-select-wrapper">
+        <?= $form->field($model, 'sets_id', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->dropDownList(\common\models\box\Sets::getList(), ['class' => 'ds-select form-control']) ?>
+        <i class="fas fa-chevron-down ds-select-arrow"></i>
+    </div>
 <?= $form->field($model, 'count')->textInput() ?>
 <?= $this->context->getFormButtons(); ?>
 

@@ -75,8 +75,18 @@ class AudienceBonusController extends Controller
      */
     public function actionView($id)
     {
+        $model = $this->findModel($id);
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> Назад',
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $model,
         ]);
     }
 

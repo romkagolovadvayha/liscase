@@ -52,6 +52,17 @@ class StatisticsController extends Controller
         $searchModel = new StatisticsSearch();
         $dataProvider = $searchModel->search($this->request->queryParams);
 
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = true;
+        $this->view->params['searchModel'] = $searchModel;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-plus"></i> ' . \Yii::t('common', 'Добавить запись'),
+                'url' => ['create'],
+                'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,

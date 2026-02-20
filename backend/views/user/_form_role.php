@@ -19,7 +19,7 @@ use backend\forms\userProfile\RoleForm;
                             [
                                 'multiple'=>'multiple',
                                 'size'=>'10',
-                                'class'=>'chosen-select input-md required',
+                                'class'=>'chosen-select ds-select form-control input-md required',
                             ]); ?>
     <?= Html::submitButton('Сохранить', ['data-confirm' => 'Вы действительно хотите сменить роль?', 'class' => 'btn btn-success']) ?>
     <?php ActiveForm::end() ?>

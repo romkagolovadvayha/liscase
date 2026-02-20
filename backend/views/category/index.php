@@ -4,47 +4,45 @@ use common\models\box\Category;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
-use yii\grid\GridView;
+use kartik\grid\GridView;
 
 /** @var yii\web\View $this */
 /** @var common\models\box\CategorySearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
 $this->title = 'Категории';
-$this->params['breadcrumbs'][] = $this->title;
-?>
-<div class="category-index-page">
-    <div class="content-header">
-        <div class="ds-flex ds-flex--between">
-            <h1><?= Html::encode($this->title) ?></h1>
-            <?= Html::a('<i class="fas fa-plus"></i> Добавить', ['create'], ['class' => 'ds-btn ds-btn--success']) ?>
-        </div>
-    </div>
+$this->params['contentClass'] = 'content-no-padding';
+$this->params['searchModel'] = $searchModel;
 
-    <div class="content">
-        <div class="ds-card">
-            <?= GridView::widget([
-        'dataProvider' => $dataProvider,
-        'filterModel' => $searchModel,
-        'columns' => [
-            [
-                'attribute' => 'id',
-                'options'   => ['width' => '50'],
+$headerCellClass = 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]';
+$bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
+?>
+<div class="category-index-page w-full">
+    <div class="w-full">
+        <?= GridView::widget([
+            'dataProvider' => $dataProvider,
+            'filterModel' => $searchModel,
+            'tableOptions' => ['class' => 'table-auto w-full text-sm'],
+            'options' => ['class' => 'admin-grid-view-dark'],
+            'layout' => "{items}\n{pager}",
+            'filterRowOptions' => ['style' => 'display: none;'],
+            'bordered' => false,
+            'striped' => false,
+            'hover' => true,
+            'columns' => [
+                ['attribute' => 'id', 'options' => ['width' => '50'], 'headerOptions' => ['class' => $headerCellClass], 'contentOptions' => ['class' => $bodyCellClass]],
+                ['attribute' => 'name', 'format' => 'ntext', 'headerOptions' => ['class' => $headerCellClass], 'contentOptions' => ['class' => $bodyCellClass]],
+                ['attribute' => 'tag', 'options' => ['width' => '200'], 'headerOptions' => ['class' => $headerCellClass], 'contentOptions' => ['class' => $bodyCellClass]],
+                [
+                    'class' => ActionColumn::class,
+                    'options' => ['width' => '80'],
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                    'urlCreator' => function ($action, Category $model, $key, $index, $column) {
+                        return Url::toRoute([$action, 'id' => $model->id]);
+                    },
+                ],
             ],
-            'name:ntext',
-            [
-                'attribute' => 'tag',
-                'options'   => ['width' => '200'],
-            ],
-            [
-                'class' => ActionColumn::className(),
-                'options'   => ['width' => '80'],
-                'urlCreator' => function ($action, Category $model, $key, $index, $column) {
-                    return Url::toRoute([$action, 'id' => $model->id]);
-                 }
-            ],
-        ],
-    ]); ?>
-        </div>
+        ]); ?>
     </div>
 </div>

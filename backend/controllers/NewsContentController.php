@@ -46,6 +46,17 @@ class NewsContentController extends CrudController
         return NewsContentForm::class;
     }
 
+    protected function getIndexHeaderActions()
+    {
+        return [
+            [
+                'label' => '<i class="fas fa-plus"></i> Добавить перевод новости',
+                'url' => $this->prepareUrl('create'),
+                'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+    }
+
     protected function _getSearchDataProvider()
     {
         return $this->_searchModel->search(Yii::$app->request->queryParams, function ($query) {

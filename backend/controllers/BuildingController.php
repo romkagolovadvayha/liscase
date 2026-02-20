@@ -53,6 +53,17 @@ class BuildingController extends BackendController
         $searchModel = new BuildingSearch();
         $dataProvider = $searchModel->search($this->request->queryParams);
 
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = true;
+        $this->view->params['searchModel'] = $searchModel;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-plus"></i> ' . Yii::t('common', 'Добавить постройку'),
+                'url' => ['create'],
+                'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
@@ -113,6 +124,16 @@ class BuildingController extends BackendController
             $model->loadDefaultValues();
         }
 
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+
         return $this->render('create', [
             'model' => $model,
         ]);
@@ -134,6 +155,16 @@ class BuildingController extends BackendController
             Yii::$app->cache->delete('api_buildings_view_' . $model->id);
             return $this->redirect(['view', 'id' => $model->id]);
         }
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
 
         return $this->render('update', [
             'model' => $model,

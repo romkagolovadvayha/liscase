@@ -41,7 +41,10 @@ $this->params['breadcrumbs'][] = [
     <div class="col-lg-4 col-md-6 col-xs-12">
         <?= $form->field($model, 'news_id')->label(false)->hiddenInput(); ?>
 
-        <?= $form->field($model, 'language')->dropDownList($model->getLanguageList()); ?>
+        <div class="ds-select-wrapper">
+        <?= $form->field($model, 'language', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->dropDownList($model->getLanguageList(), ['class' => 'ds-select form-control']) ?>
+        <i class="fas fa-chevron-down ds-select-arrow"></i>
+    </div>
 
 
         <?= $form->field($model, 'title')->textInput(); ?>

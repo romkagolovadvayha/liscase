@@ -2,12 +2,9 @@
 
 namespace backend\controllers;
 
-use backend\forms\userProfile\BanForm;
 use backend\forms\userProfile\BonusForm;
-use backend\forms\userProfile\MuteForm;
 use backend\forms\userProfile\PayoutForm;
 use backend\forms\userProfile\RoleForm;
-use backend\forms\userProfile\SkinForm;
 use common\components\helpers\Role;
 use common\models\rcon\RconTasks;
 use common\models\user\UserChecking;
@@ -15,6 +12,7 @@ use common\models\user\UserSearch;
 use common\models\user\UserTree;
 use Yii;
 use yii\filters\AccessControl;
+use yii\filters\VerbFilter;
 use common\models\user\User;
 use backend\components\CrudController;
 
@@ -36,12 +34,44 @@ class UserController extends CrudController
                     ],
                 ],
             ],
+            'verbs' => [
+                'class' => VerbFilter::class,
+                'actions' => [
+                    'set-user-bool' => ['post'],
+                ],
+            ],
         ]);
     }
 
     protected function _getSearchClassName()
     {
         return UserSearch::class;
+    }
+
+    public function actionIndex()
+    {
+        $this->_setSearchModel();
+        $this->_rememberIndexUrl();
+
+        $this->view->params['showFilters'] = true;
+        $this->view->params['searchModel'] = $this->_searchModel;
+        $headerActions = [
+            [
+                'label' => '<i class="fas fa-user-tag"></i> ' . Yii::t('common', 'Предметы пользователей'),
+                'url' => ['/user-drop/index'],
+                'class' => 'bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+        if (Yii::$app->user->can(Role::ROLE_ADMIN)) {
+            $headerActions[] = [
+                'label' => '<i class="fas fa-flag"></i> ' . Yii::t('common', 'Репорты'),
+                'url' => ['/reports/index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ];
+        }
+        $this->view->params['headerActions'] = $headerActions;
+
+        return $this->_renderIndex($this->_getSearchDataProvider());
     }
 
     public function actionRevoke($parentId, $userId)
@@ -57,6 +87,61 @@ class UserController extends CrudController
         return $this->redirect(['profile', 'userId' => $parentId]);
     }
 
+    /**
+     * Список булевых атрибутов user, которые можно менять с профиля (переключатели).
+     * @return string[]
+     */
+    public static function getUserBoolAttributes(): array
+    {
+        return [
+            'status_banned', // виртуальный: переключает status активный/забанен
+            'raid_notify',
+            'ban_notify',
+            'store',
+            'is_stats',
+            'blocked_support',
+        ];
+    }
+
+    /**
+     * AJAX: установка булевого поля пользователя (переключатель). Сохраняет сразу.
+     * POST: userId, attribute, value (0|1)
+     */
+    public function actionSetUserBool()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $userId = (int) Yii::$app->request->post('userId');
+        $attribute = (string) Yii::$app->request->post('attribute');
+        $value = (int) Yii::$app->request->post('value');
+
+        if (!in_array($attribute, self::getUserBoolAttributes(), true)) {
+            return ['success' => false, 'error' => 'Недоступный атрибут'];
+        }
+        if (!in_array($value, [0, 1], true)) {
+            return ['success' => false, 'error' => 'Значение должно быть 0 или 1'];
+        }
+
+        $user = User::findOne($userId);
+        if (!$user) {
+            return ['success' => false, 'error' => 'Пользователь не найден'];
+        }
+
+        // Бан: просто переключаем статус активный/забанен
+        if ($attribute === 'status_banned') {
+            $user->status = $value ? User::STATUS_BLOCKED : User::STATUS_ACTIVE;
+            if ($user->save(false)) {
+                return ['success' => true];
+            }
+            return ['success' => false, 'error' => implode(', ', $user->getFirstErrors())];
+        }
+
+        $user->$attribute = $value;
+        if ($user->save(false)) {
+            return ['success' => true];
+        }
+        return ['success' => false, 'error' => implode(', ', $user->getFirstErrors())];
+    }
+
     public function actionProfile($userId)
     {
         /** @var User $user */
@@ -69,9 +154,6 @@ class UserController extends CrudController
             'roleForm' => new RoleForm(),
             'bonusForm' => new BonusForm(),
             'payoutForm' => new PayoutForm(),
-            'skinForm' => new SkinForm(),
-            'banForm' => new BanForm(),
-            'muteForm' => new MuteForm(),
         ];
 
         foreach ($forms as $form) {
@@ -84,9 +166,6 @@ class UserController extends CrudController
             'User' => 'Пользователь успешно изменен!',
             'BonusForm' => 'Бонус успешно начислен!',
             'PayoutForm' => 'Вывод успешно проведен!',
-            'SkinForm' => 'Скин успешно отправлен!',
-            'BanForm' => 'Бан успешно выдан!',
-            'MuteForm' => 'Мут успешно выдан!',
         ];
 
         foreach ($messages as $formName => $message) {
@@ -99,6 +178,27 @@ class UserController extends CrudController
                 }
             }
         }
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+        $btnClass = 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5';
+        $headerActions = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'К списку'),
+                'url' => $this->getIndexUrl(),
+                'class' => $btnClass,
+            ],
+        ];
+        $isAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
+        $isModerator = Yii::$app->user->can(Role::ROLE_MODERATOR);
+        if (($isAdmin || $isModerator) && $user->status === User::STATUS_ACTIVE) {
+            $headerActions[] = [
+                'label' => '<i class="fas fa-sign-in-alt"></i> ' . Yii::t('common', 'Войти как пользователь'),
+                'url' => ['/user/switch-identity', 'id' => $user->id],
+                'class' => 'bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ];
+        }
+        $this->view->params['headerActions'] = $headerActions;
 
         return $this->render('profile', array_merge([
             'user' => $user,

@@ -1,0 +1,111 @@
+// ============================================
+// ADMIN FLEX LAYOUT - New Structure
+// ============================================
+
+@import 'design-system';
+
+// Основной flex layout
+.flex.admin-layout {
+  background: $ds-bg-primary;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+
+  // Sidebar wrapper
+  .sidebar-wrapper {
+    transition: width 0.3s ease;
+    width: 250px;
+    height: 100%;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  // Collapsed sidebar state
+  &.sidebar-collapsed {
+    .sidebar-wrapper {
+      width: 70px;
+    }
+    
+    #main-sidebar {
+      width: 70px;
+    }
+  }
+
+  // Right side container (header + content)
+  > div:last-child {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  // Контент: вертикальный и горизонтальный скролл, чтобы таблицы не «ломали» верстку
+  main {
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  // Планшеты (до 1024px) - скрываем filters
+  @media (max-width: 1023px) {
+    .filters-wrapper {
+      display: none !important;
+    }
+  }
+
+  // Мобильные (до 768px) - sidebar off-canvas
+  @media (max-width: 767px) {
+    .sidebar-wrapper {
+      position: fixed;
+      left: -250px;
+      top: 0;
+      height: 100vh;
+      z-index: $ds-z-modal;
+      transition: left 0.25s ease;
+      width: 250px;
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+
+      &.sidebar-open {
+        left: 0;
+      }
+    }
+
+    .filters-wrapper {
+      display: none !important;
+    }
+  }
+}
+
+// Блокировка прокрутки body при открытом меню на мобильных
+@media (max-width: 767px) {
+  body.sidebar-open {
+    overflow: hidden;
+    touch-action: none;
+    position: fixed;
+    width: 100%;
+  }
+}
+
+// Overlay для мобильного меню
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: $ds-bg-overlay;
+  z-index: $ds-z-modal-backdrop;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  pointer-events: none;
+
+  &.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+}
+

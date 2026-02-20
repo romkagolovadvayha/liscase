@@ -1,13 +1,17 @@
 <?php
 
 use common\models\box\Drop;
-use kartik\grid\GridView;
-use yii\bootstrap5\Html;
-use yii\helpers\ArrayHelper;
+use yii\helpers\Html;
 
-/** @var $item Drop */
+/** @var Drop $item */
 
+$imageUrl = $item->image();
 ?>
-<div class="grid-item text-danger item_sort" style="background-image: url(<?=$item->imageOrig->getImagePubUrl()?>)" title="<?=$item->name?>">
-    <input type="hidden" name="items[]" value="<?=$item->id?>">
+<div class="drop-sort-card" title="<?= Html::encode($item->name) ?>">
+    <?php if ($imageUrl): ?>
+        <div class="drop-sort-card__img" style="background-image: url(<?= Html::encode($imageUrl) ?>)"></div>
+    <?php else: ?>
+        <div class="drop-sort-card__placeholder">—</div>
+    <?php endif; ?>
+    <input type="hidden" name="items[]" value="<?= (int) $item->id ?>">
 </div>

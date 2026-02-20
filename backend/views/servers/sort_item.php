@@ -1,14 +1,12 @@
 <?php
 
-use common\models\box\Drop;
-use kartik\grid\GridView;
-use yii\bootstrap5\Html;
-use yii\helpers\ArrayHelper;
+use common\models\servers\Servers;
+use yii\helpers\Html;
 
-/** @var $item \common\models\servers\Servers */
+/** @var Servers $item */
 
 ?>
-<div class="grid-item text-danger item_sort" title="<?=$item->name?>">
-    <div><?=$item->name?></div>
-    <input type="hidden" name="items[]" value="<?=$item->id?>">
+<div class="admin-sort-card" title="<?= Html::encode($item->name) ?>">
+    <div class="admin-sort-card__body"><?= Html::encode($item->name) ?></div>
+    <input type="hidden" name="items[]" value="<?= (int) $item->id ?>">
 </div>

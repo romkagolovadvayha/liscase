@@ -40,7 +40,7 @@ class ServerSkinSearch extends ServerSkin
      */
     public function search($params)
     {
-        $query = ServerSkin::find();
+        $query = ServerSkin::find()->joinWith(['user']);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,

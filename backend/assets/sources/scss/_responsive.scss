@@ -1,0 +1,499 @@
+// ============================================
+// АДАПТИВНЫЕ СТИЛИ И МЕДИА-ЗАПРОСЫ
+// ============================================
+
+@import 'design-system';
+@import 'layout';
+@import 'components';
+
+// ============================================
+// BREAKPOINTS
+// ============================================
+
+// Mobile: < 640px
+// Tablet: 640px - 1024px
+// Desktop: > 1024px
+
+// ============================================
+// GRID LAYOUT - МОБИЛЬНАЯ АДАПТАЦИЯ
+// ============================================
+
+// Адаптивность для grid layout через Tailwind
+// Используем inline styles с media queries или Tailwind responsive классы
+
+// ============================================
+// NAVBAR - МОБИЛЬНАЯ АДАПТАЦИЯ
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .main-header {
+    .navbar {
+      padding: 0 $ds-spacing-sm;
+
+      .navbar-nav {
+        gap: $ds-spacing-sm;
+
+        .nav-link {
+          padding: $ds-spacing-sm;
+          font-size: $ds-font-size-sm;
+
+          span {
+            display: none;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ============================================
+// CONTENT - АДАПТИВНОСТЬ
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .content-wrapper {
+    .content {
+      padding: $ds-spacing-md;
+    }
+  }
+
+  .content-header {
+    padding: $ds-spacing-md;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $ds-spacing-md;
+
+    h1 {
+      font-size: $ds-font-size-xl;
+    }
+
+    .ds-flex {
+      flex-direction: column;
+      align-items: flex-start;
+      width: 100%;
+      gap: $ds-spacing-sm;
+    }
+  }
+}
+
+// ============================================
+// КАРТОЧКИ - АДАПТИВНОСТЬ
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-card {
+    padding: $ds-spacing-md;
+    border-radius: $ds-radius-md;
+
+    &__header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $ds-spacing-sm;
+    }
+
+    &__footer {
+      flex-direction: column;
+      width: 100%;
+
+      .ds-btn {
+        width: 100%;
+      }
+    }
+  }
+}
+
+// ============================================
+// КНОПКИ - АДАПТИВНОСТЬ
+// ============================================
+
+@media (max-width: $ds-breakpoint-sm - 1px) {
+  .ds-btn {
+    &--block-mobile {
+      width: 100%;
+      display: flex;
+    }
+  }
+}
+
+// ============================================
+// ФОРМЫ - АДАПТИВНОСТЬ
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-form-group {
+    margin-bottom: $ds-spacing-sm;
+  }
+
+  .ds-input,
+  .ds-textarea,
+  .ds-select {
+    font-size: $ds-font-size-base; // Увеличиваем для мобильных
+  }
+}
+
+// ============================================
+// ТАБЛИЦЫ - АДАПТИВНОСТЬ
+// ============================================
+
+@media (max-width: $ds-breakpoint-lg - 1px) {
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table {
+    min-width: 600px; // Минимальная ширина для горизонтального скролла
+  }
+
+  // Карточный вид для таблиц на мобильных
+  .table-card-view {
+    .table {
+      display: block;
+      min-width: auto;
+
+      thead {
+        display: none;
+      }
+
+      tbody {
+        display: block;
+
+        tr {
+          display: block;
+          margin-bottom: $ds-spacing-md;
+          background: $ds-bg-tertiary;
+          border-radius: $ds-radius-md;
+          padding: $ds-spacing-md;
+          border: 1px solid $ds-border-color;
+
+          td {
+            display: flex;
+            justify-content: space-between;
+            padding: $ds-spacing-sm 0;
+            border: none;
+            text-align: right;
+
+            &::before {
+              content: attr(data-label);
+              font-weight: $ds-font-weight-semibold;
+              text-align: left;
+              margin-right: $ds-spacing-md;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// ============================================
+// GRID VIEW - АДАПТИВНОСТЬ
+// ============================================
+
+@media (max-width: $ds-breakpoint-lg - 1px) {
+  .grid-view {
+    .summary {
+      font-size: $ds-font-size-xs;
+      margin-bottom: $ds-spacing-sm;
+    }
+
+    table {
+      font-size: $ds-font-size-xs;
+
+      th, td {
+        padding: $ds-spacing-sm;
+      }
+    }
+  }
+}
+
+// ============================================
+// МОДАЛЬНЫЕ ОКНА - АДАПТИВНОСТЬ
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .modal {
+    padding: $ds-spacing-md;
+
+    .modal-dialog {
+      margin: 0;
+      max-width: 100%;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+
+      .modal-content {
+        border-radius: $ds-radius-xl $ds-radius-xl 0 0;
+        max-height: 90vh;
+        overflow-y: auto;
+        width: 100%;
+
+        header {
+          padding: $ds-spacing-md;
+          position: sticky;
+          top: 0;
+          background: $ds-bg-tertiary;
+          z-index: 1;
+        }
+
+        .modal-body {
+          padding: $ds-spacing-md;
+        }
+
+        footer {
+          padding: $ds-spacing-md;
+          position: sticky;
+          bottom: 0;
+          background: $ds-bg-tertiary;
+          z-index: 1;
+        }
+      }
+    }
+  }
+}
+
+// ============================================
+// TABS - АДАПТИВНОСТЬ
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-tabs {
+    flex-direction: column;
+    gap: 0;
+    border-bottom: none;
+
+    &__item {
+      border-bottom: 1px solid $ds-border-color;
+      border-left: 2px solid transparent;
+      padding: $ds-spacing-md;
+
+      &--active {
+        border-left-color: $ds-primary;
+        border-bottom-color: $ds-border-color;
+      }
+    }
+  }
+}
+
+// ============================================
+// DROPDOWN - АДАПТИВНОСТЬ
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-dropdown {
+    &__menu {
+      position: fixed;
+      top: auto !important;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      max-width: 100%;
+      border-radius: $ds-radius-xl $ds-radius-xl 0 0;
+      max-height: 50vh;
+      overflow-y: auto;
+      transform: translateY(100%);
+
+      &--show {
+        transform: translateY(0);
+      }
+    }
+  }
+}
+
+// ============================================
+// TOOLTIP - АДАПТИВНОСТЬ
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-tooltip {
+    &__content {
+      display: none; // Скрываем tooltips на мобильных
+    }
+  }
+}
+
+// ============================================
+// BREADCRUMBS - АДАПТИВНОСТЬ
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .breadcrumb {
+    font-size: $ds-font-size-xs;
+    flex-wrap: wrap;
+
+    .breadcrumb-item {
+      & + .breadcrumb-item::before {
+        padding: 0 $ds-spacing-1;
+        margin: 0 $ds-spacing-0_5;
+      }
+
+      // Скрываем промежуточные элементы на мобильных
+      &:not(:first-child):not(:last-child) {
+        display: none;
+      }
+
+      &:first-child::after {
+        content: '...';
+        color: $ds-text-secondary;
+        padding: 0 $ds-spacing-1;
+      }
+    }
+  }
+}
+
+// ============================================
+// UTILITY CLASSES - RESPONSIVE
+// ============================================
+
+// Скрыть на мобильных
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-hidden-mobile {
+    display: none !important;
+  }
+}
+
+// Скрыть на десктопе
+@media (min-width: $ds-breakpoint-md) {
+  .ds-hidden-desktop {
+    display: none !important;
+  }
+}
+
+// Показать только на мобильных
+@media (min-width: $ds-breakpoint-md) {
+  .ds-visible-mobile {
+    display: none !important;
+  }
+}
+
+// Показать только на десктопе
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-visible-desktop {
+    display: none !important;
+  }
+}
+
+// ============================================
+// SPACING - RESPONSIVE
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-p-mobile-sm {
+    padding: $ds-spacing-sm;
+  }
+
+  .ds-p-mobile-md {
+    padding: $ds-spacing-md;
+  }
+
+  .ds-m-mobile-sm {
+    margin: $ds-spacing-sm;
+  }
+
+  .ds-m-mobile-md {
+    margin: $ds-spacing-md;
+  }
+}
+
+// ============================================
+// FONT SIZES - RESPONSIVE
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-text-responsive {
+    font-size: $ds-font-size-sm;
+  }
+
+  h1 { font-size: $ds-font-size-2xl; }
+  h2 { font-size: $ds-font-size-xl; }
+  h3 { font-size: $ds-font-size-lg; }
+  h4 { font-size: $ds-font-size-base; }
+  h5 { font-size: $ds-font-size-sm; }
+  h6 { font-size: $ds-font-size-xs; }
+}
+
+// ============================================
+// FLEX - RESPONSIVE
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-flex-mobile-col {
+    flex-direction: column;
+  }
+
+  .ds-flex-mobile-wrap {
+    flex-wrap: wrap;
+  }
+}
+
+// ============================================
+// GRID - RESPONSIVE
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-grid-mobile-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: $ds-breakpoint-md) and (max-width: $ds-breakpoint-lg - 1px) {
+  .ds-grid-tablet-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+// ============================================
+// COUNTERS - RESPONSIVE
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-counter {
+    min-height: 80px;
+    padding: $ds-spacing-sm;
+
+    &__value {
+      font-size: $ds-font-size-2xl;
+    }
+
+    &__label {
+      font-size: $ds-font-size-xs;
+    }
+  }
+}
+
+// ============================================
+// ALERTS - RESPONSIVE
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .ds-alert {
+    padding: $ds-spacing-sm;
+    font-size: $ds-font-size-sm;
+
+    &__icon {
+      font-size: $ds-font-size-base;
+    }
+  }
+}
+
+// ============================================
+// PAGINATION - RESPONSIVE
+// ============================================
+
+@media (max-width: $ds-breakpoint-md - 1px) {
+  .pagination {
+    flex-wrap: wrap;
+    gap: $ds-spacing-1;
+
+    li {
+      a, span {
+        padding: $ds-spacing-1 $ds-spacing-2;
+        font-size: $ds-font-size-xs;
+        min-width: 1.5rem;
+      }
+    }
+  }
+}
+

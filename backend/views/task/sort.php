@@ -1,29 +1,34 @@
 <?php
 
-use common\models\box\Drop;
-use kartik\grid\GridView;
-use yii\bootstrap5\ActiveForm;
-use yii\bootstrap5\Html;
 use common\models\tasks\Task;
-use yii\helpers\ArrayHelper;
+use kartik\sortable\Sortable;
+use yii\bootstrap5\ActiveForm;
+use yii\helpers\Html;
 
-/** @var $items Task[] */
+/** @var Task[] $items */
 
 $this->title = Yii::t('common', 'Сортировка');
 
 $elements = [];
 foreach ($items as $item) {
-    $html = $this->render('sort_item', [
-        'item' => $item
-    ]);
     $elements[] = [
-        'content' => $html
+        'content' => $this->render('sort_item', ['item' => $item]),
     ];
 }
 ?>
 
-<?php $form = ActiveForm::begin(['id' => 'sort-form',]); ?>
-<?=\kartik\sortable\Sortable::widget(['type'=>'grid', 'items'=> $elements])?>
-<?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
-<?php ActiveForm::end(); ?>
-
+<div class="task-sort-page admin-sort-page p-4 lg:p-6 w-full">
+    <?php $form = ActiveForm::begin(['id' => 'sort-form']); ?>
+    <div class="admin-sort-grid-wrapper">
+        <?= Sortable::widget([
+            'type' => Sortable::TYPE_GRID,
+            'items' => $elements,
+            'options' => ['id' => 'task-sortable', 'class' => 'admin-sortable-grid'],
+            'itemOptions' => ['class' => 'admin-sort-item'],
+        ]) ?>
+    </div>
+    <div class="mt-4">
+        <?= Html::submitButton(Yii::t('common', 'Сохранить'), ['class' => 'ds-btn ds-btn--primary']) ?>
+    </div>
+    <?php ActiveForm::end(); ?>
+</div>

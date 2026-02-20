@@ -43,6 +43,50 @@ class ServersTagsController extends CrudController
     }
 
     /**
+     * @return array
+     */
+    protected function getIndexHeaderActions()
+    {
+        return [
+            [
+                'label' => '<i class="fas fa-plus"></i> ' . Yii::t('common', 'Создать тег'),
+                'url' => ['create'],
+                'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+    }
+
+    /**
+     * @param int|null $id
+     * @return \common\components\base\Model|ServersTags
+     * @throws NotFoundHttpException
+     */
+    protected function _getFormModel($id = null)
+    {
+        $formModel = parent::_getFormModel($id);
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+        return $formModel;
+    }
+
+    public function actionIndex()
+    {
+        $this->_setSearchModel();
+        $this->_rememberIndexUrl();
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = true;
+        $this->view->params['searchModel'] = $this->_searchModel;
+        $this->view->params['headerActions'] = $this->getIndexHeaderActions();
+        return $this->_renderIndex($this->_getSearchDataProvider());
+    }
+
+    /**
      * @inheritDoc
      */
     public function behaviors()
@@ -106,6 +150,15 @@ class ServersTagsController extends CrudController
                 Yii::$app->session->setFlash('error', 'Ошибка сохранения: ' . print_r($model->getErrors(), true));
             }
         }
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
 
         return $this->render('create', [
             'model' => $model,

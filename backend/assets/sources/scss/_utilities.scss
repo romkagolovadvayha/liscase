@@ -1,0 +1,384 @@
+// ============================================
+// УТИЛИТАРНЫЕ КЛАССЫ (Tailwind-like)
+// ============================================
+
+@import 'design-system';
+
+// ============================================
+// DISPLAY
+// ============================================
+
+.ds-block { display: block; }
+.ds-inline-block { display: inline-block; }
+.ds-inline { display: inline; }
+.ds-flex { display: flex; }
+.ds-inline-flex { display: inline-flex; }
+.ds-grid { display: grid; }
+.ds-inline-grid { display: inline-grid; }
+.ds-table { display: table; }
+.ds-table-row { display: table-row; }
+.ds-table-cell { display: table-cell; }
+.ds-hidden { display: none; }
+
+// ============================================
+// FLEXBOX
+// ============================================
+
+.ds-flex-row { flex-direction: row; }
+.ds-flex-col { flex-direction: column; }
+.ds-flex-wrap { flex-wrap: wrap; }
+.ds-flex-nowrap { flex-wrap: nowrap; }
+.ds-flex-1 { flex: 1 1 0%; }
+.ds-flex-auto { flex: 1 1 auto; }
+.ds-flex-none { flex: none; }
+
+.ds-justify-start { justify-content: flex-start; }
+.ds-justify-end { justify-content: flex-end; }
+.ds-justify-center { justify-content: center; }
+.ds-justify-between { justify-content: space-between; }
+.ds-justify-around { justify-content: space-around; }
+.ds-justify-evenly { justify-content: space-evenly; }
+
+.ds-items-start { align-items: flex-start; }
+.ds-items-end { align-items: flex-end; }
+.ds-items-center { align-items: center; }
+.ds-items-baseline { align-items: baseline; }
+.ds-items-stretch { align-items: stretch; }
+
+.ds-self-start { align-self: flex-start; }
+.ds-self-end { align-self: flex-end; }
+.ds-self-center { align-self: center; }
+.ds-self-stretch { align-self: stretch; }
+
+.ds-gap-0 { gap: $ds-spacing-0; }
+.ds-gap-1 { gap: $ds-spacing-1; }
+.ds-gap-2 { gap: $ds-spacing-2; }
+.ds-gap-3 { gap: $ds-spacing-3; }
+.ds-gap-4 { gap: $ds-spacing-4; }
+.ds-gap-5 { gap: $ds-spacing-5; }
+.ds-gap-6 { gap: $ds-spacing-6; }
+.ds-gap-8 { gap: $ds-spacing-8; }
+
+// Алиасы для обратной совместимости
+.ds-flex--center {
+  @extend .ds-flex, .ds-items-center, .ds-justify-center;
+}
+.ds-flex--between {
+  @extend .ds-flex, .ds-items-center, .ds-justify-between;
+}
+.ds-flex--gap-sm { gap: $ds-spacing-sm; }
+.ds-flex--gap-md { gap: $ds-spacing-md; }
+.ds-flex--gap-lg { gap: $ds-spacing-lg; }
+
+// ============================================
+// GRID
+// ============================================
+
+.ds-grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.ds-grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ds-grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ds-grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ds-grid-cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.ds-grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+
+// ============================================
+// POSITION
+// ============================================
+
+.ds-static { position: static; }
+.ds-fixed { position: fixed; }
+.ds-absolute { position: absolute; }
+.ds-relative { position: relative; }
+.ds-sticky { position: sticky; }
+
+// ============================================
+// SPACING (Margin & Padding)
+// ============================================
+
+// Margin
+@mixin spacing-margin($size, $value) {
+  .ds-m-#{$size} { margin: $value; }
+  .ds-mt-#{$size} { margin-top: $value; }
+  .ds-mr-#{$size} { margin-right: $value; }
+  .ds-mb-#{$size} { margin-bottom: $value; }
+  .ds-ml-#{$size} { margin-left: $value; }
+  .ds-mx-#{$size} { margin-left: $value; margin-right: $value; }
+  .ds-my-#{$size} { margin-top: $value; margin-bottom: $value; }
+}
+
+@include spacing-margin(0, $ds-spacing-0);
+@include spacing-margin(1, $ds-spacing-1);
+@include spacing-margin(2, $ds-spacing-2);
+@include spacing-margin(3, $ds-spacing-3);
+@include spacing-margin(4, $ds-spacing-4);
+@include spacing-margin(5, $ds-spacing-5);
+@include spacing-margin(6, $ds-spacing-6);
+@include spacing-margin(8, $ds-spacing-8);
+@include spacing-margin(auto, auto);
+
+// Padding
+@mixin spacing-padding($size, $value) {
+  .ds-p-#{$size} { padding: $value; }
+  .ds-pt-#{$size} { padding-top: $value; }
+  .ds-pr-#{$size} { padding-right: $value; }
+  .ds-pb-#{$size} { padding-bottom: $value; }
+  .ds-pl-#{$size} { padding-left: $value; }
+  .ds-px-#{$size} { padding-left: $value; padding-right: $value; }
+  .ds-py-#{$size} { padding-top: $value; padding-bottom: $value; }
+}
+
+@include spacing-padding(0, $ds-spacing-0);
+@include spacing-padding(1, $ds-spacing-1);
+@include spacing-padding(2, $ds-spacing-2);
+@include spacing-padding(3, $ds-spacing-3);
+@include spacing-padding(4, $ds-spacing-4);
+@include spacing-padding(5, $ds-spacing-5);
+@include spacing-padding(6, $ds-spacing-6);
+@include spacing-padding(8, $ds-spacing-8);
+
+// ============================================
+// WIDTH & HEIGHT
+// ============================================
+
+.ds-w-auto { width: auto; }
+.ds-w-full { width: 100%; }
+.ds-w-screen { width: 100vw; }
+.ds-w-1\/2 { width: 50%; }
+.ds-w-1\/3 { width: 33.333333%; }
+.ds-w-2\/3 { width: 66.666667%; }
+.ds-w-1\/4 { width: 25%; }
+.ds-w-3\/4 { width: 75%; }
+
+.ds-h-auto { height: auto; }
+.ds-h-full { height: 100%; }
+.ds-h-screen { height: 100vh; }
+
+.ds-min-w-0 { min-width: 0; }
+.ds-min-w-full { min-width: 100%; }
+.ds-max-w-full { max-width: 100%; }
+.ds-max-w-screen-sm { max-width: $ds-container-sm; }
+.ds-max-w-screen-md { max-width: $ds-container-md; }
+.ds-max-w-screen-lg { max-width: $ds-container-lg; }
+
+.ds-min-h-0 { min-height: 0; }
+.ds-min-h-full { min-height: 100%; }
+.ds-min-h-screen { min-height: 100vh; }
+
+// ============================================
+// TYPOGRAPHY
+// ============================================
+
+.ds-text-xs { font-size: $ds-font-size-xs; }
+.ds-text-sm { font-size: $ds-font-size-sm; }
+.ds-text-base { font-size: $ds-font-size-base; }
+.ds-text-lg { font-size: $ds-font-size-lg; }
+.ds-text-xl { font-size: $ds-font-size-xl; }
+.ds-text-2xl { font-size: $ds-font-size-2xl; }
+.ds-text-3xl { font-size: $ds-font-size-3xl; }
+
+.ds-font-thin { font-weight: $ds-font-weight-thin; }
+.ds-font-light { font-weight: $ds-font-weight-light; }
+.ds-font-normal { font-weight: $ds-font-weight-normal; }
+.ds-font-medium { font-weight: $ds-font-weight-medium; }
+.ds-font-semibold { font-weight: $ds-font-weight-semibold; }
+.ds-font-bold { font-weight: $ds-font-weight-bold; }
+
+.ds-text-left { text-align: left; }
+.ds-text-center { text-align: center; }
+.ds-text-right { text-align: right; }
+.ds-text-justify { text-align: justify; }
+
+.ds-uppercase { text-transform: uppercase; }
+.ds-lowercase { text-transform: lowercase; }
+.ds-capitalize { text-transform: capitalize; }
+
+.ds-underline { text-decoration: underline; }
+.ds-line-through { text-decoration: line-through; }
+.ds-no-underline { text-decoration: none; }
+
+.ds-text--primary { color: $ds-text-primary; }
+.ds-text--secondary { color: $ds-text-secondary; }
+.ds-text--muted { color: $ds-text-muted; }
+.ds-text--success { color: $ds-success-light; }
+.ds-text--danger { color: $ds-danger-light; }
+.ds-text--warning { color: $ds-warning-light; }
+.ds-text--info { color: $ds-info-light; }
+
+// ============================================
+// BACKGROUNDS
+// ============================================
+
+.ds-bg--primary { background-color: $ds-bg-primary; }
+.ds-bg--secondary { background-color: $ds-bg-secondary; }
+.ds-bg--tertiary { background-color: $ds-bg-tertiary; }
+.ds-bg--hover { background-color: $ds-bg-hover; }
+.ds-bg--success { background-color: $ds-success; }
+.ds-bg--primary-color { background-color: $ds-primary; }
+.ds-bg--danger { background-color: $ds-danger; }
+.ds-bg--warning { background-color: $ds-warning; }
+.ds-bg--info { background-color: $ds-info; }
+.ds-bg-transparent { background-color: transparent; }
+
+// ============================================
+// BORDERS
+// ============================================
+
+.ds-border { border-width: $ds-border-width; border-style: solid; border-color: $ds-border-color; }
+.ds-border-0 { border-width: 0; }
+.ds-border-t { border-top-width: $ds-border-width; border-top-style: solid; border-top-color: $ds-border-color; }
+.ds-border-r { border-right-width: $ds-border-width; border-right-style: solid; border-right-color: $ds-border-color; }
+.ds-border-b { border-bottom-width: $ds-border-width; border-bottom-style: solid; border-bottom-color: $ds-border-color; }
+.ds-border-l { border-left-width: $ds-border-width; border-left-style: solid; border-left-color: $ds-border-color; }
+
+.ds-rounded-none { border-radius: $ds-radius-none; }
+.ds-rounded-sm { border-radius: $ds-radius-sm; }
+.ds-rounded-md { border-radius: $ds-radius-md; }
+.ds-rounded-lg { border-radius: $ds-radius-lg; }
+.ds-rounded-xl { border-radius: $ds-radius-xl; }
+.ds-rounded-2xl { border-radius: $ds-radius-2xl; }
+.ds-rounded-full { border-radius: $ds-radius-full; }
+
+// ============================================
+// SHADOWS
+// ============================================
+
+.ds-shadow-none { box-shadow: $ds-shadow-none; }
+.ds-shadow-xs { box-shadow: $ds-shadow-xs; }
+.ds-shadow-sm { box-shadow: $ds-shadow-sm; }
+.ds-shadow-md { box-shadow: $ds-shadow-md; }
+.ds-shadow-lg { box-shadow: $ds-shadow-lg; }
+.ds-shadow-xl { box-shadow: $ds-shadow-xl; }
+.ds-shadow-2xl { box-shadow: $ds-shadow-2xl; }
+.ds-shadow-inner { box-shadow: $ds-shadow-inner; }
+
+// ============================================
+// OPACITY
+// ============================================
+
+.ds-opacity-0 { opacity: 0; }
+.ds-opacity-25 { opacity: 0.25; }
+.ds-opacity-50 { opacity: 0.5; }
+.ds-opacity-75 { opacity: 0.75; }
+.ds-opacity-100 { opacity: 1; }
+
+// ============================================
+// OVERFLOW
+// ============================================
+
+.ds-overflow-auto { overflow: auto; }
+.ds-overflow-hidden { overflow: hidden; }
+.ds-overflow-visible { overflow: visible; }
+.ds-overflow-scroll { overflow: scroll; }
+.ds-overflow-x-auto { overflow-x: auto; }
+.ds-overflow-y-auto { overflow-y: auto; }
+.ds-overflow-x-hidden { overflow-x: hidden; }
+.ds-overflow-y-hidden { overflow-y: hidden; }
+
+// ============================================
+// CURSOR
+// ============================================
+
+.ds-cursor-auto { cursor: auto; }
+.ds-cursor-default { cursor: default; }
+.ds-cursor-pointer { cursor: pointer; }
+.ds-cursor-wait { cursor: wait; }
+.ds-cursor-text { cursor: text; }
+.ds-cursor-move { cursor: move; }
+.ds-cursor-not-allowed { cursor: not-allowed; }
+
+// ============================================
+// USER SELECT
+// ============================================
+
+.ds-select-none { user-select: none; }
+.ds-select-text { user-select: text; }
+.ds-select-all { user-select: all; }
+.ds-select-auto { user-select: auto; }
+
+// ============================================
+// Z-INDEX
+// ============================================
+
+.ds-z-0 { z-index: $ds-z-0; }
+.ds-z-10 { z-index: $ds-z-10; }
+.ds-z-20 { z-index: $ds-z-20; }
+.ds-z-30 { z-index: $ds-z-30; }
+.ds-z-40 { z-index: $ds-z-40; }
+.ds-z-50 { z-index: $ds-z-50; }
+.ds-z-auto { z-index: $ds-z-auto; }
+
+// ============================================
+// TRANSITIONS
+// ============================================
+
+.ds-transition-none { transition-property: none; }
+.ds-transition-all { transition-property: all; transition-duration: $ds-duration-200; transition-timing-function: $ds-ease-in-out; }
+.ds-transition-colors { transition-property: $ds-transition-colors; transition-duration: $ds-duration-200; transition-timing-function: $ds-ease-in-out; }
+.ds-transition-opacity { transition-property: $ds-transition-opacity; transition-duration: $ds-duration-200; transition-timing-function: $ds-ease-in-out; }
+.ds-transition-shadow { transition-property: $ds-transition-shadow; transition-duration: $ds-duration-200; transition-timing-function: $ds-ease-in-out; }
+
+// ============================================
+// ADDITIONAL UTILITIES
+// ============================================
+
+.ds-list-none {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ds-w-full { width: 100%; }
+.ds-h-full { height: 100%; }
+.ds-min-h-full { min-height: 100%; }
+.ds-max-w-md { max-width: 28rem; }
+.ds-mx-4 { margin-left: $ds-spacing-4; margin-right: $ds-spacing-4; }
+.ds-ml-auto { margin-left: auto; }
+.ds-mr-auto { margin-right: auto; }
+.ds-mt-auto { margin-top: auto; }
+.ds-mb-auto { margin-bottom: auto; }
+
+.ds-relative { position: relative; }
+.ds-absolute { position: absolute; }
+
+.ds-pl-10 { padding-left: 2.5rem; }
+.ds-pl-8 { padding-left: 2rem; }
+.ds-px-3 { padding-left: $ds-spacing-3; padding-right: $ds-spacing-3; }
+.ds-px-4 { padding-left: $ds-spacing-4; padding-right: $ds-spacing-4; }
+.ds-px-6 { padding-left: $ds-spacing-6; padding-right: $ds-spacing-6; }
+.ds-py-2 { padding-top: $ds-spacing-2; padding-bottom: $ds-spacing-2; }
+.ds-py-3 { padding-top: $ds-spacing-3; padding-bottom: $ds-spacing-3; }
+.ds-py-4 { padding-top: $ds-spacing-4; padding-bottom: $ds-spacing-4; }
+
+.ds-mb-1 { margin-bottom: $ds-spacing-1; }
+.ds-mb-2 { margin-bottom: $ds-spacing-2; }
+.ds-mb-3 { margin-bottom: $ds-spacing-3; }
+.ds-mb-4 { margin-bottom: $ds-spacing-4; }
+.ds-mb-6 { margin-bottom: $ds-spacing-6; }
+.ds-mt-1 { margin-top: $ds-spacing-1; }
+
+.ds-tracking-wide { letter-spacing: 0.05em; }
+
+.ds-justify-start { justify-content: flex-start; }
+.ds-justify-end { justify-content: flex-end; }
+
+.ds-hidden { display: none !important; }
+.ds-visible-mobile { display: none !important; }
+.ds-visible-desktop { display: block !important; }
+
+@media (max-width: 1023px) {
+  .ds-visible-mobile { display: block !important; }
+  .ds-visible-desktop { display: none !important; }
+}
+
+@media (min-width: 1024px) {
+  .ds-hidden-desktop { display: none !important; }
+  .ds-visible-desktop { display: block !important; }
+}
+
+// ============================================
+// RESPONSIVE UTILITIES (Mobile-first)
+// ============================================
+
+// Эти классы будут использоваться в _responsive.scss
+// Здесь только базовые утилиты без медиа-запросов
+

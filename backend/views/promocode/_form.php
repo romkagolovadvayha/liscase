@@ -27,7 +27,10 @@ use yii\bootstrap5\ActiveForm;
             'minuteStep'     => 15,
         ],
     ]); ?>
-    <?= $form->field($model, 'status')->dropDownList(Promocode::getStatusList(), []) ?>
+    <div class="ds-select-wrapper">
+        <?= $form->field($model, 'status', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->dropDownList(Promocode::getStatusList(), ['class' => 'ds-select form-control']) ?>
+        <i class="fas fa-chevron-down ds-select-arrow"></i>
+    </div>
     <button type="submit" class="btn btn-primary">
         <span class="button__text">Сохранить</span>
     </button>

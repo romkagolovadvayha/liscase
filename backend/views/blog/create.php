@@ -1,16 +1,7 @@
 <?php
+/** @var backend\forms\blog\BlogForm $model */
 
-use yii\helpers\Html;
+$this->title = Yii::t('common', 'Добавить пост');
+$this->params['contentClass'] = 'content-no-padding';
 
-/** @var yii\web\View $this */
-/** @var common\models\blog\Blog $model */
-
-$this->title = 'Create Blog';
-$this->params['breadcrumbs'][] = ['label' => 'Блог', 'url' => ['index']];
-$this->params['breadcrumbs'][] = $this->title;
-?>
-<div class="blog-create">
-    <?= $this->render('_form', [
-        'model' => $model,
-    ]) ?>
-</div>
+echo $this->render('_form', ['model' => $model]);

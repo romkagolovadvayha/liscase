@@ -48,6 +48,33 @@ class ServersController extends BackendController
         $searchModel = new ServersSearch();
         $dataProvider = $searchModel->search($this->request->queryParams);
 
+        // Показываем фильтры в правой колонке
+        $this->view->params['showFilters'] = true;
+        
+        // Передаем кнопки действий в шапку (до рендеринга layout)
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-plus"></i> ' . Yii::t('common', 'Новый сервер'),
+                'url' => ['create'],
+                'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="fas fa-tags"></i> ' . Yii::t('common', 'Теги серверов'),
+                'url' => ['/servers-tags/index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="bi bi-calendar-event"></i> ' . Yii::t('common', 'Массовое редактирование вайпов'),
+                'url' => ['mass-edit-wipe'],
+                'class' => 'bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="fas fa-sort"></i> ' . Yii::t('common', 'Сортировать'),
+                'url' => ['sort'],
+                'class' => 'bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
@@ -221,6 +248,15 @@ class ServersController extends BackendController
             $model->loadDefaultValues();
         }
 
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+
         return $this->render('create', [
             'model' => $model,
         ]);
@@ -293,6 +329,15 @@ class ServersController extends BackendController
                 }
             }
         }
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
 
         return $this->render('update', [
             'model' => $model,
@@ -417,6 +462,15 @@ class ServersController extends BackendController
                      ->andWhere(['status' => Servers::STATUS_ACTIVE])
                      ->orderBy(['sort' => SORT_ASC])
                      ->all();
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
 
         return $this->render('sort', [
             'items' => $models

@@ -1,8 +1,9 @@
 <?php
 
 use common\models\building\Building;
-use yii\helpers\Html;
 use kartik\grid\GridView;
+use yii\helpers\Html;
+use yii\helpers\ArrayHelper;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
 use backend\models\building\BuildingSearch;
@@ -12,71 +13,117 @@ use backend\models\building\BuildingSearch;
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
 $this->title = Yii::t('common', 'Постройки');
-$this->params['breadcrumbs'][] = $this->title;
-?>
-<div class="building-index-page">
-    <div class="content-header">
-        <h1><?= Html::encode($this->title) ?></h1>
-    </div>
+$this->params['contentClass'] = 'content-no-padding';
+$this->params['searchModel'] = $searchModel;
 
-    <div class="content">
-        <div class="ds-card">
-            <?= GridView::widget([
-        'dataProvider' => $dataProvider,
-        'filterModel' => $searchModel,
-        'columns' => [
-            [
-                'attribute' => 'id',
-                'options'   => ['width' => '60'],
+$headerCellClass = 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]';
+$bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
+?>
+<div class="building-index-page w-full">
+    <div class="w-full">
+        <?= GridView::widget([
+            'dataProvider' => $dataProvider,
+            'filterModel' => $searchModel,
+            'tableOptions' => ['class' => 'table-auto w-full text-sm'],
+            'options' => ['class' => 'admin-grid-view-dark'],
+            'layout' => "{items}\n{pager}",
+            'filterRowOptions' => ['style' => 'display: none;'],
+            'bordered' => false,
+            'striped' => false,
+            'hover' => true,
+            'columns' => [
+                [
+                    'attribute' => 'id',
+                    'format' => 'raw',
+                    'options' => ['width' => '90'],
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                ],
+                [
+                    'format' => 'raw',
+                    'label' => '',
+                    'options' => ['width' => '60'],
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass . ' drop-index-preview-cell'],
+                    'value' => function (Building $model) {
+                        $firstImage = $model->buildingImage ? reset($model->buildingImage) : null;
+                        $url = $firstImage ? $firstImage->getPublicUrlPreview() : null;
+                        if (!$url) {
+                            return '<span class="drop-index-preview-placeholder">—</span>';
+                        }
+                        return Html::tag('div', Html::img($url, [
+                            'width' => 48,
+                            'height' => 48,
+                            'loading' => 'lazy',
+                            'alt' => Html::encode($model->name ?? ''),
+                            'class' => 'drop-index-preview-img',
+                        ]), ['class' => 'drop-index-preview']);
+                    },
+                ],
+                [
+                    'attribute' => 'name',
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                ],
+                [
+                    'attribute' => 'user_id',
+                    'options' => ['width' => '150'],
+                    'format' => 'raw',
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                    'value' => function (Building $model) {
+                        if (!$model->user) {
+                            return '—';
+                        }
+                        return Html::a(Html::encode($model->user->username), ['/user/profile', 'userId' => $model->user->id], ['class' => 'text-blue-400 hover:underline']);
+                    },
+                ],
+                [
+                    'attribute' => 'status',
+                    'options' => ['width' => '140'],
+                    'filterType' => GridView::FILTER_SELECT2,
+                    'filter' => ArrayHelper::merge(['' => Yii::t('common', 'Любой')], Building::getStatusList()),
+                    'format' => 'raw',
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                    'value' => function (Building $model) {
+                        $statusList = Building::getStatusList();
+                        $status = ArrayHelper::getValue($statusList, $model->status, '');
+                        $badgeClass = $model->status == Building::STATUS_ACTIVE ? 'ds-badge--success' : ($model->status == Building::STATUS_WAIT ? 'ds-badge--warning' : 'ds-badge--danger');
+                        return Html::tag('span', Html::encode($status), ['class' => 'ds-badge ' . $badgeClass]);
+                    },
+                ],
+                [
+                    'attribute' => 'server_tag',
+                    'options' => ['width' => '180'],
+                    'filterType' => GridView::FILTER_SELECT2,
+                    'filter' => ArrayHelper::merge(['' => Yii::t('common', 'Любой')], \common\models\servers\Servers::getServers()),
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                    'value' => function (Building $model) {
+                        $list = \common\models\servers\Servers::getServers();
+                        return ArrayHelper::getValue($list, $model->server_tag, $model->server_tag);
+                    },
+                ],
+                [
+                    'attribute' => 'created_at',
+                    'label' => Yii::t('common', 'Дата создания'),
+                    'options' => ['width' => '160'],
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                    'format' => ['date', 'php:Y-m-d H:i'],
+                ],
+                [
+                    'class' => ActionColumn::class,
+                    'template' => '{view} {update} {delete}',
+                    'options' => ['width' => '120'],
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                    'urlCreator' => function ($action, $model, $key, $index, $column) {
+                        return Url::toRoute([$action, 'id' => $model->id]);
+                    },
+                ],
             ],
-            [
-                'attribute' => 'user_id',
-                'options'   => ['width' => '150'],
-                'format'    => 'raw',
-                'value'          => function (Building $model) {
-                    $url = \yii\helpers\Url::to(['/user/profile', 'userId' => $model->user->id]);
-                    return Html::a(Html::encode($model->user->username), $url, [
-                        'class' => 'ds-text--primary',
-                        'style' => 'text-decoration: none;'
-                    ]);
-                },
-            ],
-            'name',
-            [
-                'attribute'       => 'status',
-                'options'   => ['width' => '140'],
-                'filterType'  => GridView::FILTER_SELECT2,
-                'filter'          => \yii\helpers\ArrayHelper::merge(['' => 'Любой'], Building::getStatusList()),
-                'format'    => 'raw',
-                'value'           => function (Building $model) {
-                    $statusList = Building::getStatusList();
-                    $status = \yii\helpers\ArrayHelper::getValue($statusList, $model->status);
-                    $badgeClass = $model->status == Building::STATUS_ACTIVE ? 'ds-badge--success' : 'ds-badge--danger';
-                    return Html::tag('span', Html::encode($status), ['class' => 'ds-badge ' . $badgeClass]);
-                },
-            ],
-            [
-                'attribute'       => 'server_tag',
-                'options'   => ['width' => '180'],
-                'filterType'  => GridView::FILTER_SELECT2,
-                'filter'          => \yii\helpers\ArrayHelper::merge(['' => 'Любой'], \common\models\servers\Servers::getServers()),
-                'value'           => function (Building $model) {
-                    $statusList = \common\models\servers\Servers::getServers();
-                    return \yii\helpers\ArrayHelper::getValue($statusList, $model->server_tag);
-                },
-            ],
-            [
-                'options'   => ['width' => '200'],
-                'class' => \common\components\grid\DateColumn::class,
-            ],
-            [
-                'class' => ActionColumn::className(),
-                'urlCreator' => function ($action, Building $model, $key, $index, $column) {
-                    return Url::toRoute([$action, 'id' => $model->id]);
-                 }
-            ],
-        ],
-    ]); ?>
-        </div>
+        ]); ?>
     </div>
 </div>

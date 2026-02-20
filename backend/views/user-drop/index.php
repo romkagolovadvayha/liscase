@@ -6,56 +6,51 @@ use kartik\grid\GridView;
 use yii\helpers\Html;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Url;
+use yii\grid\ActionColumn;
 
 /** @var $dataProvider */
 /** @var $searchModel \common\models\user\UserDropSearch */
 
 $this->title = Yii::t('common', 'Предметы пользователей');
+$this->params['contentClass'] = 'content-no-padding';
+$this->params['searchModel'] = $searchModel;
+
+$headerCellClass = 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]';
+$bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
+$serversList = ArrayHelper::map(Servers::find()->orderBy(['name' => SORT_ASC])->all(), 'id', 'name');
 ?>
-<div class="user-drop-index-page">
-    <div class="content-header">
-        <div class="ds-flex ds-flex--between">
-            <h1><?= Html::encode($this->title) ?></h1>
-            <div>
-                <?= Html::a('Массовое изменение по серверу', ['bulk-change-by-server'], [
-                    'class' => 'ds-btn ds-btn--primary',
-                    'style' => 'margin-left: 10px;'
-                ]) ?>
-                <?= Html::a('Начислить бонус', ['bonus-by-server'], [
-                    'class' => 'ds-btn ds-btn--success',
-                    'style' => 'margin-left: 10px;'
-                ]) ?>
-            </div>
-        </div>
-    </div>
-
-    <div class="content">
-        <div class="ds-card">
-            <?php
-            $serversList = ArrayHelper::map(
-                Servers::find()->orderBy(['name' => SORT_ASC])->all(),
-                'id',
-                'name'
-            );
-            ?>
-
-            <?= GridView::widget([
-                'dataProvider' => $dataProvider,
-                'filterModel'  => $searchModel,
-                'columns'      => [
-                    [
-                        'class' => 'yii\grid\CheckboxColumn',
-                        'options' => ['width' => '30'],
-                    ],
+<div class="user-drop-index-page w-full">
+    <div class="w-full">
+        <?= GridView::widget([
+            'dataProvider' => $dataProvider,
+            'filterModel' => $searchModel,
+            'tableOptions' => ['class' => 'table-auto w-full text-sm'],
+            'options' => ['class' => 'admin-grid-view-dark'],
+            'layout' => "{items}\n{pager}",
+            'filterRowOptions' => ['style' => 'display: none;'],
+            'bordered' => false,
+            'striped' => false,
+            'hover' => true,
+            'columns' => [
+                [
+                    'class' => 'yii\grid\CheckboxColumn',
+                    'options' => ['width' => '30'],
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                ],
                     [
                         'attribute' => 'id',
-                        'format'    => 'raw',
-                        'options'   => ['width' => '70'],
+                        'format' => 'raw',
+                        'options' => ['width' => '70'],
+                        'headerOptions' => ['class' => $headerCellClass],
+                        'contentOptions' => ['class' => $bodyCellClass],
                     ],
                     [
                         'attribute' => 'user_username',
                         'label' => Yii::t('common', 'Пользователь'),
                         'format' => 'raw',
+                        'headerOptions' => ['class' => $headerCellClass],
+                        'contentOptions' => ['class' => $bodyCellClass],
                         'value' => function (UserDrop $model) {
                             if (empty($model->user)) {
                                 return $model->user_id ? 'ID: ' . $model->user_id : null;
@@ -63,7 +58,7 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                             return Html::a(
                                 Html::encode($model->user->username),
                                 ['/user/profile', 'userId' => $model->user_id],
-                                ['class' => 'ds-text--primary', 'style' => 'text-decoration: none;']
+                                ['class' => 'text-white hover:underline', 'style' => 'text-decoration: none;']
                             );
                         },
                     ],
@@ -73,6 +68,8 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'filterType' => GridView::FILTER_SELECT2,
                         'filter' => ArrayHelper::merge(['' => 'Все'], $serversList),
                         'options' => ['width' => '150'],
+                        'headerOptions' => ['class' => $headerCellClass],
+                        'contentOptions' => ['class' => $bodyCellClass],
                         'value' => function (UserDrop $model) {
                             if (empty($model->user) || empty($model->user->server)) {
                                 return null;
@@ -84,6 +81,8 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'attribute' => 'drop_name',
                         'label' => Yii::t('common', 'Предмет'),
                         'format' => 'raw',
+                        'headerOptions' => ['class' => $headerCellClass],
+                        'contentOptions' => ['class' => $bodyCellClass],
                         'value' => function (UserDrop $model) {
                             $drop = $model->dropOne;
                             if (empty($drop)) {
@@ -105,6 +104,8 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'attribute' => 'count',
                         'label' => Yii::t('common', 'Количество'),
                         'options' => ['width' => '100'],
+                        'headerOptions' => ['class' => $headerCellClass],
+                        'contentOptions' => ['class' => $bodyCellClass],
                     ],
                     [
                         'attribute' => 'status',
@@ -112,6 +113,8 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'filter' => ArrayHelper::merge(['' => 'Все'], UserDrop::getStatusList()),
                         'options' => ['width' => '150'],
                         'format' => 'raw',
+                        'headerOptions' => ['class' => $headerCellClass],
+                        'contentOptions' => ['class' => $bodyCellClass],
                         'value' => function (UserDrop $model) {
                             $statusList = UserDrop::getStatusList();
                             $status = ArrayHelper::getValue($statusList, $model->status);
@@ -131,17 +134,23 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                         'label' => Yii::t('common', 'Дата отправки'),
                         'options' => ['width' => '180'],
                         'class' => \common\components\grid\DateColumn::class,
+                        'headerOptions' => ['class' => $headerCellClass],
+                        'contentOptions' => ['class' => $bodyCellClass],
                     ],
                     [
                         'attribute' => 'created_at',
                         'label' => Yii::t('common', 'Дата создания'),
                         'options' => ['width' => '180'],
                         'class' => \common\components\grid\DateColumn::class,
+                        'headerOptions' => ['class' => $headerCellClass],
+                        'contentOptions' => ['class' => $bodyCellClass],
                     ],
                     [
-                        'class' => 'yii\grid\ActionColumn',
+                        'class' => ActionColumn::class,
                         'template' => '{update-status}',
                         'options' => ['width' => '100'],
+                        'headerOptions' => ['class' => $headerCellClass],
+                        'contentOptions' => ['class' => $bodyCellClass],
                         'buttons' => [
                             'update-status' => function ($url, $model) {
                                 $statusList = UserDrop::getStatusList();
@@ -167,7 +176,7 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                                     $model->status,
                                     $statusList,
                                     [
-                                        'class' => 'form-control status-select',
+                                        'class' => 'form-control ds-select status-select',
                                         'data-id' => $model->id,
                                         'style' => 'width: 120px;',
                                     ]
@@ -177,7 +186,6 @@ $this->title = Yii::t('common', 'Предметы пользователей');
                     ],
                 ],
             ]); ?>
-        </div>
     </div>
 </div>
 

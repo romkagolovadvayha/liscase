@@ -51,6 +51,22 @@ class BlogCategoryController extends BackendController
         $searchModel = new BlogCategorySearch();
         $dataProvider = $searchModel->search($this->request->queryParams);
 
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+        $this->view->params['searchModel'] = $searchModel;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-plus"></i> ' . Yii::t('common', 'Добавить категорию'),
+                'url' => ['create'],
+                'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="fas fa-newspaper"></i> ' . Yii::t('common', 'Блог'),
+                'url' => ['/blog/index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,

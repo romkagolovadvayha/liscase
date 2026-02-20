@@ -43,6 +43,46 @@ class DropController extends \backend\components\CrudController
         return DropForm::class;
     }
 
+    protected function getIndexHeaderActions()
+    {
+        return [
+            [
+                'label' => '<i class="fas fa-plus"></i> ' . Yii::t('common', 'Добавить предмет'),
+                'url' => ['create'],
+                'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="fas fa-sort"></i> ' . Yii::t('common', 'Сортировать'),
+                'url' => ['sort'],
+                'class' => 'bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="fas fa-folder"></i> ' . Yii::t('common', 'Категории'),
+                'url' => ['/category/index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+    }
+
+    /**
+     * Кнопка «Назад» в шапке на страницах создания/редактирования.
+     * @param int|null $id
+     * @return Model
+     * @throws NotFoundHttpException
+     */
+    protected function _getFormModel($id = null)
+    {
+        $formModel = parent::_getFormModel($id);
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+        return $formModel;
+    }
+
     /**
      * @param Model $formModel
      * @param string $view
@@ -145,6 +185,15 @@ class DropController extends \backend\components\CrudController
         
         // Очищаем кэш API продуктов после изменения сортировки
         $this->clearProductsCache();
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
 
         return $this->render('sort', [
             'items' => $drops

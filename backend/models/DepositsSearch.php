@@ -65,9 +65,12 @@ class DepositsSearch extends Deposit
             ->andFilterWhere([
                 't.id'              => $this->id,
                 't.status'          => $this->status,
+                't.payment_type'    => $this->payment_type,
+                't.amount'          => $this->amount,
             ])
             ->andFilterWhere(['LIKE', 'u.username', $this->username])
-            ->andFilterWhere(['LIKE', 'u.steam_id', $this->steam_id]);
+            ->andFilterWhere(['LIKE', 'u.steam_id', $this->steam_id])
+            ->andFilterWhere(['LIKE', 't.payment_id', $this->payment_id]);
 
         DateQuery::addDateCondition($query, $this, 't.created_at');
 

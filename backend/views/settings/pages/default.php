@@ -1,16 +1,15 @@
 <?php
 
-use common\models\site\SiteSetting;
-use yii\helpers\Html;
-use yii\widgets\ActiveForm;
-use yii\helpers\ArrayHelper;
-use yii\widgets\Pjax;
-
 /** @var string $category */
+/** @var string|null $pageTitle */
 
-$this->title = 'Настройки';
+if (!empty($pageTitle)) {
+    $this->title = $pageTitle;
+} else {
+    $this->title = Yii::t('common', 'Настройки');
+}
 ?>
 
-<div class="setting">
-    <?=$this->render('form', ['category' => $category])?>
+<div class="settings-index-page w-full p-4 lg:p-6">
+    <?= $this->render('form', ['category' => $category]) ?>
 </div>

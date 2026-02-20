@@ -55,6 +55,22 @@ class BlogController extends BackendController
         $searchModel = new BlogSearch();
         $dataProvider = $searchModel->search($this->request->queryParams);
 
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = true;
+        $this->view->params['searchModel'] = $searchModel;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-plus"></i> ' . Yii::t('common', 'Добавить пост'),
+                'url' => ['create'],
+                'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="fas fa-folder"></i> ' . Yii::t('common', 'Категории'),
+                'url' => ['/blog-category/index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
@@ -118,8 +134,43 @@ class BlogController extends BackendController
      */
     public function actionView($id)
     {
+        $model = $this->findModel($id);
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="fas fa-pencil-alt"></i> ' . Yii::t('common', 'Изменить'),
+                'url' => ['update', 'id' => $model->id],
+                'class' => 'bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="fas fa-trash"></i> ' . Yii::t('common', 'Удалить'),
+                'url' => ['delete', 'id' => $model->id],
+                'class' => 'bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+                'data' => ['confirm' => Yii::t('common', 'Вы уверены, что хотите удалить этот пост?'), 'method' => 'post'],
+            ],
+            [
+                'label' => '<i class="fab fa-vk"></i> ' . Yii::t('common', 'ВК'),
+                'url' => ['publish-to-vk', 'id' => $model->id],
+                'class' => 'bg-[#2787f5] hover:opacity-90 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+                'data' => ['confirm' => Yii::t('common', 'Опубликовать этот пост в группу ВКонтакте?'), 'method' => 'post'],
+            ],
+            [
+                'label' => '<i class="fab fa-telegram"></i> ' . Yii::t('common', 'Telegram'),
+                'url' => ['publish-to-telegram', 'id' => $model->id],
+                'class' => 'bg-[#0088cc] hover:opacity-90 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+                'data' => ['confirm' => Yii::t('common', 'Опубликовать этот пост в Telegram канал?'), 'method' => 'post'],
+            ],
+        ];
+
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $model,
         ]);
     }
 
@@ -134,13 +185,21 @@ class BlogController extends BackendController
 
         if ($this->request->isPost) {
             if ($model->load($this->request->post()) && $model->saveRecord()) {
-                // Очищаем кэш списка блога
                 $this->clearBlogCache();
                 return $this->redirect(['view', 'id' => $model->id]);
             }
         } else {
             $model->loadDefaultValues();
         }
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
 
         return $this->render('create', [
             'model' => $model,
@@ -159,10 +218,18 @@ class BlogController extends BackendController
         $model = $this->findModel($id);
 
         if ($this->request->isPost && $model->load($this->request->post()) && $model->saveRecord()) {
-            // Очищаем кэш списка блога
             $this->clearBlogCache();
             return $this->redirect(['view', 'id' => $model->id]);
         }
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
 
         return $this->render('update', [
             'model' => $model,

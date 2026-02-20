@@ -42,6 +42,21 @@ class UserDropController extends CrudController
         return UserDropSearch::class;
     }
 
+    protected function getIndexHeaderActions()
+    {
+        return [
+            [
+                'label' => '<i class="fas fa-edit"></i> Массовое изменение по серверу',
+                'url' => ['bulk-change-by-server'],
+                'class' => 'bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="fas fa-gift"></i> Начислить бонус',
+                'url' => ['bonus-by-server'],
+                'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+    }
 
     /**
      * Изменение статуса одного предмета
@@ -133,6 +148,16 @@ class UserDropController extends CrudController
             'id',
             'name'
         );
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
         
         return $this->render('bulk-change-by-server', [
             'serversList' => $serversList,
@@ -327,6 +352,16 @@ class UserDropController extends CrudController
             'id',
             'name'
         );
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
         
         return $this->render('bonus-by-server', [
             'serversList' => $serversList,

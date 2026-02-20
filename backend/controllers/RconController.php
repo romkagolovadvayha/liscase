@@ -64,6 +64,9 @@ class RconController extends BackendController
             $results = RconTasks::executeWithResults($command, $selectedServers);
         }
 
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+
         return $this->render('index', [
             'command' => $command,
             'results' => $results,

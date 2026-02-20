@@ -1,17 +1,7 @@
 <?php
+/** @var backend\forms\blog\BlogForm $model */
 
-use yii\helpers\Html;
+$this->title = Yii::t('common', 'Изменить пост');
+$this->params['contentClass'] = 'content-no-padding';
 
-/** @var yii\web\View $this */
-/** @var common\models\blog\Blog $model */
-
-$this->title = 'Update Blog: ' . $model->name;
-$this->params['breadcrumbs'][] = ['label' => 'Блог', 'url' => ['index']];
-$this->params['breadcrumbs'][] = ['label' => $model->name, 'url' => ['view', 'id' => $model->id]];
-$this->params['breadcrumbs'][] = 'Update';
-?>
-<div class="blog-update">
-    <?= $this->render('_form', [
-        'model' => $model,
-    ]) ?>
-</div>
+echo $this->render('_form', ['model' => $model]);

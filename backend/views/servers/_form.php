@@ -1,247 +1,59 @@
 <?php
 
+use common\models\servers\Servers;
 use common\models\servers\ServersTags;
 use kartik\select2\Select2;
+use yii\bootstrap5\ActiveForm;
 use yii\helpers\Html;
-use yii\widgets\ActiveForm;
 
 /** @var yii\web\View $this */
 /** @var common\models\servers\Servers $model */
-/** @var yii\widgets\ActiveForm $form */
-/** @var array $selectedTags */
 
 $selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
 ?>
 
-<div class="servers-form">
-    <?php $form = ActiveForm::begin(); ?>
+<div class="servers-form servers-form--compact w-full">
+    <?php $form = ActiveForm::begin([
+        'enableClientValidation' => false,
+        'enableAjaxValidation' => false,
+        'id' => 'servers-form',
+        'options' => [
+            'class' => 'flex flex-col lg:flex-row min-h-0 flex-1 w-full',
+        ],
+    ]); ?>
 
-    <?= \yii\helpers\Html::errorSummary($model, ['class' => 'ds-alert ds-alert--danger', 'encode' => false]) ?>
+    <?= Html::errorSummary($model, ['class' => 'ds-alert ds-alert--danger mb-4 mx-4 lg:mx-6', 'encode' => false]) ?>
 
-    <!-- Основная информация -->
-    <div class="ds-card mb-4">
-        <div class="ds-card__header">
-            <h5 class="ds-card__header-title">Основная информация</h5>
-        </div>
-        <div class="ds-card__body">
-            <div class="row">
-                <div class="col-md-3">
-                    <?= $form->field($model, 'name')->textInput(['class' => 'form-control ds-input']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'tag')->textInput(['class' => 'form-control ds-input']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'monitoring_name')->textInput(['class' => 'form-control ds-input']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'monitoring_description')->textInput(['class' => 'form-control ds-input']) ?>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-3">
-                    <?= $form->field($model, 'game_mode')->textInput(['class' => 'form-control ds-input', 'placeholder' => 'vanilla']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'monitoring_tags')->textInput(['class' => 'form-control ds-input', 'placeholder' => 'weekly, vanilla, EU, tut']) ?>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-3">
-                    <?= $form->field($model, 'rust_app_id')->textInput(['class' => 'form-control ds-input']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'wargm_id')->textInput(['class' => 'form-control ds-input']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'sort')->textInput(['class' => 'form-control ds-input']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'status')->dropDownList(
-                        \common\models\servers\Servers::getStatusList(),
-                        ['class' => 'form-control ds-input']
-                    ) ?>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Основная колонка -->
+    <div class="flex-1 min-w-0 p-4 lg:p-6 servers-form-content">
+        <div class="space-y-6">
+            <?= $form->field($model, 'name', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'placeholder' => 'Название сервера']) ?>
 
-    <!-- Вайп информация -->
-    <div class="ds-card mb-4">
-        <div class="ds-card__header">
-            <h5 class="ds-card__header-title">Вайп информация</h5>
-        </div>
-        <div class="ds-card__body">
-            <div class="row">
-                <div class="col-md-3">
-                    <?= $form->field($model, 'wipe')->textInput(['class' => 'form-control ds-input', 'placeholder' => 'YYYY-MM-DD HH:MM:SS']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'next_wipe')->textInput(['class' => 'form-control ds-input', 'placeholder' => 'YYYY-MM-DD HH:MM:SS']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'global_wipe')->textInput(['class' => 'form-control ds-input', 'placeholder' => 'YYYY-MM-DD HH:MM:SS']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'wipe_type')->dropDownList(
-                        [
-                            7 => Yii::t('common', 'Еженедельно'),
-                            14 => Yii::t('common', 'Каждые две недели'),
-                            30 => Yii::t('common', 'Раз в месяц'),
-                        ],
-                        ['prompt' => 'Выберите тип...', 'class' => 'form-control ds-input']
-                    ) ?>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-6">
-                    <?= $form->field($model, 'wipe_server_name')->textInput(['class' => 'form-control ds-input', 'placeholder' => 'Название сервера при вайпе (для игры)']) ?>
-                </div>
-                <div class="col-md-6">
-                    <?= $form->field($model, 'wipe_server_description')->textarea(['rows' => 4, 'class' => 'form-control ds-input', 'placeholder' => 'Описание сервера при вайпе (для игры)']) ?>
-                </div>
-            </div>
-        </div>
-    </div>
+            <?= $form->field($model, 'description', ['options' => ['class' => 'mb-2'], 'template' => '{label}{input}{error}'])->textarea(['rows' => 4, 'class' => 'ds-textarea form-control', 'placeholder' => 'Описание сервера']) ?>
 
-    <!-- Параметры карты -->
-    <div class="ds-card mb-4">
-        <div class="ds-card__header">
-            <h5 class="ds-card__header-title">Параметры карты</h5>
-        </div>
-        <div class="ds-card__body">
-            <div class="row">
-                <div class="col-md-3">
-                    <?= $form->field($model, 'min_map_size')->textInput(['class' => 'form-control ds-input', 'type' => 'number']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'max_map_size')->textInput(['class' => 'form-control ds-input', 'type' => 'number']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'secret_map')->dropDownList(
-                        [
-                            0 => Yii::t('common', 'Нет'),
-                            1 => Yii::t('common', 'Да'),
-                        ],
-                        ['class' => 'form-control ds-input']
-                    ) ?>
-                </div>
-            </div>
-        </div>
-    </div>
+            <?= $form->field($model, 'rules', ['options' => ['class' => 'mb-2'], 'template' => '{label}{input}{error}'])->textarea(['rows' => 4, 'class' => 'ds-textarea form-control', 'placeholder' => 'Правила сервера']) ?>
 
-    <!-- Подключение к серверу -->
-    <div class="ds-card mb-4">
-        <div class="ds-card__header">
-            <h5 class="ds-card__header-title">Подключение к серверу</h5>
-        </div>
-        <div class="ds-card__body">
-            <div class="row">
-                <div class="col-md-3">
-                    <?= $form->field($model, 'ip')->textInput(['class' => 'form-control ds-input']) ?>
+            <div>
+                <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide">Вайп</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-2">
+                    <?= $form->field($model, 'wipe', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'type' => 'datetime-local']) ?>
+                    <?= $form->field($model, 'next_wipe', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'type' => 'datetime-local']) ?>
+                    <?= $form->field($model, 'global_wipe', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'type' => 'datetime-local']) ?>
                 </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'text_ip')->textInput(['class' => 'form-control ds-input', 'placeholder' => 'Например: prostoj.store']) ?>
-                </div>
-                <div class="col-md-2">
-                    <?= $form->field($model, 'port')->textInput(['class' => 'form-control ds-input', 'type' => 'number']) ?>
-                </div>
-                <div class="col-md-2">
-                    <?= $form->field($model, 'query')->textInput(['class' => 'form-control ds-input', 'type' => 'number']) ?>
-                </div>
-                <div class="col-md-2">
-                    <?= $form->field($model, 'rcon')->textInput(['class' => 'form-control ds-input', 'type' => 'number']) ?>
-                </div>
+                <?= $form->field($model, 'wipe_server_description', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->textarea(['rows' => 2, 'class' => 'ds-textarea form-control', 'placeholder' => 'Описание при вайпе']) ?>
             </div>
-            <div class="row">
-                <div class="col-md-3">
-                    <?= $form->field($model, 'rcon_password')->textInput(['maxlength' => true, 'class' => 'form-control ds-input', 'type' => 'password']) ?>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Игровые параметры -->
-    <div class="ds-card mb-4">
-        <div class="ds-card__header">
-            <h5 class="ds-card__header-title">Игровые параметры</h5>
-        </div>
-        <div class="ds-card__body">
-            <div class="row">
-                <div class="col-md-3">
-                    <?= $form->field($model, 'max')->textInput(['class' => 'form-control ds-input', 'type' => 'number']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'team_limit')->textInput(['class' => 'form-control ds-input', 'type' => 'number']) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'skindrops')->dropDownList(
-                        [
-                            0 => Yii::t('common', 'Нет'),
-                            1 => Yii::t('common', 'Да'),
-                        ],
-                        ['class' => 'form-control ds-input']
-                    ) ?>
-                </div>
-                <div class="col-md-3">
-                    <?= $form->field($model, 'is_store')->dropDownList(
-                        [
-                            0 => Yii::t('common', 'Нет'),
-                            1 => Yii::t('common', 'Да'),
-                        ],
-                        ['class' => 'form-control ds-input']
-                    ) ?>
+            <div>
+                <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide">Подключение</h3>
+                <div class="flex flex-wrap gap-3">
+                    <?= $form->field($model, 'ip', ['options' => ['class' => 'mb-0 flex-1 min-w-[140px]'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'placeholder' => 'IP']) ?>
+                    <?= $form->field($model, 'port', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'type' => 'number', 'placeholder' => 'Порт']) ?>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- API и интеграции -->
-    <div class="ds-card mb-4">
-        <div class="ds-card__header">
-            <h5 class="ds-card__header-title">API и интеграции</h5>
-        </div>
-        <div class="ds-card__body">
-            <div class="row">
-                <div class="col-md-6">
-                    <?= $form->field($model, 'secret_key')->textInput(['class' => 'form-control ds-input']) ?>
-                </div>
-                <div class="col-md-6">
-                    <?= $form->field($model, 'discord_token')->textInput(['class' => 'form-control ds-input']) ?>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <?= $form->field($model, 'commands')->textInput(['class' => 'form-control ds-input', 'placeholder' => 'Команды через запятую']) ?>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Описание и правила -->
-    <div class="ds-card mb-4">
-        <div class="ds-card__header">
-            <h5 class="ds-card__header-title">Описание и правила</h5>
-        </div>
-        <div class="ds-card__body">
-            <div class="row">
-                <div class="col-md-6">
-                    <?= $form->field($model, 'description')->textarea(['rows' => 6, 'class' => 'form-control ds-input']) ?>
-                </div>
-                <div class="col-md-6">
-                    <?= $form->field($model, 'rules')->textarea(['rows' => 6, 'class' => 'form-control ds-input']) ?>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Теги сервера -->
-    <div class="ds-card mb-4">
-        <div class="ds-card__header">
-            <h5 class="ds-card__header-title">Теги сервера</h5>
-        </div>
-        <div class="ds-card__body">
-            <div class="form-group">
+            <div>
+                <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide">Теги сервера</h3>
+                <label class="text-xs text-gray-400 mb-1 block"><?= Yii::t('common', 'Теги') ?></label>
                 <?= Select2::widget([
                     'name' => 'server_tags',
                     'value' => $selectedTags,
@@ -256,22 +68,144 @@ $selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
                         'tags' => false,
                     ],
                 ]); ?>
-                <p class="help-block" style="color: var(--ds-text-secondary); margin-top: 0.5rem;">
-                    <i class="bi bi-info-circle"></i> <?= Yii::t('common', 'Можно выбрать несколько тегов') ?>
-                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-2 items-center pt-2">
+                <?= Html::submitButton('<i class="fas fa-check"></i> ' . Yii::t('common', 'Сохранить'), ['class' => 'ds-btn ds-btn--primary']) ?>
+                <?= Html::a('<i class="fas fa-times"></i> ' . Yii::t('common', 'Отмена'), ['index'], ['class' => 'ds-btn ds-btn--secondary']) ?>
             </div>
         </div>
     </div>
 
-    <!-- Кнопки действий -->
-    <div class="ds-card">
-        <div class="ds-card__body">
-            <div class="ds-flex ds-items-center ds-gap-md">
-                <?= Html::submitButton('<i class="bi bi-check-circle"></i> Сохранить', ['class' => 'ds-btn ds-btn--success']) ?>
-                <?= Html::a('<i class="bi bi-x-circle"></i> Отмена', ['index'], ['class' => 'ds-btn ds-btn--primary']) ?>
+    <!-- Правая колонка: Параметры -->
+    <aside class="servers-form-sidebar admin-filters-content flex-shrink-0 w-full lg:w-[300px] lg:border-l border-[hsl(0_0%_15.3%_/_1)] bg-[hsl(0_0%_20.4%_/_1)] h-full overflow-y-auto scrollbar-thin flex flex-col">
+        <div class="p-4 flex-1 flex flex-col">
+            <div class="mb-6">
+                <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide">Параметры</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('tag') ?></label>
+                        <?= $form->field($model, 'tag', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'placeholder' => 'Тег']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('status') ?></label>
+                        <div class="ds-select-wrapper">
+                            <?= $form->field($model, 'status', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->dropDownList(Servers::getStatusList(), ['class' => 'ds-select w-full text-sm', 'prompt' => '']) ?>
+                            <i class="fas fa-chevron-down ds-select-arrow"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('sort') ?></label>
+                        <?= $form->field($model, 'sort', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'type' => 'number']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('monitoring_name') ?></label>
+                        <?= $form->field($model, 'monitoring_name', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('monitoring_description') ?></label>
+                        <?= $form->field($model, 'monitoring_description', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('game_mode') ?></label>
+                        <?= $form->field($model, 'game_mode', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'placeholder' => 'vanilla']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('monitoring_tags') ?></label>
+                        <?= $form->field($model, 'monitoring_tags', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('rust_app_id') ?></label>
+                        <?= $form->field($model, 'rust_app_id', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'type' => 'number']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('wargm_id') ?></label>
+                        <?= $form->field($model, 'wargm_id', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'type' => 'number']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('wipe_type') ?></label>
+                        <div class="ds-select-wrapper">
+                            <?= $form->field($model, 'wipe_type', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->dropDownList([
+                                7 => Yii::t('common', 'Еженедельно'),
+                                14 => Yii::t('common', 'Каждые две недели'),
+                                30 => Yii::t('common', 'Раз в месяц'),
+                            ], ['class' => 'ds-select w-full text-sm', 'prompt' => '']) ?>
+                            <i class="fas fa-chevron-down ds-select-arrow"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('wipe_server_name') ?></label>
+                        <?= $form->field($model, 'wipe_server_name', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('min_map_size') ?></label>
+                        <?= $form->field($model, 'min_map_size', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'type' => 'number']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('max_map_size') ?></label>
+                        <?= $form->field($model, 'max_map_size', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'type' => 'number']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('secret_map') ?></label>
+                        <div class="ds-select-wrapper">
+                            <?= $form->field($model, 'secret_map', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->dropDownList([0 => Yii::t('common', 'Нет'), 1 => Yii::t('common', 'Да')], ['class' => 'ds-select w-full text-sm']) ?>
+                            <i class="fas fa-chevron-down ds-select-arrow"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('text_ip') ?></label>
+                        <?= $form->field($model, 'text_ip', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'placeholder' => 'prostoj.store']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('query') ?></label>
+                        <?= $form->field($model, 'query', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'type' => 'number']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('rcon') ?></label>
+                        <?= $form->field($model, 'rcon', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'type' => 'number']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('rcon_password') ?></label>
+                        <?= $form->field($model, 'rcon_password', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'type' => 'password']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('max') ?></label>
+                        <?= $form->field($model, 'max', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'type' => 'number']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('team_limit') ?></label>
+                        <?= $form->field($model, 'team_limit', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'type' => 'number']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('skindrops') ?></label>
+                        <div class="ds-select-wrapper">
+                            <?= $form->field($model, 'skindrops', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->dropDownList([0 => Yii::t('common', 'Нет'), 1 => Yii::t('common', 'Да')], ['class' => 'ds-select w-full text-sm']) ?>
+                            <i class="fas fa-chevron-down ds-select-arrow"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('is_store') ?></label>
+                        <div class="ds-select-wrapper">
+                            <?= $form->field($model, 'is_store', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->dropDownList([0 => Yii::t('common', 'Нет'), 1 => Yii::t('common', 'Да')], ['class' => 'ds-select w-full text-sm']) ?>
+                            <i class="fas fa-chevron-down ds-select-arrow"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('secret_key') ?></label>
+                        <?= $form->field($model, 'secret_key', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('discord_token') ?></label>
+                        <?= $form->field($model, 'discord_token', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm']) ?>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('commands') ?></label>
+                        <?= $form->field($model, 'commands', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'placeholder' => 'Через запятую']) ?>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+    </aside>
 
     <?php ActiveForm::end(); ?>
 </div>

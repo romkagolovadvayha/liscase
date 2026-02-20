@@ -12,7 +12,10 @@ use yii\widgets\ActiveForm;
     <?php $form = ActiveForm::begin(['options' => ['enctype' => 'multipart/form-data']]); ?>
     <?= $form->field($model, 'name')->textInput() ?>
     <?= $form->field($model, 'tag')->textInput() ?>
-    <?= $form->field($model, 'show_main_block')->dropDownList([0 => 'Нет', 1 => 'Да'], []); ?>
+    <div class="ds-select-wrapper">
+        <?= $form->field($model, 'show_main_block', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->dropDownList([0 => 'Нет', 1 => 'Да'], ['class' => 'ds-select form-control']) ?>
+        <i class="fas fa-chevron-down ds-select-arrow"></i>
+    </div>
     <?= $form->field($model, 'sort')->textInput() ?>
     
     <?= $form->field($model, 'image')->fileInput(['accept' => 'image/*']) ?>

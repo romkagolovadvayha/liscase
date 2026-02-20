@@ -45,7 +45,10 @@ use common\models\servers\ServersRadioStation;
 
     <?= $form->field($model, 'logoFile')->fileInput(['accept' => 'image/*'])->hint($model->isNewRecord ? 'Загрузите логотип радиостанции' : 'Оставьте пустым, чтобы не изменять логотип') ?>
 
-    <?= $form->field($model, 'status')->dropDownList(ServersRadioStation::getStatusList()) ?>
+    <div class="ds-select-wrapper">
+        <?= $form->field($model, 'status', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->dropDownList(ServersRadioStation::getStatusList(), ['class' => 'ds-select form-control']) ?>
+        <i class="fas fa-chevron-down ds-select-arrow"></i>
+    </div>
 
     <div class="form-group">
         <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>

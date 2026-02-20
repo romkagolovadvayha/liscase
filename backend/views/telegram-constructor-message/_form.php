@@ -64,7 +64,7 @@ $languages = [
                     ],
                 ]);
                 ?>
-                <?=$form->field($model, "message[{$language_id}]")->label(false)->widget(\dosamigos\tinymce\TinyMce::className(), [
+                <?=$form->field($model, "message[{$language_id}]", ['options' => ['class' => 'blog-form-tinymce-wrap']])->label(false)->widget(\dosamigos\tinymce\TinyMce::className(), [
                     'options' => [
                             'rows' => 6,
                             'value' => $model->getMessage($language_id),

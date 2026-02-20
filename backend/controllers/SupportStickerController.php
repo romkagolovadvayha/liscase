@@ -51,6 +51,17 @@ class SupportStickerController extends Controller
         $searchModel = new SupportStickerSearch();
         $dataProvider = $searchModel->search($this->request->queryParams);
 
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+        $this->view->params['searchModel'] = $searchModel;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-plus"></i> ' . Yii::t('common', 'Создать стикер'),
+                'url' => ['create'],
+                'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
+
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
@@ -65,8 +76,29 @@ class SupportStickerController extends Controller
      */
     public function actionView($id)
     {
+        $model = $this->findModel($id);
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
+                'url' => ['index'],
+                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="fas fa-pencil-alt"></i> ' . Yii::t('common', 'Изменить'),
+                'url' => ['update', 'id' => $model->id],
+                'class' => 'bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="fas fa-trash"></i> ' . Yii::t('common', 'Удалить'),
+                'url' => ['delete', 'id' => $model->id],
+                'class' => 'bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+                'data' => ['confirm' => Yii::t('common', 'Вы уверены, что хотите удалить этот стикер?'), 'method' => 'post'],
+            ],
+        ];
         return $this->render('view', [
-            'model' => $this->findModel($id),
+            'model' => $model,
         ]);
     }
 

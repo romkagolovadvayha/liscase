@@ -1,113 +1,125 @@
 <?php
 
+use backend\models\blog\BlogCategorySearch;
+use common\models\blog\Blog;
 use common\models\blog\BlogCategory;
+use kartik\grid\GridView;
 use yii\helpers\Html;
+use yii\helpers\ArrayHelper;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
-use yii\helpers\ArrayHelper;
-use kartik\grid\GridView;
 
-/** @var yii\web\View $this */
-/** @var backend\models\blog\BlogCategorySearch $searchModel */
-/** @var yii\data\ActiveDataProvider $dataProvider */
+/** @var BlogCategorySearch $searchModel */
+/** @var yii\data\ArrayDataProvider $dataProvider */
 
-$this->title = 'Категории';
-$this->params['breadcrumbs'][] = ['label' => 'Блог', 'url' => ['/blog']];
-$this->params['breadcrumbs'][] = $this->title;
-$cacheData = Yii::$app->cache->get('actionGenerate');
-//Yii::$app->cache->delete('actionGenerateError');
-//Yii::$app->cache->delete('actionGenerate_Posts_146');
-//Yii::$app->cache->delete('actionGenerate_Posts_148');
+$this->title = Yii::t('common', 'Категории блога');
+$this->params['contentClass'] = 'content-no-padding';
+$this->params['searchModel'] = $searchModel;
+
+$headerCellClass = 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]';
+$bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
 ?>
-<div class="blog-category-index">
-    <p>
-        <?= Html::a('Добавить категорию', ['create'], ['class' => 'btn btn-success']) ?>
-
-        <!--<?php if (empty($cacheData)): ?>
-            <?= Html::a('Генерация категорий', ['generate'], ['class' => 'btn btn-primary', 'data' => [
-                'confirm' => 'Вы уверены?',
-                'method' => 'post',
-            ]]) ?>
-        <?php else: ?>
-            <?= Html::a('Идет процес генерации', [''], ['class' => 'btn btn-default disabled']) ?>
-        <?php endif; ?>-->
-    </p>
-
-    <?= GridView::widget([
-        'dataProvider' => $dataProvider,
-        'rowOptions' => function (BlogCategory $model, $index, $widget, $grid){
-            if(!empty($model->blog_category_id)) {
-                return ['class' => 'sub-category'];
-            } else {
-                return ['class' => 'category'];
-            }
-        },
-        'columns' => [
-            [
-                'attribute' => 'id',
-                'options'   => ['width' => '50'],
-            ],
-            'name',
-            'description:ntext',
-            [
-                'attribute' => 'status',
-                'options'   => ['width' => '100'],
-                'contentOptions' => ['style' => ['text-align' => 'center']],
-                'value'     => function (BlogCategory $model) {
-                    return ArrayHelper::getValue(BlogCategory::getStatusList(), $model->status);
-                },
-            ],
-            [
-                'attribute' => 'gen',
-                'label' => 'Генерация постов',
-                'format' => 'raw',
-                'options'   => ['width' => '160'],
-                'contentOptions' => ['style' => ['text-align' => 'center']],
-                'value'     => function (BlogCategory $model) {
-                    if (empty($model->blog_category_id)) {
-                        return '';
-                    }
-                    $cacheErrorData = Yii::$app->cache->get('actionGenerateError_Posts_' . $model->id);
-                    if (!empty($cacheErrorData)) {
-                        Yii::$app->session->addFlash('danger', "Ошибка генерации: " . $cacheErrorData);
-                    }
-
-                    $cacheData = Yii::$app->cache->get('actionGenerate_Posts_' . $model->id);
-                    if (empty($cacheData)) {
-                        return Html::a('Генерация постов', ['/blog/generate?categoryId=' . $model->id], ['class' => 'btn btn-sm btn-success', 'data' => [
-                            'confirm' => 'Вы уверены?',
-                            'method' => 'post',
-                        ]]);
-                    } else {
-                        return Html::a('Идет генерация', [''], ['class' => 'btn btn-sm btn-default disabled']);
-                    }
-                 }
-            ],
-            [
-                'attribute' => 'posts',
-                'label' => 'Кол-во постов',
-                'format' => 'raw',
-                'options'   => ['width' => '60'],
-                'contentOptions' => ['style' => ['text-align' => 'center']],
-                'value'     => function (BlogCategory $model) {
-                    $count = \common\models\blog\Blog::find()->andWhere(['blog_category_id' => $model->id])->count();
-                    if (!empty($model->childCategories)) {
-                        foreach ($model->childCategories as $category) {
-                            $count += \common\models\blog\Blog::find()->andWhere(['blog_category_id' => $category->id])->count();
+<div class="blog-category-index-page w-full">
+    <div class="w-full">
+        <?= GridView::widget([
+            'dataProvider' => $dataProvider,
+            'filterModel' => $searchModel,
+            'tableOptions' => ['class' => 'table-auto w-full text-sm'],
+            'options' => ['class' => 'admin-grid-view-dark'],
+            'layout' => "{items}\n{pager}",
+            'filterRowOptions' => ['style' => 'display: none;'],
+            'bordered' => false,
+            'striped' => false,
+            'hover' => true,
+            'rowOptions' => function (BlogCategory $model, $index, $widget, $grid) {
+                return ['class' => !empty($model->blog_category_id) ? 'sub-category' : 'category'];
+            },
+            'columns' => [
+                [
+                    'attribute' => 'id',
+                    'format' => 'raw',
+                    'options' => ['width' => '80'],
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                ],
+                [
+                    'attribute' => 'name',
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => function (BlogCategory $model) use ($bodyCellClass) {
+                        $class = $bodyCellClass;
+                        if (!empty($model->blog_category_id)) {
+                            $class .= ' pl-8';
                         }
-                    }
-                    return $count;
-                }
+                        return ['class' => $class];
+                    },
+                ],
+                [
+                    'attribute' => 'description',
+                    'format' => 'ntext',
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass . ' max-w-[200px] truncate'],
+                ],
+                [
+                    'attribute' => 'status',
+                    'options' => ['width' => '120'],
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                    'format' => 'raw',
+                    'value' => function (BlogCategory $model) {
+                        $statusList = BlogCategory::getStatusList();
+                        $status = ArrayHelper::getValue($statusList, $model->status, '');
+                        $badgeClass = $model->status == BlogCategory::STATUS_ACTIVE ? 'ds-badge--success' : 'ds-badge--danger';
+                        return Html::tag('span', Html::encode($status), ['class' => 'ds-badge ' . $badgeClass]);
+                    },
+                ],
+                [
+                    'attribute' => 'gen',
+                    'label' => Yii::t('common', 'Генерация постов'),
+                    'format' => 'raw',
+                    'options' => ['width' => '140'],
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                    'value' => function (BlogCategory $model) {
+                        if (empty($model->blog_category_id)) {
+                            return '';
+                        }
+                        $cacheData = Yii::$app->cache->get('actionGenerate_Posts_' . $model->id);
+                        if (empty($cacheData)) {
+                            return Html::a(Yii::t('common', 'Генерация постов'), ['/blog/generate', 'categoryId' => $model->id], [
+                                'class' => 'text-green-400 hover:underline text-xs',
+                                'data' => ['confirm' => Yii::t('common', 'Вы уверены?'), 'method' => 'post'],
+                            ]);
+                        }
+                        return Html::tag('span', Yii::t('common', 'Идёт генерация'), ['class' => 'text-gray-500 text-xs']);
+                    },
+                ],
+                [
+                    'label' => Yii::t('common', 'Кол-во постов'),
+                    'format' => 'raw',
+                    'options' => ['width' => '100'],
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                    'value' => function (BlogCategory $model) {
+                        $count = Blog::find()->andWhere(['blog_category_id' => $model->id])->count();
+                        if (!empty($model->childCategories)) {
+                            foreach ($model->childCategories as $category) {
+                                $count += Blog::find()->andWhere(['blog_category_id' => $category->id])->count();
+                            }
+                        }
+                        return $count;
+                    },
+                ],
+                [
+                    'class' => ActionColumn::class,
+                    'template' => '{view} {update} {delete}',
+                    'options' => ['width' => '90'],
+                    'headerOptions' => ['class' => $headerCellClass],
+                    'contentOptions' => ['class' => $bodyCellClass],
+                    'urlCreator' => function ($action, $model, $key, $index, $column) {
+                        return Url::toRoute([$action, 'id' => $model->id]);
+                    },
+                ],
             ],
-            [
-                'class' => ActionColumn::className(),
-                'options'   => ['width' => '60'],
-                'urlCreator' => function ($action, BlogCategory $model, $key, $index, $column) {
-                    return Url::toRoute([$action, 'id' => $model->id]);
-                 }
-            ],
-        ],
-    ]); ?>
-
-
+        ]); ?>
+    </div>
 </div>

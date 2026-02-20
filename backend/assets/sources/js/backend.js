@@ -162,9 +162,69 @@ function initBackend() {
 
 initBackend();
 
+// Мобильное меню sidebar: toggle на .sidebar-wrapper (off-canvas слева)
+function initMobileSidebar() {
+    const sidebarWrapper = $('.sidebar-wrapper');
+    const overlay = $('#sidebar-overlay');
+    const pushMenuBtn = $('#mobile-menu-toggle, [data-widget="pushmenu"]');
+    const sidebarCollapseBtn = $('#sidebar-collapse-btn');
+    const MOBILE_BREAKPOINT = 768;
+
+    function isMobile() {
+        return $(window).width() < MOBILE_BREAKPOINT;
+    }
+
+    function toggleSidebar() {
+        sidebarWrapper.toggleClass('sidebar-open');
+        overlay.toggleClass('active');
+        $('body').toggleClass('sidebar-open');
+    }
+
+    function closeSidebar() {
+        sidebarWrapper.removeClass('sidebar-open');
+        overlay.removeClass('active');
+        $('body').removeClass('sidebar-open');
+    }
+
+    pushMenuBtn.off('click.mobileSidebar').on('click.mobileSidebar', function(e) {
+        e.preventDefault();
+        if (isMobile()) {
+            toggleSidebar();
+        }
+    });
+
+    overlay.off('click.mobileSidebar').on('click.mobileSidebar', function() {
+        closeSidebar();
+    });
+
+    // На мобиле кнопка «свернуть» в сайдбаре закрывает меню
+    sidebarCollapseBtn.off('click.mobileSidebar').on('click.mobileSidebar', function() {
+        if (isMobile()) {
+            closeSidebar();
+        }
+    });
+
+    // Закрытие при клике на ссылку в меню (не submenu toggle)
+    sidebarWrapper.off('click.mobileSidebar', 'a.sidebar-menu-link').on('click.mobileSidebar', 'a.sidebar-menu-link', function() {
+        if (!$(this).attr('data-toggle') && isMobile()) {
+            setTimeout(closeSidebar, 200);
+        }
+    });
+
+    $(window).off('resize.mobileSidebar').on('resize.mobileSidebar', function() {
+        if ($(window).width() >= MOBILE_BREAKPOINT) {
+            closeSidebar();
+        }
+    });
+}
+
+// Инициализация мобильного меню
+initMobileSidebar();
+
 $(document).on('pjax:send', function() {
 
 });
 $(document).on('pjax:complete', function() {
     initBackend();
+    initMobileSidebar();
 });

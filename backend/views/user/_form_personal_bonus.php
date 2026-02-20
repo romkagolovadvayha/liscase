@@ -16,7 +16,10 @@ use common\models\user\UserBalance;
 </div>
 <div class="modal-body">
     <?php $form = ActiveForm::begin() ?>
-    <?= $form->field($bonusForm, 'type_balance')->dropDownList(UserBalance::getTypeList()); ?>
+    <div class="ds-select-wrapper">
+        <?= $form->field($bonusForm, 'type_balance', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->dropDownList(UserBalance::getTypeList(), ['class' => 'ds-select form-control']) ?>
+        <i class="fas fa-chevron-down ds-select-arrow"></i>
+    </div>
     <?= $form->field($bonusForm, 'amount')->textInput(['placeholder' => 0]) ?>
     <?= Html::submitButton('Начислить', ['data-confirm' => 'Вы действительно хотите начислить бонус?', 'class' => 'btn btn-success']) ?>
     <?php ActiveForm::end() ?>

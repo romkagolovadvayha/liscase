@@ -5,6 +5,767 @@
 @import 'design-system';
 
 // ============================================
+// GRID UTILITIES ДЛЯ ФОРМ
+// ============================================
+
+// Grid utilities для форм (гарантированное применение)
+.servers-form {
+  .grid {
+    display: grid !important;
+    gap: 1rem !important;
+    
+    // По умолчанию 1 колонка
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    
+    // Responsive grid columns
+    @media (min-width: 768px) {
+      // Если есть класс md:grid-cols-2, используем 2 колонки
+      &[class*="md:grid-cols-2"] {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+      
+      &[class*="md:grid-cols-3"] {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+    }
+    
+    @media (min-width: 1024px) {
+      // Если есть класс lg:grid-cols-3, используем 3 колонки
+      &[class*="lg:grid-cols-3"] {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+      
+      &[class*="lg:grid-cols-4"] {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      }
+      
+      &[class*="lg:grid-cols-5"] {
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+      }
+      
+      &[class*="lg:grid-cols-6"] {
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+      }
+    }
+    
+    @media (min-width: 1280px) {
+      &[class*="xl:grid-cols-6"] {
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+      }
+    }
+  }
+}
+
+// ============================================
+// ТЕМНЫЕ ТАБЛИЦЫ СПИСКОВ (admin index)
+// ============================================
+$admin-grid-header-bg: hsl(0 0% 20.4% / 1);
+$admin-grid-border: hsl(0 0% 15.3% / 1);
+$admin-grid-bg: hsl(0 0% 10% / 1);
+$admin-grid-text: white;
+$admin-grid-header-text: hsl(0 0% 70% / 1);
+
+.admin-grid-view-dark {
+  background: $admin-grid-bg !important;
+
+  .table, table, .kv-grid-table, .table-striped, .table-bordered, .table-hover, .table-sm {
+    background: $admin-grid-bg !important;
+    border-collapse: collapse;
+    width: 100%;
+    color: $admin-grid-text !important;
+    border: none !important;
+    border-spacing: 0;
+  }
+
+  .table thead th, table thead th, .kv-grid-table thead th,
+  .table thead td, table thead td {
+    background: $admin-grid-header-bg !important;
+    color: $admin-grid-header-text !important;
+    border: none !important;
+    border-bottom: 1px solid $admin-grid-border !important;
+    font-weight: 600 !important;
+    vertical-align: middle !important;
+  }
+
+  .table tbody tr, table tbody tr, .kv-grid-table tbody tr {
+    background: $admin-grid-bg !important;
+    color: $admin-grid-text !important;
+    border: none !important;
+  }
+
+  .table tbody tr:hover, table tbody tr:hover, .kv-grid-table tbody tr:hover,
+  .table-hover tbody tr:hover {
+    background: hsl(0 0% 15% / 1) !important;
+  }
+
+  .table tbody td, table tbody td, .kv-grid-table tbody td {
+    background: transparent !important;
+    color: $admin-grid-text !important;
+    border: none !important;
+    border-bottom: 1px solid $admin-grid-border !important;
+    vertical-align: middle !important;
+  }
+
+  .table tbody tr:last-child td, table tbody tr:last-child td, .kv-grid-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  // Превью изображения в списке предметов (drop/index)
+  .drop-index-preview-cell {
+    width: 60px !important;
+    min-width: 60px !important;
+    vertical-align: middle !important;
+  }
+  .drop-index-preview {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: hsl(0 0% 15% / 1);
+    flex-shrink: 0;
+  }
+  .drop-index-preview-img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    display: block;
+  }
+  .drop-index-preview-placeholder {
+    color: $admin-grid-header-text;
+    font-size: 0.875rem;
+  }
+
+  .table-striped tbody tr:nth-of-type(odd) { background: $admin-grid-bg !important; }
+  .table-striped tbody tr:nth-of-type(even) { background: hsl(0 0% 12% / 1) !important; }
+
+  .pagination, .kv-panel-pager {
+    background: $admin-grid-bg !important;
+    color: $admin-grid-text !important;
+  }
+
+  .pagination .page-link {
+    background: $admin-grid-header-bg !important;
+    color: $admin-grid-text !important;
+    border-color: $admin-grid-border !important;
+  }
+
+  .pagination .page-link:hover {
+    background: hsl(0 0% 25% / 1) !important;
+  }
+
+  .pagination .page-item.active .page-link {
+    background: hsl(200 70% 50% / 1) !important;
+    border-color: hsl(200 70% 50% / 1) !important;
+  }
+}
+
+// Страница настроек: поля в стиле админки, двухколоночная сетка, переключатель чекбокса
+.settings-index-page .settings-form-wrap,
+.settings-form-wrap {
+  .setting_items_item_block {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 0.5rem;
+  }
+  .settings-checkbox-switch {
+    width: 44px;
+    height: 24px;
+  }
+  .settings-checkbox-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .settings-checkbox-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: hsl(0 0% 25%);
+    border-radius: 24px;
+    border: 1px solid hsl(0 0% 15.3%);
+    transition: 0.25s;
+  }
+  .settings-checkbox-slider::before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.25s;
+  }
+  .settings-checkbox-input:checked + .settings-checkbox-slider {
+    background-color: hsl(142 71% 45%);
+  }
+  .settings-checkbox-input:checked + .settings-checkbox-slider::before {
+    transform: translateX(20px);
+  }
+  .settings-checkbox-input:focus + .settings-checkbox-slider {
+    box-shadow: 0 0 0 2px hsl(142 71% 45% / 0.3);
+  }
+}
+
+// Профиль пользователя: тёмные таблицы в правой колонке (как в админке)
+.user-profile-page {
+  .kv-grid-container,
+  .admin-grid-view-dark {
+    background: $admin-grid-bg !important;
+    .table, table, .kv-grid-table {
+      background: $admin-grid-bg !important;
+      color: $admin-grid-text !important;
+      border: none !important;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    thead th, thead td {
+      background: $admin-grid-header-bg !important;
+      color: $admin-grid-header-text !important;
+      border-bottom: 1px solid $admin-grid-border !important;
+    }
+    tbody td {
+      background: transparent !important;
+      color: $admin-grid-text !important;
+      border-bottom: 1px solid $admin-grid-border !important;
+    }
+    tbody tr:hover td {
+      background: hsl(0 0% 15% / 1) !important;
+    }
+    .pagination .page-link {
+      background: $admin-grid-header-bg !important;
+      color: $admin-grid-text !important;
+      border-color: $admin-grid-border !important;
+    }
+  }
+}
+
+.content-no-padding {
+  padding: 0 !important;
+}
+
+// Сортировка в админке (drop, servers, task) — только карточки (квадратики/прямоугольники)
+.drop-sort-page,
+.server-sort-page,
+.task-sort-page {
+  .drop-sort-grid-wrapper,
+  .admin-sort-grid-wrapper {
+    min-height: 120px;
+  }
+  .drop-sortable-grid,
+  .admin-sortable-grid,
+  ul.sortable.grid.drop-sortable-grid,
+  ul.sortable.grid.admin-sortable-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 72px));
+    gap: 12px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    overflow: visible;
+    background: transparent;
+    border-radius: 0;
+    &.cursor-move li {
+      cursor: grab;
+      &:active {
+        cursor: grabbing;
+      }
+    }
+    li {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border: none;
+      min-width: 0;
+      min-height: 0;
+      float: none;
+      background: transparent !important;
+      &:hover {
+        background: transparent !important;
+      }
+      &.sortable-placeholder {
+        background: hsl(0 0% 18% / 1) !important;
+        border: 2px dashed $ds-border-color;
+        border-radius: 8px;
+        min-width: 72px;
+        min-height: 72px;
+      }
+      &.sortable-dragging {
+        opacity: 0.9;
+        z-index: 10;
+      }
+    }
+  }
+  // Текстовые карточки (servers, task) — шире
+  &.server-sort-page .admin-sortable-grid,
+  &.task-sort-page .admin-sortable-grid,
+  &.server-sort-page ul.sortable.grid.admin-sortable-grid,
+  &.task-sort-page ul.sortable.grid.admin-sortable-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 140px));
+  }
+  .drop-sort-card,
+  .admin-sort-card {
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: $ds-bg-tertiary;
+    border: 1px solid $ds-border-color;
+    flex-shrink: 0;
+    display: block;
+  }
+  &.server-sort-page .admin-sort-card,
+  &.task-sort-page .admin-sort-card {
+    width: 140px;
+    height: 72px;
+  }
+  .drop-sort-card__img,
+  .admin-sort-card__img {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .drop-sort-card__placeholder,
+  .admin-sort-card__placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $ds-text-muted;
+    font-size: 1.25rem;
+  }
+  .admin-sort-card__body {
+    width: 100%;
+    height: 100%;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: $ds-font-size-xs;
+    color: $ds-text-primary;
+    text-align: center;
+    word-break: break-word;
+    overflow: hidden;
+  }
+}
+
+// Форма drop: контент без отступов, блок «Параметры» на всю высоту (как колонка фильтров)
+// Цепочка высоты: main (flex column) → admin-content-wrapper (flex-1) → content-no-padding (flex-1) → form (flex-1) → pjax (flex-1) → сайдбар тянется
+main:has(.admin-content-wrapper .content-no-padding) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+main:has(.admin-content-wrapper .content-no-padding) .admin-content-wrapper {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.admin-content-wrapper .content-no-padding {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-content-wrapper .content-no-padding .drop-form,
+.admin-content-wrapper .content-no-padding .blog-form,
+.admin-content-wrapper .content-no-padding .server-skin-form,
+.admin-content-wrapper .content-no-padding .building-form,
+.admin-content-wrapper .content-no-padding .deposit-form,
+.admin-content-wrapper .content-no-padding .servers-tags-form,
+.admin-content-wrapper .content-no-padding .servers-rules-form,
+.admin-content-wrapper .content-no-padding .servers-rules-category-form,
+.admin-content-wrapper .content-no-padding .user-profile-page,
+.admin-content-wrapper .content-no-padding .wipe-index-page {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+
+  @media (min-width: 1024px) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  > .wipe-index-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-y: auto;
+  }
+
+  > .wipe-index-sidebar {
+    flex-shrink: 0;
+    width: 100%;
+    @media (min-width: 1024px) {
+      width: 300px;
+      align-self: stretch;
+      border-left: 1px solid hsl(0, 0%, 15.3%);
+    }
+  }
+}
+
+// Карточки серверов на /wipe/index — в стиле админки (как фильтры/сайдбар)
+.wipe-server-card {
+  background: hsl(0, 0%, 20.4%);
+  border: 1px solid hsl(0, 0%, 15.3%);
+  border-radius: 0.5rem;
+  overflow: hidden;
+
+  &__header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid hsl(0, 0%, 15.3%);
+    font-weight: 500;
+    color: #fff;
+
+    .wipe-server-card__tag {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-left: 0.25rem;
+    }
+  }
+
+  &__body {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .ds-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+#box-form-pjax.drop-form-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+
+  @media (min-width: 1024px) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  > .flex-1 {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  > .drop-form-sidebar {
+    flex-shrink: 0;
+    width: 100%;
+    @media (min-width: 1024px) {
+      width: 300px;
+      align-self: stretch;
+    }
+  }
+}
+
+// Профиль пользователя: две колонки как в форме предмета (drop)
+.user-profile-page .user-profile-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+
+  @media (min-width: 1024px) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  > .user-profile-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  > .user-profile-sidebar {
+    flex-shrink: 0;
+    width: 100%;
+    @media (min-width: 1024px) {
+      width: 300px;
+      border-left: 1px solid hsl(0 0% 15.3% / 1);
+      border-top: none;
+      padding: 0;
+    }
+  }
+}
+
+.admin-content-wrapper .content-no-padding .blog-form {
+  @media (min-width: 1024px) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  > .blog-form-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  > .blog-form-sidebar {
+    flex-shrink: 0;
+    width: 100%;
+    @media (min-width: 1024px) {
+      width: 300px;
+      align-self: stretch;
+    }
+  }
+}
+
+.admin-content-wrapper .content-no-padding .server-skin-form {
+  @media (min-width: 1024px) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  > .server-skin-form-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  > .server-skin-form-sidebar {
+    flex-shrink: 0;
+    width: 100%;
+    @media (min-width: 1024px) {
+      width: 300px;
+      align-self: stretch;
+    }
+  }
+}
+
+.admin-content-wrapper .content-no-padding .building-form {
+  @media (min-width: 1024px) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  > .building-form-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  > .building-form-sidebar {
+    flex-shrink: 0;
+    width: 100%;
+    @media (min-width: 1024px) {
+      width: 300px;
+      align-self: stretch;
+    }
+  }
+}
+
+.admin-content-wrapper .content-no-padding .deposit-form {
+  @media (min-width: 1024px) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  > .deposit-form-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  > .deposit-form-sidebar {
+    flex-shrink: 0;
+    width: 100%;
+    @media (min-width: 1024px) {
+      width: 300px;
+      align-self: stretch;
+    }
+  }
+}
+
+.admin-content-wrapper .content-no-padding .servers-tags-form {
+  @media (min-width: 1024px) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  > .servers-tags-form-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  > .servers-tags-form-sidebar {
+    flex-shrink: 0;
+    width: 100%;
+    @media (min-width: 1024px) {
+      width: 300px;
+      align-self: stretch;
+    }
+  }
+}
+
+.admin-content-wrapper .content-no-padding .servers-rules-form {
+  @media (min-width: 1024px) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  > .servers-rules-form-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  > .servers-rules-form-sidebar {
+    flex-shrink: 0;
+    width: 100%;
+    @media (min-width: 1024px) {
+      width: 300px;
+      align-self: stretch;
+    }
+  }
+}
+
+.admin-content-wrapper .content-no-padding .servers-rules-category-form {
+  @media (min-width: 1024px) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  > .servers-rules-category-form-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  > .servers-rules-category-form-sidebar {
+    flex-shrink: 0;
+    width: 100%;
+    @media (min-width: 1024px) {
+      width: 300px;
+      align-self: stretch;
+    }
+  }
+}
+
+// TinyMCE в админке: тёмная тема (все формы с редактором)
+.admin-content-wrapper .tox-tinymce,
+.admin-content-wrapper .blog-form-tinymce-wrap .tox-tinymce {
+  border-color: hsl(0, 0%, 15.3%);
+  border-radius: 6px;
+}
+.admin-content-wrapper .tox .tox-toolbar,
+.admin-content-wrapper .tox .tox-toolbar__primary,
+.admin-content-wrapper .blog-form-tinymce-wrap .tox .tox-toolbar,
+.admin-content-wrapper .blog-form-tinymce-wrap .tox .tox-toolbar__primary {
+  background: hsl(0, 0%, 20.4%);
+  border-bottom-color: hsl(0, 0%, 15.3%);
+  padding: 4px 8px;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.admin-content-wrapper .tox .tox-toolbar__group,
+.admin-content-wrapper .blog-form-tinymce-wrap .tox .tox-toolbar__group {
+  padding: 0 4px;
+}
+.admin-content-wrapper .tox .tox-toolbar-overlord,
+.admin-content-wrapper .blog-form-tinymce-wrap .tox .tox-toolbar-overlord {
+  background: hsl(0, 0%, 20.4%);
+}
+.admin-content-wrapper .tox .tox-statusbar,
+.admin-content-wrapper .blog-form-tinymce-wrap .tox .tox-statusbar {
+  background: hsl(0, 0%, 20.4%);
+  border-top-color: hsl(0, 0%, 15.3%);
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.admin-content-wrapper .tox .tox-edit-area__iframe,
+.admin-content-wrapper .blog-form-tinymce-wrap .tox .tox-edit-area__iframe {
+  background: hsl(0, 0%, 13%);
+}
+
+.drop-form--compact {
+  .row { display: flex; flex-wrap: wrap; gap: 0 1rem; margin-bottom: 0.5rem; }
+  .row .col-md-2, .row .col-md-4, .row .col-md-6 { margin-bottom: 0.5rem; }
+  .form-group { margin-bottom: 0.5rem; }
+  .form-group .control-label { font-size: 0.8125rem; margin-bottom: 0.25rem; }
+  .ds-select-wrapper + .ds-select-wrapper { margin-top: 0; }
+}
+
+// Блок превью + загрузка изображения в одной строке
+.drop-form-preview-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .drop-form-preview-img {
+    flex-shrink: 0;
+    width: 80px;
+    height: 80px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: $ds-bg-tertiary;
+    border: 1px solid $ds-border-color;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  }
+
+  .drop-form-preview-upload {
+    flex: 1;
+    min-width: 200px;
+  }
+}
+
+// Выпадающие списки в правой колонке (Параметры) и в панели фильтров — одинаковый вид, стрелка по центру
+$ds-select-row-height: 2.375rem;
+
+.drop-form-sidebar .ds-select-wrapper,
+.admin-filters-content .ds-select-wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: $ds-select-row-height;
+
+  .form-group {
+    margin: 0 !important;
+    display: block;
+    min-height: 0;
+  }
+
+  .ds-select,
+  select.ds-select,
+  select.ds-select.form-control {
+    width: 100% !important;
+    padding-right: 2.5rem !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-image: none !important;
+    box-sizing: border-box;
+    height: $ds-select-row-height;
+    line-height: 1.5;
+    display: block;
+  }
+
+  // Стрелка по центру по вертикали: top/bottom 0 + margin auto (не зависит от transform/line-height)
+  .ds-select-arrow {
+    position: absolute !important;
+    right: $ds-spacing-sm !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    margin: auto 0 !important;
+    height: 1em;
+    display: inline-flex;
+    align-items: center;
+    pointer-events: none;
+    z-index: 1;
+    color: $ds-text-secondary;
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+}
+
+// ============================================
 // КАРТОЧКИ
 // ============================================
 
@@ -15,6 +776,7 @@
   box-shadow: $ds-shadow-sm;
   border: 1px solid $ds-border-color;
   transition: all $ds-transition-base;
+  color: $ds-text-primary;
 
   &__header {
     display: flex;
@@ -40,13 +802,32 @@
     margin-top: $ds-spacing-md;
     padding-top: $ds-spacing-md;
     border-top: 1px solid $ds-border-color;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: $ds-spacing-sm;
   }
 
   &--hover {
     &:hover {
       box-shadow: $ds-shadow-md;
       border-color: $ds-border-color-light;
+      transform: translateY(-2px);
     }
+  }
+
+  &--gradient {
+    background: $ds-gradient-primary;
+    border: none;
+  }
+
+  &--bordered {
+    border-width: $ds-border-width-thick;
+  }
+
+  &--flat {
+    box-shadow: none;
+    border: none;
   }
 }
 
@@ -69,19 +850,46 @@
   transition: all $ds-transition-base;
   text-decoration: none;
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba($ds-primary, 0.2);
+  }
 
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    pointer-events: none;
   }
 
+  // Варианты цветов
   &--primary {
+    background: $ds-primary;
+    color: $ds-text-primary;
+
+    &:hover:not(:disabled) {
+      background: $ds-primary-light;
+      transform: translateY(-1px);
+      box-shadow: $ds-shadow-md;
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: $ds-shadow-sm;
+    }
+  }
+
+  &--secondary {
     background: $ds-bg-secondary;
     color: $ds-text-secondary;
+    border: 1px solid $ds-border-color;
 
     &:hover:not(:disabled) {
       background: $ds-bg-hover;
       color: $ds-text-primary;
+      border-color: $ds-border-color-light;
     }
   }
 
@@ -91,6 +899,8 @@
 
     &:hover:not(:disabled) {
       background: $ds-success-light;
+      transform: translateY(-1px);
+      box-shadow: $ds-shadow-md;
     }
   }
 
@@ -100,34 +910,129 @@
 
     &:hover:not(:disabled) {
       background: $ds-danger-light;
+      transform: translateY(-1px);
+      box-shadow: $ds-shadow-md;
     }
   }
 
-  &--sm {
-    padding: $ds-spacing-xs $ds-spacing-sm;
-    font-size: $ds-font-size-xs;
+  &--warning {
+    background: $ds-warning;
+    color: $ds-text-primary;
+
+    &:hover:not(:disabled) {
+      background: $ds-warning-light;
+      transform: translateY(-1px);
+      box-shadow: $ds-shadow-md;
+    }
   }
 
-  &--lg {
-    padding: $ds-spacing-md $ds-spacing-lg;
-    font-size: $ds-font-size-base;
+  &--info {
+    background: $ds-info;
+    color: $ds-text-primary;
+
+    &:hover:not(:disabled) {
+      background: $ds-info-light;
+      transform: translateY(-1px);
+      box-shadow: $ds-shadow-md;
+    }
   }
 
-  &--icon {
-    padding: $ds-spacing-sm;
-    width: 2rem;
-    height: 2rem;
-  }
-
-  &--secondary {
-    background: $ds-bg-secondary;
+  &--ghost {
+    background: transparent;
     color: $ds-text-secondary;
+    border: 1px solid transparent;
 
     &:hover:not(:disabled) {
       background: $ds-bg-hover;
       color: $ds-text-primary;
     }
   }
+
+  &--link {
+    background: transparent;
+    color: $ds-primary-light;
+    padding: 0;
+    text-decoration: underline;
+
+    &:hover:not(:disabled) {
+      color: $ds-primary;
+      text-decoration: none;
+    }
+  }
+
+  // Размеры
+  &--xs {
+    padding: $ds-spacing-1 $ds-spacing-2;
+    font-size: $ds-font-size-xs;
+    height: $ds-height-xs;
+  }
+
+  &--sm {
+    padding: $ds-spacing-2 $ds-spacing-3;
+    font-size: $ds-font-size-xs;
+    height: $ds-height-sm;
+  }
+
+  &--md {
+    padding: $ds-spacing-sm $ds-spacing-md;
+    font-size: $ds-font-size-sm;
+    height: $ds-height-md;
+  }
+
+  &--lg {
+    padding: $ds-spacing-md $ds-spacing-lg;
+    font-size: $ds-font-size-base;
+    height: $ds-height-lg;
+  }
+
+  &--xl {
+    padding: $ds-spacing-lg $ds-spacing-xl;
+    font-size: $ds-font-size-lg;
+    height: $ds-height-xl;
+  }
+
+  // Иконка
+  &--icon {
+    padding: $ds-spacing-sm;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: $ds-radius-md;
+  }
+
+  // Состояния
+  &--loading {
+    position: relative;
+    color: transparent;
+    pointer-events: none;
+
+    &::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      top: 50%;
+      left: 50%;
+      margin-left: -8px;
+      margin-top: -8px;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: ds-spin 0.6s linear infinite;
+    }
+  }
+
+  &--block {
+    width: 100%;
+    display: flex;
+  }
+
+  &--rounded {
+    border-radius: $ds-radius-full;
+  }
+}
+
+@keyframes ds-spin {
+  to { transform: rotate(360deg); }
 }
 
 // ============================================
@@ -144,11 +1049,13 @@
   border: 1px solid $ds-border-color;
   border-radius: $ds-radius-md;
   transition: all $ds-transition-base;
+  font-family: $ds-font-family;
 
   &:focus {
     outline: none;
     border-color: $ds-primary;
     box-shadow: 0 0 0 3px rgba($ds-primary, 0.1);
+    background: $ds-bg-tertiary;
   }
 
   &::placeholder {
@@ -158,6 +1065,368 @@
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    background: $ds-bg-primary;
+  }
+
+  &--error {
+    border-color: $ds-danger;
+    
+    &:focus {
+      border-color: $ds-danger;
+      box-shadow: 0 0 0 3px rgba($ds-danger, 0.1);
+    }
+  }
+
+  &--success {
+    border-color: $ds-success;
+    
+    &:focus {
+      border-color: $ds-success;
+      box-shadow: 0 0 0 3px rgba($ds-success, 0.1);
+    }
+  }
+
+  &--sm {
+    padding: $ds-spacing-2 $ds-spacing-3;
+    font-size: $ds-font-size-xs;
+  }
+
+  &--lg {
+    padding: $ds-spacing-md $ds-spacing-lg;
+    font-size: $ds-font-size-base;
+  }
+}
+
+.ds-textarea {
+  @extend .ds-input;
+  min-height: 100px !important;
+  resize: vertical !important;
+  font-family: $ds-font-family !important;
+  line-height: $ds-line-height-normal !important;
+  background: $ds-bg-secondary !important;
+  border: 1px solid $ds-border-color !important;
+  color: $ds-text-primary !important;
+  
+  &:focus {
+    outline: none !important;
+    border-color: $ds-primary !important;
+    box-shadow: 0 0 0 3px rgba($ds-primary, 0.1) !important;
+    background: $ds-bg-tertiary !important;
+  }
+  
+  &::placeholder {
+    color: $ds-text-muted !important;
+  }
+}
+
+// Переопределение для textarea с form-control
+textarea.ds-textarea.form-control,
+.form-control.ds-textarea {
+  @extend .ds-textarea;
+}
+
+.ds-select {
+  @extend .ds-input;
+  cursor: pointer !important;
+  padding-right: 2.5rem !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: none !important;
+  position: relative;
+  background: $ds-bg-secondary !important;
+  border: 1px solid $ds-border-color !important;
+  color: $ds-text-primary !important;
+  
+  // Убираем стандартную стрелку браузера (одна стрелка — только наша иконка)
+  &::-ms-expand {
+    display: none !important;
+  }
+  &::-moz-focus-inner {
+    border: 0;
+  }
+  
+  // Стили для option элементов
+  option {
+    background: $ds-bg-tertiary !important;
+    color: $ds-text-primary !important;
+    padding: $ds-spacing-sm !important;
+  }
+  
+  // Hover эффект
+  &:hover {
+    border-color: $ds-border-color-light !important;
+  }
+  
+  // Focus состояние
+  &:focus {
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba($ds-primary, 0.2) !important;
+    border-color: $ds-primary !important;
+    background: $ds-bg-tertiary !important;
+  }
+}
+
+// Переопределение для select с form-control
+select.ds-select.form-control,
+.form-control.ds-select {
+  @extend .ds-select;
+}
+
+// Переопределение Bootstrap .form-control:focus — сохраняем читаемый текст (не используем var(--bs-body-color)/var(--bs-body-bg))
+input.form-control:focus,
+select.form-control:focus,
+textarea.form-control:focus,
+.form-control:focus {
+  color: $ds-text-primary !important;
+  background-color: $ds-bg-tertiary !important;
+  border-color: $ds-primary !important;
+  outline: 0 !important;
+  box-shadow: 0 0 0 3px rgba($ds-primary, 0.15) !important;
+}
+
+// Контейнер для select с кастомной иконкой (только одна стрелка — Font Awesome)
+.ds-select-wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+  // Убираем лишний отступ сверху: выравнивание как у обычных инпутов в гриде
+  .form-group {
+    margin: 0 !important;
+  }
+  
+  .ds-select,
+  select.ds-select.form-control {
+    width: 100%;
+    padding-right: 2.5rem;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    background-image: none !important;
+  }
+  
+  // Одна стрелка — только Font Awesome; top/bottom + margin:auto для точного центра по вертикали
+  .ds-select-arrow {
+    position: absolute;
+    right: $ds-spacing-sm;
+    top: 0;
+    bottom: 0;
+    margin: auto 0;
+    height: 1em;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+    z-index: 1;
+    color: $ds-text-secondary;
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+}
+
+// Стили для полей даты с темной темой (глобальные для всех полей)
+// Применяются ко всем полям типа date, datetime-local, time
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+.ds-input[type="date"],
+.ds-input[type="datetime-local"],
+.ds-input[type="time"],
+.form-control[type="date"],
+.form-control[type="datetime-local"],
+.form-control[type="time"],
+input.form-control[type="date"],
+input.form-control[type="datetime-local"],
+input.form-control[type="time"] {
+  &::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(2) !important;
+    cursor: pointer !important;
+    opacity: 0.8 !important;
+    
+    &:hover {
+      opacity: 1 !important;
+    }
+  }
+  
+  // Для Firefox
+  &::-moz-calendar-picker-indicator {
+    filter: invert(1) brightness(2) !important;
+    cursor: pointer !important;
+    opacity: 0.8 !important;
+    
+    &:hover {
+      opacity: 1 !important;
+    }
+  }
+  
+  // Для Edge
+  &::-ms-calendar-picker-indicator {
+    filter: invert(1) brightness(2) !important;
+    cursor: pointer !important;
+    opacity: 0.8 !important;
+    
+    &:hover {
+      opacity: 1 !important;
+    }
+  }
+}
+
+// Глобальные стили для всех select в админке (автоматическое применение)
+// Применяются ко всем select, которые не имеют специальных классов
+select:not(.ds-select):not([class*="select2"]):not([class*="custom-select"]),
+select.form-control:not(.ds-select):not([class*="select2"]),
+select.status-select,
+.form-control select:not(.ds-select):not([class*="select2"]),
+.form-group select:not(.ds-select):not([class*="select2"]),
+.field select:not(.ds-select):not([class*="select2"]) {
+  @extend .ds-input;
+  cursor: pointer !important;
+  padding-right: 2.5rem !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: none !important;
+  position: relative;
+  background: $ds-bg-secondary !important;
+  border: 1px solid $ds-border-color !important;
+  color: $ds-text-primary !important;
+  
+  &::-ms-expand {
+    display: none !important;
+  }
+  
+  option {
+    background: $ds-bg-tertiary !important;
+    color: $ds-text-primary !important;
+    padding: $ds-spacing-sm !important;
+  }
+  
+  &:hover {
+    border-color: $ds-border-color-light !important;
+  }
+  
+  &:focus {
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba($ds-primary, 0.2) !important;
+    border-color: $ds-primary !important;
+    background: $ds-bg-tertiary !important;
+  }
+}
+
+// Жёсткое переопределение для всех select в админ-контенте (побеждает Bootstrap)
+.admin-layout select,
+.admin-content-wrapper select,
+.content-wrapper select,
+main select,
+.admin-grid-view-dark select,
+.filters-wrapper select,
+.admin-filters-content select {
+  background: $ds-bg-secondary !important;
+  border: 1px solid $ds-border-color !important;
+  color: $ds-text-primary !important;
+  padding: $ds-spacing-sm $ds-spacing-md !important;
+  padding-right: 2.5rem !important;
+  border-radius: $ds-radius-md !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: none !important;
+  cursor: pointer !important;
+  font-size: $ds-font-size-sm !important;
+  line-height: $ds-line-height-normal !important;
+
+  &::-ms-expand {
+    display: none !important;
+  }
+  option {
+    background: $ds-bg-tertiary !important;
+    color: $ds-text-primary !important;
+  }
+  &:hover {
+    border-color: $ds-border-color-light !important;
+  }
+  &:focus {
+    outline: none !important;
+    border-color: $ds-primary !important;
+    box-shadow: 0 0 0 2px rgba($ds-primary, 0.2) !important;
+  }
+}
+
+// Автоматическая иконка для select без обертки (через псевдоэлемент родителя)
+.form-group,
+.field,
+.form-field {
+  position: relative;
+  
+  > select:not(.ds-select):not([class*="select2"]):not([class*="custom-select"]),
+  select.form-control:not(.ds-select):not([class*="select2"]) {
+    position: relative;
+  }
+  
+  // Добавляем иконку через псевдоэлемент родителя
+  > select:not(.ds-select):not([class*="select2"]):not([class*="custom-select"])::after,
+  select.form-control:not(.ds-select):not([class*="select2"])::after {
+    content: '';
+    position: absolute;
+    right: $ds-spacing-sm;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid $ds-text-secondary;
+    z-index: 1;
+  }
+}
+
+// Альтернатива: обертка для select с form-control
+.form-group,
+.field {
+  select.form-control:not(.ds-select):not([class*="select2"]) {
+    position: relative;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      right: $ds-spacing-sm;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 6px solid $ds-text-secondary;
+      z-index: 1;
+    }
+  }
+}
+
+// Глобальные стили для всех textarea в админке (автоматическое применение)
+textarea:not(.ds-textarea):not([class*="tinymce"]):not([class*="tox"]),
+textarea.form-control:not(.ds-textarea):not([class*="tinymce"]),
+.form-control textarea:not(.ds-textarea):not([class*="tinymce"]),
+.form-group textarea:not(.ds-textarea):not([class*="tinymce"]),
+.field textarea:not(.ds-textarea):not([class*="tinymce"]) {
+  @extend .ds-input;
+  min-height: 100px !important;
+  resize: vertical !important;
+  font-family: $ds-font-family !important;
+  line-height: $ds-line-height-normal !important;
+  background: $ds-bg-secondary !important;
+  border: 1px solid $ds-border-color !important;
+  color: $ds-text-primary !important;
+  
+  &:focus {
+    outline: none !important;
+    border-color: $ds-primary !important;
+    box-shadow: 0 0 0 3px rgba($ds-primary, 0.1) !important;
+    background: $ds-bg-tertiary !important;
+  }
+  
+  &::placeholder {
+    color: $ds-text-muted !important;
   }
 }
 
@@ -172,6 +1441,13 @@
     content: ' *';
     color: $ds-danger-light;
   }
+
+  &--optional::after {
+    content: ' (опционально)';
+    color: $ds-text-muted;
+    font-weight: $ds-font-weight-normal;
+    font-size: $ds-font-size-xs;
+  }
 }
 
 .ds-form-group {
@@ -181,12 +1457,120 @@
     margin-top: $ds-spacing-xs;
     font-size: $ds-font-size-xs;
     color: $ds-danger-light;
+    display: flex;
+    align-items: center;
+    gap: $ds-spacing-1;
   }
 
   &__help {
     margin-top: $ds-spacing-xs;
     font-size: $ds-font-size-xs;
     color: $ds-text-muted;
+  }
+
+  &__label {
+    @extend .ds-label;
+  }
+}
+
+// Checkbox и Radio
+.ds-checkbox,
+.ds-radio {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: $ds-primary;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.ds-checkbox-label,
+.ds-radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: $ds-spacing-sm;
+  cursor: pointer;
+  font-size: $ds-font-size-sm;
+  color: $ds-text-primary;
+  
+  &:has(input:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Switch (Toggle)
+.ds-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+
+    &:checked + .ds-switch__slider {
+      background-color: $ds-success;
+      
+      &::before {
+        transform: translateX(20px);
+      }
+    }
+
+    &:focus + .ds-switch__slider {
+      box-shadow: 0 0 0 3px rgba($ds-success, 0.2);
+    }
+  }
+
+  &__slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: $ds-bg-secondary;
+    transition: $ds-transition-base;
+    border-radius: $ds-radius-full;
+    border: 1px solid $ds-border-color;
+
+    &::before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 2px;
+      bottom: 2px;
+      background-color: $ds-text-primary;
+      transition: $ds-transition-base;
+      border-radius: 50%;
+    }
+  }
+}
+
+// File Upload
+.ds-file-input {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+
+  input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  &__label {
+    @extend .ds-btn;
+    @extend .ds-btn--secondary;
+    display: inline-flex;
   }
 }
 
@@ -197,30 +1581,71 @@
 .ds-badge {
   display: inline-flex;
   align-items: center;
-  padding: $ds-spacing-xs $ds-spacing-sm;
+  padding: $ds-spacing-1 $ds-spacing-2;
   font-size: $ds-font-size-xs;
   font-weight: $ds-font-weight-medium;
   border-radius: $ds-radius-full;
   line-height: 1;
+  white-space: nowrap;
 
   &--success {
     background: rgba($ds-success, 0.2);
     color: $ds-success-light;
+    border: 1px solid rgba($ds-success, 0.3);
   }
 
   &--danger {
     background: rgba($ds-danger, 0.2);
     color: $ds-danger-light;
+    border: 1px solid rgba($ds-danger, 0.3);
   }
 
   &--warning {
     background: rgba($ds-warning, 0.2);
     color: $ds-warning-light;
+    border: 1px solid rgba($ds-warning, 0.3);
   }
 
   &--info {
     background: rgba($ds-info, 0.2);
     color: $ds-info-light;
+    border: 1px solid rgba($ds-info, 0.3);
+  }
+
+  &--primary {
+    background: rgba($ds-primary, 0.2);
+    color: $ds-primary-light;
+    border: 1px solid rgba($ds-primary, 0.3);
+  }
+
+  &--secondary {
+    background: rgba($ds-text-secondary, 0.2);
+    color: $ds-text-secondary;
+    border: 1px solid rgba($ds-text-secondary, 0.3);
+  }
+
+  &--sm {
+    padding: $ds-spacing-0_5 $ds-spacing-1;
+    font-size: 10px;
+  }
+
+  &--lg {
+    padding: $ds-spacing-2 $ds-spacing-3;
+    font-size: $ds-font-size-sm;
+  }
+
+  &--dot {
+    padding-left: $ds-spacing-3;
+    
+    &::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      display: inline-block;
+      margin-right: $ds-spacing-1;
+    }
   }
 }
 
@@ -233,6 +1658,45 @@
   border-radius: $ds-radius-md;
   border: 1px solid;
   margin-bottom: $ds-spacing-md;
+  display: flex;
+  align-items: flex-start;
+  gap: $ds-spacing-sm;
+  position: relative;
+
+  &__icon {
+    flex-shrink: 0;
+    font-size: $ds-font-size-lg;
+  }
+
+  &__content {
+    flex: 1;
+  }
+
+  &__title {
+    font-weight: $ds-font-weight-semibold;
+    margin-bottom: $ds-spacing-xs;
+  }
+
+  &__message {
+    font-size: $ds-font-size-sm;
+  }
+
+  &__close {
+    position: absolute;
+    top: $ds-spacing-sm;
+    right: $ds-spacing-sm;
+    background: transparent;
+    border: none;
+    color: currentColor;
+    cursor: pointer;
+    padding: $ds-spacing-1;
+    opacity: 0.7;
+    transition: opacity $ds-transition-base;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
 
   &--success {
     background: rgba($ds-success, 0.1);
@@ -257,6 +1721,10 @@
     border-color: $ds-info-light;
     color: $ds-info-light;
   }
+
+  &--dismissible {
+    padding-right: $ds-spacing-xl;
+  }
 }
 
 // ============================================
@@ -273,6 +1741,12 @@
   border-radius: $ds-radius-lg;
   border: 1px solid $ds-border-color;
   min-height: 100px;
+  transition: all $ds-transition-base;
+
+  &:hover {
+    border-color: $ds-border-color-light;
+    box-shadow: $ds-shadow-md;
+  }
 
   &__value {
     font-size: $ds-font-size-3xl;
@@ -287,6 +1761,19 @@
     margin-top: $ds-spacing-xs;
     text-align: center;
   }
+
+  &__change {
+    font-size: $ds-font-size-xs;
+    margin-top: $ds-spacing-xs;
+    
+    &--positive {
+      color: $ds-success-light;
+    }
+    
+    &--negative {
+      color: $ds-danger-light;
+    }
+  }
 }
 
 // ============================================
@@ -298,10 +1785,384 @@
   background: $ds-border-color;
   border: none;
   margin: $ds-spacing-lg 0;
+
+  &--vertical {
+    width: 1px;
+    height: auto;
+    margin: 0 $ds-spacing-lg;
+  }
+
+  &--thick {
+    height: 2px;
+  }
+
+  &--dashed {
+    background: none;
+    border-top: 1px dashed $ds-border-color;
+  }
 }
 
 // ============================================
-// УТИЛИТЫ
+// PROGRESS BAR
+// ============================================
+
+.ds-progress {
+  width: 100%;
+  height: 8px;
+  background: $ds-bg-secondary;
+  border-radius: $ds-radius-full;
+  overflow: hidden;
+  position: relative;
+
+  &__bar {
+    height: 100%;
+    background: $ds-primary;
+    border-radius: $ds-radius-full;
+    transition: width $ds-transition-slow;
+    position: relative;
+
+    &--success {
+      background: $ds-success;
+    }
+
+    &--danger {
+      background: $ds-danger;
+    }
+
+    &--warning {
+      background: $ds-warning;
+    }
+
+    &--info {
+      background: $ds-info;
+    }
+
+    &--striped {
+      background-image: linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.15) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.15) 50%,
+        rgba(255, 255, 255, 0.15) 75%,
+        transparent 75%,
+        transparent
+      );
+      background-size: 1rem 1rem;
+      animation: ds-progress-stripes 1s linear infinite;
+    }
+  }
+
+  &--sm {
+    height: 4px;
+  }
+
+  &--lg {
+    height: 12px;
+  }
+}
+
+@keyframes ds-progress-stripes {
+  0% { background-position: 1rem 0; }
+  100% { background-position: 0 0; }
+}
+
+// ============================================
+// LOADING SPINNER
+// ============================================
+
+.ds-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba($ds-text-primary, 0.2);
+  border-right-color: $ds-text-primary;
+  border-radius: 50%;
+  animation: ds-spin 0.6s linear infinite;
+
+  &--sm {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+  }
+
+  &--lg {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+  }
+
+  &--primary {
+    border-right-color: $ds-primary;
+  }
+
+  &--success {
+    border-right-color: $ds-success;
+  }
+
+  &--danger {
+    border-right-color: $ds-danger;
+  }
+}
+
+// ============================================
+// EMPTY STATE
+// ============================================
+
+.ds-empty-state {
+  text-align: center;
+  padding: $ds-spacing-2xl;
+  color: $ds-text-secondary;
+
+  &__icon {
+    font-size: $ds-font-size-5xl;
+    margin-bottom: $ds-spacing-md;
+    opacity: 0.5;
+  }
+
+  &__title {
+    font-size: $ds-font-size-xl;
+    font-weight: $ds-font-weight-semibold;
+    color: $ds-text-primary;
+    margin-bottom: $ds-spacing-sm;
+  }
+
+  &__message {
+    font-size: $ds-font-size-sm;
+    margin-bottom: $ds-spacing-lg;
+  }
+}
+
+// ============================================
+// TOOLTIP
+// ============================================
+
+.ds-tooltip {
+  position: relative;
+  display: inline-block;
+
+  &__trigger {
+    cursor: help;
+  }
+
+  &__content {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: $ds-spacing-2;
+    padding: $ds-spacing-2 $ds-spacing-3;
+    background: $ds-bg-tertiary;
+    color: $ds-text-primary;
+    font-size: $ds-font-size-xs;
+    border-radius: $ds-radius-md;
+    box-shadow: $ds-shadow-lg;
+    white-space: nowrap;
+    z-index: $ds-z-tooltip;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity $ds-transition-base;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: $ds-bg-tertiary;
+    }
+  }
+
+  &:hover &__content {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+// ============================================
+// DROPDOWN
+// ============================================
+
+.ds-dropdown {
+  position: relative;
+  display: inline-block;
+
+  &__menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: $ds-spacing-1;
+    background: $ds-bg-tertiary;
+    border: 1px solid $ds-border-color;
+    border-radius: $ds-radius-md;
+    box-shadow: $ds-shadow-lg;
+    min-width: 200px;
+    z-index: $ds-z-dropdown;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all $ds-transition-base;
+    padding: $ds-spacing-1;
+
+    &--right {
+      left: auto;
+      right: 0;
+    }
+
+    &--show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+  }
+
+  &__item {
+    display: block;
+    width: 100%;
+    padding: $ds-spacing-2 $ds-spacing-3;
+    color: $ds-text-primary;
+    text-decoration: none;
+    border-radius: $ds-radius-sm;
+    transition: background $ds-transition-base;
+    font-size: $ds-font-size-sm;
+    text-align: left;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+
+    &:hover {
+      background: $ds-bg-hover;
+    }
+
+    &--danger {
+      color: $ds-danger-light;
+
+      &:hover {
+        background: rgba($ds-danger, 0.1);
+      }
+    }
+
+    &--disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+
+  &__divider {
+    height: 1px;
+    background: $ds-border-color;
+    margin: $ds-spacing-1 0;
+  }
+}
+
+// ============================================
+// TABS
+// ============================================
+
+.ds-tabs {
+  border-bottom: 1px solid $ds-border-color;
+  display: flex;
+  gap: $ds-spacing-lg;
+
+  &__item {
+    padding: $ds-spacing-sm $ds-spacing-md;
+    color: $ds-text-secondary;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: all $ds-transition-base;
+    font-size: $ds-font-size-sm;
+    font-weight: $ds-font-weight-medium;
+    position: relative;
+    bottom: -1px;
+
+    &:hover {
+      color: $ds-text-primary;
+    }
+
+    &--active {
+      color: $ds-text-primary;
+      border-bottom-color: $ds-primary;
+    }
+
+    &--disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+}
+
+.ds-tab-content {
+  padding: $ds-spacing-lg 0;
+}
+
+// ============================================
+// ACCORDION
+// ============================================
+
+.ds-accordion {
+  border: 1px solid $ds-border-color;
+  border-radius: $ds-radius-md;
+  overflow: hidden;
+
+  &__item {
+    border-bottom: 1px solid $ds-border-color;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__header {
+    padding: $ds-spacing-md;
+    background: $ds-bg-secondary;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background $ds-transition-base;
+
+    &:hover {
+      background: $ds-bg-hover;
+    }
+
+    &--active {
+      background: $ds-bg-tertiary;
+    }
+  }
+
+  &__title {
+    font-weight: $ds-font-weight-semibold;
+    color: $ds-text-primary;
+    margin: 0;
+  }
+
+  &__icon {
+    transition: transform $ds-transition-base;
+    color: $ds-text-secondary;
+
+    &--active {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__content {
+    padding: 0 $ds-spacing-md;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height $ds-transition-slow, padding $ds-transition-slow;
+
+    &--active {
+      padding: $ds-spacing-md;
+      max-height: 1000px;
+    }
+  }
+}
+
+// ============================================
+// УТИЛИТЫ (для обратной совместимости)
 // ============================================
 
 .ds-text {
@@ -336,4 +2197,3 @@
   &--gap-md { gap: $ds-spacing-md; }
   &--gap-lg { gap: $ds-spacing-lg; }
 }
-

@@ -13,84 +13,248 @@ use yii\helpers\ArrayHelper;
 
 $this->title = 'Сервера';
 $this->params['breadcrumbs'][] = $this->title;
+// Убираем отступы для таблицы
+$this->params['contentClass'] = 'content-no-padding';
+// Передаем searchModel в layout для фильтров
+$this->params['searchModel'] = $searchModel;
 ?>
-<div class="servers-index-page">
-    <div class="content-header">
-        <div class="ds-flex ds-flex--between">
-            <h1><?= Html::encode($this->title) ?></h1>
-            <div class="ds-flex ds-flex--gap-md">
-                <?= Html::a('<i class="fas fa-plus"></i> Новый сервер', ['create'], ['class' => 'ds-btn ds-btn--success']) ?>
-                <?= Html::a('<i class="bi bi-calendar-event"></i> ' . Yii::t('common', 'Массовое редактирование вайпов'), ['mass-edit-wipe'], ['class' => 'ds-btn ds-btn--info']) ?>
-                <?= Html::a('<i class="fas fa-sort"></i> ' . Yii::t('common', 'Сортировать'), ['sort'], ['class' => 'ds-btn ds-btn--primary']) ?>
-            </div>
-        </div>
-    </div>
 
-    <div class="content">
-        <div class="ds-card">
-            <?= GridView::widget([
-        'dataProvider' => $dataProvider,
-        'filterModel' => $searchModel,
-        'columns' => [
-            [
-                'attribute' => 'id',
-                'format'    => 'raw',
-                'options'   => ['width' => '40'],
+<!-- Table Container - Full Width, No Padding -->
+<div class="servers-index-page w-full">
+
+    <!-- Table with Filters -->
+    <div class="w-full">
+        <?= GridView::widget([
+            'dataProvider' => $dataProvider,
+            'filterModel' => $searchModel,
+            'tableOptions' => [
+                'class' => 'table-auto w-full text-sm servers-table-dark',
             ],
-            'name:ntext',
-            [
-                'attribute'       => 'wipe',
-                'options'   => ['width' => '200'],
-                'value'     => function (Servers $model) {
-                    return $model->wipe;
-                },
+            'options' => [
+                'class' => 'servers-grid-view',
             ],
-            [
-                'attribute'       => 'next_wipe',
-                'options'   => ['width' => '200'],
-                'value'     => function (Servers $model) {
-                    return $model->next_wipe;
-                },
+            'layout' => "{items}\n{pager}",
+            'filterRowOptions' => ['style' => 'display: none;'], // Скрываем фильтры в таблице
+            'bordered' => false,
+            'striped' => false,
+            'hover' => true,
+            'columns' => [
+                [
+                    'attribute' => 'id',
+                    'format' => 'raw',
+                    'options' => ['width' => '60'],
+                    'headerOptions' => ['class' => 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                    'contentOptions' => ['class' => 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                ],
+                [
+                    'attribute' => 'name',
+                    'format' => 'ntext',
+                    'headerOptions' => ['class' => 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                    'contentOptions' => ['class' => 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                ],
+                [
+                    'attribute' => 'wipe',
+                    'options' => ['width' => '200'],
+                    'value' => function (Servers $model) {
+                        return $model->wipe;
+                    },
+                    'headerOptions' => ['class' => 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                    'contentOptions' => ['class' => 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                ],
+                [
+                    'attribute' => 'next_wipe',
+                    'options' => ['width' => '200'],
+                    'value' => function (Servers $model) {
+                        return $model->next_wipe;
+                    },
+                    'headerOptions' => ['class' => 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                    'contentOptions' => ['class' => 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                ],
+                [
+                    'attribute' => 'global_wipe',
+                    'options' => ['width' => '200'],
+                    'value' => function (Servers $model) {
+                        return $model->global_wipe;
+                    },
+                    'headerOptions' => ['class' => 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                    'contentOptions' => ['class' => 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                ],
+                [
+                    'attribute' => 'updated_at',
+                    'options' => ['width' => '200'],
+                    'value' => function (Servers $model) {
+                        if ($model->status != Servers::STATUS_ACTIVE) {
+                            return '';
+                        }
+                        return time() - strtotime($model->updated_at) . " сек. назад";
+                    },
+                    'headerOptions' => ['class' => 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                    'contentOptions' => ['class' => 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                ],
+                [
+                    'attribute' => 'status',
+                    'filterType' => GridView::FILTER_SELECT2,
+                    'filter' => ArrayHelper::merge(['' => 'Все'], Servers::getStatusList()),
+                    'options' => ['width' => '100'],
+                    'format' => 'raw',
+                    'value' => function (Servers $model) {
+                        $status = ArrayHelper::getValue(Servers::getStatusList(), $model->status);
+                        $badgeClass = $model->status == Servers::STATUS_ACTIVE ? 'ds-badge--success' : 'ds-badge--danger';
+                        return Html::tag('span', Html::encode($status), ['class' => 'ds-badge ' . $badgeClass]);
+                    },
+                    'headerOptions' => ['class' => 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                    'contentOptions' => ['class' => 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                ],
+                [
+                    'class' => ActionColumn::className(),
+                    'options' => ['width' => '40'],
+                    'template' => '{update}',
+                    'urlCreator' => function ($action, Servers $model, $key, $index, $column) {
+                        return Url::toRoute([$action, 'id' => $model->id]);
+                    },
+                    'headerOptions' => ['class' => 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                    'contentOptions' => ['class' => 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]'],
+                ],
             ],
-            [
-                'attribute'       => 'global_wipe',
-                'options'   => ['width' => '200'],
-                'value'     => function (Servers $model) {
-                    return $model->global_wipe;
-                },
-            ],
-            [
-                'attribute'       => 'updated_at',
-                'options'   => ['width' => '200'],
-                'value'     => function (Servers $model) {
-                    if ($model->status != Servers::STATUS_ACTIVE) {
-                        return '';
-                    }
-                    return time() - strtotime($model->updated_at) . " сек. назад";
-                },
-            ],
-            [
-                'attribute' => 'status',
-                'filterType'  => GridView::FILTER_SELECT2,
-                'filter'    => ArrayHelper::merge(['' => 'Все'], Servers::getStatusList()),
-                'options'   => ['width' => '100'],
-                'format'    => 'raw',
-                'value'     => function (Servers $model) {
-                    $status = ArrayHelper::getValue(Servers::getStatusList(), $model->status);
-                    $badgeClass = $model->status == Servers::STATUS_ACTIVE ? 'ds-badge--success' : 'ds-badge--danger';
-                    return Html::tag('span', Html::encode($status), ['class' => 'ds-badge ' . $badgeClass]);
-                },
-            ],
-            [
-                'class' => ActionColumn::className(),
-                'options'   => ['width' => '40'],
-                'template' => '{update}',
-                'urlCreator' => function ($action, Servers $model, $key, $index, $column) {
-                    return Url::toRoute([$action, 'id' => $model->id]);
-                 }
-            ],
-        ],
-    ]); ?>
-        </div>
+        ]); ?>
     </div>
 </div>
+
+<style>
+/* Убираем отступы для таблицы */
+.content-no-padding {
+    padding: 0 !important;
+}
+
+/* Стили для таблицы GridView - темная тема */
+.servers-grid-view {
+    background: hsl(0 0% 10% / 1) !important;
+}
+
+/* Все возможные варианты таблиц */
+.servers-grid-view .table,
+.servers-grid-view table,
+.servers-grid-view .kv-grid-table,
+.servers-grid-view .servers-table-dark,
+.servers-grid-view .table-striped,
+.servers-grid-view .table-bordered,
+.servers-grid-view .table-hover,
+.servers-grid-view .table-sm {
+    background: hsl(0 0% 10% / 1) !important;
+    border-collapse: collapse;
+    width: 100%;
+    color: white !important;
+    border: none !important;
+    border-spacing: 0;
+}
+
+/* Заголовки таблицы */
+.servers-grid-view .table thead,
+.servers-grid-view table thead,
+.servers-grid-view .kv-grid-table thead {
+    background: hsl(0 0% 20.4% / 1) !important;
+}
+
+.servers-grid-view .table thead th,
+.servers-grid-view table thead th,
+.servers-grid-view .kv-grid-table thead th,
+.servers-grid-view .table thead td,
+.servers-grid-view table thead td {
+    background: hsl(0 0% 20.4% / 1) !important;
+    color: hsl(0 0% 70% / 1) !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid hsl(0 0% 15.3% / 1) !important;
+    font-weight: 600 !important;
+}
+
+/* Тело таблицы */
+.servers-grid-view .table tbody,
+.servers-grid-view table tbody,
+.servers-grid-view .kv-grid-table tbody {
+    background: hsl(0 0% 10% / 1) !important;
+}
+
+.servers-grid-view .table tbody tr,
+.servers-grid-view table tbody tr,
+.servers-grid-view .kv-grid-table tbody tr {
+    background: hsl(0 0% 10% / 1) !important;
+    color: white !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+.servers-grid-view .table tbody tr:hover,
+.servers-grid-view table tbody tr:hover,
+.servers-grid-view .kv-grid-table tbody tr:hover,
+.servers-grid-view .table-hover tbody tr:hover {
+    background: hsl(0 0% 15% / 1) !important;
+}
+
+.servers-grid-view .table tbody td,
+.servers-grid-view table tbody td,
+.servers-grid-view .kv-grid-table tbody td {
+    background: transparent !important;
+    color: white !important;
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid hsl(0 0% 15.3% / 1) !important;
+}
+
+.servers-grid-view .table tbody tr:last-child td,
+.servers-grid-view table tbody tr:last-child td,
+.servers-grid-view .kv-grid-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Убираем полосы у striped таблиц */
+.servers-grid-view .table-striped tbody tr:nth-of-type(odd) {
+    background: hsl(0 0% 10% / 1) !important;
+}
+
+.servers-grid-view .table-striped tbody tr:nth-of-type(even) {
+    background: hsl(0 0% 12% / 1) !important;
+}
+
+/* Стили для пагинации */
+.servers-grid-view .pagination,
+.servers-grid-view .kv-panel-pager {
+    background: hsl(0 0% 10% / 1) !important;
+    color: white !important;
+}
+
+.servers-grid-view .pagination .page-link {
+    background: hsl(0 0% 20.4% / 1) !important;
+    color: white !important;
+    border-color: hsl(0 0% 15.3% / 1) !important;
+}
+
+.servers-grid-view .pagination .page-link:hover {
+    background: hsl(0 0% 25% / 1) !important;
+}
+
+.servers-grid-view .pagination .page-item.active .page-link {
+    background: hsl(200 70% 50% / 1) !important;
+    border-color: hsl(200 70% 50% / 1) !important;
+}
+
+/* Стили для фильтров в таблице (если они все еще отображаются) */
+.servers-grid-view .filters-row input,
+.servers-grid-view .filters-row select {
+    background: hsl(0 0% 15% / 1) !important;
+    border: 1px solid hsl(0 0% 25% / 1) !important;
+    color: white !important;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    width: 100%;
+}
+
+.servers-grid-view .filters-row input:focus,
+.servers-grid-view .filters-row select:focus {
+    outline: none;
+    border-color: hsl(200 70% 50% / 1) !important;
+}
+</style>

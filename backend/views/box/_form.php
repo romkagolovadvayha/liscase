@@ -49,7 +49,10 @@ $format = new JsExpression($format);
 
 <?= $form->field($model, 'name')->textInput(); ?>
 <?= $form->field($model, 'price')->textInput(); ?>
-<?= $form->field($model, 'type')->dropDownList(Box::getTypeList(), []) ?>
+<div class="ds-select-wrapper">
+        <?= $form->field($model, 'type', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->dropDownList(Box::getTypeList(), ['class' => 'ds-select form-control']) ?>
+        <i class="fas fa-chevron-down ds-select-arrow"></i>
+    </div>
 <?= $form->field($model, 'preview_file')->fileInput(); ?>
 <?= $form->field($model, 'drop')->widget(\kartik\select2\Select2::class, [
     'data'    => \common\models\box\Drop::getList(),
@@ -65,7 +68,10 @@ $format = new JsExpression($format);
         'allowClear' => true,
     ],
 ]); ?>
-<?= $form->field($model, 'status')->dropDownList(Box::getStatusList(), []) ?>
+<div class="ds-select-wrapper">
+        <?= $form->field($model, 'status', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->dropDownList(Box::getStatusList(), ['class' => 'ds-select form-control']) ?>
+        <i class="fas fa-chevron-down ds-select-arrow"></i>
+    </div>
 <?= $this->context->getFormButtons(); ?>
 
 <?php ActiveForm::end(); ?>

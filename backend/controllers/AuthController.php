@@ -5,8 +5,6 @@ namespace backend\controllers;
 use backend\components\BackendController;
 use Yii;
 use yii\filters\AccessControl;
-use backend\forms\LoginForm;
-use yii\web\ForbiddenHttpException;
 
 class AuthController extends BackendController
 {
@@ -31,7 +29,7 @@ class AuthController extends BackendController
                     ],
                 ],
                 'denyCallback' => function ($rule, $action) {
-                    return $action->controller->redirect('/');
+                    return $action->controller->redirect(['/']);
                 },
             ],
         ];
@@ -39,14 +37,18 @@ class AuthController extends BackendController
 
     public function actionLogin()
     {
-        $this->layout = '@common/views/layouts/blank';
-        return 'Ошибка доступа!';
+        return $this->actionIndex();
     }
 
     public function actionIndex()
     {
-        $this->layout = '@common/views/layouts/blank';
-        return 'Ошибка доступа!';
+        $this->layout = '@backend/views/layouts/blank';
+        $siteUrl = rtrim(Yii::$app->params['baseUrl'] ?? '', '/') ?: '/';
+        $steamLoginUrl = $siteUrl . '/auth/oauth';
+        return $this->render('index', [
+            'steamLoginUrl' => $steamLoginUrl,
+            'siteUrl'       => $siteUrl,
+        ]);
     }
 
     public function actionLogout()
