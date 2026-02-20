@@ -10,15 +10,9 @@ use yii\web\AssetBundle;
  */
 class TailwindAsset extends AssetBundle
 {
-    public $sourcePath = null;
-    public $baseUrl = null;
+    public $sourcePath = '@backend/assets/sources';
 
-    public $js = [
-        'https://cdn.tailwindcss.com',
+    public $css = [
+        'scss/tailwind.min.css?v=2.2',
     ];
-    public $jsOptions = [
-        'position' => \yii\web\View::POS_HEAD,
-    ];
-
-    public $css = [];
 }

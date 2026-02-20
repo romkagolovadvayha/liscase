@@ -29,7 +29,7 @@ $config = [
         ],
         'assetManager' => [
             'class' => 'yii\web\AssetManager',
-            'forceCopy' => true,
+            'forceCopy' => true, // всегда копировать ассеты заново, чтобы после деплоя не отдавался старый main.min.css
             'appendTimestamp' => true, // Автоматически добавляет timestamp к ассетам для инвалидации кэша
         ],
         'view' => [
