@@ -124,7 +124,10 @@ class PromocodeForm extends Promocode
             $this->addError('code', Yii::t('common', 'Вы уже использовали этот промокод!'));
             return null;
         }
-        UserPromocode::createRecord($user->id, $model->id);
+        if (!UserPromocode::createRecord($user->id, $model->id)) {
+            $this->addError('code', Yii::t('common', 'Промокод больше не активен!'));
+            return null;
+        }
 
         return $model;
     }

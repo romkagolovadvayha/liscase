@@ -58,10 +58,13 @@ class UserPromocode extends ActiveRecord
     }
 
     /**
-     * @param $userId
-     * @param $promocodeId
+     * Создаёт запись об использовании промокода и начисляет бонус.
+     * Для одноразовых промокодов сначала атомарно помечает промокод использованным (UPDATE ... WHERE status = ACTIVE),
+     * чтобы исключить гонку, когда несколько пользователей успевают пройти проверку до обновления статуса.
      *
-     * @return bool
+     * @param int $userId
+     * @param int $promocodeId
+     * @return bool true при успехе, false если промокод не найден или одноразовый уже использован другим
      */
     public static function createRecord($userId, $promocodeId): bool
     {
@@ -69,6 +72,22 @@ class UserPromocode extends ActiveRecord
         if (empty($promocode)) {
             return false;
         }
+
+        // Одноразовый: атомарно «занять» промокод (только один запрос обновит строку)
+        if (!empty($promocode->is_single_use)) {
+            $affected = Yii::$app->db->createCommand()->update(
+                Promocode::tableName(),
+                ['status' => Promocode::STATUS_USED],
+                [
+                    'id' => $promocodeId,
+                    'status' => Promocode::STATUS_ACTIVE,
+                ]
+            )->execute();
+            if ($affected === 0) {
+                return false; // уже использован или не активен
+            }
+        }
+
         $user = User::findOne($userId);
         $model = new UserPromocode();
         $model->user_id = $userId;
@@ -88,6 +107,7 @@ class UserPromocode extends ActiveRecord
         ], 'ru-RU');
         $profit->created_at = date('Y-m-d H:i:s');
         $profit->save(false);
+
         return true;
     }
 }
