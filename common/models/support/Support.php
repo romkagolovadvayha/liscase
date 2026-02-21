@@ -172,4 +172,26 @@ class Support extends \yii\db\ActiveRecord
             ->andWhere(['status' => SupportRead::STATUS_UNREAD])
             ->count();
     }
+
+    /**
+     * Количество непрочитанных по списку user_id одним запросом. Возвращает [user_id => count].
+     */
+    public static function unreadAllBatch(array $userIds) {
+        if (empty($userIds)) {
+            return [];
+        }
+        $userIds = array_unique(array_map('intval', $userIds));
+        $rows = SupportRead::find()
+            ->select(['user_id', 'COUNT(*) as cnt'])
+            ->andWhere(['user_id' => $userIds])
+            ->andWhere(['status' => SupportRead::STATUS_UNREAD])
+            ->groupBy('user_id')
+            ->asArray()
+            ->all();
+        $result = array_fill_keys($userIds, 0);
+        foreach ($rows as $row) {
+            $result[(int)$row['user_id']] = (int)$row['cnt'];
+        }
+        return $result;
+    }
 }

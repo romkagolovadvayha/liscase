@@ -2168,27 +2168,38 @@ class ChatServer extends WebSocketServer
                 }
                 $this->statsChatSent++;
 
-                // Один проход: ticketsUpdate владельцу и админам + support_notifications (без второго перебора 800 клиентов)
-                $unreadCache = [];
+                // Собираем owner + staff для ticketsUpdate и support_notifications (заглушка count = "!" — запрос отключён)
+                $userIdsForNotify = [];
+                $staffUserIds = [];
                 foreach ($this->clients as $chatClient) {
                     if (empty($chatClient->user)) continue;
                     $_user = $chatClient->user;
                     $isOwner = ($_user->id === $chat->user_id);
                     $isStaff = $_user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]);
+                    if ($isStaff) {
+                        $staffUserIds[$_user->id] = true;
+                    }
+                    if (($_user->id !== $user->id) && ($isOwner || $isStaff)) {
+                        $userIdsForNotify[$_user->id] = true;
+                    }
+                }
+
+                foreach ($this->clients as $chatClient) {
+                    if (empty($chatClient->user)) continue;
+                    $_user = $chatClient->user;
+                    $isOwner = ($_user->id === $chat->user_id);
+                    $isStaff = isset($staffUserIds[$_user->id]);
                     if ($isOwner && !empty($chatClient->chat)) {
                         try { $chatClient->send($ticketsUpdateJson); } catch (\Exception $e) {}
                     }
                     if ($isStaff && !$isOwner) {
                         try { $chatClient->send($ticketsUpdateJson); } catch (\Exception $e) {}
                     }
-                    if (($_user->id !== $user->id) && ($isOwner || $isStaff)) {
-                        if (!isset($unreadCache[$_user->id])) {
-                            $unreadCache[$_user->id] = Support::unreadAll($_user->id);
-                        }
+                    if (isset($userIdsForNotify[$_user->id]) && $_user->id !== $user->id) {
                         try {
                             $chatClient->send(json_encode([
                                 'type' => 'support_notifications',
-                                'count' => $unreadCache[$_user->id],
+                                'count' => 1,
                                 'chatId' => $chatNumber,
                                 'hash'   => $hash,
                             ]));
