@@ -13,6 +13,7 @@ use common\models\user\UserDrop;
 use common\models\profit\Profit;
 use Yii;
 use common\components\helpers\Role;
+use common\models\auth\AuthAssignment;
 use common\models\support\Support;
 use common\models\user\User;
 use consik\yii2websocket\events\WSClientEvent;
@@ -52,17 +53,11 @@ class ChatServer extends WebSocketServer
     /** @var array Индекс клиентов по chat для быстрого поиска */
     private $clientsByChat = [];
 
-    /** @var int Смещение для чанковой обработки клиентов в таймере (чтобы не блокировать цикл) */
-    private $supportTimerOffset = 0;
-
     /** @var int Смещение для чанковой отправки ping (не блокировать цикл) */
     private $pingTimerOffset = 0;
 
     /** @var int Смещение для таймера balance/drops (тяжёлый — отдельно от support, чтобы не блокировать чат) */
     private $balanceTimerOffset = 0;
-
-    /** Макс. клиентов за один тик support-таймера — меньше = быстрее обрабатываются входящие (чат) */
-    private const SUPPORT_TIMER_CHUNK = 20;
 
     /** Макс. клиентов за один тик ping-таймера */
     private const PING_TIMER_CHUNK = 80;
@@ -1012,27 +1007,17 @@ class ChatServer extends WebSocketServer
                 $this->statsPingTicks = 0;
             });
 
-            // Обработка support событий из кеша каждые 0.5 сек (чаще = быстрее реакция на входящие сообщения)
+            // Support/chat только для клиентов в чате — не блокировать loop обходом 150 клиентов
             $loop->addPeriodicTimer(0.5, function () {
                 $this->statsSupportTicks++;
                 try {
-                    if ($this->clientsArrayCache === null) {
-                        $this->clientsArrayCache = [];
-                        foreach ($this->clients as $c) {
-                            $this->clientsArrayCache[] = $c;
+                    $clientsWithChat = [];
+                    foreach ($this->clientsByChat as $list) {
+                        foreach ($list as $c) {
+                            $clientsWithChat[spl_object_id($c)] = $c;
                         }
                     }
-                    $clientsArr = $this->clientsArrayCache;
-                    $total = count($clientsArr);
-                    if ($total === 0) {
-                        return;
-                    }
-                    $chunkSize = self::SUPPORT_TIMER_CHUNK;
-                    $start = $this->supportTimerOffset % $total;
-                    $this->supportTimerOffset = ($start + $chunkSize) % $total;
-                    $chunk = array_slice($clientsArr, $start, $chunkSize);
-
-                    foreach ($chunk as $client) {
+                    foreach ($clientsWithChat as $client) {
                         try {
                             if (!empty($client->chat)) {
                                 $statusKey = 'ws_support_status_' . $client->chat;
@@ -1097,7 +1082,10 @@ class ChatServer extends WebSocketServer
             $loop->addPeriodicTimer(2, function () {
                 try {
                     if ($this->clientsArrayCache === null) {
-                        return;
+                        $this->clientsArrayCache = [];
+                        foreach ($this->clients as $c) {
+                            $this->clientsArrayCache[] = $c;
+                        }
                     }
                     $arr = $this->clientsArrayCache;
                     $total = count($arr);
@@ -1132,7 +1120,18 @@ class ChatServer extends WebSocketServer
                                     $buyData = Yii::$app->cache->get($buyKey);
                                     if ($buyData && isset($buyData['timestamp']) && (time() - $buyData['timestamp']) < 30) {
                                         if (!isset($buyData['sent'])) {
-                                            $this->commandBuyDrop($client, json_encode($buyData));
+                                            // Только из кеша: не вызываем commandBuyDrop (БД + рендер блокируют loop)
+                                            if (!empty($buyData['product'])) {
+                                                $response = json_encode([
+                                                    'type' => 'store.buy.items',
+                                                    'code' => 200,
+                                                    'id' => $buyData['id'] ?? null,
+                                                    'product' => $buyData['product'],
+                                                ]);
+                                                foreach ($userClients as $userClient) {
+                                                    try { $userClient->send($response); } catch (\Exception $e) {}
+                                                }
+                                            }
                                             $buyDropCount++;
                                             $buyData['sent'] = true;
                                             Yii::$app->cache->set($buyKey, $buyData, 5);
@@ -2168,17 +2167,22 @@ class ChatServer extends WebSocketServer
                 }
                 $this->statsChatSent++;
 
-                // Собираем owner + staff для ticketsUpdate и support_notifications (заглушка count = "!" — запрос отключён)
-                $userIdsForNotify = [];
+                // Staff — один запрос к auth_assignment вместо 150 canRoles() (checkAccess блокировал loop)
                 $staffUserIds = [];
+                $staffIds = AuthAssignment::find()
+                    ->select('user_id')
+                    ->distinct()
+                    ->andWhere(['item_name' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]])
+                    ->column();
+                foreach ($staffIds as $id) {
+                    $staffUserIds[(int)$id] = true;
+                }
+                $userIdsForNotify = [];
                 foreach ($this->clients as $chatClient) {
                     if (empty($chatClient->user)) continue;
                     $_user = $chatClient->user;
                     $isOwner = ($_user->id === $chat->user_id);
-                    $isStaff = $_user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]);
-                    if ($isStaff) {
-                        $staffUserIds[$_user->id] = true;
-                    }
+                    $isStaff = isset($staffUserIds[$_user->id]);
                     if (($_user->id !== $user->id) && ($isOwner || $isStaff)) {
                         $userIdsForNotify[$_user->id] = true;
                     }
