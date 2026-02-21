@@ -55,14 +55,26 @@ class ChatServer extends WebSocketServer
     /** @var int Смещение для чанковой обработки клиентов в таймере (чтобы не блокировать цикл) */
     private $supportTimerOffset = 0;
 
-    /** Макс. клиентов за один тик таймера 1 сек — чтобы входящие сообщения (чат) обрабатывались без задержки */
-    private const SUPPORT_TIMER_CHUNK = 100;
+    /** @var int Смещение для чанковой отправки ping (не блокировать цикл) */
+    private $pingTimerOffset = 0;
 
-    /** Макс. вызовов commandBuyDrop за один тик (тяжёлые операции) */
-    private const SUPPORT_TIMER_BUY_DROP_PER_TICK = 3;
+    /** Макс. клиентов за один тик support-таймера — меньше = быстрее обрабатываются входящие (чат) */
+    private const SUPPORT_TIMER_CHUNK = 20;
+
+    /** Макс. клиентов за один тик ping-таймера */
+    private const PING_TIMER_CHUNK = 80;
+
+    /** Макс. вызовов commandBuyDrop за один тик (рендер тяжёлый — не блокировать цикл) */
+    private const SUPPORT_TIMER_BUY_DROP_PER_TICK = 1;
 
     /** Кеш массива клиентов для таймера (инвалидируется при connect/disconnect) */
     private $clientsArrayCache = null;
+
+    /** Счётчики за последнюю минуту (для отчёта раз в 60 сек) */
+    private $statsChatSent = 0;
+    private $statsSubscription = 0;
+    private $statsSupportTicks = 0;
+    private $statsPingTicks = 0;
 
     /**
      * Получить singleton инстанс сервера
@@ -924,50 +936,46 @@ class ChatServer extends WebSocketServer
             $loop->addTimer(60, function () {
             });
 
-            $interval = 15; // каждые 15 сек пингуем
-            $loop->addPeriodicTimer($interval, function () {
-                $now = time();
-                foreach ($this->clients as $client) {
-                    // Инициализируем счетчик ошибок, если его нет
-                    if (!isset($client->sendErrors)) {
-                        $client->sendErrors = 0;
+            // Ping чанками каждые 5 сек, чтобы не блокировать цикл (раньше раз в 30 сек обход всех клиентов)
+            $loop->addPeriodicTimer(5, function () {
+                $this->statsPingTicks++;
+                if ($this->clientsArrayCache === null) {
+                    $this->clientsArrayCache = [];
+                    foreach ($this->clients as $c) {
+                        $this->clientsArrayCache[] = $c;
                     }
-
-                    // Проверяем таймаут авторизации для неавторизованных клиентов
+                }
+                $arr = $this->clientsArrayCache;
+                $total = count($arr);
+                if ($total === 0) return;
+                $now = time();
+                $chunkSize = self::PING_TIMER_CHUNK;
+                $start = $this->pingTimerOffset % $total;
+                $this->pingTimerOffset = ($start + $chunkSize) % $total;
+                $chunk = array_slice($arr, $start, $chunkSize);
+                foreach ($chunk as $client) {
+                    if (!isset($client->sendErrors)) $client->sendErrors = 0;
                     if (empty($client->user) && isset($client->connectedAt)) {
-                        $timeSinceConnect = $now - $client->connectedAt;
-                        if ($timeSinceConnect >= $this->authTimeoutSeconds) {
-                            $clientIp = isset($client->realIp) ? $client->realIp : $client->remoteAddress;
+                        if (($now - $client->connectedAt) >= $this->authTimeoutSeconds) {
                             $client->disconnectReason = 'auth_timeout';
                             try { $client->close(1008, 'authentication timeout'); } catch (\Throwable $e) {}
                             continue;
                         }
                     }
-
-                    // Закрываем по реальному idle-таймауту (не по счётчику)
                     $idle = $now - (isset($client->lastPong) ? $client->lastPong : 0);
                     if ($idle >= $this->idleCloseSeconds) {
-                        $userId = !empty($client->user) ? $client->user->id : 'anonymous';
                         $client->disconnectReason = 'heartbeat_timeout';
                         try { $client->close(1000, 'heartbeat timeout'); } catch (\Throwable $e) {}
                         continue;
                     }
-
-                    // Один app-level ping (lastPong обновляется в getCommand при получении pong)
                     try {
                         $client->send(json_encode(['type' => 'ping', 'ts' => $now]));
-                        // Сбрасываем счетчик ошибок при успешной отправке
                         if (isset($client->sendErrors) && $client->sendErrors > 0) {
                             $client->sendErrors = max(0, $client->sendErrors - 1);
                         }
                     } catch (\Throwable $e) {
                         $client->sendErrors = isset($client->sendErrors) ? $client->sendErrors + 1 : 1;
-                        $userId = !empty($client->user) ? $client->user->id : 'anonymous';
-                        $this->log("app ping send failed for client {$userId}: " . $e->getMessage() . " (errors: {$client->sendErrors})");
-
-                        // Закрываем только после нескольких последовательных ошибок
                         if ($client->sendErrors >= 3) {
-                            $this->log("Closing client {$userId} after {$client->sendErrors} consecutive send errors");
                             $client->disconnectReason = 'send_failed';
                             try { $client->close(1011, 'send failed'); } catch (\Throwable $e2) {}
                         }
@@ -975,8 +983,30 @@ class ChatServer extends WebSocketServer
                 }
             });
 
-            // Обработка support событий из кеша каждую секунду (чанками, чтобы не блокировать входящие сообщения)
-            $loop->addPeriodicTimer(1, function () {
+            // Отчёт в лог раз в минуту (клиенты, счётчики событий, память) — без нагрузки
+            $loop->addPeriodicTimer(60, function () {
+                $clients = $this->clientsArrayCache !== null ? count($this->clientsArrayCache) : iterator_count($this->clients);
+                $chats = count($this->clientsByChat);
+                $mem = round(memory_get_usage(true) / 1024 / 1024, 1);
+                $this->log(sprintf(
+                    'report | clients=%d chats=%d chatSent=%d subscription=%d supportTicks=%d pingTicks=%d memory=%sMb',
+                    $clients,
+                    $chats,
+                    $this->statsChatSent,
+                    $this->statsSubscription,
+                    $this->statsSupportTicks,
+                    $this->statsPingTicks,
+                    $mem
+                ));
+                $this->statsChatSent = 0;
+                $this->statsSubscription = 0;
+                $this->statsSupportTicks = 0;
+                $this->statsPingTicks = 0;
+            });
+
+            // Обработка support событий из кеша каждые 0.5 сек (чаще = быстрее реакция на входящие сообщения)
+            $loop->addPeriodicTimer(0.5, function () {
+                $this->statsSupportTicks++;
                 try {
                     if ($this->clientsArrayCache === null) {
                         $this->clientsArrayCache = [];
@@ -1190,20 +1220,17 @@ class ChatServer extends WebSocketServer
                         $ticket->user_id == $client->user->id
                     ) {
                         $client->chat = $chatId;
-
-                        // Добавляем в индекс для быстрого поиска
                         $this->indexClientByChat($client);
+                        $this->statsSubscription++;
                     }
                 } else {
-                    // Если тикета нет - разрешаем подписку (тикет создастся при первом сообщении)
                     $client->chat = $chatId;
-
-                    // Добавляем в индекс для быстрого поиска
                     $this->indexClientByChat($client);
+                    $this->statsSubscription++;
                 }
             }
 
-            $client->send(json_encode($result));
+            // Не шлём пустой ответ — клиенту не нужен ack для подписки
         } catch (\Exception $ex) {
             $this->log("Subscription error: " . $ex->getMessage());
         }
@@ -1904,11 +1931,8 @@ class ChatServer extends WebSocketServer
 
     public function commandChatFocus(ConnectionInterface $client, $msg)
     {
-        $result = ['message' => ''];
-
         $request = json_decode($msg, true);
         if (empty($client->chat) || empty($client->user) || empty($request['chatId'])) {
-            $client->send(json_encode($result));
             return;
         }
 
@@ -1932,22 +1956,17 @@ class ChatServer extends WebSocketServer
         } catch (\Exception $e) {
             $this->log("commandChatFocus error: " . $e->getLine() . ":" . $e->getMessage());
         }
-
-        $client->send(json_encode($result));
+        // Не шлём пустой ответ
     }
 
     public function commandChatBlur(ConnectionInterface $client, $msg)
     {
-        $result = ['message' => ''];
-
         $request = json_decode($msg, true);
         if (empty($client->chat) || empty($client->user) || empty($request['chatId'])) {
-            $client->send(json_encode($result));
             return;
         }
 
         try {
-            // Используем индекс для быстрого поиска клиентов по chat
             $chatClients = $this->getClientsByChat($request['chatId']);
             $response = json_encode(['type' => 'chatBlur']);
 
@@ -1963,8 +1982,7 @@ class ChatServer extends WebSocketServer
         } catch (\Exception $e) {
             $this->log("commandChatBlur error: " . $e->getLine() . ":" . $e->getMessage());
         }
-
-        $client->send(json_encode($result));
+        // Не шлём пустой ответ инициатору
     }
 
     public static function usernameClass($user) {
@@ -2128,6 +2146,7 @@ class ChatServer extends WebSocketServer
                         $this->log("Error sending chat message to client: " . $ex->getMessage());
                     }
                 }
+                $this->statsChatSent++;
 
                 // Уведомления владельцу тикета и админам/модераторам (перебор всех клиентов)
                 foreach ($this->clients as $chatClient) {
