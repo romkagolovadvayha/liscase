@@ -1093,7 +1093,7 @@ class ChatServer extends WebSocketServer
                 }
             });
 
-            // Тяжёлые balance/drops/launcher раз в 2 сек чанками — не блокируют быстрый support-таймер и чат
+            // Тяжёлые balance/drops/launcher раз в 2 сек, маленький чанк — чтобы не блокировать чат надолго
             $loop->addPeriodicTimer(2, function () {
                 try {
                     if ($this->clientsArrayCache === null) {
@@ -1102,7 +1102,7 @@ class ChatServer extends WebSocketServer
                     $arr = $this->clientsArrayCache;
                     $total = count($arr);
                     if ($total === 0) return;
-                    $chunkSize = 30;
+                    $chunkSize = 10;
                     $start = $this->balanceTimerOffset % $total;
                     $this->balanceTimerOffset = ($start + $chunkSize) % $total;
                     $chunk = array_slice($arr, $start, $chunkSize);
@@ -1132,8 +1132,20 @@ class ChatServer extends WebSocketServer
                                     $buyData = Yii::$app->cache->get($buyKey);
                                     if ($buyData && isset($buyData['timestamp']) && (time() - $buyData['timestamp']) < 30) {
                                         if (!isset($buyData['sent'])) {
-                                            $this->commandBuyDrop($client, json_encode($buyData));
-                                            $buyDropCount++;
+                                            if (!empty($buyData['product'])) {
+                                                $response = json_encode([
+                                                    'type' => 'store.buy.items',
+                                                    'code' => 200,
+                                                    'id' => $buyData['id'],
+                                                    'product' => $buyData['product'],
+                                                ]);
+                                                foreach ($userClients as $userClient) {
+                                                    try { $userClient->send($response); } catch (\Throwable $e) {}
+                                                }
+                                            } else {
+                                                $this->commandBuyDrop($client, json_encode($buyData));
+                                                $buyDropCount++;
+                                            }
                                             $buyData['sent'] = true;
                                             Yii::$app->cache->set($buyKey, $buyData, 5);
                                         }
