@@ -923,7 +923,6 @@ class ChatServer extends WebSocketServer
                         $timeSinceConnect = $now - $client->connectedAt;
                         if ($timeSinceConnect >= $this->authTimeoutSeconds) {
                             $clientIp = isset($client->realIp) ? $client->realIp : $client->remoteAddress;
-                            $this->log("Closing unauthenticated client from " . $clientIp . " (auth timeout: {$timeSinceConnect}s)");
                             $client->disconnectReason = 'auth_timeout';
                             try { $client->close(1008, 'authentication timeout'); } catch (\Throwable $e) {}
                             continue;
@@ -934,7 +933,6 @@ class ChatServer extends WebSocketServer
                     $idle = $now - (isset($client->lastPong) ? $client->lastPong : 0);
                     if ($idle >= $this->idleCloseSeconds) {
                         $userId = !empty($client->user) ? $client->user->id : 'anonymous';
-                        $this->log("Closing client {$userId} due to heartbeat timeout (idle: {$idle}s)");
                         $client->disconnectReason = 'heartbeat_timeout';
                         try { $client->close(1000, 'heartbeat timeout'); } catch (\Throwable $e) {}
                         continue;
@@ -2402,7 +2400,6 @@ class ChatServer extends WebSocketServer
                 $this->indexClientByUserId($client);
 
                 $clientIp = isset($client->realIp) ? $client->realIp : $client->remoteAddress;
-                $this->log("User {$user->id} authenticated successfully from " . $clientIp);
 
             } else {
                 $result['message'] = 'Invalid token';
