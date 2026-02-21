@@ -52,17 +52,11 @@ class ChatServer extends WebSocketServer
     /** @var array Индекс клиентов по chat для быстрого поиска */
     private $clientsByChat = [];
 
-    /** @var int Смещение для чанковой обработки клиентов в таймере (чтобы не блокировать цикл) */
-    private $supportTimerOffset = 0;
-
     /** @var int Смещение для чанковой отправки ping (не блокировать цикл) */
     private $pingTimerOffset = 0;
 
     /** @var int Смещение для таймера balance/drops (тяжёлый — отдельно от support, чтобы не блокировать чат) */
     private $balanceTimerOffset = 0;
-
-    /** Макс. клиентов за один тик support-таймера — меньше = быстрее обрабатываются входящие (чат) */
-    private const SUPPORT_TIMER_CHUNK = 20;
 
     /** Макс. клиентов за один тик ping-таймера */
     private const PING_TIMER_CHUNK = 80;
@@ -1012,71 +1006,49 @@ class ChatServer extends WebSocketServer
                 $this->statsPingTicks = 0;
             });
 
-            // Обработка support событий из кеша каждые 0.5 сек (чаще = быстрее реакция на входящие сообщения)
+            // Support/chat только для клиентов в чате (inChat) — не трогаем 150 клиентов, только 0–5
             $loop->addPeriodicTimer(0.5, function () {
                 $this->statsSupportTicks++;
                 try {
-                    if ($this->clientsArrayCache === null) {
-                        $this->clientsArrayCache = [];
-                        foreach ($this->clients as $c) {
-                            $this->clientsArrayCache[] = $c;
+                    $clientsWithChat = [];
+                    foreach ($this->clientsByChat as $list) {
+                        foreach ($list as $c) {
+                            $clientsWithChat[spl_object_id($c)] = $c;
                         }
                     }
-                    $clientsArr = $this->clientsArrayCache;
-                    $total = count($clientsArr);
-                    if ($total === 0) {
-                        return;
-                    }
-                    $chunkSize = self::SUPPORT_TIMER_CHUNK;
-                    $start = $this->supportTimerOffset % $total;
-                    $this->supportTimerOffset = ($start + $chunkSize) % $total;
-                    $chunk = array_slice($clientsArr, $start, $chunkSize);
-
-                    foreach ($chunk as $client) {
+                    foreach ($clientsWithChat as $client) {
                         try {
-                            if (!empty($client->chat)) {
-                                $statusKey = 'ws_support_status_' . $client->chat;
-                                $statusData = Yii::$app->cache->get($statusKey);
-                                if ($statusData && (time() - $statusData['timestamp']) < 5) {
-                                    if (!isset($statusData['sent'])) {
-                                        $chatClients = $this->getClientsByChat($client->chat);
-                                        foreach ($chatClients as $chatClient) {
-                                            $this->processQueuedMessage($chatClient, $statusData);
-                                        }
-                                        $statusData['sent'] = true;
-                                        Yii::$app->cache->set($statusKey, $statusData, 5);
+                            if (empty($client->chat)) continue;
+                            $statusKey = 'ws_support_status_' . $client->chat;
+                            $statusData = Yii::$app->cache->get($statusKey);
+                            if ($statusData && (time() - $statusData['timestamp']) < 5) {
+                                if (!isset($statusData['sent'])) {
+                                    foreach ($this->getClientsByChat($client->chat) as $chatClient) {
+                                        $this->processQueuedMessage($chatClient, $statusData);
                                     }
-                                }
-
-                                $chatKey = 'ws_chat_update_' . $client->chat;
-                                $chatData = Yii::$app->cache->get($chatKey);
-                                if ($chatData && isset($chatData['timestamp']) && (time() - $chatData['timestamp']) < 5) {
-                                    if (!isset($chatData['sent'])) {
-                                        $chatClients = $this->getClientsByChat($client->chat);
-                                        foreach ($chatClients as $chatClient) {
-                                            $response = [
-                                                'type' => 'chat',
-                                                'messageId' => $chatData['messageId'] ?? null,
-                                            ];
-                                            if (!empty($chatData['tempId'])) {
-                                                $response['tempId'] = $chatData['tempId'];
-                                            }
-                                            $this->processQueuedMessage($chatClient, $response);
-                                        }
-                                        $chatData['sent'] = true;
-                                        Yii::$app->cache->set($chatKey, $chatData, 5);
-                                    }
+                                    $statusData['sent'] = true;
+                                    Yii::$app->cache->set($statusKey, $statusData, 5);
                                 }
                             }
-
-                            // Только ticket — быстро; balance/drops/launcher в отдельном таймере (2 сек), чтобы не блокировать чат
+                            $chatKey = 'ws_chat_update_' . $client->chat;
+                            $chatData = Yii::$app->cache->get($chatKey);
+                            if ($chatData && isset($chatData['timestamp']) && (time() - $chatData['timestamp']) < 5) {
+                                if (!isset($chatData['sent'])) {
+                                    $response = ['type' => 'chat', 'messageId' => $chatData['messageId'] ?? null];
+                                    if (!empty($chatData['tempId'])) $response['tempId'] = $chatData['tempId'];
+                                    foreach ($this->getClientsByChat($client->chat) as $chatClient) {
+                                        $this->processQueuedMessage($chatClient, $response);
+                                    }
+                                    $chatData['sent'] = true;
+                                    Yii::$app->cache->set($chatKey, $chatData, 5);
+                                }
+                            }
                             if (!empty($client->user)) {
                                 $ticketKey = 'ws_ticket_update_' . $client->user->id;
                                 $ticketData = Yii::$app->cache->get($ticketKey);
                                 if ($ticketData && (time() - $ticketData['timestamp']) < 5) {
                                     if (!isset($ticketData['sent'])) {
-                                        $userClients = $this->getClientsByUserId($client->user->id);
-                                        foreach ($userClients as $userClient) {
+                                        foreach ($this->getClientsByUserId($client->user->id) as $userClient) {
                                             $this->processQueuedMessage($userClient, $ticketData);
                                         }
                                         $ticketData['sent'] = true;
@@ -1093,16 +1065,19 @@ class ChatServer extends WebSocketServer
                 }
             });
 
-            // Тяжёлые balance/drops/launcher раз в 2 сек, маленький чанк — чтобы не блокировать чат надолго
-            $loop->addPeriodicTimer(2, function () {
+            // Balance/drops/launcher редко и по 5 клиентов — много кеша, не блокировать чат
+            $loop->addPeriodicTimer(5, function () {
                 try {
                     if ($this->clientsArrayCache === null) {
-                        return;
+                        $this->clientsArrayCache = [];
+                        foreach ($this->clients as $c) {
+                            $this->clientsArrayCache[] = $c;
+                        }
                     }
                     $arr = $this->clientsArrayCache;
                     $total = count($arr);
                     if ($total === 0) return;
-                    $chunkSize = 10;
+                    $chunkSize = 5;
                     $start = $this->balanceTimerOffset % $total;
                     $this->balanceTimerOffset = ($start + $chunkSize) % $total;
                     $chunk = array_slice($arr, $start, $chunkSize);
