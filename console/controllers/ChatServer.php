@@ -505,7 +505,6 @@ class ChatServer extends WebSocketServer
 
         // If IP is still localhost, log warning
         if ($realIp === '127.0.0.1' || $realIp === '::1') {
-            $this->log("Warning: Could not get real IP in onOpen, using remoteAddress: {$realIp}");
         }
 
         // Call parent method
@@ -599,7 +598,6 @@ class ChatServer extends WebSocketServer
                     $xRealIp = is_array($headers['X-Real-IP']) ? $headers['X-Real-IP'][0] : $headers['X-Real-IP'];
                     if (!empty($xRealIp) && $xRealIp !== '127.0.0.1') {
                         $realIp = trim($xRealIp);
-                        $this->log("Got real IP from X-Real-IP: {$realIp} (was: {$client->remoteAddress})");
                     }
                 }
                 // Если X-Real-IP нет, проверяем X-Forwarded-For
@@ -613,7 +611,6 @@ class ChatServer extends WebSocketServer
                             $candidateIp = trim($ips[0]);
                             if ($candidateIp !== '127.0.0.1') {
                                 $realIp = $candidateIp;
-                                $this->log("Got real IP from X-Forwarded-For: {$realIp} (was: {$client->remoteAddress})");
                             }
                         }
                     }
@@ -623,7 +620,6 @@ class ChatServer extends WebSocketServer
             // Если не удалось получить заголовки, используем remoteAddress
             // Логируем только если это не 127.0.0.1 (чтобы не засорять логи)
             if ($realIp === '127.0.0.1') {
-                $this->log("Warning: Could not get real IP from headers, using remoteAddress: {$realIp} (" . $e->getMessage() . ")");
             }
         }
 
@@ -759,11 +755,9 @@ class ChatServer extends WebSocketServer
                     try {
                         $resourceId = method_exists($e->client, 'resourceId') ? $e->client->resourceId : spl_object_hash($e->client);
                         $ip = 'proxy_' . $resourceId;
-                        $this->log("Using proxy identifier for connection: {$ip} (real IP unavailable, remoteAddress was: {$originalRemoteAddress})");
                     } catch (\Throwable $ex) {
                         // Если не удалось получить resourceId, используем хеш объекта
                         $ip = 'proxy_' . md5(spl_object_hash($e->client) . microtime(true));
-                        $this->log("Using fallback proxy identifier: {$ip}");
                     }
                 }
 
@@ -833,7 +827,6 @@ class ChatServer extends WebSocketServer
                 return ($now - $time) < 60;
             });
 
-            $this->log("Client connected: {$ip} (active from IP: {$activeConnectionsFromIp})");
             $e->client->user = null;
             $e->client->chat = null;
             $e->client->launcher = false;
@@ -850,7 +843,6 @@ class ChatServer extends WebSocketServer
             $reason = isset($e->client->disconnectReason) ? $e->client->disconnectReason : 'unknown';
             $idleTime = isset($e->client->lastPong) ? (time() - $e->client->lastPong) : 'N/A';
             $ip = isset($e->client->realIp) ? $e->client->realIp : $e->client->remoteAddress;
-            $this->log("Client disconnected: {$userId} from {$ip} (reason: {$reason}, idle: {$idleTime}s)");
 
             // Очищаем счетчики подключений для этого IP (если нет активных подключений)
             $activeFromIp = 0;
@@ -915,7 +907,6 @@ class ChatServer extends WebSocketServer
 
             // Одноразовый вывод через 60 сек после старта — сколько соединений // NEW
             $loop->addTimer(60, function () {
-                $this->log("connections after 60s: " . count($this->clients));
             });
 
             $interval = 15; // каждые 15 сек пингуем
@@ -1217,7 +1208,6 @@ class ChatServer extends WebSocketServer
         // Логируем команды (кроме pong, чтобы не засорять логи)
         if ($action !== 'pong' && $action !== 'Pong') {
             $userId = !empty($from->user) ? $from->user->id : 'anonymous';
-            $this->log("Command from user {$userId}: {$action}");
         }
 
         return $action;
@@ -1452,7 +1442,7 @@ class ChatServer extends WebSocketServer
           $this->safeSend($client, $result);
       } catch (\Exception $e) {
           Yii::$app->telegramChats->sendMessage('commandGetDrop: ' . $e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage());
-          echo "commandGetDrop:" . $e->getLine() . ":" . $e->getMessage() . PHP_EOL;
+          Yii::error('commandGetDrop: ' . $e->getFile() . ':' . $e->getLine() . ' ' . $e->getMessage(), __METHOD__);
           // Пытаемся отправить ошибку клиенту
           try {
               $this->safeSend($client, [
