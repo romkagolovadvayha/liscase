@@ -19,7 +19,6 @@ use consik\yii2websocket\events\WSClientEvent;
 use consik\yii2websocket\WebSocketServer;
 use Ratchet\ConnectionInterface;
 use yii\base\BaseObject;
-use Ratchet\WebSocket\Version\RFC6455\Frame;
 use yii\db\Exception as DbException;
 use PDOException;
 use Psr\Http\Message\RequestInterface;
@@ -52,6 +51,18 @@ class ChatServer extends WebSocketServer
 
     /** @var array Индекс клиентов по chat для быстрого поиска */
     private $clientsByChat = [];
+
+    /** @var int Смещение для чанковой обработки клиентов в таймере (чтобы не блокировать цикл) */
+    private $supportTimerOffset = 0;
+
+    /** Макс. клиентов за один тик таймера 1 сек — чтобы входящие сообщения (чат) обрабатывались без задержки */
+    private const SUPPORT_TIMER_CHUNK = 100;
+
+    /** Макс. вызовов commandBuyDrop за один тик (тяжёлые операции) */
+    private const SUPPORT_TIMER_BUY_DROP_PER_TICK = 3;
+
+    /** Кеш массива клиентов для таймера (инвалидируется при connect/disconnect) */
+    private $clientsArrayCache = null;
 
     /**
      * Получить singleton инстанс сервера
@@ -738,6 +749,8 @@ class ChatServer extends WebSocketServer
         self::$instance = $this;
 
             $this->on(self::EVENT_CLIENT_CONNECTED, function(WSClientEvent $e) {
+            $this->clientsArrayCache = null; // инвалидация кеша для таймера
+
             // Используем реальный IP, который был сохранен в onOpen
             // Если realIp не установлен, пытаемся получить его через getClientRealIp
             if (isset($e->client->realIp)) {
@@ -839,6 +852,8 @@ class ChatServer extends WebSocketServer
             $e->client->disconnectReason = 'client_close'; // Причина отключения по умолчанию
         });
         $this->on(self::EVENT_CLIENT_DISCONNECTED, function(WSClientEvent $e) {
+            $this->clientsArrayCache = null; // инвалидация кеша для таймера
+
             $userId = !empty($e->client->user) ? $e->client->user->id : 'anonymous';
             $reason = isset($e->client->disconnectReason) ? $e->client->disconnectReason : 'unknown';
             $idleTime = isset($e->client->lastPong) ? (time() - $e->client->lastPong) : 'N/A';
@@ -929,7 +944,7 @@ class ChatServer extends WebSocketServer
                         }
                     }
 
-                    // Закрываем по реальному idle-таймауту (не по счётчику) // CHANGED
+                    // Закрываем по реальному idle-таймауту (не по счётчику)
                     $idle = $now - (isset($client->lastPong) ? $client->lastPong : 0);
                     if ($idle >= $this->idleCloseSeconds) {
                         $userId = !empty($client->user) ? $client->user->id : 'anonymous';
@@ -938,26 +953,7 @@ class ChatServer extends WebSocketServer
                         continue;
                     }
 
-                    // Пробуем WS-ping фрейм (браузер авто-ответит pong) // NEW
-                    try {
-                        $client->send(new Frame('', true, Frame::OP_PING));
-                        // Сбрасываем счетчик ошибок при успешной отправке
-                        $client->sendErrors = 0;
-                    } catch (\Throwable $e) {
-                        $client->sendErrors++;
-                        $userId = !empty($client->user) ? $client->user->id : 'anonymous';
-                        $this->log("ping frame send failed for client {$userId}: " . $e->getMessage() . " (errors: {$client->sendErrors})");
-
-                        // Закрываем только после нескольких последовательных ошибок
-                        if ($client->sendErrors >= 3) {
-                            $this->log("Closing client {$userId} after {$client->sendErrors} consecutive send errors");
-                            $client->disconnectReason = 'send_failed';
-                            try { $client->close(1011, 'send failed'); } catch (\Throwable $e2) {}
-                            continue;
-                        }
-                    }
-
-                    // Оставляем и app-уровень ping (на случай не-браузерных клиентов) // NEW
+                    // Один app-level ping (lastPong обновляется в getCommand при получении pong)
                     try {
                         $client->send(json_encode(['type' => 'ping', 'ts' => $now]));
                         // Сбрасываем счетчик ошибок при успешной отправке
@@ -979,55 +975,34 @@ class ChatServer extends WebSocketServer
                 }
             });
 
-            // Отправка обновлений онлайна из кеша каждые 5 секунд
-            $loop->addPeriodicTimer(5, function () {
-                try {
-                    $cacheKey = 'ws_online_data';
-                    $data = Yii::$app->cache->get($cacheKey);
-
-                    if ($data && (time() - $data['timestamp']) < 10) {
-                        $response = json_encode([
-                            'type'    => 'update.online',
-                            'code'    => 200,
-                            'servers' => $data['servers'],
-                            'total'   => $data['total'],
-                        ]);
-
-                        // Отправляем всем клиентам
-                        foreach ($this->clients as $client) {
-                            try {
-                                $client->send($response);
-                            } catch (\Throwable $e) {
-                                // Молча пропускаем
-                            }
-                        }
-                    }
-                } catch (\Throwable $e) {
-                    $this->log("Error broadcasting online update: " . $e->getMessage());
-                }
-            });
-
-            // Обработка support событий из кеша каждую секунду
+            // Обработка support событий из кеша каждую секунду (чанками, чтобы не блокировать входящие сообщения)
             $loop->addPeriodicTimer(1, function () {
                 try {
+                    if ($this->clientsArrayCache === null) {
+                        $this->clientsArrayCache = [];
+                        foreach ($this->clients as $c) {
+                            $this->clientsArrayCache[] = $c;
+                        }
+                    }
+                    $clientsArr = $this->clientsArrayCache;
+                    $total = count($clientsArr);
+                    if ($total === 0) {
+                        return;
+                    }
+                    $chunkSize = self::SUPPORT_TIMER_CHUNK;
+                    $start = $this->supportTimerOffset % $total;
+                    $this->supportTimerOffset = ($start + $chunkSize) % $total;
+                    $chunk = array_slice($clientsArr, $start, $chunkSize);
 
-                    // Обрабатываем через commandSupportStatus, commandTicketUpdate, commandChatUpdate
-                    foreach ($this->clients as $client) {
+                    $buyDropCount = 0;
+
+                    foreach ($chunk as $client) {
                         try {
-                            // Проверяем разные типы кешированных сообщений
-                            $allKeys = [
-                                'ws_support_status',
-                                'ws_ticket_update',
-                                'ws_chat_update'
-                            ];
-
-                            // Для каждого клиента проверяем есть ли для него сообщения
                             if (!empty($client->chat)) {
                                 $statusKey = 'ws_support_status_' . $client->chat;
                                 $statusData = Yii::$app->cache->get($statusKey);
                                 if ($statusData && (time() - $statusData['timestamp']) < 5) {
                                     if (!isset($statusData['sent'])) {
-                                        // Отправляем всем клиентам в этом чате
                                         $chatClients = $this->getClientsByChat($client->chat);
                                         foreach ($chatClients as $chatClient) {
                                             $this->processQueuedMessage($chatClient, $statusData);
@@ -1037,19 +1012,16 @@ class ChatServer extends WebSocketServer
                                     }
                                 }
 
-                                // Chat updates для конкретного чата
                                 $chatKey = 'ws_chat_update_' . $client->chat;
                                 $chatData = Yii::$app->cache->get($chatKey);
                                 if ($chatData && isset($chatData['timestamp']) && (time() - $chatData['timestamp']) < 5) {
                                     if (!isset($chatData['sent'])) {
-                                        // Отправляем всем клиентам в этом чате
                                         $chatClients = $this->getClientsByChat($client->chat);
                                         foreach ($chatClients as $chatClient) {
                                             $response = [
                                                 'type' => 'chat',
                                                 'messageId' => $chatData['messageId'] ?? null,
                                             ];
-                                            // Добавляем tempId, если он был сохранен
                                             if (!empty($chatData['tempId'])) {
                                                 $response['tempId'] = $chatData['tempId'];
                                             }
@@ -1061,13 +1033,11 @@ class ChatServer extends WebSocketServer
                                 }
                             }
 
-                            // Ticket updates для конкретного пользователя
                             if (!empty($client->user)) {
                                 $ticketKey = 'ws_ticket_update_' . $client->user->id;
                                 $ticketData = Yii::$app->cache->get($ticketKey);
                                 if ($ticketData && (time() - $ticketData['timestamp']) < 5) {
                                     if (!isset($ticketData['sent'])) {
-                                        // Отправляем всем клиентам пользователя
                                         $userClients = $this->getClientsByUserId($client->user->id);
                                         foreach ($userClients as $userClient) {
                                             $this->processQueuedMessage($userClient, $ticketData);
@@ -1077,71 +1047,58 @@ class ChatServer extends WebSocketServer
                                     }
                                 }
 
-                                // Balance updates для конкретного пользователя
                                 $balanceKey = 'ws_balance_update_' . $client->user->id;
                                 $balanceData = Yii::$app->cache->get($balanceKey);
                                 if ($balanceData && (time() - $balanceData['timestamp']) < 30) {
-                                    // Проверяем не отправлено ли уже
                                     if (!isset($balanceData['sent'])) {
-                                        // Отправляем всем клиентам пользователя
                                         $userClients = $this->getClientsByUserId($client->user->id);
                                         foreach ($userClients as $userClient) {
                                             $this->processQueuedMessage($userClient, $balanceData);
                                         }
-                                        // Помечаем как отправленное
                                         $balanceData['sent'] = true;
                                         Yii::$app->cache->set($balanceKey, $balanceData, 5);
                                     }
                                 }
 
-                                // Buy/Activated drop updates - используем список дропов
                                 $listKey = 'ws_drops_list_' . $client->user->id;
                                 $dropsList = Yii::$app->cache->get($listKey);
                                 if ($dropsList && is_array($dropsList) && count($dropsList) > 0) {
                                     $userClients = $this->getClientsByUserId($client->user->id);
 
                                     foreach ($dropsList as $dropId) {
-                                        // Проверяем buy drop
+                                        if ($buyDropCount >= self::SUPPORT_TIMER_BUY_DROP_PER_TICK) {
+                                            break;
+                                        }
                                         $buyKey = 'ws_buy_drop_' . $client->user->id . '_' . $dropId;
                                         $buyData = Yii::$app->cache->get($buyKey);
                                         if ($buyData && isset($buyData['timestamp']) && (time() - $buyData['timestamp']) < 30) {
-                                            // Проверяем не отправлено ли уже
                                             if (!isset($buyData['sent'])) {
-                                                // Вызываем commandBuyDrop для рендеринга и отправки
                                                 $this->commandBuyDrop($client, json_encode($buyData));
-                                                // Помечаем как отправленное
+                                                $buyDropCount++;
                                                 $buyData['sent'] = true;
                                                 Yii::$app->cache->set($buyKey, $buyData, 5);
                                             }
                                         }
 
-                                        // Проверяем activated drop
                                         $activatedKey = 'ws_activated_drop_' . $client->user->id . '_' . $dropId;
                                         $activatedData = Yii::$app->cache->get($activatedKey);
                                         if ($activatedData && isset($activatedData['timestamp']) && (time() - $activatedData['timestamp']) < 30) {
-                                            // Проверяем не отправлено ли уже
                                             if (!isset($activatedData['sent'])) {
-                                                // Отправляем всем клиентам пользователя
                                                 foreach ($userClients as $userClient) {
                                                     $this->processQueuedMessage($userClient, $activatedData);
                                                 }
-                                                // Помечаем как отправленное
                                                 $activatedData['sent'] = true;
                                                 Yii::$app->cache->set($activatedKey, $activatedData, 5);
                                             }
                                         }
 
-                                        // Проверяем return drop
                                         $returnKey = 'ws_return_drop_' . $client->user->id . '_' . $dropId;
                                         $returnData = Yii::$app->cache->get($returnKey);
                                         if ($returnData && isset($returnData['timestamp']) && (time() - $returnData['timestamp']) < 30) {
-                                            // Проверяем не отправлено ли уже
                                             if (!isset($returnData['sent'])) {
-                                                // Отправляем всем клиентам пользователя
                                                 foreach ($userClients as $userClient) {
                                                     $this->processQueuedMessage($userClient, $returnData);
                                                 }
-                                                // Помечаем как отправленное
                                                 $returnData['sent'] = true;
                                                 Yii::$app->cache->set($returnKey, $returnData, 5);
                                             }
@@ -1150,15 +1107,13 @@ class ChatServer extends WebSocketServer
                                 }
                             }
 
-                            // Launcher updates
                             if (!empty($client->launcher)) {
-                                // Проверяем launcher updates (они с timestamp в ключе, проверяем последние)
                                 for ($i = 0; $i < 10; $i++) {
                                     $launcherKey = 'ws_launcher_update_' . (time() - $i);
                                     $launcherData = Yii::$app->cache->get($launcherKey);
                                     if ($launcherData && (time() - $launcherData['timestamp']) < 5) {
                                         $this->processQueuedMessage($client, $launcherData);
-                                        break; // Отправили, выходим
+                                        break;
                                     }
                                 }
                             }
@@ -2160,42 +2115,41 @@ class ChatServer extends WebSocketServer
                 }
                 $chatResponseJson = json_encode($chatResponse);
 
-                foreach ($this->clients as $chatClient) {
-                    if (empty($chatClient)) {
-                        continue;
-                    }
-                    if (!empty($chatClient->user)) {
-                        /** @var User $_user */
-                        $_user = $chatClient->user;
-                        if ($_user->id === $chat->user_id || $_user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
-                            if ($user->id !== $_user->id) {
-                                $chatClient->send(json_encode([
-                                                              'type' => 'support_notifications',
-                                                              'count' => Support::unreadAll($_user->id),
-                                                              'chatId' => $chat->getNumber(),
-                                                              'hash'    => $hash,
-                                                          ]));
-                            }
-                        }
-                    }
-                    if (empty($chatClient->chat)) {
-                        continue;
-                    }
-                    // Сравниваем как строки, чтобы избежать проблем с типами
-                    if ((string)$chatClient->chat != $requestChatId) {
-                        continue;
-                    }
-                    // Проверяем, что у клиента есть пользователь
+                // Отправка ответа по чату только подписчикам этого чата (O(подписчики) вместо O(все клиенты))
+                $chatClients = $this->getClientsByChat($requestChatId);
+                foreach ($chatClients as $chatClient) {
                     if (empty($chatClient->user)) {
                         continue;
                     }
                     SupportRead::readedAll($model->support_id, $chatClient->user->id);
-
-                    // Отправляем ответ клиенту
                     try {
                         $chatClient->send($chatResponseJson);
                     } catch (\Exception $ex) {
                         $this->log("Error sending chat message to client: " . $ex->getMessage());
+                    }
+                }
+
+                // Уведомления владельцу тикета и админам/модераторам (перебор всех клиентов)
+                foreach ($this->clients as $chatClient) {
+                    if (empty($chatClient->user)) {
+                        continue;
+                    }
+                    /** @var User $_user */
+                    $_user = $chatClient->user;
+                    if ($_user->id === $user->id) {
+                        continue; // отправитель не получает уведомление
+                    }
+                    if ($_user->id === $chat->user_id || $_user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
+                        try {
+                            $chatClient->send(json_encode([
+                                'type' => 'support_notifications',
+                                'count' => Support::unreadAll($_user->id),
+                                'chatId' => $chat->getNumber(),
+                                'hash'    => $hash,
+                            ]));
+                        } catch (\Exception $ex) {
+                            $this->log("Error sending support notification: " . $ex->getMessage());
+                        }
                     }
                 }
             } else {
