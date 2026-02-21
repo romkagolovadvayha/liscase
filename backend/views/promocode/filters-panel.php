@@ -11,11 +11,15 @@ if (!$searchModel) return;
 ?>
 <aside class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto scrollbar-thin">
     <?php $form = ActiveForm::begin([
-        'action' => ['index'],
+        'action' => empty($searchModel->tab) ? ['index'] : ['index', 'tab' => $searchModel->tab],
         'method' => 'get',
+        'enableClientValidation' => false,
         'id' => 'promocode-search-form',
         'options' => ['class' => 'h-full flex flex-col'],
     ]); ?>
+    <?php if (!empty($searchModel->tab)): ?>
+        <?= \yii\helpers\Html::hiddenInput('tab', $searchModel->tab) ?>
+    <?php endif; ?>
     <div class="p-4 flex-1">
         <div class="mb-6">
             <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide">Фильтры</h3>
@@ -41,7 +45,7 @@ if (!$searchModel) return;
     </div>
     <div class="p-4 border-t border-[hsl(0_0%_15.3%_/_1)]">
         <button type="submit" class="ds-btn ds-btn--primary ds-btn--sm w-full justify-center"><i class="fas fa-filter"></i> Применить</button>
-        <a href="<?= Url::to(['index']) ?>" class="ds-btn ds-btn--secondary ds-btn--sm w-full justify-center block text-center mt-2"><i class="fas fa-redo"></i> Сбросить</a>
+        <a href="<?= Url::to(!empty($searchModel->tab) ? ['index', 'tab' => $searchModel->tab] : ['index']) ?>" class="ds-btn ds-btn--secondary ds-btn--sm w-full justify-center block text-center mt-2"><i class="fas fa-redo"></i> Сбросить</a>
     </div>
     <?php ActiveForm::end(); ?>
 </aside>

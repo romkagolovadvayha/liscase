@@ -14,9 +14,12 @@ use yii\base\BaseObject;
  * @property string $code
  * @property int    $type
  * @property int    $status
+ * @property int    $is_single_use
  * @property string $amount
- * @property string $finished_at
+ * @property string|null $finished_at
  * @property string $created_at
+ *
+ * @property UserPromocode[] $userPromocodes
  */
 class Promocode extends \common\components\base\ActiveRecord
 {
@@ -64,9 +67,12 @@ class Promocode extends \common\components\base\ActiveRecord
     public function rules()
     {
         return [
-            [['type', 'amount', 'finished_at', 'code'], 'required'],
-            [['type', 'status', 'amount'], 'integer'],
+            [['type', 'amount', 'code'], 'required'],
+            [['type', 'status', 'amount', 'is_single_use'], 'integer'],
             [['created_at', 'finished_at'], 'safe'],
+            [['finished_at'], 'default', 'value' => null],
+            [['finished_at'], 'filter', 'filter' => function ($v) { return $v === '' ? null : $v; }],
+            [['is_single_use'], 'default', 'value' => 0],
         ];
     }
 
@@ -74,13 +80,49 @@ class Promocode extends \common\components\base\ActiveRecord
     {
         return [
             'id'            => 'ID',
-            'code'       => Yii::t('common', 'Промокод'),
+            'code'          => Yii::t('common', 'Промокод'),
             'type'          => Yii::t('common', 'Тип'),
-            'amount'       => Yii::t('common', 'Сумма'),
             'status'        => Yii::t('common', 'Статус'),
-            'finished_at'          => Yii::t('common', 'Дата завершения'),
+            'is_single_use' => Yii::t('common', 'Одноразовый'),
+            'amount'        => Yii::t('common', 'Сумма'),
+            'finished_at'   => Yii::t('common', 'Дата завершения'),
             'created_at'    => Yii::t('common', 'Дата начала'),
         ];
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getUserPromocodes()
+    {
+        return $this->hasMany(UserPromocode::class, ['promocode_id' => 'id']);
+    }
+
+    /**
+     * Пользователь, который ввёл промокод (для одноразовых — один).
+     * @return \common\models\user\User|null
+     */
+    public function getUsedByUser()
+    {
+        $up = $this->getUserPromocodes()->with('user')->limit(1)->one();
+        return $up ? $up->user : null;
+    }
+
+    /**
+     * Текст для колонки «Кто ввёл»: один пользователь — его steam_id, несколько — число.
+     * @return string
+     */
+    public function getUsedByDisplay()
+    {
+        $count = (int) $this->getUserPromocodes()->count();
+        if ($count === 0) {
+            return '—';
+        }
+        if ($count === 1) {
+            $user = $this->getUsedByUser();
+            return $user ? ($user->steam_id ?? (string) $user->id) : '—';
+        }
+        return (string) $count;
     }
 
     /**
@@ -113,6 +155,23 @@ class Promocode extends \common\components\base\ActiveRecord
         return Promocode::find()
                         ->andWhere(['code' => $code])
                         ->one();
+    }
+
+    /**
+     * Генерирует уникальный код для одноразового промокода (A-Z, 0-9, длина 12).
+     * @return string
+     */
+    public static function generateUniqueCode()
+    {
+        $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        do {
+            $code = '';
+            for ($i = 0; $i < 12; $i++) {
+                $code .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+        } while (static::findByCode($code) !== null);
+
+        return $code;
     }
 
 }

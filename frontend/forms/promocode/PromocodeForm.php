@@ -104,13 +104,14 @@ class PromocodeForm extends Promocode
                 return null;
             }
         }
-        if ($model->status === Promocode::STATUS_NOT_ACTIVE) {
+        if ($model->status !== Promocode::STATUS_ACTIVE) {
             $this->addError('code', Yii::t('common', 'Промокод больше не активен!'));
             return null;
         }
-        if (strtotime($model->finished_at) < time()) {
+        // Бессрочные: finished_at === null
+        if ($model->finished_at !== null && strtotime($model->finished_at) < time()) {
             $model->status = Promocode::STATUS_NOT_ACTIVE;
-            $model->save();
+            $model->save(false);
             $this->addError('code', Yii::t('common', 'Промокод больше не активен!'));
             return null;
         }

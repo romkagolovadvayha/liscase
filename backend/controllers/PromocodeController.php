@@ -42,6 +42,18 @@ class PromocodeController extends \backend\components\CrudController
         return PromocodeForm::class;
     }
 
+    public function actionIndex()
+    {
+        $this->_setSearchModel();
+        $this->_searchModel->tab = Yii::$app->request->get('tab');
+        $this->_searchModel->load(Yii::$app->request->get());
+        $this->_rememberIndexUrl();
+        $this->view->params['showFilters'] = true;
+        $this->view->params['searchModel'] = $this->_searchModel;
+        $this->view->params['headerActions'] = $this->getIndexHeaderActions();
+        return $this->_renderIndex($this->_getSearchDataProvider());
+    }
+
     protected function getIndexHeaderActions()
     {
         return [
@@ -49,6 +61,11 @@ class PromocodeController extends \backend\components\CrudController
                 'label' => '<i class="fas fa-plus"></i> Новый промокод',
                 'url' => ['create'],
                 'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="fas fa-barcode"></i> Сгенерировать одноразовые',
+                'url' => ['generate-batch'],
+                'class' => 'bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
             ],
         ];
     }
@@ -93,6 +110,43 @@ class PromocodeController extends \backend\components\CrudController
 
         return $this->renderAjax('create', [
             'model' => $model,
+        ]);
+    }
+
+    /**
+     * Генерация пачки одноразовых бессрочных промокодов.
+     * GET: форма (количество, сумма), POST: создание и вывод списка кодов.
+     */
+    public function actionGenerateBatch()
+    {
+        $post = $this->request->post('DynamicModel', $this->request->post());
+        $quantity = (int) ($post['quantity'] ?? 0);
+        $amount = (int) ($post['amount'] ?? 0);
+
+        if ($this->request->isPost && $quantity > 0 && $quantity <= 1000 && $amount >= 0) {
+            $codes = [];
+            for ($i = 0; $i < $quantity; $i++) {
+                $code = Promocode::generateUniqueCode();
+                $model = new Promocode();
+                $model->code = $code;
+                $model->type = Promocode::TYPE_PAYMENT_PAYMENT;
+                $model->status = Promocode::STATUS_ACTIVE;
+                $model->is_single_use = 1;
+                $model->amount = $amount;
+                $model->finished_at = null;
+                $model->created_at = date('Y-m-d H:i:s');
+                $model->save(false);
+                $codes[] = $code;
+            }
+            return $this->render('generate-batch-result', [
+                'codes' => $codes,
+                'amount' => $amount,
+            ]);
+        }
+
+        return $this->render('generate-batch', [
+            'quantity' => $quantity ?: 100,
+            'amount' => $amount ?: 50,
         ]);
     }
 }

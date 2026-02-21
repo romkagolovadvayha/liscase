@@ -11,11 +11,15 @@ class PromocodeSearch extends Promocode
 
     public $status = 1;
 
+    /** @var string|null 'single' = только одноразовые, иначе обычные (многоразовые) */
+    public $tab;
+
     public function rules(): array
     {
         return [
             [['id', 'code', 'status'], 'required'],
             [['status'], 'integer'],
+            [['tab'], 'safe'],
         ];
     }
 
@@ -34,12 +38,21 @@ class PromocodeSearch extends Promocode
             call_user_func($filter, $query);
         }
 
-        $query
-            ->andFilterWhere([
-                'id'       => $this->id,
-                'status'     => $this->status,
-            ])
-            ->andFilterWhere(['LIKE', 'code', $this->code]);
+        if ($this->tab === 'single') {
+            $query->andWhere(['is_single_use' => 1]);
+        } else {
+            $query->andWhere(['is_single_use' => 0]);
+        }
+
+        if ($this->id !== null && $this->id !== '') {
+            $query->andWhere(['id' => $this->id]);
+        }
+        if ($this->status !== null && $this->status !== '') {
+            $query->andWhere(['status' => $this->status]);
+        }
+        if ($this->code !== null && $this->code !== '') {
+            $query->andWhere(['LIKE', 'code', $this->code]);
+        }
 
         DateQuery::addDateCondition($query, $this, 'created_at');
         return new ActiveDataProvider([
