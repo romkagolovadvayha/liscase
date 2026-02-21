@@ -2021,9 +2021,12 @@ class ChatServer extends WebSocketServer
 
     public function commandChat(ConnectionInterface $client, $msg)
     {
+        $t0 = microtime(true);
+        $this->log("commandChat [0] start");
         try {
             $request = json_decode($msg, true);
             $result = ['message' => ''];
+            $this->log("commandChat [" . round((microtime(true) - $t0) * 1000) . "ms] json_decode");
 
             // Если client->chat не установлен, но есть chatId в запросе, устанавливаем его
             if (empty($client->chat) && !empty($request['chatId'])) {
@@ -2044,6 +2047,7 @@ class ChatServer extends WebSocketServer
             $requestChatId = !empty($request['chatId']) ? (string)$request['chatId'] : (string)$client->chat;
 
             if (!empty($client->user) && !empty($request['message']) && $message = trim($request['message']) ) {
+                $this->log("commandChat [" . round((microtime(true) - $t0) * 1000) . "ms] have message");
                 $cacheKey = 'commandChat_' . $client->user->id;
                 if (!empty(Yii::$app->cache->get($cacheKey))) {
                     $errorResponse = ['type' => 'error', 'error' => Yii::$app->cache->get($cacheKey)];
@@ -2070,7 +2074,9 @@ class ChatServer extends WebSocketServer
                 }
                 // Используем нормализованный chatId
                 $chatNumber = (string)$client->chat;
+                $this->log("commandChat [" . round((microtime(true) - $t0) * 1000) . "ms] before findByNumber");
                 $chat = Support::findByNumber($chatNumber);
+                $this->log("commandChat [" . round((microtime(true) - $t0) * 1000) . "ms] after findByNumber");
                 if (empty($chat)) {
                     $chat = new Support();
                     $chat->user_id = $user->id;
@@ -2090,6 +2096,7 @@ class ChatServer extends WebSocketServer
                     $chat->updated_at = date('Y-m-d H:i:s');
                     $chat->save(false);
                 }
+                $this->log("commandChat [" . round((microtime(true) - $t0) * 1000) . "ms] after chat save");
                 // Проверяем, является ли сообщение стикером
                 $isSticker = preg_match('/^<(img|video)[^>]*class="[^"]*support_sticker[^"]*"[^>]*>.*<\/(img|video)>$/', trim($message));
 
@@ -2112,6 +2119,7 @@ class ChatServer extends WebSocketServer
                 }
 
                 // Сохраняем сообщение с обработкой ошибок
+                $this->log("commandChat [" . round((microtime(true) - $t0) * 1000) . "ms] before model->save");
                 try {
                     if (!$model->save()) {
                         $errorResponse = ['type' => 'error', 'error' => Yii::t('common', "Ошибка сохранения сообщения")];
@@ -2131,6 +2139,7 @@ class ChatServer extends WebSocketServer
                     $this->log("commandChat: Exception saving message: " . $e->getMessage());
                     return;
                 }
+                $this->log("commandChat [" . round((microtime(true) - $t0) * 1000) . "ms] after model->save");
 
                 Yii::$app->queueProcess->push(new BeforeMessageJob([
                     'chatId' => $model->support_id,
@@ -2141,6 +2150,7 @@ class ChatServer extends WebSocketServer
                 ]));
 
                 SupportRead::createRecord($chat->user_id, $user->id, $model->id, $chat->id);
+                $this->log("commandChat [" . round((microtime(true) - $t0) * 1000) . "ms] after queue+SupportRead");
                 $hash = md5(time());
                 $tempId = !empty($request['tempId']) ? $request['tempId'] : null;
                 $chatResponse = [
@@ -2155,6 +2165,7 @@ class ChatServer extends WebSocketServer
                 $chatNumber = $chat->getNumber();
 
                 // Отправка ответа по чату только подписчикам этого чата
+                $this->log("commandChat [" . round((microtime(true) - $t0) * 1000) . "ms] before getClientsByChat+send");
                 $chatClients = $this->getClientsByChat($requestChatId);
                 foreach ($chatClients as $chatClient) {
                     if (empty($chatClient->user)) continue;
@@ -2165,9 +2176,11 @@ class ChatServer extends WebSocketServer
                         $this->log("Error sending chat message to client: " . $ex->getMessage());
                     }
                 }
+                $this->log("commandChat [" . round((microtime(true) - $t0) * 1000) . "ms] CHAT_RESPONSE_SENT (getClientsByChat=" . count($chatClients) . ")");
                 $this->statsChatSent++;
 
                 // Staff — один запрос к auth_assignment вместо 150 canRoles() (checkAccess блокировал loop)
+                $this->log("commandChat [" . round((microtime(true) - $t0) * 1000) . "ms] before AuthAssignment");
                 $staffUserIds = [];
                 $staffIds = AuthAssignment::find()
                     ->select('user_id')
@@ -2212,12 +2225,14 @@ class ChatServer extends WebSocketServer
                         }
                     }
                 }
+                $this->log("commandChat [" . round((microtime(true) - $t0) * 1000) . "ms] end (broadcast done)");
             } else {
                 $result['message'] = 'Enter message';
             }
 
             //$client->send( json_encode($result) );
         } catch (\Exception $ex) {
+            $this->log("commandChat [" . round((microtime(true) - $t0) * 1000) . "ms] EXCEPTION: " . $ex->getMessage());
             Yii::$app->telegramChats->sendMessage('commandChat: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
         }
     }
