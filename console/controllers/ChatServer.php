@@ -1092,7 +1092,7 @@ class ChatServer extends WebSocketServer
                 }
             });
 
-            // Тяжёлые balance/drops/launcher раз в 2 сек, маленький чанк — чтобы не блокировать чат надолго
+            // Balance/drops/launcher раз в 2 сек. Баланс — по ВСЕМ клиентам каждый тик (чтобы не ждать очередь чанка до 20 сек)
             $loop->addPeriodicTimer(2, function () {
                 $balanceTickStart = microtime(true);
                 try {
@@ -1105,15 +1105,11 @@ class ChatServer extends WebSocketServer
                     $arr = $this->clientsArrayCache;
                     $total = count($arr);
                     if ($total === 0) return;
-                    $chunkSize = 10;
-                    $start = $this->balanceTimerOffset % $total;
-                    $this->balanceTimerOffset = ($start + $chunkSize) % $total;
-                    $chunk = array_slice($arr, $start, $chunkSize);
-                    $this->log("balanceTimer [0] tick start chunk=" . count($chunk) . " total={$total}");
-                    $buyDropCount = 0;
-                    foreach ($chunk as $client) {
+
+                    // 1) Баланс — проход по ВСЕМ клиентам (1 get на клиента), доставка в течение 2 сек
+                    foreach ($arr as $client) {
+                        if (empty($client->user)) continue;
                         try {
-                            if (empty($client->user)) continue;
                             $balanceKey = 'ws_balance_update_' . $client->user->id;
                             $balanceData = Yii::$app->cache->get($balanceKey);
                             if ($balanceData && (time() - $balanceData['timestamp']) < 30) {
@@ -1126,6 +1122,21 @@ class ChatServer extends WebSocketServer
                                     Yii::$app->cache->set($balanceKey, $balanceData, 5);
                                 }
                             }
+                        } catch (\Throwable $e) {
+                            $this->log("Error balance for uid: " . $e->getMessage());
+                        }
+                    }
+
+                    // 2) Drops/launcher — по чанку (тяжёлые, много ключей на клиента)
+                    $chunkSize = 10;
+                    $start = $this->balanceTimerOffset % $total;
+                    $this->balanceTimerOffset = ($start + $chunkSize) % $total;
+                    $chunk = array_slice($arr, $start, $chunkSize);
+                    $this->log("balanceTimer [0] tick start chunk=" . count($chunk) . " total={$total}");
+                    $buyDropCount = 0;
+                    foreach ($chunk as $client) {
+                        try {
+                            if (empty($client->user)) continue;
                             $listKey = 'ws_drops_list_' . $client->user->id;
                             $dropsList = Yii::$app->cache->get($listKey);
                             if ($dropsList && is_array($dropsList) && count($dropsList) > 0) {
