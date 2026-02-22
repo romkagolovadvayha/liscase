@@ -1009,6 +1009,7 @@ class ChatServer extends WebSocketServer
 
             // Support/chat только для клиентов в чате — не блокировать loop обходом 150 клиентов
             $loop->addPeriodicTimer(0.5, function () {
+                $tickStart = microtime(true);
                 $this->statsSupportTicks++;
                 try {
                     $clientsWithChat = [];
@@ -1017,11 +1018,15 @@ class ChatServer extends WebSocketServer
                             $clientsWithChat[spl_object_id($c)] = $c;
                         }
                     }
+                    $n = count($clientsWithChat);
+                    $this->log("supportTimer [0] tick start inChat={$n}");
                     foreach ($clientsWithChat as $client) {
                         try {
                             if (!empty($client->chat)) {
                                 $statusKey = 'ws_support_status_' . $client->chat;
+                                $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] before get " . $statusKey);
                                 $statusData = Yii::$app->cache->get($statusKey);
+                                $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] after get " . $statusKey . " hit=" . ($statusData ? 1 : 0));
                                 if ($statusData && (time() - $statusData['timestamp']) < 5) {
                                     if (!isset($statusData['sent'])) {
                                         $chatClients = $this->getClientsByChat($client->chat);
@@ -1034,9 +1039,12 @@ class ChatServer extends WebSocketServer
                                 }
 
                                 $chatKey = 'ws_chat_update_' . $client->chat;
+                                $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] before get " . $chatKey);
                                 $chatData = Yii::$app->cache->get($chatKey);
+                                $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] after get " . $chatKey . " hit=" . ($chatData ? 1 : 0));
                                 if ($chatData && isset($chatData['timestamp']) && (time() - $chatData['timestamp']) < 5) {
                                     if (!isset($chatData['sent'])) {
+                                        $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] SENDING chat_update chat=" . $client->chat);
                                         $chatClients = $this->getClientsByChat($client->chat);
                                         foreach ($chatClients as $chatClient) {
                                             $response = [
@@ -1054,10 +1062,11 @@ class ChatServer extends WebSocketServer
                                 }
                             }
 
-                            // Только ticket — быстро; balance/drops/launcher в отдельном таймере (2 сек), чтобы не блокировать чат
                             if (!empty($client->user)) {
                                 $ticketKey = 'ws_ticket_update_' . $client->user->id;
+                                $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] before get " . $ticketKey);
                                 $ticketData = Yii::$app->cache->get($ticketKey);
+                                $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] after get " . $ticketKey . " hit=" . ($ticketData ? 1 : 0));
                                 if ($ticketData && (time() - $ticketData['timestamp']) < 5) {
                                     if (!isset($ticketData['sent'])) {
                                         $userClients = $this->getClientsByUserId($client->user->id);
@@ -1073,6 +1082,7 @@ class ChatServer extends WebSocketServer
                             $this->log("Error processing support event: " . $e->getMessage());
                         }
                     }
+                    $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] tick end");
                 } catch (\Throwable $e) {
                     $this->log("Error processing support events: " . $e->getMessage());
                 }
