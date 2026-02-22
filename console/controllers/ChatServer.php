@@ -930,10 +930,6 @@ class ChatServer extends WebSocketServer
             $io = $this->server;
             $loop = $io->loop;
 
-            // Одноразовый вывод через 60 сек после старта — сколько соединений // NEW
-            $loop->addTimer(60, function () {
-            });
-
             // Ping чанками каждые 5 сек, чтобы не блокировать цикл (раньше раз в 30 сек обход всех клиентов)
             $loop->addPeriodicTimer(5, function () {
                 $this->statsPingTicks++;
@@ -1127,13 +1123,47 @@ class ChatServer extends WebSocketServer
                         }
                     }
 
-                    // 2) Drops/launcher — по чанку (тяжёлые, много ключей на клиента)
+                    // 2) Уведомление «куплен предмет» (buy_drop) — по ВСЕМ клиентам каждый тик, чтобы приходило в течение 2 сек
+                    foreach ($arr as $client) {
+                        if (empty($client->user)) continue;
+                        try {
+                            $listKey = 'ws_drops_list_' . $client->user->id;
+                            $dropsList = Yii::$app->cache->get($listKey);
+                            if (!$dropsList || !is_array($dropsList) || count($dropsList) === 0) continue;
+                            $userClients = $this->getClientsByUserId($client->user->id);
+                            $sent = 0;
+                            foreach ($dropsList as $dropId) {
+                                if ($sent >= 5) break; // не более 5 за тик на пользователя
+                                $buyKey = 'ws_buy_drop_' . $client->user->id . '_' . $dropId;
+                                $buyData = Yii::$app->cache->get($buyKey);
+                                if ($buyData && isset($buyData['timestamp']) && (time() - $buyData['timestamp']) < 30 && !isset($buyData['sent'])) {
+                                    if (!empty($buyData['product'])) {
+                                        $response = json_encode([
+                                            'type' => 'store.buy.items',
+                                            'code' => 200,
+                                            'id' => $buyData['id'] ?? null,
+                                            'product' => $buyData['product'],
+                                        ]);
+                                        foreach ($userClients as $userClient) {
+                                            try { $userClient->send($response); } catch (\Exception $e) {}
+                                        }
+                                        $sent++;
+                                    }
+                                    $buyData['sent'] = true;
+                                    Yii::$app->cache->set($buyKey, $buyData, 5);
+                                }
+                            }
+                        } catch (\Throwable $e) {
+                            $this->log("Error buy_drop for uid: " . $e->getMessage());
+                        }
+                    }
+
+                    // 3) Activated/return/launcher — по чанку (много ключей)
                     $chunkSize = 10;
                     $start = $this->balanceTimerOffset % $total;
                     $this->balanceTimerOffset = ($start + $chunkSize) % $total;
                     $chunk = array_slice($arr, $start, $chunkSize);
                     $this->log("balanceTimer [0] tick start chunk=" . count($chunk) . " total={$total}");
-                    $buyDropCount = 0;
                     foreach ($chunk as $client) {
                         try {
                             if (empty($client->user)) continue;
@@ -1142,28 +1172,6 @@ class ChatServer extends WebSocketServer
                             if ($dropsList && is_array($dropsList) && count($dropsList) > 0) {
                                 $userClients = $this->getClientsByUserId($client->user->id);
                                 foreach ($dropsList as $dropId) {
-                                    if ($buyDropCount >= self::SUPPORT_TIMER_BUY_DROP_PER_TICK) break;
-                                    $buyKey = 'ws_buy_drop_' . $client->user->id . '_' . $dropId;
-                                    $buyData = Yii::$app->cache->get($buyKey);
-                                    if ($buyData && isset($buyData['timestamp']) && (time() - $buyData['timestamp']) < 30) {
-                                        if (!isset($buyData['sent'])) {
-                                            // Только из кеша: не вызываем commandBuyDrop (БД + рендер блокируют loop)
-                                            if (!empty($buyData['product'])) {
-                                                $response = json_encode([
-                                                    'type' => 'store.buy.items',
-                                                    'code' => 200,
-                                                    'id' => $buyData['id'] ?? null,
-                                                    'product' => $buyData['product'],
-                                                ]);
-                                                foreach ($userClients as $userClient) {
-                                                    try { $userClient->send($response); } catch (\Exception $e) {}
-                                                }
-                                            }
-                                            $buyDropCount++;
-                                            $buyData['sent'] = true;
-                                            Yii::$app->cache->set($buyKey, $buyData, 5);
-                                        }
-                                    }
                                     $activatedKey = 'ws_activated_drop_' . $client->user->id . '_' . $dropId;
                                     $activatedData = Yii::$app->cache->get($activatedKey);
                                     if ($activatedData && isset($activatedData['timestamp']) && (time() - $activatedData['timestamp']) < 30) {
