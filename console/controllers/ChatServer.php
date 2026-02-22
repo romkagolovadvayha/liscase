@@ -1003,85 +1003,72 @@ class ChatServer extends WebSocketServer
                 $this->statsPingTicks = 0;
             });
 
-            // Support/chat только для клиентов в чате — не блокировать loop обходом 150 клиентов
-            $loop->addPeriodicTimer(0.01, function () {
-                $tickStart = microtime(true);
+            // Support/chat: по одному разу на чат (не на клиента), раз в 0.5 сек
+            $loop->addPeriodicTimer(0.5, function () {
                 $this->statsSupportTicks++;
                 try {
-                    $clientsWithChat = [];
-                    foreach ($this->clientsByChat as $list) {
-                        foreach ($list as $c) {
-                            $clientsWithChat[spl_object_id($c)] = $c;
-                        }
-                    }
-                    $n = count($clientsWithChat);
-                    if ($n > 0) {
-                        $this->log("supportTimer [0] tick start inChat={$n}");
-                    }
-                    foreach ($clientsWithChat as $client) {
+                    $chatIds = array_keys($this->clientsByChat);
+                    foreach ($chatIds as $chatId) {
+                        if (empty($chatId)) continue;
                         try {
-                            if (!empty($client->chat)) {
-                                $statusKey = 'ws_support_status_' . $client->chat;
-                                $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] before get " . $statusKey);
-                                $statusData = Yii::$app->cache->get($statusKey);
-                                $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] after get " . $statusKey . " hit=" . ($statusData ? 1 : 0));
-                                if ($statusData && (time() - $statusData['timestamp']) < 5) {
-                                    if (!isset($statusData['sent'])) {
-                                        $chatClients = $this->getClientsByChat($client->chat);
-                                        foreach ($chatClients as $chatClient) {
-                                            $this->processQueuedMessage($chatClient, $statusData);
-                                        }
-                                        $statusData['sent'] = true;
-                                        Yii::$app->cache->set($statusKey, $statusData, 5);
+                            $statusKey = 'ws_support_status_' . $chatId;
+                            $statusData = Yii::$app->cache->get($statusKey);
+                            if ($statusData && (time() - $statusData['timestamp']) < 5) {
+                                if (!isset($statusData['sent'])) {
+                                    foreach ($this->getClientsByChat($chatId) as $chatClient) {
+                                        $this->processQueuedMessage($chatClient, $statusData);
                                     }
-                                }
-
-                                $chatKey = 'ws_chat_update_' . $client->chat;
-                                $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] before get " . $chatKey);
-                                $chatData = Yii::$app->cache->get($chatKey);
-                                $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] after get " . $chatKey . " hit=" . ($chatData ? 1 : 0));
-                                if ($chatData && isset($chatData['timestamp']) && (time() - $chatData['timestamp']) < 5) {
-                                    if (!isset($chatData['sent'])) {
-                                        $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] SENDING chat_update chat=" . $client->chat);
-                                        $chatClients = $this->getClientsByChat($client->chat);
-                                        foreach ($chatClients as $chatClient) {
-                                            $response = [
-                                                'type' => 'chat',
-                                                'messageId' => $chatData['messageId'] ?? null,
-                                            ];
-                                            if (!empty($chatData['tempId'])) {
-                                                $response['tempId'] = $chatData['tempId'];
-                                            }
-                                            $this->processQueuedMessage($chatClient, $response);
-                                        }
-                                        $chatData['sent'] = true;
-                                        Yii::$app->cache->set($chatKey, $chatData, 5);
-                                    }
+                                    $statusData['sent'] = true;
+                                    Yii::$app->cache->set($statusKey, $statusData, 5);
                                 }
                             }
 
-                            if (!empty($client->user)) {
-                                $ticketKey = 'ws_ticket_update_' . $client->user->id;
-                                $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] before get " . $ticketKey);
-                                $ticketData = Yii::$app->cache->get($ticketKey);
-                                $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] after get " . $ticketKey . " hit=" . ($ticketData ? 1 : 0));
-                                if ($ticketData && (time() - $ticketData['timestamp']) < 5) {
-                                    if (!isset($ticketData['sent'])) {
-                                        $userClients = $this->getClientsByUserId($client->user->id);
-                                        foreach ($userClients as $userClient) {
-                                            $this->processQueuedMessage($userClient, $ticketData);
-                                        }
-                                        $ticketData['sent'] = true;
-                                        Yii::$app->cache->set($ticketKey, $ticketData, 5);
+                            $chatKey = 'ws_chat_update_' . $chatId;
+                            $chatData = Yii::$app->cache->get($chatKey);
+                            if ($chatData && isset($chatData['timestamp']) && (time() - $chatData['timestamp']) < 5) {
+                                if (!isset($chatData['sent'])) {
+                                    $response = [
+                                        'type' => 'chat',
+                                        'messageId' => $chatData['messageId'] ?? null,
+                                    ];
+                                    if (!empty($chatData['tempId'])) {
+                                        $response['tempId'] = $chatData['tempId'];
                                     }
+                                    foreach ($this->getClientsByChat($chatId) as $chatClient) {
+                                        $this->processQueuedMessage($chatClient, $response);
+                                    }
+                                    $chatData['sent'] = true;
+                                    Yii::$app->cache->set($chatKey, $chatData, 5);
                                 }
                             }
                         } catch (\Throwable $e) {
-                            $this->log("Error processing support event: " . $e->getMessage());
+                            $this->log("Error processing support chat {$chatId}: " . $e->getMessage());
                         }
                     }
-                    if ($n > 0) {
-                        $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] tick end");
+
+                    // ticket_update — по одному разу на пользователя (кто в каком-то чате)
+                    $seenUserIds = [];
+                    foreach ($this->clientsByChat as $list) {
+                        foreach ($list as $c) {
+                            if (!empty($c->user) && !isset($seenUserIds[$c->user->id])) {
+                                $seenUserIds[$c->user->id] = true;
+                                try {
+                                    $ticketKey = 'ws_ticket_update_' . $c->user->id;
+                                    $ticketData = Yii::$app->cache->get($ticketKey);
+                                    if ($ticketData && (time() - $ticketData['timestamp']) < 5) {
+                                        if (!isset($ticketData['sent'])) {
+                                            foreach ($this->getClientsByUserId($c->user->id) as $userClient) {
+                                                $this->processQueuedMessage($userClient, $ticketData);
+                                            }
+                                            $ticketData['sent'] = true;
+                                            Yii::$app->cache->set($ticketKey, $ticketData, 5);
+                                        }
+                                    }
+                                } catch (\Throwable $e) {
+                                    $this->log("Error processing support ticket: " . $e->getMessage());
+                                }
+                            }
+                        }
                     }
                 } catch (\Throwable $e) {
                     $this->log("Error processing support events: " . $e->getMessage());
