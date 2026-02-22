@@ -1355,7 +1355,7 @@ class ChatServer extends WebSocketServer
 
               $cacheKey = 'commandGetDrop_kd_' . $model->user->id;
               $count = Yii::$app->cache->get($cacheKey) ?? 0;
-              if ($count > 5) {
+              if ($count > 15) {
                   Yii::$app->cache->delete($lockKey); // Снимаем блокировку
                   $this->safeSend($client, [
                                                 'type' => 'store.take',
