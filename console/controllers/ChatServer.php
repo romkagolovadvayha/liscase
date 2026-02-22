@@ -1008,7 +1008,7 @@ class ChatServer extends WebSocketServer
             });
 
             // Support/chat только для клиентов в чате — не блокировать loop обходом 150 клиентов
-            $loop->addPeriodicTimer(0.5, function () {
+            $loop->addPeriodicTimer(0.2, function () {
                 $tickStart = microtime(true);
                 $this->statsSupportTicks++;
                 try {
@@ -1093,7 +1093,7 @@ class ChatServer extends WebSocketServer
             });
 
             // Balance/drops/launcher раз в 2 сек. Баланс — по ВСЕМ клиентам каждый тик (чтобы не ждать очередь чанка до 20 сек)
-            $loop->addPeriodicTimer(2, function () {
+            $loop->addPeriodicTimer(0.3, function () {
                 $balanceTickStart = microtime(true);
                 try {
                     if ($this->clientsArrayCache === null) {
