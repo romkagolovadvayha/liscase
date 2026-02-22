@@ -1019,7 +1019,9 @@ class ChatServer extends WebSocketServer
                         }
                     }
                     $n = count($clientsWithChat);
-                    $this->log("supportTimer [0] tick start inChat={$n}");
+                    if ($n > 0) {
+                        $this->log("supportTimer [0] tick start inChat={$n}");
+                    }
                     foreach ($clientsWithChat as $client) {
                         try {
                             if (!empty($client->chat)) {
@@ -1082,7 +1084,9 @@ class ChatServer extends WebSocketServer
                             $this->log("Error processing support event: " . $e->getMessage());
                         }
                     }
-                    $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] tick end");
+                    if ($n > 0) {
+                        $this->log("supportTimer [" . round((microtime(true) - $tickStart) * 1000) . "ms] tick end");
+                    }
                 } catch (\Throwable $e) {
                     $this->log("Error processing support events: " . $e->getMessage());
                 }
@@ -1090,6 +1094,7 @@ class ChatServer extends WebSocketServer
 
             // Тяжёлые balance/drops/launcher раз в 2 сек, маленький чанк — чтобы не блокировать чат надолго
             $loop->addPeriodicTimer(2, function () {
+                $balanceTickStart = microtime(true);
                 try {
                     if ($this->clientsArrayCache === null) {
                         $this->clientsArrayCache = [];
@@ -1104,6 +1109,7 @@ class ChatServer extends WebSocketServer
                     $start = $this->balanceTimerOffset % $total;
                     $this->balanceTimerOffset = ($start + $chunkSize) % $total;
                     $chunk = array_slice($arr, $start, $chunkSize);
+                    $this->log("balanceTimer [0] tick start chunk=" . count($chunk) . " total={$total}");
                     $buyDropCount = 0;
                     foreach ($chunk as $client) {
                         try {
@@ -1181,10 +1187,12 @@ class ChatServer extends WebSocketServer
                                     }
                                 }
                             }
+                            $this->log("balanceTimer [" . round((microtime(true) - $balanceTickStart) * 1000) . "ms] client uid=" . $client->user->id . " done");
                         } catch (\Throwable $e) {
                             $this->log("Error processing balance/drops event: " . $e->getMessage());
                         }
                     }
+                    $this->log("balanceTimer [" . round((microtime(true) - $balanceTickStart) * 1000) . "ms] tick end");
                 } catch (\Throwable $e) {
                     $this->log("Error in balance/drops timer: " . $e->getMessage());
                 }
