@@ -1004,7 +1004,7 @@ class ChatServer extends WebSocketServer
             });
 
             // Support/chat только для клиентов в чате — не блокировать loop обходом 150 клиентов
-            $loop->addPeriodicTimer(0.2, function () {
+            $loop->addPeriodicTimer(0.01, function () {
                 $tickStart = microtime(true);
                 $this->statsSupportTicks++;
                 try {
