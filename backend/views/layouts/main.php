@@ -50,21 +50,23 @@ $this->registerJsFile($publishedRes[1].'/control_sidebar.js', ['depends' => '\ha
             <?= $this->render('navbar', [
                 'pageTitle' => $this->title,
                 'headerActions' => $this->params['headerActions'] ?? null,
+                'showFilters' => $this->params['showFilters'] ?? false,
             ]) ?>
         </header>
 
-        <!-- Content and Filters Row -->
-        <div class="flex-1 flex min-h-0 overflow-hidden">
+        <!-- Content and Filters Row (id нужен, чтобы при открытии фильтров на мобилке не обрезать панель) -->
+        <div class="flex-1 flex min-h-0 overflow-hidden" id="content-and-filters-row">
             <!-- Content Area -->
             <main class="flex-1 overflow-y-auto scrollbar-thin min-w-0 bg-[hsl(0_0%_10%_/_1)]">
                 <?= $this->render('content', ['content' => $content, 'assetDir' => $assetDir]) ?>
             </main>
 
-            <!-- Filters Panel (optional, can be hidden) -->
+            <!-- Filters Panel: на десктопе — сайдбар справа, на мобилке — выдвижная панель (при открытии переносится в body, чтобы не обрезаться) -->
             <?php if (isset($this->params['showFilters']) && $this->params['showFilters']): ?>
-            <aside class="flex-shrink-0 overflow-y-auto scrollbar-thin hidden lg:block filters-wrapper border-l border-[hsl(0_0%_15.3%_/_1)]" id="filters-wrapper" style="width: 300px;">
-                <?php 
-                // Пробуем найти специфичный файл фильтров для текущего контроллера
+            <div class="filters-drawer-backdrop" id="filters-drawer-backdrop" aria-hidden="true"></div>
+            <div id="filters-drawer-slot">
+            <aside class="filters-wrapper filters-drawer-aside flex-shrink-0 overflow-y-auto border-l border-[hsl(0_0%_15.3%_/_1)] bg-[hsl(0_0%_20.4%_/_1)]" id="filters-wrapper" style="width: 300px;">
+                <?php
                 $controllerId = Yii::$app->controller->id;
                 $filtersFile = '@backend/views/' . $controllerId . '/filters-panel.php';
                 $searchModel = $this->params['searchModel'] ?? null;
@@ -75,6 +77,7 @@ $this->registerJsFile($publishedRes[1].'/control_sidebar.js', ['depends' => '\ha
                 }
                 ?>
             </aside>
+            </div>
             <?php endif; ?>
         </div>
     </div>
@@ -103,6 +106,135 @@ echo $secondModal->run();
 
 <!-- Page Preloader -->
 <div class="page-preloader" id="page-preloader"></div>
+
+<?php if (isset($this->params['showFilters']) && $this->params['showFilters']): ?>
+<style>
+/* Фильтры на мобилке: выдвижная панель (чистый CSS, без зависимости от Tailwind) */
+.filters-drawer-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9998;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+body.filters-drawer-open .filters-drawer-backdrop {
+    display: block;
+    opacity: 1;
+}
+@media (max-width: 991px) {
+    .filters-drawer-backdrop {
+        display: block;
+        pointer-events: none;
+    }
+    body.filters-drawer-open .filters-drawer-backdrop {
+        pointer-events: auto;
+    }
+    .filters-wrapper.filters-drawer-aside {
+        position: fixed !important;
+        top: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 90vw !important;
+        max-width: 320px !important;
+        z-index: 9999 !important;
+        transform: translateX(100%);
+        transition: transform 0.25s ease-out;
+        box-shadow: -4px 0 24px rgba(0,0,0,0.4);
+    }
+    body.filters-drawer-open .filters-wrapper.filters-drawer-aside {
+        transform: translateX(0);
+    }
+    body.filters-drawer-open { overflow: hidden !important; }
+    #filters-drawer-toggle {
+        display: inline-flex !important;
+        min-height: 44px;
+        min-width: 44px;
+        padding: 10px 14px;
+        align-items: center;
+        justify-content: center;
+    }
+    #filters-drawer-toggle .filters-btn-text { display: none; }
+}
+@media (max-width: 991px) and (min-width: 400px) {
+    #filters-drawer-toggle .filters-btn-text { display: inline; }
+}
+@media (min-width: 992px) {
+    .filters-drawer-backdrop { display: none !important; }
+    #filters-drawer-toggle { display: none !important; }
+    /* Панель фильтров на всю высоту */
+    #content-and-filters-row {
+        display: flex;
+        align-items: stretch;
+    }
+    #filters-drawer-slot {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        height: 100%;
+        align-self: stretch;
+    }
+    #filters-wrapper.filters-drawer-aside {
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+    #filters-wrapper .admin-filters-content {
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.getElementById('filters-drawer-toggle');
+    var backdrop = document.getElementById('filters-drawer-backdrop');
+    var wrapper = document.getElementById('filters-wrapper');
+    var slot = document.getElementById('filters-drawer-slot');
+    if (!btn || !backdrop || !wrapper) return;
+    var isMobile = function() { return window.innerWidth < 992; };
+    function openDrawer() {
+        if (isMobile() && slot && wrapper.parentNode === slot) {
+            document.body.appendChild(wrapper);
+        }
+        document.body.classList.add('filters-drawer-open');
+        backdrop.setAttribute('aria-hidden', 'false');
+    }
+    function closeDrawer() {
+        document.body.classList.remove('filters-drawer-open');
+        backdrop.setAttribute('aria-hidden', 'true');
+        if (slot && wrapper.parentNode === document.body) {
+            slot.appendChild(wrapper);
+        }
+    }
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        openDrawer();
+    });
+    backdrop.addEventListener('click', closeDrawer);
+    document.body.addEventListener('click', function(e) {
+        if (e.target && e.target.closest && e.target.closest('.filters-drawer-close')) closeDrawer();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.body.classList.contains('filters-drawer-open')) closeDrawer();
+    });
+    window.addEventListener('resize', function() {
+        if (!isMobile() && wrapper.parentNode === document.body) {
+            closeDrawer();
+        }
+    });
+});
+</script>
+<?php endif; ?>
 
 <?php $this->endBody() ?>
 </body>

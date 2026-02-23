@@ -266,8 +266,12 @@ class WipeController extends Controller
 
         if (Yii::$app->request->isPost) {
             $post = Yii::$app->request->post('map_list_id', []);
+            $fixOnlyServerId = (int)Yii::$app->request->post('fix_server', 0);
             $fixed = 0;
             foreach ($servers as $server) {
+                if ($fixOnlyServerId > 0 && (int)$server->id !== $fixOnlyServerId) {
+                    continue;
+                }
                 $mapId = isset($post[$server->id]) ? (int)$post[$server->id] : 0;
                 if ($mapId > 0 && MapList::find()->where(['id' => $mapId])->exists()) {
                     $server->map_list_id = $mapId;
@@ -275,7 +279,11 @@ class WipeController extends Controller
                     $fixed++;
                 }
             }
-            Yii::$app->session->addFlash('success', 'Карты зафиксированы. Обработано серверов: ' . $fixed . '.');
+            if ($fixOnlyServerId > 0) {
+                Yii::$app->session->addFlash('success', Yii::t('common', 'Карта для сервера зафиксирована.'));
+            } else {
+                Yii::$app->session->addFlash('success', Yii::t('common', 'Карты зафиксированы. Обработано серверов: {n}.', ['n' => $fixed]));
+            }
             return $this->redirect(['/wipe/fix-map-form']);
         }
 

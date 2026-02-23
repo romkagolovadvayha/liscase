@@ -39,6 +39,7 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                         <th class="<?= $headerCellClass ?>"><?= Yii::t('common', 'ID карты') ?></th>
                         <th class="<?= $headerCellClass ?>"><?= Yii::t('common', 'Seed') ?></th>
                         <th class="<?= $headerCellClass ?>"><?= Yii::t('common', 'Голосов') ?></th>
+                        <th class="<?= $headerCellClass ?>"><?= Yii::t('common', 'Действие') ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -68,6 +69,11 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                             </td>
                             <td class="<?= $bodyCellClass ?> text-gray-400"><?= Html::encode($seedText) ?></td>
                             <td class="<?= $bodyCellClass ?> text-gray-400"><?= $voteCount ?></td>
+                            <td class="<?= $bodyCellClass ?>">
+                                <button type="submit" name="fix_server" value="<?= (int)$server->id ?>" class="ds-btn ds-btn--success ds-btn--sm">
+                                    <i class="bi bi-pin-angle"></i> <?= Yii::t('common', 'Зафиксировать') ?>
+                                </button>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

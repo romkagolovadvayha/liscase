@@ -1,12 +1,14 @@
 <?php
 /* @var $pageTitle string */
 /* @var $headerActions array|null */
+/* @var $showFilters bool */
 
 use yii\helpers\Html;
 use yii\helpers\Url;
 
 $pageTitle = $pageTitle ?? '';
 $headerActions = $headerActions ?? $this->params['headerActions'] ?? null;
+$showFilters = $showFilters ?? false;
 ?>
 <!-- Modern Header -->
 <header class="admin-header-content bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]">
@@ -72,6 +74,13 @@ $headerActions = $headerActions ?? $this->params['headerActions'] ?? null;
 
         <!-- Right: Actions -->
         <div class="flex items-center gap-3">
+            <!-- Кнопка «Фильтры» на мобилке (открывает выдвижную панель) -->
+            <?php if ($showFilters): ?>
+            <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm inline-flex items-center gap-1.5" id="filters-drawer-toggle" aria-label="Открыть фильтры">
+                <i class="fas fa-filter" aria-hidden="true"></i>
+                <span class="filters-btn-text">Фильтры</span>
+            </button>
+            <?php endif; ?>
 
             <!-- User Info -->
             <div class="flex items-center gap-2">

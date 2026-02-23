@@ -14,7 +14,11 @@ if (!$searchModel) {
 }
 ?>
 
-<aside class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto scrollbar-thin">
+<aside class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto flex flex-col">
+<style>
+@media (min-width: 992px) { .user-filters-mobile-header { display: none !important; } }
+@media (max-width: 991px) { .user-filters-mobile-header { display: flex !important; } }
+</style>
     <?php $form = ActiveForm::begin([
         'action' => ['index'],
         'method' => 'get',
@@ -22,12 +26,17 @@ if (!$searchModel) {
         'options' => ['class' => 'h-full flex flex-col'],
     ]); ?>
 
-    <div class="p-4 flex-1">
-        <div class="mb-6">
-            <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide">
-                Фильтры
-            </h3>
+    <!-- Заголовок с кнопкой закрытия (только на мобилке) -->
+    <div class="user-filters-mobile-header flex-shrink-0" style="align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-bottom: 1px solid hsl(0 0% 15.3% / 1);">
+        <h3 class="text-sm font-semibold text-white uppercase tracking-wide m-0">Фильтры</h3>
+        <button type="button" class="filters-drawer-close ds-btn ds-btn--icon ds-btn--ghost" aria-label="Закрыть" style="min-width: 44px; min-height: 44px; padding: 0;">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
 
+    <div class="p-4 flex-1 min-h-0 overflow-y-auto">
+        <div class="mb-6">
+            <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide hidden lg:block">Фильтры</h3>
             <div class="space-y-3">
                 <div>
                     <label class="text-xs text-gray-400 mb-1 block">ID</label>

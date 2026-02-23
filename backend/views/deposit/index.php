@@ -6,6 +6,7 @@ use yii\helpers\Html;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
+use yii\widgets\ListView;
 use backend\models\DepositsSearch;
 use common\components\helpers\Role;
 
@@ -21,6 +22,8 @@ $headerCellClass = 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppe
 $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
 ?>
 <div class="deposit-index-page w-full">
+    <!-- Десктоп: таблица -->
+    <div class="deposit-index-desktop">
     <div class="w-full">
         <?= GridView::widget([
             'dataProvider' => $dataProvider,
@@ -150,4 +153,88 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
             ],
         ]); ?>
     </div>
+    </div>
+
+    <!-- Мобилка: карточки депозитов -->
+    <div class="deposit-index-mobile">
+        <?= ListView::widget([
+            'dataProvider' => $dataProvider,
+            'itemView' => '_deposit_card',
+            'layout' => "{items}\n<div class=\"deposit-index-mobile-pager\">{pager}</div>",
+            'itemOptions' => ['class' => 'deposit-index-card-wrap', 'tag' => 'div'],
+            'options' => ['class' => 'deposit-index-cards', 'tag' => 'div'],
+        ]) ?>
+    </div>
 </div>
+
+<style>
+.deposit-index-mobile { display: none; }
+@media (max-width: 991px) {
+    .deposit-index-desktop { display: none !important; }
+    .deposit-index-mobile { display: block; padding: 12px; }
+}
+.deposit-index-cards { margin: 0; padding: 0; list-style: none; }
+.deposit-index-card-wrap { margin-bottom: 12px; }
+.deposit-index-card {
+    padding: 14px;
+    background: hsl(0 0% 15% / 1);
+    border-radius: 10px;
+    border: 1px solid hsl(0 0% 20% / 1);
+    box-sizing: border-box;
+}
+.deposit-index-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.deposit-index-card__id { font-weight: 600; color: hsl(0 0% 70%); font-size: 0.875rem; }
+.deposit-index-card__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+}
+.deposit-index-card__label { color: hsl(0 0% 55%); flex-shrink: 0; }
+.deposit-index-card__value { color: hsl(0 0% 88%); word-break: break-all; }
+.deposit-index-card__amount { color: #fff; font-weight: 600; }
+.deposit-index-card__link { color: hsl(200 70% 60%); text-decoration: none; }
+.deposit-index-card__link:hover { text-decoration: underline; }
+.deposit-index-card__debug { font-size: 12px; color: hsl(0 0% 55%); }
+.deposit-index-card__date { font-size: 12px; color: hsl(0 0% 50%); margin-top: 8px; margin-bottom: 10px; }
+.deposit-index-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid hsl(0 0% 20% / 1);
+}
+.deposit-index-card__actions .ds-btn { min-height: 44px; padding: 10px 14px; }
+.deposit-index-mobile-pager {
+    margin-top: 16px;
+    padding: 12px 0;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.deposit-index-mobile-pager .pagination { margin: 0; }
+.deposit-index-mobile-pager .page-link {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(0 0% 20% / 1) !important;
+    color: #fff !important;
+    border-color: hsl(0 0% 15% / 1) !important;
+}
+.deposit-index-mobile-pager .page-item.active .page-link {
+    background: hsl(200 70% 50% / 1) !important;
+    border-color: hsl(200 70% 50% / 1) !important;
+}
+</style>

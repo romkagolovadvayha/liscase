@@ -6,6 +6,7 @@ use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\helpers\ArrayHelper;
 use yii\grid\ActionColumn;
+use yii\widgets\ListView;
 use common\models\user\UserSearch;
 use common\models\user\User;
 
@@ -18,12 +19,14 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
 ?>
 
 <div class="user-index-page w-full">
-    <div class="w-full">
+    <!-- Десктоп: таблица -->
+    <div class="user-index-desktop">
+        <div class="user-index-table-wrap">
         <?= GridView::widget([
             'dataProvider' => $dataProvider,
             'filterModel' => $searchModel,
             'tableOptions' => [
-                'class' => 'table-auto w-full text-sm user-table-dark',
+                'class' => 'table-auto w-full text-sm user-table-dark user-index-table',
             ],
             'options' => [
                 'class' => 'user-grid-view',
@@ -146,6 +149,18 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                 ],
             ],
         ]); ?>
+        </div>
+    </div>
+
+    <!-- Мобилка: карточки пользователей -->
+    <div class="user-index-mobile">
+        <?= ListView::widget([
+            'dataProvider' => $dataProvider,
+            'itemView' => '_user_card',
+            'layout' => "{items}\n<div class=\"user-index-mobile-pager\">{pager}</div>",
+            'itemOptions' => ['class' => 'user-index-card-wrap', 'tag' => 'div'],
+            'options' => ['class' => 'user-index-cards', 'tag' => 'div'],
+        ]) ?>
     </div>
 </div>
 
@@ -266,5 +281,146 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
 .user-grid-view .user-index-avatar-placeholder {
     color: hsl(0 0% 50%);
     font-size: 0.875rem;
+}
+
+/* Мобилка: показываем карточки, скрываем таблицу */
+.user-index-mobile {
+    display: none;
+}
+@media (max-width: 991px) {
+    .user-index-desktop {
+        display: none !important;
+    }
+    .user-index-mobile {
+        display: block;
+        padding: 12px;
+    }
+}
+
+/* Карточка пользователя (мобилка) */
+.user-index-cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.user-index-card-wrap {
+    margin-bottom: 10px;
+}
+.user-index-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: hsl(0 0% 15% / 1);
+    border-radius: 10px;
+    border: 1px solid hsl(0 0% 20% / 1);
+    min-height: 72px;
+    box-sizing: border-box;
+}
+.user-index-card__avatar {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: hsl(0 0% 22% / 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.user-index-card__avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.user-index-card__avatar-placeholder {
+    color: hsl(0 0% 50%);
+    font-size: 0.875rem;
+}
+.user-index-card__body {
+    flex: 1;
+    min-width: 0;
+}
+.user-index-card__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+}
+.user-index-card__name {
+    font-weight: 600;
+    color: #fff;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.user-index-card__name:hover {
+    text-decoration: underline;
+}
+.user-index-card__meta {
+    font-size: 12px;
+    color: hsl(0 0% 60%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.user-index-card__id {
+    color: hsl(0 0% 55%);
+}
+.user-index-card__steam {
+    color: hsl(0 0% 65%);
+    text-decoration: none;
+}
+.user-index-card__steam:hover {
+    text-decoration: underline;
+}
+.user-index-card__date {
+    font-size: 11px;
+    color: hsl(0 0% 50%);
+    margin-top: 2px;
+}
+.user-index-card__action {
+    flex-shrink: 0;
+}
+.user-index-card__action .ds-btn {
+    min-height: 44px;
+    padding: 10px 14px;
+}
+
+.user-index-mobile-pager {
+    margin-top: 16px;
+    padding: 12px 0;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.user-index-mobile-pager .pagination {
+    margin: 0;
+}
+.user-index-mobile-pager .page-link {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(0 0% 20% / 1) !important;
+    color: #fff !important;
+    border-color: hsl(0 0% 15% / 1) !important;
+}
+.user-index-mobile-pager .page-item.active .page-link {
+    background: hsl(200 70% 50% / 1) !important;
+    border-color: hsl(200 70% 50% / 1) !important;
+}
+
+/* Десктоп: таблица (мобильные стили убраны, т.к. таблица скрыта на мобилке) */
+@media (min-width: 992px) {
+    .user-index-page {
+        padding: 0;
+    }
 }
 </style>

@@ -13,12 +13,12 @@ class AppAsset extends AssetBundle
     public $sourcePath = '@backend/assets/sources';
 
     public $css = [
-        'scss/main.min.css?v=2.3',
+        'scss/main.min.css?v=2.4',
     ];
 
     public $js = [
         'https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js',
-        'js/backend.js?v=2.2',
+        'js/backend.js?v=2.4',
     ];
 
     public $depends = [
