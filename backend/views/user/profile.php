@@ -114,6 +114,9 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
                                     <?php if ($user->auto): ?>
                                         <span class="ds-badge ds-badge--info"><?= Yii::t('common', 'Авто') ?></span>
                                     <?php endif; ?>
+                                    <?php if ($user->hasVip()): ?>
+                                        <span class="ds-badge ds-badge--warning"><?= Yii::t('common', 'VIP') ?></span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -126,6 +129,9 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
                             <?php if (!empty($user->server)): ?>
                             <?= Html::a('<i class="fas fa-chart-line"></i> ' . Yii::t('common', 'Статистика'), ['/statistics/index', 'StatisticsSearch' => ['steam_id' => $user->steam_id, 'server_tag' => $user->server->tag, 'wipe' => $user->server->currentWipe()]], ['class' => 'ds-btn ds-btn--secondary ds-btn--sm !border-0']) ?>
                             <?= Html::a('<i class="fas fa-trophy"></i> ' . Yii::t('common', 'Топ'), ['/user-top/index', 'UserTopSearch' => ['user_id' => $user->id, 'server_id' => $user->server->id, 'wipe' => $user->server->currentWipe()]], ['class' => 'ds-btn ds-btn--secondary ds-btn--sm !border-0']) ?>
+                            <?php if (Yii::$app->user->can(Role::ROLE_ADMIN) && $user->hasVip()): ?>
+                            <?= Html::a('<i class="fas fa-crown"></i> ' . Yii::t('common', 'Выдать VIP на сервере'), ['/user/run-vip-on-server', 'userId' => $user->id], ['class' => 'ds-btn ds-btn--secondary ds-btn--sm !border-0', 'data' => ['confirm' => Yii::t('common', 'Выполнить addgroup vip_status на сервере?'), 'method' => 'post']]) ?>
+                            <?php endif; ?>
                             <?php endif; ?>
                         </div>
                     </div>

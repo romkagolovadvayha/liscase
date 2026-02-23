@@ -13,16 +13,15 @@ $languages = [
 ];
 \lajax\languagepicker\bundles\LanguageLargeIconsAsset::register($this);
 
+$labelOptions = ['class' => 'text-xs text-gray-400 mb-1 block'];
 ?>
+<div class="tcm-form-wrap p-4 lg:p-6">
+    <?php $form = ActiveForm::begin(); ?>
 
-<div class="ds-card">
-    <div class="ds-card__header">
-        <h5 class="ds-card__header-title"><?= $model->isNewRecord ? 'Создать сообщение' : 'Редактировать сообщение' ?></h5>
-    </div>
-    <div class="ds-card__body">
-        <?php $form = ActiveForm::begin(); ?>
-
-    <?= $form->field($model, 'title')->textInput() ?>
+    <?= $form->field($model, 'title', [
+        'labelOptions' => $labelOptions,
+        'template' => '{label}{input}{error}',
+    ])->textInput(['class' => 'ds-input form-control w-full']) ?>
 
     <ul class="nav nav-pills language-picker large">
     <?php foreach ($languages as $language): ?>
@@ -112,12 +111,12 @@ $languages = [
     </div>
 
 
-        <div class="form-group">
-            <?= Html::submitButton('<i class="bi bi-check-circle"></i> Сохранить', ['class' => 'ds-btn ds-btn--success']) ?>
+        <div class="form-group flex flex-wrap gap-2 items-center mt-4">
+            <?= Html::submitButton('<i class="fas fa-save"></i> ' . Yii::t('common', 'Сохранить'), ['class' => 'ds-btn ds-btn--primary']) ?>
+            <?= Html::a('<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Отмена'), ['index'], ['class' => 'ds-btn ds-btn--secondary']) ?>
         </div>
 
         <?php ActiveForm::end(); ?>
-    </div>
 </div>
 
 <div class="modal fade" id="modalFormAddButtonTgConstructor" tabindex="-1" role="dialog" aria-labelledby="modalForm">
@@ -150,8 +149,8 @@ $languages = [
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary addButton" data-dismiss="modal">Сохранить</button>
-                <button type="button" class="btn btn-default" data-dismiss="modal">Отмена</button>
+                <button type="button" class="ds-btn ds-btn--primary addButton" data-dismiss="modal"><i class="fas fa-check"></i> Сохранить</button>
+                <button type="button" class="ds-btn ds-btn--secondary" data-dismiss="modal"><i class="fas fa-times"></i> Отмена</button>
             </div>
         </div>
     </div>

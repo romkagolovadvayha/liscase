@@ -556,6 +556,22 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
+     * Возвращает количество оставшихся дней VIP (целое число).
+     * 0 если VIP нет или срок истёк.
+     *
+     * @return int
+     */
+    public function getVipDaysLeft(): int
+    {
+        $vip = $this->getActiveVip();
+        if (!$vip) {
+            return 0;
+        }
+        $diff = strtotime($vip->expires_at) - time();
+        return max(0, (int) ceil($diff / 86400));
+    }
+
+    /**
      * Проверяет, скрыт ли статус онлайн/оффлайн
      * Возвращает true только если у пользователя есть активный VIP и установлен флаг is_hide_online
      *

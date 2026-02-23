@@ -30,6 +30,11 @@ class UserController extends CrudController
                 'rules' => [
                     [
                         'allow' => true,
+                        'actions' => ['run-vip-on-server'],
+                        'roles' => [Role::ROLE_ADMIN],
+                    ],
+                    [
+                        'allow' => true,
                         'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
                     ],
                 ],
@@ -38,6 +43,7 @@ class UserController extends CrudController
                 'class' => VerbFilter::class,
                 'actions' => [
                     'set-user-bool' => ['post'],
+                    'run-vip-on-server' => ['post'],
                 ],
             ],
         ]);
@@ -203,6 +209,34 @@ class UserController extends CrudController
         return $this->render('profile', array_merge([
             'user' => $user,
         ], $forms));
+    }
+
+    /**
+     * Выполняет addgroup vip_status на сервере, где сейчас играет пользователь.
+     * Только для админов. Дни VIP подставляются из оставшегося срока VIP пользователя.
+     */
+    public function actionRunVipOnServer($userId)
+    {
+        $user = User::findOne($userId);
+        if (!$user) {
+            throw new \yii\web\NotFoundHttpException('Пользователь не найден');
+        }
+        if (!$user->server) {
+            Yii::$app->session->addFlash('error', Yii::t('common', 'У пользователя нет текущего сервера.'));
+            return $this->redirect(['profile', 'userId' => $userId]);
+        }
+        $days = $user->getVipDaysLeft();
+        $steamId = $user->steam_id;
+        $command = "addgroup {$steamId} vip_status {$days}d";
+        $results = RconTasks::executeWithResults($command, [$user->server->tag]);
+        $first = reset($results);
+        $error = $first && !empty($first['error']) ? $first['error'] : null;
+        if ($error) {
+            Yii::$app->session->addFlash('error', Yii::t('common', 'Ошибка RCON: {error}', ['error' => $error]));
+        } else {
+            Yii::$app->session->addFlash('success', Yii::t('common', 'Команда выполнена на сервере: addgroup vip_status {days}d', ['days' => $days]));
+        }
+        return $this->redirect(['profile', 'userId' => $userId]);
     }
 
     protected function clearBanlistCache()

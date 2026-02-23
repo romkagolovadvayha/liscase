@@ -73,7 +73,7 @@ if (!$searchModel) {
                 </div>
 
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block">Статус</label>
+                    <label class="text-xs text-gray-400 mb-1 block"><?= $searchModel->getAttributeLabel('status') ?></label>
                     <div class="ds-select-wrapper">
                         <?= $form->field($searchModel, 'status', [
                             'options' => ['class' => 'mb-0'],
@@ -84,6 +84,48 @@ if (!$searchModel) {
                                 'class' => 'ds-select',
                                 'prompt' => 'Все',
                             ]
+                        ) ?>
+                        <i class="fas fa-chevron-down ds-select-arrow"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs text-gray-400 mb-1 block"><?= $searchModel->getAttributeLabel('is_online') ?></label>
+                    <div class="ds-select-wrapper">
+                        <?= $form->field($searchModel, 'is_online', [
+                            'options' => ['class' => 'mb-0'],
+                            'template' => '{input}',
+                        ])->dropDownList(
+                            ['' => 'Все', '1' => Yii::t('common', 'Только онлайн')],
+                            ['class' => 'ds-select']
+                        ) ?>
+                        <i class="fas fa-chevron-down ds-select-arrow"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs text-gray-400 mb-1 block"><?= $searchModel->getAttributeLabel('has_vip') ?></label>
+                    <div class="ds-select-wrapper">
+                        <?= $form->field($searchModel, 'has_vip', [
+                            'options' => ['class' => 'mb-0'],
+                            'template' => '{input}',
+                        ])->dropDownList(
+                            ['' => 'Все', '1' => Yii::t('common', 'Только с VIP')],
+                            ['class' => 'ds-select']
+                        ) ?>
+                        <i class="fas fa-chevron-down ds-select-arrow"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs text-gray-400 mb-1 block"><?= $searchModel->getAttributeLabel('server_id') ?></label>
+                    <div class="ds-select-wrapper">
+                        <?= $form->field($searchModel, 'server_id', [
+                            'options' => ['class' => 'mb-0'],
+                            'template' => '{input}',
+                        ])->dropDownList(
+                            ArrayHelper::merge(['' => 'Все'], UserSearch::getServerList()),
+                            ['class' => 'ds-select']
                         ) ?>
                         <i class="fas fa-chevron-down ds-select-arrow"></i>
                     </div>

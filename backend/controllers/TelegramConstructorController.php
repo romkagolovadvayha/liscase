@@ -168,6 +168,7 @@ class TelegramConstructorController extends \backend\components\CrudController
      */
     protected function _renderIndex($dataProvider)
     {
+        $this->view->params['showFilters'] = true;
         $countTelegramUsers = User::find()->andWhere('telegram_chat_id IS NOT NULL')->andWhere(['is_telegram_blocked' => 0])->count();
         $countVkUsers = VkUser::find()->where(['can_send_message' => true])->count();
 
