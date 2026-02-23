@@ -628,9 +628,6 @@ class AuthController extends WebController
             curl_close($ch);
 
             if ($httpCode === 204 || $httpCode === 200) {
-                // Роль успешно удалена
-                Yii::info("Discord role {$roleId} successfully removed from user {$discordUserId}", __METHOD__);
-                Yii::$app->telegramChats->sendMessage("Discord: Role {$roleId} removed from user {$discordUserId}");
                 return true;
             } else {
                 // Ошибка при удалении роли
@@ -680,9 +677,6 @@ class AuthController extends WebController
             curl_close($ch);
 
             if ($httpCode === 204 || $httpCode === 200) {
-                // Роль успешно выдана
-                Yii::info("Discord role {$roleId} successfully assigned to user {$discordUserId}", __METHOD__);
-                Yii::$app->telegramChats->sendMessage("Discord: Role {$roleId} assigned to user {$discordUserId}");
                 return true;
             } else {
                 // Парсим ответ для проверки кода ошибки

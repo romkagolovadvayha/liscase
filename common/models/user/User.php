@@ -361,13 +361,6 @@ class User extends ActiveRecord implements IdentityInterface
                         $auth->save();
                         $dbTransaction->commit();
                         
-                        // Отправляем сообщение в телеграмм
-                        $telegramMessage = 'Новый пользователь на сайте (' . $source . '): ' . $user->username;
-                        if ($isWipeCalendarVisitor) {
-                            $telegramMessage .= "\n🎁 Пользователь был на странице /wipe-calendar и видел промокод с выигрышем скина!";
-                        }
-                        Yii::$app->telegramChats->sendMessage($telegramMessage);
-                        
                         Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $steamId]));
                         UserTree::appendUser($user->id, 509);
                         UserProfile::createModel($user, $username);
