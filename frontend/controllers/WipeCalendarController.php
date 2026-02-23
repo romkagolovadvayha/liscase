@@ -127,10 +127,11 @@ class WipeCalendarController extends Controller
             }
         }
 
-        // === 4.5) Недельные по понедельникам (серверы с tag = monday, любой статус) ===
+        // === 4.5) Недельные по понедельникам (серверы с tag = monday, любой статус).
+        // Вайп каждый понедельник, включая понедельник перед глобалом — не блокируем неделю глобала.
         foreach ($mondayServers as $s) {
             $this->addMondaysWeeklyBlockedByGlobal(
-                $byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $mapTime, $s, $tz
+                $byDateTime, $monthStarts, $afterLastMonth, [], $mapTime, $s, $tz
             );
         }
 
@@ -234,12 +235,19 @@ class WipeCalendarController extends Controller
                         ['class' => $badgeClass,
                          'text'  => $srv['monitoring_name'] ?: $srv['name']],
                     ];
+                    $isGlobalMonday = !empty($srv['is_global_monday']);
+                    if ($isGlobalMonday) {
+                        $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'глобал')];
+                    }
+                    $eventName = $isGlobalMonday
+                        ? Yii::t('common', 'Глобальный вайп — {server}', ['server' => $srv['name']])
+                        : Yii::t('common', 'Вайп карты — {server}', ['server' => $srv['name']]);
                     $events[$dayKey][] = [
-                        'name'        => Yii::t('common', 'Вайп карты — {server}', ['server' => $srv['name']]),
+                        'name'        => $eventName,
                         'link'        => $srv['link'],
                         'time'        => $timeTxt,
                         'is_official' => false,
-                        'is_global'   => false,
+                        'is_global'   => $isGlobalMonday,
                         'badges'      => $badges,
                         'desc'        => null,
                     ];
@@ -385,12 +393,15 @@ class WipeCalendarController extends Controller
                             'names'            => [],
                         ];
                     }
+                    $dayOfMonth = (int)$dt->format('j');
+                    $isSecondMonday = ($dayOfMonth >= 8 && $dayOfMonth <= 14); // второй понедельник месяца = глобал на этом сервере
                     $byDateTime[$key]['servers'][$s->id] = [
                         'id'              => (int)$s->id,
                         'name'            => $s->name,
                         'monitoring_name' => $s->monitoring_name,
                         'link'            => $s->getLink('stats'),
                         'wt'              => 71, // weekly Monday
+                        'is_global_monday' => $isSecondMonday,
                     ];
                 }
                 $dt = $dt->modify('+7 days');
