@@ -3,6 +3,7 @@
 use yii\web\View;
 use common\models\user\UserDrop;
 use common\models\box\DropBlocked;
+use common\models\statistics\Statistics;
 use yii\widgets\ActiveForm;
 use frontend\widgets\Alert;
 
@@ -10,6 +11,23 @@ use frontend\widgets\Alert;
 
 $user = Yii::$app->user->identity;
 $this->title = Yii::t('common', "Корзина") . " - {$user->username}";
+
+// Доступ к магазину: при выключенном is_store проверяем Скрытый магазин (hidden_store); при включённом — магазин для игроков с игрой > 10 ч на сервере
+$storeVisible = false;
+if (!empty($user->server)) {
+    $playtimeMinutes = (int) Statistics::find()
+        ->andWhere(['steam_id' => $user->steam_id, 'server_tag' => $user->server->tag, 'key' => 'playtime'])
+        ->sum('value');
+    $hasTenHours = $playtimeMinutes >= 600; // 10 часов = 600 минут
+    if ($user->server->is_store) {
+        $storeVisible = $hasTenHours;
+    } else {
+        $storeVisible = $user->server->hidden_store && $hasTenHours;
+    }
+    if ($user->store) {
+        $storeVisible = true;
+    }
+}
 
 /** @var UserDrop[] $userDrops */
 $userDrops = $user->getUserDrop()
@@ -109,7 +127,7 @@ JS
         <div class="content_text content_text_warning">
             🔒 <?=Yii::t('common', 'Магазин на сервере котором вы находитесь закрыт до 06.06.2025 21:00 МСК!')?>
         </div>
-    <?php elseif (!empty($user->server) && ($user->server->is_store || $user->store)): ?>
+    <?php elseif (!empty($user->server) && $storeVisible): ?>
         <?php if (!empty($userDrops)):?>
             <div class="store_launcher_categories_wrapper">
                 <div class="store_launcher_categories">

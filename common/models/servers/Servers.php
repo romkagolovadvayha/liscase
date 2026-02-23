@@ -51,6 +51,7 @@ use yii\helpers\ArrayHelper;
  * @property bool   $stats_payment
  * @property bool   $skindrops
  * @property bool   $is_store
+ * @property bool   $hidden_store
  * @property bool   $secret_map
  * @property int    $wargm_id
  * @property string $commands
@@ -98,6 +99,17 @@ class Servers extends \common\components\base\ActiveRecord
     /**
      * {@inheritdoc}
      */
+    public function init()
+    {
+        parent::init();
+        if ($this->isNewRecord && $this->sort === null) {
+            $this->sort = 100;
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public static function tableName()
     {
         return 'servers';
@@ -133,6 +145,7 @@ class Servers extends \common\components\base\ActiveRecord
             'tag'          => Yii::t('common', 'Тег сервера'),
             'wargm_id'          => Yii::t('common', 'WarGM ID'),
             'is_store'          => Yii::t('common', 'Магазин на сервере'),
+            'hidden_store'     => Yii::t('common', 'Скрытый магазин'),
             'updated_at'          => Yii::t('common', 'Обновлено'),
             'monitoring_name'          => Yii::t('common', 'Название сервера в мониторинге'),
             'monitoring_description'          => Yii::t('common', 'Описание сервера в мониторинге'),
@@ -155,7 +168,7 @@ class Servers extends \common\components\base\ActiveRecord
         return [
             [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description', 'min_map_size', 'max_map_size'], 'required'],
             [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'game_mode', 'monitoring_tags', 'wipe_server_name', 'wipe_server_description', 'secret_key'], 'string'],
-            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id'], 'integer'],
+            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'hidden_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id'], 'integer'],
             [['wipe', 'next_wipe', 'global_wipe', 'secret_map'], 'safe'],
             [['tag'], 'unique', 'targetClass' => self::class, 'message' => Yii::t('common', 'Сервер с таким тегом уже существует')],
             [['min_map_size'], 'validateMapSize', 'skipOnError' => false],

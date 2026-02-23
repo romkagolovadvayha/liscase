@@ -387,6 +387,7 @@ main:has(.admin-content-wrapper .content-no-padding) .admin-content-wrapper {
 .admin-content-wrapper .content-no-padding .server-skin-form,
 .admin-content-wrapper .content-no-padding .building-form,
 .admin-content-wrapper .content-no-padding .deposit-form,
+.admin-content-wrapper .content-no-padding .servers-form,
 .admin-content-wrapper .content-no-padding .servers-tags-form,
 .admin-content-wrapper .content-no-padding .servers-rules-form,
 .admin-content-wrapper .content-no-padding .servers-rules-category-form,
@@ -583,6 +584,93 @@ main:has(.admin-content-wrapper .content-no-padding) .admin-content-wrapper {
       width: 300px;
       align-self: stretch;
     }
+  }
+}
+
+// Форма серверов: как форма предмета (drop) — контент и «Параметры» в одну строку на всю высоту
+.admin-content-wrapper .content-no-padding .servers-form {
+  .servers-form-layout {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+
+    @media (min-width: 1024px) {
+      flex-direction: row;
+      align-items: stretch;
+    }
+
+    > .servers-form-content {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-y: auto;
+    }
+
+    > .servers-form-sidebar {
+      flex-shrink: 0;
+      width: 100%;
+      @media (min-width: 1024px) {
+        width: 300px;
+        align-self: stretch;
+      }
+    }
+  }
+}
+
+// Свичи для булевых полей в форме сервера (как на /user/profile)
+.servers-form-bool-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+
+  .servers-form-bool-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .servers-form-bool-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: hsl(0 0% 25%);
+    border-radius: 24px;
+    border: 1px solid hsl(0 0% 15.3%);
+    transition: 0.25s;
+
+    &::before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      border-radius: 50%;
+      transition: 0.25s;
+    }
+  }
+
+  .servers-form-bool-input:checked + .servers-form-bool-slider {
+    background-color: hsl(142 71% 45%);
+  }
+
+  .servers-form-bool-input:checked + .servers-form-bool-slider::before {
+    transform: translateX(20px);
+  }
+
+  .servers-form-bool-input:focus + .servers-form-bool-slider {
+    box-shadow: 0 0 0 2px hsl(142 71% 45% / 0.3);
+  }
+
+  .servers-form-bool-input:disabled + .servers-form-bool-slider {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
 
