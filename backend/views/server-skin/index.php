@@ -1,126 +1,175 @@
 <?php
 
-use common\models\serverskin\ServerSkin;
-use backend\models\serverskin\ServerSkinSearch;
-use kartik\grid\GridView;
 use yii\helpers\Html;
-use yii\helpers\ArrayHelper;
-use yii\helpers\Url;
-use yii\grid\ActionColumn;
+use yii\widgets\ListView;
+use backend\models\serverskin\ServerSkinSearch;
 
+/** @var yii\web\View $this */
 /** @var ServerSkinSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
 $this->title = Yii::t('common', 'Свои скины');
 $this->params['contentClass'] = 'content-no-padding';
 $this->params['searchModel'] = $searchModel;
-
-$headerCellClass = 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]';
-$bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
 ?>
-<div class="server-skin-index-page w-full">
-    <div class="w-full">
-        <?= GridView::widget([
-            'dataProvider' => $dataProvider,
-            'filterModel' => $searchModel,
-            'tableOptions' => ['class' => 'table-auto w-full text-sm'],
-            'options' => ['class' => 'admin-grid-view-dark'],
-            'layout' => "{items}\n{pager}",
-            'filterRowOptions' => ['style' => 'display: none;'],
-            'bordered' => false,
-            'striped' => false,
-            'hover' => true,
-            'columns' => [
-                [
-                    'attribute' => 'id',
-                    'format' => 'raw',
-                    'options' => ['width' => '90'],
-                    'headerOptions' => ['class' => $headerCellClass],
-                    'contentOptions' => ['class' => $bodyCellClass],
-                ],
-                [
-                    'format' => 'raw',
-                    'label' => '',
-                    'options' => ['width' => '60'],
-                    'headerOptions' => ['class' => $headerCellClass],
-                    'contentOptions' => ['class' => $bodyCellClass . ' server-skin-index-preview-cell'],
-                    'value' => function (ServerSkin $model) {
-                        $url = null;
-                        if (!empty($model->image)) {
-                            try {
-                                $url = $model->getImagePubUrl();
-                            } catch (\Throwable $e) {
-                            }
-                        }
-                        if (!$url) {
-                            return '<span class="server-skin-index-preview-placeholder">—</span>';
-                        }
-                        return Html::tag('div', Html::img($url, [
-                            'width' => 48,
-                            'height' => 48,
-                            'loading' => 'lazy',
-                            'alt' => Html::encode($model->name ?? ''),
-                            'class' => 'object-cover rounded',
-                            'style' => 'width: 48px; height: 48px; object-fit: cover;',
-                        ]), ['class' => 'server-skin-index-preview']);
-                    },
-                ],
-                [
-                    'attribute' => 'name',
-                    'headerOptions' => ['class' => $headerCellClass],
-                    'contentOptions' => ['class' => $bodyCellClass],
-                ],
-                [
-                    'attribute' => 'user_id',
-                    'options' => ['width' => '150'],
-                    'format' => 'raw',
-                    'headerOptions' => ['class' => $headerCellClass],
-                    'contentOptions' => ['class' => $bodyCellClass],
-                    'value' => function (ServerSkin $model) {
-                        if (!$model->user) {
-                            return '—';
-                        }
-                        return Html::a(Html::encode($model->user->username), ['/user/profile', 'userId' => $model->user->id], ['class' => 'text-blue-400 hover:underline']);
-                    },
-                ],
-                [
-                    'attribute' => 'skin_id',
-                    'headerOptions' => ['class' => $headerCellClass],
-                    'contentOptions' => ['class' => $bodyCellClass],
-                ],
-                [
-                    'attribute' => 'status',
-                    'options' => ['width' => '140'],
-                    'filterType' => GridView::FILTER_SELECT2,
-                    'filter' => ArrayHelper::merge(['' => Yii::t('common', 'Любой')], ServerSkin::getStatusList()),
-                    'format' => 'raw',
-                    'headerOptions' => ['class' => $headerCellClass],
-                    'contentOptions' => ['class' => $bodyCellClass],
-                    'value' => function (ServerSkin $model) {
-                        $status = ArrayHelper::getValue(ServerSkin::getStatusList(), $model->status, '');
-                        $badgeClass = $model->status == ServerSkin::STATUS_ACTIVE ? 'ds-badge--success' : ($model->status == ServerSkin::STATUS_WAIT ? 'ds-badge--warning' : 'ds-badge--danger');
-                        return Html::tag('span', Html::encode($status), ['class' => 'ds-badge ' . $badgeClass]);
-                    },
-                ],
-                [
-                    'attribute' => 'created_at',
-                    'label' => Yii::t('common', 'Дата создания'),
-                    'options' => ['width' => '160'],
-                    'headerOptions' => ['class' => $headerCellClass],
-                    'contentOptions' => ['class' => $bodyCellClass],
-                    'format' => ['date', 'php:Y-m-d H:i'],
-                ],
-                [
-                    'class' => ActionColumn::class,
-                    'template' => '{view} {update} {delete}',
-                    'options' => ['width' => '120'],
-                    'headerOptions' => ['class' => $headerCellClass],
-                    'contentOptions' => ['class' => $bodyCellClass],
-                    'urlCreator' => function ($action, $model, $key, $index, $column) {
-                        return Url::toRoute([$action, 'id' => $model->id]);
-                    },
-                ],
-            ],
-        ]); ?>
-    </div>
+<div class="server-skin-index-page">
+    <?= \frontend\widgets\Alert::widget() ?>
+
+    <?= ListView::widget([
+        'dataProvider' => $dataProvider,
+        'itemView' => '_card',
+        'layout' => "{items}\n<div class=\"server-skin-index-pager\">{pager}</div>",
+        'itemOptions' => ['class' => 'server-skin-index-card-wrap', 'tag' => 'div'],
+        'options' => ['class' => 'server-skin-index-cards', 'tag' => 'div'],
+        'emptyText' => '<div class="server-skin-index-empty">' . Yii::t('common', 'Скинов не найдено') . '</div>',
+        'emptyTextOptions' => ['class' => 'server-skin-index-empty-wrap'],
+    ]) ?>
 </div>
+
+<style>
+.server-skin-index-page {
+    padding: 16px 24px;
+    background: hsl(0 0% 10% / 1);
+    min-height: 100%;
+}
+.server-skin-index-cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+.server-skin-index-card-wrap {
+    margin: 0;
+}
+.server-skin-index-card {
+    display: flex;
+    flex-direction: column;
+    background: hsl(0 0% 15% / 1);
+    border: 1px solid hsl(0 0% 20% / 1);
+    border-radius: 10px;
+    overflow: hidden;
+    min-height: 0;
+}
+.server-skin-index-card__preview {
+    position: relative;
+    width: 100%;
+    padding-bottom: 75%;
+    background: hsl(0 0% 18% / 1);
+    overflow: hidden;
+}
+.server-skin-index-card__preview-link {
+    position: absolute;
+    inset: 0;
+    display: block;
+}
+.server-skin-index-card__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.server-skin-index-card__no-photo {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(0 0% 50%);
+    font-size: 14px;
+}
+.server-skin-index-card__body {
+    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-top: 1px solid hsl(0 0% 20% / 1);
+}
+.server-skin-index-card__name {
+    font-weight: 600;
+    font-size: 15px;
+    color: #fff;
+    margin-bottom: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.server-skin-index-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: hsl(0 0% 65%);
+    margin-bottom: 6px;
+}
+.server-skin-index-card__user {
+    color: hsl(210 100% 60%);
+    text-decoration: none;
+}
+.server-skin-index-card__user:hover {
+    text-decoration: underline;
+}
+.server-skin-index-card__skin-id {
+    font-size: 12px;
+    color: hsl(0 0% 55%);
+    margin-bottom: 6px;
+}
+.server-skin-index-card__date {
+    font-size: 12px;
+    color: hsl(0 0% 50%);
+    margin-bottom: 12px;
+}
+.server-skin-index-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid hsl(0 0% 20% / 1);
+}
+.server-skin-index-card__actions .ds-btn {
+    flex-shrink: 0;
+}
+.server-skin-index-empty-wrap {
+    grid-column: 1 / -1;
+}
+.server-skin-index-empty {
+    text-align: center;
+    color: hsl(0 0% 55%);
+    padding: 32px 16px;
+}
+.server-skin-index-pager {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.server-skin-index-pager .pagination {
+    margin: 0;
+}
+.server-skin-index-pager .page-link {
+    min-width: 40px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: hsl(0 0% 20% / 1);
+    color: #fff;
+    border: 1px solid hsl(0 0% 15% / 1);
+    border-radius: 6px;
+    text-decoration: none;
+}
+.server-skin-index-pager .page-link:hover {
+    background: hsl(0 0% 28% / 1);
+}
+.server-skin-index-pager .page-item.active .page-link {
+    background: hsl(200 70% 50% / 1);
+    border-color: hsl(200 70% 50% / 1);
+}
+</style>

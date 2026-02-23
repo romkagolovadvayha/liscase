@@ -31,59 +31,71 @@ $dropFormat = new JsExpression("
     }
 ");
 
+$fieldTemplate = '<div class="tasks-v2-form__field mb-4">{label}{input}{hint}{error}</div>';
+$labelClass = 'text-xs text-gray-400 mb-1 block';
 ?>
-<div class="tasks-v2-form">
+<div class="tasks-v2-form-wrap">
     <?php $form = ActiveForm::begin([
         'id' => 'tasks-v2-form',
-        'options' => ['enctype' => 'multipart/form-data']
+        'options' => ['enctype' => 'multipart/form-data', 'class' => 'tasks-v2-form'],
+        'fieldConfig' => [
+            'template' => $fieldTemplate,
+            'labelOptions' => ['class' => $labelClass],
+            'inputOptions' => ['class' => 'ds-input w-full'],
+            'options' => ['class' => 'mb-0'],
+        ],
     ]); ?>
 
-    <div class="card">
-        <div class="card-header">
-            <h4><?= Html::encode($this->title) ?></h4>
+    <div class="tasks-v2-form-section">
+        <div class="tasks-v2-form-section__header">
+            <h4 class="tasks-v2-form-section__title"><?= Html::encode($this->title) ?></h4>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-8">
-                    <?= $form->field($model, 'title')->textInput(['maxlength' => true]) ?>
+        <div class="tasks-v2-form-section__body">
+            <div class="tasks-v2-form__grid">
+                <div class="tasks-v2-form__main">
+                    <?= $form->field($model, 'title')->textInput(['maxlength' => true, 'class' => 'ds-input w-full']) ?>
                     
-                    <?= $form->field($model, 'short_description')->textarea(['rows' => 2]) ?>
+                    <?= $form->field($model, 'short_description')->textarea(['rows' => 2, 'class' => 'ds-input w-full']) ?>
                     
-                    <?= $form->field($model, 'full_description')->textarea(['rows' => 6]) ?>
+                    <?= $form->field($model, 'full_description')->textarea(['rows' => 6, 'class' => 'ds-input w-full']) ?>
                     
-                    <div class="row">
-                        <div class="col-md-6">
+                    <div class="tasks-v2-form__row">
+                        <div class="tasks-v2-form__col">
                             <?= $form->field($model, 'type')->dropDownList(TaskV2::getTypeList(), [
                                 'id' => 'task-type',
-                                'prompt' => Yii::t('common', 'Выберите тип...')
+                                'prompt' => Yii::t('common', 'Выберите тип...'),
+                                'class' => 'ds-select w-full',
                             ]) ?>
                         </div>
-                        <div class="col-md-6">
+                        <div class="tasks-v2-form__col">
                             <?= $form->field($model, 'check_type')->dropDownList(TaskV2::getCheckTypeList(), [
                                 'id' => 'task-check-type',
-                                'prompt' => Yii::t('common', 'Выберите тип проверки...')
+                                'prompt' => Yii::t('common', 'Выберите тип проверки...'),
+                                'class' => 'ds-select w-full',
                             ]) ?>
                         </div>
                     </div>
                     
-                    <div id="check-params-container" style="display: none;">
-                        <h5><?= Yii::t('common', 'Параметры проверки') ?></h5>
+                    <div id="check-params-container" class="tasks-v2-form__block" style="display: none;">
+                        <h5 class="tasks-v2-form__subtitle"><?= Yii::t('common', 'Параметры проверки') ?></h5>
                         <div id="check-params-content"></div>
                     </div>
                     
-                    <h5 class="mt-4"><?= Yii::t('common', 'Награда') ?></h5>
-                    <div class="row">
-                        <div class="col-md-6">
+                    <h5 class="tasks-v2-form__subtitle"><?= Yii::t('common', 'Награда') ?></h5>
+                    <div class="tasks-v2-form__row">
+                        <div class="tasks-v2-form__col">
                             <?= $form->field($model, 'reward_type')->dropDownList(TaskV2::getRewardTypeList(), [
                                 'id' => 'task-reward-type',
-                                'prompt' => Yii::t('common', 'Выберите тип награды...')
+                                'prompt' => Yii::t('common', 'Выберите тип награды...'),
+                                'class' => 'ds-select w-full',
                             ]) ?>
                         </div>
-                        <div class="col-md-6" id="reward-item-container" style="display: none;">
+                        <div class="tasks-v2-form__col" id="reward-item-container" style="display: none;">
                             <?= $form->field($model, 'reward_item_id')->widget(Select2::class, [
                                 'data' => Drop::getList(),
                                 'options' => [
                                     'placeholder' => Yii::t('common', 'Выберите товар...'),
+                                    'class' => 'ds-select w-full',
                                 ],
                                 'pluginOptions' => [
                                     'templateResult' => $dropFormat,
@@ -93,63 +105,63 @@ $dropFormat = new JsExpression("
                                 ],
                             ]) ?>
                         </div>
-                        <div class="col-md-6" id="reward-currency-container" style="display: none;">
+                        <div class="tasks-v2-form__col" id="reward-currency-container" style="display: none;">
                             <?= $form->field($model, 'reward_currency')->dropDownList([
                                 'personal' => Yii::t('common', 'Лицевой счет'),
                                 'skins' => Yii::t('common', 'Скины'),
-                            ], ['prompt' => Yii::t('common', 'Выберите тип баланса...')]) ?>
+                            ], ['prompt' => Yii::t('common', 'Выберите тип баланса...'), 'class' => 'ds-select w-full']) ?>
                         </div>
-                        <div class="col-md-6" id="reward-amount-container" style="display: none;">
-                            <?= $form->field($model, 'reward_amount')->textInput(['type' => 'number', 'step' => '0.01']) ?>
+                        <div class="tasks-v2-form__col" id="reward-amount-container" style="display: none;">
+                            <?= $form->field($model, 'reward_amount')->textInput(['type' => 'number', 'step' => '0.01', 'class' => 'ds-input w-full']) ?>
                         </div>
                     </div>
                     
-                    <h5 class="mt-4"><?= Yii::t('common', 'Лимиты') ?></h5>
-                    <div class="row">
-                        <div class="col-md-6" id="per-user-limit-container" style="display: none;">
-                            <?= $form->field($model, 'per_user_limit')->textInput(['type' => 'number'])
+                    <h5 class="tasks-v2-form__subtitle"><?= Yii::t('common', 'Лимиты') ?></h5>
+                    <div class="tasks-v2-form__row">
+                        <div class="tasks-v2-form__col" id="per-user-limit-container" style="display: none;">
+                            <?= $form->field($model, 'per_user_limit')->textInput(['type' => 'number', 'class' => 'ds-input w-full'])
                                 ->hint(Yii::t('common', 'Оставьте пустым для неограниченного количества выполнений на пользователя')) ?>
                         </div>
-                        <div class="col-md-6">
-                            <?= $form->field($model, 'global_limit')->textInput(['type' => 'number'])
+                        <div class="tasks-v2-form__col">
+                            <?= $form->field($model, 'global_limit')->textInput(['type' => 'number', 'class' => 'ds-input w-full'])
                                 ->hint(Yii::t('common', 'Оставьте пустым для неограниченного общего количества выполнений')) ?>
                         </div>
-                        <div class="col-md-6" id="max-progress-container" style="display: none;">
-                            <?= $form->field($model, 'max_progress')->textInput(['type' => 'number', 'min' => 1])
+                        <div class="tasks-v2-form__col" id="max-progress-container" style="display: none;">
+                            <?= $form->field($model, 'max_progress')->textInput(['type' => 'number', 'min' => 1, 'class' => 'ds-input w-full'])
                                 ->hint(Yii::t('common', 'Максимальный прогресс для отображения (для заданий с прогрессом). Оставьте пустым, если прогресс вычисляется автоматически.')) ?>
                         </div>
                     </div>
                 </div>
                 
-                <div class="col-md-4">
-                    <h5><?= Yii::t('common', 'Изображение') ?></h5>
+                <div class="tasks-v2-form__sidebar">
+                    <h5 class="tasks-v2-form__subtitle"><?= Yii::t('common', 'Изображение') ?></h5>
                     <?php if ($model->image_path): ?>
-                        <div class="mb-3">
-                            <img src="/<?= Html::encode(ltrim($model->image_path, '/')) ?>" 
+                        <div class="tasks-v2-form__image-preview mb-4">
+                            <img src="/<?= Html::encode(ltrim($model->image_path, '/')) ?>"
                                  alt="<?= Html::encode($model->title) ?>"
-                                 style="max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 8px;">
+                                 class="tasks-v2-form__image">
                             <br>
                             <?= Html::a(
                                 '<i class="fas fa-trash"></i> ' . Yii::t('common', 'Удалить изображение'),
                                 ['delete-image', 'id' => $model->id],
                                 [
-                                    'class' => 'btn btn-sm btn-danger',
+                                    'class' => 'ds-btn ds-btn--danger ds-btn--sm mt-2',
                                     'data-confirm' => Yii::t('common', 'Вы уверены, что хотите удалить изображение?'),
                                     'data-method' => 'post',
-                                    'style' => 'display: none;', // Пока не реализовано
+                                    'style' => 'display: none;',
                                 ]
                             ) ?>
                         </div>
                     <?php endif; ?>
                     
-                    <?= $form->field($model, 'imageFile')->fileInput(['accept' => 'image/*'])
+                    <?= $form->field($model, 'imageFile')->fileInput(['accept' => 'image/*', 'class' => 'ds-input w-full'])
                         ->hint(Yii::t('common', 'Рекомендуемый размер: 400x300px или 16:9')) ?>
                     
-                    <h5 class="mt-4"><?= Yii::t('common', 'UX-настройки') ?></h5>
-                    <?= $form->field($model, 'button_text')->textInput(['maxlength' => true])
+                    <h5 class="tasks-v2-form__subtitle"><?= Yii::t('common', 'UX-настройки') ?></h5>
+                    <?= $form->field($model, 'button_text')->textInput(['maxlength' => true, 'class' => 'ds-input w-full'])
                         ->hint(Yii::t('common', 'По умолчанию: "Проверить"')) ?>
                     
-                    <h6 class="mt-3"><?= Yii::t('common', 'Дополнительные кнопки-ссылки') ?></h6>
+                    <h6 class="tasks-v2-form__subtitle-sm"><?= Yii::t('common', 'Дополнительные кнопки-ссылки') ?></h6>
                     <div id="extra-buttons-container">
                         <?php
                         $extraButtons = $model->extra_buttons ?? [];
@@ -157,62 +169,70 @@ $dropFormat = new JsExpression("
                             $extraButtons = [['label' => '', 'url' => '']];
                         }
                         foreach ($extraButtons as $index => $button): ?>
-                            <div class="extra-button-row mb-2" data-index="<?= $index ?>">
-                                <div class="input-group">
+                            <div class="extra-button-row tasks-v2-form__extra-row" data-index="<?= $index ?>">
+                                <div class="tasks-v2-form__extra-group">
                                     <?= Html::textInput("extra_buttons[{$index}][label]", $button['label'] ?? '', [
-                                        'class' => 'form-control',
+                                        'class' => 'ds-input flex-1 min-w-0',
                                         'placeholder' => Yii::t('common', 'Название кнопки')
                                     ]) ?>
                                     <?= Html::textInput("extra_buttons[{$index}][url]", $button['url'] ?? '', [
-                                        'class' => 'form-control',
+                                        'class' => 'ds-input flex-1 min-w-0',
                                         'placeholder' => Yii::t('common', 'URL')
                                     ]) ?>
                                     <?php if (count($extraButtons) > 1): ?>
-                                    <button type="button" class="btn btn-outline-danger remove-extra-button">
+                                    <button type="button" class="ds-btn ds-btn--danger ds-btn--icon remove-extra-button">
                                         <i class="fas fa-times"></i>
                                     </button>
                                     <?php else: ?>
-                                    <button type="button" class="btn btn-outline-danger remove-extra-button" style="display: none;">
+                                    <button type="button" class="ds-btn ds-btn--danger ds-btn--icon remove-extra-button" style="display: none;">
                                         <i class="fas fa-times"></i>
                                     </button>
                                     <?php endif; ?>
                                 </div>
                             </div>
                         <?php endforeach; ?>
-                        <button type="button" class="btn btn-sm btn-secondary" id="add-extra-button">
+                        <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm" id="add-extra-button">
                             <i class="fas fa-plus"></i> <?= Yii::t('common', 'Добавить кнопку') ?>
                         </button>
                     </div>
                     
-                    <h5 class="mt-4"><?= Yii::t('common', 'Видимость') ?></h5>
-                    <?= $form->field($model, 'is_visible_for_guests')->checkbox()
-                        ->hint(Yii::t('common', 'Отображать задание для неавторизованных пользователей (не смогут выполнить)')) ?>
+                    <h5 class="tasks-v2-form__subtitle"><?= Yii::t('common', 'Видимость') ?></h5>
+                    <?= $form->field($model, 'is_visible_for_guests')->checkbox([
+                        'template' => '<div class="tasks-v2-form__checkbox-wrap mb-4">{input}{label}</div>{hint}{error}',
+                        'labelOptions' => ['class' => 'tasks-v2-form__checkbox-label'],
+                    ])->hint(Yii::t('common', 'Отображать задание для неавторизованных пользователей (не смогут выполнить)')) ?>
                     
-                    <?= $form->field($model, 'is_vip_only')->checkbox()
-                        ->hint(Yii::t('common', 'Задание доступно только для пользователей со статусом VIP')) ?>
+                    <?= $form->field($model, 'is_vip_only')->checkbox([
+                        'template' => '<div class="tasks-v2-form__checkbox-wrap mb-4">{input}{label}</div>{hint}{error}',
+                        'labelOptions' => ['class' => 'tasks-v2-form__checkbox-label'],
+                    ])->hint(Yii::t('common', 'Задание доступно только для пользователей со статусом VIP')) ?>
                     
                     <?= $form->field($model, 'available_from')->textInput([
                             'type' => 'datetime-local',
-                            'value' => $model->available_from ? date('Y-m-d\TH:i', strtotime($model->available_from)) : ''
+                            'value' => $model->available_from ? date('Y-m-d\TH:i', strtotime($model->available_from)) : '',
+                            'class' => 'ds-input w-full',
                         ])
                         ->hint(Yii::t('common', 'Дата и время, когда задание станет доступно. Оставьте пустым, если задание доступно сразу.')) ?>
                     
-                    <?= $form->field($model, 'is_active')->checkbox() ?>
+                    <?= $form->field($model, 'is_active')->checkbox([
+                        'template' => '<div class="tasks-v2-form__checkbox-wrap mb-4">{input}{label}</div>{hint}{error}',
+                        'labelOptions' => ['class' => 'tasks-v2-form__checkbox-label'],
+                    ]) ?>
                     
-                    <?= $form->field($model, 'sort')->textInput(['type' => 'number'])
+                    <?= $form->field($model, 'sort')->textInput(['type' => 'number', 'class' => 'ds-input w-full'])
                         ->hint(Yii::t('common', 'Меньше значение = выше в списке')) ?>
                 </div>
             </div>
         </div>
-        <div class="card-footer">
+        <div class="tasks-v2-form-section__footer">
             <?= Html::submitButton(
                 Yii::t('common', 'Сохранить'),
-                ['class' => 'btn btn-success']
+                ['class' => 'ds-btn ds-btn--primary']
             ) ?>
             <?= Html::a(
                 Yii::t('common', 'Отмена'),
                 ['index'],
-                ['class' => 'btn btn-secondary']
+                ['class' => 'ds-btn ds-btn--secondary']
             ) ?>
         </div>
     </div>
@@ -332,8 +352,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label class="form-label">${param.label}</label>
                         <input type="${param.type}" 
                                name="check_params[${param.name}]"
-                               class="form-control"
-                               value="${currentParams[param.name] || ''}">
+                               class="ds-input w-full"
+                               value="${(currentParams[param.name] || '').toString().replace(/"/g, '&quot;')}">
                     `;
                 }
                 checkParamsContent.appendChild(field);
@@ -357,11 +377,11 @@ document.addEventListener('DOMContentLoaded', function() {
         container.className = 'daily-rewards-container';
         container.innerHTML = `
             <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> 
+                <i class="fas fa-info-circle"></i>
                 <?= Html::encode(Yii::t('common', 'Настройте список наград для ежедневного задания. Каждый день пользователь будет получать следующую награду из списка. При пропуске дня последовательность сбрасывается на первую награду.')) ?>
             </div>
             <div id="daily-rewards-list"></div>
-            <button type="button" class="btn btn-sm btn-success mt-2" id="add-daily-reward">
+            <button type="button" class="ds-btn ds-btn--primary ds-btn--sm mt-2" id="add-daily-reward">
                 <i class="fas fa-plus"></i> <?= Html::encode(Yii::t('common', 'Добавить награду')) ?>
             </button>
         `;
@@ -381,33 +401,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 rewardRow.innerHTML = `
                     <div class="d-flex justify-content-between align-items-start mb-2">
-                        <strong><?= Html::encode(Yii::t('common', 'День {day}', ['day' => ''])) ?><span class="reward-day-number">${index + 1}</span></strong>
-                        <button type="button" class="btn btn-sm btn-outline-danger remove-daily-reward" ${rewards.length <= 1 ? 'style="display:none;"' : ''}>
+                        <strong class="text-gray-300"><?= Html::encode(Yii::t('common', 'День {day}', ['day' => ''])) ?><span class="reward-day-number">${index + 1}</span></strong>
+                        <button type="button" class="ds-btn ds-btn--danger ds-btn--sm remove-daily-reward" ${rewards.length <= 1 ? 'style="display:none;"' : ''}>
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <label class="form-label"><?= Html::encode(Yii::t('common', 'Тип награды')) ?></label>
-                            <select name="check_params[rewards][${index}][reward_type]" class="form-control reward-type-select" data-index="${index}">
+                            <select name="check_params[rewards][${index}][reward_type]" class="ds-select w-full reward-type-select" data-index="${index}">
                                 <option value="currency" ${isCurrency ? 'selected' : ''}><?= Html::encode(Yii::t('common', 'Валюта (монеты)')) ?></option>
                                 <option value="item" ${!isCurrency ? 'selected' : ''}><?= Html::encode(Yii::t('common', 'Предмет')) ?></option>
                             </select>
                         </div>
                         <div class="col-md-6 reward-amount-container">
                             <label class="form-label"><?= Html::encode(Yii::t('common', 'Количество')) ?></label>
-                            <input type="number" 
-                                   name="check_params[rewards][${index}][amount]" 
-                                   class="form-control" 
-                                   value="${reward.amount || 1}" 
-                                   min="1" 
+                            <input type="number"
+                                   name="check_params[rewards][${index}][amount]"
+                                   class="ds-input w-full"
+                                   value="${reward.amount || 1}"
+                                   min="1"
                                    step="1"
                                    required>
                         </div>
                         <div class="col-md-12 reward-item-container" style="display: ${!isCurrency ? 'block' : 'none'};">
                             <label class="form-label"><?= Html::encode(Yii::t('common', 'Предмет')) ?></label>
-                            <select name="check_params[rewards][${index}][drop_id]" 
-                                    class="form-control reward-item-select" 
+                            <select name="check_params[rewards][${index}][drop_id]"
+                                    class="ds-select w-full reward-item-select"
                                     data-index="${index}"
                                     ${isCurrency ? 'style="display:none;"' : ''}>
                                 <option value=""><?= Html::encode(Yii::t('common', 'Выберите предмет...')) ?></option>
@@ -566,14 +586,14 @@ document.addEventListener('DOMContentLoaded', function() {
         row.className = 'extra-button-row mb-2';
         row.dataset.index = extraButtonIndex;
         row.innerHTML = `
-            <div class="input-group">
-                <input type="text" name="extra_buttons[${extraButtonIndex}][label]" 
-                       class="form-control" 
+            <div class="tasks-v2-form__extra-group">
+                <input type="text" name="extra_buttons[${extraButtonIndex}][label]"
+                       class="ds-input flex-1 min-w-0"
                        placeholder="<?= Yii::t('common', 'Название кнопки') ?>">
-                <input type="text" name="extra_buttons[${extraButtonIndex}][url]" 
-                       class="form-control" 
+                <input type="text" name="extra_buttons[${extraButtonIndex}][url]"
+                       class="ds-input flex-1 min-w-0"
                        placeholder="<?= Yii::t('common', 'URL') ?>">
-                <button type="button" class="btn btn-outline-danger remove-extra-button">
+                <button type="button" class="ds-btn ds-btn--danger ds-btn--icon remove-extra-button">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -608,20 +628,96 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+.tasks-v2-form-wrap { padding: 0 1rem 1rem; }
+.tasks-v2-form-section {
+    background: hsl(0 0% 20.4% / 1);
+    border: 1px solid hsl(0 0% 15.3% / 1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.tasks-v2-form-section__header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid hsl(0 0% 15.3% / 1);
+}
+.tasks-v2-form-section__title { margin: 0; font-size: 1.125rem; font-weight: 600; color: #fff; }
+.tasks-v2-form-section__body { padding: 1.25rem; }
+.tasks-v2-form-section__footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid hsl(0 0% 15.3% / 1);
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.tasks-v2-form__grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2rem;
+}
+@media (max-width: 991px) {
+    .tasks-v2-form__grid { grid-template-columns: 1fr; }
+}
+.tasks-v2-form__main { min-width: 0; }
+.tasks-v2-form__sidebar { min-width: 0; }
+.tasks-v2-form__row { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem; }
+.tasks-v2-form__col { flex: 1 1 200px; min-width: 0; }
+.tasks-v2-form__block { margin-bottom: 1rem; }
+.tasks-v2-form__subtitle { margin: 1.25rem 0 0.75rem; font-size: 0.9375rem; font-weight: 600; color: hsl(0 0% 85%); }
+.tasks-v2-form__subtitle:first-child { margin-top: 0; }
+.tasks-v2-form__subtitle-sm { margin: 0.75rem 0 0.5rem; font-size: 0.875rem; font-weight: 500; color: hsl(0 0% 75%); }
+.tasks-v2-form__image { max-width: 100%; height: auto; border-radius: 8px; display: block; }
+.tasks-v2-form__extra-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.tasks-v2-form__extra-group .ds-input { min-width: 120px; }
+.tasks-v2-form__checkbox-wrap { display: flex; align-items: flex-start; gap: 0.5rem; }
+.tasks-v2-form__checkbox-wrap input[type="checkbox"] { margin-top: 0.2rem; }
+.tasks-v2-form__checkbox-label { font-size: 0.875rem; color: hsl(0 0% 80%); cursor: pointer; }
+.tasks-v2-form .help-block { font-size: 0.75rem; color: hsl(0 0% 60%); margin-top: 0.25rem; }
+.tasks-v2-form .has-error .help-block { color: #f87171; }
+
+/* check-params (динамические поля) */
+#check-params-content .mb-3 { margin-bottom: 1rem; }
+#check-params-content .form-label,
+.tasks-v2-form .daily-rewards-container .form-label { font-size: 0.75rem; color: hsl(0 0% 65%); margin-bottom: 0.25rem; display: block; }
+#check-params-content .form-control,
+.tasks-v2-form .daily-reward-row .form-control { background: hsl(0 0% 14% / 1); border-color: hsl(0 0% 22% / 1); color: #fff; padding: 0.5rem 0.75rem; border-radius: 6px; width: 100%; }
+#check-params-content .form-check { display: flex; align-items: center; gap: 0.5rem; }
+#check-params-content .form-check-input { margin: 0; }
+#check-params-content .form-check-label { font-size: 0.875rem; color: hsl(0 0% 80%); }
+.tasks-v2-form .daily-rewards-container .alert-info {
+    background: hsl(220 30% 18% / 1);
+    border: 1px solid hsl(220 25% 28% / 1);
+    color: hsl(0 0% 85%);
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+}
+.tasks-v2-form .daily-reward-row {
+    background: hsl(0 0% 16% / 1);
+    border: 1px solid hsl(0 0% 22% / 1);
+    border-radius: 6px;
+    padding: 1rem;
+}
+.tasks-v2-form .daily-reward-row .reward-type-select,
+.tasks-v2-form .daily-reward-row select.reward-item-select { background: hsl(0 0% 14% / 1); border-color: hsl(0 0% 22% / 1); color: #fff; padding: 0.5rem 0.75rem; border-radius: 6px; }
+.tasks-v2-form .daily-reward-row .btn { padding: 0.35rem 0.65rem; font-size: 0.8125rem; border-radius: 6px; }
+.tasks-v2-form .daily-reward-row .btn-outline-danger { color: #f87171; border-color: #f87171; }
+.tasks-v2-form .daily-reward-row .btn-success { background: hsl(142 70% 35%); color: #fff; border: none; }
+
 .drop-select-item {
     padding: 5px;
-    background: #f1f1f1;
+    background: hsl(0 0% 18% / 1);
     border-radius: 5px;
     text-align: center;
     display: flex;
     align-items: center;
     gap: 5px;
-    color: #000;
+    color: #e5e5e5;
     justify-content: flex-start;
 }
-.drop-select-item img {
-    display: block;
-    width: 24px;
-}
+.drop-select-item img { display: block; width: 24px; }
 </style>
 

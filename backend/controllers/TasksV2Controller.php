@@ -45,7 +45,7 @@ class TasksV2Controller extends BackendController
      */
     public function actionIndex()
     {
-        $query = TaskV2::find();
+        $query = TaskV2::find()->with(['rewardItem', 'rewardItem.imageOrig']);
         
         // Фильтры
         $isActive = Yii::$app->request->get('is_active');
@@ -71,6 +71,14 @@ class TasksV2Controller extends BackendController
                 'pageSize' => 20,
             ],
         ]);
+
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fas fa-plus"></i> ' . Yii::t('common', 'Создать задание'),
+                'url' => ['create'],
+                'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+        ];
 
         return $this->render('index', [
             'dataProvider' => $dataProvider,

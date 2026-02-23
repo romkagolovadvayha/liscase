@@ -807,10 +807,18 @@ $color_text: $ds-text-primary;
   outline: none;
 }
 
-.field-telegramconstructormessageform-message .tox-tinymce {
-  border: none;
+// Стили TinyMCE в форме сообщений рассылки: в админке показываем рамку и тёмный контент (content_style в виджете)
+.tcm-form-wrap .blog-form-tinymce-wrap .tox-tinymce,
+.tcm-form-wrap .tcm-tinymce-wrap .tox-tinymce {
+  border: 1px solid hsl(0, 0%, 15.3%);
+  border-radius: 6px;
   box-shadow: none;
-  background: none;
+  background: hsl(0, 0%, 20.4%);
+}
+.tcm-form-wrap .tabs_tg_message.active a {
+  background: hsl(0, 0%, 22%);
+  border-color: hsl(0, 0%, 28%);
+  color: #fff;
 }
 
 .tg-preview_wrap {

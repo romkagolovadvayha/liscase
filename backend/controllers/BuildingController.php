@@ -37,6 +37,8 @@ class BuildingController extends BackendController
                     'class' => VerbFilter::className(),
                     'actions' => [
                         'delete' => ['POST'],
+                        'success' => ['POST'],
+                        'reject' => ['POST'],
                     ],
                 ],
             ]

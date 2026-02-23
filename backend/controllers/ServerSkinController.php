@@ -39,6 +39,8 @@ class ServerSkinController extends Controller
                     'class' => VerbFilter::className(),
                     'actions' => [
                         'delete' => ['POST'],
+                        'success' => ['POST'],
+                        'reject' => ['POST'],
                     ],
                 ],
             ]

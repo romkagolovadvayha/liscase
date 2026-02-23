@@ -1,181 +1,232 @@
 <?php
 
 use common\models\tasks_v2\TaskV2;
-use kartik\grid\GridView;
-use yii\bootstrap5\Html;
-use yii\helpers\Url;
+use yii\helpers\Html;
+use yii\widgets\ListView;
 
 /** @var yii\web\View $this */
 /** @var \yii\data\ActiveDataProvider $dataProvider */
 
 $this->title = Yii::t('common', 'Задания v2');
+$this->params['contentClass'] = 'content-no-padding';
 $this->params['breadcrumbs'][] = $this->title;
 
+$type = Yii::$app->request->get('type');
+$isActive = Yii::$app->request->get('is_active');
+$search = Yii::$app->request->get('search');
 ?>
 <div class="tasks-v2-index-page">
-    <div class="content-header">
-        <div class="ds-flex ds-flex--between">
-            <h1><?= Html::encode($this->title) ?></h1>
-            <?= Html::a(
-                '<i class="fas fa-plus"></i> ' . Yii::t('common', 'Создать задание'),
-                ['create'],
-                ['class' => 'ds-btn ds-btn--success']
-            ) ?>
-        </div>
-    </div>
+    <?= \frontend\widgets\Alert::widget() ?>
 
-    <div class="content">
-        <?= \frontend\widgets\Alert::widget() ?>
-
-        <div class="ds-card">
-            <div class="mb-3">
-                <?= Html::beginForm(['tasks-v2/index'], 'get', ['class' => 'form-inline']) ?>
-                
-                <div class="form-group me-2">
-                    <?= Html::label(Yii::t('common', 'Тип'), 'type') ?>
-                    <?= Html::dropDownList(
-                        'type',
-                        Yii::$app->request->get('type'),
-                        ['' => Yii::t('common', 'Все')] + TaskV2::getTypeList(),
-                        ['class' => 'form-control', 'id' => 'type']
-                    ) ?>
+    <div class="tasks-v2-index-section">
+        <div class="tasks-v2-index-filters">
+            <?= Html::beginForm(['tasks-v2/index'], 'get', ['class' => 'tasks-v2-index-form']) ?>
+            <div class="tasks-v2-index-filters__row">
+                <div class="tasks-v2-index-filters__field">
+                    <label class="tasks-v2-index-label" for="type"><?= Yii::t('common', 'Тип') ?></label>
+                    <?= Html::dropDownList('type', $type, ['' => Yii::t('common', 'Все')] + TaskV2::getTypeList(), ['class' => 'ds-select', 'id' => 'type']) ?>
                 </div>
-                
-                <div class="form-group me-2">
-                    <?= Html::label(Yii::t('common', 'Статус'), 'is_active') ?>
-                    <?= Html::dropDownList(
-                        'is_active',
-                        Yii::$app->request->get('is_active'),
-                        ['' => Yii::t('common', 'Все'), '1' => Yii::t('common', 'Активные'), '0' => Yii::t('common', 'Неактивные')],
-                        ['class' => 'form-control', 'id' => 'is_active']
-                    ) ?>
+                <div class="tasks-v2-index-filters__field">
+                    <label class="tasks-v2-index-label" for="is_active"><?= Yii::t('common', 'Статус') ?></label>
+                    <?= Html::dropDownList('is_active', $isActive, ['' => Yii::t('common', 'Все'), '1' => Yii::t('common', 'Активные'), '0' => Yii::t('common', 'Неактивные')], ['class' => 'ds-select', 'id' => 'is_active']) ?>
                 </div>
-                
-                <div class="form-group me-2">
-                    <?= Html::label(Yii::t('common', 'Поиск'), 'search') ?>
-                    <?= Html::textInput(
-                        'search',
-                        Yii::$app->request->get('search'),
-                        ['class' => 'form-control', 'id' => 'search', 'placeholder' => Yii::t('common', 'Название...')]
-                    ) ?>
+                <div class="tasks-v2-index-filters__field">
+                    <label class="tasks-v2-index-label" for="search"><?= Yii::t('common', 'Поиск') ?></label>
+                    <?= Html::textInput('search', $search, ['class' => 'ds-input', 'id' => 'search', 'placeholder' => Yii::t('common', 'Название...')]) ?>
                 </div>
-                
-                <?= Html::submitButton(Yii::t('common', 'Применить'), ['class' => 'btn btn-primary me-2']) ?>
-                <?= Html::a(Yii::t('common', 'Сбросить'), ['tasks-v2/index'], ['class' => 'btn btn-secondary']) ?>
-                
-                <?= Html::endForm() ?>
+                <div class="tasks-v2-index-filters__actions">
+                    <?= Html::submitButton('<i class="fas fa-filter"></i> ' . Yii::t('common', 'Применить'), ['class' => 'ds-btn ds-btn--primary']) ?>
+                    <?= Html::a('<i class="fas fa-redo"></i> ' . Yii::t('common', 'Сбросить'), ['tasks-v2/index'], ['class' => 'ds-btn ds-btn--secondary']) ?>
+                </div>
             </div>
+            <?= Html::endForm() ?>
+        </div>
 
-            <?= GridView::widget([
+        <div class="tasks-v2-index-cards-wrap">
+            <?= ListView::widget([
                 'dataProvider' => $dataProvider,
-                'columns' => [
-                    ['class' => 'kartik\grid\SerialColumn'],
-                    
-                    [
-                        'attribute' => 'id',
-                        'label' => 'ID',
-                        'width' => '60px',
-                    ],
-                    
-                    [
-                        'attribute' => 'title',
-                        'label' => Yii::t('common', 'Название'),
-                        'format' => 'raw',
-                        'value' => function ($model) {
-                            $image = $model->image_path 
-                                ? Html::img('/' . ltrim($model->image_path, '/'), ['style' => 'width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-right: 8px;'])
-                                : '';
-                            return $image . Html::encode($model->title);
-                        },
-                    ],
-                    
-                    [
-                        'attribute' => 'type',
-                        'label' => Yii::t('common', 'Тип'),
-                        'value' => function ($model) {
-                            return TaskV2::getTypeList()[$model->type] ?? $model->type;
-                        },
-                    ],
-                    
-                    [
-                        'attribute' => 'check_type',
-                        'label' => Yii::t('common', 'Тип проверки'),
-                        'value' => function ($model) {
-                            return TaskV2::getCheckTypeList()[$model->check_type] ?? $model->check_type;
-                        },
-                    ],
-                    
-                    [
-                        'attribute' => 'reward_type',
-                        'label' => Yii::t('common', 'Награда'),
-                        'format' => 'raw',
-                        'value' => function ($model) {
-                            if ($model->reward_type === TaskV2::REWARD_TYPE_CURRENCY) {
-                                return '<i class="fas fa-coins"></i> ' . number_format($model->reward_amount, 0, '.', ' ') . ' ' . ($model->reward_currency ?? 'RUB');
-                            } elseif ($model->reward_type === TaskV2::REWARD_TYPE_ITEM && $model->rewardItem) {
-                                return '<img src="' . $model->rewardItem->imageOrig->getImagePubUrl() . '" style="width: 24px; height: 24px; object-fit: cover; border-radius: 4px; margin-right: 4px;"> ' . Yii::t('database', $model->rewardItem->name);
-                            }
-                            return '-';
-                        },
-                    ],
-                    
-                    [
-                        'attribute' => 'global_completed',
-                        'label' => Yii::t('common', 'Выполнено'),
-                        'width' => '100px',
-                    ],
-                    
-                    [
-                        'attribute' => 'is_active',
-                        'label' => Yii::t('common', 'Активно'),
-                        'format' => 'raw',
-                        'value' => function ($model) {
-                            return $model->is_active
-                                ? '<span class="badge bg-success">' . Yii::t('common', 'Да') . '</span>'
-                                : '<span class="badge bg-secondary">' . Yii::t('common', 'Нет') . '</span>';
-                        },
-                        'width' => '100px',
-                    ],
-                    
-                    [
-                        'attribute' => 'sort',
-                        'label' => Yii::t('common', 'Сортировка'),
-                        'width' => '80px',
-                    ],
-                    
-                    [
-                        'class' => 'kartik\grid\ActionColumn',
-                        'header' => Yii::t('common', 'Действия'),
-                        'template' => '{update} {toggle-active} {delete}',
-                        'buttons' => [
-                            'toggle-active' => function ($url, $model) {
-                                return Html::a(
-                                    '<i class="fas fa-toggle-' . ($model->is_active ? 'on' : 'off') . '"></i>',
-                                    $url,
-                                    [
-                                        'title' => Yii::t('common', $model->is_active ? 'Деактивировать' : 'Активировать'),
-                                        'class' => 'btn btn-sm btn-outline-secondary',
-                                    ]
-                                );
-                            },
-                        ],
-                        'urlCreator' => function ($action, $model) {
-                            if ($action === 'toggle-active') {
-                                return Url::to(['tasks-v2/toggle-active', 'id' => $model->id]);
-                            }
-                            return Url::to(['tasks-v2/' . $action, 'id' => $model->id]);
-                        },
-                    ],
-                ],
-                'responsive' => true,
-                'hover' => true,
-                'export' => false,
-                'panel' => [
-                    'type' => GridView::TYPE_PRIMARY,
-                    'heading' => '<i class="fas fa-tasks"></i> ' . Yii::t('common', 'Задания v2'),
-                ],
+                'itemView' => '_card',
+                'layout' => "{items}\n<div class=\"tasks-v2-index-pager\">{pager}</div>",
+                'itemOptions' => ['class' => 'tasks-v2-index-card-wrap', 'tag' => 'div'],
+                'options' => ['class' => 'tasks-v2-index-cards', 'tag' => 'div'],
+                'emptyText' => '<div class="tasks-v2-index-empty">' . Yii::t('common', 'Заданий не найдено') . '</div>',
+                'emptyTextOptions' => ['class' => 'tasks-v2-index-empty-wrap'],
             ]) ?>
         </div>
     </div>
 </div>
 
+<style>
+.tasks-v2-index-page {
+    padding: 16px 24px;
+    background: hsl(0 0% 10% / 1);
+    min-height: 100%;
+}
+.tasks-v2-index-section {
+    background: hsl(0 0% 11.8% / 1);
+    border: 1px solid hsl(0 0% 15.3% / 1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+.tasks-v2-index-filters {
+    padding: 16px 20px;
+    border-bottom: 1px solid hsl(0 0% 15.3% / 1);
+}
+.tasks-v2-index-filters__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 20px;
+}
+.tasks-v2-index-filters__field {
+    display: flex;
+    flex-direction: column;
+    min-width: 140px;
+}
+.tasks-v2-index-label {
+    font-size: 12px;
+    color: hsl(0 0% 55%);
+    margin-bottom: 4px;
+}
+.tasks-v2-index-filters__field .ds-input,
+.tasks-v2-index-filters__field .ds-select {
+    min-width: 160px;
+}
+.tasks-v2-index-filters__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.tasks-v2-index-cards-wrap {
+    padding: 16px 20px;
+}
+.tasks-v2-index-cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+.tasks-v2-index-card-wrap { margin: 0; }
+.tasks-v2-index-card {
+    display: flex;
+    flex-direction: column;
+    background: hsl(0 0% 15% / 1);
+    border: 1px solid hsl(0 0% 20% / 1);
+    border-radius: 10px;
+    overflow: hidden;
+    min-height: 0;
+}
+.tasks-v2-index-card__preview {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%;
+    background: hsl(0 0% 18% / 1);
+    overflow: hidden;
+}
+.tasks-v2-index-card__preview-link {
+    position: absolute;
+    inset: 0;
+    display: block;
+}
+.tasks-v2-index-card__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.tasks-v2-index-card__no-photo {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: hsl(0 0% 50%);
+    font-size: 14px;
+}
+.tasks-v2-index-card__id {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+.tasks-v2-index-card__body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+.tasks-v2-index-card__title {
+    font-weight: 600;
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.tasks-v2-index-card__meta {
+    font-size: 12px;
+    color: hsl(0 0% 65%);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+}
+.tasks-v2-index-card__reward {
+    font-size: 12px;
+    color: hsl(0 0% 75%);
+}
+.tasks-v2-index-card__reward img { vertical-align: middle; margin-right: 4px; }
+.tasks-v2-index-card__stats {
+    font-size: 11px;
+    color: hsl(0 0% 55%);
+    display: flex;
+    gap: 12px;
+}
+.tasks-v2-index-card__badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.tasks-v2-index-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+}
+.tasks-v2-index-card__actions .ds-btn { flex-shrink: 0; }
+.tasks-v2-index-empty-wrap {
+    padding: 24px;
+    text-align: center;
+    color: hsl(0 0% 55%);
+}
+.tasks-v2-index-pager {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid hsl(0 0% 15.3% / 1);
+    display: flex;
+    justify-content: center;
+}
+.tasks-v2-index-pager .pagination {
+    margin: 0;
+    background: transparent;
+}
+.tasks-v2-index-pager .page-link {
+    background: hsl(0 0% 20% / 1) !important;
+    color: #fff !important;
+    border-color: hsl(0 0% 15.3% / 1) !important;
+}
+.tasks-v2-index-pager .page-item.active .page-link {
+    background: hsl(200 70% 50% / 1) !important;
+    border-color: hsl(200 70% 50% / 1) !important;
+}
+</style>

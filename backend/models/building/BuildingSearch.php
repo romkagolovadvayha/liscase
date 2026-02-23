@@ -40,9 +40,7 @@ class BuildingSearch extends Building
      */
     public function search($params)
     {
-        $query = Building::find()->with(['user', 'buildingImage' => function ($q) {
-            $q->limit(1);
-        }]);
+        $query = Building::find()->with(['user', 'buildingImage']);
 
         // add conditions that should always apply here
 
