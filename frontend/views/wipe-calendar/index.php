@@ -36,8 +36,12 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
             <?php if (!empty($nearestWipe)): ?>
                 <h2 class="nearest-wipe__title"><?= Yii::t('common', 'Ближайший вайп') ?></h2>
                 <p class="nearest-wipe__info">
-                    <span class="nearest-wipe__date"><?= htmlspecialchars($nearestWipe['date'], ENT_QUOTES, 'UTF-8') ?></span>
-                    <span class="nearest-wipe__time"><?= htmlspecialchars($nearestWipe['time'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php if (!empty($nearestWipe['is_today'])): ?>
+                        <span class="nearest-wipe__date"><?= Yii::t('common', 'Сегодня в {time} МСК', ['time' => $nearestWipe['time']]) ?></span>
+                    <?php else: ?>
+                        <span class="nearest-wipe__date"><?= htmlspecialchars($nearestWipe['date'], ENT_QUOTES, 'UTF-8') ?></span>
+                        <span class="nearest-wipe__time"><?= htmlspecialchars($nearestWipe['time'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php endif; ?>
                     <?php if (!empty($nearestWipe['link'])): ?>
                         <a href="<?= htmlspecialchars($nearestWipe['link'], ENT_QUOTES, 'UTF-8') ?>" class="nearest-wipe__link" target="_blank" rel="noopener"><?= htmlspecialchars($nearestWipe['name'], ENT_QUOTES, 'UTF-8') ?></a>
                     <?php else: ?>
@@ -62,8 +66,12 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
             <?php if (!empty($recentWipe)): ?>
                 <h3 class="nearest-wipe__subtitle"><?= Yii::t('common', 'Недавний вайп') ?></h3>
                 <p class="nearest-wipe__info">
-                    <span class="nearest-wipe__date"><?= htmlspecialchars($recentWipe['date'], ENT_QUOTES, 'UTF-8') ?></span>
-                    <span class="nearest-wipe__time"><?= htmlspecialchars($recentWipe['time'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php if (!empty($recentWipe['is_today'])): ?>
+                        <span class="nearest-wipe__date"><?= Yii::t('common', 'Сегодня в {time} МСК', ['time' => $recentWipe['time']]) ?></span>
+                    <?php else: ?>
+                        <span class="nearest-wipe__date"><?= htmlspecialchars($recentWipe['date'], ENT_QUOTES, 'UTF-8') ?></span>
+                        <span class="nearest-wipe__time"><?= htmlspecialchars($recentWipe['time'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php endif; ?>
                     <?php if (!empty($recentWipe['link'])): ?>
                         <a href="<?= htmlspecialchars($recentWipe['link'], ENT_QUOTES, 'UTF-8') ?>" class="nearest-wipe__link" target="_blank" rel="noopener"><?= htmlspecialchars($recentWipe['name'], ENT_QUOTES, 'UTF-8') ?></a>
                     <?php else: ?>

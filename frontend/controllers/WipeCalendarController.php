@@ -314,6 +314,7 @@ class WipeCalendarController extends Controller
             $nearestWipe = $formatWipeRow($dt, $bucket);
             if ($nearestWipe !== null) {
                 $nearestWipe['link'] = '/servers';
+                $nearestWipe['is_today'] = ($dt->format('Y-m-d') === $now->format('Y-m-d'));
                 break;
             }
         }
@@ -328,6 +329,7 @@ class WipeCalendarController extends Controller
             }
             $recentWipe = $formatWipeRow($dt, $bucket);
             if ($recentWipe !== null) {
+                $recentWipe['is_today'] = ($dt->format('Y-m-d') === $now->format('Y-m-d'));
                 break;
             }
         }
