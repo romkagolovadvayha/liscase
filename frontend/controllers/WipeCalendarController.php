@@ -62,6 +62,14 @@ class WipeCalendarController extends Controller
         }));
         $countNon30 = count($non30Active);
 
+        // Серверы с вайпом по понедельникам (tag = monday) — показываем в календаре даже при выключенном статусе
+        /** @var Servers[] $mondayServers */
+        $mondayServers = Servers::find()
+            ->select(['id', 'name', 'monitoring_name', 'tag', 'wipe_type', 'status', 'sort'])
+            ->andWhere(['tag' => 'monday'])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
         // === 1) Глобальные (первый четверг каждого месяца) + блок-недели ===
         $globalByDateTime = []; // 'Y-m-d H:i:s' => true
         $blockedIsoWeeks  = []; // 'YYYY-WW' => true
@@ -119,13 +127,11 @@ class WipeCalendarController extends Controller
             }
         }
 
-        // === 4.5) Недельные по понедельникам (серверы с tag = monday) ===
-        foreach ($non30Active as $s) {
-            if (isset($s->tag) && strtolower((string)$s->tag) === 'monday') {
-                $this->addMondaysWeeklyBlockedByGlobal(
-                    $byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $mapTime, $s, $tz
-                );
-            }
+        // === 4.5) Недельные по понедельникам (серверы с tag = monday, любой статус) ===
+        foreach ($mondayServers as $s) {
+            $this->addMondaysWeeklyBlockedByGlobal(
+                $byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $mapTime, $s, $tz
+            );
         }
 
         // === 5) Агрегация ===
