@@ -37,7 +37,7 @@ class WipeCalendarController extends Controller
         $this->view->registerMetaTag(['name' => 'twitter:card', 'content' => 'summary']);
 
         // Время событий
-        $globalTime = '21:00:00'; // глобал (четверг)
+        $globalTime = '22:00:00'; // глобал (четверг)
         $mapTime    = '16:00:00'; // карта (пятница)
 
         // Диапазон месяцев
@@ -97,9 +97,9 @@ class WipeCalendarController extends Controller
             ];
         }
 
-        // === 3) 7-дневные: каждая пятница, КРОМЕ недели глобала ===
+        // === 3) 7-дневные: каждая пятница, КРОМЕ недели глобала (пропускаем серверы с вайпом по понедельникам) ===
         foreach ($non30Active as $s) {
-            if ((int)$s->wipe_type === 7) {
+            if ((int)$s->wipe_type === 7 && (!isset($s->tag) || strtolower((string)$s->tag) !== 'monday')) {
                 $this->addFridaysWeeklyBlockedByGlobal(
                     $byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $mapTime, $s, $tz
                 );
@@ -112,9 +112,18 @@ class WipeCalendarController extends Controller
         // === 4) 14-дневные: по пятницам, начиная с пятницы после глобала,
         // но неделя глобала заблокирована → первый слот = через неделю после глобала, далее +14 ===
         foreach ($non30Active as $s) {
-            if ((int)$s->wipe_type === 14) {
+            if ((int)$s->wipe_type === 14 && (!isset($s->tag) || strtolower((string)$s->tag) !== 'monday')) {
                 $this->addFridaysBiWeeklyAfterGlobalBlocked(
                     $byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $globalTime, $mapTime, $s, $tz
+                );
+            }
+        }
+
+        // === 4.5) Недельные по понедельникам (серверы с tag = monday) ===
+        foreach ($non30Active as $s) {
+            if (isset($s->tag) && strtolower((string)$s->tag) === 'monday') {
+                $this->addMondaysWeeklyBlockedByGlobal(
+                    $byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $mapTime, $s, $tz
                 );
             }
         }
@@ -213,8 +222,10 @@ class WipeCalendarController extends Controller
             // По серверам отдельно
             if (!empty($bucket['servers'])) {
                 foreach ($bucket['servers'] as $srv) {
+                    $wt = isset($srv['wt']) ? (int)$srv['wt'] : 7;
+                    $badgeClass = ($wt === 71 ? 'badge-weekly-monday' : ($wt === 14 ? 'badge-biweekly14' : 'badge-weekly7'));
                     $badges = [
-                        ['class' => ($srv['wt'] === 7 ? 'badge-weekly7' : 'badge-biweekly14'),
+                        ['class' => $badgeClass,
                          'text'  => $srv['monitoring_name'] ?: $srv['name']],
                     ];
                     $events[$dayKey][] = [
@@ -337,6 +348,46 @@ class WipeCalendarController extends Controller
                     $byDateTime[$key]['names14'][] = $s->monitoring_name ?: $s->name;
                 }
                 $dt = $dt->modify('+14 days');
+            }
+        }
+    }
+
+    /**
+     * Недельные по понедельникам: каждый понедельник, кроме ISO-недели глобала.
+     * Используется для серверов с tag = monday.
+     */
+    private function addMondaysWeeklyBlockedByGlobal(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, array $blockedIsoWeeks, $mapTime, Servers $s, DateTimeZone $tz)
+    {
+        foreach ($monthStarts as $mStart) {
+            $firstMon = $this->firstWeekdayOfMonth($mStart, 1); // Пн
+            $dt = new DateTimeImmutable($firstMon->format('Y-m-d') . ' ' . $mapTime, $tz);
+
+            while ($dt < $afterLastMonth) {
+                $iso = $dt->format('o-\WW');
+                if (!isset($blockedIsoWeeks[$iso])) {
+                    $key = $dt->format('Y-m-d H:i:s');
+                    if (!isset($byDateTime[$key])) {
+                        $byDateTime[$key] = [
+                            'global'           => false,
+                            'servers'          => [],
+                            'weekly7_count'    => 0,
+                            'biweekly14_count' => 0,
+                            'names7'           => [],
+                            'names14'          => [],
+                            'title'            => null,
+                            'link'             => null,
+                            'names'            => [],
+                        ];
+                    }
+                    $byDateTime[$key]['servers'][$s->id] = [
+                        'id'              => (int)$s->id,
+                        'name'            => $s->name,
+                        'monitoring_name' => $s->monitoring_name,
+                        'link'            => $s->getLink('stats'),
+                        'wt'              => 71, // weekly Monday
+                    ];
+                }
+                $dt = $dt->modify('+7 days');
             }
         }
     }
