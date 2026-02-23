@@ -220,6 +220,7 @@ class TasksV2Controller extends BackendController
             }
         }
 
+        $this->view->params['contentClass'] = 'content-no-padding';
         return $this->render('_form', [
             'model' => $model,
         ]);
@@ -353,6 +354,7 @@ class TasksV2Controller extends BackendController
             }
         }
 
+        $this->view->params['contentClass'] = 'content-no-padding';
         return $this->render('_form', [
             'model' => $model,
         ]);

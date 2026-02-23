@@ -56,6 +56,10 @@
   --system-colors-success-color: #{$system-colors-success-color};
 
   --shadow-card: #{$shadow-card};
+  --shadow-card-soft: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  --block-radius: 16px;
+  --card-radius: 8px;
 
   --progress-step-color: #{$progress-step-color};
 

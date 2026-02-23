@@ -392,7 +392,11 @@ main:has(.admin-content-wrapper .content-no-padding) .admin-content-wrapper {
 .admin-content-wrapper .content-no-padding .servers-rules-form,
 .admin-content-wrapper .content-no-padding .servers-rules-category-form,
 .admin-content-wrapper .content-no-padding .user-profile-page,
-.admin-content-wrapper .content-no-padding .wipe-index-page {
+.admin-content-wrapper .content-no-padding .wipe-index-page,
+.admin-content-wrapper .content-no-padding .tasks-v2-create,
+.admin-content-wrapper .content-no-padding .tasks-v2-update,
+.admin-content-wrapper .content-no-padding .tasks-v2-form-wrap,
+.admin-content-wrapper .content-no-padding .tasks-v2-form {
   flex: 1 1 0;
   min-height: 0;
   display: flex;
@@ -472,6 +476,34 @@ main:has(.admin-content-wrapper .content-no-padding) .admin-content-wrapper {
   }
 
   > .drop-form-sidebar {
+    flex-shrink: 0;
+    width: 100%;
+    @media (min-width: 1024px) {
+      width: 300px;
+      align-self: stretch;
+    }
+  }
+}
+
+// Форма заданий v2: тот же layout — контент слева, параметры справа на всю высоту
+.tasks-v2-form-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+
+  @media (min-width: 1024px) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  > .tasks-v2-form-content {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  > .tasks-v2-form-sidebar {
     flex-shrink: 0;
     width: 100%;
     @media (min-width: 1024px) {

@@ -61,6 +61,7 @@ class TaskV2 extends ActiveRecord
     const CHECK_TYPE_COMMENTS_COUNT = 'comments_count';
     const CHECK_TYPE_BUILDING_ADD = 'building_add';
     const CHECK_TYPE_RADIO_TRACK_ADD = 'radio_track_add';
+    const CHECK_TYPE_SKIN_ADD = 'skin_add';
 
     /**
      * {@inheritdoc}
@@ -429,6 +430,7 @@ class TaskV2 extends ActiveRecord
             self::CHECK_TYPE_COMMENTS_COUNT => Yii::t('common', 'Количество комментариев'),
             self::CHECK_TYPE_BUILDING_ADD => Yii::t('common', 'Добавление постройки'),
             self::CHECK_TYPE_RADIO_TRACK_ADD => Yii::t('common', 'Добавление музыки в радио'),
+            self::CHECK_TYPE_SKIN_ADD => Yii::t('common', 'Добавление скинов (одобренных)'),
         ];
     }
 

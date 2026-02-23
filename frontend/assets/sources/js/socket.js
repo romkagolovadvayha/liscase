@@ -124,14 +124,29 @@ function connectWs() {
         isConnecting = false;
         console.warn('WebSocket соединение закрыто. Причина:', e.reason || e.code, 'Код:', e.code, 'Было чистое закрытие:', e.wasClean);
         
+        // Не переподключаемся при определенных кодах ошибок:
+        // 1006 - abnormal closure (проблема с подключением, возможно nginx/прокси)
+        // 1008 - policy violation (например, rate limit)
+        // 1011 - server error
+        var shouldNotReconnect = e.code === 1006 || e.code === 1008 || e.code === 1011;
+        
+        if (shouldNotReconnect) {
+            console.error('WebSocket: Критическая ошибка подключения (код ' + e.code + '), переподключение отложено');
+            // Увеличиваем задержку перед переподключением при критических ошибках
+            reconnectDelay = Math.min(reconnectDelay * 2, 30000); // Максимум 30 секунд
+        }
+        
         // Переподключаемся только если:
         // 1. Это не было нормальное закрытие (код 1000) ИЛИ это был таймаут (код 1008)
         // 2. Не превышен лимит попыток
-        var shouldReconnect = (!e.wasClean || e.code === 1008 || e.code === 1000) && reconnectAttempts < maxReconnectAttempts;
+        // 3. Не критическая ошибка подключения (1006)
+        var shouldReconnect = !shouldNotReconnect && 
+            (!e.wasClean || e.code === 1000) && 
+            reconnectAttempts < maxReconnectAttempts;
         
         if (shouldReconnect) {
             reconnectAttempts++;
-            console.log('WebSocket: Попытка переподключения (' + reconnectAttempts + '/' + maxReconnectAttempts + ')...');
+            console.log('WebSocket: Попытка переподключения (' + reconnectAttempts + '/' + maxReconnectAttempts + ') через ' + (reconnectDelay / 1000) + ' сек...');
             if (reconnectTimeout) {
                 clearTimeout(reconnectTimeout);
             }
@@ -140,6 +155,14 @@ function connectWs() {
             }, reconnectDelay);
         } else if (reconnectAttempts >= maxReconnectAttempts) {
             console.error('WebSocket: Достигнут лимит попыток переподключения');
+        } else if (shouldNotReconnect) {
+            console.log('WebSocket: Переподключение отложено из-за критической ошибки');
+            // Пробуем переподключиться через больший интервал
+            reconnectTimeout = setTimeout(function() {
+                reconnectAttempts = 0; // Сбрасываем счетчик
+                reconnectDelay = 5000; // Сбрасываем задержку
+                reconnectWebSocket();
+            }, 30000); // Через 30 секунд
         } else {
             console.log('WebSocket: Переподключение не требуется');
         }

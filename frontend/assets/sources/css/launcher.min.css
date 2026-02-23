@@ -469,7 +469,7 @@ p {
       -ms-flex-pack: center;
           justify-content: center;
   gap: 8px;
-  cursor: pointer;
+  cursor: default;
   -webkit-transition: background-color 0.25s ease-in-out, -webkit-box-shadow 0.25s ease-in-out, -webkit-transform 0.25s ease-in-out;
   transition: background-color 0.25s ease-in-out, -webkit-box-shadow 0.25s ease-in-out, -webkit-transform 0.25s ease-in-out;
   transition: box-shadow 0.25s ease-in-out, background-color 0.25s ease-in-out, transform 0.25s ease-in-out;
@@ -490,21 +490,22 @@ p {
   border: 1px solid var(--border-color-default);
   color: var(--text-secondary);
   cursor: pointer;
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
-  -webkit-box-pack: center;
-      -ms-flex-pack: center;
-          justify-content: center;
-  z-index: 10;
+  display: block;
+  text-align: center;
+  line-height: 32px;
+  z-index: 20;
+  isolation: isolate;
   -webkit-transition: all 0.25s ease-in-out;
   transition: all 0.25s ease-in-out;
   font-size: 14px;
   -webkit-box-shadow: var(--shadow-card);
           box-shadow: var(--shadow-card);
+}
+.store_launcher_cards_item_return::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
 }
 .store_launcher_cards_item_return:hover {
   background: var(--background-secondary);
@@ -526,7 +527,8 @@ p {
           transform: none;
   pointer-events: none;
 }
-.store_launcher_cards_item_return i {
+.store_launcher_cards_item_return i,
+.store_launcher_cards_item_return svg {
   pointer-events: none;
   font-size: 14px;
 }
@@ -536,11 +538,13 @@ p {
     height: 28px;
     min-width: 28px;
     min-height: 28px;
+    line-height: 28px;
     font-size: 12px;
     top: 6px;
     right: 6px;
   }
-  .store_launcher_cards_item_return i {
+  .store_launcher_cards_item_return i,
+  .store_launcher_cards_item_return svg {
     font-size: 12px;
   }
 }
@@ -595,28 +599,31 @@ p {
   z-index: 2;
 }
 .store_launcher_cards_item_button {
-  width: 100%;
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
   text-transform: uppercase;
   color: var(--primary-colors-secondary);
   text-align: center;
-  padding: 10px 0;
-  -webkit-transition: color 0.25s ease-in-out;
-  transition: color 0.25s ease-in-out;
-}
-.store_launcher_cards_item:hover {
+  padding: 8px 16px;
+  margin-top: 4px;
+  border-radius: var(--button-radius);
   background: var(--background-teritiary);
-  -webkit-box-shadow: var(--shadow-card);
-          box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-color-default);
+  -webkit-transition: color 0.25s ease-in-out, background 0.25s ease-in-out, border-color 0.25s ease-in-out;
+  transition: color 0.25s ease-in-out, background 0.25s ease-in-out, border-color 0.25s ease-in-out;
+  cursor: pointer;
+  -ms-flex-negative: 0;
+      flex-shrink: 0;
+}
+.store_launcher_cards_item_button:hover {
+  background: var(--background-secondary);
+  border-color: var(--primary-colors-secondary);
+  color: var(--primary-colors-secondary);
 }
 .store_launcher_cards_item:hover .store_launcher_cards_item_image img {
-  -webkit-transform: scale(1.1) rotate(10deg);
-          transform: scale(1.1) rotate(10deg);
-}
-.store_launcher_cards_item:hover .store_launcher_cards_item_button {
-  color: var(--text-main);
+  -webkit-transform: scale(1.05);
+          transform: scale(1.05);
 }
 .store_launcher_cards_item_blocked_wrap {
   position: absolute;

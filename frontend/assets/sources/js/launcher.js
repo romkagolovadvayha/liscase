@@ -4,13 +4,14 @@ function initLauncher() {
 function launcherUpdate() {
     location.reload();
 }
-$('.store_launcher_cards_item').on('click', function (e) {
-    // Не обрабатываем клик, если кликнули на кнопку возврата
-    if ($(e.target).closest('.store_launcher_cards_item_return').length > 0) {
-        return;
-    }
-    clickItem($(this).attr('data-id'));
+// «Получить» — только по клику на кнопку, не по всей карточке
+$(document).on('click', '.store_launcher_cards_item_button', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var id = $(this).closest('.store_launcher_cards_item').attr('data-id');
+    if (id) clickItem(id);
 });
+
 function clickItem(id) {
     $('.store_launcher_cards_item[data-id=' + id + ']').parent().addClass('loader');
     chat.send( JSON.stringify({'action' : 'getDrop', 'id': id}) );
@@ -27,9 +28,6 @@ function storeTake(response) {
 
 function storeAdd(html, id) {
     $('#products').prepend(html);
-    $('.store_launcher_cards_item[data-id=' + id + ']').on('click', function () {
-        clickItem($(this).attr('data-id'));
-    });
 }
 
 function storeGetItems(response) {

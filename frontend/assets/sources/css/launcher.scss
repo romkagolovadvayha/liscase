@@ -450,7 +450,7 @@ p {
       align-items: center;
       justify-content: center;
       gap: 8px;
-      cursor: pointer;
+      cursor: default;
       transition: box-shadow 0.25s ease-in-out, background-color 0.25s ease-in-out, transform 0.25s ease-in-out;
       min-height: 220px;
 
@@ -468,13 +468,21 @@ p {
         border: 1px solid var(--border-color-default);
         color: var(--text-secondary);
         cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10;
+        display: block;
+        text-align: center;
+        line-height: 32px;
+        z-index: 20;
+        isolation: isolate;
         transition: all 0.25s ease-in-out;
         font-size: 14px;
         box-shadow: var(--shadow-card);
+        // Вся область кнопки кликабельна: иконка не перехватывает события
+        &::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+        }
 
         &:hover {
           background: var(--background-secondary);
@@ -495,7 +503,8 @@ p {
           pointer-events: none;
         }
 
-        i {
+        i,
+        svg {
           pointer-events: none;
           font-size: 14px;
         }
@@ -505,11 +514,13 @@ p {
           height: 28px;
           min-width: 28px;
           min-height: 28px;
+          line-height: 28px;
           font-size: 12px;
           top: 6px;
           right: 6px;
 
-          i {
+          i,
+          svg {
             font-size: 12px;
           }
         }
@@ -557,30 +568,34 @@ p {
         z-index: 2;
       }
       
-      // Button (простой текст)
+      // Кнопка «Получить» — отдельная, не на всю карточку
       &_button {
-        width: 100%;
         font-size: 14px;
         font-weight: 500;
         line-height: 20px;
         text-transform: uppercase;
         color: var(--primary-colors-secondary);
         text-align: center;
-        padding: 10px 0;
-        transition: color 0.25s ease-in-out;
+        padding: 8px 16px;
+        margin-top: 4px;
+        border-radius: var(--button-radius);
+        background: var(--background-teritiary);
+        border: 1px solid var(--border-color-default);
+        transition: color 0.25s ease-in-out, background 0.25s ease-in-out, border-color 0.25s ease-in-out;
+        cursor: pointer;
+        flex-shrink: 0;
+
+        &:hover {
+          background: var(--background-secondary);
+          border-color: var(--primary-colors-secondary);
+          color: var(--primary-colors-secondary);
+        }
       }
       
-      // Hover effects (как category-card)
+      // Лёгкий hover карточки (без подсветки кнопки — она своя)
       &:hover {
-        background: var(--background-teritiary);
-        box-shadow: var(--shadow-card);
-        
         .store_launcher_cards_item_image img {
-          transform: scale(1.1) rotate(10deg);
-        }
-        
-        .store_launcher_cards_item_button {
-          color: var(--text-main);
+          transform: scale(1.05);
         }
       }
       

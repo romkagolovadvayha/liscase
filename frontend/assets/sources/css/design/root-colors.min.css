@@ -42,10 +42,17 @@
   --button-teritiary-radius: 6px;
   --system-colors-success-color: #009136;
   --shadow-card: 4px 4px 4px 0px rgba(0, 0, 0, 0.25);
+  --shadow-card-soft: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --block-radius: 16px;
+  --card-radius: 8px;
   --progress-step-color: #ff7d58;
   --system-colors-gold: #f8b34d;
   --system-colors-silver: #b4b4b4;
   --system-colors-bronze: #af7355;
-  --base-linear-gradiend: linear-gradient(90deg, var(--primary-colors-main) 50%, var(--primary-colors-secondary) 100%);
+  --base-linear-gradiend: linear-gradient(
+    90deg,
+    var(--primary-colors-main) 50%,
+    var(--primary-colors-secondary) 100%
+  );
   --online: #4BCC18;
 }

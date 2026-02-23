@@ -64,32 +64,81 @@ class SkinsSearch extends Model
      * This method returns ArrayDataProvider.
      * Filtered and sorted if required.
      */
-    public function search($params, $type)
+    public function search($params, $type, $page = 1, $pageSize = 24)
     {
         // Устанавливаем значение по умолчанию для сортировки, если не задано
         if (empty($this->sort)) {
             $this->sort = 'price_asc';
         }
         
-        if ($this->load($params) && $this->validate()) {
-            $this->_filtered = true;
+        // Загружаем параметры из запроса
+        $this->load($params);
+        
+        // Устанавливаем sort из параметров, если он передан
+        if (isset($params['sort']) && !empty($params['sort'])) {
+            $this->sort = $params['sort'];
+        }
+        
+        // Валидируем модель
+        if ($this->validate()) {
+            // Устанавливаем флаг фильтрации, если есть хотя бы один фильтр
+            $hasFilters = !empty($this->name) || 
+                         !empty($this->quality) || 
+                         ($this->price_min !== null && $this->price_min !== '') ||
+                         ($this->price_max !== null && $this->price_max !== '');
+            
+            $this->_filtered = $hasFilters;
+            
             // Если после загрузки параметров sort пустой, устанавливаем по умолчанию
             if (empty($this->sort)) {
                 $this->sort = 'price_asc';
             }
+        } else {
+            // Если валидация не прошла, все равно применяем фильтры если они есть
+            $hasFilters = !empty($this->name) || 
+                         !empty($this->quality) || 
+                         ($this->price_min !== null && $this->price_min !== '') ||
+                         ($this->price_max !== null && $this->price_max !== '');
+            $this->_filtered = $hasFilters;
         }
 
         $data = $this->getData($type);
         
         // Определяем сортировку
         $sortConfig = $this->getSortConfig();
+        
+        // Всегда применяем сортировку к данным (даже если нет фильтров)
+        if (!empty($sortConfig)) {
+            $sortField = key($sortConfig);
+            $sortOrder = $sortConfig[$sortField];
+            
+            usort($data, function($a, $b) use ($sortField, $sortOrder) {
+                $aVal = $a[$sortField] ?? null;
+                $bVal = $b[$sortField] ?? null;
+                
+                // Обработка null значений
+                if ($aVal === null && $bVal === null) return 0;
+                if ($aVal === null) return ($sortOrder === SORT_ASC ? 1 : -1);
+                if ($bVal === null) return ($sortOrder === SORT_ASC ? -1 : 1);
+                
+                // Сравнение
+                if (is_numeric($aVal) && is_numeric($bVal)) {
+                    $result = $aVal <=> $bVal;
+                } else {
+                    $result = strcmp((string)$aVal, (string)$bVal);
+                }
+                
+                return $sortOrder === SORT_ASC ? $result : -$result;
+            });
+        }
 
         return new \yii\data\ArrayDataProvider([
                                                    // ArrayDataProvider here takes the actual data source
                                                    'allModels' => $data,
                                                    'totalCount' => count($data),
                                                    'pagination' => [
-                                                       'pageSize' => 91,
+                                                       'page' => $page - 1, // Yii2 использует 0-based индексацию
+                                                       'pageSize' => $pageSize,
                                                    ],
                                                    'sort' => [
                                                        'attributes' => ['price', 'ru_name', 'popularity_7d'],
@@ -128,7 +177,14 @@ class SkinsSearch extends Model
             $data = \Yii::$app->csGoMarket->items();
         }
 
-        if ($this->_filtered) {
+        // Всегда применяем фильтры, если они заданы (даже если _filtered = false)
+        // Это нужно для корректной работы поиска и других фильтров
+        $hasFilters = !empty($this->name) || 
+                     !empty($this->quality) || 
+                     ($this->price_min !== null && $this->price_min !== '') ||
+                     ($this->price_max !== null && $this->price_max !== '');
+        
+        if ($this->_filtered || $hasFilters) {
             $sName = !empty($this->name) ? mb_strtolower($this->name) : null;
             $quality = $this->quality;
             // Преобразуем quality в массив, если это строка
