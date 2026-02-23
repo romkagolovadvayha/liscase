@@ -247,7 +247,7 @@ class WipeCalendarController extends Controller
                         'link'        => $srv['link'],
                         'time'        => $timeTxt,
                         'is_official' => false,
-                        'is_global'   => $isGlobalMonday,
+                        'is_global'   => false, // не выводить автоматический бейдж «глобальный» — уже есть «глобал» в badges
                         'badges'      => $badges,
                         'desc'        => null,
                     ];

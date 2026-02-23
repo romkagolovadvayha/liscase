@@ -269,6 +269,7 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
     .event-meta {
         display: flex;
         flex-wrap: wrap;
+        align-items: flex-start;
         gap: 6px;
     }
 
