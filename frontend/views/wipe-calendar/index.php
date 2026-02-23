@@ -1,9 +1,11 @@
 <?php
 /**
- * @var array $monthsData
- * @var int   $currentYear
- * @var int   $currentMonth
- * @var int   $shownMonths
+ * @var array      $monthsData
+ * @var int        $currentYear
+ * @var int        $currentMonth
+ * @var int        $shownMonths
+ * @var array|null $nearestWipe  ['date', 'time', 'name', 'link', 'ip', 'port', 'connect_href', 'connect_text' для кнопок]
+ * @var array|null $recentWipe   ['date', 'time', 'name', 'link']
  */
 
 use yii\helpers\Url;
@@ -28,6 +30,49 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
                           'timeout'         => 8000,
                           'enablePushState' => true,
                       ]); ?>
+
+    <?php if (!empty($nearestWipe) || !empty($recentWipe)): ?>
+        <section class="nearest-wipe">
+            <?php if (!empty($nearestWipe)): ?>
+                <h2 class="nearest-wipe__title"><?= Yii::t('common', 'Ближайший вайп') ?></h2>
+                <p class="nearest-wipe__info">
+                    <span class="nearest-wipe__date"><?= htmlspecialchars($nearestWipe['date'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <span class="nearest-wipe__time"><?= htmlspecialchars($nearestWipe['time'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php if (!empty($nearestWipe['link'])): ?>
+                        <a href="<?= htmlspecialchars($nearestWipe['link'], ENT_QUOTES, 'UTF-8') ?>" class="nearest-wipe__link" target="_blank" rel="noopener"><?= htmlspecialchars($nearestWipe['name'], ENT_QUOTES, 'UTF-8') ?></a>
+                    <?php else: ?>
+                        <span class="nearest-wipe__name"><?= htmlspecialchars($nearestWipe['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php endif; ?>
+                </p>
+                <?php if (!empty($nearestWipe['connect_href']) && !empty($nearestWipe['connect_text'])): ?>
+                    <div class="nearest-wipe__actions">
+                        <a class="button button-primary button-size__s h-36" href="<?= htmlspecialchars($nearestWipe['connect_href'], ENT_QUOTES, 'UTF-8') ?>"><span class="button__text"><?= Yii::t('common', 'Подключиться к серверу') ?></span></a>
+                        <button type="button"
+                                class="button button-secondary button-size__s h-36 btn-clipboard nearest-wipe__copy"
+                                data-clipboard-text="<?= htmlspecialchars($nearestWipe['connect_text'], ENT_QUOTES, 'UTF-8') ?>"
+                                data-message="<?= htmlspecialchars(Yii::t('common', 'IP адрес скопирован в буфер обмена!'), ENT_QUOTES, 'UTF-8') ?>"
+                                title="<?= htmlspecialchars(Yii::t('common', 'Скопировать IP'), ENT_QUOTES, 'UTF-8') ?>">
+                            <i class="fas fa-copy nearest-wipe__copy-icon" aria-hidden="true"></i>
+                            <span class="button__text"><?= Yii::t('common', 'Скопировать IP') ?></span>
+                        </button>
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
+
+            <?php if (!empty($recentWipe)): ?>
+                <h3 class="nearest-wipe__subtitle"><?= Yii::t('common', 'Недавний вайп') ?></h3>
+                <p class="nearest-wipe__info">
+                    <span class="nearest-wipe__date"><?= htmlspecialchars($recentWipe['date'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <span class="nearest-wipe__time"><?= htmlspecialchars($recentWipe['time'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php if (!empty($recentWipe['link'])): ?>
+                        <a href="<?= htmlspecialchars($recentWipe['link'], ENT_QUOTES, 'UTF-8') ?>" class="nearest-wipe__link" target="_blank" rel="noopener"><?= htmlspecialchars($recentWipe['name'], ENT_QUOTES, 'UTF-8') ?></a>
+                    <?php else: ?>
+                        <span class="nearest-wipe__name"><?= htmlspecialchars($recentWipe['name'], ENT_QUOTES, 'UTF-8') ?></span>
+                    <?php endif; ?>
+                </p>
+            <?php endif; ?>
+        </section>
+    <?php endif; ?>
 
     <div class="calendar-wrap">
         <?php foreach ($monthsData as $m): ?>
@@ -234,6 +279,7 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
 
     .calendar-cell.today {
         background-color: var(--background-teritiary);
+        box-shadow: inset 0 0 0 2px var(--accent, rgba(59, 130, 246, 0.6));
     }
 
     .calendar-daynum {
@@ -312,7 +358,63 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
     /* оставляем подсветку «сегодня» даже если это соседний месяц */
     .calendar-cell.today {
         background-color: var(--background-teritiary);
+        box-shadow: inset 0 0 0 2px var(--accent, rgba(59, 130, 246, 0.6));
     }
+
+    /* ====== БЛИЖАЙШИЙ ВАЙП ====== */
+    .nearest-wipe {
+        padding: 14px 18px;
+        margin-bottom: 24px;
+        border-radius: var(--block-radius);
+        background-color: var(--background-secondary);
+        border: 1px solid var(--background-teritiary);
+    }
+    .nearest-wipe__title {
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        font-weight: 600;
+        opacity: .9;
+    }
+    .nearest-wipe__subtitle {
+        margin: 16px 0 8px 0;
+        font-size: 13px;
+        font-weight: 600;
+        opacity: .85;
+    }
+    .nearest-wipe__info {
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 8px 14px;
+    }
+    .nearest-wipe__actions {
+        margin-top: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+    }
+    .nearest-wipe__copy {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .nearest-wipe__copy-icon {
+        font-size: 12px;
+        opacity: .9;
+    }
+    .nearest-wipe__date { font-weight: 600; }
+    .nearest-wipe__time {
+        font-weight: 700;
+        color: var(--accent, #3b82f6);
+    }
+    .nearest-wipe__link {
+        color: var(--link-color, #3b82f6);
+        text-decoration: none;
+    }
+    .nearest-wipe__link:hover { text-decoration: underline; }
+    .nearest-wipe__name { font-weight: 500; }
 </style>
 
 <?= $this->render('@frontend/views/layouts/_wipe-calendar-promo-script') ?>

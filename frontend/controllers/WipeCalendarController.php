@@ -261,11 +261,99 @@ class WipeCalendarController extends Controller
             $monthsData[] = $this->buildMonthGrid($mStart, $events, $tz);
         }
 
+        $monthsRu = [
+            1 => Yii::t('common', 'января'), 2 => Yii::t('common', 'февраля'), 3 => Yii::t('common', 'марта'),
+            4 => Yii::t('common', 'апреля'), 5 => Yii::t('common', 'мая'), 6 => Yii::t('common', 'июня'),
+            7 => Yii::t('common', 'июля'), 8 => Yii::t('common', 'августа'), 9 => Yii::t('common', 'сентября'),
+            10 => Yii::t('common', 'октября'), 11 => Yii::t('common', 'ноября'), 12 => Yii::t('common', 'декабря'),
+        ];
+        $formatWipeRow = function ($dt, $bucket) use ($monthsRu, $tz) {
+            $title = null;
+            $link = null;
+            $serverId = null;
+            if (!empty($bucket['global'])) {
+                $title = $bucket['title'];
+                $link = $bucket['link'];
+            } elseif (!empty($bucket['title'])) {
+                $title = $bucket['title'];
+                $link = isset($bucket['link']) ? $bucket['link'] : null;
+            } elseif (!empty($bucket['servers'])) {
+                $first = reset($bucket['servers']);
+                $title = !empty($first['is_global_monday'])
+                    ? Yii::t('common', 'Глобальный вайп — {server}', ['server' => $first['name']])
+                    : Yii::t('common', 'Вайп карты — {server}', ['server' => $first['name']]);
+                $link = $first['link'];
+                // Кнопки «Подключиться» и «Скопировать IP» только если вайп на одном сервере
+                $serverId = (count($bucket['servers']) === 1 && isset($first['id'])) ? (int)$first['id'] : null;
+            }
+            if ($title === null) {
+                return null;
+            }
+            $dayNum = (int)$dt->format('j');
+            $monthKey = (int)$dt->format('n');
+            $yearNum = (int)$dt->format('Y');
+            $dateFormatted = $dayNum . ' ' . $monthsRu[$monthKey] . ' ' . $yearNum;
+            return [
+                'date'      => $dateFormatted,
+                'time'      => $dt->format('H:i'),
+                'name'      => $title,
+                'link'      => $link,
+                'server_id' => $serverId,
+            ];
+        };
+
+        // === 8) Ближайший вайп (первое событие с datetime >= сейчас) ===
+        $nearestWipe = null;
+        $nowTs = $now->getTimestamp();
+        ksort($byDateTime);
+        foreach ($byDateTime as $dtStr => $bucket) {
+            $dt = new DateTimeImmutable($dtStr, $tz);
+            if ($dt->getTimestamp() < $nowTs) {
+                continue;
+            }
+            $nearestWipe = $formatWipeRow($dt, $bucket);
+            if ($nearestWipe !== null) {
+                $nearestWipe['link'] = '/servers';
+                break;
+            }
+        }
+
+        // === 9) Недавний вайп (последнее событие с datetime < сейчас) ===
+        $recentWipe = null;
+        krsort($byDateTime);
+        foreach ($byDateTime as $dtStr => $bucket) {
+            $dt = new DateTimeImmutable($dtStr, $tz);
+            if ($dt->getTimestamp() >= $nowTs) {
+                continue;
+            }
+            $recentWipe = $formatWipeRow($dt, $bucket);
+            if ($recentWipe !== null) {
+                break;
+            }
+        }
+
+        // Для кнопок «Подключиться» и «Скопировать IP» — данные сервера ближайшего вайпа (если один сервер)
+        $serverForButtons = null;
+        if (!empty($nearestWipe['server_id'])) {
+            $serverForButtons = Servers::find()
+                ->select(['id', 'ip', 'port', 'status'])
+                ->andWhere(['id' => $nearestWipe['server_id']])
+                ->one();
+        }
+        if ($serverForButtons && $serverForButtons->ip && $serverForButtons->port) {
+            $nearestWipe['ip'] = $serverForButtons->ip;
+            $nearestWipe['port'] = (int)$serverForButtons->port;
+            $nearestWipe['connect_href'] = 'steam://rungameid/252490//+connect ' . $serverForButtons->ip . ':' . $serverForButtons->port;
+            $nearestWipe['connect_text'] = 'connect ' . $serverForButtons->ip . ':' . $serverForButtons->port;
+        }
+
         return $this->render('index', [
             'monthsData'   => $monthsData,
             'currentYear'  => $year,
             'currentMonth' => $month,
             'shownMonths'  => $months,
+            'nearestWipe'  => $nearestWipe,
+            'recentWipe'   => $recentWipe,
         ]);
     }
 
@@ -379,7 +467,10 @@ class WipeCalendarController extends Controller
             while ($dt < $afterLastMonth) {
                 $iso = $dt->format('o-\WW');
                 if (!isset($blockedIsoWeeks[$iso])) {
-                    $key = $dt->format('Y-m-d H:i:s');
+                    $dateStr = $dt->format('Y-m-d');
+                    // 23.02.2026 на понедельничных серверах вайп в 15:00, в остальные дни — 16:00
+                    $timeForMonday = ($dateStr === '2026-02-23') ? '15:00:00' : $mapTime;
+                    $key = $dateStr . ' ' . $timeForMonday;
                     if (!isset($byDateTime[$key])) {
                         $byDateTime[$key] = [
                             'global'           => false,
