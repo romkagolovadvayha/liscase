@@ -15,14 +15,16 @@ $this->title = Yii::t('common', "Корзина") . " - {$user->username}";
 // Доступ к магазину: при выключенном is_store проверяем Скрытый магазин (hidden_store); при включённом — магазин для игроков с игрой > 10 ч на сервере
 $storeVisible = false;
 if (!empty($user->server)) {
-    $playtimeMinutes = (int) Statistics::find()
-        ->andWhere(['steam_id' => $user->steam_id, 'server_tag' => $user->server->tag, 'key' => 'playtime'])
-        ->sum('value');
-    $hasTenHours = $playtimeMinutes >= 600; // 10 часов = 600 минут
     if ($user->server->is_store) {
-        $storeVisible = $hasTenHours;
+        $storeVisible = true;
+    } elseif (!$user->server->hidden_store) {
+        $storeVisible = false;
     } else {
-        $storeVisible = $user->server->hidden_store && $hasTenHours;
+        // магазин выключен, скрытый включен — проверяем время на сервере (≥ 10 ч)
+        $playtimeMinutes = (int) Statistics::find()
+            ->andWhere(['steam_id' => $user->steam_id, 'server_tag' => $user->server->tag, 'key' => 'playtime'])
+            ->sum('value');
+        $storeVisible = $playtimeMinutes >= 600; // 10 часов = 600 минут
     }
     if ($user->store) {
         $storeVisible = true;
