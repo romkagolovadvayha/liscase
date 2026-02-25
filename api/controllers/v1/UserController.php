@@ -1047,26 +1047,102 @@ class UserController extends BaseApiController
     {
         $user = $this->getCurrentUser();
 
-        $childUser = User::findOne($id);
+        $childUser = User::find()->where(['id' => (int)$id])->with(['userProfile', 'userTree'])->one();
         if (!$childUser) {
             throw new NotFoundHttpException('Пользователь не найден');
         }
 
-        $userTree = UserTree::find()
-            ->where(['parent_user_id' => $user->id, 'user_id' => $id])
-            ->one();
-
-        if (!$userTree) {
-            return $this->errorResponse('NOT_REFERRAL', 'Пользователь не является вашим рефералом', [], 400);
+        $parentUser = $childUser->getParentUser();
+        if (!$parentUser || $parentUser->id !== $user->id) {
+            return $this->errorResponse('NOT_REFERRAL', 'Вы не приглашали данного игрока', [], 400);
         }
 
-        if ($userTree->parent_bonus_received) {
-            return $this->errorResponse('BONUS_ALREADY_RECEIVED', 'Бонус уже получен', [], 400);
+        if ($childUser->parent_skin_send && $childUser->userProfile && $childUser->userProfile->parent_bonus) {
+            return $this->errorResponse('BONUS_ALREADY_RECEIVED', 'Награда уже получена', [], 400);
         }
 
-        // Логика получения бонуса (копируем из frontend контроллера)
-        // Это сложная логика, требует детальной реализации
-        // Пока возвращаем успех
+        if (!$childUser->hasHourInServer()) {
+            return $this->errorResponse('NO_HOUR', 'Игрок ещё не отыграл час на сервере', [], 400);
+        }
+
+        $referralBonusAmount = (int)Yii::$app->settings->get('referral_bonus', 0);
+        if ($referralBonusAmount < 0) {
+            $referralBonusAmount = 0;
+        }
+
+        $db = Yii::$app->db;
+        $transaction = $db->beginTransaction();
+        try {
+            // Бонус на баланс (реферальный процент)
+            if ($childUser->userProfile && !$childUser->userProfile->parent_bonus) {
+                $childUser->userProfile->parent_bonus = 1;
+                $childUser->userProfile->save(false);
+
+                $profit = new Profit();
+                $profit->status = 1;
+                $profit->type = Profit::TYPE_REFERRAL;
+                $profit->amount = $referralBonusAmount;
+                $profit->user_balance_id = $user->getPersonalBalance()->id;
+                $profit->comment = 'Бонус за приглашённого пользователя "' . ($childUser->username ?? '') . '"';
+                $profit->created_at = date('Y-m-d H:i:s');
+                $profit->save(false);
+                $user->getPersonalBalance()->recalculateBalance();
+            }
+
+            // Скин на баланс скинов (как в старом frontend)
+            if (!$childUser->parent_skin_send) {
+                $childUser->parent_skin_send = 1;
+                $childUser->save(false);
+
+                $minSum = (float)Yii::$app->settings->get('referral_minSum', 0);
+                $maxSum = (float)Yii::$app->settings->get('referral_maxSum', 0);
+                if ($maxSum <= 0) {
+                    $maxSum = 1000;
+                }
+
+                if (isset(Yii::$app->rustTm) && $minSum >= 0) {
+                    $items = Yii::$app->rustTm->items();
+                    if (is_array($items)) {
+                        shuffle($items);
+                        foreach ($items as $item) {
+                            $price = isset($item['price']) ? (float)$item['price'] : 0;
+                            if ($price < $minSum || $price > $maxSum) {
+                                continue;
+                            }
+                            $name = $item['name'] ?? '';
+                            $image = $item['image'] ?? '';
+
+                            $skindrop = new Skindrops();
+                            $skindrop->name = $name;
+                            $skindrop->steam_id = $user->steam_id;
+                            $skindrop->player = $user->username;
+                            $skindrop->price = ceil($price);
+                            $skindrop->real_price = ceil($price);
+                            $skindrop->image = $image;
+                            $skindrop->created_at = date('Y-m-d H:i:s');
+                            $skindrop->save(false);
+
+                            $skinProfit = new Profit();
+                            $skinProfit->user_balance_id = $user->getSkinsBalance()->id;
+                            $skinProfit->amount = ceil($price);
+                            $skinProfit->comment = 'Выигрыш скина';
+                            $skinProfit->status = 1;
+                            $skinProfit->type = Profit::TYPE_WINNER_SKINS;
+                            $skinProfit->created_at = date('Y-m-d H:i:s');
+                            $skinProfit->save(false);
+                            $user->getSkinsBalance()->recalculateBalance();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            $transaction->commit();
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            Yii::error('actionPartnerBonus: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'api');
+            return $this->errorResponse('SERVER_ERROR', 'Ошибка при получении награды: ' . $e->getMessage(), [], 500);
+        }
 
         return $this->successResponse([
             'message' => 'Награда успешно получена',

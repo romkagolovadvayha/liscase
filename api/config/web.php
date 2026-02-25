@@ -76,6 +76,7 @@ $config = [
                 'v1/user/partner/invite' => 'v1/user/partner-invite',
                 'v1/user/partner/referrals' => 'v1/user/partner-referrals',
                 'v1/user/partner/promocode' => 'v1/user/partner-promocode',
+                'v1/user/partner-bonus/<id:\d+>' => 'v1/user/partner-bonus',
                 'v1/user/partner-bonus' => 'v1/user/partner-bonus',
                 'v1/user/promocode' => 'v1/user/promocode',
                 'v1/user/promocode/activate' => 'v1/user/activate-promocode',
