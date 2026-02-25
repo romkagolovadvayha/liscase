@@ -228,33 +228,51 @@ class ProductsController extends BaseApiController
             }
 
             // Сортировка: при наличии избранного — сначала избранные, затем базовая сортировка
-            $orderBy = [];
             if (!empty($favoriteDropIds)) {
                 $safeIds = array_map('intval', $favoriteDropIds);
-                $orderBy[new Expression('(CASE WHEN id IN (' . implode(',', $safeIds) . ') THEN 0 ELSE 1 END)')] = SORT_ASC;
+                $favoritesOrder = '(CASE WHEN id IN (' . implode(',', $safeIds) . ') THEN 0 ELSE 1 END) ASC';
+                switch ($sort) {
+                    case 'price_asc':
+                        $query->orderBy(new Expression($favoritesOrder . ', price ASC'));
+                        break;
+                    case 'price_desc':
+                        $query->orderBy(new Expression($favoritesOrder . ', price DESC'));
+                        break;
+                    case 'name_asc':
+                        $query->orderBy(new Expression($favoritesOrder . ', name ASC'));
+                        break;
+                    case 'name_desc':
+                        $query->orderBy(new Expression($favoritesOrder . ', name DESC'));
+                        break;
+                    case 'created_at_desc':
+                        $query->orderBy(new Expression($favoritesOrder . ', created_at DESC'));
+                        break;
+                    default:
+                        $query->orderBy(new Expression($favoritesOrder . ', sort ASC, created_at DESC'));
+                        break;
+                }
+            } else {
+                switch ($sort) {
+                    case 'price_asc':
+                        $query->orderBy(['price' => SORT_ASC]);
+                        break;
+                    case 'price_desc':
+                        $query->orderBy(['price' => SORT_DESC]);
+                        break;
+                    case 'name_asc':
+                        $query->orderBy(['name' => SORT_ASC]);
+                        break;
+                    case 'name_desc':
+                        $query->orderBy(['name' => SORT_DESC]);
+                        break;
+                    case 'created_at_desc':
+                        $query->orderBy(['created_at' => SORT_DESC]);
+                        break;
+                    default:
+                        $query->orderBy(['sort' => SORT_ASC, 'created_at' => SORT_DESC]);
+                        break;
+                }
             }
-            switch ($sort) {
-                case 'price_asc':
-                    $orderBy['price'] = SORT_ASC;
-                    break;
-                case 'price_desc':
-                    $orderBy['price'] = SORT_DESC;
-                    break;
-                case 'name_asc':
-                    $orderBy['name'] = SORT_ASC;
-                    break;
-                case 'name_desc':
-                    $orderBy['name'] = SORT_DESC;
-                    break;
-                case 'created_at_desc':
-                    $orderBy['created_at'] = SORT_DESC;
-                    break;
-                default:
-                    $orderBy['sort'] = SORT_ASC;
-                    $orderBy['created_at'] = SORT_DESC;
-                    break;
-            }
-            $query->orderBy($orderBy);
 
             $dataProvider = new ActiveDataProvider([
                 'query' => $query,
