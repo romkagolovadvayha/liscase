@@ -144,6 +144,13 @@ class ProductsController extends BaseApiController
      *         @OA\Schema(type="integer")
      *     ),
      *     @OA\Parameter(
+     *         name="show_main_block",
+     *         in="query",
+     *         description="0 = только товары не из главного блока (сетка), 1 = только наборы (главный блок). Не передавать = все товары",
+     *         required=false,
+     *         @OA\Schema(type="integer", enum={0, 1})
+     *     ),
+     *     @OA\Parameter(
      *         name="search",
      *         in="query",
      *         description="Поиск по названию",
@@ -169,6 +176,7 @@ class ProductsController extends BaseApiController
         $limit = (int)Yii::$app->request->get('limit', 20);
         $offset = (int)Yii::$app->request->get('offset', 0);
         $categoryId = Yii::$app->request->get('category_id');
+        $showMainBlock = Yii::$app->request->get('show_main_block');
         $search = Yii::$app->request->get('search');
         $sort = Yii::$app->request->get('sort', 'sort');
 
@@ -177,9 +185,10 @@ class ProductsController extends BaseApiController
         $isDefaultSort = $sort === 'sort';
         $cacheKey = null;
         $cachedData = null;
+        $cacheSuffix = $showMainBlock !== null && $showMainBlock !== '' ? '_main_' . (int)$showMainBlock : '';
         
         if (!$hasFilters && $offset === 0 && $isDefaultSort) {
-            $cacheKey = 'api_products_list_' . $limit;
+            $cacheKey = 'api_products_list_' . $limit . $cacheSuffix;
             $cache = Yii::$app->cache;
             $cachedData = $cache->get($cacheKey);
             
@@ -201,6 +210,11 @@ class ProductsController extends BaseApiController
 
             if ($categoryId) {
                 $query->andWhere(['category_id' => (int)$categoryId]);
+            }
+
+            // Как в старом фронте: show_main_block=0 — сетка товаров, show_main_block=1 — наборы (главный блок)
+            if ($showMainBlock !== null && $showMainBlock !== '') {
+                $query->andWhere(['show_main_block' => (int)$showMainBlock]);
             }
 
             if ($search) {
