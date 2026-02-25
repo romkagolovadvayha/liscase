@@ -90,6 +90,7 @@ class UserController extends BaseApiController
                 'avatar' => $user->getAvatar(),
                 'profile' => [
                     'name' => $user->userProfile->name ?? $user->username,
+                    'trade_link' => $user->userProfile->trade_link ?? null,
                     'raid_notify' => (bool)($user->userProfile->raid_notify ?? false),
                     'ban_notify' => (bool)($user->userProfile->ban_notify ?? false),
                     'is_hide_online' => (bool)($user->userProfile->is_hide_online ?? false),
@@ -98,6 +99,8 @@ class UserController extends BaseApiController
                     'twitch_link' => $user->userProfile->twitch_link ?? null,
                     'vk_link' => $user->userProfile->vk_link ?? null,
                     'telegram_link' => $user->userProfile->telegram_link ?? null,
+                    'telegram_chat_id' => !empty($user->telegram_chat_id) ? (string)(int)$user->telegram_chat_id : null,
+                    'telegramBotUsername' => (string)(Yii::$app->settings->get('telegram_personal_bot_username') ?? ''),
                 ],
             ]);
         }
