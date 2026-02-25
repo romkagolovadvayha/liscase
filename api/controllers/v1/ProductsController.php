@@ -11,7 +11,10 @@ use common\models\box\DropFavorite;
 use common\models\user\UserDrop;
 use common\models\invoice\Invoice;
 use api\components\jwt\JwtAuthFilter;
+use api\components\jwt\JwtService;
+use common\models\user\User;
 use yii\data\ActiveDataProvider;
+use yii\db\Expression;
 use OpenApi\Annotations as OA;
 
 /**
@@ -180,30 +183,32 @@ class ProductsController extends BaseApiController
         $search = Yii::$app->request->get('search');
         $sort = Yii::$app->request->get('sort', 'sort');
 
+        // Опциональная JWT: для авторизованного пользователя отдаём товары с избранными в начале
+        $this->tryAuthenticateUserFromJwt();
+        $userId = Yii::$app->user->getIsGuest() ? null : (int)Yii::$app->user->getId();
+        $favoriteDropIds = $userId ? DropFavorite::getFavoriteDropIds($userId) : [];
+
         // Кэшируем только базовый список (без фильтров, первая страница, дефолтная сортировка)
+        // Не кэшируем при персональной сортировке по избранному
         $hasFilters = !empty($categoryId) || !empty($search);
         $isDefaultSort = $sort === 'sort';
         $cacheKey = null;
         $cachedData = null;
-        // Отдельный ключ для «все товары» (_all), чтобы не отдавать старый кэш от фильтра show_main_block
         $cacheSuffix = ($showMainBlock !== null && $showMainBlock !== '') ? '_main_' . (int)$showMainBlock : '_all';
-        
-        if (!$hasFilters && $offset === 0 && $isDefaultSort) {
+
+        if (!$hasFilters && $offset === 0 && $isDefaultSort && empty($favoriteDropIds)) {
             $cacheKey = 'api_products_list_' . $limit . $cacheSuffix;
             $cache = Yii::$app->cache;
             $cachedData = $cache->get($cacheKey);
-            
-            // Если есть кэшированные данные, возвращаем их
+
             if ($cachedData !== false && is_array($cachedData)) {
-                // Извлекаем данные и пагинацию из кэша
                 $cachedProducts = $cachedData['data'] ?? $cachedData;
                 $cachedPagination = $cachedData['pagination'] ?? [];
                 return $this->successResponse($cachedProducts, ['pagination' => $cachedPagination]);
             }
         }
 
-        // Если нет кэша или есть фильтры/пагинация/сортировка, строим запрос
-        if ($cachedData === false || $cachedData === null || $hasFilters || $offset > 0 || !$isDefaultSort) {
+        if ($cachedData === false || $cachedData === null || $hasFilters || $offset > 0 || !$isDefaultSort || !empty($favoriteDropIds)) {
             $query = Drop::find()
                 ->where(['status' => Drop::STATUS_ACTIVE])
                 ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
@@ -213,7 +218,6 @@ class ProductsController extends BaseApiController
                 $query->andWhere(['category_id' => (int)$categoryId]);
             }
 
-            // Как в старом фронте: show_main_block=0 — сетка товаров, show_main_block=1 — наборы (главный блок)
             if ($showMainBlock !== null && $showMainBlock !== '') {
                 $query->andWhere(['show_main_block' => (int)$showMainBlock]);
             }
@@ -223,27 +227,34 @@ class ProductsController extends BaseApiController
                       ->orFilterWhere(['like', 'eng_name', $search]);
             }
 
-            // Применяем сортировку
+            // Сортировка: при наличии избранного — сначала избранные, затем базовая сортировка
+            $orderBy = [];
+            if (!empty($favoriteDropIds)) {
+                $safeIds = array_map('intval', $favoriteDropIds);
+                $orderBy[new Expression('(CASE WHEN id IN (' . implode(',', $safeIds) . ') THEN 0 ELSE 1 END)')] = SORT_ASC;
+            }
             switch ($sort) {
                 case 'price_asc':
-                    $query->orderBy(['price' => SORT_ASC]);
+                    $orderBy['price'] = SORT_ASC;
                     break;
                 case 'price_desc':
-                    $query->orderBy(['price' => SORT_DESC]);
+                    $orderBy['price'] = SORT_DESC;
                     break;
                 case 'name_asc':
-                    $query->orderBy(['name' => SORT_ASC]);
+                    $orderBy['name'] = SORT_ASC;
                     break;
                 case 'name_desc':
-                    $query->orderBy(['name' => SORT_DESC]);
+                    $orderBy['name'] = SORT_DESC;
                     break;
                 case 'created_at_desc':
-                    $query->orderBy(['created_at' => SORT_DESC]);
+                    $orderBy['created_at'] = SORT_DESC;
                     break;
                 default:
-                    $query->orderBy(['sort' => SORT_ASC, 'created_at' => SORT_DESC]);
+                    $orderBy['sort'] = SORT_ASC;
+                    $orderBy['created_at'] = SORT_DESC;
                     break;
             }
+            $query->orderBy($orderBy);
 
             $dataProvider = new ActiveDataProvider([
                 'query' => $query,
@@ -324,8 +335,8 @@ class ProductsController extends BaseApiController
 
             $pagination = $dataProvider->getPagination();
 
-            // Сохраняем в кэш только базовый список (без фильтров, первая страница, дефолтная сортировка)
-            if (!$hasFilters && $offset === 0 && $isDefaultSort && $cacheKey) {
+            // Сохраняем в кэш только базовый список без персональной сортировки по избранному
+            if (!$hasFilters && $offset === 0 && $isDefaultSort && empty($favoriteDropIds) && $cacheKey) {
                 $responseData = [
                     'data' => $products,
                     'pagination' => [
@@ -699,6 +710,43 @@ class ProductsController extends BaseApiController
             $dbTransaction->rollBack();
             Yii::error('Error buying product: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'products');
             return $this->errorResponse('PURCHASE_ERROR', 'Произошла ошибка при покупке товара: ' . $e->getMessage(), [], 500);
+        }
+    }
+
+    /**
+     * Опциональная JWT-авторизация: при наличии токена в запросе устанавливает пользователя в Yii::$app->user.
+     * Используется в actionIndex для персональной сортировки (избранное в начале). Не выбрасывает исключений.
+     */
+    private function tryAuthenticateUserFromJwt(): void
+    {
+        if (Yii::$app->request->getMethod() === 'OPTIONS') {
+            return;
+        }
+        /** @var JwtService $jwt */
+        $jwt = Yii::$app->has('jwt') ? Yii::$app->get('jwt') : new JwtService();
+        $token = $jwt->extractTokenFromRequest(Yii::$app->request);
+        if (empty($token)) {
+            return;
+        }
+        try {
+            $payload = $jwt->validateToken($token);
+            $userId = $jwt->getUserId($payload);
+            $steamId = $jwt->getSteamId($payload);
+            if (empty($userId) && empty($steamId)) {
+                return;
+            }
+            $user = null;
+            if ($userId) {
+                $user = User::findIdentity($userId);
+            }
+            if (!$user && $steamId) {
+                $user = User::find()->where(['steam_id' => $steamId])->one();
+            }
+            if ($user) {
+                Yii::$app->user->login($user, 0);
+            }
+        } catch (\Throwable $e) {
+            // Игнорируем: запрос остаётся без авторизации
         }
     }
 }
