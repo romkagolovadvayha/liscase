@@ -185,7 +185,8 @@ class ProductsController extends BaseApiController
         $isDefaultSort = $sort === 'sort';
         $cacheKey = null;
         $cachedData = null;
-        $cacheSuffix = $showMainBlock !== null && $showMainBlock !== '' ? '_main_' . (int)$showMainBlock : '';
+        // Отдельный ключ для «все товары» (_all), чтобы не отдавать старый кэш от фильтра show_main_block
+        $cacheSuffix = ($showMainBlock !== null && $showMainBlock !== '') ? '_main_' . (int)$showMainBlock : '_all';
         
         if (!$hasFilters && $offset === 0 && $isDefaultSort) {
             $cacheKey = 'api_products_list_' . $limit . $cacheSuffix;
