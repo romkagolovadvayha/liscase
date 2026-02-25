@@ -7,6 +7,7 @@ use common\models\box\Drop;
 use common\models\box\Category;
 use common\models\box\DropImage;
 use common\models\box\DropDrop;
+use common\models\box\DropFavorite;
 use common\models\user\UserDrop;
 use common\models\invoice\Invoice;
 use api\components\jwt\JwtAuthFilter;
@@ -450,6 +451,62 @@ class ProductsController extends BaseApiController
         }
 
         return $this->successResponse($product);
+    }
+
+    /**
+     * Добавить/удалить товар из избранного
+     *
+     * @OA\Post(
+     *     path="/v1/products/{id}/favorite",
+     *     operationId="toggleProductFavorite",
+     *     tags={"Products"},
+     *     summary="Переключить избранное для товара",
+     *     description="Требует JWT авторизации. Добавляет товар в избранное или удаляет из него.",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID товара (drop_id)",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Статус избранного обновлен",
+     *         @OA\MediaType(mediaType="application/json")
+     *     ),
+     *     @OA\Response(response=401, description="Не авторизован"),
+     *     @OA\Response(response=404, description="Товар не найден")
+     * )
+     */
+    public function actionToggleFavorite($id)
+    {
+        $user = $this->getCurrentUser();
+        $drop = Drop::find()
+            ->where(['id' => (int)$id, 'status' => Drop::STATUS_ACTIVE])
+            ->one();
+
+        if (!$drop) {
+            return $this->errorResponse('PRODUCT_NOT_FOUND', Yii::t('common', 'Товар не найден'), [], 404);
+        }
+
+        $userId = $user->id;
+        $dropId = (int)$id;
+        $isFavorite = DropFavorite::isFavorite($userId, $dropId);
+
+        if ($isFavorite) {
+            DropFavorite::removeFromFavorite($userId, $dropId);
+            return $this->successResponse([
+                'isFavorite' => false,
+                'message' => Yii::t('common', 'Товар удален из избранного'),
+            ]);
+        }
+
+        DropFavorite::addToFavorite($userId, $dropId);
+        return $this->successResponse([
+            'isFavorite' => true,
+            'message' => Yii::t('common', 'Товар добавлен в избранное'),
+        ]);
     }
 
     /**

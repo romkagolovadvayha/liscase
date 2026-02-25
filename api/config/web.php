@@ -91,6 +91,7 @@ $config = [
                 // Products
             'v1/products' => 'v1/products/index',
             'v1/products/categories' => 'v1/products/categories',
+            'v1/products/<id:\d+>/favorite' => 'v1/products/toggle-favorite',
             'v1/products/<id:\d+>' => 'v1/products/view',
             'v1/products/<id:\d+>/buy' => 'v1/products/buy',
             'v1/banlist' => 'v1/banlist/index',

@@ -17,6 +17,7 @@ use common\models\invoice\Invoice;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use common\models\tasks_v2\TaskV2;
+use common\models\box\DropFavorite;
 use frontend\forms\profile\ProfileForm;
 use frontend\forms\user\TransferForm;
 use frontend\forms\promocode\UserPromocodeForm;
@@ -1355,6 +1356,9 @@ class UserController extends BaseApiController
             Yii::$app->cache->set($projectStatsCacheKey, $projectStats, 5 * 60);
         }
         
+        // Список ID товаров в избранном (drop_id)
+        $favoriteDropIds = DropFavorite::getFavoriteDropIds($user->id);
+        
         return $this->successResponse([
             'username' => $user->username,
             'userStats' => $userStats,
@@ -1370,6 +1374,7 @@ class UserController extends BaseApiController
                 'online' => $projectStats['online'] ?? 0,
                 'count' => $projectStats['count'] ?? 0,
             ],
+            'favoriteDropIds' => $favoriteDropIds,
         ]);
     }
 
