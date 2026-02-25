@@ -414,15 +414,15 @@ class ServersController extends BaseApiController
             ],
         ];
 
-        // Текущая карта: приоритет mapList (картинка с S3), иначе mapEntity
+        // Текущая карта: приоритет mapList (картинка через getMapImageUrl как в MapsController), иначе mapEntity
         if ($server->mapList) {
-            $imageUrl = $server->mapList->getImagePreviewUrl() ?? $server->mapList->getImageUrl();
+            $imagePath = $server->mapList->image_preview ?? $server->mapList->image ?? null;
             $data['map'] = [
                 'id' => $server->mapList->id,
                 'name' => $server->mapList->hash ?? $server->mapList->name ?? null,
                 'size' => $server->mapList->size ?? $server->mapList->size_int ?? null,
                 'seed' => $server->mapList->seed ?? null,
-                'image' => $imageUrl,
+                'image' => $this->getMapImageUrl($imagePath),
             ];
         } elseif ($server->mapEntity) {
             $data['map'] = [
@@ -475,6 +475,29 @@ class ServersController extends BaseApiController
             default:
                 return 'unknown';
         }
+    }
+
+    /**
+     * Формирует публичный URL изображения карты (S3 или как есть для полного URL).
+     * Логика как в MapsController::getMapImageUrl().
+     *
+     * @param string|null $path Путь к изображению
+     * @return string|null
+     */
+    private function getMapImageUrl(?string $path): ?string
+    {
+        if (empty($path)) {
+            return null;
+        }
+        if (preg_match('#^https?://#i', $path)) {
+            return $path;
+        }
+        $s3PublicUrl = Yii::$app->settings->get('s3_publicUrl');
+        if (empty($s3PublicUrl)) {
+            return $path;
+        }
+        $path = ltrim($path, '/');
+        return rtrim($s3PublicUrl, '/') . '/' . $path;
     }
 }
 
