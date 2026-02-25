@@ -78,6 +78,7 @@ $config = [
                 'v1/user/partner/promocode' => 'v1/user/partner-promocode',
                 'v1/user/partner-bonus' => 'v1/user/partner-bonus',
                 'v1/user/promocode' => 'v1/user/promocode',
+                'v1/user/promocode/activate' => 'v1/user/activate-promocode',
 
                 // Settings
                 'v1/settings' => 'v1/settings/index',

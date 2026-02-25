@@ -21,6 +21,7 @@ use common\models\box\DropFavorite;
 use frontend\forms\profile\ProfileForm;
 use frontend\forms\user\TransferForm;
 use frontend\forms\promocode\UserPromocodeForm;
+use frontend\forms\promocode\PromocodeForm;
 use frontend\forms\market\PaymentForm;
 use api\components\jwt\JwtAuthFilter;
 use yii\data\ArrayDataProvider;
@@ -1091,6 +1092,50 @@ class UserController extends BaseApiController
         }
 
         return $this->errorResponse('INVALID_DATA', 'Неверные данные', [], 400);
+    }
+
+    /**
+     * Активация промокода (как в шапке сайта site/promocode — ввод кода для пополнения баланса).
+     *
+     * @OA\Post(
+     *     path="/v1/user/promocode/activate",
+     *     operationId="activatePromocode",
+     *     tags={"User"},
+     *     summary="Активировать промокод (пополнение баланса)",
+     *     description="Требует JWT. Ввод промокода из шапки сайта — начисление на баланс.",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="application/json",
+     *             @OA\Schema(
+     *                 required={"code"},
+     *                 @OA\Property(property="code", type="string", example="PROMO123", description="Код промокода для активации")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Промокод активирован"),
+     *     @OA\Response(response=400, description="Ошибка валидации"),
+     *     @OA\Response(response=401, description="Не авторизован")
+     * )
+     */
+    public function actionActivatePromocode()
+    {
+        $user = $this->getCurrentUser();
+
+        $form = new PromocodeForm();
+        if (!$form->load(Yii::$app->request->post(), '')) {
+            return $this->errorResponse('INVALID_DATA', 'Неверные данные', [], 400);
+        }
+        $model = $form->saveRecord();
+        if ($model !== null && $model !== false) {
+            $amount = is_object($model) && isset($model->amount) ? (int) $model->amount : 50;
+            return $this->successResponse([
+                'message' => Yii::t('common', 'Баланс пополнен на {PARAMS_PROMSUM} RUB', ['PARAMS_PROMSUM' => $amount]),
+                'newBalance' => (int) $user->getPersonalBalance()->balance,
+            ]);
+        }
+        return $this->validationErrorResponse($form);
     }
 
     /**
