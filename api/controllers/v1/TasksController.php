@@ -446,7 +446,7 @@ class TasksController extends BaseApiController
             ] : null,
             'is_vip_only' => (bool)$task->is_vip_only,
             'button_text' => $task->button_text,
-            'extra_buttons' => $task->extra_buttons ? json_decode($task->extra_buttons, true) : null,
+            'extra_buttons' => is_array($task->extra_buttons) ? $task->extra_buttons : ($task->extra_buttons ? json_decode($task->extra_buttons, true) : null),
             'max_progress' => $task->max_progress,
             'global_completed' => (int)$task->global_completed,
         ];
