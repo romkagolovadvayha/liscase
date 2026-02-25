@@ -686,7 +686,9 @@ class UserController extends BaseApiController
             return $this->errorResponse('INVALID_TYPE', 'Неверный тип перевода', [], 400);
         }
 
-        if ($form->load(Yii::$app->request->post(), '')) {
+        // JSON body от фронта приходит в getBodyParams()
+        $params = Yii::$app->request->getBodyParams() ?: Yii::$app->request->post();
+        if ($form->load($params, '')) {
             $result = $form->saveRecord();
             if ($result !== false) {
                 return $this->successResponse([
