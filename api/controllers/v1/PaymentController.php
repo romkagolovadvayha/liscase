@@ -7,6 +7,7 @@ use yii\web\NotFoundHttpException;
 use yii\web\ForbiddenHttpException;
 use yii\web\BadRequestHttpException;
 use common\models\invoice\Deposit;
+use common\models\invoice\PaymentBonuses;
 use common\components\payments\PaymentApi;
 use common\components\helpers\EmailHelper;
 use frontend\forms\market\PaymentForm;
@@ -101,8 +102,21 @@ class PaymentController extends BaseApiController
             ];
         }
 
+        // Бонусы за пополнение (как в frontend/views/user/payment.php)
+        $bonuses = PaymentBonuses::find()
+            ->orderBy(['amount' => SORT_ASC])
+            ->asArray()
+            ->all();
+        $bonusesList = array_map(function ($row) {
+            return [
+                'amount' => (int)($row['amount'] ?? 0),
+                'bonus' => (int)($row['bonus'] ?? 0),
+            ];
+        }, $bonuses);
+
         return $this->successResponse([
             'methods' => $methods,
+            'bonuses' => $bonusesList,
         ]);
     }
 
