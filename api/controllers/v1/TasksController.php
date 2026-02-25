@@ -177,6 +177,23 @@ class TasksController extends BaseApiController
             $tasks[] = $this->formatTask($task, $user, $tasksProgress[$task->id] ?? null);
         }
 
+        // Фильтр по статусу (для вкладки "Выполненные" и др.)
+        $statusFilter = Yii::$app->request->get('status');
+        if ($statusFilter === 'completed') {
+            $tasks = array_values(array_filter($tasks, function ($t) {
+                return ($t['userStatus']['status'] ?? '') === 'completed';
+            }));
+        } elseif ($statusFilter === 'active') {
+            $tasks = array_values(array_filter($tasks, function ($t) {
+                $s = $t['userStatus']['status'] ?? '';
+                return $s === 'available' || $s === 'in_progress';
+            }));
+        } elseif ($statusFilter === 'vip') {
+            $tasks = array_values(array_filter($tasks, function ($t) {
+                return !empty($t['is_vip_only']);
+            }));
+        }
+
         // Пагинация
         $page = (int)Yii::$app->request->get('page', 1);
         $pageSize = (int)Yii::$app->request->get('pageSize', 20);
