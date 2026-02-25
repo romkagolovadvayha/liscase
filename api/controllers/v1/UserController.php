@@ -108,7 +108,8 @@ class UserController extends BaseApiController
         // PUT - обновление профиля
         if (Yii::$app->request->isPut || Yii::$app->request->isPost) {
             $model = ProfileForm::findOne($user->userProfile->id);
-            $post = Yii::$app->request->post();
+            // JSON body (PUT от фронта) приходит в getBodyParams(), form — в post()
+            $post = Yii::$app->request->getBodyParams() ?: Yii::$app->request->post();
 
             if ($model->load($post, '') || $model->load($post)) {
                 // Обработка чекбоксов - API ожидает целые числа (0 или 1), а не булевы значения

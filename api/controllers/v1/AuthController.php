@@ -557,6 +557,20 @@ class AuthController extends BaseApiController
             $data['server'] = null;
         }
 
+        // IP пользователя и страна по GeoIP (как в старой версии)
+        $data['ip'] = !empty($user->ip) ? $user->ip : null;
+        $data['country_code'] = null;
+        if (!empty($user->ip)) {
+            try {
+                $data['country_code'] = $user->getCountryByIp();
+            } catch (\Exception $e) {
+                // не показываем страну при ошибке GeoIP
+            }
+        }
+
+        // Последнее посещение сервера
+        $data['last_visit_server_at'] = !empty($user->last_visit_server_at) ? $user->last_visit_server_at : null;
+
         return $data;
     }
 
