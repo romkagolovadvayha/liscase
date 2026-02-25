@@ -414,14 +414,15 @@ class ServersController extends BaseApiController
             ],
         ];
 
-        // Текущая карта: приоритет mapList (S3 image, size, seed), иначе mapEntity
+        // Текущая карта: приоритет mapList (картинка с S3), иначе mapEntity
         if ($server->mapList) {
+            $imageUrl = $server->mapList->getImagePreviewUrl() ?? $server->mapList->getImageUrl();
             $data['map'] = [
                 'id' => $server->mapList->id,
                 'name' => $server->mapList->hash ?? $server->mapList->name ?? null,
                 'size' => $server->mapList->size ?? $server->mapList->size_int ?? null,
                 'seed' => $server->mapList->seed ?? null,
-                'image' => $server->mapList->image_preview ?? $server->mapList->image ?? null,
+                'image' => $imageUrl,
             ];
         } elseif ($server->mapEntity) {
             $data['map'] = [
