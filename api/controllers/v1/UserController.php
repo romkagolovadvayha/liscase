@@ -91,8 +91,8 @@ class UserController extends BaseApiController
                 'profile' => [
                     'name' => $user->userProfile->name ?? $user->username,
                     'trade_link' => $user->userProfile->trade_link ?? null,
-                    'raid_notify' => (bool)($user->userProfile->raid_notify ?? false),
-                    'ban_notify' => (bool)($user->userProfile->ban_notify ?? false),
+                    'raid_notify' => (bool)($user->raid_notify ?? false),
+                    'ban_notify' => (bool)($user->ban_notify ?? false),
                     'is_hide_online' => (bool)($user->userProfile->is_hide_online ?? false),
                     'is_hide_team' => (bool)($user->userProfile->is_hide_team ?? false),
                     'youtube_link' => $user->userProfile->youtube_link ?? null,
@@ -110,36 +110,60 @@ class UserController extends BaseApiController
             $model = ProfileForm::findOne($user->userProfile->id);
             // JSON body (PUT от фронта) приходит в getBodyParams(), form — в post()
             $post = Yii::$app->request->getBodyParams() ?: Yii::$app->request->post();
-
-            if ($model->load($post, '') || $model->load($post)) {
-                // Обработка чекбоксов - API ожидает целые числа (0 или 1), а не булевы значения
-                if (isset($post['raid_notify'])) {
-                    // Преобразуем в целое число: 0 или 1
-                    $model->raid_notify = (int)$post['raid_notify'];
-                }
-                if (isset($post['ban_notify'])) {
-                    // Преобразуем в целое число: 0 или 1
-                    $model->ban_notify = (int)$post['ban_notify'];
-                }
-                if (isset($post['is_hide_online'])) {
-                    $value = $post['is_hide_online'];
-                    $model->is_hide_online = is_array($value) ? (bool)end($value) : (bool)$value;
-                }
-                if (isset($post['is_hide_team'])) {
-                    $value = $post['is_hide_team'];
-                    $model->is_hide_team = is_array($value) ? (bool)end($value) : (bool)$value;
-                }
-
-                if ($model->saveRecord()) {
-                    return $this->successResponse([
-                        'message' => 'Настройки успешно сохранены',
-                    ]);
-                } else {
-                    return $this->validationErrorResponse($model);
+            // Fallback: для PUT часто тело не парсится в getBodyParams() — читаем raw JSON
+            if (empty($post) && (Yii::$app->request->isPut || Yii::$app->request->isPost)) {
+                $raw = Yii::$app->request->getRawBody();
+                if (!empty($raw)) {
+                    $decoded = json_decode($raw, true);
+                    if (is_array($decoded)) {
+                        $post = $decoded;
+                    }
                 }
             }
 
-            return $this->errorResponse('INVALID_DATA', 'Неверные данные', [], 400);
+            if (!empty($post)) {
+                $model->load($post, '') || $model->load($post);
+                // Явно выставляем поля из тела (load может не подхватить всё из-за formName/attributes)
+                if (array_key_exists('raid_notify', $post)) {
+                    $model->raid_notify = (int)$post['raid_notify'];
+                }
+                if (array_key_exists('ban_notify', $post)) {
+                    $model->ban_notify = (int)$post['ban_notify'];
+                }
+                if (array_key_exists('is_hide_online', $post)) {
+                    $value = $post['is_hide_online'];
+                    $model->is_hide_online = is_array($value) ? (bool)end($value) : (bool)$value;
+                }
+                if (array_key_exists('is_hide_team', $post)) {
+                    $value = $post['is_hide_team'];
+                    $model->is_hide_team = is_array($value) ? (bool)end($value) : (bool)$value;
+                }
+                if (array_key_exists('trade_link', $post)) {
+                    $model->trade_link = $post['trade_link'] !== null && $post['trade_link'] !== '' ? trim((string)$post['trade_link']) : null;
+                }
+                if (array_key_exists('youtube_link', $post)) {
+                    $model->youtube_link = $post['youtube_link'] !== null && $post['youtube_link'] !== '' ? trim((string)$post['youtube_link']) : null;
+                }
+                if (array_key_exists('twitch_link', $post)) {
+                    $model->twitch_link = $post['twitch_link'] !== null && $post['twitch_link'] !== '' ? trim((string)$post['twitch_link']) : null;
+                }
+                if (array_key_exists('vk_link', $post)) {
+                    $model->vk_link = $post['vk_link'] !== null && $post['vk_link'] !== '' ? trim((string)$post['vk_link']) : null;
+                }
+                if (array_key_exists('telegram_link', $post)) {
+                    $model->telegram_link = $post['telegram_link'] !== null && $post['telegram_link'] !== '' ? trim((string)$post['telegram_link']) : null;
+                }
+            } else {
+                return $this->errorResponse('INVALID_DATA', 'Неверные данные: тело запроса пусто или не JSON', [], 400);
+            }
+
+            if ($model->saveRecord()) {
+                return $this->successResponse([
+                    'message' => 'Настройки успешно сохранены',
+                ]);
+            }
+
+            return $this->validationErrorResponse($model);
         }
     }
 
