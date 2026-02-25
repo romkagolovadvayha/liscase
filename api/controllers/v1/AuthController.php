@@ -529,6 +529,8 @@ class AuthController extends BaseApiController
             'roles' => $user->getUserRoles(),
             'isAdmin' => $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]),
             'created_at' => $user->created_at,
+            'is_email' => (bool)$user->is_email,
+            'email' => $user->is_email ? ($user->email ?? '') : '',
         ];
 
         // Добавляем информацию о VIP, если он активен
