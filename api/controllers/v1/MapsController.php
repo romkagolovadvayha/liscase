@@ -311,15 +311,17 @@ class MapsController extends BaseApiController
             ],
         ];
 
-        // Добавляем информацию о текущей карте, если есть
+        // Добавляем информацию о текущей карте (картинка и данные как в старой версии)
         if ($server->map_list_id) {
             $fixedMap = MapList::findOne($server->map_list_id);
             if ($fixedMap) {
+                $imagePath = $fixedMap->image_preview ?? $fixedMap->image ?? null;
                 $serverData['currentMap'] = [
                     'id' => $fixedMap->id,
                     'hash' => $fixedMap->hash,
-                    'size' => $fixedMap->size_int,
+                    'size' => $fixedMap->size_int ?? $fixedMap->size,
                     'seed' => $fixedMap->seed,
+                    'image' => $this->getMapImageUrl($imagePath),
                 ];
             }
         }
