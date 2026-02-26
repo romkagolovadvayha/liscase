@@ -611,7 +611,7 @@ class Servers extends \common\components\base\ActiveRecord
     {
         return $this->hasMany(ServersTags::class, ['id' => 'tag_id'])
             ->viaTable('servers_tags_relation', ['server_id' => 'id'])
-            ->andWhere(['status' => ServersTags::STATUS_ACTIVE])
+            ->andWhere([ServersTags::tableName() . '.status' => ServersTags::STATUS_ACTIVE])
             ->orderBy(['sort' => SORT_ASC]);
     }
 
