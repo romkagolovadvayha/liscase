@@ -82,6 +82,44 @@ class MapList extends \yii\db\ActiveRecord
     }
 
     /**
+     * Возвращает публичный URL изображения из S3 (или как есть, если уже полный URL).
+     * @param string|null $path Поле image или image_preview
+     * @return string|null
+     */
+    protected function buildImageUrl($path)
+    {
+        if (empty($path)) {
+            return null;
+        }
+        if (strpos($path, 'http://') === 0 || strpos($path, 'https://') === 0) {
+            return $path;
+        }
+        if (!\Yii::$app->has('s3Api')) {
+            return $path;
+        }
+        $s3Key = ltrim($path, '/');
+        return \Yii::$app->s3Api->getPublicUrl($s3Key);
+    }
+
+    /**
+     * Публичный URL основного изображения карты (S3).
+     * @return string|null
+     */
+    public function getImageUrl()
+    {
+        return $this->buildImageUrl($this->image);
+    }
+
+    /**
+     * Публичный URL превью изображения карты (S3).
+     * @return string|null
+     */
+    public function getImagePreviewUrl()
+    {
+        return $this->buildImageUrl($this->image_preview ?? $this->image);
+    }
+
+    /**
      * Gets query for [[Maps]].
      *
      * @return \yii\db\ActiveQuery

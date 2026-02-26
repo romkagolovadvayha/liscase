@@ -154,7 +154,7 @@ class ServersController extends BaseApiController
         $cached = Yii::$app->cache->get($cacheKey);
 
         if ($cached === false) {
-            $tag = ServersTags::find()->where(['link' => $tagLink])->one();
+            $tag = ServersTags::find()->where(['link_name' => $tagLink])->one();
             if (!$tag) {
                 throw new NotFoundHttpException('Тег не найден');
             }
@@ -175,7 +175,7 @@ class ServersController extends BaseApiController
                 'tag' => [
                     'id' => $tag->id,
                     'name' => $tag->name,
-                    'link' => $tag->link,
+                    'link' => $tag->link_name,
                 ],
                 'servers' => $serversData,
             ];
@@ -404,6 +404,8 @@ class ServersController extends BaseApiController
             'nextWipe' => $server->next_wipe,
             'nextWipeTimestamp' => $server->next_wipe ? (($timestamp = strtotime($server->next_wipe)) !== false ? $timestamp : null) : null,
             'wipeType' => $server->wipeTypeText() ?? 'Вайп',
+            'wipe_type' => (int)($server->wipe_type ?? 0),
+            'current_wipe' => $server->wipe ?? null,
             'monitoring' => [
                 'percentPlayers' => $monitoring['percentPlayers'] ?? 0,
                 'percentJoined' => $monitoring['percentJoined'] ?? 0,
@@ -450,7 +452,6 @@ class ServersController extends BaseApiController
         }
 
         if ($detailed) {
-            $data['current_wipe'] = $server->wipe ?? null;
             $data['sort'] = $server->sort ?? null;
         }
 
