@@ -475,6 +475,7 @@ class StatsController extends BaseApiController
                     'wipe' => $wipe,
                     'username' => $user->username,
                     'avatar' => $user->getAvatar(),
+                    'has_vip' => $user->hasVip(),
                     'stats' => $formattedStats,
                     'metrics' => [
                         'kills' => $kills,
