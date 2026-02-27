@@ -423,6 +423,25 @@ class StatsController extends BaseApiController
                 ];
             }
 
+            // Медицина — для списка в «Последняя активность»
+            $healItems = [
+                ['name' => \Yii::t('common', 'Большая аптечка'), 'key' => 'first_aid_kit', 'image_key' => 'largemedkit'],
+                ['name' => \Yii::t('common', 'Медицинский шприц'), 'key' => 'syringe', 'image_key' => 'syringe.medical'],
+                ['name' => \Yii::t('common', 'Бинт'), 'key' => 'bandage', 'image_key' => 'bandage'],
+            ];
+            $medical = [];
+            foreach ($healItems as $item) {
+                $count = (int) Statistics::getParam($playerStats, $item['key']);
+                $imageKey = $item['image_key'] ?? $item['key'];
+                $medical[] = [
+                    'key' => $item['key'],
+                    'name' => $item['name'],
+                    'image' => Statistics::getImage($images, $imageKey),
+                    'count' => $count,
+                    'score' => 0,
+                ];
+            }
+
             $tasksV2 = TaskV2::find()
                 ->where(['is_active' => 1])
                 ->orderBy(['sort' => SORT_ASC])
@@ -521,6 +540,7 @@ class StatsController extends BaseApiController
                     'weapons' => $weapons,
                     'farm' => $farm,
                     'tea' => $tea,
+                    'medical' => $medical,
                     'awards' => $awards,
                     'awards_stats' => [
                         'completed' => $awardsCompleted,
