@@ -100,15 +100,17 @@ class Kills extends ActiveRecord
 
     /**
      * @param Servers $server
-     * @param User $user
-     *
+     * @param User|null $user
+     * @param int $limit
+     * @param string|null $wipe вайп для фильтра; если не передан — используется текущий вайп сервера
      */
-    public static function getKills($server, $user = null, $limit = 10) {
+    public static function getKills($server, $user = null, $limit = 10, $wipe = null) {
+        $wipeFilter = $wipe !== null && $wipe !== '' ? $wipe : $server->currentWipe();
         $query = Kills::find()
                        ->cache(60)
                        ->andWhere(['!=', 'dead', ''])
                        ->andWhere(['server_tag' => $server->tag])
-                       ->andWhere(['wipe' => $server->currentWipe()]);
+                       ->andWhere(['wipe' => $wipeFilter]);
 
         if (!empty($user)) {
             $query->andWhere(['OR',

@@ -26,6 +26,22 @@ use api\components\jwt\JwtService;
 class StatsController extends BaseApiController
 {
     /**
+     * URL статической картинки (например, охота) из S3 или baseUrl.
+     * Дублирует логику Statistics::getStaticImageUrl для совместимости со старым деплоем common.
+     * @param string $path путь без ведущего слэша, например images/hunters/Boar.png
+     * @return string
+     */
+    private static function getStaticImageUrl($path)
+    {
+        $path = ltrim($path, '/');
+        if (Yii::$app->has('s3Api')) {
+            return Yii::$app->s3Api->getPublicUrl($path);
+        }
+        $baseUrl = Yii::$app->settings->get('s3_publicUrl');
+        return $baseUrl ? rtrim($baseUrl, '/') . '/' . $path : '/' . $path;
+    }
+
+    /**
      * Настройка behaviors
      */
     public function behaviors()
@@ -471,7 +487,7 @@ class StatsController extends BaseApiController
                 $hunters[] = [
                     'key' => $item['key'],
                     'name' => $item['name'],
-                    'image' => Statistics::getStaticImageUrl($item['image_path']),
+                    'image' => self::getStaticImageUrl($item['image_path']),
                     'count' => $count,
                     'score' => 0,
                 ];

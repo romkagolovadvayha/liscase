@@ -98,6 +98,20 @@ class Statistics extends ActiveRecord
         return $images[$key];
     }
 
+    /**
+     * URL статической картинки (например, охота) из S3 или baseUrl.
+     * @param string $path путь без ведущего слэша, например images/hunters/Boar.png
+     * @return string
+     */
+    public static function getStaticImageUrl($path) {
+        $path = ltrim($path, '/');
+        if (Yii::$app->has('s3Api')) {
+            return Yii::$app->s3Api->getPublicUrl($path);
+        }
+        $baseUrl = Yii::$app->settings->get('s3_publicUrl');
+        return $baseUrl ? rtrim($baseUrl, '/') . '/' . $path : '/' . $path;
+    }
+
     public static function getName($names, $key) {
         if (empty($names[$key])) {
             return Yii::t('common', 'Без названия');
