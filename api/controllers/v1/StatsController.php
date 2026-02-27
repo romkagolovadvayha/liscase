@@ -286,12 +286,26 @@ class StatsController extends BaseApiController
                 ->limit(120)
                 ->asArray()
                 ->all();
+            $serverTags = array_unique(array_filter(array_column($wipesActivityRows, 'server_tag')));
+            $serverNamesByTag = [];
+            if (!empty($serverTags)) {
+                $serversList = Servers::find()
+                    ->select(['tag', 'monitoring_name'])
+                    ->andWhere(['tag' => $serverTags])
+                    ->asArray()
+                    ->all();
+                foreach ($serversList as $s) {
+                    $serverNamesByTag[$s['tag']] = $s['monitoring_name'] ?? $s['tag'];
+                }
+            }
             $wipesActivity = [];
             foreach ($wipesActivityRows as $row) {
                 $playtime = is_numeric($row['value']) ? (int) $row['value'] : 0;
+                $tag = $row['server_tag'] ?? '';
                 $wipesActivity[] = [
                     'wipe' => $row['wipe'],
-                    'server_tag' => $row['server_tag'] ?? '',
+                    'server_tag' => $tag,
+                    'server_name' => $serverNamesByTag[$tag] ?? $tag,
                     'playtime' => $playtime,
                 ];
             }
@@ -457,6 +471,7 @@ class StatsController extends BaseApiController
                 'player' => [
                     'steam_id' => $steamId,
                     'server_tag' => $serverTag,
+                    'server_name' => $server->monitoring_name ?? $serverTag,
                     'wipe' => $wipe,
                     'username' => $user->username,
                     'avatar' => $user->getAvatar(),
