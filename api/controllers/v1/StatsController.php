@@ -442,6 +442,27 @@ class StatsController extends BaseApiController
                 ];
             }
 
+            // Пироги — ключи mod_*pie* из статистики, как в _player_stats_pie.php
+            $pie = [];
+            foreach ($playerStats as $statKey => $unused) {
+                if (strpos($statKey, 'mod_') !== 0 || strpos($statKey, 'pie') === false) {
+                    continue;
+                }
+                $key = str_replace('mod_', '', $statKey);
+                $row = Statistics::getFoodItem($images, $names, $playerStats, $key);
+                $pie[] = [
+                    'key' => $row['key'],
+                    'name' => $row['name'],
+                    'image' => $row['image'],
+                    'count' => (int) $row['count'],
+                    'score' => 0,
+                ];
+            }
+            usort($pie, function ($a, $b) {
+                return $b['count'] - $a['count'];
+            });
+            $pie = array_slice($pie, 0, 10);
+
             // Медицина — для списка в «Последняя активность»
             $healItems = [
                 ['name' => \Yii::t('common', 'Большая аптечка'), 'key' => 'first_aid_kit', 'image_key' => 'largemedkit'],
@@ -646,6 +667,7 @@ class StatsController extends BaseApiController
                     'weapons' => $weapons,
                     'farm' => $farm,
                     'tea' => $tea,
+                    'pie' => $pie,
                     'medical' => $medical,
                     'hunters' => $hunters,
                     'ferm' => $ferm,
