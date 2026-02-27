@@ -445,18 +445,18 @@ class StatsController extends BaseApiController
                 ];
             }
 
-            // Охота — животные (ключ статистики => имя для API)
+            // Охота — животные; картинки как в frontend/views/stats/_player_stats_hunter.php (images/hunters/*.png) через S3
             $hunterItems = [
-                ['key' => 'boar', 'name' => \Yii::t('common', 'Кабаны')],
-                ['key' => 'horse', 'name' => \Yii::t('common', 'Лошади')],
-                ['key' => 'wolf', 'name' => \Yii::t('common', 'Волки'), 'param' => ['wolf', 'wolf2']],
-                ['key' => 'bear', 'name' => \Yii::t('common', 'Медведи'), 'param' => ['bear', 'polarbear']],
-                ['key' => 'deer', 'name' => \Yii::t('common', 'Олени'), 'param' => ['deer', 'stag']],
-                ['key' => 'chicken', 'name' => \Yii::t('common', 'Курицы')],
-                ['key' => 'simpleshark', 'name' => \Yii::t('common', 'Акулы')],
-                ['key' => 'panther', 'name' => \Yii::t('common', 'Пантеры')],
-                ['key' => 'crocodile', 'name' => \Yii::t('common', 'Крокодилы')],
-                ['key' => 'tiger', 'name' => \Yii::t('common', 'Тигры')],
+                ['key' => 'boar', 'name' => \Yii::t('common', 'Кабаны'), 'image_path' => 'images/hunters/Boar.png'],
+                ['key' => 'horse', 'name' => \Yii::t('common', 'Лошади'), 'image_path' => 'images/hunters/Horse.png'],
+                ['key' => 'wolf', 'name' => \Yii::t('common', 'Волки'), 'param' => ['wolf', 'wolf2'], 'image_path' => 'images/hunters/Wolf.png'],
+                ['key' => 'bear', 'name' => \Yii::t('common', 'Медведи'), 'param' => ['bear', 'polarbear'], 'image_path' => 'images/hunters/bear.png'],
+                ['key' => 'deer', 'name' => \Yii::t('common', 'Олени'), 'param' => ['deer', 'stag'], 'image_path' => 'images/hunters/Stag.png'],
+                ['key' => 'chicken', 'name' => \Yii::t('common', 'Курицы'), 'image_path' => 'images/hunters/Chicken.png'],
+                ['key' => 'simpleshark', 'name' => \Yii::t('common', 'Акулы'), 'image_path' => 'images/hunters/shark2.png'],
+                ['key' => 'panther', 'name' => \Yii::t('common', 'Пантеры'), 'image_path' => 'images/hunters/panther.png'],
+                ['key' => 'crocodile', 'name' => \Yii::t('common', 'Крокодилы'), 'image_path' => 'images/hunters/crocodile.png'],
+                ['key' => 'tiger', 'name' => \Yii::t('common', 'Тигры'), 'image_path' => 'images/hunters/tiger.png'],
             ];
             $hunters = [];
             foreach ($hunterItems as $item) {
@@ -468,11 +468,10 @@ class StatsController extends BaseApiController
                 } else {
                     $count = (int) Statistics::getParam($playerStats, $item['key']);
                 }
-                $imgKey = $item['key'] === 'wolf' ? 'wolf' : ($item['key'] === 'bear' ? 'bear' : $item['key']);
                 $hunters[] = [
                     'key' => $item['key'],
                     'name' => $item['name'],
-                    'image' => Statistics::getImage($images, $imgKey),
+                    'image' => Statistics::getStaticImageUrl($item['image_path']),
                     'count' => $count,
                     'score' => 0,
                 ];
@@ -495,14 +494,15 @@ class StatsController extends BaseApiController
                 ['name' => \Yii::t('common', 'Подсолнух'), 'key' => 'gathered_sunflower', 'score' => 0.3],
                 ['name' => \Yii::t('common', 'Пшеница'), 'key' => 'gathered_wheat', 'score' => 0.3],
             ];
+            // Фермерство — ключи как в getFermItem: gathered_cloth, gathered_blue.berry и т.д.; картинки из $images (S3)
             $ferm = [];
             foreach ($fermItems as $item) {
-                $count = (int) Statistics::getParam($playerStats, $item['key']);
+                $row = Statistics::getFermItem($images, $playerStats, $item['key'], $item['name'], $item['score']);
                 $ferm[] = [
                     'key' => $item['key'],
-                    'name' => $item['name'],
-                    'image' => Statistics::getImage($images, str_replace('.', '_', $item['key'])),
-                    'count' => $count,
+                    'name' => $row['name'],
+                    'image' => $row['image'],
+                    'count' => (int) $row['count'],
                     'score' => (float) $item['score'],
                 ];
             }
@@ -519,14 +519,15 @@ class StatsController extends BaseApiController
                 ['name' => \Yii::t('common', 'Сельдь'), 'key' => 'f_fish.herring', 'score' => 10],
                 ['name' => \Yii::t('common', 'Сардина'), 'key' => 'f_fish.sardine', 'score' => 10],
             ];
+            // Рыболовство — ключи как в getFishItem: f_fish.anchovy и т.д.; картинки из $images (S3)
             $fishing = [];
             foreach ($fishingItems as $item) {
-                $count = (int) Statistics::getParam($playerStats, $item['key']);
+                $row = Statistics::getFishItem($images, $playerStats, $item['key'], $item['name'], $item['score']);
                 $fishing[] = [
                     'key' => $item['key'],
-                    'name' => $item['name'],
-                    'image' => Statistics::getImage($images, str_replace(['f_fish.', '.'], ['', '_'], $item['key'])),
-                    'count' => $count,
+                    'name' => $row['name'],
+                    'image' => $row['image'],
+                    'count' => (int) $row['count'],
                     'score' => (float) $item['score'],
                 ];
             }
