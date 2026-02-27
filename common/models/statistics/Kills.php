@@ -251,15 +251,14 @@ class Kills extends ActiveRecord
     }
 
     /**
-     * Дуэли: сводка по противникам (игрок vs игрок).
-     * Для текущего игрока возвращает список оппонентов с количеством убийств в обе стороны.
+     * Дуэли: сводка по противникам (игрок vs игрок) по всем серверам.
+     * Фильтр только по дате вайпа, без привязки к серверу.
      *
-     * @param Servers $server
      * @param string $currentSteamId steam_id игрока, чья статистика просматривается
      * @param string|null $wipe если null — за все время; иначе за указанный вайп
      * @return array список [ ['opponent_steam_id' => ..., 'opponent_name' => ..., 'opponent_avatar' => ..., 'opponent_link' => ..., 'kills_by_me' => int, 'kills_by_them' => int, 'total' => int ], ... ]
      */
-    public static function getDuels($server, $currentSteamId, $wipe = null)
+    public static function getDuels($currentSteamId, $wipe = null)
     {
         $currentSteamId = (string) $currentSteamId;
         $query = static::find()
@@ -268,7 +267,6 @@ class Kills extends ActiveRecord
                 'kills_by_me' => 'SUM(CASE WHEN steam_id = :current THEN 1 ELSE 0 END)',
                 'kills_by_them' => 'SUM(CASE WHEN dead = :current THEN 1 ELSE 0 END)',
             ])
-            ->andWhere(['server_tag' => $server->tag])
             ->andWhere(['type' => 'kill'])
             ->andWhere(['OR', ['steam_id' => $currentSteamId], ['dead' => $currentSteamId]])
             ->andWhere(['!=', 'dead', ''])
