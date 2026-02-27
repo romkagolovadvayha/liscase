@@ -674,7 +674,7 @@ class StatsController extends BaseApiController
                     'weapons' => $weapons,
                     'farm' => $farm,
                     'craftable_images' => [
-                        'metal_fragments' => Statistics::getImage($images, 'metal.fragments'),
+                        'metal_fragments' => Statistics::getImage($images, 'metal_fragments'),
                         'hq.metal.ore' => Statistics::getImage($images, 'hq.metal.ore'),
                         'gunpowder' => Statistics::getImage($images, 'gunpowder'),
                         'low_grade_fuel' => Statistics::getImage($images, 'low_grade_fuel'),
