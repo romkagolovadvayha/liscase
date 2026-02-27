@@ -419,30 +419,28 @@ class StatsController extends BaseApiController
                 ];
             }
 
-            $teaItems = [
-                ['name' => \Yii::t('common', 'Чистый чай на макс. здоровье'), 'key' => 'consumable.tea.pure'],
-                ['name' => \Yii::t('common', 'Простой чай на металлолом'), 'key' => 'consumable.tea.simple'],
-                ['name' => \Yii::t('common', 'Продвинутый чай на макс. здоровье'), 'key' => 'consumable.tea.advanced'],
-                ['name' => \Yii::t('common', 'Чистый чай на руду'), 'key' => 'oretea.pure'],
-                ['name' => \Yii::t('common', 'Продвинутый чай на руду'), 'key' => 'oretea.advanced'],
-                ['name' => \Yii::t('common', 'Чистый чай на дерево'), 'key' => 'woodtea.pure'],
-                ['name' => \Yii::t('common', 'Продвинутый чай на дерево'), 'key' => 'woodtea.advanced'],
-                ['name' => \Yii::t('common', 'Чистый чай на металлолом'), 'key' => 'scraptea.pure'],
-                ['name' => \Yii::t('common', 'Продвинутый чай на металлолом'), 'key' => 'scraptea.advanced'],
-            ];
+            // Чаепитие — как в _player_stats_tea.php: ключи mod_*tea* из статистики, getFoodItem (в БД ключ mod_*)
             $tea = [];
-            foreach ($teaItems as $item) {
-                $row = Statistics::getFarmItem($images, $names, $playerStats, $item['key'], $item['name'], 0);
+            foreach ($playerStats as $statKey => $unused) {
+                if (strpos($statKey, 'mod_') !== 0 || strpos($statKey, 'tea') === false) {
+                    continue;
+                }
+                $key = str_replace('mod_', '', $statKey);
+                $row = Statistics::getFoodItem($images, $names, $playerStats, $key);
                 $tea[] = [
-                    'key' => $item['key'],
+                    'key' => $row['key'],
                     'name' => $row['name'],
                     'image' => $row['image'],
                     'count' => (int) $row['count'],
                     'score' => 0,
                 ];
             }
+            usort($tea, function ($a, $b) {
+                return $b['count'] - $a['count'];
+            });
+            $tea = array_slice($tea, 0, 10);
 
-            // Пироги — ключи mod_*pie* из статистики, как в _player_stats_pie.php
+            // Пироги — как в _player_stats_pie.php: ключи mod_*pie* из статистики, getFoodItem
             $pie = [];
             foreach ($playerStats as $statKey => $unused) {
                 if (strpos($statKey, 'mod_') !== 0 || strpos($statKey, 'pie') === false) {
