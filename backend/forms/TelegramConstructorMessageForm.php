@@ -53,22 +53,25 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
         $updated = [];
         $viewPath = Yii::getAlias('@app/web/uploads') . '/telegram';
 
-        // Нормализуем к массивам (из POST могут прийти строки)
-        $this->message = is_array($this->message) ? $this->message : [];
-        $this->image_url = is_array($this->image_url) ? $this->image_url : [];
+        // Нормализуем к массивам (из POST могут прийти строки) — не теряем значение
+        $defaultLang = Yii::$app->language ?: 'ru';
+        if (!is_array($this->message)) {
+            $this->message = ($this->message !== null && $this->message !== '') ? [$defaultLang => (string)$this->message] : [];
+        }
+        if (!is_array($this->image_url)) {
+            $this->image_url = ($this->image_url !== null && $this->image_url !== '') ? [$defaultLang => (string)$this->image_url] : [];
+        }
         $this->is_delete_image = is_array($this->is_delete_image) ? $this->is_delete_image : [];
         
-        // Получаем список языков из image_file или image_url
+        // Список языков: из message, image_file, image_url — чтобы сохранить текст по всем вкладкам
         $imageFileArray = is_array($this->image_file) ? $this->image_file : [];
         $imageUrlArray = is_array($this->image_url) ? $this->image_url : [];
         $languages = array_merge(
+            array_keys($this->message),
             array_keys($imageFileArray),
             array_keys($imageUrlArray)
         );
-        $languages = array_unique($languages);
-        if (empty($languages) && !empty($this->message)) {
-            $languages = array_keys($this->message);
-        }
+        $languages = array_unique(array_filter($languages));
         
         foreach ($languages as $language) {
             $this->message[$language] = trim($this->message[$language] ?? '');
