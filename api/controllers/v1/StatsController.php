@@ -240,8 +240,9 @@ class StatsController extends BaseApiController
         $requestWipe = \Yii::$app->request->get('wipe');
         $wipe = ($requestWipe !== null && $requestWipe !== '') ? $requestWipe : $server->currentWipe();
 
-        // Кэшируем статистику игрока на 5 минут
-        $cacheKey = 'api_stats_player_' . $serverTag . '_' . $steamId . '_' . ($wipe ?? 'current');
+        // Кэшируем статистику игрока на 5 минут (в ключе заменяем / на _ для совместимости с бэкендами кэша)
+        $wipeKey = str_replace('/', '_', (string)($wipe ?? 'current'));
+        $cacheKey = 'api_stats_player_' . $serverTag . '_' . $steamId . '_' . $wipeKey;
         $cached = Yii::$app->cache->get($cacheKey);
         
         if ($cached === false) {
@@ -444,6 +445,92 @@ class StatsController extends BaseApiController
                 ];
             }
 
+            // Охота — животные (ключ статистики => имя для API)
+            $hunterItems = [
+                ['key' => 'boar', 'name' => \Yii::t('common', 'Кабаны')],
+                ['key' => 'horse', 'name' => \Yii::t('common', 'Лошади')],
+                ['key' => 'wolf', 'name' => \Yii::t('common', 'Волки'), 'param' => ['wolf', 'wolf2']],
+                ['key' => 'bear', 'name' => \Yii::t('common', 'Медведи'), 'param' => ['bear', 'polarbear']],
+                ['key' => 'deer', 'name' => \Yii::t('common', 'Олени'), 'param' => ['deer', 'stag']],
+                ['key' => 'chicken', 'name' => \Yii::t('common', 'Курицы')],
+                ['key' => 'simpleshark', 'name' => \Yii::t('common', 'Акулы')],
+                ['key' => 'panther', 'name' => \Yii::t('common', 'Пантеры')],
+                ['key' => 'crocodile', 'name' => \Yii::t('common', 'Крокодилы')],
+                ['key' => 'tiger', 'name' => \Yii::t('common', 'Тигры')],
+            ];
+            $hunters = [];
+            foreach ($hunterItems as $item) {
+                $count = 0;
+                if (!empty($item['param'])) {
+                    foreach ((array) $item['param'] as $p) {
+                        $count += (int) Statistics::getParam($playerStats, $p);
+                    }
+                } else {
+                    $count = (int) Statistics::getParam($playerStats, $item['key']);
+                }
+                $imgKey = $item['key'] === 'wolf' ? 'wolf' : ($item['key'] === 'bear' ? 'bear' : $item['key']);
+                $hunters[] = [
+                    'key' => $item['key'],
+                    'name' => $item['name'],
+                    'image' => Statistics::getImage($images, $imgKey),
+                    'count' => $count,
+                    'score' => 0,
+                ];
+            }
+
+            // Фермерство — собранные культуры (count x score)
+            $fermItems = [
+                ['name' => \Yii::t('common', 'Ткань'), 'key' => 'gathered_cloth', 'score' => 0.05],
+                ['name' => \Yii::t('common', 'Кукуруза'), 'key' => 'gathered_corn', 'score' => 0.3],
+                ['name' => \Yii::t('common', 'Картофель'), 'key' => 'gathered_potato', 'score' => 0.4],
+                ['name' => \Yii::t('common', 'Тыква'), 'key' => 'gathered_pumpkin', 'score' => 0.5],
+                ['name' => \Yii::t('common', 'Синие ягоды'), 'key' => 'gathered_blue.berry', 'score' => 0.5],
+                ['name' => \Yii::t('common', 'Желтые ягоды'), 'key' => 'gathered_yellow.berry', 'score' => 0.5],
+                ['name' => \Yii::t('common', 'Красные ягоды'), 'key' => 'gathered_red.berry', 'score' => 0.5],
+                ['name' => \Yii::t('common', 'Белые ягоды'), 'key' => 'gathered_white.berry', 'score' => 0.5],
+                ['name' => \Yii::t('common', 'Зеленые ягоды'), 'key' => 'gathered_green.berry', 'score' => 0.5],
+                ['name' => \Yii::t('common', 'Черные ягоды'), 'key' => 'gathered_black.berry', 'score' => 1],
+                ['name' => \Yii::t('common', 'Орхидея'), 'key' => 'gathered_orchid', 'score' => 0.3],
+                ['name' => \Yii::t('common', 'Розы'), 'key' => 'gathered_rose', 'score' => 0.3],
+                ['name' => \Yii::t('common', 'Подсолнух'), 'key' => 'gathered_sunflower', 'score' => 0.3],
+                ['name' => \Yii::t('common', 'Пшеница'), 'key' => 'gathered_wheat', 'score' => 0.3],
+            ];
+            $ferm = [];
+            foreach ($fermItems as $item) {
+                $count = (int) Statistics::getParam($playerStats, $item['key']);
+                $ferm[] = [
+                    'key' => $item['key'],
+                    'name' => $item['name'],
+                    'image' => Statistics::getImage($images, str_replace('.', '_', $item['key'])),
+                    'count' => $count,
+                    'score' => (float) $item['score'],
+                ];
+            }
+
+            // Рыболовство — рыба (count x множитель)
+            $fishingItems = [
+                ['name' => \Yii::t('common', 'Акула'), 'key' => 'f_fish.smallshark', 'score' => 45],
+                ['name' => \Yii::t('common', 'Большеголов'), 'key' => 'f_fish.orangeroughy', 'score' => 37],
+                ['name' => \Yii::t('common', 'Сом'), 'key' => 'f_fish.catfish', 'score' => 32],
+                ['name' => \Yii::t('common', 'Окунь'), 'key' => 'f_fish.yellowperch', 'score' => 25],
+                ['name' => \Yii::t('common', 'Лосось'), 'key' => 'f_fish.salmon', 'score' => 22],
+                ['name' => \Yii::t('common', 'Форель'), 'key' => 'f_fish.troutsmall', 'score' => 15],
+                ['name' => \Yii::t('common', 'Анчоус'), 'key' => 'f_fish.anchovy', 'score' => 10],
+                ['name' => \Yii::t('common', 'Сельдь'), 'key' => 'f_fish.herring', 'score' => 10],
+                ['name' => \Yii::t('common', 'Сардина'), 'key' => 'f_fish.sardine', 'score' => 10],
+            ];
+            $fishing = [];
+            foreach ($fishingItems as $item) {
+                $count = (int) Statistics::getParam($playerStats, $item['key']);
+                $fishing[] = [
+                    'key' => $item['key'],
+                    'name' => $item['name'],
+                    'image' => Statistics::getImage($images, str_replace(['f_fish.', '.'], ['', '_'], $item['key'])),
+                    'count' => $count,
+                    'score' => (float) $item['score'],
+                ];
+            }
+
             $tasksV2 = TaskV2::find()
                 ->where(['is_active' => 1])
                 ->orderBy(['sort' => SORT_ASC])
@@ -543,6 +630,9 @@ class StatsController extends BaseApiController
                     'farm' => $farm,
                     'tea' => $tea,
                     'medical' => $medical,
+                    'hunters' => $hunters,
+                    'ferm' => $ferm,
+                    'fishing' => $fishing,
                     'awards' => $awards,
                     'awards_stats' => [
                         'completed' => $awardsCompleted,
