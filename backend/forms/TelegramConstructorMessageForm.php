@@ -53,38 +53,31 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
         $updated = [];
         $viewPath = Yii::getAlias('@app/web/uploads') . '/telegram';
 
-        // Нормализуем к массивам (из POST могут прийти строки) — не теряем значение
+        // Копии для безопасного доступа по ключу (из POST иногда приходят строки — PHP 8 TypeError)
         $defaultLang = Yii::$app->language ?: 'ru';
-        if (!is_array($this->message)) {
-            $this->message = ($this->message !== null && $this->message !== '') ? [$defaultLang => (string)$this->message] : [];
-        }
-        if (!is_array($this->image_url)) {
-            $this->image_url = ($this->image_url !== null && $this->image_url !== '') ? [$defaultLang => (string)$this->image_url] : [];
-        }
-        $this->is_delete_image = is_array($this->is_delete_image) ? $this->is_delete_image : [];
+        $messageByLang = is_array($this->message) ? $this->message : (($this->message !== null && $this->message !== '') ? [$defaultLang => (string)$this->message] : []);
+        $imageUrlByLang = is_array($this->image_url) ? $this->image_url : [];
+        $isDeleteByLang = is_array($this->is_delete_image) ? $this->is_delete_image : [];
         
-        // Список языков: из message, image_file, image_url — чтобы сохранить текст по всем вкладкам
+        // Как раньше: языки из image_file и image_url, при отсутствии — из message
         $imageFileArray = is_array($this->image_file) ? $this->image_file : [];
         $imageUrlArray = is_array($this->image_url) ? $this->image_url : [];
-        $languages = array_merge(
-            array_keys($this->message),
-            array_keys($imageFileArray),
-            array_keys($imageUrlArray)
-        );
-        $languages = array_unique(array_filter($languages));
+        $languages = array_merge(array_keys($imageFileArray), array_keys($imageUrlArray));
+        $languages = array_unique($languages);
+        if (empty($languages) && !empty($messageByLang)) {
+            $languages = array_keys($messageByLang);
+        }
         
         foreach ($languages as $language) {
-            $this->message[$language] = trim($this->message[$language] ?? '');
+            $messageText = trim($messageByLang[$language] ?? '');
             
-            // Проверяем, указана ли ссылка на изображение
-            $imageUrl = $this->image_url[$language] ?? '';
+            $imageUrl = $imageUrlByLang[$language] ?? '';
             if (!empty($imageUrl)) {
-                // Если ссылка не начинается с @, добавляем @
                 if (strpos($imageUrl, '@') !== 0) {
                     $imageUrl = '@' . $imageUrl;
                 }
                 $updated[$language] = true;
-                $this->updateLanguage($language, $this->message[$language], $imageUrl);
+                $this->updateLanguage($language, $messageText, $imageUrl);
                 continue;
             }
             
@@ -111,19 +104,18 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
                         \Yii::info("image file $fileLink was not created " . print_r($e->getMessage(), 1), 'problem');
                     }
                     $updated[$language] = true;
-                    $this->updateLanguage($language, $this->message[$language], $fileLink);
+                    $this->updateLanguage($language, $messageText, $fileLink);
                 }
-            } else if (!empty($this->getImageLink($language)) && !empty($this->is_delete_image[$language])) {
+            } else if (!empty($this->getImageLink($language)) && !empty($isDeleteByLang[$language])) {
                 $oldImageLink = $this->getImageLink($language);
-                // Удаляем файл только если это был файл, а не ссылка
                 if (strpos($oldImageLink, '@') !== 0 && file_exists($oldImageLink)) {
                     unlink($oldImageLink);
                 }
                 $updated[$language] = true;
-                $this->updateLanguage($language, $this->message[$language], null);
+                $this->updateLanguage($language, $messageText, null);
             } else {
                 $updated[$language] = true;
-                $this->updateLanguage($language, $this->message[$language], null, false);
+                $this->updateLanguage($language, $messageText, null, false);
             }
         }
 
