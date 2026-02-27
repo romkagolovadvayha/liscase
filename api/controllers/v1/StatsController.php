@@ -383,14 +383,15 @@ class StatsController extends BaseApiController
                 ['name' => \Yii::t('common', 'Дерево'), 'key' => 'wood', 'score' => 0.05],
                 ['name' => \Yii::t('common', 'Разбито бочек'), 'key' => 'barrel', 'score' => 0],
                 ['name' => \Yii::t('common', 'Открыто ящиков'), 'key' => 'crate_open', 'score' => 0],
-                ['name' => \Yii::t('common', 'Обломки костей'), 'key' => 'bones', 'image_key' => 'bone.fragments', 'score' => 0],
-                ['name' => \Yii::t('common', 'Животный жир'), 'key' => 'animal_fat', 'image_key' => 'fat.animal', 'score' => 0],
+                ['name' => \Yii::t('common', 'Обломки костей'), 'key' => 'bones', 'param' => 'bone.fragments', 'image_key' => 'bone.fragments', 'score' => 0],
+                ['name' => \Yii::t('common', 'Животный жир'), 'key' => 'animal_fat', 'param' => 'fat.animal', 'image_key' => 'fat.animal', 'score' => 0],
                 ['name' => \Yii::t('common', 'Кожа'), 'key' => 'leather', 'score' => 0],
                 ['name' => \Yii::t('common', 'Скрап'), 'key' => 'scrap', 'score' => 0],
             ];
             $farm = [];
             foreach ($farmItems as $item) {
-                $row = Statistics::getFarmItem($images, $names, $playerStats, $item['key'], $item['name'], $item['score']);
+                $statKey = $item['param'] ?? $item['key'];
+                $row = Statistics::getFarmItem($images, $names, $playerStats, $statKey, $item['name'], $item['score']);
                 $imageKey = $item['image_key'] ?? $item['key'];
                 $farm[] = [
                     'key' => $item['key'],
@@ -427,7 +428,7 @@ class StatsController extends BaseApiController
             // Медицина — для списка в «Последняя активность»
             $healItems = [
                 ['name' => \Yii::t('common', 'Большая аптечка'), 'key' => 'first_aid_kit', 'image_key' => 'largemedkit'],
-                ['name' => \Yii::t('common', 'Медицинский шприц'), 'key' => 'syringe', 'image_key' => 'syringe'],
+                ['name' => \Yii::t('common', 'Медицинский шприц'), 'key' => 'syringe', 'image_key' => 'syringe.medical'],
                 ['name' => \Yii::t('common', 'Бинт'), 'key' => 'bandage', 'image_key' => 'bandage'],
             ];
             $medical = [];
