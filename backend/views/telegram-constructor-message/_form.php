@@ -137,7 +137,7 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
                     </div>
                     <div class="mb-4">
                         <label class="<?= $labelOptions['class'] ?>"><?= Yii::t('common', 'Отправить ответное сообщение:') ?></label>
-                        <?= $form->field($model, 'message', ['template' => '{input}', 'labelOptions' => ['class' => 'hidden']])->widget(\kartik\select2\Select2::class, [
+                        <?= $form->field($model, 'buttonResponseMessageId', ['template' => '{input}', 'labelOptions' => ['class' => 'hidden']])->widget(\kartik\select2\Select2::class, [
                             'data' => \yii\helpers\ArrayHelper::merge(['0' => Yii::t('common', 'Выберите сообщение...')], TelegramConstructorMessage::getList()),
                             'options' => ['id' => 'telegramConstructorMessageButtonMessageId', 'prompt' => Yii::t('common', 'Выберите сообщение...')],
                             'showToggleAll' => false,

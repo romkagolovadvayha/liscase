@@ -20,12 +20,15 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
     public $is_delete_image;
     public $buttons;
     public $buttonsTitles;
+    /** @var string|array текст сообщения по языкам (message[ru-RU] и т.д.) */
     public $message;
+    /** ID сообщения для кнопки в модалке — отдельно, чтобы не перезаписывать message[] в POST */
+    public $buttonResponseMessageId;
 
     public function rules()
     {
         return [
-            [['buttons', 'title', 'is_delete_image', 'message', 'buttonsTitles', 'image_url'], 'safe'],
+            [['buttons', 'title', 'is_delete_image', 'message', 'buttonsTitles', 'image_url', 'buttonResponseMessageId'], 'safe'],
             [['image_file'],
              'file',
              'skipOnEmpty' => true,
@@ -53,23 +56,33 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
         $updated = [];
         $viewPath = Yii::getAlias('@app/web/uploads') . '/telegram';
 
-        // message не входит в атрибуты таблицы, load() его не подставляет — берём из POST
-        $postForm = Yii::$app->request->post('TelegramConstructorMessageForm', []);
-        $rawMessage = $postForm['message'] ?? $this->message;
-        $defaultLang = Yii::$app->language ?: 'ru';
-        $messageByLang = is_array($rawMessage) ? $rawMessage : (($rawMessage !== null && $rawMessage !== '') ? [$defaultLang => (string)$rawMessage] : []);
-        $imageUrlByLang = is_array($this->image_url) ? $this->image_url : [];
-        $isDeleteByLang = is_array($this->is_delete_image) ? $this->is_delete_image : [];
+        // message/image_url не входят в атрибуты таблицы — берём из POST по formName()
+        $formName = $this->formName();
+        $postForm = Yii::$app->request->post($formName, []);
+        $rawMessage = $postForm['message'] ?? null;
+        $defaultLang = 'ru-RU';
+        $messageByLang = [];
+        if (is_array($rawMessage)) {
+            $messageByLang = $rawMessage;
+        } elseif ($rawMessage !== null && $rawMessage !== '') {
+            $messageByLang = [$defaultLang => (string)$rawMessage];
+        }
+        $imageUrlByLang = is_array($postForm['image_url'] ?? null) ? $postForm['image_url'] : [];
+        $isDeleteByLang = is_array($postForm['is_delete_image'] ?? null) ? $postForm['is_delete_image'] : [];
         
-        // Языки: всегда включаем ключи из message, плюс из image_file/image_url
         $imageFileArray = is_array($this->image_file) ? $this->image_file : [];
-        $imageUrlArray = is_array($this->image_url) ? $this->image_url : [];
         $languages = array_merge(
             array_keys($messageByLang),
-            array_keys($imageFileArray),
-            array_keys($imageUrlArray)
+            array_keys($imageUrlByLang),
+            array_keys($imageFileArray)
         );
         $languages = array_unique(array_filter($languages));
+        // Если из POST ничего не подтянулось — сохраняем хотя бы для одного языка (как в форме)
+        if (empty($languages)) {
+            $languages = [$defaultLang];
+            $msg = $postForm['message'] ?? null;
+            $messageByLang[$defaultLang] = is_array($msg) ? ($msg[$defaultLang] ?? '') : (string)($msg ?? '');
+        }
         
         foreach ($languages as $language) {
             $messageText = trim($messageByLang[$language] ?? '');
