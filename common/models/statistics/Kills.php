@@ -153,7 +153,7 @@ class Kills extends ActiveRecord
             $steamIdsList = array_keys($steamIds);
             $users = User::find()
                 ->where(['IN', 'steam_id', $steamIdsList])
-                ->with(['server'])
+                ->with(['server', 'userProfile'])
                 ->indexBy('steam_id')
                 ->all();
             foreach ($users as $steamId => $userObj) {
@@ -170,21 +170,26 @@ class Kills extends ActiveRecord
             if (!empty($user) && $model['steam_id'] === $user->steam_id) {
                 $model['name'] = $user->username;
                 $model['link'] = $user->getLink('stats');
+                $model['avatar'] = $user->getAvatar() ?: ($scientists['default'] ?? '');
             }
             if (!empty($user) && $model['dead'] === $user->steam_id) {
                 $model['dead_name'] = $user->username;
                 $model['dead_link'] = $user->getLink('stats');
+                $model['dead_avatar'] = $user->getAvatar() ?: ($scientists['default'] ?? '');
             }
             if (empty($model['name']) && strlen($model['steam_id']) === 17) {
                 if (isset($usersMap[$model['steam_id']])) {
                     $_user = $usersMap[$model['steam_id']];
                     $model['name'] = $_user->username;
                     $model['link'] = $_user->getLink('stats');
+                    $model['avatar'] = $_user->getAvatar() ?: ($scientists['default'] ?? '');
                 } else {
-                    // Fallback для пользователей, которых нет в базе
                     $_user = User::findBySteamId($model['steam_id'], false, 'kills');
-                    $model['name'] = $_user->username;
-                    $model['link'] = $_user->getLink('stats');
+                    if ($_user) {
+                        $model['name'] = $_user->username;
+                        $model['link'] = $_user->getLink('stats');
+                        $model['avatar'] = $_user->getAvatar() ?: ($scientists['default'] ?? '');
+                    }
                 }
             }
             if (empty($model['dead_name']) && strlen($model['dead']) === 17) {
@@ -192,11 +197,14 @@ class Kills extends ActiveRecord
                     $_user = $usersMap[$model['dead']];
                     $model['dead_name'] = $_user->username;
                     $model['dead_link'] = $_user->getLink('stats');
+                    $model['dead_avatar'] = $_user->getAvatar() ?: ($scientists['default'] ?? '');
                 } else {
-                    // Fallback для пользователей, которых нет в базе
                     $_user = User::findBySteamId($model['dead'], false, 'kills 2');
-                    $model['dead_name'] = $_user->username;
-                    $model['dead_link'] = $_user->getLink('stats');
+                    if ($_user) {
+                        $model['dead_name'] = $_user->username;
+                        $model['dead_link'] = $_user->getLink('stats');
+                        $model['dead_avatar'] = $_user->getAvatar() ?: ($scientists['default'] ?? '');
+                    }
                 }
             }
             if ($model['type'] !== 'deaths' && $model['type'] !== 'suicides') {
@@ -209,13 +217,30 @@ class Kills extends ActiveRecord
                 if (!empty($scientists[$model['dead']])) {
                     $model['image'] = $scientists[$model['dead']];
                     $model['bot'] = true;
+                    if (empty($model['dead_avatar'])) {
+                        $model['dead_avatar'] = $model['image'];
+                    }
+                } elseif (!empty($scientists['default'])) {
+                    if (empty($model['dead_avatar'])) {
+                        $model['dead_avatar'] = $scientists['default'];
+                    }
                 }
             }
             if ($model['type'] === 'kill') {
                 if (strlen($model['steam_id']) < 10) {
                     $model['image'] = $scientists['default'];
                     $model['bot'] = true;
+                    if (empty($model['avatar'])) {
+                        $model['avatar'] = $scientists['default'];
+                    }
                 }
+            }
+            // Дефолтные аватары для убийцы и жертвы, если не заданы (бот/неизвестный)
+            if (empty($model['avatar']) && !empty($scientists['default'])) {
+                $model['avatar'] = $scientists['default'];
+            }
+            if (empty($model['dead_avatar']) && !empty($scientists['default'])) {
+                $model['dead_avatar'] = $scientists['default'];
             }
             $models[$i] = $model;
         }
