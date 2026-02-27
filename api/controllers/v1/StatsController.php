@@ -411,11 +411,19 @@ class StatsController extends BaseApiController
                 $statKey = $item['param'] ?? $item['key'];
                 $row = Statistics::getFarmItem($images, $names, $playerStats, $statKey, $item['name'], $item['score']);
                 $imageKey = $item['image_key'] ?? $item['key'];
+                $count = (int) $row['count'];
+                // Разбито бочек: основной ключ в БД — barrel (ExpertStatistics), fallback — barrels_broken (на случай других плагинов)
+                if ($item['key'] === 'barrel') {
+                    $countBarrelsBroken = (int) Statistics::getParam($playerStats, 'barrels_broken');
+                    if ($countBarrelsBroken > $count) {
+                        $count = $countBarrelsBroken;
+                    }
+                }
                 $farm[] = [
                     'key' => $item['key'],
                     'name' => $row['name'],
                     'image' => Statistics::getImage($images, $imageKey),
-                    'count' => (int) $row['count'],
+                    'count' => $count,
                     'score' => (float) $row['score'],
                 ];
             }
@@ -665,6 +673,14 @@ class StatsController extends BaseApiController
                     'explosives' => $explosives,
                     'weapons' => $weapons,
                     'farm' => $farm,
+                    'craftable_images' => [
+                        'metal_fragments' => Statistics::getImage($images, 'metal.fragments'),
+                        'hq.metal.ore' => Statistics::getImage($images, 'hq.metal.ore'),
+                        'gunpowder' => Statistics::getImage($images, 'gunpowder'),
+                        'low_grade_fuel' => Statistics::getImage($images, 'low_grade_fuel'),
+                        'sulfur' => Statistics::getImage($images, 'sulfur'),
+                        'charcoal' => Statistics::getImage($images, 'charcoal'),
+                    ],
                     'tea' => $tea,
                     'pie' => $pie,
                     'medical' => $medical,
