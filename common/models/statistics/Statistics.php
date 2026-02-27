@@ -88,7 +88,12 @@ class Statistics extends ActiveRecord
 
     public static function getImage($images, $key) {
         if (empty($images[$key])) {
-            return '/uploads/drop/870_7aca7dcc75a50be0c7bcf772460d2018.png';
+            $defaultPath = 'uploads/drop/870_7aca7dcc75a50be0c7bcf772460d2018.png';
+            if (Yii::$app->has('s3Api')) {
+                return Yii::$app->s3Api->getPublicUrl($defaultPath);
+            }
+            $baseUrl = Yii::$app->settings->get('s3_publicUrl');
+            return $baseUrl ? rtrim($baseUrl, '/') . '/' . $defaultPath : '/' . $defaultPath;
         }
         return $images[$key];
     }
@@ -420,10 +425,15 @@ class Statistics extends ActiveRecord
         /** @var Drop[] $drops */
         $drops = Drop::find()
             ->andWhere(['<>', 'eng_name', ''])
+            ->with('dropImages', 'imageOrig')
             ->all();
 
         foreach ($drops as $item) {
-            $result[$item->eng_name] = $item->image64();
+            $url = $item->image64();
+            if ($url === null && $item->imageOrig !== null) {
+                $url = $item->imageOrig->getImagePubUrl();
+            }
+            $result[$item->eng_name] = $url;
         }
 
         Yii::$app->cache->set($cacheKey, $result, 30*60);
