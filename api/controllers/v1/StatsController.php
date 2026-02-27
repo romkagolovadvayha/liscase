@@ -7,8 +7,11 @@ use OpenApi\Annotations as OA;
 use yii\web\NotFoundHttpException;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
+use common\models\statistics\Kills;
 use common\models\statistics\Reports;
 use common\models\user\User;
+use common\models\tasks_v2\TaskV2;
+use common\models\tasks_v2\TaskV2UserCompletion;
 use common\models\user\UserTop;
 use api\components\jwt\JwtAuthFilter;
 use api\components\jwt\JwtService;
@@ -264,6 +267,130 @@ class StatsController extends BaseApiController
             $kills = Statistics::getParam($playerStats, 'kills');
             $deaths = Statistics::getParam($playerStats, 'deaths');
             $kdr = $deaths > 0 ? round($kills / $deaths, 2) : $kills;
+            $wounded = Statistics::getParam($playerStats, 'wounded');
+            $tcsDestroyed = Statistics::getParam($playerStats, 'tcsdestroyed');
+            $nudeKills = Statistics::getParam($playerStats, 'nude_kills');
+            $wipesCount = (int) Statistics::find()
+                ->select('COUNT(DISTINCT wipe)')
+                ->andWhere(['steam_id' => $steamId])
+                ->andWhere(['server_tag' => $server->tag])
+                ->scalar();
+
+            $images = Statistics::productsImages();
+            $names = Statistics::productsNames();
+
+            $reiderItems = [
+                ['key' => 'c4thrown', 'score' => 1],
+                ['key' => 'satchelsthrown', 'score' => 0.2],
+                ['key' => 'rocket_basic', 'score' => 0.5, 'combined' => ['rocket_basic_rpg']],
+                ['key' => 'rocket_hv', 'score' => 0.1, 'combined' => ['rocket_hv_rpg']],
+                ['key' => 'rocket_fire', 'score' => 0.1, 'combined' => ['rocket_fire_rpg']],
+                ['key' => 'ammo_explosive', 'score' => 0.01],
+                ['key' => 'grenade.f1.deployed', 'score' => 0.02],
+                ['key' => 'grenade.molotov.deployed', 'score' => 0.05],
+                ['key' => 'grenade.beancan.deployed', 'score' => 0.05],
+                ['key' => 'grenade.flashbang.deployed', 'score' => 0],
+                ['key' => 'grenade.supplysignal.deployed', 'score' => 0],
+                ['key' => 'grenade.smoke.deployed', 'score' => 0],
+                ['key' => 'grenade.bee.deployed', 'score' => 0],
+                ['key' => '40mm_grenade_he', 'score' => 0],
+                ['key' => '40mm_grenade_smoke', 'score' => 0],
+                ['key' => 'rocket_heatseeker', 'score' => 0],
+                ['key' => 'flare.deployed', 'score' => 0],
+            ];
+            $explosives = [];
+            foreach ($reiderItems as $item) {
+                $itemData = Statistics::getRaiderItem($names, $images, $playerStats, $item['key'], $item['score']);
+                if (!empty($item['combined'])) {
+                    $combinedCount = $itemData['count'];
+                    foreach ($item['combined'] as $combinedKey) {
+                        $combinedCount += Statistics::getParam($playerStats, $combinedKey);
+                    }
+                    $itemData['count'] = $combinedCount;
+                    $itemData['desc'] = $combinedCount;
+                }
+                $explosives[] = [
+                    'key' => str_replace('.deployed', '', $item['key']),
+                    'name' => $itemData['name'],
+                    'image' => $itemData['image'],
+                    'count' => (int) $itemData['count'],
+                    'score' => (float) $itemData['score'],
+                ];
+            }
+
+            $killWeapons = Kills::find()
+                ->select(['weapon', 'COUNT(*) as count'])
+                ->andWhere(['steam_id' => $steamId])
+                ->andWhere(['server_tag' => $server->tag])
+                ->andWhere(['wipe' => $wipe])
+                ->andWhere('weapon IS NOT NULL')
+                ->asArray()
+                ->groupBy('weapon')
+                ->orderBy(['count' => SORT_DESC])
+                ->all();
+            $weapons = [];
+            foreach ($killWeapons as $item) {
+                if (empty($item['weapon'])) {
+                    continue;
+                }
+                $weapons[] = [
+                    'weapon' => $item['weapon'],
+                    'name' => Statistics::getName($names, $item['weapon']),
+                    'image' => Statistics::getImage($images, $item['weapon']),
+                    'count' => (int) $item['count'],
+                ];
+            }
+
+            $farmItems = [
+                ['name' => \Yii::t('common', 'Серная руда'), 'key' => 'sulfur.ore', 'score' => 1],
+                ['name' => \Yii::t('common', 'Железная руда'), 'key' => 'metal.ore', 'score' => 0.5],
+                ['name' => \Yii::t('common', 'Камни'), 'key' => 'stones', 'score' => 0.3],
+                ['name' => \Yii::t('common', 'Дерево'), 'key' => 'wood', 'score' => 0.05],
+                ['name' => \Yii::t('common', 'Разбито бочек'), 'key' => 'barrel', 'score' => 0],
+                ['name' => \Yii::t('common', 'Открыто ящиков'), 'key' => 'crate_open', 'score' => 0],
+            ];
+            $farm = [];
+            foreach ($farmItems as $item) {
+                $row = Statistics::getFarmItem($images, $names, $playerStats, $item['key'], $item['name'], $item['score']);
+                $farm[] = [
+                    'key' => $item['key'],
+                    'name' => $row['name'],
+                    'image' => $row['image'],
+                    'count' => (int) $row['count'],
+                    'score' => (float) $row['score'],
+                ];
+            }
+
+            $tasksV2 = TaskV2::find()
+                ->where(['is_active' => 1])
+                ->orderBy(['sort' => SORT_ASC])
+                ->all();
+            $userCompletions = TaskV2UserCompletion::find()
+                ->where(['user_id' => $user->id])
+                ->indexBy('task_id')
+                ->all();
+            $awards = [];
+            foreach ($tasksV2 as $task) {
+                $completed = isset($userCompletions[$task->id]) && $userCompletions[$task->id]->count_completed > 0;
+                $awards[] = [
+                    'id' => $task->id,
+                    'name' => $task->title,
+                    'image' => $task->getImageUrl(),
+                    'completed' => $completed,
+                ];
+            }
+            usort($awards, function ($a, $b) {
+                if ($a['completed'] === $b['completed']) {
+                    return 0;
+                }
+                return $a['completed'] ? -1 : 1;
+            });
+            $awardsCompleted = 0;
+            foreach ($awards as $a) {
+                if ($a['completed']) {
+                    $awardsCompleted++;
+                }
+            }
 
             $cached = [
                 'player' => [
@@ -279,6 +406,18 @@ class StatsController extends BaseApiController
                         'kdr' => $kdr,
                         'playtime' => Statistics::getParam($playerStats, 'playtime'),
                         'scientists' => Statistics::getParam($playerStats, 'scientists'),
+                        'wounded' => $wounded,
+                        'tcs_destroyed' => $tcsDestroyed,
+                        'nude_kills' => $nudeKills,
+                        'wipes' => $wipesCount,
+                    ],
+                    'explosives' => $explosives,
+                    'weapons' => $weapons,
+                    'farm' => $farm,
+                    'awards' => $awards,
+                    'awards_stats' => [
+                        'completed' => $awardsCompleted,
+                        'total' => count($awards),
                     ],
                 ],
             ];

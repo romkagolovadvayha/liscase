@@ -421,9 +421,9 @@ class ServersController extends BaseApiController
             ],
         ];
 
-        // Текущая карта: приоритет mapList (картинка через getMapImageUrl как в MapsController), иначе mapEntity
+        // Текущая карта: приоритет mapList (картинка большего размера для качества), иначе mapEntity
         if ($server->mapList) {
-            $imagePath = $server->mapList->image_preview ?? $server->mapList->image ?? null;
+            $imagePath = $server->mapList->image ?? $server->mapList->image_preview ?? null;
             $data['map'] = [
                 'id' => $server->mapList->id,
                 'name' => $server->mapList->hash ?? $server->mapList->name ?? null,
