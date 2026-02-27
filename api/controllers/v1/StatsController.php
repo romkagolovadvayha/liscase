@@ -383,18 +383,19 @@ class StatsController extends BaseApiController
                 ['name' => \Yii::t('common', 'Дерево'), 'key' => 'wood', 'score' => 0.05],
                 ['name' => \Yii::t('common', 'Разбито бочек'), 'key' => 'barrel', 'score' => 0],
                 ['name' => \Yii::t('common', 'Открыто ящиков'), 'key' => 'crate_open', 'score' => 0],
-                ['name' => \Yii::t('common', 'Обломки костей'), 'key' => 'bones', 'score' => 0],
-                ['name' => \Yii::t('common', 'Животный жир'), 'key' => 'animal_fat', 'score' => 0],
+                ['name' => \Yii::t('common', 'Обломки костей'), 'key' => 'bones', 'image_key' => 'bone.fragments', 'score' => 0],
+                ['name' => \Yii::t('common', 'Животный жир'), 'key' => 'animal_fat', 'image_key' => 'fat.animal', 'score' => 0],
                 ['name' => \Yii::t('common', 'Кожа'), 'key' => 'leather', 'score' => 0],
                 ['name' => \Yii::t('common', 'Скрап'), 'key' => 'scrap', 'score' => 0],
             ];
             $farm = [];
             foreach ($farmItems as $item) {
                 $row = Statistics::getFarmItem($images, $names, $playerStats, $item['key'], $item['name'], $item['score']);
+                $imageKey = $item['image_key'] ?? $item['key'];
                 $farm[] = [
                     'key' => $item['key'],
                     'name' => $row['name'],
-                    'image' => $row['image'],
+                    'image' => Statistics::getImage($images, $imageKey),
                     'count' => (int) $row['count'],
                     'score' => (float) $row['score'],
                 ];
