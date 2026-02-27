@@ -276,6 +276,25 @@ class StatsController extends BaseApiController
                 ->andWhere(['server_tag' => $server->tag])
                 ->scalar();
 
+            // Активность по вайпам: playtime в каждом вайпе (для теплокарты под аватаром)
+            $wipesActivityRows = Statistics::find()
+                ->select(['wipe', 'value'])
+                ->andWhere(['steam_id' => $steamId])
+                ->andWhere(['server_tag' => $server->tag])
+                ->andWhere(['key' => 'playtime'])
+                ->orderBy(['wipe' => SORT_DESC])
+                ->limit(90)
+                ->asArray()
+                ->all();
+            $wipesActivity = [];
+            foreach ($wipesActivityRows as $row) {
+                $playtime = is_numeric($row['value']) ? (int) $row['value'] : 0;
+                $wipesActivity[] = [
+                    'wipe' => $row['wipe'],
+                    'playtime' => $playtime,
+                ];
+            }
+
             $images = Statistics::productsImages();
             $names = Statistics::productsNames();
 
@@ -419,6 +438,7 @@ class StatsController extends BaseApiController
                         'completed' => $awardsCompleted,
                         'total' => count($awards),
                     ],
+                    'wipes_activity' => $wipesActivity,
                 ],
             ];
 
