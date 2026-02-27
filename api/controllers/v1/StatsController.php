@@ -383,6 +383,10 @@ class StatsController extends BaseApiController
                 ['name' => \Yii::t('common', 'Дерево'), 'key' => 'wood', 'score' => 0.05],
                 ['name' => \Yii::t('common', 'Разбито бочек'), 'key' => 'barrel', 'score' => 0],
                 ['name' => \Yii::t('common', 'Открыто ящиков'), 'key' => 'crate_open', 'score' => 0],
+                ['name' => \Yii::t('common', 'Обломки костей'), 'key' => 'bones', 'score' => 0],
+                ['name' => \Yii::t('common', 'Животный жир'), 'key' => 'animal_fat', 'score' => 0],
+                ['name' => \Yii::t('common', 'Кожа'), 'key' => 'leather', 'score' => 0],
+                ['name' => \Yii::t('common', 'Скрап'), 'key' => 'scrap', 'score' => 0],
             ];
             $farm = [];
             foreach ($farmItems as $item) {
@@ -393,6 +397,29 @@ class StatsController extends BaseApiController
                     'image' => $row['image'],
                     'count' => (int) $row['count'],
                     'score' => (float) $row['score'],
+                ];
+            }
+
+            $teaItems = [
+                ['name' => \Yii::t('common', 'Чистый чай на макс. здоровье'), 'key' => 'consumable.tea.pure'],
+                ['name' => \Yii::t('common', 'Простой чай на металлолом'), 'key' => 'consumable.tea.simple'],
+                ['name' => \Yii::t('common', 'Продвинутый чай на макс. здоровье'), 'key' => 'consumable.tea.advanced'],
+                ['name' => \Yii::t('common', 'Чистый чай на руду'), 'key' => 'oretea.pure'],
+                ['name' => \Yii::t('common', 'Продвинутый чай на руду'), 'key' => 'oretea.advanced'],
+                ['name' => \Yii::t('common', 'Чистый чай на дерево'), 'key' => 'woodtea.pure'],
+                ['name' => \Yii::t('common', 'Продвинутый чай на дерево'), 'key' => 'woodtea.advanced'],
+                ['name' => \Yii::t('common', 'Чистый чай на металлолом'), 'key' => 'scraptea.pure'],
+                ['name' => \Yii::t('common', 'Продвинутый чай на металлолом'), 'key' => 'scraptea.advanced'],
+            ];
+            $tea = [];
+            foreach ($teaItems as $item) {
+                $row = Statistics::getFarmItem($images, $names, $playerStats, $item['key'], $item['name'], 0);
+                $tea[] = [
+                    'key' => $item['key'],
+                    'name' => $row['name'],
+                    'image' => $row['image'],
+                    'count' => (int) $row['count'],
+                    'score' => 0,
                 ];
             }
 
@@ -493,6 +520,7 @@ class StatsController extends BaseApiController
                     'explosives' => $explosives,
                     'weapons' => $weapons,
                     'farm' => $farm,
+                    'tea' => $tea,
                     'awards' => $awards,
                     'awards_stats' => [
                         'completed' => $awardsCompleted,
