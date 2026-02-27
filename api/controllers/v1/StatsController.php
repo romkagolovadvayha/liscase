@@ -427,7 +427,7 @@ class StatsController extends BaseApiController
             // Медицина — для списка в «Последняя активность»
             $healItems = [
                 ['name' => \Yii::t('common', 'Большая аптечка'), 'key' => 'first_aid_kit', 'image_key' => 'largemedkit'],
-                ['name' => \Yii::t('common', 'Медицинский шприц'), 'key' => 'syringe', 'image_key' => 'syringe.medical'],
+                ['name' => \Yii::t('common', 'Медицинский шприц'), 'key' => 'syringe', 'image_key' => 'syringe'],
                 ['name' => \Yii::t('common', 'Бинт'), 'key' => 'bandage', 'image_key' => 'bandage'],
             ];
             $medical = [];
