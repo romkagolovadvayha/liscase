@@ -52,6 +52,11 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
 
         $updated = [];
         $viewPath = Yii::getAlias('@app/web/uploads') . '/telegram';
+
+        // Нормализуем к массивам (из POST могут прийти строки)
+        $this->message = is_array($this->message) ? $this->message : [];
+        $this->image_url = is_array($this->image_url) ? $this->image_url : [];
+        $this->is_delete_image = is_array($this->is_delete_image) ? $this->is_delete_image : [];
         
         // Получаем список языков из image_file или image_url
         $imageFileArray = is_array($this->image_file) ? $this->image_file : [];
@@ -61,6 +66,9 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
             array_keys($imageUrlArray)
         );
         $languages = array_unique($languages);
+        if (empty($languages) && !empty($this->message)) {
+            $languages = array_keys($this->message);
+        }
         
         foreach ($languages as $language) {
             $this->message[$language] = trim($this->message[$language] ?? '');
@@ -102,7 +110,7 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
                     $updated[$language] = true;
                     $this->updateLanguage($language, $this->message[$language], $fileLink);
                 }
-            } else if (!empty($this->getImageLink($language)) && $this->is_delete_image[$language]) {
+            } else if (!empty($this->getImageLink($language)) && !empty($this->is_delete_image[$language])) {
                 $oldImageLink = $this->getImageLink($language);
                 // Удаляем файл только если это был файл, а не ссылка
                 if (strpos($oldImageLink, '@') !== 0 && file_exists($oldImageLink)) {
