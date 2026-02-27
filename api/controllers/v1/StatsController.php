@@ -411,6 +411,32 @@ class StatsController extends BaseApiController
                 }
             }
 
+            // История убийств (последние 30 событий: убийства, смерти, суициды и т.д.)
+            $killsList = Kills::getKills($server, $user, 30);
+            $killsForApi = array_map(function ($k) {
+                return [
+                    'id' => (int) ($k['id'] ?? 0),
+                    'type' => $k['type'] ?? 'kill',
+                    'steam_id' => $k['steam_id'] ?? '',
+                    'dead' => $k['dead'] ?? '',
+                    'weapon' => $k['weapon'] ?? null,
+                    'weapon_name' => $k['weapon_name'] ?? null,
+                    'weapon_image' => $k['weapon_image'] ?? null,
+                    'distance' => (int) ($k['distance'] ?? 0),
+                    'name' => $k['name'] ?? null,
+                    'link' => $k['link'] ?? null,
+                    'dead_name' => $k['dead_name'] ?? null,
+                    'dead_link' => $k['dead_link'] ?? null,
+                    'deadLink' => $k['dead_link'] ?? null,
+                    'signs' => $k['signs'] ?? null,
+                    'wears' => $k['wears'] ?? null,
+                    'bot' => !empty($k['bot']),
+                    'animal' => $k['animal'] ?? null,
+                    'animal2' => $k['animal2'] ?? null,
+                    'created_at' => $k['created_at'] ?? '',
+                ];
+            }, $killsList);
+
             $cached = [
                 'player' => [
                     'steam_id' => $steamId,
@@ -439,6 +465,7 @@ class StatsController extends BaseApiController
                         'total' => count($awards),
                     ],
                     'wipes_activity' => $wipesActivity,
+                    'kills' => $killsForApi,
                 ],
             ];
 
