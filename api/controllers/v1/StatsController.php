@@ -13,6 +13,7 @@ use common\models\user\User;
 use common\models\tasks_v2\TaskV2;
 use common\models\tasks_v2\TaskV2UserCompletion;
 use common\models\user\UserTop;
+use common\models\teams\Teams as TeamsModel;
 use api\components\jwt\JwtAuthFilter;
 use api\components\jwt\JwtService;
 
@@ -411,6 +412,19 @@ class StatsController extends BaseApiController
                 }
             }
 
+            // Команда игрока (как в frontend/views/widgets/teams.twig)
+            $teamMembers = [];
+            $teamHidden = false;
+            if ($user->hasHideTeam()) {
+                $teamHidden = true;
+            } else {
+                try {
+                    $teamMembers = TeamsModel::getTeamList($server->id, $user->id, $wipe);
+                } catch (\Exception $e) {
+                    $teamMembers = [];
+                }
+            }
+
             // История убийств (последние 30 событий: убийства, смерти, суициды и т.д.)
             $killsList = Kills::getKills($server, $user, 30);
             $killsForApi = array_map(function ($k) {
@@ -468,6 +482,8 @@ class StatsController extends BaseApiController
                     ],
                     'wipes_activity' => $wipesActivity,
                     'kills' => $killsForApi,
+                    'team_members' => $teamMembers,
+                    'team_hidden' => $teamHidden,
                 ],
             ];
 
