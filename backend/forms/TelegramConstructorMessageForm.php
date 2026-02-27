@@ -53,20 +53,23 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
         $updated = [];
         $viewPath = Yii::getAlias('@app/web/uploads') . '/telegram';
 
-        // Копии для безопасного доступа по ключу (из POST иногда приходят строки — PHP 8 TypeError)
+        // message не входит в атрибуты таблицы, load() его не подставляет — берём из POST
+        $postForm = Yii::$app->request->post('TelegramConstructorMessageForm', []);
+        $rawMessage = $postForm['message'] ?? $this->message;
         $defaultLang = Yii::$app->language ?: 'ru';
-        $messageByLang = is_array($this->message) ? $this->message : (($this->message !== null && $this->message !== '') ? [$defaultLang => (string)$this->message] : []);
+        $messageByLang = is_array($rawMessage) ? $rawMessage : (($rawMessage !== null && $rawMessage !== '') ? [$defaultLang => (string)$rawMessage] : []);
         $imageUrlByLang = is_array($this->image_url) ? $this->image_url : [];
         $isDeleteByLang = is_array($this->is_delete_image) ? $this->is_delete_image : [];
         
-        // Как раньше: языки из image_file и image_url, при отсутствии — из message
+        // Языки: всегда включаем ключи из message, плюс из image_file/image_url
         $imageFileArray = is_array($this->image_file) ? $this->image_file : [];
         $imageUrlArray = is_array($this->image_url) ? $this->image_url : [];
-        $languages = array_merge(array_keys($imageFileArray), array_keys($imageUrlArray));
-        $languages = array_unique($languages);
-        if (empty($languages) && !empty($messageByLang)) {
-            $languages = array_keys($messageByLang);
-        }
+        $languages = array_merge(
+            array_keys($messageByLang),
+            array_keys($imageFileArray),
+            array_keys($imageUrlArray)
+        );
+        $languages = array_unique(array_filter($languages));
         
         foreach ($languages as $language) {
             $messageText = trim($messageByLang[$language] ?? '');
