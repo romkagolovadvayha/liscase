@@ -105,11 +105,13 @@ $config = [
                 'v1/servers/<serverTag:[\w-]+>/rules' => 'v1/servers/rules',
                 'v1/servers/<serverTag:[\w-]+>/wipe-info' => 'v1/servers/wipe-info',
                 'v1/servers/wipe-block' => 'v1/servers/wipe-block',
+                'v1/servers/stats' => 'v1/stats/stats', // публичный, без обязательной авторизации
 
                 // Stats
                 'v1/stats' => 'v1/stats/stats',
                 'v1/stats/players' => 'v1/stats/players',
                 'v1/stats/player/<steamId:\d+>' => 'v1/stats/player-new',
+                'v1/stats/duels' => 'v1/stats/duels',
                 'v1/stats/search' => 'v1/stats/search',
                 'v1/stats/tops' => 'v1/stats/tops',
                 'v1/stats/personal' => 'v1/stats/personal',

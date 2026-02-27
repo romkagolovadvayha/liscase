@@ -52,7 +52,7 @@ class StatsController extends BaseApiController
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
             'only' => ['personal', 'report'],
-            'except' => ['stats', 'player-new', 'search', 'tops', 'options'],
+            'except' => ['stats', 'player-new', 'duels', 'search', 'tops', 'options'],
         ];
 
         // Опциональная авторизация для stats (инициализирует пользователя, если токен есть, но не требует его)
@@ -691,6 +691,45 @@ class StatsController extends BaseApiController
         $cached['player']['current_wipe'] = $server->currentWipe();
 
         return $this->successResponse($cached);
+    }
+
+    /**
+     * Дуэли игрока: сводка по противникам (убийства в обе стороны).
+     * Вызывается отдельно при открытии вкладки «Дуэли» или смене фильтра по вайпу.
+     *
+     * @OA\Get(
+     *     path="/v1/stats/duels",
+     *     operationId="getPlayerDuels",
+     *     tags={"Stats"},
+     *     summary="Дуэли игрока по серверу и вайпу",
+     *     @OA\Parameter(name="serverTag", in="query", required=true, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="steamId", in="query", required=true, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="wipe", in="query", required=false, description="Пусто = за все время", @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="Список дуэлей")
+     * )
+     */
+    public function actionDuels()
+    {
+        $serverTag = \Yii::$app->request->get('serverTag');
+        $steamId = \Yii::$app->request->get('steamId');
+        if (empty($serverTag) || empty($steamId)) {
+            return $this->errorResponse('INVALID_PARAMS', 'Требуются serverTag и steamId', [], 400);
+        }
+        $server = Servers::find()->where(['tag' => $serverTag])->one();
+        if (!$server) {
+            throw new NotFoundHttpException('Сервер не найден');
+        }
+        $wipeParam = \Yii::$app->request->get('wipe');
+        $wipe = ($wipeParam !== null && $wipeParam !== '') ? $wipeParam : null;
+
+        $duels = Kills::getDuels($server, $steamId, $wipe);
+
+        return $this->successResponse([
+            'server_tag' => $serverTag,
+            'steam_id' => $steamId,
+            'wipe' => $wipe,
+            'duels' => $duels,
+        ]);
     }
 
     /**

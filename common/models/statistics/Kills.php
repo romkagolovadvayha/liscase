@@ -250,6 +250,77 @@ class Kills extends ActiveRecord
         return $models;
     }
 
+    /**
+     * Дуэли: сводка по противникам (игрок vs игрок).
+     * Для текущего игрока возвращает список оппонентов с количеством убийств в обе стороны.
+     *
+     * @param Servers $server
+     * @param string $currentSteamId steam_id игрока, чья статистика просматривается
+     * @param string|null $wipe если null — за все время; иначе за указанный вайп
+     * @return array список [ ['opponent_steam_id' => ..., 'opponent_name' => ..., 'opponent_avatar' => ..., 'opponent_link' => ..., 'kills_by_me' => int, 'kills_by_them' => int, 'total' => int ], ... ]
+     */
+    public static function getDuels($server, $currentSteamId, $wipe = null)
+    {
+        $currentSteamId = (string) $currentSteamId;
+        $query = static::find()
+            ->select([
+                'opponent' => 'CASE WHEN steam_id = :current THEN dead ELSE steam_id END',
+                'kills_by_me' => 'SUM(CASE WHEN steam_id = :current THEN 1 ELSE 0 END)',
+                'kills_by_them' => 'SUM(CASE WHEN dead = :current THEN 1 ELSE 0 END)',
+            ])
+            ->andWhere(['server_tag' => $server->tag])
+            ->andWhere(['type' => 'kill'])
+            ->andWhere(['OR', ['steam_id' => $currentSteamId], ['dead' => $currentSteamId]])
+            ->andWhere(['!=', 'dead', ''])
+            ->addParams([':current' => $currentSteamId])
+            ->groupBy('opponent');
+
+        if ($wipe !== null && $wipe !== '') {
+            $query->andWhere(['wipe' => $wipe]);
+        }
+
+        $rows = $query->orderBy('(kills_by_me + kills_by_them) DESC')->asArray()->all();
+
+        $opponentIds = array_column($rows, 'opponent');
+        $usersMap = [];
+        if (!empty($opponentIds)) {
+            $users = User::find()
+                ->where(['IN', 'steam_id', $opponentIds])
+                ->indexBy('steam_id')
+                ->all();
+            foreach ($users as $sid => $u) {
+                $usersMap[$sid] = [
+                    'name' => $u->username,
+                    'link' => $u->getLink('stats'),
+                    'avatar' => $u->getAvatar() ?: '',
+                ];
+            }
+        }
+
+        $scientists = static::getScientistsList();
+        $defaultAvatar = $scientists['default'] ?? '';
+
+        $result = [];
+        foreach ($rows as $row) {
+            $opponentId = $row['opponent'] ?? '';
+            if ($opponentId === '') {
+                continue;
+            }
+            $info = $usersMap[$opponentId] ?? null;
+            $result[] = [
+                'opponent_steam_id' => $opponentId,
+                'opponent_name' => $info['name'] ?? \Yii::t('common', 'Не известный'),
+                'opponent_avatar' => $info['avatar'] ?? $defaultAvatar,
+                'opponent_link' => $info['link'] ?? null,
+                'kills_by_me' => (int) ($row['kills_by_me'] ?? 0),
+                'kills_by_them' => (int) ($row['kills_by_them'] ?? 0),
+                'total' => (int) ($row['kills_by_me'] ?? 0) + (int) ($row['kills_by_them'] ?? 0),
+            ];
+        }
+
+        return $result;
+    }
+
     public static function getKillsLive($server, $user = null) {
         $kills = [];
         $animals = Kills::getAnimalsList();
