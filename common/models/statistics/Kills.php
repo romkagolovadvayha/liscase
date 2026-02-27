@@ -9,6 +9,7 @@ use common\models\servers\Servers;
 use common\models\user\User;
 use Yii;
 use yii\base\BaseObject;
+use yii\db\Expression;
 
 /**
  * @property int    $id
@@ -263,9 +264,9 @@ class Kills extends ActiveRecord
         $currentSteamId = (string) $currentSteamId;
         $query = static::find()
             ->select([
-                'opponent' => 'CASE WHEN steam_id = :current THEN dead ELSE steam_id END',
-                'kills_by_me' => 'SUM(CASE WHEN steam_id = :current THEN 1 ELSE 0 END)',
-                'kills_by_them' => 'SUM(CASE WHEN dead = :current THEN 1 ELSE 0 END)',
+                'opponent' => new Expression('CASE WHEN steam_id = :current THEN dead ELSE steam_id END'),
+                'kills_by_me' => new Expression('SUM(CASE WHEN steam_id = :current THEN 1 ELSE 0 END)'),
+                'kills_by_them' => new Expression('SUM(CASE WHEN dead = :current THEN 1 ELSE 0 END)'),
             ])
             ->andWhere(['type' => 'kill'])
             ->andWhere(['OR', ['steam_id' => $currentSteamId], ['dead' => $currentSteamId]])
