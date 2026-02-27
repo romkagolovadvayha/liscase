@@ -488,8 +488,8 @@ class StatsController extends BaseApiController
                 }
             }
 
-            // История убийств (последние 30 событий: убийства, смерти, суициды и т.д.)
-            $killsList = Kills::getKills($server, $user, 30);
+            // История убийств (последние 30 событий: убийства, смерти, суициды и т.д.) за выбранный вайп
+            $killsList = Kills::getKills($server, $user, 30, $wipe);
             $killsForApi = array_map(function ($k) {
                 return [
                     'id' => (int) ($k['id'] ?? 0),

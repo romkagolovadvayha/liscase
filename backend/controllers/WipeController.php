@@ -68,6 +68,12 @@ class WipeController extends Controller
                 'class' => 'ds-btn ds-btn--secondary ds-btn--sm',
                 'data' => ['confirm' => Yii::t('common', 'Удалить все незафиксированные карты?'), 'method' => 'post'],
             ],
+            [
+                'label' => '<i class="bi bi-arrow-counterclockwise"></i> ' . Yii::t('common', 'Обнулить промокод WIPE'),
+                'url' => ['/wipe/promocode'],
+                'class' => 'ds-btn ds-btn--secondary ds-btn--sm',
+                'data' => ['confirm' => Yii::t('common', 'Обнулить промокод WIPE? Пользователи смогут ввести его заново.'), 'method' => 'post'],
+            ],
         ];
         return $this->render('index');
     }
