@@ -237,8 +237,9 @@ class StatsController extends BaseApiController
             throw new NotFoundHttpException('Сервер не найден');
         }
 
-        $wipe = $server->currentWipe();
-        
+        $requestWipe = \Yii::$app->request->get('wipe');
+        $wipe = ($requestWipe !== null && $requestWipe !== '') ? $requestWipe : $server->currentWipe();
+
         // Кэшируем статистику игрока на 5 минут
         $cacheKey = 'api_stats_player_' . $serverTag . '_' . $steamId . '_' . ($wipe ?? 'current');
         $cached = Yii::$app->cache->get($cacheKey);
@@ -476,6 +477,7 @@ class StatsController extends BaseApiController
                     'username' => $user->username,
                     'avatar' => $user->getAvatar(),
                     'has_vip' => $user->hasVip(),
+                    'display_status' => $user->getDisplayStatus(),
                     'stats' => $formattedStats,
                     'metrics' => [
                         'kills' => $kills,
@@ -506,6 +508,9 @@ class StatsController extends BaseApiController
             // Сохраняем в кэш на 5 минут
             Yii::$app->cache->set($cacheKey, $cached, 300);
         }
+
+        // Всегда подставляем актуальный текущий вайп сервера для отображения на фронте
+        $cached['player']['current_wipe'] = $server->currentWipe();
 
         return $this->successResponse($cached);
     }
