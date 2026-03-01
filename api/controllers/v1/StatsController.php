@@ -258,9 +258,9 @@ class StatsController extends BaseApiController
         $wipe = $periodAll ? null : (($requestWipe !== null && $requestWipe !== '') ? $requestWipe : $server->currentWipe());
 
         // Кэшируем статистику игрока на 5 минут (в ключе заменяем / на _ для совместимости с бэкендами кэша)
-        // _v2: инвалидация кэша после перехода чая/пирогов на getFoodItem по mod_* ключам
+        // _v3: инвалидация кэша после добавления killed_player в hunters (смерти от животных)
         $wipeKey = $periodAll ? 'all' : str_replace('/', '_', (string)($wipe ?? 'current'));
-        $cacheKey = 'api_stats_player_' . $serverTag . '_' . $steamId . '_' . $wipeKey . '_v2';
+        $cacheKey = 'api_stats_player_' . $serverTag . '_' . $steamId . '_' . $wipeKey . '_v3';
         $cached = Yii::$app->cache->get($cacheKey);
         
         if ($cached === false) {
