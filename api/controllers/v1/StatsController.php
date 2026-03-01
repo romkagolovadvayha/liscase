@@ -253,17 +253,20 @@ class StatsController extends BaseApiController
             throw new NotFoundHttpException('Сервер не найден');
         }
 
+        $periodAll = \Yii::$app->request->get('period') === 'all';
         $requestWipe = \Yii::$app->request->get('wipe');
-        $wipe = ($requestWipe !== null && $requestWipe !== '') ? $requestWipe : $server->currentWipe();
+        $wipe = $periodAll ? null : (($requestWipe !== null && $requestWipe !== '') ? $requestWipe : $server->currentWipe());
 
         // Кэшируем статистику игрока на 5 минут (в ключе заменяем / на _ для совместимости с бэкендами кэша)
         // _v2: инвалидация кэша после перехода чая/пирогов на getFoodItem по mod_* ключам
-        $wipeKey = str_replace('/', '_', (string)($wipe ?? 'current'));
+        $wipeKey = $periodAll ? 'all' : str_replace('/', '_', (string)($wipe ?? 'current'));
         $cacheKey = 'api_stats_player_' . $serverTag . '_' . $steamId . '_' . $wipeKey . '_v2';
         $cached = Yii::$app->cache->get($cacheKey);
         
         if ($cached === false) {
-            $playerStats = Statistics::getPlayerStats($server, $steamId, $wipe);
+            $playerStats = $periodAll
+                ? Statistics::getPlayerStatsAllTime($steamId)
+                : Statistics::getPlayerStats($server, $steamId, $wipe);
 
             // Получаем информацию о пользователе
             $user = User::findBySteamId($steamId, false, 'stats');
@@ -290,11 +293,16 @@ class StatsController extends BaseApiController
             $wounded = Statistics::getParam($playerStats, 'wounded');
             $tcsDestroyed = Statistics::getParam($playerStats, 'tcsdestroyed');
             $nudeKills = Statistics::getParam($playerStats, 'nude_kills');
-            $wipesCount = (int) Statistics::find()
-                ->select('COUNT(DISTINCT wipe)')
-                ->andWhere(['steam_id' => $steamId])
-                ->andWhere(['server_tag' => $server->tag])
-                ->scalar();
+            $wipesCount = $periodAll
+                ? (int) Statistics::find()
+                    ->select([new \yii\db\Expression('COUNT(DISTINCT CONCAT(COALESCE(server_tag,\'\'), \'|\', COALESCE(wipe,\'\')))')])
+                    ->andWhere(['steam_id' => $steamId])
+                    ->scalar()
+                : (int) Statistics::find()
+                    ->select('COUNT(DISTINCT wipe)')
+                    ->andWhere(['steam_id' => $steamId])
+                    ->andWhere(['server_tag' => $server->tag])
+                    ->scalar();
 
             // Активность по вайпам за всё время: по всем серверам, playtime в каждом вайпе (для теплокарты)
             $wipesActivityRows = Statistics::find()
@@ -371,16 +379,25 @@ class StatsController extends BaseApiController
                 ];
             }
 
-            $killWeapons = Kills::find()
-                ->select(['weapon', 'COUNT(*) as count'])
-                ->andWhere(['steam_id' => $steamId])
-                ->andWhere(['server_tag' => $server->tag])
-                ->andWhere(['wipe' => $wipe])
-                ->andWhere('weapon IS NOT NULL')
-                ->asArray()
-                ->groupBy('weapon')
-                ->orderBy(['count' => SORT_DESC])
-                ->all();
+            $killWeapons = $periodAll
+                ? Kills::find()
+                    ->select(['weapon', 'COUNT(*) as count'])
+                    ->andWhere(['steam_id' => $steamId])
+                    ->andWhere('weapon IS NOT NULL')
+                    ->asArray()
+                    ->groupBy('weapon')
+                    ->orderBy(['count' => SORT_DESC])
+                    ->all()
+                : Kills::find()
+                    ->select(['weapon', 'COUNT(*) as count'])
+                    ->andWhere(['steam_id' => $steamId])
+                    ->andWhere(['server_tag' => $server->tag])
+                    ->andWhere(['wipe' => $wipe])
+                    ->andWhere('weapon IS NOT NULL')
+                    ->asArray()
+                    ->groupBy('weapon')
+                    ->orderBy(['count' => SORT_DESC])
+                    ->all();
             $weapons = [];
             foreach ($killWeapons as $item) {
                 if (empty($item['weapon'])) {
@@ -620,8 +637,10 @@ class StatsController extends BaseApiController
                 }
             }
 
-            // История убийств (последние 30 событий: убийства, смерти, суициды и т.д.) за выбранный вайп
-            $killsList = Kills::getKills($server, $user, 30, $wipe);
+            // История убийств (последние 30 событий): за вайп или за всё время по всем серверам
+            $killsList = $periodAll
+                ? Kills::getKillsAllTime($user, 30)
+                : Kills::getKills($server, $user, 30, $wipe);
             $killsForApi = array_map(function ($k) {
                 return [
                     'id' => (int) ($k['id'] ?? 0),

@@ -133,6 +133,27 @@ class Statistics extends ActiveRecord
         return $statistics;
     }
 
+    /**
+     * Агрегированная статистика игрока за всё время по всем серверам и вайпам (для period=all).
+     * @param string $steamId
+     * @return array key => ['key' => key, 'value' => sum]
+     */
+    public static function getPlayerStatsAllTime($steamId) {
+        $rows = Statistics::find()
+            ->cache(120)
+            ->select(['key', 'SUM(CAST(value AS SIGNED)) as value'])
+            ->andWhere(['steam_id' => $steamId])
+            ->groupBy('key')
+            ->asArray()
+            ->all();
+        $result = [];
+        foreach ($rows as $row) {
+            $k = $row['key'] ?? '';
+            $result[$k] = ['key' => $k, 'value' => (int) ($row['value'] ?? 0)];
+        }
+        return $result;
+    }
+
     public static function getStats(Servers $server, $steamId = null, $all = true, $wipeDate = null, $cache = true) {
         ini_set('memory_limit', '512M');
         // Если запрашивается статистика одного пользователя, используем отдельный кэш-ключ

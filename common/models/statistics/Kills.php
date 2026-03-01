@@ -252,6 +252,135 @@ class Kills extends ActiveRecord
     }
 
     /**
+     * История убийств за всё время по всем серверам и вайпам (для period=all).
+     * @param User $user
+     * @param int $limit
+     * @return array
+     */
+    public static function getKillsAllTime($user, $limit = 30)
+    {
+        $query = Kills::find()
+            ->cache(60)
+            ->andWhere(['!=', 'dead', ''])
+            ->andWhere(['OR', ['steam_id' => $user->steam_id], ['dead' => $user->steam_id]]);
+
+        $models = $query->orderBy(['created_at' => SORT_DESC])
+            ->asArray()
+            ->limit($limit)
+            ->all();
+
+        $weapons = [];
+        foreach ($models as $model) {
+            if (!empty($model['weapon'])) {
+                $weapons[$model['weapon']] = null;
+            }
+        }
+        $weapons = array_keys($weapons);
+        $drops = !empty($weapons) ? Drop::find()->andWhere(['IN', 'eng_name', $weapons])->indexBy('eng_name')->all() : [];
+        $scientists = Kills::getScientistsList();
+
+        $steamIds = [];
+        foreach ($models as $model) {
+            if (!empty($model['steam_id']) && strlen($model['steam_id']) === 17) {
+                $steamIds[$model['steam_id']] = true;
+            }
+            if (!empty($model['dead']) && strlen($model['dead']) === 17) {
+                $steamIds[$model['dead']] = true;
+            }
+        }
+        $usersMap = [];
+        if (!empty($steamIds)) {
+            $users = User::find()
+                ->where(['IN', 'steam_id', array_keys($steamIds)])
+                ->with(['server', 'userProfile'])
+                ->indexBy('steam_id')
+                ->all();
+            foreach ($users as $sid => $u) {
+                $usersMap[$sid] = $u;
+            }
+        }
+
+        for ($i = 0; $i < count($models); $i++) {
+            $model = $models[$i];
+            if (!empty($model['signs'])) {
+                $model['signs'] = json_decode($model['signs'], true);
+            }
+            $model['bot'] = false;
+            if ($model['steam_id'] === $user->steam_id) {
+                $model['name'] = $user->username;
+                $model['link'] = $user->getLink('stats');
+                $model['avatar'] = $user->getAvatar() ?: ($scientists['default'] ?? '');
+            }
+            if ($model['dead'] === $user->steam_id) {
+                $model['dead_name'] = $user->username;
+                $model['dead_link'] = $user->getLink('stats');
+                $model['dead_avatar'] = $user->getAvatar() ?: ($scientists['default'] ?? '');
+            }
+            if (empty($model['name']) && strlen($model['steam_id']) === 17) {
+                if (isset($usersMap[$model['steam_id']])) {
+                    $_u = $usersMap[$model['steam_id']];
+                    $model['name'] = $_u->username;
+                    $model['link'] = $_u->getLink('stats');
+                    $model['avatar'] = $_u->getAvatar() ?: ($scientists['default'] ?? '');
+                } else {
+                    $_u = User::findBySteamId($model['steam_id'], false, 'kills');
+                    if ($_u) {
+                        $model['name'] = $_u->username;
+                        $model['link'] = $_u->getLink('stats');
+                        $model['avatar'] = $_u->getAvatar() ?: ($scientists['default'] ?? '');
+                    }
+                }
+            }
+            if (empty($model['dead_name']) && strlen($model['dead']) === 17) {
+                if (isset($usersMap[$model['dead']])) {
+                    $_u = $usersMap[$model['dead']];
+                    $model['dead_name'] = $_u->username;
+                    $model['dead_link'] = $_u->getLink('stats');
+                    $model['dead_avatar'] = $_u->getAvatar() ?: ($scientists['default'] ?? '');
+                } else {
+                    $_u = User::findBySteamId($model['dead'], false, 'kills');
+                    if ($_u) {
+                        $model['dead_name'] = $_u->username;
+                        $model['dead_link'] = $_u->getLink('stats');
+                        $model['dead_avatar'] = $_u->getAvatar() ?: ($scientists['default'] ?? '');
+                    }
+                }
+            }
+            if (!empty($model['type']) && $model['type'] !== 'deaths' && $model['type'] !== 'suicides' && !empty($model['weapon']) && isset($drops[$model['weapon']])) {
+                $model['weapon_image'] = $drops[$model['weapon']]->imageOrig->getImagePubUrl();
+                $model['weapon_name'] = $drops[$model['weapon']]->name;
+            }
+            if (!empty($model['type']) && $model['type'] === 'scientists') {
+                if (!empty($scientists[$model['dead']])) {
+                    $model['image'] = $scientists[$model['dead']];
+                    $model['bot'] = true;
+                    if (empty($model['dead_avatar'])) {
+                        $model['dead_avatar'] = $model['image'];
+                    }
+                } elseif (!empty($scientists['default']) && empty($model['dead_avatar'])) {
+                    $model['dead_avatar'] = $scientists['default'];
+                }
+            }
+            if (!empty($model['type']) && $model['type'] === 'kill' && strlen($model['steam_id']) < 10) {
+                $model['image'] = $scientists['default'] ?? '';
+                $model['bot'] = true;
+                if (empty($model['avatar'])) {
+                    $model['avatar'] = $scientists['default'] ?? '';
+                }
+            }
+            if (empty($model['avatar']) && !empty($scientists['default'])) {
+                $model['avatar'] = $scientists['default'];
+            }
+            if (empty($model['dead_avatar']) && !empty($scientists['default'])) {
+                $model['dead_avatar'] = $scientists['default'];
+            }
+            $models[$i] = $model;
+        }
+
+        return $models;
+    }
+
+    /**
      * Дуэли: сводка по противникам (игрок vs игрок) по всем серверам.
      * Фильтр только по дате вайпа, без привязки к серверу.
      *
