@@ -109,6 +109,41 @@ class m260225_120000_add_statistics_unique_for_upsert extends Migration
         }
         $this->execute("DROP TEMPORARY TABLE IF EXISTS _stat_dup_agg");
 
+        // 1.5. Финальная очистка дубликатов (могли появиться из-за записей приложения во время долгого DELETE)
+        $this->execute("
+            CREATE TEMPORARY TABLE _stat_dup_final (
+                steam_id VARCHAR(255) NOT NULL,
+                server_tag VARCHAR(255) NOT NULL,
+                wipe VARCHAR(255) NOT NULL,
+                `key` VARCHAR(255) NOT NULL,
+                keep_id INT UNSIGNED NOT NULL,
+                total INT UNSIGNED NOT NULL,
+                PRIMARY KEY (steam_id(191), server_tag(191), wipe(191), `key`(191))
+            ) ENGINE=InnoDB
+        ");
+        $this->execute("
+            INSERT INTO _stat_dup_final (steam_id, server_tag, wipe, `key`, keep_id, total)
+            SELECT steam_id, server_tag, wipe, `key`, MIN(id), SUM(value)
+            FROM {$tableName}
+            GROUP BY steam_id, server_tag, wipe, `key`
+            HAVING COUNT(*) > 1
+        ");
+        $finalDupes = $this->db->createCommand("SELECT COUNT(*) FROM _stat_dup_final")->queryScalar();
+        if ($finalDupes > 0) {
+            $this->execute("
+                UPDATE {$tableName} s
+                INNER JOIN _stat_dup_final a ON s.steam_id = a.steam_id AND s.server_tag = a.server_tag
+                    AND s.wipe = a.wipe AND s.`key` = a.`key` AND s.id = a.keep_id
+                SET s.value = a.total
+            ");
+            $this->execute("
+                DELETE s FROM {$tableName} s
+                INNER JOIN _stat_dup_final a ON s.steam_id = a.steam_id AND s.server_tag = a.server_tag
+                    AND s.wipe = a.wipe AND s.`key` = a.`key` AND s.id != a.keep_id
+            ");
+        }
+        $this->execute("DROP TEMPORARY TABLE IF EXISTS _stat_dup_final");
+
         // 2. Убираем временный индекс и создаём уникальный
         $dedupExistsNow = $this->db->createCommand("
             SELECT COUNT(*) FROM information_schema.statistics
