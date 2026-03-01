@@ -463,7 +463,7 @@ class Statistics extends ActiveRecord
     }
 
     public static function productsImages($update = false) {
-        $cacheKey = 'Statistics_productsImages_';
+        $cacheKey = 'Statistics_productsImages2_';
         if (Yii::$app->cache->get($cacheKey) && !$update) {
             return Yii::$app->cache->get($cacheKey);
         }
