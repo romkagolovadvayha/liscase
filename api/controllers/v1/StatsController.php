@@ -566,6 +566,7 @@ class StatsController extends BaseApiController
                     'weapon' => $item['weapon'],
                     'name' => Statistics::getName($names, $item['weapon']),
                     'image' => Statistics::getImage($images, $item['weapon']),
+                    'image_large' => Statistics::getImageLarge($images, $item['weapon']),
                     'count' => (int) $item['count'],
                 ];
             }

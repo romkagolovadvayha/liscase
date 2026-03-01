@@ -95,7 +95,20 @@ class Statistics extends ActiveRecord
             $baseUrl = Yii::$app->settings->get('s3_publicUrl');
             return $baseUrl ? rtrim($baseUrl, '/') . '/' . $defaultPath : '/' . $defaultPath;
         }
-        return $images[$key];
+        $v = $images[$key];
+        return is_array($v) ? ($v['image'] ?? $v) : $v;
+    }
+
+    /** Большое изображение (150px или оригинал) для оружия и т.п. */
+    public static function getImageLarge($images, $key) {
+        if (empty($images[$key])) {
+            return self::getImage($images, $key);
+        }
+        $v = $images[$key];
+        if (is_array($v) && !empty($v['image_large'])) {
+            return $v['image_large'];
+        }
+        return is_array($v) ? ($v['image'] ?? $v) : $v;
     }
 
     /**
@@ -468,7 +481,20 @@ class Statistics extends ActiveRecord
             if ($url === null && $item->imageOrig !== null) {
                 $url = $item->imageOrig->getImagePubUrl();
             }
-            $result[$item->eng_name] = $url;
+            $urlLarge = $item->image150();
+            if ($urlLarge === null) {
+                $urlLarge = $item->image();
+            }
+            if ($urlLarge === null && $item->imageOrig !== null) {
+                $urlLarge = $item->imageOrig->getImagePubUrl();
+            }
+            if ($urlLarge === null) {
+                $urlLarge = $url;
+            }
+            $result[$item->eng_name] = [
+                'image' => $url,
+                'image_large' => $urlLarge,
+            ];
         }
 
         Yii::$app->cache->set($cacheKey, $result, 30*60);
