@@ -494,7 +494,7 @@ class Statistics extends ActiveRecord
             // Если image_large всё ещё 64px — подставляем URL 150px по соглашению путей (drop64 → drop150)
             $srcForLarge = $urlLarge !== null ? $urlLarge : $url;
             if ($srcForLarge !== null && $srcForLarge !== '' && strpos($srcForLarge, 'drop64') !== false) {
-                $candidate = str_replace(['/drop64/', 'drop64/'], ['/drop150/', 'drop150/'], $srcForLarge);
+                $candidate = str_replace(['drop64'], ['drop150'], $srcForLarge);
                 if ($candidate !== $srcForLarge) {
                     $urlLarge = $candidate;
                 }
