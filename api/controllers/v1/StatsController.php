@@ -510,7 +510,7 @@ class StatsController extends BaseApiController
             $hunterItems = [
                 ['key' => 'boar', 'name' => \Yii::t('common', 'Кабаны'), 'image_path' => 'images/hunters/Boar.png'],
                 ['key' => 'horse', 'name' => \Yii::t('common', 'Лошади'), 'image_path' => 'images/hunters/Horse.png'],
-                ['key' => 'wolf', 'name' => \Yii::t('common', 'Волки'), 'param' => ['wolf', 'wolf2'], 'image_path' => 'images/hunters/Wolf.png'],
+                ['key' => 'wolf', 'name' => \Yii::t('common', 'Волки'), 'param' => ['wolf', 'wolf2', 'skull.wolf'], 'image_path' => 'images/hunters/Wolf.png'],
                 ['key' => 'bear', 'name' => \Yii::t('common', 'Медведи'), 'param' => ['bear', 'polarbear'], 'image_path' => 'images/hunters/bear.png'],
                 ['key' => 'deer', 'name' => \Yii::t('common', 'Олени'), 'param' => ['deer', 'stag'], 'image_path' => 'images/hunters/Stag.png'],
                 ['key' => 'chicken', 'name' => \Yii::t('common', 'Курицы'), 'image_path' => 'images/hunters/Chicken.png'],
@@ -519,6 +519,7 @@ class StatsController extends BaseApiController
                 ['key' => 'crocodile', 'name' => \Yii::t('common', 'Крокодилы'), 'image_path' => 'images/hunters/crocodile.png'],
                 ['key' => 'tiger', 'name' => \Yii::t('common', 'Тигры'), 'image_path' => 'images/hunters/tiger.png'],
             ];
+            $deathsByAnimal = Kills::getDeathsByAnimalCounts($user, $periodAll ? null : $server, $wipe, $periodAll);
             $hunters = [];
             foreach ($hunterItems as $item) {
                 $count = 0;
@@ -529,11 +530,20 @@ class StatsController extends BaseApiController
                 } else {
                     $count = (int) Statistics::getParam($playerStats, $item['key']);
                 }
+                $killedPlayer = 0;
+                if (!empty($item['param'])) {
+                    foreach ((array) $item['param'] as $p) {
+                        $killedPlayer += (int) isset($deathsByAnimal[$p]) ? $deathsByAnimal[$p] : 0;
+                    }
+                } else {
+                    $killedPlayer = (int) isset($deathsByAnimal[$item['key']]) ? $deathsByAnimal[$item['key']] : 0;
+                }
                 $hunters[] = [
                     'key' => $item['key'],
                     'name' => $item['name'],
                     'image' => self::getStaticImageUrl($item['image_path']),
                     'count' => $count,
+                    'killed_player' => $killedPlayer,
                     'score' => 0,
                 ];
             }

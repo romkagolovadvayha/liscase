@@ -403,6 +403,42 @@ class Kills extends ActiveRecord
     }
 
     /**
+     * Агрегат: сколько раз каждое животное убило игрока (type=deaths, steam_id=игрок, dead=животное).
+     * Используется для блока «Охота», чтобы не зависеть от лимита последних 30 записей в истории убийств.
+     *
+     * @param User $user
+     * @param \common\models\servers\Servers|null $server если null и !$periodAll — не фильтруем по серверу
+     * @param string|null $wipe вайп для фильтра (игнорируется при $periodAll)
+     * @param bool $periodAll true = за всё время по всем серверам
+     * @return array [ 'bear' => 5, 'polarbear' => 2, 'boar' => 0, ... ]
+     */
+    public static function getDeathsByAnimalCounts($user, $server = null, $wipe = null, $periodAll = false)
+    {
+        $query = static::find()
+            ->select(['dead', 'cnt' => 'COUNT(*)'])
+            ->andWhere(['steam_id' => $user->steam_id])
+            ->andWhere(['type' => 'deaths'])
+            ->andWhere(['!=', 'dead', ''])
+            ->groupBy(['dead']);
+
+        if (!$periodAll && $server !== null) {
+            $query->andWhere(['server_tag' => $server->tag]);
+            if ($wipe !== null && $wipe !== '') {
+                $query->andWhere(['wipe' => $wipe]);
+            } else {
+                $query->andWhere(['wipe' => $server->currentWipe()]);
+            }
+        }
+
+        $rows = $query->asArray()->all();
+        $result = [];
+        foreach ($rows as $row) {
+            $result[$row['dead']] = (int) $row['cnt'];
+        }
+        return $result;
+    }
+
+    /**
      * Дуэли: сводка по противникам (игрок vs игрок) по всем серверам.
      * Фильтр только по дате вайпа, без привязки к серверу.
      *
