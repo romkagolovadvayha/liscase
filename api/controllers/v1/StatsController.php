@@ -52,7 +52,7 @@ class StatsController extends BaseApiController
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
             'only' => ['personal', 'report'],
-            'except' => ['stats', 'player-new', 'player-resources', 'duels', 'search', 'tops', 'options'],
+            'except' => ['stats', 'player-new', 'player-resources', 'player-kills', 'player-team', 'duels', 'search', 'tops', 'options'],
         ];
 
         // Опциональная авторизация для stats (инициализирует пользователя, если токен есть, но не требует его)
@@ -417,9 +417,9 @@ class StatsController extends BaseApiController
         $wipe = $periodAll ? null : (($requestWipe !== null && $requestWipe !== '') ? $requestWipe : $server->currentWipe());
 
         // Кэшируем статистику игрока на 5 минут (в ключе заменяем / на _ для совместимости с бэкендами кэша)
-        // _v3: инвалидация кэша после добавления killed_player в hunters (смерти от животных)
+        // _v6: team_members вынесены в отдельный endpoint player-team (для бэйджа только team_members_count)
         $wipeKey = $periodAll ? 'all' : str_replace('/', '_', (string)($wipe ?? 'current'));
-        $cacheKey = 'api_stats_player_' . $serverTag . '_' . $steamId . '_' . $wipeKey . '_v3';
+        $cacheKey = 'api_stats_player_' . $serverTag . '_' . $steamId . '_' . $wipeKey . '_v6';
         $cached = Yii::$app->cache->get($cacheKey);
         
         if ($cached === false) {
@@ -646,24 +646,7 @@ class StatsController extends BaseApiController
             });
             $pie = array_slice($pie, 0, 10);
 
-            // Медицина — для списка в «Последняя активность»
-            $healItems = [
-                ['name' => \Yii::t('common', 'Большая аптечка'), 'key' => 'first_aid_kit', 'image_key' => 'largemedkit'],
-                ['name' => \Yii::t('common', 'Медицинский шприц'), 'key' => 'syringe', 'image_key' => 'syringe'],
-                ['name' => \Yii::t('common', 'Бинт'), 'key' => 'bandage', 'image_key' => 'bandage'],
-            ];
-            $medical = [];
-            foreach ($healItems as $item) {
-                $count = (int) Statistics::getParam($playerStats, $item['key']);
-                $imageKey = $item['image_key'] ?? $item['key'];
-                $medical[] = [
-                    'key' => $item['key'],
-                    'name' => $item['name'],
-                    'image' => Statistics::getImage($images, $imageKey),
-                    'count' => $count,
-                    'score' => 0,
-                ];
-            }
+            // Медицина (для вкладки Убийства) — загружается через endpoint player-kills
 
             // Охота — животные; картинки как в frontend/views/stats/_player_stats_hunter.php (images/hunters/*.png) через S3
             $hunterItems = [
@@ -806,35 +789,9 @@ class StatsController extends BaseApiController
                 }
             }
 
-            // История убийств (последние 30 событий): за вайп или за всё время по всем серверам
-            $killsList = $periodAll
-                ? Kills::getKillsAllTime($user, 30)
-                : Kills::getKills($server, $user, 30, $wipe);
-            $killsForApi = array_map(function ($k) {
-                return [
-                    'id' => (int) ($k['id'] ?? 0),
-                    'type' => $k['type'] ?? 'kill',
-                    'steam_id' => $k['steam_id'] ?? '',
-                    'dead' => $k['dead'] ?? '',
-                    'weapon' => $k['weapon'] ?? null,
-                    'weapon_name' => $k['weapon_name'] ?? null,
-                    'weapon_image' => $k['weapon_image'] ?? null,
-                    'distance' => (int) ($k['distance'] ?? 0),
-                    'name' => $k['name'] ?? null,
-                    'link' => $k['link'] ?? null,
-                    'avatar' => $k['avatar'] ?? null,
-                    'dead_name' => $k['dead_name'] ?? null,
-                    'dead_link' => $k['dead_link'] ?? null,
-                    'dead_avatar' => $k['dead_avatar'] ?? null,
-                    'deadLink' => $k['dead_link'] ?? null,
-                    'signs' => $k['signs'] ?? null,
-                    'wears' => $k['wears'] ?? null,
-                    'bot' => !empty($k['bot']),
-                    'animal' => $k['animal'] ?? null,
-                    'animal2' => $k['animal2'] ?? null,
-                    'created_at' => $k['created_at'] ?? '',
-                ];
-            }, $killsList);
+            // История убийств и медицинские предметы — отдельный endpoint player-kills при открытии вкладки Убийства
+            $killsForApi = [];
+            $medical = [];
 
             $cached = [
                 'player' => [
@@ -882,7 +839,7 @@ class StatsController extends BaseApiController
                     ],
                     'wipes_activity' => $wipesActivity,
                     'kills' => $killsForApi,
-                    'team_members' => $teamMembers,
+                    'team_members_count' => count($teamMembers),
                     'team_hidden' => $teamHidden,
                 ],
             ];
@@ -945,6 +902,199 @@ class StatsController extends BaseApiController
             }
 
             $cached = $this->buildPlayerResourcesData($server, $user, $wipe, $periodAll, $playerStats);
+            Yii::$app->cache->set($cacheKey, $cached, 300);
+        }
+
+        return $this->successResponse($cached);
+    }
+
+    /**
+     * Данные для вкладки «Убийства»: история убийств (последние 30) и медицинские предметы.
+     * Вызывается только при открытии вкладки.
+     *
+     * @param \common\models\servers\Servers $server
+     * @param \common\models\user\User $user
+     * @param string|null $wipe
+     * @param bool $periodAll
+     * @param array $playerStats результат Statistics::getPlayerStats / getPlayerStatsAllTime
+     * @return array{kills: array, medical: array}
+     */
+    private function buildPlayerKillsData($server, $user, $wipe, $periodAll, $playerStats)
+    {
+        $killsList = $periodAll
+            ? Kills::getKillsAllTime($user, 30)
+            : Kills::getKills($server, $user, 30, $wipe);
+        $killsForApi = array_map(function ($k) {
+            return [
+                'id' => (int) ($k['id'] ?? 0),
+                'type' => $k['type'] ?? 'kill',
+                'steam_id' => $k['steam_id'] ?? '',
+                'dead' => $k['dead'] ?? '',
+                'weapon' => $k['weapon'] ?? null,
+                'weapon_name' => $k['weapon_name'] ?? null,
+                'weapon_image' => $k['weapon_image'] ?? null,
+                'distance' => (int) ($k['distance'] ?? 0),
+                'name' => $k['name'] ?? null,
+                'link' => $k['link'] ?? null,
+                'avatar' => $k['avatar'] ?? null,
+                'dead_name' => $k['dead_name'] ?? null,
+                'dead_link' => $k['dead_link'] ?? null,
+                'dead_avatar' => $k['dead_avatar'] ?? null,
+                'deadLink' => $k['dead_link'] ?? null,
+                'signs' => $k['signs'] ?? null,
+                'wears' => $k['wears'] ?? null,
+                'bot' => !empty($k['bot']),
+                'animal' => $k['animal'] ?? null,
+                'animal2' => $k['animal2'] ?? null,
+                'created_at' => $k['created_at'] ?? '',
+            ];
+        }, $killsList);
+
+        $images = Statistics::productsImages();
+        $healItems = [
+            ['name' => \Yii::t('common', 'Большая аптечка'), 'key' => 'first_aid_kit', 'image_key' => 'largemedkit'],
+            ['name' => \Yii::t('common', 'Медицинский шприц'), 'key' => 'syringe', 'image_key' => 'syringe'],
+            ['name' => \Yii::t('common', 'Бинт'), 'key' => 'bandage', 'image_key' => 'bandage'],
+        ];
+        $medical = [];
+        foreach ($healItems as $item) {
+            $count = (int) Statistics::getParam($playerStats, $item['key']);
+            $imageKey = $item['image_key'] ?? $item['key'];
+            $medical[] = [
+                'key' => $item['key'],
+                'name' => $item['name'],
+                'image' => Statistics::getImage($images, $imageKey),
+                'count' => $count,
+                'score' => 0,
+            ];
+        }
+
+        return [
+            'kills' => $killsForApi,
+            'medical' => $medical,
+        ];
+    }
+
+    /**
+     * @param \common\models\servers\Servers $server
+     * @param \common\models\user\User $user
+     * @param string|null $wipe
+     * @return array{team_members: array, team_hidden: bool}
+     */
+    private function buildPlayerTeamData($server, $user, $wipe)
+    {
+        $teamHidden = $user->hasHideTeam();
+        $teamMembers = [];
+        if (!$teamHidden) {
+            try {
+                $teamMembers = TeamsModel::getTeamList($server->id, $user->id, $wipe);
+            } catch (\Exception $e) {
+                $teamMembers = [];
+            }
+        }
+        return [
+            'team_members' => $teamMembers,
+            'team_hidden' => $teamHidden,
+        ];
+    }
+
+    /**
+     * Данные для вкладки «Убийства» (kills, medical).
+     * Вызывается только при открытии вкладки.
+     *
+     * @OA\Get(
+     *     path="/v1/stats/player-kills",
+     *     operationId="getPlayerKills",
+     *     tags={"Stats"},
+     *     summary="История убийств и медицина игрока",
+     *     @OA\Parameter(name="serverTag", in="query", required=true, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="steamId", in="query", required=true, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="wipe", in="query", required=false, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="period", in="query", required=false, description="all = за всё время", @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="kills, medical")
+     * )
+     */
+    public function actionPlayerKills()
+    {
+        $serverTag = \Yii::$app->request->get('serverTag');
+        $steamId = \Yii::$app->request->get('steamId');
+        if (empty($serverTag) || empty($steamId)) {
+            return $this->errorResponse('INVALID_PARAMS', 'Требуются serverTag и steamId', [], 400);
+        }
+
+        $server = Servers::find()->where(['tag' => $serverTag])->one();
+        if (!$server) {
+            throw new NotFoundHttpException('Сервер не найден');
+        }
+
+        $periodAll = \Yii::$app->request->get('period') === 'all';
+        $requestWipe = \Yii::$app->request->get('wipe');
+        $wipe = $periodAll ? null : (($requestWipe !== null && $requestWipe !== '') ? $requestWipe : $server->currentWipe());
+
+        $wipeKey = $periodAll ? 'all' : str_replace('/', '_', (string)($wipe ?? 'current'));
+        $cacheKey = 'api_stats_player_kills_' . $serverTag . '_' . $steamId . '_' . $wipeKey . '_v1';
+        $cached = Yii::$app->cache->get($cacheKey);
+
+        if ($cached === false) {
+            $playerStats = $periodAll
+                ? Statistics::getPlayerStatsAllTime($steamId)
+                : Statistics::getPlayerStats($server, $steamId, $wipe);
+
+            $user = User::findBySteamId($steamId, false, 'stats');
+            if (!$user) {
+                throw new NotFoundHttpException('Игрок не найден');
+            }
+
+            $cached = $this->buildPlayerKillsData($server, $user, $wipe, $periodAll, $playerStats);
+            Yii::$app->cache->set($cacheKey, $cached, 300);
+        }
+
+        return $this->successResponse($cached);
+    }
+
+    /**
+     * Данные для вкладки «Тимейты» (team_members, team_hidden).
+     * Вызывается только при открытии вкладки.
+     *
+     * @OA\Get(
+     *     path="/v1/stats/player-team",
+     *     operationId="getPlayerTeam",
+     *     tags={"Stats"},
+     *     summary="Команда игрока (тимейты)",
+     *     @OA\Parameter(name="serverTag", in="query", required=true, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="steamId", in="query", required=true, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="wipe", in="query", required=false, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="period", in="query", required=false, description="all = за всё время", @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="team_members, team_hidden")
+     * )
+     */
+    public function actionPlayerTeam()
+    {
+        $serverTag = \Yii::$app->request->get('serverTag');
+        $steamId = \Yii::$app->request->get('steamId');
+        if (empty($serverTag) || empty($steamId)) {
+            return $this->errorResponse('INVALID_PARAMS', 'Требуются serverTag и steamId', [], 400);
+        }
+
+        $server = Servers::find()->where(['tag' => $serverTag])->one();
+        if (!$server) {
+            throw new NotFoundHttpException('Сервер не найден');
+        }
+
+        $periodAll = \Yii::$app->request->get('period') === 'all';
+        $requestWipe = \Yii::$app->request->get('wipe');
+        $wipe = $periodAll ? null : (($requestWipe !== null && $requestWipe !== '') ? $requestWipe : $server->currentWipe());
+
+        $wipeKey = $periodAll ? 'all' : str_replace('/', '_', (string)($wipe ?? 'current'));
+        $cacheKey = 'api_stats_player_team_' . $serverTag . '_' . $steamId . '_' . $wipeKey . '_v1';
+        $cached = Yii::$app->cache->get($cacheKey);
+
+        if ($cached === false) {
+            $user = User::findBySteamId($steamId, false, 'stats');
+            if (!$user) {
+                throw new NotFoundHttpException('Игрок не найден');
+            }
+            $cached = $this->buildPlayerTeamData($server, $user, $wipe);
             Yii::$app->cache->set($cacheKey, $cached, 300);
         }
 
