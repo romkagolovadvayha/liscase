@@ -245,15 +245,15 @@ class Kills extends ActiveRecord
             if (empty($model['dead_avatar']) && !empty($scientists['default'])) {
                 $model['dead_avatar'] = $scientists['default'];
             }
-            // Для смертей от животного: убийца в steam_id, заполняем animal/animal2 для API
+            // Для смертей от животного: в БД dead = животное (bear, boar, …), steam_id = игрок
             if ($model['type'] === 'deaths') {
                 $animals = Kills::getAnimalsList();
                 $animals2 = Kills::getAnimals2List();
-                if (!empty($animals[$model['steam_id']])) {
-                    $model['animal'] = $animals[$model['steam_id']];
+                if (!empty($animals[$model['dead']])) {
+                    $model['animal'] = $animals[$model['dead']];
                 }
-                if (!empty($animals2[$model['steam_id']])) {
-                    $model['animal2'] = $animals2[$model['steam_id']];
+                if (!empty($animals2[$model['dead']])) {
+                    $model['animal2'] = $animals2[$model['dead']];
                 }
             }
             $models[$i] = $model;
@@ -385,15 +385,15 @@ class Kills extends ActiveRecord
             if (empty($model['dead_avatar']) && !empty($scientists['default'])) {
                 $model['dead_avatar'] = $scientists['default'];
             }
-            // Для смертей от животного: убийца в steam_id, заполняем animal/animal2 для API
+            // Для смертей от животного: в БД dead = животное (bear, boar, …), steam_id = игрок
             if (!empty($model['type']) && $model['type'] === 'deaths') {
                 $animals = Kills::getAnimalsList();
                 $animals2 = Kills::getAnimals2List();
-                if (!empty($animals[$model['steam_id']])) {
-                    $model['animal'] = $animals[$model['steam_id']];
+                if (!empty($animals[$model['dead']])) {
+                    $model['animal'] = $animals[$model['dead']];
                 }
-                if (!empty($animals2[$model['steam_id']])) {
-                    $model['animal2'] = $animals2[$model['steam_id']];
+                if (!empty($animals2[$model['dead']])) {
+                    $model['animal2'] = $animals2[$model['dead']];
                 }
             }
             $models[$i] = $model;
@@ -491,21 +491,12 @@ class Kills extends ActiveRecord
                     {$model['name']}
                 </a>";
             }
-            // Для смертей от животного убийца в steam_id, для убийств игрока/бота — в dead
-            if (!empty($model['type']) && $model['type'] === 'deaths') {
-                if (!empty($animals[$model['steam_id']])) {
-                    $model['animal'] = $animals[$model['steam_id']];
-                }
-                if (!empty($animals2[$model['steam_id']])) {
-                    $model['animal2'] = $animals2[$model['steam_id']];
-                }
-            } else {
-                if (!empty($animals[$model['dead']])) {
-                    $model['animal'] = $animals[$model['dead']];
-                }
-                if (!empty($animals2[$model['dead']])) {
-                    $model['animal2'] = $animals2[$model['dead']];
-                }
+            // Для смертей от животного в БД dead = животное; для убийств dead = жертва (игрок/бот)
+            if (!empty($animals[$model['dead']])) {
+                $model['animal'] = $animals[$model['dead']];
+            }
+            if (!empty($animals2[$model['dead']])) {
+                $model['animal2'] = $animals2[$model['dead']];
             }
             if (empty($model['weapon_name'])) {
                 $model['weapon_name'] = $model['weapon'];
@@ -544,20 +535,11 @@ class Kills extends ActiveRecord
                     {$model['name']}
                 </a>";
                 }
-                if (!empty($model['type']) && $model['type'] === 'deaths') {
-                    if (!empty($animals[$model['steam_id']])) {
-                        $model['animal'] = $animals[$model['steam_id']];
-                    }
-                    if (!empty($animals2[$model['steam_id']])) {
-                        $model['animal2'] = $animals2[$model['steam_id']];
-                    }
-                } else {
-                    if (!empty($animals[$model['dead']])) {
-                        $model['animal'] = $animals[$model['dead']];
-                    }
-                    if (!empty($animals2[$model['dead']])) {
-                        $model['animal2'] = $animals2[$model['dead']];
-                    }
+                if (!empty($animals[$model['dead']])) {
+                    $model['animal'] = $animals[$model['dead']];
+                }
+                if (!empty($animals2[$model['dead']])) {
+                    $model['animal2'] = $animals2[$model['dead']];
                 }
                 if (empty($model['weapon_name'])) {
                     $model['weapon_name'] = $model['weapon'];
