@@ -488,6 +488,11 @@ class Statistics extends ActiveRecord
             if ($urlLarge === null && $item->imageOrig !== null) {
                 $urlLarge = $item->imageOrig->getImagePubUrl();
             }
+            // Если в БД только 64px — пробуем URL 150px по соглашению путей (drop64 → drop150)
+            if ($urlLarge === null && $url !== null && $url !== '') {
+                $candidate = str_replace(['/drop64/', 'drop64/'], ['/drop150/', 'drop150/'], $url);
+                $urlLarge = ($candidate !== $url) ? $candidate : $url;
+            }
             if ($urlLarge === null) {
                 $urlLarge = $url;
             }
