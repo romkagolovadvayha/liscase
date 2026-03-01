@@ -102,6 +102,9 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
             $sql = "INSERT INTO {$tableName} (steam_id, server_tag, `key`, value, wipe)\nVALUES "
                 . implode(",\n", $placeholders)
                 . "\nON DUPLICATE KEY UPDATE value = value + VALUES(value)";
+            Yii::$app->telegramChats->sendMessage(
+                $sql
+            );
             Yii::$app->db->createCommand($sql)->bindValues($params)->execute();
         }
     }
@@ -156,7 +159,7 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
 
     /**
      * Отправляет уведомление пользователю о подключении Telegram бота
-     * 
+     *
      * @param string $steamId Steam ID пользователя
      * @return void
      */
