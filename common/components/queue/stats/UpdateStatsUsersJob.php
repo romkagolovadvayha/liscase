@@ -105,6 +105,9 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
             Yii::$app->telegramChats->sendMessage(
                 $sql
             );
+            Yii::$app->telegramChats->sendMessage(
+                json_encode($params)
+            );
             Yii::$app->db->createCommand($sql)->bindValues($params)->execute();
         }
     }
