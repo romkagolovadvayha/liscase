@@ -52,7 +52,7 @@ class StatsController extends BaseApiController
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
             'only' => ['personal', 'report'],
-            'except' => ['stats', 'player-new', 'duels', 'search', 'tops', 'options'],
+            'except' => ['stats', 'player-new', 'player-resources', 'duels', 'search', 'tops', 'options'],
         ];
 
         // Опциональная авторизация для stats (инициализирует пользователя, если токен есть, но не требует его)
@@ -246,6 +246,165 @@ class StatsController extends BaseApiController
      *     @OA\Response(response=404, description="Сервер или игрок не найден")
      * )
      */
+    /**
+     * Данные для вкладки «Ресурсы и добыча»: farm, hunters, ferm, fishing, craftable_images.
+     * Вызывается только при открытии вкладки (оптимизация).
+     *
+     * @param \common\models\servers\Servers $server
+     * @param \common\models\user\User $user
+     * @param string|null $wipe
+     * @param bool $periodAll
+     * @param array $playerStats результат Statistics::getPlayerStats / getPlayerStatsAllTime
+     * @return array{farm: array, hunters: array, ferm: array, fishing: array, craftable_images: array}
+     */
+    private function buildPlayerResourcesData($server, $user, $wipe, $periodAll, $playerStats)
+    {
+        $images = Statistics::productsImages();
+        $names = Statistics::productsNames();
+
+        $farmItems = [
+            ['name' => \Yii::t('common', 'Серная руда'), 'key' => 'sulfur.ore', 'score' => 1],
+            ['name' => \Yii::t('common', 'Железная руда'), 'key' => 'metal.ore', 'score' => 0.5],
+            ['name' => \Yii::t('common', 'Камни'), 'key' => 'stones', 'score' => 0.3],
+            ['name' => \Yii::t('common', 'Дерево'), 'key' => 'wood', 'score' => 0.05],
+            ['name' => \Yii::t('common', 'Разбито бочек'), 'key' => 'barrel', 'score' => 0],
+            ['name' => \Yii::t('common', 'Открыто ящиков'), 'key' => 'crate_open', 'score' => 0],
+            ['name' => \Yii::t('common', 'Обломки костей'), 'key' => 'bones', 'param' => 'bone.fragments', 'image_key' => 'bone.fragments', 'score' => 0],
+            ['name' => \Yii::t('common', 'Животный жир'), 'key' => 'animal_fat', 'param' => 'fat.animal', 'image_key' => 'fat.animal', 'score' => 0],
+            ['name' => \Yii::t('common', 'Кожа'), 'key' => 'leather', 'score' => 0],
+            ['name' => \Yii::t('common', 'Скрап'), 'key' => 'scrap', 'score' => 0],
+        ];
+        $farm = [];
+        foreach ($farmItems as $item) {
+            $statKey = $item['param'] ?? $item['key'];
+            $row = Statistics::getFarmItem($images, $names, $playerStats, $statKey, $item['name'], $item['score']);
+            $imageKey = $item['image_key'] ?? $item['key'];
+            $count = (int) $row['count'];
+            if ($item['key'] === 'barrel') {
+                $countBarrelsBroken = (int) Statistics::getParam($playerStats, 'barrels_broken');
+                if ($countBarrelsBroken > $count) {
+                    $count = $countBarrelsBroken;
+                }
+            }
+            $farm[] = [
+                'key' => $item['key'],
+                'name' => $row['name'],
+                'image' => Statistics::getImage($images, $imageKey),
+                'count' => $count,
+                'score' => (float) $row['score'],
+            ];
+        }
+
+        $hunterItems = [
+            ['key' => 'boar', 'name' => \Yii::t('common', 'Кабаны'), 'image_path' => 'images/hunters/Boar.png'],
+            ['key' => 'horse', 'name' => \Yii::t('common', 'Лошади'), 'image_path' => 'images/hunters/Horse.png'],
+            ['key' => 'wolf', 'name' => \Yii::t('common', 'Волки'), 'param' => ['wolf', 'wolf2', 'skull.wolf'], 'image_path' => 'images/hunters/Wolf.png'],
+            ['key' => 'bear', 'name' => \Yii::t('common', 'Медведи'), 'param' => ['bear', 'polarbear'], 'image_path' => 'images/hunters/bear.png'],
+            ['key' => 'deer', 'name' => \Yii::t('common', 'Олени'), 'param' => ['deer', 'stag'], 'image_path' => 'images/hunters/Stag.png'],
+            ['key' => 'chicken', 'name' => \Yii::t('common', 'Курицы'), 'image_path' => 'images/hunters/Chicken.png'],
+            ['key' => 'simpleshark', 'name' => \Yii::t('common', 'Акулы'), 'image_path' => 'images/hunters/shark2.png'],
+            ['key' => 'panther', 'name' => \Yii::t('common', 'Пантеры'), 'image_path' => 'images/hunters/panther.png'],
+            ['key' => 'crocodile', 'name' => \Yii::t('common', 'Крокодилы'), 'image_path' => 'images/hunters/crocodile.png'],
+            ['key' => 'tiger', 'name' => \Yii::t('common', 'Тигры'), 'image_path' => 'images/hunters/tiger.png'],
+        ];
+        $deathsByAnimal = Kills::getDeathsByAnimalCounts($user, $periodAll ? null : $server, $wipe, $periodAll);
+        $hunters = [];
+        foreach ($hunterItems as $item) {
+            $count = 0;
+            if (!empty($item['param'])) {
+                foreach ((array) $item['param'] as $p) {
+                    $count += (int) Statistics::getParam($playerStats, $p);
+                }
+            } else {
+                $count = (int) Statistics::getParam($playerStats, $item['key']);
+            }
+            $killedPlayer = 0;
+            if (!empty($item['param'])) {
+                foreach ((array) $item['param'] as $p) {
+                    $killedPlayer += (int) (isset($deathsByAnimal[$p]) ? $deathsByAnimal[$p] : 0);
+                }
+            } else {
+                $killedPlayer = (int) (isset($deathsByAnimal[$item['key']]) ? $deathsByAnimal[$item['key']] : 0);
+            }
+            $hunters[] = [
+                'key' => $item['key'],
+                'name' => $item['name'],
+                'image' => self::getStaticImageUrl($item['image_path']),
+                'count' => $count,
+                'killed_player' => $killedPlayer,
+                'score' => 0,
+            ];
+        }
+
+        $fermItems = [
+            ['name' => \Yii::t('common', 'Ткань'), 'key' => 'gathered_cloth', 'score' => 0.05],
+            ['name' => \Yii::t('common', 'Кукуруза'), 'key' => 'gathered_corn', 'score' => 0.3],
+            ['name' => \Yii::t('common', 'Картофель'), 'key' => 'gathered_potato', 'score' => 0.4],
+            ['name' => \Yii::t('common', 'Тыква'), 'key' => 'gathered_pumpkin', 'score' => 0.5],
+            ['name' => \Yii::t('common', 'Синие ягоды'), 'key' => 'gathered_blue.berry', 'score' => 0.5],
+            ['name' => \Yii::t('common', 'Желтые ягоды'), 'key' => 'gathered_yellow.berry', 'score' => 0.5],
+            ['name' => \Yii::t('common', 'Красные ягоды'), 'key' => 'gathered_red.berry', 'score' => 0.5],
+            ['name' => \Yii::t('common', 'Белые ягоды'), 'key' => 'gathered_white.berry', 'score' => 0.5],
+            ['name' => \Yii::t('common', 'Зеленые ягоды'), 'key' => 'gathered_green.berry', 'score' => 0.5],
+            ['name' => \Yii::t('common', 'Черные ягоды'), 'key' => 'gathered_black.berry', 'score' => 1],
+            ['name' => \Yii::t('common', 'Орхидея'), 'key' => 'gathered_orchid', 'score' => 0.3],
+            ['name' => \Yii::t('common', 'Розы'), 'key' => 'gathered_rose', 'score' => 0.3],
+            ['name' => \Yii::t('common', 'Подсолнух'), 'key' => 'gathered_sunflower', 'score' => 0.3],
+            ['name' => \Yii::t('common', 'Пшеница'), 'key' => 'gathered_wheat', 'score' => 0.3],
+        ];
+        $ferm = [];
+        foreach ($fermItems as $item) {
+            $row = Statistics::getFermItem($images, $playerStats, $item['key'], $item['name'], $item['score']);
+            $ferm[] = [
+                'key' => $item['key'],
+                'name' => $row['name'],
+                'image' => $row['image'],
+                'count' => (int) $row['count'],
+                'score' => (float) $item['score'],
+            ];
+        }
+
+        $fishingItems = [
+            ['name' => \Yii::t('common', 'Акула'), 'key' => 'f_fish.smallshark', 'score' => 45],
+            ['name' => \Yii::t('common', 'Большеголов'), 'key' => 'f_fish.orangeroughy', 'score' => 37],
+            ['name' => \Yii::t('common', 'Сом'), 'key' => 'f_fish.catfish', 'score' => 32],
+            ['name' => \Yii::t('common', 'Окунь'), 'key' => 'f_fish.yellowperch', 'score' => 25],
+            ['name' => \Yii::t('common', 'Лосось'), 'key' => 'f_fish.salmon', 'score' => 22],
+            ['name' => \Yii::t('common', 'Форель'), 'key' => 'f_fish.troutsmall', 'score' => 15],
+            ['name' => \Yii::t('common', 'Анчоус'), 'key' => 'f_fish.anchovy', 'score' => 10],
+            ['name' => \Yii::t('common', 'Сельдь'), 'key' => 'f_fish.herring', 'score' => 10],
+            ['name' => \Yii::t('common', 'Сардина'), 'key' => 'f_fish.sardine', 'score' => 10],
+        ];
+        $fishing = [];
+        foreach ($fishingItems as $item) {
+            $row = Statistics::getFishItem($images, $playerStats, $item['key'], $item['name'], $item['score']);
+            $fishing[] = [
+                'key' => $item['key'],
+                'name' => $row['name'],
+                'image' => $row['image'],
+                'count' => (int) $row['count'],
+                'score' => (float) $item['score'],
+            ];
+        }
+
+        $craftableImages = [
+            'metal_fragments' => Statistics::getImage($images, 'metal_fragments'),
+            'hq.metal.ore' => Statistics::getImage($images, 'hq.metal.ore'),
+            'gunpowder' => Statistics::getImage($images, 'gunpowder'),
+            'low_grade_fuel' => Statistics::getImage($images, 'low_grade_fuel'),
+            'sulfur' => Statistics::getImage($images, 'sulfur'),
+            'charcoal' => Statistics::getImage($images, 'charcoal'),
+        ];
+
+        return [
+            'farm' => $farm,
+            'hunters' => $hunters,
+            'ferm' => $ferm,
+            'fishing' => $fishing,
+            'craftable_images' => $craftableImages,
+        ];
+    }
+
     public function actionPlayerNew($serverTag, $steamId)
     {
         $server = Servers::find()->where(['tag' => $serverTag])->one();
@@ -734,6 +893,60 @@ class StatsController extends BaseApiController
 
         // Всегда подставляем актуальный текущий вайп сервера для отображения на фронте
         $cached['player']['current_wipe'] = $server->currentWipe();
+
+        return $this->successResponse($cached);
+    }
+
+    /**
+     * Данные для вкладки «Ресурсы и добыча» (farm, hunters, ferm, fishing, craftable_images).
+     * Вызывается только при открытии вкладки для уменьшения нагрузки на основной запрос профиля.
+     *
+     * @OA\Get(
+     *     path="/v1/stats/player-resources",
+     *     operationId="getPlayerResources",
+     *     tags={"Stats"},
+     *     summary="Ресурсы и добыча игрока",
+     *     @OA\Parameter(name="serverTag", in="query", required=true, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="steamId", in="query", required=true, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="wipe", in="query", required=false, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="period", in="query", required=false, description="all = за всё время", @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="farm, hunters, ferm, fishing, craftable_images")
+     * )
+     */
+    public function actionPlayerResources()
+    {
+        $serverTag = \Yii::$app->request->get('serverTag');
+        $steamId = \Yii::$app->request->get('steamId');
+        if (empty($serverTag) || empty($steamId)) {
+            return $this->errorResponse('INVALID_PARAMS', 'Требуются serverTag и steamId', [], 400);
+        }
+
+        $server = Servers::find()->where(['tag' => $serverTag])->one();
+        if (!$server) {
+            throw new NotFoundHttpException('Сервер не найден');
+        }
+
+        $periodAll = \Yii::$app->request->get('period') === 'all';
+        $requestWipe = \Yii::$app->request->get('wipe');
+        $wipe = $periodAll ? null : (($requestWipe !== null && $requestWipe !== '') ? $requestWipe : $server->currentWipe());
+
+        $wipeKey = $periodAll ? 'all' : str_replace('/', '_', (string)($wipe ?? 'current'));
+        $cacheKey = 'api_stats_player_resources_' . $serverTag . '_' . $steamId . '_' . $wipeKey . '_v1';
+        $cached = Yii::$app->cache->get($cacheKey);
+
+        if ($cached === false) {
+            $playerStats = $periodAll
+                ? Statistics::getPlayerStatsAllTime($steamId)
+                : Statistics::getPlayerStats($server, $steamId, $wipe);
+
+            $user = User::findBySteamId($steamId, false, 'stats');
+            if (!$user) {
+                throw new NotFoundHttpException('Игрок не найден');
+            }
+
+            $cached = $this->buildPlayerResourcesData($server, $user, $wipe, $periodAll, $playerStats);
+            Yii::$app->cache->set($cacheKey, $cached, 300);
+        }
 
         return $this->successResponse($cached);
     }
