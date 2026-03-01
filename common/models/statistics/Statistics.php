@@ -370,7 +370,7 @@ class Statistics extends ActiveRecord
         $result = [];
 
         $result['name'] = Yii::t('database', Statistics::getParam($names, $key));
-        $result['image'] = Statistics::getParam($images, $key);
+        $result['image'] = Statistics::getImage($images, $key);
         $result['count'] = Statistics::getParam($player, $key);
         $result['desc'] = number_format(Statistics::getParam($player, $key), 0);
 
