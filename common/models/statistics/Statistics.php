@@ -191,12 +191,12 @@ class Statistics extends ActiveRecord
                     ->cache(3*60)
                     ->andWhere(['server_tag' => $server->tag])
                     ->andWhere(['wipe' => $wipeDate]);
-                
+
                 // Оптимизация: если нужна статистика только одного пользователя, фильтруем сразу в SQL
                 if (!empty($steamId) && !$all) {
                     $query->andWhere(['steam_id' => $steamId]);
                 }
-                
+
                 $statistics = $query->asArray()->all();
 
                 $userList = [];
@@ -207,7 +207,7 @@ class Statistics extends ActiveRecord
                 $steamIds = array_keys($userList);
                 $models = [];
                 $isSingleUser = !empty($steamId) && !$all;
-                
+
                 foreach ($steamIds as $_steamId) {
                     $params = $userList[$_steamId];
                     if (!$all && Statistics::getParam($params, 'playtime') <= 60) {
@@ -266,7 +266,7 @@ class Statistics extends ActiveRecord
                         + Statistics::getParam($params, 'gathered_potato') * 0.4;
                     $models[] = $item;
                 }
-                
+
                 // Если запрашивается статистика одного пользователя, не формируем топики (экономим время)
                 if ($isSingleUser) {
                     $data = [
@@ -286,7 +286,7 @@ class Statistics extends ActiveRecord
                         'models' => $models
                     ];
                 }
-                
+
                 Yii::$app->cache->set($cacheKey, $data, 15 * 60);
             }
         } catch (\Exception $e) {
@@ -463,7 +463,7 @@ class Statistics extends ActiveRecord
     }
 
     public static function productsImages($update = false) {
-        $cacheKey = 'Statistics_productsImages2_';
+        $cacheKey = 'Statistics_productsImages3_';
         if (Yii::$app->cache->get($cacheKey) && !$update) {
             return Yii::$app->cache->get($cacheKey);
         }
@@ -488,16 +488,13 @@ class Statistics extends ActiveRecord
             if ($urlLarge === null && $item->imageOrig !== null) {
                 $urlLarge = $item->imageOrig->getImagePubUrl();
             }
+            // Если в БД только 64px — пробуем URL 150px по соглашению путей (drop64 → drop150)
+            if ($urlLarge === null && $url !== null && $url !== '') {
+                $candidate = str_replace(['/drop64/', 'drop64/'], ['/drop150/', 'drop150/'], $url);
+                $urlLarge = ($candidate !== $url) ? $candidate : $url;
+            }
             if ($urlLarge === null) {
                 $urlLarge = $url;
-            }
-            // Если image_large всё ещё 64px — подставляем URL 150px по соглашению путей (drop64 → drop150)
-            $srcForLarge = $urlLarge !== null ? $urlLarge : $url;
-            if ($srcForLarge !== null && $srcForLarge !== '' && strpos($srcForLarge, 'drop64') !== false) {
-                $candidate = str_replace(['drop64'], ['drop150'], $srcForLarge);
-                if ($candidate !== $srcForLarge) {
-                    $urlLarge = $candidate;
-                }
             }
             $result[$item->eng_name] = [
                 'image' => $url,
