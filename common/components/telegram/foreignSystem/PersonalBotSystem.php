@@ -79,7 +79,9 @@ class PersonalBotSystem extends AbstractSystem
                     . PHP_EOL . PHP_EOL
                     . "⚙️ <b>Настройки уведомлений:</b>"
                     . PHP_EOL . "🚨 <b>/raid_alert</b> — Оповещения о рейдах"
-                    . PHP_EOL . "🔔 <b>/ban_alert</b> — Оповещения о банах";
+                    . PHP_EOL . "🔔 <b>/ban_alert</b> — Оповещения о банах"
+                    . PHP_EOL . PHP_EOL
+                    . "🔓 <b>/unlink</b> — Отвязать Telegram от аккаунта";
             case '/pop':
                 return $this->getOnline();
             case '/wipe':
@@ -94,6 +96,8 @@ class PersonalBotSystem extends AbstractSystem
                 return $this->getRaidAlert($message);
             case '/ban_alert':
                 return $this->getBanAlert($message);
+            case '/unlink':
+                return $this->unlinkAccount($message);
         }
 
         return $answerMessage;
@@ -182,6 +186,46 @@ class PersonalBotSystem extends AbstractSystem
                 . PHP_EOL . PHP_EOL
                 . "Теперь вы будете получать оповещения о рейдах на ваших базах.";
         }
+    }
+
+    /**
+     * Отвязать Telegram-бота от аккаунта пользователя.
+     * @param array $message
+     * @return string
+     */
+    public function unlinkAccount($message)
+    {
+        $chatId = ArrayHelper::getValue($message, 'chat.id');
+        $cacheKey = 'PersonalBotSystem_unlink_' . $chatId;
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $user = User::findByChatId($chatId);
+        if (empty($user)) {
+            $return = '🔒 <b>Требуется авторизация</b>'
+                . PHP_EOL . PHP_EOL
+                . "Telegram не привязан к аккаунту. Для привязки напишите <code>/start</code>.";
+            return $return;
+        }
+
+        if ($user->status === User::STATUS_BLOCKED) {
+            $return = '🚫 <b>Доступ запрещен</b>'
+                . PHP_EOL . PHP_EOL
+                . "Ваш аккаунт заблокирован.";
+            Yii::$app->cache->set($cacheKey, $return, 60);
+            return $return;
+        }
+
+        Yii::$app->cache->set($cacheKey, "⏳ Попробуйте через минуту.", 60);
+
+        $user->telegram_chat_id = null;
+        $user->is_telegram_blocked = false;
+        $user->save(false);
+
+        return '✅ <b>Telegram отвязан</b>'
+            . PHP_EOL . PHP_EOL
+            . "Бот отключен от аккаунта <b>{$user->username}</b>. Для повторной привязки напишите <code>/start</code> и следуйте инструкциям.";
     }
 
     public function getBanAlert($message) {
