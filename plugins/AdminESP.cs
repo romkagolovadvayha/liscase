@@ -9,7 +9,7 @@ using System.Linq;
 using UnityEngine;
 namespace Oxide.Plugins
 {
-    [Info("AdminESP", "OxideBro", "1.0.12")]
+    [Info("AdminESP", "OxideBro", "1.0.21")]
     public class AdminESP : RustPlugin
     {
 
@@ -85,9 +85,12 @@ namespace Oxide.Plugins
         private class PluginConfig
         {
             [JsonProperty("Привилегия использования ESP")]
-            public string Permission;
+            public string Permission = "adminesp.use";
+
+            [JsonProperty("Размер текста отображения игрока")]
+            public int DDrawTextSize = 12;
             [JsonProperty("Настройка UI")]
-            public UISetting uISetting;
+            public UISetting uISetting = new();
 
             [JsonProperty("Версия конфигурации")]
             public VersionNumber PluginVersion = new VersionNumber();
@@ -877,42 +880,35 @@ namespace Oxide.Plugins
                 if (LastUpdate > data.UpdateTime)
                 {
                     LastUpdate = 0;
-                    foreach (var target in BasePlayer.activePlayerList)
+                    foreach (var target in BasePlayer.allPlayerList)
                     {
                         if (target == null || target.transform == null || target == player)
                             continue;
-                        var currDistance = Math.Floor(Vector3.Distance(target.transform.position, player.transform.position));
                         if (target.IsAdmin && !data.ShowAdmins) continue;
+                        var currDistance = Math.Floor(Vector3.Distance(target.transform.position, player.transform.position));
+
                         if (currDistance > data.PlayerDistance)
                             continue;
-                        if (currDistance < data.PlayerDistance)
+
+                        if (!target.IsSleeping())
                         {
                             if (currDistance > 2 && data.DrawNames)
-                                DDraw("text", target, Color.cyan, $"{target.displayName} ({currDistance.ToString("#0")} м.)\nHealth: {Math.Floor(target.health)}");
+                                DDraw("text", target, Color.cyan, $"<size={config.DDrawTextSize}>{target.displayName} ({currDistance.ToString("#0")} м.)\nHealth: {Math.Floor(target.health)}</size>");
                             if (currDistance > 2 && data.DrawBoxes)
                                 DDraw("box", target, Color.cyan);
                             if (data.DrawEyeLine)
                                 DDraw("line", target, Color.cyan);
-
                         }
-                    }
-                    if (data.Sleepers)
-                        foreach (var target in BasePlayer.sleepingPlayerList)
+                        else if (data.Sleepers && target.IsSleeping())
                         {
-                            if (target == null || target.transform == null || target == player)
-                                continue;
-                            var currDistance = Math.Floor(Vector3.Distance(target.transform.position, player.transform.position));
-                            if (target.IsAdmin && !data.ShowAdmins) continue;
-                            if (currDistance > data.PlayerDistance)
-                                continue;
-                            if (currDistance < data.PlayerDistance)
-                            {
-                                if (currDistance > 2 && data.DrawNames)
-                                    DDraw("text", target, Color.white, $"СПИТ\n{target.displayName} ({currDistance.ToString("#0")} м.)\nHealth: {Math.Floor(target.health)}");
-                                if (currDistance > 2 && data.DrawBoxes && currDistance < 20)
-                                    DDraw("box", target, Color.white);
-                            }
+                            if (currDistance > 2 && data.DrawNames)
+                                DDraw("text", target, Color.white, $"<size={config.DDrawTextSize}>СПИТ\n{target.displayName} ({currDistance.ToString("#0")} м.)\nHealth: {Math.Floor(target.health)}</size>");
+                            if (currDistance > 2 && data.DrawBoxes && currDistance < 20)
+                                DDraw("box", target, Color.white);
                         }
+
+                    }
+
                 }
             }
 

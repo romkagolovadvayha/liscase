@@ -6,9 +6,6 @@ using Oxide.Game.Rust.Cui;
 using Rust;
 using UnityEngine;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Oxide.Core.Libraries;
-using ConVar;
 using VLB;
 using HarmonyLib;
 using System.Linq;
@@ -16,7 +13,7 @@ using System.IO;
 
 namespace Oxide.Plugins
 {
-    [Info("Wallpaper Planner", "RobJ/Razor", "2.1.0")]
+    [Info("Wallpaper Planner", "RobJ/Razor", "2.2.6")]
     [Description("Intercepts third-click on the Wallpaper Tool and shows a custom skin selector.")]
     public class WallpaperPlanner : RustPlugin
     {
@@ -49,17 +46,15 @@ namespace Oxide.Plugins
         * */
         private List<SkinInfo> NewSkinsWall = new List<SkinInfo>()
         {
-
         };
 
         private List<SkinInfo> NewSkinsFloor = new List<SkinInfo>()
         {
-
+                new SkinInfo() { skinid = (ulong)3662833101, name = "Ocean Wood Floor" }
         };
 
         private List<SkinInfo> NewSkinsCeling = new List<SkinInfo>()
         {
-
         };
 
         private void AddNewSkins()
@@ -123,10 +118,6 @@ namespace Oxide.Plugins
         private void OnServerInitialized()
         {
             Instance = this;
-            
-            // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
-            LoadConfigFromAPI();
-            
             if (configData.settings == null)
             {
                 configData.settings = new ConfigData.Settings();
@@ -243,9 +234,6 @@ namespace Oxide.Plugins
             {
                 [JsonProperty(PropertyName = "UI input key")]
                 public string inputkey;
-                
-                [JsonProperty(PropertyName = "Sender Steam ID")]
-                public ulong senderSteamId { get; set; } = 76561198394504608;
             }
 
             public class SettingsW
@@ -284,7 +272,7 @@ namespace Oxide.Plugins
                 UpdateConfigValues();
 
             //change only this to add new skins
-            if (configData.Version < new VersionNumber(2, 0, 0))
+            if (configData.Version < new VersionNumber(2, 3, 6))
                 AddNewSkins();
 
             Config.WriteObject(configData, true);
@@ -292,140 +280,13 @@ namespace Oxide.Plugins
 
         protected override void LoadDefaultConfig() => configData = GetBaseConfig();
 
-        private const Boolean LanguageEn = false;
-
-        // Исправляет пустые массивы в VIP разделах на пустые объекты
-        private JToken FixVipSections(JToken token)
-        {
-            if (token == null) return token;
-            
-            if (token.Type == JTokenType.Object)
-            {
-                JObject obj = (JObject)token;
-                var properties = obj.Properties().ToList();
-                
-                foreach (var prop in properties)
-                {
-                    // Проверяем VIP разделы
-                    if (prop.Name == "VIP WALL" || prop.Name == "VIP FLOOR" || prop.Name == "VIP CEILING")
-                    {
-                        if (prop.Value.Type == JTokenType.Array)
-                        {
-                            // Заменяем массив на пустой объект
-                            prop.Value = new JObject();
-                        }
-                        else if (prop.Value.Type == JTokenType.Object)
-                        {
-                            // Рекурсивно обрабатываем вложенные объекты
-                            prop.Value = FixVipSections(prop.Value);
-                        }
-                    }
-                    else
-                    {
-                        // Рекурсивно обрабатываем другие свойства
-                        prop.Value = FixVipSections(prop.Value);
-                    }
-                }
-            }
-            else if (token.Type == JTokenType.Array)
-            {
-                JArray arr = (JArray)token;
-                for (int i = 0; i < arr.Count; i++)
-                {
-                    arr[i] = FixVipSections(arr[i]);
-                }
-            }
-            
-            return token;
-        }
-
-        private void LoadConfigFromAPI()
-        {
-            try
-            {
-                // Получаем IP и порт сервера
-                String serverIp = ConVar.Server.ip;
-                Int32 serverPort = ConVar.Server.port;
-                String pluginName = Name; // "WallpaperPlanner"
-                
-                String apiUrl = $"https://api.prostoj.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
-                
-                PrintWarning(LanguageEn
-                    ? $"Loading configuration from API: {apiUrl}"
-                    : $"Загрузка конфигурации из API: {apiUrl}");
-                
-                webrequest.Enqueue(apiUrl, null, (code, response) =>
-                {
-                    if (code == 200 && !String.IsNullOrEmpty(response))
-                    {
-                        try
-                        {
-                            // Парсим ответ API
-                            JObject apiResponse = JObject.Parse(response);
-                            JToken contentToken = apiResponse["content"];
-                            
-                            if (contentToken != null)
-                            {
-                                // Исправляем пустые массивы в VIP разделах
-                                JToken fixedContent = FixVipSections(contentToken);
-                                
-                                // Десериализуем content в ConfigData
-                                ConfigData apiConfig = fixedContent.ToObject<ConfigData>();
-                                
-                                if (apiConfig != null)
-                                {
-                                    configData = apiConfig;
-                                    
-                                    // Убеждаемся, что Version установлен
-                                    if (configData.Version == null)
-                                    {
-                                        configData.Version = Version;
-                                    }
-                                    
-                                    PrintWarning(LanguageEn
-                                        ? $"Configuration loaded successfully from API!"
-                                        : $"Конфигурация успешно загружена из API!");
-                                    
-                                    NextTick(() => {
-                                        SaveConfig();
-                                        // Перерегистрируем разрешения после загрузки конфига
-                                        RegisterPermissions();
-                                    });
-                                    return;
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            PrintError(LanguageEn
-                                ? $"Error parsing API response: {ex.Message}. Using default config."
-                                : $"Ошибка парсинга ответа API: {ex.Message}. Используется конфиг по умолчанию.");
-                        }
-                    }
-                    else
-                    {
-                        PrintWarning(LanguageEn
-                            ? $"Failed to load config from API (Code: {code}). Using default config."
-                            : $"Не удалось загрузить конфиг из API (Код: {code}). Используется конфиг по умолчанию.");
-                    }
-                }, this, RequestMethod.GET, null, 10f);
-            }
-            catch (Exception ex)
-            {
-                PrintError(LanguageEn
-                    ? $"Error loading config from API: {ex.Message}. Using default config."
-                    : $"Ошибка загрузки конфига из API: {ex.Message}. Используется конфиг по умолчанию.");
-            }
-        }
-
         private ConfigData GetBaseConfig()
         {
             return new ConfigData
             {
                 settings = new ConfigData.Settings
                 {
-                    inputkey = "FIRE_THIRD",
-                    senderSteamId = 76561198394504608
+                    inputkey = "FIRE_THIRD"
                 },
 
                 settingsW = new ConfigData.SettingsW
@@ -469,6 +330,12 @@ namespace Oxide.Plugins
                         new SkinInfo() { skinid = (ulong)3527499663, name = "Makeshift Wall" },
                         new SkinInfo() { skinid = (ulong)3531972921, name = "Spacecraft  MLI (Silver)" },
                         new SkinInfo() { skinid = (ulong)3530632969, name = "Spacecraft  MLI (Gold)" },
+                        new SkinInfo() { skinid = (ulong)3620217498, name = "Solid Ice" },
+                        new SkinInfo() { skinid = (ulong)3620404193, name = "Reinforced Panels Arctic Camo" },
+                        new SkinInfo() { skinid = (ulong)3620406908, name = "Reinforced Panel Red" },
+                        new SkinInfo() { skinid = (ulong)3620409782, name = "Reinforced Panel Army Green" },
+                        new SkinInfo() { skinid = (ulong)3620429801, name = "Reinforced Panel Purple" },
+                        new SkinInfo() { skinid = (ulong)3620426728, name = "Happy Snowman" },
                     },
 
                     infoVIP = new Dictionary<string, List<SkinInfo>>()
@@ -520,6 +387,8 @@ namespace Oxide.Plugins
                         new SkinInfo() { skinid = (ulong)3493617039, name = "Grip Metal Plate Floor" },
                         new SkinInfo() { skinid = (ulong)3492777466, name = "Green Bamboo Floor" },
                         new SkinInfo() { skinid = (ulong)3491102082, name = "Underground Floor" },
+                        new SkinInfo() { skinid = (ulong)3620390954, name = "Solid Ice Floor" },
+                        new SkinInfo() { skinid = (ulong)3620501599, name = "Snow" },
                     },
 
                     infoVIP = new Dictionary<string, List<SkinInfo>>()
@@ -551,6 +420,7 @@ namespace Oxide.Plugins
                         new SkinInfo() { skinid = (ulong)3494116957, name = "Painted Plate Ceiling" },
                         new SkinInfo() { skinid = (ulong)3492711354, name = "Green Bamboo Ceiling" },
                         new SkinInfo() { skinid = (ulong)3491003267, name = "Underground Ceiling" },
+                        new SkinInfo() { skinid = (ulong)3620393268, name = "Solid Ice Ceiling" },
                     },
 
                     infoVIP = new Dictionary<string, List<SkinInfo>>()
@@ -758,7 +628,7 @@ namespace Oxide.Plugins
             var item = player.GetActiveItem();
             if (item == null)
             {
-                SendChatMessage(player, lang.GetMessage("errorhold", this, player.UserIDString));
+                player.ChatMessage(lang.GetMessage("errorhold", this, player.UserIDString));
                 return;
             }
 
@@ -766,7 +636,7 @@ namespace Oxide.Plugins
 
             if (heldEnt == null)
             {
-                SendChatMessage(player, lang.GetMessage("errorhold", this, player.UserIDString));
+                player.ChatMessage(lang.GetMessage("errorhold", this, player.UserIDString));
                 return;
             }
 
@@ -857,7 +727,7 @@ namespace Oxide.Plugins
             string favButtonText = playerData.FavoritesToggled ? lang.GetMessage("showall", this, player.UserIDString) : lang.GetMessage("showfavs", this, player.UserIDString);
             string favButtonColor = playerData.FavoritesToggled ? "0.95 0.85 0.4 1" : "0.541 0.780 0.949 1";
             string favButtonBgColor = playerData.FavoritesToggled ? "0.6 0.5 0.2 0.89" : "0.118 0.345 0.522 0.89";
-            AddButton(mainPanel, MainBodyPanel, "customwallpaper.favtoggle", favButtonText, 14, favButtonColor, favButtonBgColor, TextAnchor.MiddleCenter, $"{command} {SecretKey} toggle_favorites", "0.80 0.92", "0.98 0.98", "0 0", "0 0", "assets/content/ui/uibackgroundblur.mat");//rBody.AddExplosionForce(Mathf.Min(10 * 650f, %id%0f);
+            AddButton(mainPanel, MainBodyPanel, "customwallpaper.favtoggle", favButtonText, 14, favButtonColor, favButtonBgColor, TextAnchor.MiddleCenter, $"{command} {SecretKey} toggle_favorites", "0.80 0.92", "0.98 0.98", "0 0", "0 0", "assets/content/ui/uibackgroundblur.mat");
 
             int position = 0;
             int positionStop = 0;
@@ -962,7 +832,7 @@ namespace Oxide.Plugins
         {
             if (!permission.UserHasPermission(player.UserIDString, usePerm))
             {
-                SendChatMessage(player, lang.GetMessage("NoPermission", this, player.UserIDString));
+                SendReply(player, lang.GetMessage("NoPermission", this, player.UserIDString));
                 return;
             }
             ShowCustomUI(player);
@@ -1286,7 +1156,7 @@ namespace Oxide.Plugins
 
                             if (item == null)
                             {
-                                SendChatMessage(player, lang.GetMessage("errorhold", this, player.UserIDString));
+                                player.ChatMessage(lang.GetMessage("errorhold", this, player.UserIDString));
                                 return;
                             }
 
@@ -1294,7 +1164,7 @@ namespace Oxide.Plugins
 
                             if (heldEnt == null)
                             {
-                                SendChatMessage(player, lang.GetMessage("errorhold", this, player.UserIDString));
+                                player.ChatMessage(lang.GetMessage("errorhold", this, player.UserIDString));
                             }
                             else if (heldEnt.GetOwnerPlayer() == player && (int)heldEnt.currentMode > 0 && (int)heldEnt.currentMode <= 3)
                             {
@@ -1310,8 +1180,6 @@ namespace Oxide.Plugins
                                         heldEnt.ceilingSkinID = skinID;
                                         break;
                                 }
-
-                                heldEnt.skinID = skinID;
                                 heldEnt.SendNetworkUpdate();
                                 heldEnt.ClientRPC<ulong, int>(RpcTarget.NetworkGroup("CLIENT_ChangeSkin"), heldEnt.skinID, (int)heldEnt.currentMode);
                             }
@@ -1427,41 +1295,8 @@ namespace Oxide.Plugins
                 player.ShowToast(GameTip.Styles.Blue_Normal, message, true);
         }
 
-        // Отправка сообщения в чат от указанного Steam ID
-        private void SendChatMessage(BasePlayer player, string message)
-        {
-            if (player != null && !string.IsNullOrEmpty(message))
-            {
-                player.SendConsoleCommand("chat.add", 0, configData.settings.senderSteamId, message);
-            }
-        }
-
         private new void LoadDefaultMessages()
         {
-            lang.RegisterMessages(new Dictionary<string, string>
-            {
-                ["helptext"] = "НАЖМИТЕ КЛАВИШУ КОЛЕСИКО МЫШИ ДЛЯ ОТКРЫТИЯ МЕНЮ ОБОЕВ",
-                ["broke"] = "ВАМ НУЖНО {0} {1} ДЛЯ УСТАНОВКИ",
-                ["adminadd"] = "+ ДОБАВИТЬ НОВЫЙ СКИН",
-                ["errorhold"] = "<color=orange>Вам нужно держать инструмент для обоев!</color>",
-                ["savewall"] = "СОХРАНИТЬ КАК СТЕНУ",
-                ["savefloor"] = "СОХРАНИТЬ КАК ПОЛ",
-                ["saveceiling"] = "СОХРАНИТЬ КАК ПОТОЛОК",
-                ["errorname"] = "Название скина не может быть пустым!",
-                ["errorid"] = "ID скина имеет неправильный формат!",
-                ["name"] = "НАЗВАНИЕ СКИНА:",
-                ["skin"] = "ID СКИНА:",
-                ["saved"] = "НОВЫЙ СКИН ДОБАВЛЕН В {0}",
-                ["exists"] = "ЭТОТ СКИН УЖЕ СУЩЕСТВУЕТ С НАЗВАНИЕМ {0}",
-                ["savechanges"] = "СОХРАНИТЬ ИЗМЕНЕНИЯ",
-                ["delete"] = "УДАЛИТЬ",
-                ["editskin"] = "РЕДАКТИРОВАНИЕ СКИНА",
-                ["addskin"] = "ДОБАВЛЕНИЕ НОВОГО СКИНА",
-                ["NoPermission"] = "<color=red>У вас нет разрешения использовать эту команду.</color>",
-                ["showfavs"] = "★ ПОКАЗАТЬ ИЗБРАННОЕ",
-                ["showall"] = "★ ПОКАЗАТЬ ВСЕ",
-            }, this, "ru");
-            
             lang.RegisterMessages(new Dictionary<string, string>
             {
                 ["helptext"] = "PRESS THE {0} KEY TO OPEN CUSTOM WALLPAPER MENU",

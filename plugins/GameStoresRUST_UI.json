@@ -1,0 +1,478 @@
+[
+  {
+    "name": "UI_GameStoresRUST_Store",
+    "parent": "Overlay",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Image",
+        "color": "0 0 0 0.8",
+        "material": "assets/content/ui/uibackgroundblur.mat"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      },
+      {
+        "type": "NeedsCursor"
+      }
+    ]
+  },
+  {
+    "name": "BasketTitle",
+    "parent": "UI_GameStoresRUST_Store",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "0 0 0 0"
+      },
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "{BASKET_TITLE}",
+        "fontSize": 32,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 0.6",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0.3 0.9",
+        "anchormax": "0.7 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "BasketDescription",
+    "parent": "UI_GameStoresRUST_Store",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "{BASKET_DESCRIPTION}",
+        "fontSize": 14,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 0.4",
+        "align": "UpperCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 0",
+        "offsetmin": "0 -0",
+        "offsetmax": "0 20"
+      }
+    ]
+  },
+  {
+    "name": "HelpButton",
+    "parent": "UI_GameStoresRUST_Store",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "0 0 0 0",
+        "command": "UI_GameStoresRUST help"
+      },
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "{HELP_TEXT}",
+        "fontSize": 28,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 1",
+        "align": "MiddleLeft"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0.065 0.9",
+        "anchormax": "0.2 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "StoreExitButton",
+    "parent": "UI_GameStoresRUST_Store",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "0 0 0 0",
+        "command": "closemenu",
+        "close": "UI_GameStoresRUST_Store"
+      },
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "{EXIT_TEXT}",
+        "fontSize": 28,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 1",
+        "align": "MiddleRight"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0.8 0.9",
+        "anchormax": "0.935 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "BlockPanel",
+    "parent": "UI_GameStoresRUST_Store",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Image",
+        "color": "0 0 0 0"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 0.9",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "RequestProcessingTitle",
+    "parent": "BlockPanel",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "{REQUEST_PROCESSING_TEXT}",
+        "fontSize": 34,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 1",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1.1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "PageNumber",
+    "parent": "BlockPanel",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "{PAGE_NUMBER}",
+        "fontSize": 34,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 1",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 0.14",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "PageButtonPrev",
+    "parent": "BlockPanel",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "0 0 0 0",
+        "command": "{PAGE_PREV_COMMAND}"
+      },
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "<",
+        "fontSize": 80,
+        "font": "robotocondensed-regular.ttf",
+        "color": "{PAGE_PREV_COLOR}",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0.4 0.14",
+        "anchormax": "0.4 0.14",
+        "offsetmin": "-40 -125",
+        "offsetmax": "125 40"
+      }
+    ]
+  },
+  {
+    "name": "PageButtonNext",
+    "parent": "BlockPanel",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "0 0 0 0",
+        "command": "{PAGE_NEXT_COMMAND}"
+      },
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": ">",
+        "fontSize": 80,
+        "font": "robotocondensed-regular.ttf",
+        "color": "{PAGE_NEXT_COLOR}",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0.6 0.14",
+        "anchormax": "0.6 0.14",
+        "offsetmin": "-125 -125",
+        "offsetmax": "40 40"
+      }
+    ]
+  },
+  {
+    "name": "UI_GameStoresRUST_Bucket",
+    "parent": "Overlay",
+    "components": [
+      {
+        "type": "UnityEngine.UI.RawImage",
+        "color": "1 1 1 1",
+        "url": "{BUCKET_IMAGE_URL}",
+        "png": "{BUCKET_IMAGE_PNG}"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "{BUCKET_ANCHOR_MIN}",
+        "anchormax": "{BUCKET_ANCHOR_MAX}",
+        "offsetmin": "{BUCKET_OFFSET_MIN}",
+        "offsetmax": "{BUCKET_OFFSET_MAX}"
+      }
+    ]
+  },
+  {
+    "name": "BucketButton",
+    "parent": "UI_GameStoresRUST_Bucket",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "0 0 0 0",
+        "command": "chat.say /store"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "BucketButtonFallback",
+    "parent": "Overlay",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "1 1 1 0.6",
+        "sprite": "assets/icons/open.png",
+        "command": "chat.say /store"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "{BUCKET_ANCHOR_MIN}",
+        "anchormax": "{BUCKET_ANCHOR_MAX}",
+        "offsetmin": "{BUCKET_OFFSET_MIN}",
+        "offsetmax": "{BUCKET_OFFSET_MAX}"
+      }
+    ]
+  },
+  {
+    "name": "UI_GameStoresRUST_Store.Help",
+    "parent": "Overlay",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Image",
+        "color": "0 0 0 0.9",
+        "material": "assets/content/ui/uibackgroundblur.mat"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      },
+      {
+        "type": "NeedsCursor"
+      }
+    ]
+  },
+  {
+    "name": "HelpTitle",
+    "parent": "UI_GameStoresRUST_Store.Help",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "{HELP_TITLE}",
+        "fontSize": 34,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 1",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0.6",
+        "anchormax": "1 0.78",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "HelpDescription",
+    "parent": "UI_GameStoresRUST_Store.Help",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "{HELP_DESCRIPTION}",
+        "fontSize": 22,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 1",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0.3",
+        "anchormax": "1 0.72",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "HelpBalance",
+    "parent": "UI_GameStoresRUST_Store.Help",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "{HELP_BALANCE}",
+        "fontSize": 32,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 1",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0.1",
+        "anchormax": "1 0.48",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "HelpCloseButton",
+    "parent": "UI_GameStoresRUST_Store.Help",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "0 0 0 0",
+        "command": "chat.say /store",
+        "close": "UI_GameStoresRUST_Store.Help"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "Notify",
+    "parent": "UI_GameStoresRUST_Store",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "{NOTIFY_TEXT}",
+        "fontSize": 16,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 1",
+        "align": "UpperCenter",
+        "fadeIn": 1.0
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0.80",
+        "anchormax": "1 0.90",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "BasketEmpty",
+    "parent": "BlockPanel",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "{BASKET_EMPTY_TEXT}",
+        "fontSize": 34,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 1",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0.1",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "BasketNoAuth",
+    "parent": "BlockPanel",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "{BASKET_NO_AUTH_TEXT}",
+        "fontSize": 20,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 1",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0.1",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "BasketUnavailable",
+    "parent": "BlockPanel",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "{BASKET_UNAVAILABLE_TEXT}",
+        "fontSize": 20,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 1",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  }
+]
+

@@ -24,7 +24,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("Expert Statistics", "prostoj.store", "1.0.0")]
+    [Info("Expert Statistics", "prostoj.store", "1.0.1")]
     [Description("Плагин, синхронизирует статистику игроков с сайтом.")]
     public class ExpertStatistics : CovalencePlugin
     {
@@ -188,10 +188,15 @@ namespace Oxide.Plugins
 		ReportsData reportsData = new ReportsData();
 		ChatsData chatsData = new ChatsData();
         Dictionary<ulong, List<ulong>> teams = new Dictionary<ulong, List<ulong>>();
+        // Уникальные луты: один и тот же крейт засчитывается игроку только один раз (entity+player)
+        private readonly Dictionary<ulong, HashSet<string>> _uniqueLootCounted = new Dictionary<ulong, HashSet<string>>();
+        private readonly object _uniqueLootLock = new object();
+        // basicblueprintfragment: один раз за 5 мин на игрока
+        private readonly HashSet<string> _countedBasicBlueprintFragment = new HashSet<string>();
 
         void OnServerInitialized(bool initial)
         {
-            Puts("Expert Statistics: OnServerInitialized.");
+            Puts("[Stats] OnServerInitialized | initial=" + initial);
             
             // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
             LoadConfigFromAPI();
@@ -199,6 +204,11 @@ namespace Oxide.Plugins
             timer.Every(1 * 60, () =>
             {
                 SaveAllStats();
+            });
+            timer.Every(5 * 60, () =>
+            {
+                lock (_uniqueLootLock) { _uniqueLootCounted.Clear(); }
+                _countedBasicBlueprintFragment.Clear();
             });
         }
         void Unload()
@@ -226,17 +236,22 @@ namespace Oxide.Plugins
                         queue = ServerMgr.Instance.connectionQueue.Queued
                     }
                 }).Replace("\n", "").Replace("  ", "");
-
+Puts(requestBody);
             Dictionary<string, string> header = new Dictionary<string, string>();
             header.Add("Content-Type", "application/json");
-            webrequest.Enqueue($"https://prostoj.store/api-stats/update?serverTag={config.server_tag}", requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
-            list.Clear();
-            chatsData.Chats.Clear();
-            reportsData.Reports.Clear();
-            teamsData.Teams.Clear();
-            killsData.Kills.Clear();
-            teams.Clear();
-            disconnects.Clear();
+            webrequest.Enqueue($"https://prostoj.store/api-stats/update?serverTag={config.server_tag}", requestBody, (code, response) =>
+            {
+                if (code >= 200 && code < 300)
+                {
+                    list.Clear();
+                    chatsData.Chats.Clear();
+                    reportsData.Reports.Clear();
+                    teamsData.Teams.Clear();
+                    killsData.Kills.Clear();
+                    teams.Clear();
+                    disconnects.Clear();
+                }
+            }, this, RequestMethod.POST, header, timeout: 1F);
         }
 
         [Command("stats.save")]
@@ -287,15 +302,22 @@ namespace Oxide.Plugins
         }
         void addParametr(string steamId, string parametr, int count)
         {
+            if (string.IsNullOrEmpty(steamId) || string.IsNullOrEmpty(parametr) || count <= 0) return;
+            // Только реальные игроки: Steam ID 17 цифр, начинается с 765
+            if (steamId.Length != 17 || !steamId.StartsWith("765") || !ulong.TryParse(steamId, out _)) return;
             if (!list.ContainsKey(steamId))
-            {
                 list.Add(steamId, new Dictionary<string, int>());
-            }
-            if (!list[steamId].ContainsKey(parametr)) {
+            if (!list[steamId].ContainsKey(parametr))
                 list[steamId][parametr] = 0;
-            }
             list[steamId][parametr] += count;
         }
+
+        /// <summary>Отладочный вывод отключён (консоль и чат).</summary>
+        private void LogHookEvent(BasePlayer player, string hookName, string details = null)
+        {
+            // Puts(msg); player.ChatMessage(msg); — отключено
+        }
+
         #endregion
 
         #region Hooks
@@ -320,6 +342,7 @@ namespace Oxide.Plugins
 		// }
 		void OnPlayerChat(BasePlayer player, string message, ConVar.Chat.ChatChannel channel)
 		{
+			LogHookEvent(player, "OnPlayerChat", $"channel={channel} msg={message}");
 			if (channel == ConVar.Chat.ChatChannel.Global) {
 				Chat model = new Chat();
 				model.steam_id = player.UserIDString;
@@ -330,6 +353,7 @@ namespace Oxide.Plugins
 		}
         private void OnPlayerReported(BasePlayer reporter, string targetName, string targetId, string subject, string message, string type)
 		{
+			LogHookEvent(reporter, "OnPlayerReported", $"type={type} target={targetId}");
 			if (!type.Equals("cheat")) return;
             Report model = new Report();
             model.steam_id = reporter.UserIDString;
@@ -340,6 +364,7 @@ namespace Oxide.Plugins
 		}
 		void OnCardSwipe(CardReader cardReader, Keycard card, BasePlayer player)
 		{
+			LogHookEvent(player, "OnCardSwipe", $"accessLevel={card?.accessLevel}");
             switch (card.accessLevel)
             {
                 case 1:
@@ -355,11 +380,13 @@ namespace Oxide.Plugins
 		}
 		void OnCupboardAuthorize(BuildingPrivlidge privilege, BasePlayer player)
 		{
+			LogHookEvent(player, "OnCupboardAuthorize", "");
 			if (privilege == null || player == null || !player.userID.IsSteamId()) return;
 			addParametr(player.UserIDString, "cupboard_authorized", 1);
 		}
 		void OnPlayerAttack(BasePlayer attacker, HitInfo info)
         {
+			LogHookEvent(attacker, "OnPlayerAttack", $"bone={info?.boneName} target={info?.HitEntity?.ShortPrefabName}");
 			BasePlayer player = info.HitEntity?.ToPlayer();
             if (player != null && !player.IsNpc)
             {
@@ -409,6 +436,7 @@ namespace Oxide.Plugins
         }
         void OnHealingItemUse(MedicalTool tool, BasePlayer player)
 		{
+			LogHookEvent(player, "OnHealingItemUse", $"tool={tool?.ShortPrefabName}");
             if (player.IsNpc) {
                 return;
             }
@@ -428,6 +456,7 @@ namespace Oxide.Plugins
 
 		void OnPlayerAddModifiers(BasePlayer player, Item item, ItemModConsumable consumable)
 		{
+			LogHookEvent(player, "OnPlayerAddModifiers", $"item={item?.info?.shortname}");
             if (player.IsNpc) {
                 return;
             }
@@ -436,11 +465,13 @@ namespace Oxide.Plugins
 
         void OnFishCatch(Item item, BaseFishingRod rod, BasePlayer player)
         {
+			LogHookEvent(player, "OnFishCatch", $"item={item?.info?.shortname} amount={item?.amount}");
             addParametr(player.UserIDString, "f_" + item.info.shortname, item.amount);
         }
 
         void OnEntityDeath(BasePlayer player, HitInfo info)
-        {   
+        {
+			LogHookEvent(info?.InitiatorPlayer ?? player, "OnEntityDeath(BasePlayer)", $"victim={player?.displayName} weapon={info?.Weapon?.GetItem()?.info?.shortname}");
             BasePlayer attacker = info?.InitiatorPlayer;
 			if (player == null || info == null) return;
             if (!player.userID.IsSteamId()) return;
@@ -485,7 +516,8 @@ namespace Oxide.Plugins
             if (player.IsSleeping()) {
 				kill.signs.Add("sleep");
             }
-            if (attacker.currentTeam == player.currentTeam) {
+            // Только если оба в команде и это одна и та же команда (currentTeam == 0 = не в команде)
+            if (attacker.currentTeam != 0 && attacker.currentTeam == player.currentTeam) {
 				kill.signs.Add("team");
             }
             Item weaponItem = info.Weapon?.GetItem();
@@ -510,6 +542,7 @@ namespace Oxide.Plugins
         }
         void OnEntityDeath(SimpleShark shark, HitInfo info)
         {
+			LogHookEvent(info?.InitiatorPlayer, "OnEntityDeath(SimpleShark)", "shark");
             if (shark == null || info == null) return;
             BasePlayer attacker = info?.InitiatorPlayer;
             if (attacker == null || !attacker.userID.IsSteamId()) return;
@@ -530,6 +563,7 @@ namespace Oxide.Plugins
 
         void OnEntityDeath(BuildingPrivlidge entity, HitInfo info)
         {
+			LogHookEvent(info?.InitiatorPlayer, "OnEntityDeath(BuildingPrivlidge)", "TC");
             if (entity == null || info == null) return;
             BasePlayer attacker = info?.InitiatorPlayer;
             if (attacker == null || !attacker.userID.IsSteamId()) return;
@@ -539,6 +573,7 @@ namespace Oxide.Plugins
 
         void OnEntityDeath(NPCPlayer scientist, HitInfo info)
         {
+			LogHookEvent(info?.InitiatorPlayer, "OnEntityDeath(NPCPlayer)", "scientist");
             if (scientist == null || info == null) return;
             BasePlayer attacker = info?.InitiatorPlayer;
             if (attacker == null || !attacker.userID.IsSteamId()) return;
@@ -548,6 +583,7 @@ namespace Oxide.Plugins
 
         void OnEntityDeath(BaseAnimalNPC animal, HitInfo info)
         {
+			LogHookEvent(info?.InitiatorPlayer, "OnEntityDeath(BaseAnimalNPC)", $"animal={animal?.ShortPrefabName}");
             BasePlayer attacker = info?.InitiatorPlayer;
             if (attacker == null || !attacker.userID.IsSteamId()) return;
             Kill kill = new Kill();
@@ -567,6 +603,7 @@ namespace Oxide.Plugins
 		
         void OnEntityDeath(BaseNPC2 animal, HitInfo info)
         {
+			LogHookEvent(info?.InitiatorPlayer, "OnEntityDeath(BaseNPC2)", $"npc={animal?.ShortPrefabName}");
             BasePlayer attacker = info?.InitiatorPlayer;
             if (attacker == null || !attacker.userID.IsSteamId()) return;
             Kill kill = new Kill();
@@ -586,37 +623,84 @@ namespace Oxide.Plugins
 
         void OnGrowableGathered(GrowableEntity plant, Item item, BasePlayer player)
         {
+            if (player == null || player.IsNpc || !player.userID.IsSteamId() || item?.info == null) return;
             addParametr(player.UserIDString, "gathered_" + item.info.shortname, item.amount);
         }
 
         void OnDispenserBonus(ResourceDispenser dispenser, BasePlayer player, Item item)
         {
+            if (player == null || player.IsNpc || !player.userID.IsSteamId() || item?.info == null) return;
             addParametr(player.UserIDString, item.info.shortname, item.amount);
         }
 
-
         void OnDispenserGather(ResourceDispenser dispenser, BaseEntity entity, Item item)
         {
+            if (entity == null || item?.info == null) return;
             BasePlayer player = entity.ToPlayer();
-            if (player == null) return;
-
+            if (player == null || player.IsNpc || !player.userID.IsSteamId()) return;
             addParametr(player.UserIDString, item.info.shortname, item.amount);
+        }
+
+        // Поднятие ресурсов с земли — дерево, сера, камни, металл пишем в gathered_ как при добыче
+        private static readonly HashSet<string> GatheredCollectibles = new HashSet<string> { "wood", "stones", "sulfur.ore", "metal.ore" };
+
+        void OnCollectiblePickedup(CollectibleEntity instance, BasePlayer reciever, Item component)
+        {
+            if (reciever == null || reciever.IsNpc || !reciever.userID.IsSteamId() || component?.info == null) return;
+            string shortname = component.info.shortname;
+            LogHookEvent(reciever, "OnCollectiblePickedup", $"item={shortname} amount={component.amount}");
+            string key;
+            if (shortname == "diesel_barrel")
+                key = "diesel_barrel";
+            else if (GatheredCollectibles.Contains(shortname))
+                key = "gathered_" + shortname;
+            else
+                key = "pickup_" + shortname;
+            addParametr(reciever.UserIDString, key, component.amount);
+        }
+
+        // Подбор предметов с земли (world item)
+        void OnItemPickup(Item item, BasePlayer player, WorldItem worldItem)
+        {
+            if (player == null || player.IsNpc || !player.userID.IsSteamId() || item?.info == null) return;
+            LogHookEvent(player, "OnItemPickup", $"item={item.info?.shortname} amount={item.amount}");
+            if (item.info.shortname == "basicblueprintfragment")
+            {
+                lock (_uniqueLootLock)
+                {
+                    if (_countedBasicBlueprintFragment.Add(player.UserIDString))
+                        addParametr(player.UserIDString, "basicblueprintfragment", item.amount);
+                }
+            }
+            else
+            {
+                addParametr(player.UserIDString, "pickup_item_" + item.info.shortname, item.amount);
+            }
         }
 
         void OnEntityDeath(BradleyAPC bradley, HitInfo info)
         {
             if (bradley == null || info == null) return;
-            
             BasePlayer player = info.InitiatorPlayer;
-
+            string who = player != null ? $"{player.displayName}({player.UserIDString})" : "null";
+            LogHookEvent(player, "OnEntityDeath(BradleyAPC)", $"bradley | killer={who}");
             if (player != null && player.userID.IsSteamId())
-            {
                 addParametr(player.UserIDString, "bradleys", 1);
-            }
+        }
+
+        // Взрыв вертолёта
+        void OnEntityDeath(PatrolHelicopter helicopter, HitInfo info)
+        {
+            if (helicopter == null || info == null) return;
+            BasePlayer player = info.InitiatorPlayer;
+            LogHookEvent(player, "OnEntityDeath(PatrolHelicopter)", "heli");
+            if (player != null && player.userID.IsSteamId())
+                addParametr(player.UserIDString, "helicopters", 1);
         }
 
         void OnExplosiveThrown(BasePlayer player, BaseEntity entity, ThrownWeapon item)
         {
+			LogHookEvent(player, "OnExplosiveThrown", $"item={player?.GetActiveItem()?.info?.shortname}");
             if (player == null || item == null)
                 return;
 
@@ -631,20 +715,22 @@ namespace Oxide.Plugins
                 case "explosive.satchel":
                     addParametr(player.UserIDString, "satchelsthrown", 1);
                     break;
+                case "supply.signal":
+                    addParametr(player.UserIDString, "grenade.supplysignal.deployed", 1);
+                    break;
             }
         }
 
         void OnEntityDismounted(BaseMountable mountable, BasePlayer player)
         {
-            if (mountable == null || player == null) return;
-
-            if (mountable.ShortPrefabName == "parachuteseat") {
+            if (mountable == null || player == null || player.IsNpc || !player.userID.IsSteamId()) return;
+            if (mountable.ShortPrefabName == "parachuteseat")
                 addParametr(player.UserIDString, "parachuteseat", 1);
-            }
         }
 
         void OnRocketLaunched(BasePlayer player, BaseEntity entity)
         {
+			LogHookEvent(player, "OnRocketLaunched", $"entity={entity?.ShortPrefabName}");
             if (player == null || entity == null)
                 return;
             ExplosionProgressAdd(player, entity);
@@ -652,19 +738,66 @@ namespace Oxide.Plugins
 
         void OnPlayerWound(BasePlayer player, HitInfo hitInfo)
         {
+            if (player == null || player.IsNpc || !player.userID.IsSteamId()) return;
             addParametr(player.UserIDString, "wounded", 1);
         }
 
         void OnWeaponFired(BaseProjectile projectile, BasePlayer player, ItemModProjectile mod, ProtoBuf.ProjectileShoot projectiles)
         {
+			LogHookEvent(player, "OnWeaponFired", $"projectile={projectile?.ShortPrefabName} ammo={projectile?.primaryMagazine?.ammoType?.shortname}");
             if (projectile == null || player == null)
                 return;
   
             ExplosionProgressAdd(player, null, projectile.primaryMagazine?.ammoType?.shortname);
         }
 
+        // Строительство (постановка блока/объекта)
+        void OnEntityBuilt(Planner plan, GameObject result)
+        {
+            if (plan == null || result == null) return;
+            BasePlayer player = plan.GetOwnerPlayer();
+            if (player == null || player.IsNpc || !player.userID.IsSteamId()) return;
+            BuildingBlock block = result?.ToBaseEntity()?.GetComponent<BuildingBlock>();
+            string blockInfo = block != null ? block.ShortPrefabName : result.name;
+            LogHookEvent(player, "OnEntityBuilt", $"block={blockInfo}");
+            addParametr(player.UserIDString, "built", 1);
+        }
+
+        // Апгрейд постройки — отдельный ключ на каждый грейд
+        void OnStructureUpgrade(BuildingBlock block, BasePlayer player, BuildingGrade.Enum grade, ulong skin)
+        {
+            if (block == null || player == null || player.IsNpc) return;
+            LogHookEvent(player, "OnStructureUpgrade", $"grade={grade}");
+            string key;
+            switch (grade)
+            {
+                case BuildingGrade.Enum.Wood:    key = "upgrade_wood"; break;
+                case BuildingGrade.Enum.Stone:   key = "upgrade_stone"; break;
+                case BuildingGrade.Enum.Metal:   key = "upgrade_metal"; break;
+                case BuildingGrade.Enum.TopTier: key = "upgrade_toptier"; break;
+                default: key = "upgrade_" + grade.ToString().ToLower(); break;
+            }
+            addParametr(player.UserIDString, key, 1);
+        }
+
+        // Крафт (оружие, одежда и т.д.)
+        void OnItemCraft(ItemCraftTask task, BasePlayer player, Item fromTempBlueprint)
+        {
+            if (task == null || player == null || player.IsNpc) return;
+            ItemDefinition def = task.blueprint?.targetItem;
+            if (def == null) return;
+            string shortname = def.shortname;
+            LogHookEvent(player, "OnItemCraft", $"item={shortname} amount={task.amount}");
+            addParametr(player.UserIDString, "craft_" + shortname, task.amount);
+            if (def.category == ItemCategory.Weapon)
+                addParametr(player.UserIDString, "craft_weapon", task.amount);
+            else if (def.category == ItemCategory.Attire)
+                addParametr(player.UserIDString, "craft_attire", task.amount);
+        }
+
         private void OnEntityDeath(LootContainer entity, HitInfo info)
         {
+			LogHookEvent(info?.InitiatorPlayer, "OnEntityDeath(LootContainer)", $"entity={entity?.ShortPrefabName}");
             if (entity == null || info == null)
                 return;
             BasePlayer player = info.InitiatorPlayer;
@@ -676,14 +809,83 @@ namespace Oxide.Plugins
             }
         }
 
+        /// <summary>Засчитывает открытие только один раз на пару (игрок, сущность). Возвращает true, если засчитано.</summary>
+        private bool TryCountUniqueLootOnce(BasePlayer player, LootContainer entity)
+        {
+            if (entity?.net == null) return false;
+            ulong netId = entity.net.ID.Value;
+            string userId = player?.UserIDString;
+            if (string.IsNullOrEmpty(userId)) return false;
+            lock (_uniqueLootLock)
+            {
+                if (!_uniqueLootCounted.TryGetValue(netId, out var players))
+                {
+                    players = new HashSet<string>();
+                    _uniqueLootCounted[netId] = players;
+                }
+                if (players.Add(userId))
+                    return true;
+                return false;
+            }
+        }
+
         private void OnLootEntity(BasePlayer player, LootContainer entity)
         {
+			LogHookEvent(player, "OnLootEntity", $"entity={entity?.ShortPrefabName}");
             if (entity == null || player == null || entity.OwnerID.IsSteamId() || entity.net == null)
                 return;
 
-            if (entity.ShortPrefabName.Contains("codelockedhackablecrate")) {
-                addParametr(player.UserIDString, "codelockedhackablecrate", 1);
-            } else {
+            if (entity.ShortPrefabName.Contains("supply_drop") || entity.ShortPrefabName.Contains("supply_drop_"))
+            {
+                if (TryCountUniqueLootOnce(player, entity))
+                    addParametr(player.UserIDString, "supply_crate_open", 1);
+                else
+                    LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
+            }
+            else if (entity.ShortPrefabName.Contains("codelockedhackablecrate_oilrig"))
+            {
+                if (TryCountUniqueLootOnce(player, entity))
+                    addParametr(player.UserIDString, "codelockedhackablecrate_oilrig", 1);
+                else
+                    LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
+            }
+            else if (entity.ShortPrefabName.Contains("codelockedhackablecrate"))
+            {
+                if (TryCountUniqueLootOnce(player, entity))
+                    addParametr(player.UserIDString, "codelockedhackablecrate", 1);
+                else
+                    LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
+            }
+            else if (entity.ShortPrefabName.Contains("crate_elite") || entity.ShortPrefabName.Contains("bradley_crate"))
+            {
+                if (TryCountUniqueLootOnce(player, entity))
+                    addParametr(player.UserIDString, "crate_elite", 1);
+                else
+                    LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
+            }
+            else if (entity.ShortPrefabName.Contains("crate_normal"))
+            {
+                if (TryCountUniqueLootOnce(player, entity))
+                    addParametr(player.UserIDString, "crate_normal", 1);
+                else
+                    LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
+            }
+            else if (entity.ShortPrefabName.Contains("crate_underwater_advanced"))
+            {
+                if (TryCountUniqueLootOnce(player, entity))
+                    addParametr(player.UserIDString, "crate_underwater_advanced", 1);
+                else
+                    LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
+            }
+            else if (entity.ShortPrefabName.Contains("crate_underwater_basic"))
+            {
+                if (TryCountUniqueLootOnce(player, entity))
+                    addParametr(player.UserIDString, "crate_underwater_basic", 1);
+                else
+                    LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
+            }
+            else
+            {
                 addParametr(player.UserIDString, "crate_open", 1);
             }
             foreach (var item in entity.inventory.itemList)
@@ -694,8 +896,33 @@ namespace Oxide.Plugins
                 }
             }
         }
+
+        // Учитываем только чертежи, забранные из элитных ящиков (crate_elite, bradley_crate)
+        // private object CanMoveItem(Item item, PlayerInventory inventory, ItemContainerId targetContainerID, int targetSlot, int amount, ItemMoveModifier itemMoveModifier)
+        // {
+        //     BasePlayer player = inventory?.GetComponent<BasePlayer>();
+        //     if (player == null || player.IsNpc || !player.userID.IsSteamId() || item?.info == null)
+        //         return null;
+        //     if (!item.IsBlueprint())
+        //         return null;
+        //     BaseEntity sourceOwner = item.parent?.entityOwner;
+        //     if (sourceOwner == null || sourceOwner == player || sourceOwner is BasePlayer)
+        //         return null;
+        //     var lootContainer = sourceOwner as LootContainer;
+        //     if (lootContainer == null)
+        //         return null;
+        //     string prefab = lootContainer.ShortPrefabName ?? "";
+        //     bool isEliteCrate = prefab.Contains("crate_elite") || prefab.Contains("bradley_crate");
+        //     if (!isEliteCrate)
+        //         return null;
+        //     int amountMoved = amount > 0 ? amount : item.amount;
+        //     addParametr(player.UserIDString, item.info.shortname, amountMoved);
+        //     return null;
+        // }
+
 		private void OnTeamLeave(RelationshipManager.PlayerTeam team, BasePlayer player)
 		{
+			LogHookEvent(player, "OnTeamLeave", "");
             Team model = new Team();
             model.steam_id = player.UserIDString;
             model.type = "leaved";
@@ -706,6 +933,7 @@ namespace Oxide.Plugins
 
 		private void OnTeamKick(RelationshipManager.PlayerTeam team, BasePlayer player, ulong target)
 		{
+			LogHookEvent(player, "OnTeamKick", $"target={target}");
             Team model = new Team();
             model.steam_id = player.UserIDString;
             model.type = "kicked";
@@ -716,6 +944,7 @@ namespace Oxide.Plugins
 
 		private void OnTeamAcceptInvite(RelationshipManager.PlayerTeam team, BasePlayer player)
 		{
+			LogHookEvent(player, "OnTeamAcceptInvite", "");
             Team model = new Team();
             model.steam_id = player.UserIDString;
             model.type = "invite_accepted";
@@ -726,6 +955,7 @@ namespace Oxide.Plugins
 
         private void OnTeamDisband(RelationshipManager.PlayerTeam team)
         {
+			Puts("[Stats] OnTeamDisband | members=" + (team?.members?.Count ?? 0));
             foreach (var item in team.members)
             {
                 Team model = new Team();
@@ -741,6 +971,7 @@ namespace Oxide.Plugins
 
 		private void OnStashExposed(StashContainer stash, BasePlayer player)
 		{
+			LogHookEvent(player, "OnStashExposed", "stash");
 		  if (stash == null)
 		  {
 			return;

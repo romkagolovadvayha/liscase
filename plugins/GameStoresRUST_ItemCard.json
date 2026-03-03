@@ -1,0 +1,459 @@
+[
+  {
+    "name": "UI_GameStoresRUST_Store.BlockPanel.0",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "1 1 1 0.2",
+        "command": ""
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0.495 0.55",
+        "anchormax": "0.495 0.55",
+        "offsetmin": "-525 365",
+        "offsetmax": "-375 515"
+      }
+    ]
+  },
+  {
+    "name": "ItemImage_0",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.0",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Image",
+        "color": "1 1 1 1",
+        "itemId": -1461508848
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "5 5",
+        "offsetmax": "-5 -5"
+      }
+    ]
+  },
+  {
+    "name": "ItemAmount_0",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.0",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "x5",
+        "fontSize": 24,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 1",
+        "align": "LowerRight"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 5",
+        "offsetmax": "-5 0"
+      }
+    ]
+  },
+  {
+    "name": "ItemName_0",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.0",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "AK-47",
+        "fontSize": 16,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 0.8",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 0",
+        "offsetmin": "0 -22.5",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "ItemButton_0",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.0",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "0 0 0 0",
+        "command": "UI_GameStoresRUST take 0 12345",
+        "close": "UI_GameStoresRUST_Store.BlockPanel.0.Open"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "UI_GameStoresRUST_Store.BlockPanel.1",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "1 1 1 0.2",
+        "command": ""
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0.495 0.55",
+        "anchormax": "0.495 0.55",
+        "offsetmin": "-370 365",
+        "offsetmax": "-220 515"
+      }
+    ]
+  },
+  {
+    "name": "ItemImage_1",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.1",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Image",
+        "color": "1 1 1 1",
+        "itemId": 815896488
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "5 5",
+        "offsetmax": "-5 -5"
+      }
+    ]
+  },
+  {
+    "name": "ItemAmount_1",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.1",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "x128",
+        "fontSize": 24,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 1",
+        "align": "LowerRight"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 5",
+        "offsetmax": "-5 0"
+      }
+    ]
+  },
+  {
+    "name": "ItemName_1",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.1",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "5.56 Rifle Ammo",
+        "fontSize": 16,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 0.8",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 0",
+        "offsetmin": "0 -22.5",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "ItemButton_1",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.1",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "0 0 0 0",
+        "command": "UI_GameStoresRUST take 1 12346",
+        "close": "UI_GameStoresRUST_Store.BlockPanel.1.Open"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "UI_GameStoresRUST_Store.BlockPanel.2",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "1 1 1 0.2",
+        "command": ""
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0.495 0.55",
+        "anchormax": "0.495 0.55",
+        "offsetmin": "-215 365",
+        "offsetmax": "-65 515"
+      }
+    ]
+  },
+  {
+    "name": "ItemImage_2",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.2",
+    "components": [
+      {
+        "type": "UnityEngine.UI.RawImage",
+        "color": "1 1 1 1",
+        "url": "https://gamestores.app/img/games/rust/blueprintbase.png"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "5 5",
+        "offsetmax": "-5 -5"
+      }
+    ]
+  },
+  {
+    "name": "ItemName_2",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.2",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "LR-300 Blueprint",
+        "fontSize": 16,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 0.8",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 0",
+        "offsetmin": "0 -22.5",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "ItemButton_2",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.2",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "0 0 0 0",
+        "command": "UI_GameStoresRUST take 2 12347",
+        "close": "UI_GameStoresRUST_Store.BlockPanel.2.Open"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "ItemWaitOverlay_Example",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.0",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "1 1 1 0.2",
+        "command": "UI_GameStoresRUST take 0 12345",
+        "close": "UI_GameStoresRUST_Store.BlockPanel.0.Open",
+        "fadeIn": 1.0
+      },
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "ПОДОЖДИТЕ",
+        "fontSize": 24,
+        "font": "robotocondensed-bold.ttf",
+        "color": "1 1 1 0.4",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "ItemErrorOverlay_Example",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.1",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "1 0.5 0.5 0.2",
+        "command": "UI_GameStoresRUST take 1 12346",
+        "close": "UI_GameStoresRUST_Store.BlockPanel.1.Open",
+        "fadeIn": 1.0
+      },
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "ОШИБКА\nПОЛУЧЕНИЯ",
+        "fontSize": 22,
+        "font": "robotocondensed-bold.ttf",
+        "color": "1 0.7 0.7 1",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "ItemSuccessOverlay_Example",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.2",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "0.5 1 0.5 0.2",
+        "fadeIn": 1.0
+      },
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "УСПЕШНО\nПОЛУЧЕНО",
+        "fontSize": 22,
+        "font": "robotocondensed-bold.ttf",
+        "color": "0.7 1 0.7 1",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "ItemBlockedOverlay_Example",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.0",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "1 0.5 0.5 0.2",
+        "command": "UI_GameStoresRUST take 0 12345",
+        "close": "UI_GameStoresRUST_Store.BlockPanel.0.Open",
+        "fadeIn": 1.0
+      },
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "ЗАБЛОКИРОВАНО\n2дн. 5ч. 30мин.",
+        "fontSize": 22,
+        "font": "robotocondensed-bold.ttf",
+        "color": "1 0.7 0.7 1",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "UI_GameStoresRUST_Store.BlockPanel.3",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "1 1 1 0.2",
+        "command": ""
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0.495 0.55",
+        "anchormax": "0.495 0.55",
+        "offsetmin": "-60 365",
+        "offsetmax": "90 515"
+      }
+    ]
+  },
+  {
+    "name": "ItemImage_3",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.3",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Image",
+        "color": "1 1 1 1",
+        "itemId": -1716193401
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "5 5",
+        "offsetmax": "-5 -5"
+      }
+    ]
+  },
+  {
+    "name": "ItemName_3",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.3",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Text",
+        "text": "LR-300 Assault Rifle",
+        "fontSize": 16,
+        "font": "robotocondensed-regular.ttf",
+        "color": "1 1 1 0.8",
+        "align": "MiddleCenter"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 0",
+        "offsetmin": "0 -22.5",
+        "offsetmax": "0 0"
+      }
+    ]
+  },
+  {
+    "name": "ItemButton_3",
+    "parent": "UI_GameStoresRUST_Store.BlockPanel.3",
+    "components": [
+      {
+        "type": "UnityEngine.UI.Button",
+        "color": "0 0 0 0",
+        "command": "UI_GameStoresRUST take 3 12348",
+        "close": "UI_GameStoresRUST_Store.BlockPanel.3.Open"
+      },
+      {
+        "type": "RectTransform",
+        "anchormin": "0 0",
+        "anchormax": "1 1",
+        "offsetmin": "0 0",
+        "offsetmax": "0 0"
+      }
+    ]
+  }
+]
+

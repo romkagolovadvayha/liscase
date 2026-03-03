@@ -19,8 +19,8 @@ using Oxide.Plugins.ExtensionsRealPVE;
 
 namespace Oxide.Plugins
 {
-    [Info("RealPVE", "IIIaKa", "0.1.22")]
-	[Description("Plugin for Real PvE servers, featuring damage prevention, anti-griefing measures, customizable PvP zones, an automatic loot queue in radtowns and raid zones, and much more.")]
+    [Info("RealPVE", "IIIaKa", "0.1.231")]
+	[Description("Plugin for Real PvE servers, featuring damage prevention, anti-griefing measures, customizable PvP zones, an automatic loot queue in radtowns and raid zones, and much more. Now with protection against naval turrets on PT Boats and other ships.")]
 	class RealPVE : RustPlugin
     {
 
@@ -30,7 +30,7 @@ namespace Oxide.Plugins
 			{
 				object result = monumentData.CanLoot(player);
 				if (result != null)
-					SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
 				return result;
 			}
 			return null;
@@ -126,7 +126,7 @@ namespace Oxide.Plugins
             {
                 object result = CanInteractSharedEntity(player, machine);
                 if (result != null)
-                    SendMessageText(player, lang.GetMessage("MsgCantAdministerVending", this, player.UserIDString));
+                    SendMessageText(player.IPlayer, lang.GetMessage("MsgCantAdministerVending", this, player.UserIDString));
                 return result;
             }
 			return null;
@@ -172,9 +172,14 @@ namespace Oxide.Plugins
 				}
             }
             return false;
-        }
+		}
 		
-		object OnVehiclePush(BaseVehicle vehicle, BasePlayer player) => player.Uyda() ? null : HandleVehicleInteractionM(player, vehicle, "MsgVehicleCantPush");
+		object OnVehiclePush(BaseVehicle vehicle, BasePlayer player)
+		{
+			if (player.Uyda())
+				return null;
+			return HandleVehicleInteractionM(player, vehicle, "MsgVehicleCantPush");
+		}
 
 		protected override void LoadConfig()
 		{
@@ -288,20 +293,30 @@ namespace Oxide.Plugins
 			{
 				_pvpBar.Add(20, barSettings.Text_Outline_Color);
 				if (barSettings.Text_Outline_Color.StartsWith("#"))
+				{
 					_pvpBar.Add(-20, barSettings.Text_Outline_Transparency);
+					_pvpBar.Add(20, barSettings.Text_Outline_Color);
+					_pvpBar.Add(-20, barSettings.Text_Outline_Transparency);
+				}
+				_pvpBar.Add(21, barSettings.Text_Outline_Distance);
 				_pvpBar.Add(21, barSettings.Text_Outline_Distance);
 			}
 			if (barSettings.SubText_Outline_Enabled)
 			{
 				_pvpBar.Add(26, barSettings.SubText_Outline_Color);
 				if (barSettings.SubText_Outline_Color.StartsWith("#"))
+				{
 					_pvpBar.Add(-26, barSettings.SubText_Outline_Transparency);
+					_pvpBar.Add(26, barSettings.SubText_Outline_Color);
+					_pvpBar.Add(-26, barSettings.SubText_Outline_Transparency);
+				}
+				_pvpBar.Add(27, barSettings.SubText_Outline_Distance);
 				_pvpBar.Add(27, barSettings.SubText_Outline_Distance);
 			}
-
+			
 			SaveConfig();
 		}
-		
+
 		private void ToggleRaidableBases(bool isLoaded)
 		{
 			if (!isLoaded)
@@ -438,7 +453,7 @@ namespace Oxide.Plugins
 				if (_unrestrictedLooters.Contains(player.userID))
 					AdminOpenLoot(player, privilege);
                 else
-					SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
                 return true;
             }
 			return null;
@@ -1161,6 +1176,13 @@ namespace Oxide.Plugins
 				MonumentData oldMonumentData = null;
 				if (!string.IsNullOrWhiteSpace(oldMonumentID) && _monumentsList.TryGetValue(oldMonumentID, out oldMonumentData))
                     oldMonumentData.OnPlayerExit(player);
+                
+                if (monumentData.IsRespawning(player.userID))
+                {
+                    SendMessageText(player.IPlayer, "You cannot enter another monument while your previous monument is still active.");
+                    return;
+                }
+                
                 monumentData.OnPlayerEnter(player);
             }
         }
@@ -1209,6 +1231,11 @@ namespace Oxide.Plugins
 					if (attacker.userID.IsSteamId() && !IsEntityInPvP(attacker.userID, vehicle.net.ID.Value) && vehicleData.CanInteract(attacker) != null)
 						info.Urma();
 					break;
+				case AttackerIndex.NavalTurret:
+                    // Prevent naval turrets from damaging vehicles in PVE areas
+                    if (!IsEntityInPvP(initiator.OwnerID, vehicle.net.ID.Value))
+                        info.Urma();
+                    break;
 				case AttackerIndex.PlayerOwnerMissing:
 					info.Urma();
 					break;
@@ -1240,7 +1267,7 @@ namespace Oxide.Plugins
         }
 		void OnEntityKill(Minicopter minicopter) => HandleVehicleKill(minicopter);
 
-		private class Configuration
+		public class Configuration
 		{
 			[JsonProperty(PropertyName = "Chat command")]
 			public string Command = string.Empty;
@@ -1367,14 +1394,13 @@ namespace Oxide.Plugins
 			}
 		}
 		
-		private static string ReplacePlaceholders(string str, params string[] args)
+		private static string ReplacePlaceholders(string str, string uiName, string image, string title, string text, string command)
         {
-            for (int i = 0; i < args.Length; i++)
-            {
-                if (args[i] != null)
-                    str = str.Replace($"{{{i}}}", args[i]);
-            }
-            return str;
+            return str.Replace("*uiName*", uiName)
+                      .Replace("*image*", image)
+                      .Replace("*title*", title)
+                      .Replace("*text*", text)
+                      .Replace("*command*", command);
         }
 		
 		void OnEntityKill(BaseEntity entity) => OnEntityExitPVP(entity);
@@ -1417,7 +1443,7 @@ namespace Oxide.Plugins
 			int limit = GetVehicleLimit(player.UserIDString, type), totalCars = CountVehiclesByType(player.userID, type);
             if (limit >= 0 && totalCars >= limit)
             {
-				SendMessageText(player, string.Format(lang.GetMessage("MsgVehicleLimit", this, player.UserIDString), string.Empty, totalCars, limit));
+				SendMessageText(player.IPlayer, string.Format(lang.GetMessage("MsgVehicleLimit", this, player.UserIDString), string.Empty, totalCars, limit));
 				npcTalking.ForceEndConversation(player);
             }
             else
@@ -1427,7 +1453,7 @@ namespace Oxide.Plugins
                     canPay = GetBalance(player.UserIDString) >= GetVehiclePrice(player.UserIDString, type);
                 if (!canPay)
                 {
-					SendMessageText(player, lang.GetMessage("MsgEconomicsNotEnough", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgEconomicsNotEnough", this, player.UserIDString));
 					npcTalking.ForceEndConversation(player);
                 }
 			}
@@ -1482,7 +1508,7 @@ namespace Oxide.Plugins
 				corpse.blockBagDrop = true;
 			}
 			if (corpse.skinID == _bradleySkinId)
-                _eventScientistsList.Remove(corpse.net.ID);
+                _eventScientistsList.Remove(corpse.net.ID.Value);
         }
 		
 		object OnQuarryToggle(MiningQuarry mining, BasePlayer player)
@@ -1496,7 +1522,7 @@ namespace Oxide.Plugins
                     result = monumentData.CanLoot(player);
 				
 				if (result != null)
-					SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
 				return result;
             }
             return null;
@@ -1552,7 +1578,7 @@ namespace Oxide.Plugins
             }
             else if (npc.skinID == _bradleySkinId)
             {
-                if (_eventScientistsList.TryGetValue(npc.net.ID, out var eventData))
+                if (_eventScientistsList.TryGetValue(npc.net.ID.Value, out var eventData))
                     return eventData.CanBeTargeted(ownerPlayer) != null ? true : null;
             }
 			return null;
@@ -1575,7 +1601,7 @@ namespace Oxide.Plugins
 					if (lootableEntity != null)
 						lootableEntity.LastLootedBy = lastLooter;
 					restrictor.SendNetworkUpdate();
-					SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
 				});
 			}
 		}
@@ -1597,6 +1623,8 @@ namespace Oxide.Plugins
 		}
 		
 		private static readonly string[] _cmdKeysAdminTC = { "add", "remove", "clear", "info" };
+		private static readonly string[] _cmdKeysAdmin = { "autobuy", "config", "loot", "monument", "permissions", "pickup", "share", "tc", "types" };
+		private static readonly string[] _cmdKeysAdminConfig = { "force_pve", "force_tutorial", "gametips", "recheck_permission_limits", "prevent_safezone_logout_death", "prevent_pickup_collectible", "prevent_patrol_to_deployables", "prevent_handcuffing", "assign_portals", "prevent_backpack_drop", "prevent_laptop_attack", "recycler_no_penalties" };
 		private static bool IsPlayerInPvP(ulong a) => _pvpPlayers.ContainsKey(a);
 		
 		private void ConfigLaptopAttackToggled()
@@ -2141,9 +2169,9 @@ namespace Oxide.Plugins
             }
             else
             {
-                player.Reply(lang.GetMessage("CmdAdminMonument", this, player.Id));
+                player.Reply(lang.GetMessage("CmdAdminConfig", this, player.Id));
                 if (caseFound)
-                    SendMessageText(player, lang.GetMessage("CmdAdminMonumentWrongValue", this, player.Id));
+                    SendMessageText(player, lang.GetMessage("CmdMainEditWrongValue", this, player.Id));
             }
 		}
 		
@@ -2167,13 +2195,14 @@ namespace Oxide.Plugins
 		private void RemoveDemolishable(DecayEntity decayEntity)
         {
             if (decayEntity.IsDemolishSupported && decayEntity.OwnerID.IsSteamId())
-            {
 				decayEntity.SetFlag(BaseEntity.Flags.Reserved2, false);
 				if (decayEntity is BuildingBlock block)
                     block.SetFlag(BaseEntity.Flags.Reserved1, false);
 			}
-		}
+		
 		private static Dictionary<ulong, EventData> _eventsList;
+		private static Dictionary<ulong, EventData> _eventScientistsList;
+		private static HashSet<string> _dynamicPvPs;
 		
 		void OnRaidableBasePurchased(string userIDStr, Vector3 pos)
         {
@@ -2192,7 +2221,7 @@ namespace Oxide.Plugins
 				if (_vehiclesList.TryGetValue(tugBoat.net.ID.Value, out var vehicleData) && vehicleData.OwnerID != 0uL)
 					result = vehicleData.CanLoot(player);
 				if (result != null)
-					SendMessageText(player, lang.GetMessage("MsgVehicleTugboatAuthorization", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgVehicleTugboatAuthorization", this, player.UserIDString));
 				return result;
 			}
 			return null;
@@ -2245,11 +2274,9 @@ namespace Oxide.Plugins
 							}
 							else
 							{
-								if (_economicsIsLoaded)
-								{
-									double regPrice = GetVehiclePrice(bPlayer.UserIDString, vehicleData.Type);
-									if (regPrice > 0d) isPayed = MakeWithdraw(bPlayer.UserIDString, regPrice);
-								}
+								// Проверка оплаты уже была выполнена при спавне транспорта
+								isPayed = true;
+								
 								if (isPayed is bool && !(bool)isPayed)
 								{
 									replyKey = "MsgEconomicsNotEnough";
@@ -2451,7 +2478,7 @@ namespace Oxide.Plugins
 			return null;
         }
 		
-		private class MonumentConfig
+		public class MonumentConfig
         {
 			[JsonProperty(PropertyName = "Time in seconds(3-60) to return to the monument if the owner has left its boundaries")]
             public float TimeToComeBack = 15f;
@@ -2500,7 +2527,7 @@ namespace Oxide.Plugins
 			{
 				object result = looter.TasirMumkin(target.userID) == null || IsFriend(looter.UserIDString, target.UserIDString) ? null : false;
 				if (result != null)
-					SendMessageText(looter, lang.GetMessage("MsgCantInteractPlayer", this, looter.UserIDString));
+					SendMessageText(looter.IPlayer, lang.GetMessage("MsgCantInteractPlayer", this, looter.UserIDString));
 				return result;
 			}
 			return null;
@@ -2564,7 +2591,7 @@ namespace Oxide.Plugins
         {
 			if (!_rbList.TryGetValue(pos.ToString(), out var rbData))
             {
-				SendMessageText(player, lang.GetMessage("MsgRaidableBasesDisabled", this, player.UserIDString));
+				SendMessageText(player.IPlayer, lang.GetMessage("MsgRaidableBasesDisabled", this, player.UserIDString));
 				return;
             }
 			rbData.OnPlayerEnter(player);
@@ -2673,7 +2700,7 @@ namespace Oxide.Plugins
 					result = player.TasirMumkin(towEntity.OwnerID);
 				
 				if (result != null)
-                    SendMessageText(player, lang.GetMessage("MsgVehicleCantTow", this, player.UserIDString));
+                    SendMessageText(player.IPlayer, lang.GetMessage("MsgVehicleCantTow", this, player.UserIDString));
                 return result;
 			}
 			return null;
@@ -2763,7 +2790,7 @@ namespace Oxide.Plugins
                 uiList = GetDefaultClaimOffer();
                 Interface.Oxide.DataFileSystem.WriteObject(uiOfferPath, uiList);
             }
-			_vanillaEventsUiOffer = ReplacePlaceholders(CuiHelper.ToJson(uiList), EventOfferUI);
+			_vanillaEventsUiOffer = ReplacePlaceholders(CuiHelper.ToJson(uiList), EventOfferUI, "", "Event Offer", "Click to claim this event!", "");
 			
 			SaveVanillaEventsConfig();
         }
@@ -2790,7 +2817,7 @@ namespace Oxide.Plugins
 			}
 			if (result != null)
 			{
-				SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+				SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
 				return true;
 			}
             return null;
@@ -2846,6 +2873,11 @@ namespace Oxide.Plugins
                     _rrAllRaiders.Add(corpse.net.ID.Value, rrData);
                     rrData.Raiders.Add(corpse.net.ID.Value);
                 }
+            }
+            
+            if (AbandonedBases != null && Convert.ToBoolean(AbandonedBases?.Call("isAbandoned", corpse)))
+            {
+                corpse.OwnerID = 0; 
             }
 		}
 		object OnEntityTakeDamage(Tugboat tugBoat, HitInfo info) => HandleDamageToVehicle(tugBoat, info);
@@ -2915,7 +2947,7 @@ namespace Oxide.Plugins
 			{
 				int totalPlayers = privilege.authorizedPlayers.Count() - 1;
                 if (totalPlayers < 1)
-					SendMessageText(player, lang.GetMessage("MsgPrivlidgeClearEmpty", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgPrivlidgeClearEmpty", this, player.UserIDString));
 				else
                 {
                     privilege.authorizedPlayers.Clear();
@@ -2924,7 +2956,7 @@ namespace Oxide.Plugins
                     privilege.AddPlayer(player);
                     privilege.UpdateMaxAuthCapacity();
                     privilege.SendNetworkUpdate();
-					SendMessageText(player, string.Format(lang.GetMessage("MsgPrivlidgeClear", this, player.UserIDString), totalPlayers), false);
+					SendMessageText(player.IPlayer, string.Format(lang.GetMessage("MsgPrivlidgeClear", this, player.UserIDString), totalPlayers), false);
 				}
                 return false;
             }
@@ -3016,7 +3048,7 @@ namespace Oxide.Plugins
 				result = monumentData.CanLoot(player);
 			
 			if (result != null)
-				SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+				SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
 			return result;
 		}
 		void OnFireBallSpread(FireBall fireBall, BaseEntity entity) => entity.OwnerID = fireBall.OwnerID;
@@ -3033,7 +3065,7 @@ namespace Oxide.Plugins
             {
 				object result = vehicleData.CanLoot(player);
 				if (result != null)
-					SendMessageText(player, lang.GetMessage("MsgVehicleCantInteract", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgVehicleCantInteract", this, player.UserIDString));
 				return result;
 			}
 			return null;
@@ -3054,7 +3086,7 @@ namespace Oxide.Plugins
                     result = player.BinoMumkin();
 				
 				if (result != null)
-                    SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+                    SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
                 return result;
 			}
             return null;
@@ -3074,7 +3106,7 @@ namespace Oxide.Plugins
 			{
 				object result = CanInteractSharedEntity(player, rack);
 				if (result != null)
-					SendMessageText(player, lang.GetMessage("MsgCantInteractWeaponRack", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteractWeaponRack", this, player.UserIDString));
 				return result;
 			}
 			return null;
@@ -3204,7 +3236,7 @@ namespace Oxide.Plugins
                 container.skinID = _rbPluginID;
         }
 		
-		private class NewbieConfig
+		public class NewbieConfig
 		{
 			[JsonProperty(PropertyName = "Is it worth changing the list of items given at spawn on the beach?")]
 			public bool Respawn_Override = true;
@@ -3630,9 +3662,19 @@ namespace Oxide.Plugins
 		
 		private void GiveDefaultItems(BasePlayer player)
         {
-			if (!player.IsValid() || (!_newbieConfig.Tutorial_Override && player.IsInTutorial) || player.isMounted) return;
-			var inventory = player.inventory;
-			bool canOverride = true;
+            if (!player.IsValid() || (!_newbieConfig.Tutorial_Override && player.IsInTutorial) || player.isMounted) return;
+            
+            bool isOnBeach = player.IsOnBeach();
+            bool isInSafeZone = player.InSafeZone();
+            
+            if (isOnBeach || isInSafeZone || 
+                player.inventory.containerMain.itemList.Count > 0 || 
+                player.inventory.containerBelt.itemList.Count > 0 || 
+                player.inventory.containerWear.itemList.Count > 0)
+                return;
+            
+            var inventory = player.inventory;
+            bool canOverride = true;
             var bags = Pool.Get<List<SleepingBag>>();
             Vis.Entities(inventory.baseEntity.transform.position, 0.1f, bags);
             foreach (var bag in bags)
@@ -3644,10 +3686,10 @@ namespace Oxide.Plugins
                 }
             }
             Pool.FreeUnmanaged(ref bags);
-			if (!canOverride)
-				return;
-			
-			inventory.Strip();
+            if (!canOverride)
+                return;
+            
+            inventory.Strip();
             foreach (var rItem in _newbieConfig.Respawn_Main)
             {
                 var item = ItemManager.CreateByName(rItem.ShortName, rItem.Amount, rItem.SkinID);
@@ -3733,10 +3775,22 @@ namespace Oxide.Plugins
 			if (_eventsList.TryGetValue(bradley.net.ID.Value, out var eventData))
 				eventData.LockedCrateSpawned(lockedCrate);
 		}
-		private static void SendMessageText(IPlayer player, string text, bool isWarning = true)
+		private void SendMessageText(IPlayer player, string text, bool isWarning = true)
         {
 			if (_config.GameTips_Enabled && !player.IsServer)
-                player.Command(Str_Showtoast, (int)(isWarning ? GameTip.Styles.Error : GameTip.Styles.Blue_Long), text, string.Empty);
+			{
+				if (NCP != null && NCP.IsLoaded && (bool)(NCP.Call("HasPermission", player.Id, "ncp.see") ?? false))
+				{
+					player.Command("ncp.send", text);
+					return;
+				}
+				if (UINotify != null && UINotify.IsLoaded && (bool)(UINotify.Call("HasPermission", player.Id, "uinotify.see") ?? false))
+				{
+					player.Command("uinotify.send", text);
+					return;
+				}
+				player.Command(Str_Showtoast, (int)(isWarning ? GameTip.Styles.Error : GameTip.Styles.Blue_Long), text, string.Empty);
+			}
             else
                 player.Reply(text);
         }
@@ -3776,7 +3830,7 @@ namespace Oxide.Plugins
 			{
 				object result = monumentData.CanLoot(player);
 				if (result != null)
-					SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
 				return result;
 			}
 			return null;
@@ -3810,7 +3864,7 @@ namespace Oxide.Plugins
 				
 				if (result != null)
                 {
-                    SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+                    SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
                     return true;
                 }
                 return null;
@@ -4250,7 +4304,7 @@ namespace Oxide.Plugins
 					OwnerIDString = owner.UserIDString;
 					if (Settings.TimeLimit > 0d)
 						EndTime = _unixSeconds + Settings.TimeLimit;
-					SendMessageText(Owner.IPlayer, string.Format(Instance.lang.GetMessage("MsgEventNewLooter", Instance, OwnerIDString), Instance.lang.GetMessage(TypeKey, Instance, OwnerIDString), Settings.DeathLimit, Math.Round(Settings.TimeLimit / 60d, 2)), false);
+					Instance.SendMessageText(Owner.IPlayer, string.Format(Instance.lang.GetMessage("MsgEventNewLooter", Instance, OwnerIDString), Instance.lang.GetMessage(TypeKey, Instance, OwnerIDString), Settings.DeathLimit, Math.Round(Settings.TimeLimit / 60d, 2)), false);
 				}
 				else
 				{
@@ -4284,12 +4338,12 @@ namespace Oxide.Plugins
 				if (DeathCounter < Settings.DeathLimit)
                 {
 					if (Owner != null && Owner.IsConnected)
-						SendMessageText(Owner.IPlayer, string.Format(Instance.lang.GetMessage("MsgEventDeath", Instance, OwnerIDString), Instance.lang.GetMessage(TypeKey, Instance, OwnerIDString), player.displayName, DeathCounter, Settings.DeathLimit));
+						Instance.SendMessageText(Owner.IPlayer, string.Format(Instance.lang.GetMessage("MsgEventDeath", Instance, OwnerIDString), Instance.lang.GetMessage(TypeKey, Instance, OwnerIDString), player.displayName, DeathCounter, Settings.DeathLimit));
 				}
 				else
 				{
 					if (Owner != null && Owner.IsConnected)
-						SendMessageText(Owner.IPlayer, string.Format(Instance.lang.GetMessage("MsgEventDeathLimit", Instance, OwnerIDString), Instance.lang.GetMessage(TypeKey, Instance, OwnerIDString), player.displayName));
+						Instance.SendMessageText(Owner.IPlayer, string.Format(Instance.lang.GetMessage("MsgEventDeathLimit", Instance, OwnerIDString), Instance.lang.GetMessage(TypeKey, Instance, OwnerIDString), player.displayName));
                     SetNewOwner(null);
                 }
 			}
@@ -4297,7 +4351,7 @@ namespace Oxide.Plugins
 			public void OnLootTimeEnded()
             {
 				if (Owner != null && Owner.IsConnected)
-					SendMessageText(Owner.IPlayer, string.Format(Instance.lang.GetMessage("MsgEventTimeLimit", Instance, OwnerIDString), Instance.lang.GetMessage(TypeKey, Instance, OwnerIDString)));
+					Instance.SendMessageText(Owner.IPlayer, string.Format(Instance.lang.GetMessage("MsgEventTimeLimit", Instance, OwnerIDString), Instance.lang.GetMessage(TypeKey, Instance, OwnerIDString)));
 				SetNewOwner(null);
 			}
 			
@@ -4347,7 +4401,7 @@ namespace Oxide.Plugins
             {
 				if (Owner != null && Owner.IsConnected)
                 {
-					SendMessageText(Owner, string.Format(Instance.lang.GetMessage("MsgEventComplete", Instance, OwnerIDString), Instance.lang.GetMessage(TypeKey, Instance, OwnerIDString), pos), false);
+					Instance.SendMessageText(Owner.IPlayer, string.Format(Instance.lang.GetMessage("MsgEventComplete", Instance, OwnerIDString), Instance.lang.GetMessage(TypeKey, Instance, OwnerIDString), pos), false);
 					Owner.AddPingAtLocation(BasePlayer.PingType.Loot, pos, 15f, default);
 				}
 				if (Settings.StopFire)
@@ -4370,7 +4424,7 @@ namespace Oxide.Plugins
                 object result = CanInteractSharedEntity(player, portal) == null || IsFriend(player.UserIDString, portal.OwnerID.ToString()) ? null : false;
 				if (result != null)
                 {
-                    SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+                    SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
                     return true;
                 }
                 return null;
@@ -4670,7 +4724,7 @@ namespace Oxide.Plugins
 
 
         [PluginReference]
-		private Plugin ImageLibrary, ZoneManager, Economics, RaidableBases, RandomRaids, Friends, DynamicPVP, AdvancedStatus, MonumentsWatcher, ServerPanels;
+		private Plugin ImageLibrary, ZoneManager, Economics, RaidableBases, RandomRaids, Friends, DynamicPVP, AdvancedStatus, MonumentsWatcher, ServerPanels, NCP, UINotify, AbandonedBases;
 		
 		public static IEnumerable<CodeInstruction> ModSpawnSwarm(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
@@ -4864,7 +4918,7 @@ namespace Oxide.Plugins
 			else if (player.CanBuild(cached: true))
                 return true;
 			
-			SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+			SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
 			return false;
 		}
 		
@@ -4877,6 +4931,7 @@ namespace Oxide.Plugins
 			public bool AutoBuy { get; set; }
 			public bool AllowPickup { get; set; }
 			public Dictionary<ulong, SharedEntity> SharedEntities { get; set; } = new Dictionary<ulong, SharedEntity>();
+			public List<BaseMission.MissionInstance> Missions { get; set; } = new List<BaseMission.MissionInstance>();
 			
 			public PlayerData() {}
 			public PlayerData(ulong userID)
@@ -4943,6 +4998,11 @@ namespace Oxide.Plugins
                         }
                     }
 					break;
+                case AttackerIndex.NavalTurret:
+                    // Prevent naval turrets from damaging entities in PVE areas
+                    if (entity.OwnerID.IsSteamId() && !IsEntityInPvP(initiator.OwnerID, entity.net.ID.Value))
+                        return true;
+                    break;
                 case AttackerIndex.PlayerOwnerMissing:
 					return true;
 			}
@@ -5077,6 +5137,7 @@ namespace Oxide.Plugins
 			
 			public List<BasePlayer> PlayersQueue = Pool.Get<List<BasePlayer>>();
 			public HashSet<BasePlayer> FriendsList = Pool.Get<HashSet<BasePlayer>>();
+			private Dictionary<ulong, double> respawningPlayers = new Dictionary<ulong, double>();
 			
 			private double LootStartTime { get; set; }
 			public double LootEndTime { get; private set; }
@@ -5183,7 +5244,7 @@ namespace Oxide.Plugins
                     {
 						Instance.SendCounterBar(player, this, LootEndTime, Settings.UseProgressBar ? LootStartTime : 0d);
 						FriendsList.Add(player);
-						SendMessageText(player, string.Format(Instance.lang.GetMessage("MsgMonumentFriendEnter", Instance, player.UserIDString), OwnerName));
+						Instance.SendMessageText(player.IPlayer, string.Format(Instance.lang.GetMessage("MsgMonumentFriendEnter", Instance, player.UserIDString), OwnerName));
 					}
 					else
 					{
@@ -5191,9 +5252,9 @@ namespace Oxide.Plugins
 						int queuePos = PlayersQueue.Count;
 						double price = !_economicsIsLoaded || Settings.Price <= 0d ? 0d : Settings.Price * Instance.GetMonumentPriceMultiplier(player.UserIDString);
                         if (price > 0d)
-							SendMessageText(player, string.Format(Instance.lang.GetMessage("MsgMonumentQueueNotFree", Instance, player.UserIDString), queuePos, queuePos, string.Format(_config.PriceFormat, price)));
+							Instance.SendMessageText(player.IPlayer, string.Format(Instance.lang.GetMessage("MsgMonumentQueueNotFree", Instance, player.UserIDString), queuePos, queuePos, string.Format(_config.PriceFormat, price)));
                         else
-							SendMessageText(player, string.Format(Instance.lang.GetMessage("MsgMonumentQueue", Instance, player.UserIDString), queuePos, queuePos, OwnerName));
+							Instance.SendMessageText(player.IPlayer, string.Format(Instance.lang.GetMessage("MsgMonumentQueue", Instance, player.UserIDString), queuePos, queuePos, OwnerName));
 						UpdateQueueBars();
 					}
 				}
@@ -5277,7 +5338,7 @@ namespace Oxide.Plugins
 					foreach (var player in BasePlayer.activePlayerList)
 					{
 						if (player.userID.IsSteamId())
-							SendMessageText(player.IPlayer, string.Format(Instance.lang.GetMessage("MsgMonumentOccupied", Instance, player.UserIDString), GetMonumentName(player.userID), newOwner.displayName, timeStr));
+							Instance.SendMessageText(player.IPlayer, string.Format(Instance.lang.GetMessage("MsgMonumentOccupied", Instance, player.UserIDString), GetMonumentName(player.userID), newOwner.displayName, timeStr));
 					}
 					BroadcastNext = _unixSeconds + 5d;
 				}
@@ -5300,7 +5361,7 @@ namespace Oxide.Plugins
 					foreach (var player in BasePlayer.activePlayerList)
                     {
                         if (player.userID.IsSteamId())
-                            SendMessageText(player.IPlayer, string.Format(Instance.lang.GetMessage("MsgMonumentFree", Instance, player.UserIDString), GetMonumentName(player.userID)));
+                            Instance.SendMessageText(player.IPlayer, string.Format(Instance.lang.GetMessage("MsgMonumentFree", Instance, player.UserIDString), GetMonumentName(player.userID)));
                     }
 					BroadcastNext = _unixSeconds + 5d;
 				}
@@ -5428,6 +5489,22 @@ namespace Oxide.Plugins
                 }
 			}
 			
+			public void SetRespawning(ulong userID)
+			{
+				respawningPlayers[userID] = _unixSeconds + _monumentsConfig.TimeToComeBack;
+			}
+
+			public bool IsRespawning(ulong userID)
+			{
+				if (respawningPlayers.TryGetValue(userID, out double endTime))
+				{
+					if (_unixSeconds < endTime)
+						return true;
+					respawningPlayers.Remove(userID);
+				}
+				return false;
+			}
+			
 			public bool SetAsPvP(bool addMarkers = true)
             {
                 if (IsPvP) return false;
@@ -5453,9 +5530,15 @@ namespace Oxide.Plugins
 				else
 				{
 					if (mainMapMarker != null)
+					{
 						mainMapMarker.Kill();
+						mainMapMarker = null;
+					}
 					if (circleMapMarker != null)
+					{
 						circleMapMarker.Kill();
+						circleMapMarker = null;
+					}
 				}
 				return true;
             }
@@ -5487,9 +5570,15 @@ namespace Oxide.Plugins
 				if (Settings.MapMarkerMode == 0 || (Settings.MapMarkerMode == 2 && !IsPvP))
 				{
 					if (mainMapMarker != null)
+					{
 						mainMapMarker.Kill();
+						mainMapMarker = null;
+					}
 					if (circleMapMarker != null)
+					{
 						circleMapMarker.Kill();
+						circleMapMarker = null;
+					}
 					mapMarkerNextTime = 0d;
 					return;
 				}
@@ -5541,7 +5630,10 @@ namespace Oxide.Plugins
                     }
 				}
 				else if (circleMapMarker != null)
+				{
 					circleMapMarker.Kill();
+					circleMapMarker = null;
+				}
 				UpdateMapMarkers();
 			}
 			
@@ -5599,10 +5691,13 @@ namespace Oxide.Plugins
 			
 			public object CanLoot(BasePlayer looter)
             {
+                if (!Instance._enhancedPermissions.HasPermission(looter.UserIDString, "monument", "loot"))
+                    return false;
+                
                 if (IsPvP || (IsOwned && (OwnerID == looter.userID || FriendsList.Contains(looter))))
                     return null;
                 return false;
-			}
+            }
 			
 			public bool IsOwnerFriend(BasePlayer looter)
             {
@@ -5683,7 +5778,7 @@ namespace Oxide.Plugins
 				object result = CanInteractSharedEntity(player, table);
 				if (result != null)
                 {
-                    SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+                    SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
                     return true;
                 }
                 return null;
@@ -5699,25 +5794,27 @@ namespace Oxide.Plugins
 		
 		private void ForceFailBedMission(BasePlayer player)
         {
-            using HashSet<StaticRespawnArea>.Enumerator enumerator = StaticRespawnArea.staticRespawnAreas.GetEnumerator();
-            if (enumerator.MoveNext() && enumerator.Current.IsAuthed(player.userID))
+            foreach (var area in StaticRespawnArea.staticRespawnAreas)
             {
-                enumerator.Current.Deauthorize(player.userID);
-                player.SendRespawnOptions();
+                if (area.IsAuthed(player.userID))
+                {
+                    area.Deauthorize(player.userID);
+                    player.SendRespawnOptions();
+                }
             }
 
-            BaseMission.MissionInstance missionInstance = null;
-			for (int i = 0; i < player.missions.Count; i++)
-			{
-                missionInstance = player.missions[i];
+            GetOrCreatePlayerData(player.UserIDString, out var playerData);
+            for (int i = 0; i < playerData.Missions.Count; i++)
+            {
+                var missionInstance = playerData.Missions[i];
                 if (missionInstance.missionID == _bedMissionId)
                 {
-					if (missionInstance.status == BaseMission.MissionStatus.Completed)
-						missionInstance.GetMission().MissionFailed(missionInstance, player, BaseMission.MissionFailReason.Abandon);
-					break;
-				}
-			}
-		}
+                    if (missionInstance.status != BaseMission.MissionStatus.Completed)
+                        missionInstance.GetMission().MissionFailed(missionInstance, player, BaseMission.MissionFailReason.Abandon);
+                    break;
+                }
+            }
+        }
 		private static bool UrishMumkin(ulong a, BasePlayer b) => b.userID == a || (b.Team != null && b.Team.members.Contains(a) && _teamsList.TryGetValue(b.currentTeam, out var c) && c.FriendlyFire);
 		
 		object OnSwitchToggle(IOEntity entity, BasePlayer player)
@@ -5732,7 +5829,7 @@ namespace Oxide.Plugins
 				
 				if (result != null)
                 {
-                    SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+                    SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
                     return true;
                 }
                 return null;
@@ -5873,7 +5970,6 @@ namespace Oxide.Plugins
 		
 		object OnEngineStart(BaseVehicle vehicle, BasePlayer driver) => HandleVehicleInteraction(driver, vehicle, "MsgVehicleCantEngineStart");
 		
-		private static void SendMessageText(BasePlayer player, string text, bool isWarning = true) => SendMessageText(player.IPlayer, text, isWarning);
 		private static double _unixSeconds = 0d;
 		
 		private void HandleLanguageFile(Dictionary<string, string> langFile, string langKey)
@@ -5883,133 +5979,7 @@ namespace Oxide.Plugins
             {
                 if (!Directory.Exists(Path.Combine(Interface.Oxide.LangDirectory, langKey)))
                     Directory.CreateDirectory(Path.Combine(Interface.Oxide.LangDirectory, langKey));
-                File.WriteAllText(Path.Combine(Interface.Oxide.LangDirectory, $"{langKey}{Path.DirectorySeparatorChar}{Name}.json"), JsonConvert.SerializeObject(langFile, Formatting.Indented));
             }
-            lang.RegisterMessages(langFile, this, langKey);
-        }
-
-		void OnServerInitialized(bool initial)
-        {
-            for (int i = 0; i < _config.LanguageKeys.Count; i++)
-                HandleLanguageFile(_enLang, _config.LanguageKeys[i]);
-            HandleLanguageFile(_ruLang, "ru");
-            _enLang.Clear();
-            _ruLang.Clear();
-			
-			_unixSeconds = Network.TimeEx.currentTimestamp;
-			UnityEngine.Application.logMessageReceived += HookConflict;
-			UnityEngine.Application.logMessageReceived -= Facepunch.Output.LogHandler;
-			_defaultBeds = ConVar.Server.max_sleeping_bags;
-			_defaultShelters = LegacyShelter.max_shelters;
-			_defaultTurrets = ConVar.Sentry.maxinterference;
-			if (string.IsNullOrWhiteSpace(_config.WipeID) || _config.WipeID != SaveRestore.WipeId)
-			{
-				_config.WipeID = SaveRestore.WipeId;
-				_vehiclesList.Clear();
-				_teamsList.Clear();
-				PrintWarning("Wipe detected! Stored data was reset!");
-				SaveConfig();
-				SaveData(_dataVehiclesPath, _vehiclesList);
-				SaveData(_dataTeamsPath, _teamsList);
-			}
-			_pvpPlayers = new Dictionary<ulong, PlayerPvP>();
-			_pvpEntities = new HashSet<ulong>();
-			InitPermissions();
-			foreach (var itemDef in ItemManager.GetItemDefinitions())
-            {
-                if (itemDef.TryGetComponent<ItemModDeployable>(out var deployable))
-                    _deployables.Add(deployable.entityPrefab.resourcePath);
-            }
-			foreach (var kvp in _playersList)
-            {
-				var playerData = kvp.Value;
-				playerData.UserID = kvp.Key;
-				if (playerData.AdminLoot)
-                    _unrestrictedLooters.Add(playerData.UserID);
-				if (playerData.AutoBuy)
-					_autoBuyPlayers.Add(playerData.UserID);
-				if (playerData.AllowPickup)
-                    _pickupPlayers.Add(playerData.UserID);
-				if (playerData.SharedEntities == null)
-					playerData.SharedEntities = new Dictionary<ulong, SharedEntity>();
-				else if (playerData.SharedEntities.Any())
-                {
-					var list = playerData.SharedEntities;
-					playerData.SharedEntities = new Dictionary<ulong, SharedEntity>();
-					foreach (var kvp2 in list)
-                    {
-						var sharedEntity = kvp2.Value;
-						if (sharedEntity == null)
-							continue;
-						var netID = kvp2.Key;
-						var entity = BaseNetworkable.serverEntities.Find(new NetworkableId(netID)) as BaseEntity;
-						if (entity != null && entity.OwnerID == playerData.UserID)
-							playerData.SharedEntities[netID] = _sharedEntities[netID] = sharedEntity;
-					}
-				}
-            }
-			
-			ConfigForcePvEToggled();
-			if (_config.Force_Tutorial)
-				ConVar.Server.tutorialEnabled = true;
-			
-			_harmony = new Harmony(IdForHarmony);
-			PatchMethod(typeof(DecayEntity), "StartBeingDemolishable", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModStartDemolishable)));
-			PatchMethod(typeof(Mannequin), "Server_ChangePose", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModChangePose)), new Type[] { typeof(BaseEntity.RPCMessage) });
-			PatchMethod(typeof(Mannequin), "Server_RequestSwap", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModSwapMannequin)), new Type[] { typeof(BaseEntity.RPCMessage) });
-			PatchMethod(typeof(AutoTurret), "OnEntityEnterTrigger", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModEntityEnter)), new Type[] { typeof(BaseNetworkable) });
-			PatchMethod(typeof(ItemModProjectileDart), "ServerProjectileHitEntity", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModDartHit)), new Type[] { typeof(HitInfo) });
-			PatchMethod(typeof(SmokeGrenade), "Explode", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModSmokeExplode)));
-			PatchMethod(typeof(Flashbang), "Explode", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModFlashExplode)));
-			PatchMethod(typeof(DeployableSiegeExplosive), "Hurt", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModSiegeExplosiveHurt)), new Type[] { typeof(HitInfo) });
-			PatchMethod(typeof(RidableHorse), "SERVER_RequestTow", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModHorseTow)), new Type[] { typeof(BaseEntity.RPCMessage) });
-			PatchMethod(typeof(RidableHorse), "SERVER_RequestDetach", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModHorseDetach)), new Type[] { typeof(BaseEntity.RPCMessage) });
-			PatchMethod(typeof(RidableHorse), "SERVER_RequestSaddleSwap", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModHorseSaddleSwap)), new Type[] { typeof(BaseEntity.RPCMessage) });
-			PatchMethod(typeof(NaturalBeehive), "OnDied", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModNaturalBeehiveDied)), new Type[] { typeof(HitInfo) });
-			PatchMethod(typeof(LootableCorpse), "DropItems", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModDroppedContainer)));
-			PatchMethod(typeof(BaseProjectile), "AssignInitiator", 1, new HarmonyMethod(typeof(RealPVE), nameof(ModAssignInitiator)), new Type[] { typeof(HitInfo) });
-			PatchMethod(typeof(RemoteControlEntity), "InitializeControl", 0, new HarmonyMethod(typeof(RealPVE), nameof(ModRemoteEntityControl)), new Type[] { typeof(CameraViewerId) });
-			PatchMethod(typeof(ChickenCoop), "SpawnChicken", 1, new HarmonyMethod(typeof(RealPVE), nameof(ModSpawnChicken)), new Type[] { typeof(int) });
-			PatchMethod(typeof(ItemContainer), "Drop", 1, new HarmonyMethod(typeof(RealPVE), nameof(ModDroppedContainer2)), new Type[] { typeof(string), typeof(Vector3), typeof(Quaternion), typeof(float) });
-			PatchMethod(typeof(ItemContainer), "Drop", 1, new HarmonyMethod(typeof(RealPVE), nameof(ModDroppedContainer3)), new Type[] { typeof(string), typeof(Vector3), typeof(Quaternion), typeof(ItemContainer[]) });
-			PatchMethod(typeof(ThrownWeapon), "DoThrowImpl", 1, new HarmonyMethod(typeof(RealPVE), nameof(ModDroneWeaponThrown)));
-			PatchMethod(typeof(BasePlayer), "Hurt", 2, new HarmonyMethod(typeof(RealPVE), nameof(ModMirror)), new Type[] { typeof(HitInfo) });
-			PatchMethod(typeof(BuildingBlock), "Hurt", 2, new HarmonyMethod(typeof(RealPVE), nameof(ModMirror)), new Type[] { typeof(HitInfo) });
-			PatchMethod(typeof(BeeSwarmAI), "ThinkAI", 2, new HarmonyMethod(typeof(RealPVE), nameof(ModBeeThink)));
-			PatchMethod(typeof(Drone), "OnCollisionEnter", 2, new HarmonyMethod(typeof(RealPVE), nameof(ModDroneCollision)), new Type[] { typeof(Collision) });
-			PatchMethod(typeof(NaturalBeehive), "SpawnSwarm", 2, new HarmonyMethod(typeof(RealPVE), nameof(ModSpawnSwarm)));
-			PatchMethod(typeof(ItemModProjectileSpawn), "ServerProjectileHit", 2, new HarmonyMethod(typeof(RealPVE), nameof(ModFireBall)), new Type[] { typeof(HitInfo) });
-			PatchMethod(typeof(DroneStorage), "TryServerItemDrop", 2, new HarmonyMethod(typeof(RealPVE), nameof(ModDroneItemDrop)), new Type[] { typeof(Item) });
-			
-			foreach (var player in BasePlayer.activePlayerList)
-                OnPlayerConnected(player);
-			
-			ToggleImageLib(ImageLibrary != null && ImageLibrary.IsLoaded);
-			if (AdvancedStatus != null && AdvancedStatus?.Call("IsReady") != null)
-				OnAdvancedStatusLoaded();
-			Subscribe(nameof(OnAdvancedStatusLoaded));
-			_economicsIsLoaded = Economics != null && Economics.IsLoaded;
-            _friendsIsLoaded = Friends != null && Friends.IsLoaded;
-            if (MonumentsWatcher != null && MonumentsWatcher.IsLoaded)
-				OnMonumentsWatcherLoaded();
-			Subscribe(nameof(OnMonumentsWatcherLoaded));
-			
-			InitVehicles();
-			InitTeams();
-			InitVanillaEvents();
-			
-			UpdatePvPBars();
-			
-			ToggleRaidableBases(RaidableBases != null && RaidableBases.IsLoaded);
-			
-			foreach (var entity in BaseNetworkable.serverEntities)
-			{
-				if (!entity.IsValid()) continue;
-				if (_config.RecyclerNoPenalties && entity is Recycler recycler)
-					recycler.SetFlag(BaseEntity.Flags.Reserved9, false);
-				else if (entity is DecayEntity decayEntity)
-					ApplyDemolishable(decayEntity);
-			}
             ConfigPermissionLimitsToggled();
 			ConfigSafeZoneLogoutDeathToggled();
 			ConfigHandcuffToggled();
@@ -6046,7 +6016,7 @@ namespace Oxide.Plugins
 				PrintWarning("MonumentsWatcher plugin not found! MonumentsWatcher is required to work with monuments!\n* https://codefling.com/plugins/monuments-watcher");
 			if (!_statusIsLoaded)
 			{
-				if (initial && AdvancedStatus != null)
+				if (AdvancedStatus != null)
                     PrintWarning("AdvancedStatus plugin found, but not ready yet. Waiting for it to load...");
                 else
                     PrintWarning("AdvancedStatus plugin not found! AdvancedStatus is required to work with status bars!\n* https://codefling.com/plugins/advanced-status");
@@ -6074,7 +6044,7 @@ namespace Oxide.Plugins
 		void OnEntityKill(ScientistNPC scientist)
         {
             if (scientist.skinID == _bradleySkinId)
-                _eventScientistsList.Remove(scientist.net.ID);
+                _eventScientistsList.Remove(scientist.net.ID.Value);
         }
 		void OnEntityKill(SubmarineDuo submarineDuo) => HandleVehicleKill(submarineDuo);
 		
@@ -6346,10 +6316,13 @@ namespace Oxide.Plugins
 			[JsonProperty(PropertyName = "Text_Color(Hex or RGBA)")]
 			public string Text_Color { get; set; } = "1 1 1 1";
 			
+			[JsonProperty(PropertyName = "Text_Transparency")]
+			public float Text_Transparency { get; set; } = 1f;
+			
 			[JsonProperty(PropertyName = "Text_Font(https://umod.org/guides/rust/basic-concepts-of-gui#fonts)")]
 			public string Text_Font { get; set; } = "RobotoCondensed-Bold.ttf";
 			
-			[JsonProperty(PropertyName = "Is it worth enabling an outline for the text?")]
+			[JsonProperty(PropertyName = "Is it worth enabling an outline for text?")]
 			public bool Text_Outline_Enabled { get; set; }
 			
 			[JsonProperty(PropertyName = "Text_Outline_Color(Hex or RGBA)")]
@@ -6361,6 +6334,10 @@ namespace Oxide.Plugins
 			
 			[JsonProperty(PropertyName = "SubText_Color(Hex or RGBA)")]
 			public string SubText_Color { get; set; } = "1 1 1 1";
+			
+			[JsonProperty(PropertyName = "SubText_Transparency")]
+			public float SubText_Transparency { get; set; } = 1f;
+			
 			public string SubText_Font { get; set; } = "RobotoCondensed-Bold.ttf";
 			
 			[JsonProperty(PropertyName = "Is it worth enabling an outline for the sub text?")]
@@ -6395,60 +6372,13 @@ namespace Oxide.Plugins
                     result = CanInteractSharedEntity(player, vehicle);
 				
 				if (result != null)
-                    SendMessageText(player, lang.GetMessage(textKey, this, player.UserIDString));
-                return result;
+                    SendMessageText(player.IPlayer, lang.GetMessage(textKey, this, player.UserIDString));
+				return result;
             }
-            return null;
+			return null;
         }
-
-        private void LoadPermissionsConfig()
-        {
-			_permissionsPath = $"{Name}{Path.DirectorySeparatorChar}PermissionConfig";
-			if (Interface.Oxide.DataFileSystem.ExistsDatafile(_permissionsPath))
-            {
-                try { _permissionsConfig = Interface.Oxide.DataFileSystem.ReadObject<PermissionConfig>(_permissionsPath); }
-                catch (Exception ex) { UnityEngine.Debug.LogException(ex); }
-            }
-
-            if (_permissionsConfig == null || _permissionsConfig.Version < _permissionsVersion)
-            {
-                if (_permissionsConfig != null)
-                {
-					string pathOld = $"{Name}{Path.DirectorySeparatorChar}_old_PermissionConfig({_permissionsConfig.Version})";
-					PrintWarning($"Your settings version for permissions is outdated. The config file has been updated, and your old settings have been saved in {Interface.Oxide.DataDirectory}{Path.DirectorySeparatorChar}{pathOld}.json");
-					Interface.Oxide.DataFileSystem.WriteObject(pathOld, _permissionsConfig);
-				}
-                _permissionsConfig = new PermissionConfig() { Version = _permissionsVersion };
-            }
-			
-			if (_permissionsConfig.PermissionsList == null || !_permissionsConfig.PermissionsList.Any())
-                _permissionsConfig.PermissionsList = new List<PvEPermission>() { new PvEPermission("realpve.default", false, false, 15, 1, 12, 0f, 1f, 1f, 1, 1f, 1, 1f), new PvEPermission("realpve.vip", true, true, 20, 2, 15, 450f, 0.9f, 0.9f, 2, 0.9f, 5, 0.9f) };
-			else
-            {
-				PvEPermission perm;
-				for (int i = 0; i < _permissionsConfig.PermissionsList.Count; i++)
-                {
-					perm = _permissionsConfig.PermissionsList[i];
-					if (perm.Name.StartsWith("realpve", StringComparison.OrdinalIgnoreCase))
-						perm.Name = perm.Name.ToLower();
-					
-					var values = (VehicleType[])Enum.GetValues(typeof(VehicleType));
-					for (int j = 1; j < values.Length; j++)
-					{
-						VehicleType type = values[j];
-						if (!perm.Allowed_Vehicles.ContainsKey(type))
-							perm.Allowed_Vehicles[type] = new VehicleProperties();
-					}
-				}
-			}
-			
-			SavePermissionsConfig();
-		}
-
-        
-        object OnRidableAnimalClaim(RidableHorse horse, BasePlayer player) => _vehiclesList.TryGetValue(horse.net.ID.Value, out var vehicleData) ? vehicleData.AssignNewOwner(player, false) : null;
-
-				private static RealPVE Instance { get; set; }
+		
+		private static RealPVE Instance { get; set; }
 		
 		object OnEntityTakeDamage(PlayerCorpse corpse, HitInfo info)
         {
@@ -6479,7 +6409,7 @@ namespace Oxide.Plugins
         
         		void OnEntitySpawned(RidableHorse horse) => HandleVehicleSpawn(horse);
 		
-		private class RBConfig
+		public class RBConfig
         {
 			[JsonProperty(PropertyName = "Is RaidableBases enabled?")]
 			public bool IsEnabled = true;
@@ -6533,6 +6463,144 @@ namespace Oxide.Plugins
 				Text = text;
 			}
 		}
+		
+		public class DailySpendingData
+		{
+			public DateTime LastResetDate { get; set; }
+			public double TotalSpent { get; set; }
+			public List<TransactionRecord> Transactions { get; set; } = new List<TransactionRecord>();
+		}
+		
+		public class TransactionRecord
+		{
+			public DateTime Timestamp { get; set; }
+			public double Amount { get; set; }
+			public string Description { get; set; }
+		}
+		
+		public class EnhancedPermissionSystem
+		{
+			private Dictionary<string, DailySpendingData> _dailySpending = new Dictionary<string, DailySpendingData>();
+			public Dictionary<string, DailySpendingData> DailySpending => _dailySpending;
+			internal void SetDailySpending(Dictionary<string, DailySpendingData> data) => _dailySpending = data;
+			
+			[JsonProperty(PropertyName = "Разрешения монументов")]
+			public Dictionary<string, bool> MonumentPermissions = new Dictionary<string, bool>
+			{
+				["loot"] = true,
+				["buy"] = true,
+				["admin"] = false
+			};
+			
+			[JsonProperty(PropertyName = "Разрешения транспорта")]
+			public Dictionary<string, bool> VehiclePermissions = new Dictionary<string, bool>
+			{
+				["interact"] = true,
+				["buy"] = true,
+				["admin"] = false
+			};
+			
+			[JsonProperty(PropertyName = "Разрешения ресурсов")]
+			public Dictionary<string, bool> ResourcePermissions = new Dictionary<string, bool>
+			{
+				["trees"] = true,
+				["ores"] = true,
+				["flesh"] = true,
+				["admin"] = false
+			};
+			
+			[JsonProperty(PropertyName = "Экономические лимиты")]
+			public double MaxDailySpending = 10000.0;
+			public double MaxTransactionAmount = 5000.0;
+			public bool RequireConfirmation = true;
+			
+			[JsonProperty(PropertyName = "PvP разрешения")]
+			public bool AllowAdminBypass = true;
+			public bool RequireConfirmationForPvP = false;
+			
+			[JsonProperty(PropertyName = "Админские разрешения")]
+			public bool CanAuditAdminActions = true;
+			public bool LogAdminActions = true;
+			
+			public bool HasPermission(string userID, string category, string action)
+			{
+				string permKey = $"realpve.{category}.{action}";
+				return Instance.permission.UserHasPermission(userID, permKey);
+			}
+			
+			public bool ValidateTransaction(string userID, double amount)
+			{
+				if (amount > MaxTransactionAmount)
+					return false;
+					
+				double dailySpent = GetDailySpending(userID);
+				if (dailySpent + amount > MaxDailySpending)
+					return false;
+					
+				return true;
+			}
+			
+			public bool CanBypassPvP(string userID)
+			{
+				return AllowAdminBypass && Instance.permission.UserHasPermission(userID, "realpve.pvp.bypass");
+			}
+			
+			private double GetDailySpending(string userID)
+			{
+				var today = DateTime.Today;
+				
+				if (!_dailySpending.TryGetValue(userID, out var spendingData))
+				{
+					spendingData = new DailySpendingData
+					{
+						LastResetDate = today,
+						TotalSpent = 0.0
+					};
+					_dailySpending[userID] = spendingData;
+				}
+				
+				if (spendingData.LastResetDate < today)
+				{
+					spendingData.LastResetDate = today;
+					spendingData.TotalSpent = 0.0;
+					spendingData.Transactions.Clear();
+				}
+				
+				return spendingData.TotalSpent;
+			}
+			
+			public void AddDailyTransaction(string userID, double amount, string description)
+			{
+				var today = DateTime.Today;
+				
+				if (!_dailySpending.TryGetValue(userID, out var spendingData))
+				{
+					spendingData = new DailySpendingData
+					{
+						LastResetDate = today,
+						TotalSpent = 0.0
+					};
+					_dailySpending[userID] = spendingData;
+				}
+				
+				if (spendingData.LastResetDate < today)
+				{
+					spendingData.LastResetDate = today;
+					spendingData.TotalSpent = 0.0;
+					spendingData.Transactions.Clear();
+				}
+				
+				spendingData.TotalSpent += amount;
+				spendingData.Transactions.Add(new TransactionRecord
+				{
+					Timestamp = DateTime.Now,
+					Amount = amount,
+					Description = description
+				});
+			}
+		}
+		
+		private EnhancedPermissionSystem _enhancedPermissions = new EnhancedPermissionSystem();
 		private Dictionary<string, HashSet<string>> _pvpChangedMonuments = new Dictionary<string, HashSet<string>>();
         		
 				private void ShowVehiclePanels(BasePlayer player, VehicleData vehicleData)
@@ -6583,74 +6651,13 @@ namespace Oxide.Plugins
                 result = monumentData.CanLoot(player);
 
             if (result != null)
-                SendMessageText(player, lang.GetMessage("MsgVehicleCantSeat", this, player.UserIDString));
+                SendMessageText(player.IPlayer, lang.GetMessage("MsgVehicleCantSeat", this, player.UserIDString));
             return result;
         }
-        
-        		object OnEntityTakeDamage(ResourceEntity resource, HitInfo info)
-        {
-			if (_gatherFlags == BuildingGatherRestrictions.None || info == null) return null;
-			switch (resource.resourceDispenser?.gatherType ?? ResourceDispenser.GatherType.UNSET)
-            {
-				case ResourceDispenser.GatherType.Tree:
-					
-					if ((_gatherFlags & BuildingGatherRestrictions.Trees) == 0)
-						return null;
-					break;
-				case ResourceDispenser.GatherType.Ore:
-					if ((_gatherFlags & BuildingGatherRestrictions.Ores) == 0)
-						return null;
-					break;
-				case ResourceDispenser.GatherType.Flesh:
-					if ((_gatherFlags & BuildingGatherRestrictions.Flesh) == 0)
-						return null;
-					break;
-				default:
-					return null;
-			}
-			
-			if (TryGetAttacker(info, out var initiator) != AttackerIndex.BasePlayer) return null;
-			var attacker = (BasePlayer)initiator;
-			if (attacker.userID.IsSteamId() && !_unrestrictedLooters.Contains(attacker.userID) && !IsEntityInPvP(attacker.userID, resource.net.ID.Value))
-			{
-				object result = attacker.BinoMumkin();
-				if (result != null)
-				{
-					SendMessageText(attacker, lang.GetMessage("MsgCantGatherInBase", this, attacker.UserIDString));
-					return true;
-				}
-				
-            }
-            return null;
-        }
-		object OnEntityTakeDamage(BaseNPC2 npc, HitInfo info) => null;
-		public static bool ModSwapMannequin(Mannequin __instance, BaseEntity.RPCMessage msg)
-        {
-			var player = msg.player;
-			if (Instance == null || __instance == null || __instance.IsEquipping() || player == null || player.IsDead())
-				return true;
-			if (Instance.CanInteractMannequin(__instance, player) && Mannequin.SwapPlayerInventoryWithContainer(player, __instance.inventory, __instance.GetDropPosition(), __instance.GetDropVelocity(), __instance.FilterItems))
-            {
-                if (__instance.EquipSound != null)
-                    Effect.server.Run(__instance.EquipSound.resourcePath, player, StringPool.Get("spine3"), Vector3.zero, Vector3.zero);
-                __instance.SetFlag(BaseEntity.Flags.Reserved1, b: true);
-                __instance.Invoke(__instance.ClearEquipping, 1.5f);
-            }
-            return false;
-		}
-		private Dictionary<NetworkableId, EventData> _eventScientistsList = new Dictionary<NetworkableId, EventData>();
-		object OnPortalUse(BasePlayer player, XmasDungeon xmas) => HandlePortalUse(player, xmas);
-		
-		private static readonly string[] _cmdKeysAdminConfig = { "forcepve", "forcetutorial", "gametips", "perm_limits", "safe_death", "plant_privilege", "heli_damage", "handcuffs", "portals", "backpack_drop",
-			"laptop_damage", "recycler_safezone", "item_pickup", "safe_sleep", "resource_privilege", "priceformat", "vehicle_marker_time", "antisleeper", "randomraids", "teamff",
-			"pvpmarkers", "pvpmarkersname" };
-		
-        		private static readonly string[] _cmdKeysAdmin = { "autobuy", "config", "loot", "monument", "perm", "pickup", "share", "tc", "vehicle" };
         
         		private void SendPvPBar(BasePlayer player, string zoneID)
         {
 			if (!_statusIsLoaded) return;
-			
 			Dictionary<int, object> parameters;
 			if (_monumentsList.TryGetValue(zoneID, out var monumentData))
 			{
@@ -6709,6 +6716,37 @@ namespace Oxide.Plugins
         }
 		object OnEntityTakeDamage(MotorRowboat boat, HitInfo info) => HandleDamageToVehicle(boat, info);
 		private void SavePermissionsConfig() => Interface.Oxide.DataFileSystem.WriteObject(_permissionsPath, _permissionsConfig);
+		
+		private void LoadPermissionsConfig()
+        {
+			_permissionsPath = $"{Name}{Path.DirectorySeparatorChar}PermissionsConfig";
+			if (Interface.Oxide.DataFileSystem.ExistsDatafile(_permissionsPath))
+            {
+				try
+				{
+					_permissionsConfig = Interface.Oxide.DataFileSystem.ReadObject<PermissionConfig>(_permissionsPath);
+				}
+				catch (Exception ex) { UnityEngine.Debug.LogException(ex); }
+			}
+			else
+			{
+				_permissionsConfig = new PermissionConfig
+				{
+					PermissionsList = new List<PvEPermission>
+					{
+						new PvEPermission
+						{
+							Name = "realpve.default",
+							Beds = 16,
+							Shelters = 8,
+							Turrets = 12,
+							Allowed_Vehicles = new Dictionary<VehicleType, VehicleProperties>()
+						}
+					}
+				};
+				SavePermissionsConfig();
+			}
+		}
 		
 		private static bool IsEntitySharedToPlayer(ulong userID, ulong netID)
         {
@@ -6854,6 +6892,50 @@ namespace Oxide.Plugins
 		
 		object OnEntityTakeDamage(BaseAnimalNPC npc, HitInfo info) => null;
         
+        object OnEntityTakeDamage(ResourceEntity resource, HitInfo info)
+        {
+			if (_gatherFlags == BuildingGatherRestrictions.None || info == null) return null;
+			
+			string resourceType = "";
+			switch (resource.resourceDispenser?.gatherType ?? ResourceDispenser.GatherType.UNSET)
+            {
+				case ResourceDispenser.GatherType.Tree:
+					resourceType = "trees";
+					if ((_gatherFlags & BuildingGatherRestrictions.Trees) == 0)
+						return null;
+					break;
+				case ResourceDispenser.GatherType.Ore:
+					resourceType = "ores";
+					if ((_gatherFlags & BuildingGatherRestrictions.Ores) == 0)
+						return null;
+					break;
+				case ResourceDispenser.GatherType.Flesh:
+					resourceType = "flesh";
+					if ((_gatherFlags & BuildingGatherRestrictions.Flesh) == 0)
+						return null;
+					break;
+				default:
+					return null;
+			}
+			
+			if (TryGetAttacker(info, out var initiator) != AttackerIndex.BasePlayer) return null;
+			var attacker = (BasePlayer)initiator;
+			
+			if (!_enhancedPermissions.HasPermission(attacker.UserIDString, "resource", resourceType))
+				return true;
+			
+			if (attacker.userID.IsSteamId() && !_unrestrictedLooters.Contains(attacker.userID) && !IsEntityInPvP(attacker.userID, resource.net.ID.Value))
+			{
+				object result = attacker.BinoMumkin();
+				if (result != null)
+				{
+					SendMessageText(attacker.IPlayer, lang.GetMessage("MsgCantGatherInBase", this, attacker.UserIDString));
+					return true;
+				}
+			}
+            return null;
+        }
+        
         		private void ToggleImageLib(bool isLoaded)
         {
             _imgLibIsLoaded = isLoaded;
@@ -6962,7 +7044,7 @@ namespace Oxide.Plugins
 				_monumentsConfig.MapCircle_PvP.VerifyValues();
 			MonumentData.MapCircle_PvP = _monumentsConfig.MapCircle_PvP;
 			if (_monumentsConfig.TrackedCategories == null)
-                _monumentsConfig.TrackedCategories = new string[] { "RadTown", "RadTownWater", "RadTownSmall", "TunnelStation", "Custom" };
+                _monumentsConfig.TrackedCategories = new string[] { "RadTown", "RadTownWater", "RadTownSmall", "TunnelStation", "Custom", "DeepSeaIsland" };
             if (_monumentsConfig.IgnoredNames == null)
                 _monumentsConfig.IgnoredNames = new string[] { "example" };
             if (_monumentsConfig.MonumentsSettings == null)
@@ -6975,7 +7057,7 @@ namespace Oxide.Plugins
                 uiList = GetDefaultClaimOffer();
                 Interface.Oxide.DataFileSystem.WriteObject(uiOfferPath, uiList);
             }
-            _monumentsUiOffer = ReplacePlaceholders(CuiHelper.ToJson(uiList), MonumentOfferUI);
+            _monumentsUiOffer = ReplacePlaceholders(CuiHelper.ToJson(uiList), MonumentOfferUI, "", "Monument Offer", "Click to claim this monument!", "");
 			
 			SaveMonumentsConfig();
 		}
@@ -7028,7 +7110,7 @@ namespace Oxide.Plugins
 			return null;
 		}
 		
-		private class VanillaEventsConfig
+		public class VanillaEventsConfig
         {
 			[JsonProperty(PropertyName = "Is it worth enabling forced auto-buy for vanilla events where the final price is greater than 0?")]
 			public bool AutoBuy = false;
@@ -7109,12 +7191,13 @@ namespace Oxide.Plugins
             }
         }
 				
-		        void Unload()
+		        public void Unload()
         {
 			_harmony?.UnpatchAll(IdForHarmony);
 			SaveData(_dataPlayersPath, _playersList);
 			SaveData(_dataVehiclesPath, _vehiclesList);
 			SaveData(_dataTeamsPath, _teamsList);
+			SaveData($"{Name}{Path.DirectorySeparatorChar}DailySpending", _enhancedPermissions.DailySpending);
 			UnityEngine.Application.logMessageReceived += Facepunch.Output.LogHandler;
 			UnityEngine.Application.logMessageReceived -= HookConflict;
 			ConVar.Server.max_sleeping_bags = _defaultBeds;
@@ -7156,6 +7239,32 @@ namespace Oxide.Plugins
 			{
 				foreach (var rbData in _rbList.Values.ToList())
 					rbData.Destroy();
+			}
+			foreach (var monumentData in _monumentsList.Values)
+			{
+				if (monumentData.IsOwned && monumentData.Settings.Price > 0)
+				{
+					MakeDeposit(monumentData.OwnerID.ToString(), monumentData.Settings.Price);
+					SendMessageText(monumentData.Owner.IPlayer, "Your payment for the monument has been refunded due to plugin unload.");
+				}
+			}
+			foreach (var eventData in _eventsList.Values)
+			{
+				if (eventData.Settings.Price > 0)
+				{
+					MakeDeposit(eventData.OwnerID.ToString(), eventData.Settings.Price);
+					SendMessageText(eventData.Owner.IPlayer, "Your payment for the event has been refunded due to plugin unload.");
+				}
+			}
+			foreach (var rbData in _rbList.Values)
+			{
+				if (rbData.Settings.Price > 0)
+				{
+					MakeDeposit(rbData.OwnerID.ToString(), rbData.Settings.Price);
+					var owner = BasePlayer.FindByID(rbData.OwnerID);
+					if (owner != null)
+						SendMessageText(owner.IPlayer, "Your payment for the raidable base has been refunded due to plugin unload.");
+				}
 			}
 			_pvpPlayers = null;
 			_pvpEntities = null;
@@ -7321,7 +7430,7 @@ namespace Oxide.Plugins
                 {
                     object result = vehicleData.CanLoot(player);
 					if (result != null)
-                        SendMessageText(player, lang.GetMessage("MsgVehicleCantInteract", this, player.UserIDString));
+                        SendMessageText(player.IPlayer, lang.GetMessage("MsgVehicleCantInteract", this, player.UserIDString));
                     return result;
                 }
             }
@@ -7387,7 +7496,7 @@ namespace Oxide.Plugins
             {
 				if (corpse.skinID == _bradleySkinId)
                 {
-                    if (_eventScientistsList.TryGetValue(corpse.net.ID, out var eventData) && !eventData.CanBeAttackedBy(attacker))
+                    if (_eventScientistsList.TryGetValue(corpse.net.ID.Value, out var eventData) && !eventData.CanBeAttackedBy(attacker))
 						info.Urma();
 				}
                 else if (corpse.skinID == _rbPluginID)
@@ -7477,7 +7586,7 @@ namespace Oxide.Plugins
 				if (playerPvP.ActiveZones.Count == 1)
 				{
 					player.SendEffect();
-					SendMessageText(player, lang.GetMessage("MsgPvPEnter", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgPvPEnter", this, player.UserIDString));
 				}
             }
 			playerPvP.LastZone = zoneID;
@@ -7603,7 +7712,7 @@ namespace Oxide.Plugins
                     return true;
                 }
 				if (Instance != null)
-					SendMessageText(player.IPlayer, Instance.lang.GetMessage("MsgVehicleNotOwner", Instance, player.UserIDString));
+					Instance.SendMessageText(player.IPlayer, Instance.lang.GetMessage("MsgVehicleNotOwner", Instance, player.UserIDString));
                 return false;
             }
 
@@ -7619,7 +7728,7 @@ namespace Oxide.Plugins
                     if (showButtons)
                         ShowVehicleButtons(player);
 					if (Instance != null)
-						SendMessageText(player.IPlayer, string.Format(Instance.lang.GetMessage("MsgVehicleUnLinked", Instance, player.UserIDString), Instance.lang.GetMessage($"MsgVehicle{Type}", Instance, player.UserIDString)), false);
+						Instance.SendMessageText(player.IPlayer, string.Format(Instance.lang.GetMessage("MsgVehicleUnLinked", Instance, player.UserIDString), Instance.lang.GetMessage($"MsgVehicle{Type}", Instance, player.UserIDString)), false);
 				}
             }
 
@@ -7641,18 +7750,21 @@ namespace Oxide.Plugins
 			public object CanLoot(BasePlayer player) => CanPerformAction(player);
 			private object CanPerformAction(BasePlayer player, bool checkFriends = false, bool sendMsg = true)
             {
-				if (OwnerID == 0uL || player.userID == OwnerID || (player.Team != null && player.Team.members.Contains(OwnerID)) ||
-					(checkFriends && Instance.IsFriend(player.UserIDString, OwnerID.ToString())) || IsEntitySharedToPlayer(player.userID, ID))
-					return null;
-				if (sendMsg && Instance != null)
-					SendMessageText(player.IPlayer, Instance.lang.GetMessage("MsgVehicleCantInteract", Instance, player.UserIDString));
-				return false;
+                if (!Instance._enhancedPermissions.HasPermission(player.UserIDString, "vehicle", "interact"))
+                    return false;
+                
+                if (OwnerID == 0uL || player.userID == OwnerID || (player.Team != null && player.Team.members.Contains(OwnerID)) ||
+                    (checkFriends && Instance.IsFriend(player.UserIDString, OwnerID.ToString())) || IsEntitySharedToPlayer(player.userID, ID))
+                    return null;
+                if (sendMsg && Instance != null)
+                    Instance.SendMessageText(player.IPlayer, Instance.lang.GetMessage("MsgVehicleCantInteract", Instance, player.UserIDString));
+                return false;
             }
 
             public void OnDestroy()
             {
 				if (OwnerID != 0uL && Instance != null && BasePlayer.FindByID(OwnerID) is BasePlayer owner)
-					SendMessageText(owner.IPlayer, string.Format(Instance.lang.GetMessage("MsgVehicleDestroyed", Instance, owner.UserIDString), Type, ID));
+					Instance.SendMessageText(owner.IPlayer, string.Format(Instance.lang.GetMessage("MsgVehicleDestroyed", Instance, owner.UserIDString), Type, ID));
 				_vehiclesList.Remove(ID);
 			}
 			
@@ -7813,9 +7925,15 @@ namespace Oxide.Plugins
 			LoadData(_dataVehiclesPath, out _vehiclesList);
 			_dataTeamsPath = $"{dataPath}TeamsData";
 			LoadData(_dataTeamsPath, out _teamsList);
+			LoadData($"{Name}{Path.DirectorySeparatorChar}DailySpending", out Dictionary<string, DailySpendingData> tempDailySpending);
+			if (tempDailySpending != null)
+			{
+				_enhancedPermissions.SetDailySpending(tempDailySpending);
+			}
 			
 			LoadVanillaEventsConfig();
 			_eventsList = new Dictionary<ulong, EventData>();
+			_eventScientistsList = new Dictionary<ulong, EventData>();
 			LoadRBsConfig();
 			LoadBeachConfig();
 			_unrestrictedLooters = new HashSet<ulong>();
@@ -7849,6 +7967,7 @@ namespace Oxide.Plugins
 		object OnItemPickup(Item item, BasePlayer player, DroppedItem droppedItem)
         {
 			if (_unrestrictedLooters.Contains(player.userID) || IsEntityInPvP(player.userID, droppedItem.net.ID.Value)) return null;
+			if (AbandonedBases != null && Convert.ToBoolean(AbandonedBases?.Call("isAbandoned", droppedItem))) return null;
 
             object result = null;
             string replyKey = string.Empty;
@@ -7868,7 +7987,7 @@ namespace Oxide.Plugins
 
             if (result != null)
 			{
-				SendMessageText(player, lang.GetMessage(replyKey, this, player.UserIDString));
+				SendMessageText(player.IPlayer, lang.GetMessage(replyKey, this, player.UserIDString));
 				return true;
 			}
 			return null;
@@ -7927,6 +8046,19 @@ namespace Oxide.Plugins
             else if (result is BradleyAPC)
                 return AttackerIndex.BradleyAPC;
 			
+			// Check for naval turrets (PT Boat and other ship turrets)
+			if (result.ShortPrefabName?.Contains("turret") == true || result.ShortPrefabName?.Contains("naval") == true || 
+			    result.ShortPrefabName?.Contains("patrol") == true || result.ShortPrefabName?.Contains("boat") == true)
+			{
+				// Check if turret is on a naval vehicle
+				var parentEntity = result.GetParentEntity();
+				if (parentEntity != null && (parentEntity.ShortPrefabName?.Contains("boat") == true || 
+				    parentEntity.ShortPrefabName?.Contains("patrol") == true || parentEntity.ShortPrefabName?.Contains("naval") == true))
+				{
+					return AttackerIndex.NavalTurret;
+				}
+			}
+			
 			if (result.OwnerID.IsSteamId())
             {
 				player = BasePlayer.FindAwakeOrSleepingByID(result.OwnerID);
@@ -7957,7 +8089,8 @@ namespace Oxide.Plugins
 			PatrolHelicopter,
 			BradleyAPC,
 			BasePlayer,
-            PlayerOwnerMissing
+            PlayerOwnerMissing,
+            NavalTurret
 		}
         
         		private Dictionary<string, string> _enLang = new Dictionary<string, string>
@@ -8377,7 +8510,7 @@ namespace Oxide.Plugins
             {
                 object result = CanInteractSharedEntity(player, bed);
                 if (result != null)
-                    SendMessageText(player, lang.GetMessage("MsgCantRenameBed", this, player.UserIDString));
+                    SendMessageText(player.IPlayer, lang.GetMessage("MsgCantRenameBed", this, player.UserIDString));
                 return result;
             }
 			return null;
@@ -8457,7 +8590,7 @@ namespace Oxide.Plugins
 				object result = CanInteractSharedEntity(player, button);
 				if (result != null)
                 {
-                    SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+                    SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
                     return true;
                 }
                 return null;
@@ -8707,22 +8840,49 @@ namespace Oxide.Plugins
                 uiList = GetDefaultClaimOffer();
                 Interface.Oxide.DataFileSystem.WriteObject(uiOfferPath, uiList);
             }
-            _rbsUiOffer = ReplacePlaceholders(CuiHelper.ToJson(uiList), RBOfferUI);
+            _rbsUiOffer = ReplacePlaceholders(CuiHelper.ToJson(uiList), RBOfferUI, "", "Raidable Base Offer", "Click to claim this raidable base!", "");
 			
 			SaveRBsConfig();
 		}
 		
 		void OnPlayerRespawned(BasePlayer player)
 		{
-			
-			if (_respawnMessage.TryGetValue(player.userID, out var msg))
+			NextTick(() =>
 			{
-				if (_config.GameTips_Enabled)
-					player.SendConsoleCommand(Str_Showtoast, (int)GameTip.Styles.Blue_Long, msg, string.Empty);
-				else
-					player.ChatMessage(msg);
-				_respawnMessage.Remove(player.userID);
-			}
+				if (_monumentsList.TryGetValue(GetPlayerMonument(player.userID), out var currentMonument))
+				{
+					if (currentMonument.IsRespawning(player.userID))
+					{
+						// Player is allowed back in the same monument
+					}
+					else if (currentMonument.IsOwned && currentMonument.OwnerID != player.userID && !currentMonument.FriendsList.Contains(player))
+					{
+						currentMonument.OnPlayerExit(player, "respawn_block");
+					}
+				}
+
+				if (_respawnMessage.TryGetValue(player.userID, out var msg))
+				{
+					if (currentMonument != null && currentMonument.OwnerID == player.userID)
+					{
+						int remaining = (int)(currentMonument.LootEndTime - _unixSeconds);
+						msg = string.Format(lang.GetMessage("MsgMonumentLooterDeath", this, player.UserIDString), currentMonument.GetMonumentName(player.userID), remaining);
+					}
+					else
+					{
+						msg = null; 
+					}
+
+					if (!string.IsNullOrEmpty(msg))
+					{
+						if (_config.GameTips_Enabled)
+							player.SendConsoleCommand(Str_Showtoast, (int)GameTip.Styles.Blue_Long, msg, string.Empty);
+						else
+							player.ChatMessage(msg);
+					}
+					_respawnMessage.Remove(player.userID);
+				}
+			});
 		}
 		private HashSet<string> _deployables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		private void SaveVanillaEventsConfig() => Interface.Oxide.DataFileSystem.WriteObject(_vanillaEventsPath, _vanillaEventsConfig);
@@ -8764,7 +8924,7 @@ namespace Oxide.Plugins
                     result = monumentData.CanLoot(player);
 				
 				if (result != null)
-                    SendMessageText(player, lang.GetMessage(textKey, this, player.UserIDString));
+                    SendMessageText(player.IPlayer, lang.GetMessage(textKey, this, player.UserIDString));
                 return result;
             }
             return null;
@@ -8794,7 +8954,7 @@ namespace Oxide.Plugins
             {
 				object result = CanInteractSharedEntity(player, debris) == null || IsFriend(player.UserIDString, debris.OwnerID.ToString()) ? null : false;
 				if (result != null)
-                    SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+                    SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
                 return result;
             }
             return null;
@@ -8816,7 +8976,7 @@ namespace Oxide.Plugins
 		{
 			if (garage.carOccupant == null)
             {
-				SendMessageText(player, lang.GetMessage("MsgVehicleCarGarageEmpty", this, player.UserIDString));
+				SendMessageText(player.IPlayer, lang.GetMessage("MsgVehicleCarGarageEmpty", this, player.UserIDString));
 				return false;
 			}
 			return null;
@@ -9008,6 +9168,11 @@ namespace Oxide.Plugins
                     if (initiator.IsValid() && _eventsList.TryGetValue(initiator.net.ID.Value, out var eventData) && !eventData.CanBeAttackedBy(victim))
 						info.Urma();
 					break;
+                case AttackerIndex.NavalTurret:
+                    // Prevent naval turrets from damaging players in PVE areas
+                    if (!IsEntityInPvP(initiator.OwnerID, victim.userID))
+                        info.Urma();
+                    break;
                 case AttackerIndex.BasePlayer:
 					var attacker = (BasePlayer)initiator;
 					if (victim.userID.IsSteamId() && attacker.userID.IsSteamId() && !IsPlayerInPvP(attacker.userID, victim.userID) && !UrishMumkin(attacker, victim.userID))
@@ -9042,7 +9207,7 @@ namespace Oxide.Plugins
 			{
 				object result = CanInteractSharedEntity(player, entity);
 				if (result != null)
-					SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
 				return result;
 			}
 			return null;
@@ -9064,11 +9229,19 @@ namespace Oxide.Plugins
                 result = false;
 			
 			if (result != null)
-				SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+				SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
 			return result;
 		}
 		object OnEntityTakeDamage(BaseSubmarine submarine, HitInfo info) => HandleDamageToVehicle(submarine, info);
-        private bool MakeWithdraw(string userID, double amount) => (bool)(Economics?.Call("Withdraw", userID, amount) ?? false);
+        private bool MakeWithdraw(string userID, double amount)
+		{
+			var success = (bool)(Economics?.Call("Withdraw", userID, amount) ?? false);
+			if (success)
+			{
+				_enhancedPermissions.AddDailyTransaction(userID, amount, "Economy withdrawal");
+			}
+			return success;
+		}
 		
 		private string _newbiePath = string.Empty;
 		
@@ -9095,7 +9268,7 @@ namespace Oxide.Plugins
             {
                 if (killerEnt is ScientistNPC)
                 {
-                    if (killerEnt.skinID == _bradleySkinId && _eventScientistsList.TryGetValue(killerEnt.net.ID, out var eventData) && eventData.CanBeAttackedBy(player))
+                    if (killerEnt.skinID == _bradleySkinId && _eventScientistsList.TryGetValue(killerEnt.net.ID.Value, out var eventData) && eventData.CanBeAttackedBy(player))
                         eventData.OnLooterDeath(player);
                 }
                 else if (killerEnt is BradleyAPC || killerEnt is PatrolHelicopter)
@@ -9103,6 +9276,12 @@ namespace Oxide.Plugins
                     if (_eventsList.TryGetValue(killerEnt.net.ID.Value, out var eventData) && eventData.CanBeAttackedBy(player))
                         eventData.OnLooterDeath(player);
                 }
+            }
+            
+            if (_monumentsList.TryGetValue(GetPlayerMonument(player.userID), out var monumentData))
+            {
+                monumentData.OnPlayerExit(player, "death");
+                monumentData.SetRespawning(player.userID);
             }
         }
 		
@@ -9172,7 +9351,7 @@ namespace Oxide.Plugins
         {
 			if (_eventsList.TryGetValue(bradley.net.ID.Value, out var eventData))
 			{
-				_eventScientistsList[scientist.net.ID] = eventData;
+				_eventScientistsList[scientist.net.ID.Value] = eventData;
 				scientist.skinID = _bradleySkinId;
 			}
 		}
@@ -9344,36 +9523,40 @@ namespace Oxide.Plugins
 		
 		private void ForceCompleteBedMission(BasePlayer player)
         {
-            using HashSet<StaticRespawnArea>.Enumerator enumerator = StaticRespawnArea.staticRespawnAreas.GetEnumerator();
-            if (enumerator.MoveNext() && !enumerator.Current.IsAuthed(player.userID))
+            using (HashSet<StaticRespawnArea>.Enumerator enumerator = StaticRespawnArea.staticRespawnAreas.GetEnumerator())
             {
-                enumerator.Current.Authorize(player.userID);
-                player.SendRespawnOptions();
+                if (enumerator.MoveNext() && !enumerator.Current.IsAuthed(player.userID))
+                {
+                    enumerator.Current.Authorize(player.userID);
+                    player.SendRespawnOptions();
+                }
             }
 
+            GetOrCreatePlayerData(player.UserIDString, out var playerData);
             BaseMission.MissionInstance missionInstance = null;
-            for (int i = 0; i < player.missions.Count; i++)
+
+            for (int i = 0; i < playerData.Missions.Count; i++)
             {
-                missionInstance = player.missions[i];
+                missionInstance = playerData.Missions[i];
                 if (missionInstance.missionID == _bedMissionId)
                     break;
                 missionInstance = null;
             }
+
             if (missionInstance == null)
             {
                 var mission = MissionManifest.GetFromID(_bedMissionId);
                 missionInstance = Facepunch.Pool.Get<BaseMission.MissionInstance>();
-                player.missions.Add(missionInstance);
+                playerData.Missions.Add(missionInstance);
                 missionInstance.missionID = mission.id;
-				missionInstance.startTimeUtcSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-				missionInstance.status = BaseMission.MissionStatus.Active;
-                missionInstance.objectiveStatuses = new BaseMission.MissionInstance.ObjectiveStatus[mission.objectives.Length];
+                missionInstance.startTimeUtcSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                missionInstance.status = BaseMission.MissionStatus.Active;
+                missionInstance.objectiveStatuses = new BufferList<BaseMission.MissionInstance.ObjectiveStatus>(mission.objectives.Length);
                 for (int j = 0; j < mission.objectives.Length; j++)
-                    missionInstance.objectiveStatuses[j] = new BaseMission.MissionInstance.ObjectiveStatus();
+                    missionInstance.objectiveStatuses.Add(new BaseMission.MissionInstance.ObjectiveStatus());
                 mission.MissionStart(missionInstance, player);
-                player.SetActiveMission(player.missions.Count);
-                player.MissionDirty();
             }
+
             if (missionInstance.status != BaseMission.MissionStatus.Completed)
                 missionInstance.GetMission().MissionComplete(missionInstance, player);
         }
@@ -9497,7 +9680,7 @@ namespace Oxide.Plugins
 			return null;
 		}
 		
-		private class PermissionConfig
+		public class PermissionConfig
         {
             [JsonProperty(PropertyName = "List of permissions. NOTE: The first permission will be used by default for those who do not have any permissions.")]
             public List<PvEPermission> PermissionsList;
@@ -9976,7 +10159,7 @@ namespace Oxide.Plugins
             AdvancedStatus?.Call(StatusCreateBar, player.userID.Get(), parameters);
         }
 		
-		void OnScientistRecalled(BradleyAPC bradley, ScientistNPC scientist) => _eventScientistsList.Remove(scientist.net.ID);
+		void OnScientistRecalled(BradleyAPC bradley, ScientistNPC scientist) => _eventScientistsList.Remove(scientist.net.ID.Value);
 		
 		public static void RealPVE_BeeTarget(BeeSwarmAI beeSwarm, BasePlayer targetPlayer)
 		{
@@ -10045,7 +10228,7 @@ namespace Oxide.Plugins
 			var tugBoat = privilege.GetParentEntity() as Tugboat;
 			if (tugBoat.IsValid() && _vehiclesList.TryGetValue(tugBoat.net.ID.Value, out var vehicleData) && vehicleData.IsOwner(player.userID))
             {
-				SendMessageText(player, lang.GetMessage("MsgVehicleFailedDeauthorize", this, player.UserIDString));
+				SendMessageText(player.IPlayer, lang.GetMessage("MsgVehicleFailedDeauthorize", this, player.UserIDString));
 				return false;
 			}
 			return null;
@@ -10088,7 +10271,7 @@ namespace Oxide.Plugins
             {
                 object result = CanInteractSharedEntity(player, machine);
                 if (result != null)
-                    SendMessageText(player, lang.GetMessage("MsgCantAdministerVending", this, player.UserIDString));
+                    SendMessageText(player.IPlayer, lang.GetMessage("MsgCantAdministerVending", this, player.UserIDString));
                 return result;
             }
             return null;
@@ -10113,10 +10296,14 @@ namespace Oxide.Plugins
 					if (_config.RandomRaids_Enabled && _rrAllRaiders.TryGetValue(entity.net.ID.Value, out var rrData) && !rrData.PlayersList.Contains(player.userID))
 						result = false;
 				}
+				else if (AbandonedBases != null && Convert.ToBoolean(AbandonedBases?.Call("isAbandoned", entity)))
+				{
+					result = null;
+				}
 				else if (_monumentsList.TryGetValue(GetPlayerMonument(player.userID), out var monumentData))
 					result = monumentData.CanLoot(player);
 				if (result != null)
-					SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
 				return result;
 			}
 			return null;
@@ -10252,12 +10439,12 @@ namespace Oxide.Plugins
 						_sharedEntities.Remove(netID);
 					playerData.SharedEntities.Clear();
 				}
-				SendMessageText(player, string.Format(lang.GetMessage("CmdMainShareClear", this, player.UserIDString), total), false);
+				SendMessageText(player.IPlayer, string.Format(lang.GetMessage("CmdMainShareClear", this, player.UserIDString), total), false);
 			}
 			else if (!TryGetEntity(index == 1 || index == 2 ? args[2] : args[1], out var entity, player))
-				SendMessageText(player, lang.GetMessage("CmdEntityNotFound", this, player.UserIDString));
+				SendMessageText(player.IPlayer, lang.GetMessage("CmdEntityNotFound", this, player.UserIDString));
 			else if (entity.OwnerID != player.userID)
-				SendMessageText(player, lang.GetMessage("CmdEntityNotOwner", this, player.UserIDString));
+				SendMessageText(player.IPlayer, lang.GetMessage("CmdEntityNotOwner", this, player.UserIDString));
 			else
 			{
 				ulong netID = entity.net.ID.Value;
@@ -10266,7 +10453,7 @@ namespace Oxide.Plugins
 					
 					if (playerData.SharedEntities.Remove(netID))
 						_sharedEntities.Remove(netID);
-					SendMessageText(player, string.Format(lang.GetMessage("CmdMainShareDelete", this, player.UserIDString), netID), false);
+					SendMessageText(player.IPlayer, string.Format(lang.GetMessage("CmdMainShareDelete", this, player.UserIDString), netID), false);
 				}
 				else
                 {
@@ -10280,7 +10467,7 @@ namespace Oxide.Plugins
                     {
 						
 						sharedEntity.ForEveryOne = !sharedEntity.ForEveryOne;
-						SendMessageText(player, string.Format(lang.GetMessage(sharedEntity.ForEveryOne ? "CmdMainShareToggleEveryOne" : "CmdMainShareToggleDefault", this, player.UserIDString), netID), false);
+						SendMessageText(player.IPlayer, string.Format(lang.GetMessage(sharedEntity.ForEveryOne ? "CmdMainShareToggleEveryOne" : "CmdMainShareToggleDefault", this, player.UserIDString), netID), false);
 					}
 					else if (TryGetPlayer(player.IPlayer, args[1], out var tPlayer))
 					{
@@ -10289,13 +10476,13 @@ namespace Oxide.Plugins
 						{
 							
 							sharedEntity.PlayersList.Add(tUserID);
-							SendMessageText(player, string.Format(lang.GetMessage(sharedEntity.ForEveryOne? "CmdMainShareDenied" : "CmdMainShareGranted", this, player.UserIDString), netID, tPlayer.Name), false);
+							SendMessageText(player.IPlayer, string.Format(lang.GetMessage(sharedEntity.ForEveryOne? "CmdMainShareDenied" : "CmdMainShareGranted", this, player.UserIDString), netID, tPlayer.Name), false);
 						}
                         else if (index == 2)
 						{
 							
 							sharedEntity.PlayersList.Remove(tUserID);
-							SendMessageText(player, string.Format(lang.GetMessage(sharedEntity.ForEveryOne ? "CmdMainShareGranted" : "CmdMainShareDenied", this, player.UserIDString), netID, tPlayer.Name), false);
+							SendMessageText(player.IPlayer, string.Format(lang.GetMessage(sharedEntity.ForEveryOne ? "CmdMainShareGranted" : "CmdMainShareDenied", this, player.UserIDString), netID, tPlayer.Name), false);
 						}
 					}
 				}
@@ -10311,7 +10498,7 @@ namespace Oxide.Plugins
             {
                 if (victimNPC.skinID == _bradleySkinId)
                 {
-                    if (_eventScientistsList.TryGetValue(victimNPC.net.ID, out var eventData) && !eventData.CanBeAttackedBy(attacker))
+                    if (_eventScientistsList.TryGetValue(victimNPC.net.ID.Value, out var eventData) && !eventData.CanBeAttackedBy(attacker))
                         info.UrmaB();
                 }
                 else if (victimNPC.skinID == _rbPluginID)
@@ -10343,7 +10530,7 @@ namespace Oxide.Plugins
 				object result = CanInteractSharedEntity(player, entity);
 				if (result != null)
                 {
-                    SendMessageText(player, lang.GetMessage("MsgCantPickup", this, player.UserIDString));
+                    SendMessageText(player.IPlayer, lang.GetMessage("MsgCantPickup", this, player.UserIDString));
                     return true;
                 }
                 return null;
@@ -10384,7 +10571,7 @@ namespace Oxide.Plugins
 			{
 				object result = monumentData.CanLoot(player);
 				if (result != null)
-					SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
 				return result;
 			}
 			return null;
@@ -10398,13 +10585,13 @@ namespace Oxide.Plugins
                 {
                     if (CanInteractSharedEntity(player, planter) != null)
                     {
-                        SendMessageText(player, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
+                        SendMessageText(player.IPlayer, lang.GetMessage("MsgCantInteract", this, player.UserIDString));
                         return false;
                     }
 				}
 				else if (_config.PreventPickUpCollectible && player.BinoMumkin() != null)
 				{
-					SendMessageText(player, lang.GetMessage("MsgCantGatherInBase", this, player.UserIDString));
+					SendMessageText(player.IPlayer, lang.GetMessage("MsgCantGatherInBase", this, player.UserIDString));
 					return false;
 				}
 			}
@@ -10416,7 +10603,7 @@ namespace Oxide.Plugins
         {
 			if (victim.userID.IsSteamId() && !IsPlayerInPvP(attacker.userID, victim.userID) && !UrishMumkin(attacker, victim.userID))
             {
-				SendMessageText(attacker, lang.GetMessage("MsgCantHandcuffing", this, attacker.UserIDString));
+				SendMessageText(attacker.IPlayer, lang.GetMessage("MsgCantHandcuffing", this, attacker.UserIDString));
 				return true;
             }
 			return null;
@@ -10634,7 +10821,7 @@ namespace Oxide.Plugins
             {
 				SendPvPBar(player, playerPvP.ActiveZones[^1]);
 				player.SendEffect();
-				SendMessageText(player, lang.GetMessage("MsgPvPEnter", this, player.UserIDString));
+				SendMessageText(player.IPlayer, lang.GetMessage("MsgPvPEnter", this, player.UserIDString));
 			}
 		}
 		
@@ -10752,15 +10939,32 @@ namespace Oxide.Plugins
 				return;
 			harborData.RemovePvP();
 		}
-		
-                private HashSet<string> _dynamicPvPs;
-            }
+	}
 }
 
 namespace Oxide.Plugins.ExtensionsRealPVE
 {
-    public static class ExtensionMethods
+	public static class ExtensionMethods
 	{
+		public static bool IsOnBeach(this BasePlayer player)
+		{
+			if (player == null || !player.IsValid())
+				return false;
+				
+			var position = player.transform.position;
+			
+			if (position.y > 15f) 
+				return false;
+				
+			if (TerrainMeta.TopologyMap != null)
+			{
+				var topology = TerrainMeta.TopologyMap.GetTopology(position);
+				return (topology & (int)TerrainTopology.Enum.Ocean) != 0;
+			}
+			
+			return position.y <= 5f; 
+		}
+		
 		public static string GetGrid(this Vector3 a) { var b = TerrainMeta.Size.x / 1024f; var c = 7f; var d = new Vector2(TerrainMeta.NormalizeX(a.x), TerrainMeta.NormalizeZ(a.z)) * b * c; var e = Mathf.Floor(d.x) + 1f; return $"{(e / 26f > 1f ? (char)(64 + (int)(e / 26f)) : "")}{(char)(64 + (int)((e - 1) % 26 + 1))}{Mathf.Floor(b * c - d.y)}"; }
 		public static Vector3 ToVector3(this string a) { try { a = a.Replace("(", "").Replace(")", "").Replace(" ", ""); var b = a.Split(','); return new Vector3(float.Parse(b[0]), float.Parse(b[1]), float.Parse(b[2])); } catch { return Vector3.zero; } }
 		public static bool TryParseVector3(this string a, out Vector3 b) { b = a.ToVector3(); return b != Vector3.zero; }
@@ -10773,6 +10977,6 @@ namespace Oxide.Plugins.ExtensionsRealPVE
 		public static bool Uyda(this BasePlayer a) { var b = a.GetBuildingPrivilege(); return b != null && b.IsAuthed(a); }
 		public static bool IsDefault(this VersionNumber a) => a.Major == 0 && a.Minor == 0 && a.Patch == 0;
 		public static void SendEffect(this BasePlayer a, string b = "assets/bundled/prefabs/fx/invite_notice.prefab") => EffectNetwork.Send(new Effect(b, a.transform.position, Vector3.zero), a.Connection);
-        public static void RunEffect(this BaseEntity a, string b = "assets/prefabs/locks/keypad/effects/lock.code.denied.prefab") => Effect.server.Run(b, a, 0u, Vector3.zero, Vector3.zero);
+		public static void RunEffect(this BaseEntity a, string b = "assets/prefabs/locks/keypad/effects/lock.code.denied.prefab") => Effect.server.Run(b, a, 0u, Vector3.zero, Vector3.zero);
 	}
 }

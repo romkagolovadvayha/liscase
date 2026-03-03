@@ -10,7 +10,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 using Newtonsoft.Json.Linq;
-using System.Globalization;
+using System.Globalization; 
 using System.IO;
 using ConVar;
 using Rust;
@@ -28,7 +28,7 @@ using Star = ProtoBuf.PatternFirework.Star;
 
 namespace Oxide.Plugins
 {
-    [Info("RustApp", "RustApp.io", "2.5.0")]
+    [Info("RustApp", "RustApp.io", "2.5.2")]
     public class RustApp : RustPlugin
     {
         #region Variables
@@ -48,7 +48,7 @@ namespace Oxide.Plugins
 
         private static JsonSerializer _jsonSerializer = JsonSerializer.CreateDefault(null);
 
-        private static (string name, string value)[] _apiHeaders = Array.Empty<(string, string)>();
+        private static (string name, string value)[] _ApiHeaders = Array.Empty<(string, string)>();
 
         #endregion
 
@@ -128,10 +128,10 @@ namespace Oxide.Plugins
             #region StateUpdate
 
             public class PluginStatePlayerMetaDto
-            {
+            { 
                 public Dictionary<string, string> tags = new Dictionary<string, string>();
                 public Dictionary<string, string> fields = new Dictionary<string, string>();
-            }
+            } 
 
             public static Dictionary<ulong, PluginStatePlayerDto> players = new Dictionary<ulong, PluginStatePlayerDto>();
 
@@ -929,7 +929,7 @@ namespace Oxide.Plugins
 
             public void SetupHeaders()
             {
-                _apiHeaders = new[]
+                _ApiHeaders = new[]
                 {
                     ("x-plugin-auth", _MetaInfo?.Value ?? ""),
                     ("x-plugin-version", _RustApp.Version.ToString()),
@@ -1142,7 +1142,7 @@ namespace Oxide.Plugins
 
                         if (_RustAppEngine?.StateWorker != null)
                         {
-                            _RustAppEngine?.StateWorker?.SendUpdate(true, () => saveData());
+                            _RustAppEngine?.StateWorker?.SendUpdate(() => saveData());
                         }
                         else
                         {
@@ -1180,26 +1180,16 @@ namespace Oxide.Plugins
 
             public void CycleSendUpdate()
             {
-                SendUpdate(false);
+                SendUpdate();
             }
 
-            public void SendUpdate(bool unload = false, Action? onFinished = null)
+            public void SendUpdate(Action? onFinished = null)
             {
                 var players = Pool.Get<List<CourtApi.PluginStatePlayerDto>>();
-                if (!unload)
-                {
-                    CollectPlayers(players);
-                }
+                CollectPlayers(players);
 
                 var disconnected = Pool.Get<Dictionary<string, string>>();
-                if (unload)
-                {
-                    CollectFakeDisconnects(disconnected);
-                }
-                else
-                {
-                    ResurrectDictionary(DisconnectReasons, disconnected);
-                }
+                ResurrectDictionary(DisconnectReasons, disconnected);
 
                 var teamChanges = Pool.Get<Dictionary<string, string>>();
                 ResurrectDictionary(TeamChanges, teamChanges);
@@ -1282,8 +1272,6 @@ namespace Oxide.Plugins
             public void OnDestroy()
             {
                 base.OnDestroy();
-
-                SendUpdate(true);
             }
         }
 
@@ -2135,6 +2123,14 @@ namespace Oxide.Plugins
 
         #region System hooks
 
+        private void Init()
+        {
+            _MetaInfo = MetaInfo.Read();
+            _CheckInfo = CheckInfo.Read();
+
+            CourtApi.players = new Dictionary<ulong, CourtApi.PluginStatePlayerDto>();
+        }
+
         private void OnServerInitialized()
         {
             _RustApp = this;
@@ -2428,7 +2424,7 @@ namespace Oxide.Plugins
 
         private void CanAssignBed(BasePlayer player, SleepingBag bag, ulong targetPlayerId)
         {
-            _RustAppEngine.SleepingBagWorker?.AddSleepingBag(new CourtApi.PluginSleepingBagDto {
+            _RustAppEngine?.SleepingBagWorker?.AddSleepingBag(new CourtApi.PluginSleepingBagDto {
                 initiator_steam_id = player.UserIDString,
                 target_steam_id = targetPlayerId.ToString(),
 
@@ -2492,6 +2488,11 @@ namespace Oxide.Plugins
                 if (mute.chat_broadcast)
                 {
                     var target = BasePlayer.Find(mute.data.target_steam_id);
+                    if (target == null)
+                    {
+                        return true;
+                    }
+
                     foreach (var player in BasePlayer.activePlayerList)
                     {
                         var msg = _RustApp.lang.GetMessage("System.Mute.Broadcast.Mute", _RustApp, player.UserIDString).Replace("%TARGET%", target.displayName).Replace("%REASON%", mute.data.reason).Replace("%TIME%", mute.data.GetLeftTime());
@@ -3246,6 +3247,11 @@ namespace Oxide.Plugins
         private void DrawPlayerReportReasons(BasePlayer player, string targetId, string min, string max, bool leftAlign)
         {
             BasePlayer target = BasePlayer.Find(targetId) ?? BasePlayer.FindSleeping(targetId);
+            if (target == null) 
+            {
+                Puts($"Trying report not exists player: {targetId}");
+                return;
+            }
 
             Effect effect = new Effect("assets/prefabs/tools/detonator/effects/unpress.prefab", player, 0, new Vector3(), new Vector3());
             EffectNetwork.Send(effect, player.Connection);
@@ -3295,46 +3301,59 @@ namespace Oxide.Plugins
             container.Add(new CuiElement
             {
                 Parent = ReportLayer + $".T",
-                Components =
-        {
-            // Do not change in devblogs
-            new CuiRawImageComponent { SteamId = target.UserIDString, Sprite = "assets/icons/loading.png" },
-            new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1", OffsetMax = "0 0" }
-        }
+                Components = {
+                    // Do not change in devblogs
+                    new CuiRawImageComponent { SteamId = target.UserIDString, Sprite = "assets/icons/loading.png" },
+                    new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1", OffsetMax = "0 0" }
+                }
             });
 
-            var was_checked = _CheckInfo.LastChecks.ContainsKey(target.UserIDString) && CurrentTime() - _CheckInfo.LastChecks[target.UserIDString] < _Settings.report_ui_show_check_in * 24 * 60 * 60;
-            if (was_checked)
+            try
             {
-                container.Add(new CuiPanel
+                var was_checked = _CheckInfo.LastChecks.ContainsKey(target.UserIDString) && CurrentTime() - _CheckInfo.LastChecks[target.UserIDString] < _Settings.report_ui_show_check_in * 24 * 60 * 60;
+                if (was_checked)
                 {
-                    RectTransform = { AnchorMin = "0 1", AnchorMax = "1 1", OffsetMin = "5 -25", OffsetMax = "-5 -5" },
-                    Image = { Color = "0.239 0.568 0.294 1", Material = "assets/icons/greyout.mat" },
-                }, ReportLayer + $".T", ReportLayer + $".T.Recent");
+                    container.Add(new CuiPanel
+                    {
+                        RectTransform = { AnchorMin = "0 1", AnchorMax = "1 1", OffsetMin = "5 -25", OffsetMax = "-5 -5" },
+                        Image = { Color = "0.239 0.568 0.294 1", Material = "assets/icons/greyout.mat" },
+                    }, ReportLayer + $".T", ReportLayer + $".T.Recent");
 
-                container.Add(new CuiLabel
-                {
-                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1", OffsetMin = "0 0", OffsetMax = "0 0" },
-                    Text = { Text = lang.GetMessage("UI.CheckMark", this, player.UserIDString), Align = TextAnchor.MiddleCenter, Font = "robotocondensed-regular.ttf", FontSize = 12, Color = "0.639 0.968 0.694 1" }
-                }, ReportLayer + $".T.Recent");
+                    container.Add(new CuiLabel
+                    {
+                        RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1", OffsetMin = "0 0", OffsetMax = "0 0" },
+                        Text = { Text = lang.GetMessage("UI.CheckMark", this, player.UserIDString), Align = TextAnchor.MiddleCenter, Font = "robotocondensed-regular.ttf", FontSize = 12, Color = "0.639 0.968 0.694 1" }
+                    }, ReportLayer + $".T.Recent");
+                }
+            }
+            catch
+            {
+                Puts($"Failed to apply was_checked mark for {targetId}");
             }
 
-            for (var i = 0; i < _Settings.report_ui_reasons.Count; i++)
+            try
             {
-                var offXMin = (20 + (i * 5)) + i * 80;
-                var offXMax = 20 + (i * 5) + (i + 1) * 80;
-
-                var sendReportCommand = UICommand((player, args, input) =>
+                for (var i = 0; i < _Settings.report_ui_reasons.Count; i++)
                 {
-                    SendReport(player, args.target_id, args.reason);
-                }, new { target_id = target.UserIDString, reason = _Settings.report_ui_reasons[i] }, "sendReportToPlayer");
+                    var offXMin = (20 + (i * 5)) + i * 80;
+                    var offXMax = 20 + (i * 5) + (i + 1) * 80;
 
-                container.Add(new CuiButton()
-                {
-                    RectTransform = { AnchorMin = $"{(leftAlign ? 0 : 1)} 0", AnchorMax = $"{(leftAlign ? 0 : 1)} 0", OffsetMin = $"{(leftAlign ? -offXMax : offXMin)} 15", OffsetMax = $"{(leftAlign ? -offXMin : offXMax)} 45" },
-                    Button = { FadeIn = 0.4f + i * 0.2f, Color = HexToRustFormat("#D0C6BD4D"), Command = sendReportCommand },
-                    Text = { FadeIn = 0.4f + i * 0.2f, Text = $"{_Settings.report_ui_reasons[i]}", Align = TextAnchor.MiddleCenter, Color = HexToRustFormat("#D0C6BD"), Font = "robotocondensed-bold.ttf", FontSize = 16 }
-                }, ReportLayer + $".T");
+                    var sendReportCommand = UICommand((player, args, input) =>
+                    {
+                        SendReport(player, args.target_id, args.reason);
+                    }, new { target_id = target.UserIDString, reason = _Settings.report_ui_reasons[i] }, "sendReportToPlayer");
+
+                    container.Add(new CuiButton()
+                    {
+                        RectTransform = { AnchorMin = $"{(leftAlign ? 0 : 1)} 0", AnchorMax = $"{(leftAlign ? 0 : 1)} 0", OffsetMin = $"{(leftAlign ? -offXMax : offXMin)} 15", OffsetMax = $"{(leftAlign ? -offXMin : offXMax)} 45" },
+                        Button = { FadeIn = 0.4f + i * 0.2f, Color = HexToRustFormat("#D0C6BD4D"), Command = sendReportCommand },
+                        Text = { FadeIn = 0.4f + i * 0.2f, Text = $"{_Settings.report_ui_reasons[i]}", Align = TextAnchor.MiddleCenter, Color = HexToRustFormat("#D0C6BD"), Font = "robotocondensed-bold.ttf", FontSize = 16 }
+                    }, ReportLayer + $".T");
+                }
+            }
+            catch
+            {
+                Puts($"Failed to add report reasons for {targetId}");
             }
 
             CuiHelper.AddUi(player, container);
@@ -3473,9 +3492,8 @@ namespace Oxide.Plugins
                 return;
             }
 
-            BasePlayer target = BasePlayer.Find(targetId) ?? BasePlayer.FindSleeping(targetId);
+            RA_ReportSend(initiator.UserIDString, targetId, reason, "");
 
-            RA_ReportSend(initiator.UserIDString, target.UserIDString, reason, "");
             CuiHelper.DestroyUi(initiator, ReportLayer);
 
             SoundToast(initiator, lang.GetMessage("Sent", this, initiator.UserIDString), SoundToastType.Info);
@@ -3521,6 +3539,15 @@ namespace Oxide.Plugins
         private void RustAppEngineDestroy()
         {
             UnityEngine.Object.Destroy(_RustAppEngine?.gameObject);
+            
+            // Clean-up stale static references
+            _RustApp = null;
+            _MetaInfo = null;
+            _CheckInfo = null;
+            _Settings = null;
+            _ApiHeaders = null;
+
+            CourtApi.players = null;
         }
 
         private void BanCreate(string steamId, CourtApi.PluginBanCreatePayload payload)
@@ -3742,7 +3769,7 @@ namespace Oxide.Plugins
                 request.downloadHandler = new DownloadHandlerBuffer();
                 request.timeout = 10;
 
-                foreach (var header in _apiHeaders)
+                foreach (var header in _ApiHeaders)
                 {
                     request.SetRequestHeader(header.name, header.value);
                 }
