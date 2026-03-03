@@ -578,6 +578,12 @@ class PersonalBotSystem extends AbstractSystem
                 $profit->created_at      = date('Y-m-d H:i:s');
                 $profit->save(false);
                 $answerMessage = $this->_getAfterRegisterMessage($user);
+            } else {
+                $answerMessage = '✅ <b>Бот снова привязан</b>'
+                    . PHP_EOL . PHP_EOL
+                    . "Добро пожаловать, <b>{$user->username}</b>! Привязка восстановлена. Бонус за привязку начисляется только при первой активации."
+                    . PHP_EOL . PHP_EOL
+                    . "💡 Напишите <code>/help</code> для списка команд.";
             }
         }
 
