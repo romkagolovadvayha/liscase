@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Collections;
 using System.Collections.Generic;
 using Rust;
 using Rust.Ai.Gen2;
@@ -20,7 +19,7 @@ using Oxide.Plugins.ExtensionsRealPVE;
 
 namespace Oxide.Plugins
 {
-    [Info("RealPVE", "IIIaKa", "0.1.22")]
+    [Info("RealPVE", "IIIaKa", "0.1.221")]
 	[Description("Plugin for Real PvE servers, featuring damage prevention, anti-griefing measures, customizable PvP zones, an automatic loot queue in radtowns and raid zones, and much more.")]
 	class RealPVE : RustPlugin
     {
@@ -4878,6 +4877,7 @@ namespace Oxide.Plugins
 			public bool AutoBuy { get; set; }
 			public bool AllowPickup { get; set; }
 			public Dictionary<ulong, SharedEntity> SharedEntities { get; set; } = new Dictionary<ulong, SharedEntity>();
+			public List<BaseMission.MissionInstance> Missions { get; set; } = new List<BaseMission.MissionInstance>();
 			
 			public PlayerData() {}
 			public PlayerData(ulong userID)
@@ -5698,15 +5698,6 @@ namespace Oxide.Plugins
 				OnTeamUpdated(tPlayer);
 		}
 		
-		private static IList GetPlayerMissions(BasePlayer player)
-		{
-			if (player == null) return null;
-			var t = typeof(BasePlayer);
-			var f = t.GetField("missions", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-				?? t.GetField("Missions", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-			return f?.GetValue(player) as IList;
-		}
-
 		private void ForceFailBedMission(BasePlayer player)
         {
             using HashSet<StaticRespawnArea>.Enumerator enumerator = StaticRespawnArea.staticRespawnAreas.GetEnumerator();
@@ -5716,14 +5707,12 @@ namespace Oxide.Plugins
                 player.SendRespawnOptions();
             }
 
-			var missions = GetPlayerMissions(player);
-			if (missions == null) return;
-
             BaseMission.MissionInstance missionInstance = null;
-			for (int i = 0; i < missions.Count; i++)
+			GetOrCreatePlayerData(player.userID.ToString(), out var playerData);
+			for (int i = 0; i < playerData.Missions.Count; i++)
 			{
-                missionInstance = missions[i] as BaseMission.MissionInstance;
-                if (missionInstance != null && missionInstance.missionID == _bedMissionId)
+                missionInstance = playerData.Missions[i];
+                if (missionInstance.missionID == _bedMissionId)
                 {
 					if (missionInstance.status == BaseMission.MissionStatus.Completed)
 						missionInstance.GetMission().MissionFailed(missionInstance, player, BaseMission.MissionFailReason.Abandon);
@@ -9364,33 +9353,28 @@ namespace Oxide.Plugins
                 player.SendRespawnOptions();
             }
 
-			var missions = GetPlayerMissions(player);
+            GetOrCreatePlayerData(player.userID.ToString(), out var playerData);
             BaseMission.MissionInstance missionInstance = null;
-			if (missions != null)
-			{
-				for (int i = 0; i < missions.Count; i++)
-				{
-					missionInstance = missions[i] as BaseMission.MissionInstance;
-					if (missionInstance != null && missionInstance.missionID == _bedMissionId)
-						break;
-					missionInstance = null;
-				}
-			}
-            if (missionInstance == null && missions != null)
+            for (int i = 0; i < playerData.Missions.Count; i++)
+            {
+                missionInstance = playerData.Missions[i];
+                if (missionInstance.missionID == _bedMissionId)
+                    break;
+                missionInstance = null;
+            }
+            if (missionInstance == null)
             {
                 var mission = MissionManifest.GetFromID(_bedMissionId);
                 missionInstance = Facepunch.Pool.Get<BaseMission.MissionInstance>();
-                missions.Add(missionInstance);
+                playerData.Missions.Add(missionInstance);
                 missionInstance.missionID = mission.id;
 				missionInstance.startTimeUtcSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 				missionInstance.status = BaseMission.MissionStatus.Active;
-                missionInstance.objectiveStatuses = new BaseMission.MissionInstance.ObjectiveStatus[mission.objectives.Length];
+                missionInstance.objectiveStatuses = new BufferList<BaseMission.MissionInstance.ObjectiveStatus>(mission.objectives.Length);
                 for (int j = 0; j < mission.objectives.Length; j++)
-                    missionInstance.objectiveStatuses[j] = new BaseMission.MissionInstance.ObjectiveStatus();
+                    missionInstance.objectiveStatuses.Add(new BaseMission.MissionInstance.ObjectiveStatus());
                 mission.MissionStart(missionInstance, player);
-                player.SetActiveMission(missions.Count);
-                player.MissionDirty();
-            }
+                                            }
             if (missionInstance.status != BaseMission.MissionStatus.Completed)
                 missionInstance.GetMission().MissionComplete(missionInstance, player);
         }
