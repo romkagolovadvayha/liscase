@@ -78,7 +78,7 @@
         "zircote/swagger-php": "^4.8",
         "doctrine/annotations": "^2.0",
         "codeception/codeception": "^5.0",
-        "codeception/module-yii2": "^1.2",
+        "codeception/module-yii2": "^2.0",
         "codeception/module-asserts": "^2.0",
         "codeception/module-rest": "^2.0",
         "codeception/module-filesystem": "^2.0"
