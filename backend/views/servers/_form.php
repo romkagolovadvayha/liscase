@@ -98,6 +98,17 @@ $selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
             </div>
 
             <div>
+                <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide">FTP (менеджер файлов)</h3>
+                <div class="flex flex-wrap gap-3">
+                    <?= $form->field($model, 'ftp_host', ['options' => ['class' => 'mb-0 flex-1 min-w-[120px]'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'placeholder' => 'Хост (пусто = IP сервера)']) ?>
+                    <?= $form->field($model, 'ftp_port', ['options' => ['class' => 'mb-0 w-20'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'type' => 'number', 'placeholder' => '21']) ?>
+                    <?= $form->field($model, 'ftp_login', ['options' => ['class' => 'mb-0 flex-1 min-w-[120px]'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'placeholder' => 'FTP логин']) ?>
+                    <?= $form->field($model, 'ftp_password', ['options' => ['class' => 'mb-0 flex-1 min-w-[120px]'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'type' => 'password', 'placeholder' => 'FTP пароль', 'autocomplete' => 'new-password']) ?>
+                    <?= $form->field($model, 'ftp_root_path', ['options' => ['class' => 'mb-0 flex-1 min-w-[200px]'], 'template' => '{label}{input}{hint}{error}'])->textInput(['class' => 'ds-input form-control', 'placeholder' => '/home/user/server или пусто'])->hint('Каталог на FTP, который в менеджере отображается как корень (/)', ['class' => 'text-gray-500 text-xs mt-1']) ?>
+                </div>
+            </div>
+
+            <div>
                 <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide">Теги сервера</h3>
                 <label class="text-xs text-gray-400 mb-1 block"><?= Yii::t('common', 'Теги') ?></label>
                 <?= Select2::widget([

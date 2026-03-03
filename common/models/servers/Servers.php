@@ -70,6 +70,11 @@ use yii\helpers\ArrayHelper;
  * @property int $map_id
  * @property int $map_list_id
  * @property string $secret_key
+ * @property string|null $ftp_host
+ * @property int $ftp_port
+ * @property string|null $ftp_login
+ * @property string|null $ftp_password
+ * @property string|null $ftp_root_path
  *
  * @property Map $mapEntity
  * @property \common\models\map\MapList $mapList
@@ -160,6 +165,11 @@ class Servers extends \common\components\base\ActiveRecord
             'map_list_id'          => Yii::t('common', 'ID карты из списка'),
             'secret_key'          => Yii::t('common', 'Секретный ключ'),
             'secret_map'          => Yii::t('common', 'Секретная карты'),
+            'ftp_host'            => Yii::t('common', 'FTP хост'),
+            'ftp_port'            => Yii::t('common', 'FTP порт'),
+            'ftp_login'           => Yii::t('common', 'FTP логин'),
+            'ftp_password'        => Yii::t('common', 'FTP пароль'),
+            'ftp_root_path'       => Yii::t('common', 'FTP корневой каталог'),
         ];
     }
 
@@ -167,8 +177,8 @@ class Servers extends \common\components\base\ActiveRecord
     {
         return [
             [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description', 'min_map_size', 'max_map_size'], 'required'],
-            [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'game_mode', 'monitoring_tags', 'wipe_server_name', 'wipe_server_description', 'secret_key'], 'string'],
-            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'hidden_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id'], 'integer'],
+            [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'game_mode', 'monitoring_tags', 'wipe_server_name', 'wipe_server_description', 'secret_key', 'ftp_host', 'ftp_login', 'ftp_password', 'ftp_root_path'], 'string'],
+            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'hidden_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id', 'ftp_port'], 'integer'],
             [['wipe', 'next_wipe', 'global_wipe', 'secret_map'], 'safe'],
             [['tag'], 'unique', 'targetClass' => self::class, 'message' => Yii::t('common', 'Сервер с таким тегом уже существует')],
             [['min_map_size'], 'validateMapSize', 'skipOnError' => false],
@@ -456,6 +466,37 @@ class Servers extends \common\components\base\ActiveRecord
             return "https://rustmaps.com/map/{$this->map}";
         }
         return null;
+    }
+
+    /**
+     * Есть ли у сервера учётные данные FTP для менеджера файлов
+     * @return bool
+     */
+    public function hasFtpCredentials(): bool
+    {
+        return !empty($this->ftp_login) && $this->ftp_login !== '' && !empty($this->ftp_password);
+    }
+
+    /**
+     * Хост для FTP (если не задан — IP сервера)
+     * @return string
+     */
+    public function getFtpHost(): string
+    {
+        return !empty($this->ftp_host) ? trim($this->ftp_host) : (trim((string)$this->ip) ?: 'localhost');
+    }
+
+    /**
+     * Нормализованный корневой каталог FTP (без слэжа в конце).
+     * @return string
+     */
+    public function getFtpRootPath(): string
+    {
+        if (empty($this->ftp_root_path)) {
+            return '';
+        }
+        $path = trim(str_replace('\\', '/', $this->ftp_root_path));
+        return trim($path, '/');
     }
 
     /**

@@ -47,7 +47,7 @@ if ($moderOrSupport) {
         'label' => 'Сервера',
         'icon' => 'fas fa-gamepad',
         'url' => [''],
-        'active' => _checkActive('/servers') || _checkActive('/map-list') || _checkActive('/rust-plugin-config') || _checkActive('/servers-rules') || _checkActive('/servers-tags') || _checkActive('/servers-radio-station'),
+        'active' => _checkActive('/servers') || _checkActive('/map-list') || _checkActive('/rust-plugin-config') || _checkActive('/servers-rules') || _checkActive('/servers-tags') || _checkActive('/servers-radio-station') || _checkActive('/ftp-manager'),
         'items' => [
             [
                 'label' => 'Список серверов',
@@ -75,6 +75,13 @@ if ($moderOrSupport) {
                 'url' => ['/rcon/index'],
                 'visibility' => $admin,
                 'active' => _checkActive('/rcon'),
+            ],
+            [
+                'label' => 'FTP менеджер',
+                'icon' => 'fas fa-folder-tree',
+                'url' => ['/ftp-manager/index'],
+                'visibility' => $admin,
+                'active' => _checkActive('/ftp-manager'),
             ],
             [
                 'label' => 'Карты',
@@ -227,6 +234,12 @@ if ($admin) {
         'icon' => 'fa-solid fa-cloud-sun',
         'url' => ['/wipe/index'],
         'active' => _checkActive('/wipe'),
+    ];
+    $managementItems[] = [
+        'label' => 'Плагины',
+        'icon' => 'fa-solid fa-puzzle-piece',
+        'url' => ['/plugins/index'],
+        'active' => _checkActive('/plugins'),
     ];
 }
 if ($moder) {
