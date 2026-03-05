@@ -46,7 +46,7 @@ namespace Oxide.Plugins
         }
 
         /// <summary>true — запросы не отправляются, вывод в консоль и в чат (LogHookEvent). false — запросы отправляются, вывод отключён.</summary>
-        public bool Debug = false;
+        public bool Debug = true;
         protected override void LoadConfig()
         {
             base.LoadConfig();
@@ -306,10 +306,8 @@ namespace Oxide.Plugins
         private void ExplosionProgressAdd(BasePlayer player, BaseEntity entity, string shortname = "")
         {
             string WeaponName = string.IsNullOrWhiteSpace(shortname) == true ? string.Empty : shortname;
-            if (entity != null)
-            {
+            if (entity != null && !string.IsNullOrEmpty(entity.ShortPrefabName))
                 addParametr(player.UserIDString, entity.ShortPrefabName, 1);
-            }
             if (!string.IsNullOrEmpty(WeaponName))
             {
                 switch (WeaponName)
@@ -323,9 +321,10 @@ namespace Oxide.Plugins
         }
         void addParametr(string steamId, string parametr, int count)
         {
-            if (string.IsNullOrEmpty(steamId) || string.IsNullOrEmpty(parametr) || count <= 0) return;
-            // Только реальные игроки: Steam ID 17 цифр, начинается с 765
-            if (steamId.Length != 17 || !steamId.StartsWith("765") || !ulong.TryParse(steamId, out _)) return;
+            Puts(steamId + " " + parametr + " " + count);
+            if (string.IsNullOrEmpty(steamId)) return;
+            if (count <= 0) return;
+            if (string.IsNullOrEmpty(parametr)) parametr = "unknown";
             if (!list.ContainsKey(steamId))
                 list.Add(steamId, new Dictionary<string, int>());
             if (!list[steamId].ContainsKey(parametr))
@@ -565,27 +564,6 @@ namespace Oxide.Plugins
 				addParametr(attacker.UserIDString, "kills", 1);
 			}
         }
-        void OnEntityDeath(SimpleShark shark, HitInfo info)
-        {
-			LogHookEvent(info?.InitiatorPlayer, "OnEntityDeath(SimpleShark)", "shark");
-            if (shark == null || info == null) return;
-            BasePlayer attacker = info?.InitiatorPlayer;
-            if (attacker == null || !attacker.userID.IsSteamId()) return;
-
-            Kill kill = new Kill();
-			kill.steam_id = attacker.UserIDString;
-			kill.type = "animal";
-			kill.dead = shark.ShortPrefabName;
-			kill.distance = (int)info.ProjectileDistance;
-			kill.date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-			Item weaponItem = info.Weapon?.GetItem();
-			if (weaponItem != null) {
-			    kill.weapon = weaponItem.info.shortname;
-			}
-			killsData.Kills.Add(kill);
-			addParametr(attacker.UserIDString, shark.ShortPrefabName, 1);
-        }
-
         void OnEntityDeath(BuildingPrivlidge entity, HitInfo info)
         {
 			LogHookEvent(info?.InitiatorPlayer, "OnEntityDeath(BuildingPrivlidge)", "TC");
@@ -606,54 +584,19 @@ namespace Oxide.Plugins
             addParametr(attacker.UserIDString, "scientists", 1);
         }
 
-        void OnEntityDeath(BaseAnimalNPC animal, HitInfo info)
-        {
-			LogHookEvent(info?.InitiatorPlayer, "OnEntityDeath(BaseAnimalNPC)", $"animal={animal?.ShortPrefabName}");
-            BasePlayer attacker = info?.InitiatorPlayer;
-            if (attacker == null || !attacker.userID.IsSteamId()) return;
-            Kill kill = new Kill();
-            kill.steam_id = attacker.UserIDString;
-            kill.type = "animal";
-            kill.dead = animal.ShortPrefabName;
-            kill.distance = (int)info.ProjectileDistance;
-            kill.date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            Item weaponItem = info.Weapon?.GetItem();
-            if (weaponItem != null)
-            {
-                kill.weapon = weaponItem.info.shortname;
-            }
-            killsData.Kills.Add(kill);
-            addParametr(attacker.UserIDString, animal.ShortPrefabName, 1);
-        }
-		
-        void OnEntityDeath(BaseNPC2 animal, HitInfo info)
-        {
-			LogHookEvent(info?.InitiatorPlayer, "OnEntityDeath(BaseNPC2)", $"npc={animal?.ShortPrefabName}");
-            BasePlayer attacker = info?.InitiatorPlayer;
-            if (attacker == null || !attacker.userID.IsSteamId()) return;
-            Kill kill = new Kill();
-            kill.steam_id = attacker.UserIDString;
-            kill.type = "animal";
-            kill.dead = animal.ShortPrefabName;
-            kill.distance = (int)info.ProjectileDistance;
-            kill.date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            Item weaponItem = info.Weapon?.GetItem();
-            if (weaponItem != null)
-            {
-                kill.weapon = weaponItem.info.shortname;
-            }
-            killsData.Kills.Add(kill);
-            addParametr(attacker.UserIDString, animal.ShortPrefabName, 1);
-        }
-
+        // Один хук на все смерти сущностей (животные, акула, змеи) — Oxide вызывает именно BaseCombatEntity
         void OnEntityDeath(BaseCombatEntity entity, HitInfo info)
         {
             if (entity == null || info == null) return;
-            string prefab = entity.ShortPrefabName ?? "";
-            if (!prefab.Contains("snake")) return;
+            if (Debug) Puts($"[Stats] OnEntityDeath(BaseCombatEntity) entity={entity.ShortPrefabName}");
+
             BasePlayer attacker = info?.InitiatorPlayer;
             if (attacker == null || !attacker.userID.IsSteamId()) return;
-            LogHookEvent(attacker, "OnEntityDeath(Snake)", $"prefab={prefab}");
+
+            string prefab = entity.ShortPrefabName ?? "";
+            bool isAnimal = entity is BaseAnimalNPC || entity is BaseNPC2 || entity is SimpleShark || prefab.Contains("snake");
+            if (!isAnimal) return;
+
             Kill kill = new Kill();
             kill.steam_id = attacker.UserIDString;
             kill.type = "animal";
@@ -664,26 +607,28 @@ namespace Oxide.Plugins
             if (weaponItem != null)
                 kill.weapon = weaponItem.info.shortname;
             killsData.Kills.Add(kill);
-            addParametr(attacker.UserIDString, prefab, 1);
+            addParametr(attacker.UserIDString, entity.ShortPrefabName, 1);
         }
 
         void OnGrowableGathered(GrowableEntity plant, Item item, BasePlayer player)
         {
-            if (player == null || player.IsNpc || !player.userID.IsSteamId() || item?.info == null) return;
+            if (Debug) Puts($"[Stats] OnGrowableGathered item={item?.info?.shortname}");
+            if (player == null || item?.info == null) return;
             addParametr(player.UserIDString, "gathered_" + item.info.shortname, item.amount);
         }
 
         void OnDispenserBonus(ResourceDispenser dispenser, BasePlayer player, Item item)
         {
-            if (player == null || player.IsNpc || !player.userID.IsSteamId() || item?.info == null) return;
+            if (Debug) Puts($"[Stats] OnDispenserBonus item={item?.info?.shortname}");
+            if (player == null || item?.info == null) return;
             addParametr(player.UserIDString, item.info.shortname, item.amount);
         }
 
         void OnDispenserGather(ResourceDispenser dispenser, BaseEntity entity, Item item)
         {
-            if (entity == null || item?.info == null) return;
-            BasePlayer player = entity.ToPlayer();
-            if (player == null || player.IsNpc || !player.userID.IsSteamId()) return;
+            if (Debug) Puts($"[Stats] OnDispenserGather entity={entity?.ShortPrefabName} item={item?.info?.shortname}");
+            BasePlayer player = entity?.ToPlayer();
+            if (player == null || item?.info == null) return;
             addParametr(player.UserIDString, item.info.shortname, item.amount);
         }
 
