@@ -40,7 +40,7 @@ namespace Oxide.Plugins
                 return new Configuration
                 {
                     server_tag = "pve",
-                    api_base_url = "https://api.prostoj.store"
+                    api_base_url = "https://api.moscow77.store"
                 };
             }
         }
@@ -76,7 +76,7 @@ namespace Oxide.Plugins
                 String serverIp = ConVar.Server.ip;
                 Int32 serverPort = ConVar.Server.port;
                 String pluginName = Name; // "ExpertStatistics"
-                String baseUrl = !String.IsNullOrEmpty(config.api_base_url) ? config.api_base_url.TrimEnd('/') : "https://api.prostoj.store";
+                String baseUrl = !String.IsNullOrEmpty(config.api_base_url) ? config.api_base_url.TrimEnd('/') : "https://api.moscow77.store";
                 String apiUrl = $"{baseUrl}/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
                 
                 if (Debug)
@@ -242,7 +242,7 @@ namespace Oxide.Plugins
                         queue = ServerMgr.Instance.connectionQueue.Queued
                     }
                 }).Replace("\n", "").Replace("  ", "");
-            String statsBaseUrl = !String.IsNullOrEmpty(config.api_base_url) ? config.api_base_url.TrimEnd('/') : "https://api.prostoj.store";
+            String statsBaseUrl = !String.IsNullOrEmpty(config.api_base_url) ? config.api_base_url.TrimEnd('/') : "https://api.moscow77.store";
             string statsUrl = $"{statsBaseUrl}/api-stats/update?serverTag={config.server_tag}";
             if (Debug)
             {
