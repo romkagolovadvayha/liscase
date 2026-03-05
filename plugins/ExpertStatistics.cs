@@ -573,17 +573,9 @@ namespace Oxide.Plugins
             addParametr(attacker.UserIDString, "tcsdestroyed", 1);
         }
 
-        void OnEntityDeath(NPCPlayer scientist, HitInfo info)
-        {
-			LogHookEvent(info?.InitiatorPlayer, "OnEntityDeath(NPCPlayer)", "scientist");
-            if (scientist == null || info == null) return;
-            BasePlayer attacker = info?.InitiatorPlayer;
-            if (attacker == null || !attacker.userID.IsSteamId()) return;
+        // Убийства ботов (NPCPlayer) обрабатываются в OnEntityDeath(BaseCombatEntity), т.к. в новых версиях Oxide вызывается только он.
 
-            addParametr(attacker.UserIDString, "scientists", 1);
-        }
-
-        // Один хук на все смерти сущностей (животные, акула, змеи) — Oxide вызывает именно BaseCombatEntity
+        // Один хук на все смерти сущностей (животные, акула, змеи, боты) — Oxide может вызывать только BaseCombatEntity
         void OnEntityDeath(BaseCombatEntity entity, HitInfo info)
         {
             if (entity == null || info == null) return;
@@ -593,6 +585,14 @@ namespace Oxide.Plugins
             if (attacker == null || !attacker.userID.IsSteamId()) return;
 
             string prefab = entity.ShortPrefabName ?? "";
+
+            // Боты (учёные, рейдеры и т.д.) — засчитываем убийство; иначе в новых версиях Oxide может не вызваться OnEntityDeath(NPCPlayer)
+            if (entity is NPCPlayer)
+            {
+                addParametr(attacker.UserIDString, "scientists", 1);
+                return;
+            }
+
             bool isAnimal = entity is BaseAnimalNPC || entity is BaseNPC2 || entity is SimpleShark || prefab.Contains("snake");
             if (!isAnimal) return;
 
