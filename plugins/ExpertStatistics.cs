@@ -24,7 +24,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("Expert Statistics", "prostoj.store", "1.0.1")]
+    [Info("Expert Statistics", "prostoj.store", "1.0.2")]
     [Description("Плагин, синхронизирует статистику игроков с сайтом.")]
     public class ExpertStatistics : CovalencePlugin
     {
@@ -33,15 +33,20 @@ namespace Oxide.Plugins
         public class Configuration
         {
             [JsonProperty(PropertyName = "Server Tag")] public string server_tag;
+            [JsonProperty(PropertyName = "API Base URL")] public string api_base_url;
 
             public static Configuration DefaultConfig()
             {
                 return new Configuration
                 {
-                    server_tag = "pve"
+                    server_tag = "pve",
+                    api_base_url = "https://api.prostoj.store"
                 };
             }
         }
+
+        /// <summary>true — запросы не отправляются, вывод в консоль и в чат (LogHookEvent). false — запросы отправляются, вывод отключён.</summary>
+        public bool Debug = false;
         protected override void LoadConfig()
         {
             base.LoadConfig();
@@ -53,8 +58,9 @@ namespace Oxide.Plugins
             }
             catch (Exception e)
             {
-                PrintWarning("Создание нового файла конфигурации.");
                 LoadDefaultConfig();
+                if (Debug)
+                    PrintWarning("Создание нового файла конфигурации.");
             }
         }
         protected override void LoadDefaultConfig() => config = Configuration.DefaultConfig();
@@ -70,12 +76,14 @@ namespace Oxide.Plugins
                 String serverIp = ConVar.Server.ip;
                 Int32 serverPort = ConVar.Server.port;
                 String pluginName = Name; // "ExpertStatistics"
+                String baseUrl = !String.IsNullOrEmpty(config.api_base_url) ? config.api_base_url.TrimEnd('/') : "https://api.prostoj.store";
+                String apiUrl = $"{baseUrl}/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
                 
-                String apiUrl = $"https://api.prostoj.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
-                
-                PrintWarning(LanguageEn
-                    ? $"Loading configuration from API: {apiUrl}"
-                    : $"Загрузка конфигурации из API: {apiUrl}");
+                if (Debug)
+                {
+                    Puts($"[ExpertStatistics] DEBUG GET (request not sent): {apiUrl}");
+                    return;
+                }
                 
                 webrequest.Enqueue(apiUrl, null, (code, response) =>
                 {
@@ -95,11 +103,6 @@ namespace Oxide.Plugins
                                 if (apiConfig != null)
                                 {
                                     config = apiConfig;
-                                    
-                                    PrintWarning(LanguageEn
-                                        ? $"Configuration loaded successfully from API!"
-                                        : $"Конфигурация успешно загружена из API!");
-                                    
                                     NextTick(SaveConfig);
                                     return;
                                 }
@@ -107,12 +110,13 @@ namespace Oxide.Plugins
                         }
                         catch (Exception ex)
                         {
-                            PrintError(LanguageEn
-                                ? $"Error parsing API response: {ex.Message}. Using default config."
-                                : $"Ошибка парсинга ответа API: {ex.Message}. Используется конфиг по умолчанию.");
+                            if (Debug)
+                                PrintError(LanguageEn
+                                    ? $"Error parsing API response: {ex.Message}. Using default config."
+                                    : $"Ошибка парсинга ответа API: {ex.Message}. Используется конфиг по умолчанию.");
                         }
                     }
-                    else
+                    else if (Debug)
                     {
                         PrintWarning(LanguageEn
                             ? $"Failed to load config from API (Code: {code}). Using default config."
@@ -122,9 +126,10 @@ namespace Oxide.Plugins
             }
             catch (Exception ex)
             {
-                PrintError(LanguageEn
-                    ? $"Error loading config from API: {ex.Message}. Using default config."
-                    : $"Ошибка загрузки конфига из API: {ex.Message}. Используется конфиг по умолчанию.");
+                if (Debug)
+                    PrintError(LanguageEn
+                        ? $"Error loading config from API: {ex.Message}. Using default config."
+                        : $"Ошибка загрузки конфига из API: {ex.Message}. Используется конфиг по умолчанию.");
             }
         }
 
@@ -196,7 +201,8 @@ namespace Oxide.Plugins
 
         void OnServerInitialized(bool initial)
         {
-            Puts("[Stats] OnServerInitialized | initial=" + initial);
+            if (Debug)
+                Puts("[Stats] OnServerInitialized | initial=" + initial);
             
             // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
             LoadConfigFromAPI();
@@ -236,10 +242,24 @@ namespace Oxide.Plugins
                         queue = ServerMgr.Instance.connectionQueue.Queued
                     }
                 }).Replace("\n", "").Replace("  ", "");
-Puts(requestBody);
+            String statsBaseUrl = !String.IsNullOrEmpty(config.api_base_url) ? config.api_base_url.TrimEnd('/') : "https://api.prostoj.store";
+            string statsUrl = $"{statsBaseUrl}/api-stats/update?serverTag={config.server_tag}";
+            if (Debug)
+            {
+                Puts($"[ExpertStatistics] DEBUG POST (request not sent): {statsUrl}");
+                Puts(requestBody);
+                list.Clear();
+                chatsData.Chats.Clear();
+                reportsData.Reports.Clear();
+                teamsData.Teams.Clear();
+                killsData.Kills.Clear();
+                teams.Clear();
+                disconnects.Clear();
+                return;
+            }
             Dictionary<string, string> header = new Dictionary<string, string>();
             header.Add("Content-Type", "application/json");
-            webrequest.Enqueue($"https://prostoj.store/api-stats/update?serverTag={config.server_tag}", requestBody, (code, response) =>
+            webrequest.Enqueue(statsUrl, requestBody, (code, response) =>
             {
                 if (code >= 200 && code < 300)
                 {
@@ -257,7 +277,8 @@ Puts(requestBody);
         [Command("stats.save")]
         private void SaveStatsCMD(IPlayer iPlayer, string command, string[] args)
         {
-            Puts("Expert Statistics: SaveStatsCMD.");
+            if (Debug)
+                Puts("Expert Statistics: SaveStatsCMD.");
             if (!iPlayer.IsServer) return;
             SaveAllStats();
         }
@@ -312,10 +333,14 @@ Puts(requestBody);
             list[steamId][parametr] += count;
         }
 
-        /// <summary>Отладочный вывод отключён (консоль и чат).</summary>
+        /// <summary>При Debug: вывод в консоль; в чат — только если игрок админ. При Debug выключен — ничего не выводится.</summary>
         private void LogHookEvent(BasePlayer player, string hookName, string details = null)
         {
-            // Puts(msg); player.ChatMessage(msg); — отключено
+            if (!Debug) return;
+            string msg = $"[Stats] {hookName}" + (string.IsNullOrEmpty(details) ? "" : $" | {details}");
+            Puts(msg);
+            if (player != null && player.IsAdmin)
+                player.ChatMessage(msg);
         }
 
         #endregion
@@ -621,6 +646,27 @@ Puts(requestBody);
             addParametr(attacker.UserIDString, animal.ShortPrefabName, 1);
         }
 
+        void OnEntityDeath(BaseCombatEntity entity, HitInfo info)
+        {
+            if (entity == null || info == null) return;
+            string prefab = entity.ShortPrefabName ?? "";
+            if (!prefab.Contains("snake")) return;
+            BasePlayer attacker = info?.InitiatorPlayer;
+            if (attacker == null || !attacker.userID.IsSteamId()) return;
+            LogHookEvent(attacker, "OnEntityDeath(Snake)", $"prefab={prefab}");
+            Kill kill = new Kill();
+            kill.steam_id = attacker.UserIDString;
+            kill.type = "animal";
+            kill.dead = prefab;
+            kill.distance = (int)info.ProjectileDistance;
+            kill.date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            Item weaponItem = info.Weapon?.GetItem();
+            if (weaponItem != null)
+                kill.weapon = weaponItem.info.shortname;
+            killsData.Kills.Add(kill);
+            addParametr(attacker.UserIDString, prefab, 1);
+        }
+
         void OnGrowableGathered(GrowableEntity plant, Item item, BasePlayer player)
         {
             if (player == null || player.IsNpc || !player.userID.IsSteamId() || item?.info == null) return;
@@ -662,6 +708,7 @@ Puts(requestBody);
         // Подбор предметов с земли (world item)
         void OnItemPickup(Item item, BasePlayer player, WorldItem worldItem)
         {
+            if (!Debug) return;
             if (player == null || player.IsNpc || !player.userID.IsSteamId() || item?.info == null) return;
             LogHookEvent(player, "OnItemPickup", $"item={item.info?.shortname} amount={item.amount}");
             if (item.info.shortname == "basicblueprintfragment")
@@ -835,90 +882,135 @@ Puts(requestBody);
             if (entity == null || player == null || entity.OwnerID.IsSteamId() || entity.net == null)
                 return;
 
-            if (entity.ShortPrefabName.Contains("supply_drop") || entity.ShortPrefabName.Contains("supply_drop_"))
+            bool isUniqueOpen = false;
+            if (entity.ShortPrefabName.Contains("codelockedhackablecrate_oilrig"))
             {
                 if (TryCountUniqueLootOnce(player, entity))
-                    addParametr(player.UserIDString, "supply_crate_open", 1);
-                else
-                    LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
-            }
-            else if (entity.ShortPrefabName.Contains("codelockedhackablecrate_oilrig"))
-            {
-                if (TryCountUniqueLootOnce(player, entity))
+                {
                     addParametr(player.UserIDString, "codelockedhackablecrate_oilrig", 1);
+                    isUniqueOpen = true;
+                }
                 else
                     LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
             }
             else if (entity.ShortPrefabName.Contains("codelockedhackablecrate"))
             {
                 if (TryCountUniqueLootOnce(player, entity))
+                {
                     addParametr(player.UserIDString, "codelockedhackablecrate", 1);
+                    isUniqueOpen = true;
+                }
                 else
                     LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
             }
-            else if (entity.ShortPrefabName.Contains("crate_elite") || entity.ShortPrefabName.Contains("bradley_crate"))
+            else if (entity.ShortPrefabName.Contains("crate_elite") || entity.ShortPrefabName.Contains("bradley_crate") || entity.ShortPrefabName.Contains("heli_crate"))
             {
                 if (TryCountUniqueLootOnce(player, entity))
+                {
                     addParametr(player.UserIDString, "crate_elite", 1);
+                    isUniqueOpen = true;
+                }
                 else
                     LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
             }
             else if (entity.ShortPrefabName.Contains("crate_normal"))
             {
                 if (TryCountUniqueLootOnce(player, entity))
+                {
                     addParametr(player.UserIDString, "crate_normal", 1);
+                    isUniqueOpen = true;
+                }
                 else
                     LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
             }
             else if (entity.ShortPrefabName.Contains("crate_underwater_advanced"))
             {
                 if (TryCountUniqueLootOnce(player, entity))
+                {
                     addParametr(player.UserIDString, "crate_underwater_advanced", 1);
+                    isUniqueOpen = true;
+                }
                 else
                     LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
             }
             else if (entity.ShortPrefabName.Contains("crate_underwater_basic"))
             {
                 if (TryCountUniqueLootOnce(player, entity))
+                {
                     addParametr(player.UserIDString, "crate_underwater_basic", 1);
+                    isUniqueOpen = true;
+                }
+                else
+                    LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
+            }
+            else if (entity.ShortPrefabName.Contains("supply_drop") || entity.ShortPrefabName.Contains("supply_drop_"))
+            {
+                if (TryCountUniqueLootOnce(player, entity))
+                {
+                    addParametr(player.UserIDString, "supply_drop", 1);
+                    isUniqueOpen = true;
+                }
                 else
                     LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
             }
             else
             {
-                addParametr(player.UserIDString, "crate_open", 1);
-            }
-            foreach (var item in entity.inventory.itemList)
-            {
-                if (item.info.shortname == "scrap")
+                if (TryCountUniqueLootOnce(player, entity))
                 {
-                    addParametr(player.UserIDString, "scrap", item.amount);
+                    addParametr(player.UserIDString, "crate_open", 1);
+                    isUniqueOpen = true;
+                }
+                else
+                    LogHookEvent(player, "OnLootEntity", $"already opened | entity={entity.ShortPrefabName}");
+            }
+            if (isUniqueOpen)
+            {
+                foreach (var item in entity.inventory.itemList)
+                {
+                    if (item?.info == null) continue;
+                    string sn = item.info.shortname;
+                    if (sn == "scrap")
+                        addParametr(player.UserIDString, "scrap", item.amount);
+                    else if (sn == "advancedblueprintfragment" || sn == "basicblueprintfragment")
+                        addParametr(player.UserIDString, sn, item.amount);
+                }
+                if (Debug)
+                {
+                    var itemParts = new List<string>();
+                    foreach (var item in entity.inventory.itemList)
+                    {
+                        if (item?.info == null) continue;
+                        itemParts.Add($"{item.info.shortname} x{item.amount}");
+                    }
+                    if (itemParts.Count > 0)
+                        LogHookEvent(player, "OnLootEntity", "items=" + string.Join(", ", itemParts));
                 }
             }
         }
 
-        // Учитываем только чертежи, забранные из элитных ящиков (crate_elite, bradley_crate)
-        // private object CanMoveItem(Item item, PlayerInventory inventory, ItemContainerId targetContainerID, int targetSlot, int amount, ItemMoveModifier itemMoveModifier)
-        // {
-        //     BasePlayer player = inventory?.GetComponent<BasePlayer>();
-        //     if (player == null || player.IsNpc || !player.userID.IsSteamId() || item?.info == null)
-        //         return null;
-        //     if (!item.IsBlueprint())
-        //         return null;
-        //     BaseEntity sourceOwner = item.parent?.entityOwner;
-        //     if (sourceOwner == null || sourceOwner == player || sourceOwner is BasePlayer)
-        //         return null;
-        //     var lootContainer = sourceOwner as LootContainer;
-        //     if (lootContainer == null)
-        //         return null;
-        //     string prefab = lootContainer.ShortPrefabName ?? "";
-        //     bool isEliteCrate = prefab.Contains("crate_elite") || prefab.Contains("bradley_crate");
-        //     if (!isEliteCrate)
-        //         return null;
-        //     int amountMoved = amount > 0 ? amount : item.amount;
-        //     addParametr(player.UserIDString, item.info.shortname, amountMoved);
-        //     return null;
-        // }
+        // Учитываем только чертежи, забранные из элитных ящиков (crate_elite, bradley_crate). Работает только при Debug.
+        private object CanMoveItem(Item item, PlayerInventory inventory, ItemContainerId targetContainerID, int targetSlot, int amount, ItemMoveModifier itemMoveModifier)
+        {
+            if (!Debug) return null;
+            BasePlayer player = inventory?.GetComponent<BasePlayer>();
+            if (player == null || player.IsNpc || !player.userID.IsSteamId() || item?.info == null)
+                return null;
+            if (!item.IsBlueprint())
+                return null;
+            BaseEntity sourceOwner = item.parent?.entityOwner;
+            if (sourceOwner == null || sourceOwner == player || sourceOwner is BasePlayer)
+                return null;
+            var lootContainer = sourceOwner as LootContainer;
+            if (lootContainer == null)
+                return null;
+            string prefab = lootContainer.ShortPrefabName ?? "";
+            bool isEliteCrate = prefab.Contains("crate_elite") || prefab.Contains("bradley_crate");
+            if (!isEliteCrate)
+                return null;
+            int amountMoved = amount > 0 ? amount : item.amount;
+            addParametr(player.UserIDString, item.info.shortname, amountMoved);
+            return null;
+        }
 
 		private void OnTeamLeave(RelationshipManager.PlayerTeam team, BasePlayer player)
 		{
