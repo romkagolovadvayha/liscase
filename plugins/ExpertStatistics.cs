@@ -24,7 +24,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("Expert Statistics", "prostoj.store", "1.0.4")]
+    [Info("Expert Statistics", "prostoj.store", "1.0.5")]
     [Description("Плагин, синхронизирует статистику игроков с сайтом.")]
     public class ExpertStatistics : CovalencePlugin
     {
@@ -641,34 +641,34 @@ namespace Oxide.Plugins
             string shortname = component.info.shortname;
             LogHookEvent(reciever, "OnCollectiblePickedup", $"item={shortname} amount={component.amount}");
             string key;
-            if (shortname == "diesel_barrel")
+            if (shortname == "diesel_barrel") {
                 key = "diesel_barrel";
-            else if (GatheredCollectibles.Contains(shortname))
+                addParametr(reciever.UserIDString, key, component.amount);
+            } else if (GatheredCollectibles.Contains(shortname)) {
                 key = "gathered_" + shortname;
-            else
-                key = "pickup_" + shortname;
-            addParametr(reciever.UserIDString, key, component.amount);
+                addParametr(reciever.UserIDString, key, component.amount);
+            }
         }
 
         // Подбор предметов с земли (world item)
-        void OnItemPickup(Item item, BasePlayer player, WorldItem worldItem)
-        {
-            if (!Debug) return;
-            if (player == null || player.IsNpc || !player.userID.IsSteamId() || item?.info == null) return;
-            LogHookEvent(player, "OnItemPickup", $"item={item.info?.shortname} amount={item.amount}");
-            if (item.info.shortname == "basicblueprintfragment")
-            {
-                lock (_uniqueLootLock)
-                {
-                    if (_countedBasicBlueprintFragment.Add(player.UserIDString))
-                        addParametr(player.UserIDString, "basicblueprintfragment", item.amount);
-                }
-            }
-            else
-            {
-                addParametr(player.UserIDString, "pickup_item_" + item.info.shortname, item.amount);
-            }
-        }
+        // void OnItemPickup(Item item, BasePlayer player, WorldItem worldItem)
+        // {
+        //     if (!Debug) return;
+        //     if (player == null || player.IsNpc || !player.userID.IsSteamId() || item?.info == null) return;
+        //     LogHookEvent(player, "OnItemPickup", $"item={item.info?.shortname} amount={item.amount}");
+        //     if (item.info.shortname == "basicblueprintfragment")
+        //     {
+        //         lock (_uniqueLootLock)
+        //         {
+        //             if (_countedBasicBlueprintFragment.Add(player.UserIDString))
+        //                 addParametr(player.UserIDString, "basicblueprintfragment", item.amount);
+        //         }
+        //     }
+        //     else
+        //     {
+        //         addParametr(player.UserIDString, "pickup_item_" + item.info.shortname, item.amount);
+        //     }
+        // }
 
         void OnEntityDeath(BradleyAPC bradley, HitInfo info)
         {
