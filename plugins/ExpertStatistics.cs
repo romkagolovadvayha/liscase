@@ -24,7 +24,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("Expert Statistics", "prostoj.store", "1.0.3")]
+    [Info("Expert Statistics", "prostoj.store", "1.0.4")]
     [Description("Плагин, синхронизирует статистику игроков с сайтом.")]
     public class ExpertStatistics : CovalencePlugin
     {
@@ -78,13 +78,13 @@ namespace Oxide.Plugins
                 String pluginName = Name; // "ExpertStatistics"
                 String baseUrl = !String.IsNullOrEmpty(config.api_base_url) ? config.api_base_url.TrimEnd('/') : "https://api.moscow77.store";
                 String apiUrl = $"{baseUrl}/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
-                
+
                 if (Debug)
                 {
                     Puts($"[ExpertStatistics] DEBUG GET (request not sent): {apiUrl}");
                     return;
                 }
-                
+
                 webrequest.Enqueue(apiUrl, null, (code, response) =>
                 {
                     if (code == 200 && !String.IsNullOrEmpty(response))
@@ -94,12 +94,12 @@ namespace Oxide.Plugins
                             // Парсим ответ API
                             JObject apiResponse = JObject.Parse(response);
                             JToken contentToken = apiResponse["content"];
-                            
+
                             if (contentToken != null)
                             {
                                 // Десериализуем content в Configuration
                                 Configuration apiConfig = contentToken.ToObject<Configuration>();
-                                
+
                                 if (apiConfig != null)
                                 {
                                     config = apiConfig;
@@ -203,7 +203,7 @@ namespace Oxide.Plugins
         {
             if (Debug)
                 Puts("[Stats] OnServerInitialized | initial=" + initial);
-            
+
             // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
             LoadConfigFromAPI();
 
@@ -230,9 +230,9 @@ namespace Oxide.Plugins
         void SaveAllStats()
         {
             string requestBody = JsonConvert.SerializeObject(
-                new { 
-                    users = list, 
-                    kills = killsData.Kills, 
+                new {
+                    users = list,
+                    kills = killsData.Kills,
                     teams = teamsData.Teams,
                     reports = reportsData.Reports,
                     chats = chatsData.Chats,
@@ -521,7 +521,7 @@ namespace Oxide.Plugins
             {
                 return;
             }
-			
+
             /*foreach (var item in player.inventory.containerBelt.itemList)
             {
 				kill.inventoryWear.Add(item.info.shortname);
@@ -739,7 +739,7 @@ namespace Oxide.Plugins
 			LogHookEvent(player, "OnWeaponFired", $"projectile={projectile?.ShortPrefabName} ammo={projectile?.primaryMagazine?.ammoType?.shortname}");
             if (projectile == null || player == null)
                 return;
-  
+
             ExplosionProgressAdd(player, null, projectile.primaryMagazine?.ammoType?.shortname);
         }
 
@@ -1014,7 +1014,7 @@ namespace Oxide.Plugins
 			return;
 		  }
 		  var owner = stash.OwnerID;
-		   
+
 		   if (player.userID != owner) {
 			addParametr(player.UserIDString, "stash", 1);
 		   }
