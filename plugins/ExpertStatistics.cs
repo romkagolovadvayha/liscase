@@ -243,7 +243,7 @@ namespace Oxide.Plugins
                     }
                 }).Replace("\n", "").Replace("  ", "");
             String statsBaseUrl = !String.IsNullOrEmpty(config.api_base_url) ? config.api_base_url.TrimEnd('/') : "https://api.moscow77.store";
-            string statsUrl = $"{statsBaseUrl}/api-stats/update?serverTag={config.server_tag}";
+            string statsUrl = $"{statsBaseUrl}/stats/update?serverTag={config.server_tag}";
             if (Debug)
             {
                 Puts($"[ExpertStatistics] DEBUG POST (request not sent): {statsUrl}");
