@@ -24,7 +24,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("Expert Statistics", "prostoj.store", "1.0.5")]
+    [Info("Expert Statistics", "prostoj.store", "1.0.6")]
     [Description("Плагин, синхронизирует статистику игроков с сайтом.")]
     public class ExpertStatistics : CovalencePlugin
     {
@@ -321,7 +321,6 @@ namespace Oxide.Plugins
         }
         void addParametr(string steamId, string parametr, int count)
         {
-            Puts(steamId + " " + parametr + " " + count);
             if (string.IsNullOrEmpty(steamId)) return;
             if (count <= 0) return;
             if (string.IsNullOrEmpty(parametr)) parametr = "unknown";
