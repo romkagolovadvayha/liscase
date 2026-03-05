@@ -456,7 +456,11 @@ class UserController extends WebController
         }
 
         $data = new SkinsSearch();
-        $provider = $data->search(Yii::$app->request->get(), $type);
+        $page = (int) Yii::$app->request->get('page', 1);
+        if ($page < 1) {
+            $page = 1;
+        }
+        $provider = $data->search(Yii::$app->request->get(), $type, $page);
 
         $form = new SkinsForm();
         if ($type == 'rust') {
