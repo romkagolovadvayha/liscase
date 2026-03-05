@@ -24,7 +24,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("Expert Statistics", "prostoj.store", "1.0.6")]
+    [Info("Expert Statistics", "prostoj.store", "1.0.7")]
     [Description("Плагин, синхронизирует статистику игроков с сайтом.")]
     public class ExpertStatistics : CovalencePlugin
     {
