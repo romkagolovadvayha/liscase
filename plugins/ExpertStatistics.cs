@@ -46,7 +46,7 @@ namespace Oxide.Plugins
         }
 
         /// <summary>true — запросы не отправляются, вывод в консоль и в чат (LogHookEvent). false — запросы отправляются, вывод отключён.</summary>
-        public bool Debug = true;
+        public bool Debug = false;
         protected override void LoadConfig()
         {
             base.LoadConfig();
