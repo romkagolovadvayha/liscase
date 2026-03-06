@@ -268,7 +268,7 @@ class StatsController extends BaseApiController
             ['name' => \Yii::t('common', 'Камни'), 'key' => 'stones', 'score' => 0.3],
             ['name' => \Yii::t('common', 'Дерево'), 'key' => 'wood', 'score' => 0.05],
             ['name' => \Yii::t('common', 'Разбито бочек'), 'key' => 'barrel', 'score' => 0],
-            ['name' => \Yii::t('common', 'Открыто ящиков'), 'key' => 'crate_open', 'score' => 0],
+            ['name' => \Yii::t('common', 'Дизельная бочка'), 'key' => 'diesel_barrel', 'score' => 0],
             ['name' => \Yii::t('common', 'Обломки костей'), 'key' => 'bones', 'param' => 'bone.fragments', 'image_key' => 'bone.fragments', 'score' => 0],
             ['name' => \Yii::t('common', 'Животный жир'), 'key' => 'animal_fat', 'param' => 'fat.animal', 'image_key' => 'fat.animal', 'score' => 0],
             ['name' => \Yii::t('common', 'Кожа'), 'key' => 'leather', 'score' => 0],
@@ -577,7 +577,7 @@ class StatsController extends BaseApiController
                 ['name' => \Yii::t('common', 'Камни'), 'key' => 'stones', 'score' => 0.3],
                 ['name' => \Yii::t('common', 'Дерево'), 'key' => 'wood', 'score' => 0.05],
                 ['name' => \Yii::t('common', 'Разбито бочек'), 'key' => 'barrel', 'score' => 0],
-                ['name' => \Yii::t('common', 'Открыто ящиков'), 'key' => 'crate_open', 'score' => 0],
+                ['name' => \Yii::t('common', 'Дизельная бочка'), 'key' => 'diesel_barrel', 'score' => 0],
                 ['name' => \Yii::t('common', 'Обломки костей'), 'key' => 'bones', 'param' => 'bone.fragments', 'image_key' => 'bone.fragments', 'score' => 0],
                 ['name' => \Yii::t('common', 'Животный жир'), 'key' => 'animal_fat', 'param' => 'fat.animal', 'image_key' => 'fat.animal', 'score' => 0],
                 ['name' => \Yii::t('common', 'Кожа'), 'key' => 'leather', 'score' => 0],
@@ -1167,13 +1167,8 @@ class StatsController extends BaseApiController
         $images = Statistics::productsImages();
         $names = Statistics::productsNames();
 
-        // Ключи лута из ExpertStatistics: карты доступа, бочки, ящики (названия для отображения)
+        // Лут: только ящики и аирдроп (карты доступа — в access_cards, бочки — в Ресурсы и добыча)
         $lootKeys = [
-            'card_level_1' => \Yii::t('common', 'Карта доступа 1 ур.'),
-            'card_level_2' => \Yii::t('common', 'Карта доступа 2 ур.'),
-            'card_level_3' => \Yii::t('common', 'Карта доступа 3 ур.'),
-            'barrel' => \Yii::t('common', 'Бочка'),
-            'diesel_barrel' => \Yii::t('common', 'Дизельная бочка'),
             'codelockedhackablecrate_oilrig' => \Yii::t('common', 'Ящик на нефтевышке'),
             'codelockedhackablecrate' => \Yii::t('common', 'Взломанный ящик'),
             'crate_elite' => \Yii::t('common', 'Элитный ящик'),
@@ -1195,6 +1190,23 @@ class StatsController extends BaseApiController
                     'count' => $count,
                 ];
             }
+        }
+
+        // Карты доступа: всегда три позиции (Красная, Синяя, Зелёная), как на старом сайте
+        $accessCardKeys = [
+            ['key' => 'card_level_3', 'name' => \Yii::t('common', 'Красная карта доступа')],
+            ['key' => 'card_level_1', 'name' => \Yii::t('common', 'Синяя карта доступа')],
+            ['key' => 'card_level_2', 'name' => \Yii::t('common', 'Зелёная карта доступа')],
+        ];
+        $access_cards = [];
+        foreach ($accessCardKeys as $item) {
+            $count = (int) Statistics::getParam($playerStats, $item['key']);
+            $access_cards[] = [
+                'key' => $item['key'],
+                'name' => $item['name'],
+                'image' => Statistics::getImage($images, $item['key']),
+                'count' => $count,
+            ];
         }
 
         // Крафты: все ключи статистики с префиксом craft_; для отображения — ключ предмета без префикса (weapon.mod.lasersight)
@@ -1269,9 +1281,10 @@ class StatsController extends BaseApiController
 
         return [
             'loot' => $loot,
-            'crafts' => $crafts,
+            'access_cards' => $access_cards,
             'blueprints' => $blueprints,
             'building' => $building,
+            'crafts' => $crafts,
         ];
     }
 
