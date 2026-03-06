@@ -1170,14 +1170,12 @@ class StatsController extends BaseApiController
         $loot = [];
         foreach ($lootKeys as $key => $name) {
             $count = (int) Statistics::getParam($playerStats, $key);
-            if ($count > 0) {
-                $loot[] = [
-                    'key' => $key,
-                    'name' => $name,
-                    'image' => Statistics::getImage($images, $key),
-                    'count' => $count,
-                ];
-            }
+            $loot[] = [
+                'key' => $key,
+                'name' => $name,
+                'image' => Statistics::getImage($images, $key),
+                'count' => $count,
+            ];
         }
 
         // Карты доступа: всегда три позиции (Красная, Синяя, Зелёная), как на старом сайте
