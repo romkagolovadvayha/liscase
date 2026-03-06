@@ -68,6 +68,7 @@ class Kills extends ActiveRecord
             'panther' => 'пантера',
             'crocodile' => 'крокодил',
             'tiger' => 'тигр',
+            'snake.entity' => 'змея',
         ];
     }
 
@@ -87,6 +88,7 @@ class Kills extends ActiveRecord
             'panther' => 'пантеру',
             'crocodile' => 'крокодила',
             'tiger' => 'тигра',
+            'snake.entity' => 'змею',
         ];
     }
 

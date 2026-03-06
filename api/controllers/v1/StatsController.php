@@ -267,7 +267,6 @@ class StatsController extends BaseApiController
             ['name' => \Yii::t('common', 'Железная руда'), 'key' => 'metal.ore', 'score' => 0.5],
             ['name' => \Yii::t('common', 'Камни'), 'key' => 'stones', 'score' => 0.3],
             ['name' => \Yii::t('common', 'Дерево'), 'key' => 'wood', 'score' => 0.05],
-            ['name' => \Yii::t('common', 'Разбито бочек'), 'key' => 'barrel', 'score' => 0],
             ['name' => \Yii::t('common', 'Дизельная бочка'), 'key' => 'diesel_barrel', 'score' => 0],
             ['name' => \Yii::t('common', 'Обломки костей'), 'key' => 'bones', 'param' => 'bone.fragments', 'image_key' => 'bone.fragments', 'score' => 0],
             ['name' => \Yii::t('common', 'Животный жир'), 'key' => 'animal_fat', 'param' => 'fat.animal', 'image_key' => 'fat.animal', 'score' => 0],
@@ -280,12 +279,6 @@ class StatsController extends BaseApiController
             $row = Statistics::getFarmItem($images, $names, $playerStats, $statKey, $item['name'], $item['score']);
             $imageKey = $item['image_key'] ?? $item['key'];
             $count = (int) $row['count'];
-            if ($item['key'] === 'barrel') {
-                $countBarrelsBroken = (int) Statistics::getParam($playerStats, 'barrels_broken');
-                if ($countBarrelsBroken > $count) {
-                    $count = $countBarrelsBroken;
-                }
-            }
             $farm[] = [
                 'key' => $item['key'],
                 'name' => $row['name'],
@@ -306,6 +299,7 @@ class StatsController extends BaseApiController
             ['key' => 'panther', 'name' => \Yii::t('common', 'Пантеры'), 'image_path' => 'images/hunters/panther.png'],
             ['key' => 'crocodile', 'name' => \Yii::t('common', 'Крокодилы'), 'image_path' => 'images/hunters/crocodile.png'],
             ['key' => 'tiger', 'name' => \Yii::t('common', 'Тигры'), 'image_path' => 'images/hunters/tiger.png'],
+            ['key' => 'snake.entity', 'name' => \Yii::t('common', 'Змеи'), 'param' => ['snake.entity'], 'image_path' => 'images/hunters/Snake.png'],
         ];
         $deathsByAnimal = Kills::getDeathsByAnimalCounts($user, $periodAll ? null : $server, $wipe, $periodAll);
         $hunters = [];
@@ -576,7 +570,6 @@ class StatsController extends BaseApiController
                 ['name' => \Yii::t('common', 'Железная руда'), 'key' => 'metal.ore', 'score' => 0.5],
                 ['name' => \Yii::t('common', 'Камни'), 'key' => 'stones', 'score' => 0.3],
                 ['name' => \Yii::t('common', 'Дерево'), 'key' => 'wood', 'score' => 0.05],
-                ['name' => \Yii::t('common', 'Разбито бочек'), 'key' => 'barrel', 'score' => 0],
                 ['name' => \Yii::t('common', 'Дизельная бочка'), 'key' => 'diesel_barrel', 'score' => 0],
                 ['name' => \Yii::t('common', 'Обломки костей'), 'key' => 'bones', 'param' => 'bone.fragments', 'image_key' => 'bone.fragments', 'score' => 0],
                 ['name' => \Yii::t('common', 'Животный жир'), 'key' => 'animal_fat', 'param' => 'fat.animal', 'image_key' => 'fat.animal', 'score' => 0],
@@ -589,13 +582,6 @@ class StatsController extends BaseApiController
                 $row = Statistics::getFarmItem($images, $names, $playerStats, $statKey, $item['name'], $item['score']);
                 $imageKey = $item['image_key'] ?? $item['key'];
                 $count = (int) $row['count'];
-                // Разбито бочек: основной ключ в БД — barrel (ExpertStatistics), fallback — barrels_broken (на случай других плагинов)
-                if ($item['key'] === 'barrel') {
-                    $countBarrelsBroken = (int) Statistics::getParam($playerStats, 'barrels_broken');
-                    if ($countBarrelsBroken > $count) {
-                        $count = $countBarrelsBroken;
-                    }
-                }
                 $farm[] = [
                     'key' => $item['key'],
                     'name' => $row['name'],
@@ -661,6 +647,7 @@ class StatsController extends BaseApiController
                 ['key' => 'panther', 'name' => \Yii::t('common', 'Пантеры'), 'image_path' => 'images/hunters/panther.png'],
                 ['key' => 'crocodile', 'name' => \Yii::t('common', 'Крокодилы'), 'image_path' => 'images/hunters/crocodile.png'],
                 ['key' => 'tiger', 'name' => \Yii::t('common', 'Тигры'), 'image_path' => 'images/hunters/tiger.png'],
+                ['key' => 'snake', 'name' => \Yii::t('common', 'Змеи'), 'param' => ['snake.entity'], 'image_path' => 'images/hunters/Snake.png'],
             ];
             $deathsByAnimal = Kills::getDeathsByAnimalCounts($user, $periodAll ? null : $server, $wipe, $periodAll);
             $hunters = [];
@@ -1167,8 +1154,9 @@ class StatsController extends BaseApiController
         $images = Statistics::productsImages();
         $names = Statistics::productsNames();
 
-        // Лут: только ящики и аирдроп (карты доступа — в access_cards, бочки — в Ресурсы и добыча)
+        // Лут: ящики, бочки, аирдроп (карты доступа — в access_cards)
         $lootKeys = [
+            'barrel' => \Yii::t('common', 'Разбито бочек'),
             'codelockedhackablecrate_oilrig' => \Yii::t('common', 'Ящик на нефтевышке'),
             'codelockedhackablecrate' => \Yii::t('common', 'Взломанный ящик'),
             'crate_elite' => \Yii::t('common', 'Элитный ящик'),
