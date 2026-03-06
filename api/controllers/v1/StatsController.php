@@ -52,7 +52,7 @@ class StatsController extends BaseApiController
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
             'only' => ['personal', 'report'],
-            'except' => ['stats', 'player-new', 'player-resources', 'player-kills', 'player-team', 'duels', 'search', 'tops', 'options'],
+            'except' => ['stats', 'player-new', 'player-resources', 'player-kills', 'player-team', 'player-loot-crafts', 'duels', 'search', 'tops', 'options'],
         ];
 
         // Опциональная авторизация для stats (инициализирует пользователя, если токен есть, но не требует его)
@@ -1100,6 +1100,179 @@ class StatsController extends BaseApiController
         }
 
         return $this->successResponse($cached);
+    }
+
+    /**
+     * Данные для вкладки «Лут и крафты»: карты доступа, ящики/бочки, крафты.
+     * Вызывается только при открытии вкладки.
+     *
+     * @OA\Get(
+     *     path="/v1/stats/player-loot-crafts",
+     *     operationId="getPlayerLootCrafts",
+     *     tags={"Stats"},
+     *     summary="Лут и крафты игрока",
+     *     @OA\Parameter(name="serverTag", in="query", required=true, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="steamId", in="query", required=true, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="wipe", in="query", required=false, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="period", in="query", required=false, description="all = за всё время", @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="loot, crafts, blueprints, building")
+     * )
+     */
+    public function actionPlayerLootCrafts()
+    {
+        $serverTag = \Yii::$app->request->get('serverTag');
+        $steamId = \Yii::$app->request->get('steamId');
+        if (empty($serverTag) || empty($steamId)) {
+            return $this->errorResponse('INVALID_PARAMS', 'Требуются serverTag и steamId', [], 400);
+        }
+
+        $server = Servers::find()->where(['tag' => $serverTag])->one();
+        if (!$server) {
+            throw new NotFoundHttpException('Сервер не найден');
+        }
+
+        $periodAll = \Yii::$app->request->get('period') === 'all';
+        $requestWipe = \Yii::$app->request->get('wipe');
+        $wipe = $periodAll ? null : (($requestWipe !== null && $requestWipe !== '') ? $requestWipe : $server->currentWipe());
+
+        $wipeKey = $periodAll ? 'all' : str_replace('/', '_', (string)($wipe ?? 'current'));
+        $cacheKey = 'api_stats_player_loot_crafts_' . $serverTag . '_' . $steamId . '_' . $wipeKey . '_v1';
+        $cached = Yii::$app->cache->get($cacheKey);
+
+        if ($cached === false) {
+            $playerStats = $periodAll
+                ? Statistics::getPlayerStatsAllTime($steamId)
+                : Statistics::getPlayerStats($server, $steamId, $wipe);
+
+            $user = User::findBySteamId($steamId, false, 'stats');
+            if (!$user) {
+                throw new NotFoundHttpException('Игрок не найден');
+            }
+
+            $cached = $this->buildPlayerLootCraftsData($playerStats);
+            Yii::$app->cache->set($cacheKey, $cached, 300);
+        }
+
+        return $this->successResponse($cached);
+    }
+
+    /**
+     * Собирает данные для вкладки «Лут и крафты»: лут (карты доступа, ящики, бочки) и крафты (ключи craft_*).
+     *
+     * @param array $playerStats результат Statistics::getPlayerStats / getPlayerStatsAllTime
+     * @return array{loot: array, crafts: array, blueprints: array, building: array}
+     */
+    private function buildPlayerLootCraftsData($playerStats)
+    {
+        $images = Statistics::productsImages();
+        $names = Statistics::productsNames();
+
+        // Ключи лута из ExpertStatistics: карты доступа, бочки, ящики (названия для отображения)
+        $lootKeys = [
+            'card_level_1' => \Yii::t('common', 'Карта доступа 1 ур.'),
+            'card_level_2' => \Yii::t('common', 'Карта доступа 2 ур.'),
+            'card_level_3' => \Yii::t('common', 'Карта доступа 3 ур.'),
+            'barrel' => \Yii::t('common', 'Бочка'),
+            'diesel_barrel' => \Yii::t('common', 'Дизельная бочка'),
+            'codelockedhackablecrate_oilrig' => \Yii::t('common', 'Ящик на нефтевышке'),
+            'codelockedhackablecrate' => \Yii::t('common', 'Взломанный ящик'),
+            'crate_elite' => \Yii::t('common', 'Элитный ящик'),
+            'crate_normal' => \Yii::t('common', 'Обычный ящик'),
+            'crate_underwater_advanced' => \Yii::t('common', 'Подводный ящик (продвинутый)'),
+            'crate_underwater_basic' => \Yii::t('common', 'Подводный ящик (базовый)'),
+            'supply_drop' => \Yii::t('common', 'Аирдроп'),
+            'crate_open' => \Yii::t('common', 'Другой ящик'),
+        ];
+
+        $loot = [];
+        foreach ($lootKeys as $key => $name) {
+            $count = (int) Statistics::getParam($playerStats, $key);
+            if ($count > 0) {
+                $loot[] = [
+                    'key' => $key,
+                    'name' => $name,
+                    'image' => Statistics::getImage($images, $key),
+                    'count' => $count,
+                ];
+            }
+        }
+
+        // Крафты: все ключи статистики с префиксом craft_; для отображения — ключ предмета без префикса (weapon.mod.lasersight)
+        $crafts = [];
+        $allKeys = is_array($playerStats) ? array_keys($playerStats) : [];
+        foreach ($allKeys as $statKey) {
+            if (strpos($statKey, 'craft_') !== 0) {
+                continue;
+            }
+            $count = (int) Statistics::getParam($playerStats, $statKey);
+            if ($count <= 0) {
+                continue;
+            }
+            $itemKey = substr($statKey, 6); // без префикса "craft_"
+            if ($itemKey === 'weapon') {
+                $displayName = \Yii::t('common', 'Оружие');
+            } elseif ($itemKey === 'attire') {
+                $displayName = \Yii::t('common', 'Одежда');
+            } else {
+                $displayName = $names[$itemKey] ?? $itemKey;
+            }
+            $crafts[] = [
+                'key' => $itemKey,
+                'stat_key' => $statKey,
+                'name' => $displayName,
+                'image' => Statistics::getImage($images, $itemKey),
+                'count' => $count,
+            ];
+        }
+        // Сортируем крафты по количеству (убывание)
+        usort($crafts, function ($a, $b) {
+            return $b['count'] - $a['count'];
+        });
+
+        // Чертежи: фрагменты из лута ящиков (ExpertStatistics OnLootEntity)
+        $blueprintKeys = [
+            'basicblueprintfragment' => \Yii::t('common', 'Фрагмент простого чертежа'),
+            'advancedblueprintfragment' => \Yii::t('common', 'Фрагмент продвинутого чертежа'),
+        ];
+        $blueprints = [];
+        foreach ($blueprintKeys as $key => $name) {
+            $count = (int) Statistics::getParam($playerStats, $key);
+            if ($count > 0) {
+                $blueprints[] = [
+                    'key' => $key,
+                    'name' => $name,
+                    'image' => Statistics::getImage($images, $key),
+                    'count' => $count,
+                ];
+            }
+        }
+
+        // Стройка: апгрейд блоков (ExpertStatistics OnStructureUpgrade)
+        $buildingKeys = [
+            'upgrade_wood' => \Yii::t('common', 'Дерево'),
+            'upgrade_stone' => \Yii::t('common', 'Камень'),
+            'upgrade_metal' => \Yii::t('common', 'Металл'),
+            'upgrade_toptier' => \Yii::t('common', 'МВК'),
+        ];
+        $building = [];
+        foreach ($buildingKeys as $key => $name) {
+            $count = (int) Statistics::getParam($playerStats, $key);
+            if ($count > 0) {
+                $building[] = [
+                    'key' => $key,
+                    'name' => $name,
+                    'image' => Statistics::getImage($images, $key),
+                    'count' => $count,
+                ];
+            }
+        }
+
+        return [
+            'loot' => $loot,
+            'crafts' => $crafts,
+            'blueprints' => $blueprints,
+            'building' => $building,
+        ];
     }
 
     /**

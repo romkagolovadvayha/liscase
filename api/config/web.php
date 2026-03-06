@@ -114,6 +114,7 @@ $config = [
                 'v1/stats/player-resources' => 'v1/stats/player-resources',
                 'v1/stats/player-kills' => 'v1/stats/player-kills',
                 'v1/stats/player-team' => 'v1/stats/player-team',
+                'v1/stats/player-loot-crafts' => 'v1/stats/player-loot-crafts',
                 'v1/stats/duels' => 'v1/stats/duels',
                 'v1/stats/search' => 'v1/stats/search',
                 'v1/stats/tops' => 'v1/stats/tops',
