@@ -636,6 +636,36 @@ class StatsController extends BaseApiController
             });
             $pie = array_slice($pie, 0, 10);
 
+            // Любимая еда — как в _player_stats_food.php: mod_* кроме tea, pie, largemedkit
+            $food = [];
+            foreach ($playerStats as $statKey => $unused) {
+                if (strpos($statKey, 'mod_') !== 0) {
+                    continue;
+                }
+                if (strpos($statKey, 'pie') !== false) {
+                    continue;
+                }
+                $key = str_replace('mod_', '', $statKey);
+                if (strpos($key, 'tea') !== false) {
+                    continue;
+                }
+                if (strpos($key, 'largemedkit') !== false) {
+                    continue;
+                }
+                $row = Statistics::getFoodItem($images, $names, $playerStats, $key);
+                $food[] = [
+                    'key' => $row['key'],
+                    'name' => $row['name'],
+                    'image' => $row['image'],
+                    'count' => (int) $row['count'],
+                    'score' => 0,
+                ];
+            }
+            usort($food, function ($a, $b) {
+                return $b['count'] - $a['count'];
+            });
+            $food = array_slice($food, 0, 10);
+
             // Медицина (для вкладки Убийства) — загружается через endpoint player-kills
 
             // Охота — животные; картинки как в frontend/views/stats/_player_stats_hunter.php (images/hunters/*.png) через S3
@@ -840,6 +870,7 @@ class StatsController extends BaseApiController
                     ],
                     'tea' => $tea,
                     'pie' => $pie,
+                    'food' => $food,
                     'medical' => $medical,
                     'hunters' => $hunters,
                     'ferm' => $ferm,
