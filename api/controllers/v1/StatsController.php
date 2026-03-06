@@ -1232,15 +1232,17 @@ class StatsController extends BaseApiController
                 'key' => $key,
                 'name' => $name,
                 'image' => Statistics::getImage($images, $key),
+                'image_large' => Statistics::getImageLarge($images, $key),
                 'count' => $count,
             ];
         }
 
         // Карты доступа: всегда три позиции (Красная, Синяя, Зелёная), как на старом сайте
+        // Синяя (card_level_1) и Зелёная (card_level_2) в базе картинок перепутаны — подставляем изображения наоборот
         $accessCardKeys = [
-            ['key' => 'card_level_3', 'name' => \Yii::t('common', 'Красная карта доступа')],
-            ['key' => 'card_level_1', 'name' => \Yii::t('common', 'Синяя карта доступа')],
-            ['key' => 'card_level_2', 'name' => \Yii::t('common', 'Зелёная карта доступа')],
+            ['key' => 'card_level_3', 'name' => \Yii::t('common', 'Красная карта доступа'), 'imageKey' => 'card_level_3'],
+            ['key' => 'card_level_2', 'name' => \Yii::t('common', 'Синяя карта доступа'), 'imageKey' => 'card_level_2'],
+            ['key' => 'card_level_1', 'name' => \Yii::t('common', 'Зелёная карта доступа'), 'imageKey' => 'card_level_1'],
         ];
         $access_cards = [];
         foreach ($accessCardKeys as $item) {
@@ -1248,7 +1250,7 @@ class StatsController extends BaseApiController
             $access_cards[] = [
                 'key' => $item['key'],
                 'name' => $item['name'],
-                'image' => Statistics::getImage($images, $item['key']),
+                'image' => Statistics::getImage($images, $item['imageKey']),
                 'count' => $count,
             ];
         }
