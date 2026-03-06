@@ -299,7 +299,7 @@ class StatsController extends BaseApiController
             ['key' => 'panther', 'name' => \Yii::t('common', 'Пантеры'), 'image_path' => 'images/hunters/panther.png'],
             ['key' => 'crocodile', 'name' => \Yii::t('common', 'Крокодилы'), 'image_path' => 'images/hunters/crocodile.png'],
             ['key' => 'tiger', 'name' => \Yii::t('common', 'Тигры'), 'image_path' => 'images/hunters/tiger.png'],
-            ['key' => 'snake.entity', 'name' => \Yii::t('common', 'Змеи'), 'param' => ['snake.entity'], 'image_path' => 'images/hunters/Snake.png'],
+            ['key' => 'snake', 'name' => \Yii::t('common', 'Змеи'), 'param' => ['snake.entity'], 'product_image_key' => 'snake.entity'],
         ];
         $deathsByAnimal = Kills::getDeathsByAnimalCounts($user, $periodAll ? null : $server, $wipe, $periodAll);
         $hunters = [];
@@ -320,10 +320,13 @@ class StatsController extends BaseApiController
             } else {
                 $killedPlayer = (int) (isset($deathsByAnimal[$item['key']]) ? $deathsByAnimal[$item['key']] : 0);
             }
+            $imageUrl = !empty($item['product_image_key'])
+                ? Statistics::getImage($images, $item['product_image_key'])
+                : self::getStaticImageUrl($item['image_path']);
             $hunters[] = [
                 'key' => $item['key'],
                 'name' => $item['name'],
-                'image' => self::getStaticImageUrl($item['image_path']),
+                'image' => $imageUrl,
                 'count' => $count,
                 'killed_player' => $killedPlayer,
                 'score' => 0,
@@ -647,7 +650,7 @@ class StatsController extends BaseApiController
                 ['key' => 'panther', 'name' => \Yii::t('common', 'Пантеры'), 'image_path' => 'images/hunters/panther.png'],
                 ['key' => 'crocodile', 'name' => \Yii::t('common', 'Крокодилы'), 'image_path' => 'images/hunters/crocodile.png'],
                 ['key' => 'tiger', 'name' => \Yii::t('common', 'Тигры'), 'image_path' => 'images/hunters/tiger.png'],
-                ['key' => 'snake', 'name' => \Yii::t('common', 'Змеи'), 'param' => ['snake.entity'], 'image_path' => 'images/hunters/Snake.png'],
+                ['key' => 'snake', 'name' => \Yii::t('common', 'Змеи'), 'param' => ['snake.entity'], 'product_image_key' => 'snake.entity'],
             ];
             $deathsByAnimal = Kills::getDeathsByAnimalCounts($user, $periodAll ? null : $server, $wipe, $periodAll);
             $hunters = [];
@@ -663,15 +666,18 @@ class StatsController extends BaseApiController
                 $killedPlayer = 0;
                 if (!empty($item['param'])) {
                     foreach ((array) $item['param'] as $p) {
-                        $killedPlayer += (int) isset($deathsByAnimal[$p]) ? $deathsByAnimal[$p] : 0;
+                        $killedPlayer += (int) (isset($deathsByAnimal[$p]) ? $deathsByAnimal[$p] : 0);
                     }
                 } else {
-                    $killedPlayer = (int) isset($deathsByAnimal[$item['key']]) ? $deathsByAnimal[$item['key']] : 0;
+                    $killedPlayer = (int) (isset($deathsByAnimal[$item['key']]) ? $deathsByAnimal[$item['key']] : 0);
                 }
+                $imageUrl = !empty($item['product_image_key'])
+                    ? Statistics::getImage($images, $item['product_image_key'])
+                    : self::getStaticImageUrl($item['image_path']);
                 $hunters[] = [
                     'key' => $item['key'],
                     'name' => $item['name'],
-                    'image' => self::getStaticImageUrl($item['image_path']),
+                    'image' => $imageUrl,
                     'count' => $count,
                     'killed_player' => $killedPlayer,
                     'score' => 0,
@@ -777,6 +783,24 @@ class StatsController extends BaseApiController
                 }
             }
 
+            // Стройка: апгрейд блоков (ExpertStatistics OnStructureUpgrade) — для вкладки «Общая информация»
+            $buildingKeys = [
+                'upgrade_wood' => \Yii::t('common', 'Дерево'),
+                'upgrade_stone' => \Yii::t('common', 'Камень'),
+                'upgrade_metal' => \Yii::t('common', 'Металл'),
+                'upgrade_toptier' => \Yii::t('common', 'МВК'),
+            ];
+            $building = [];
+            foreach ($buildingKeys as $key => $name) {
+                $count = (int) Statistics::getParam($playerStats, $key);
+                $building[] = [
+                    'key' => $key,
+                    'name' => $name,
+                    'image' => Statistics::getImage($images, $key),
+                    'count' => $count,
+                ];
+            }
+
             // История убийств и медицинские предметы — отдельный endpoint player-kills при открытии вкладки Убийства
             $killsForApi = [];
             $medical = [];
@@ -829,6 +853,7 @@ class StatsController extends BaseApiController
                     'kills' => $killsForApi,
                     'team_members_count' => count($teamMembers),
                     'team_hidden' => $teamHidden,
+                    'building' => $building,
                 ],
             ];
 
@@ -1090,7 +1115,7 @@ class StatsController extends BaseApiController
     }
 
     /**
-     * Данные для вкладки «Лут и крафты»: карты доступа, ящики/бочки, крафты.
+     * Данные для вкладки «Лут и РТ»: лут, карты доступа, чертежи, стройка.
      * Вызывается только при открытии вкладки.
      *
      * @OA\Get(
@@ -1102,7 +1127,7 @@ class StatsController extends BaseApiController
      *     @OA\Parameter(name="steamId", in="query", required=true, @OA\Schema(type="string")),
      *     @OA\Parameter(name="wipe", in="query", required=false, @OA\Schema(type="string")),
      *     @OA\Parameter(name="period", in="query", required=false, description="all = за всё время", @OA\Schema(type="string")),
-     *     @OA\Response(response=200, description="loot, crafts, blueprints, building")
+     *     @OA\Response(response=200, description="loot, access_cards, blueprints")
      * )
      */
     public function actionPlayerLootCrafts()
@@ -1144,17 +1169,17 @@ class StatsController extends BaseApiController
     }
 
     /**
-     * Собирает данные для вкладки «Лут и крафты»: лут (карты доступа, ящики, бочки) и крафты (ключи craft_*).
+     * Собирает данные для вкладки «Лут и РТ»: лут, карты доступа, чертежи, стройка.
      *
      * @param array $playerStats результат Statistics::getPlayerStats / getPlayerStatsAllTime
-     * @return array{loot: array, crafts: array, blueprints: array, building: array}
+     * @return array{loot: array, access_cards: array, blueprints: array}
      */
     private function buildPlayerLootCraftsData($playerStats)
     {
         $images = Statistics::productsImages();
         $names = Statistics::productsNames();
 
-        // Лут: ящики, бочки, аирдроп (карты доступа — в access_cards)
+        // Лут: ящики, бочки, аирдроп, танки, вертолёты (карты доступа — в access_cards)
         $lootKeys = [
             'barrel' => \Yii::t('common', 'Разбито бочек'),
             'codelockedhackablecrate_oilrig' => \Yii::t('common', 'Ящик на нефтевышке'),
@@ -1165,6 +1190,8 @@ class StatsController extends BaseApiController
             'crate_underwater_basic' => \Yii::t('common', 'Подводный ящик (базовый)'),
             'supply_drop' => \Yii::t('common', 'Аирдроп'),
             'crate_open' => \Yii::t('common', 'Другой ящик'),
+            'bradleys' => \Yii::t('common', 'Взорванные танки'),
+            'helicopters' => \Yii::t('common', 'Патрульные вертолёты'),
         ];
 
         $loot = [];
@@ -1195,38 +1222,6 @@ class StatsController extends BaseApiController
             ];
         }
 
-        // Крафты: все ключи статистики с префиксом craft_; для отображения — ключ предмета без префикса (weapon.mod.lasersight)
-        $crafts = [];
-        $allKeys = is_array($playerStats) ? array_keys($playerStats) : [];
-        foreach ($allKeys as $statKey) {
-            if (strpos($statKey, 'craft_') !== 0) {
-                continue;
-            }
-            $count = (int) Statistics::getParam($playerStats, $statKey);
-            if ($count <= 0) {
-                continue;
-            }
-            $itemKey = substr($statKey, 6); // без префикса "craft_"
-            if ($itemKey === 'weapon') {
-                $displayName = \Yii::t('common', 'Оружие');
-            } elseif ($itemKey === 'attire') {
-                $displayName = \Yii::t('common', 'Одежда');
-            } else {
-                $displayName = $names[$itemKey] ?? $itemKey;
-            }
-            $crafts[] = [
-                'key' => $itemKey,
-                'stat_key' => $statKey,
-                'name' => $displayName,
-                'image' => Statistics::getImage($images, $itemKey),
-                'count' => $count,
-            ];
-        }
-        // Сортируем крафты по количеству (убывание)
-        usort($crafts, function ($a, $b) {
-            return $b['count'] - $a['count'];
-        });
-
         // Чертежи: фрагменты из лута ящиков (ExpertStatistics OnLootEntity)
         $blueprintKeys = [
             'basicblueprintfragment' => \Yii::t('common', 'Фрагмент простого чертежа'),
@@ -1245,32 +1240,10 @@ class StatsController extends BaseApiController
             }
         }
 
-        // Стройка: апгрейд блоков (ExpertStatistics OnStructureUpgrade)
-        $buildingKeys = [
-            'upgrade_wood' => \Yii::t('common', 'Дерево'),
-            'upgrade_stone' => \Yii::t('common', 'Камень'),
-            'upgrade_metal' => \Yii::t('common', 'Металл'),
-            'upgrade_toptier' => \Yii::t('common', 'МВК'),
-        ];
-        $building = [];
-        foreach ($buildingKeys as $key => $name) {
-            $count = (int) Statistics::getParam($playerStats, $key);
-            if ($count > 0) {
-                $building[] = [
-                    'key' => $key,
-                    'name' => $name,
-                    'image' => Statistics::getImage($images, $key),
-                    'count' => $count,
-                ];
-            }
-        }
-
         return [
             'loot' => $loot,
             'access_cards' => $access_cards,
             'blueprints' => $blueprints,
-            'building' => $building,
-            'crafts' => $crafts,
         ];
     }
 
