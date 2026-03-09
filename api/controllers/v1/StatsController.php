@@ -1212,15 +1212,15 @@ class StatsController extends BaseApiController
 
         // Лут: ящики, бочки, аирдроп, танки, вертолёты (карты доступа — в access_cards)
         $lootKeys = [
-            'barrel' => \Yii::t('common', 'Разбито бочек'),
-            'codelockedhackablecrate_oilrig' => \Yii::t('common', 'Ящик на нефтевышке'),
-            'codelockedhackablecrate' => \Yii::t('common', 'Взломанный ящик'),
+            'codelockedhackablecrate_oilrig' => \Yii::t('common', 'Крейт на нефтевышке'),
+            'codelockedhackablecrate' => \Yii::t('common', 'Крейт'),
             'crate_elite' => \Yii::t('common', 'Элитный ящик'),
-            'crate_normal' => \Yii::t('common', 'Обычный ящик'),
+            'crate_normal' => \Yii::t('common', 'Армейский ящик'),
             'crate_underwater_advanced' => \Yii::t('common', 'Подводный ящик (продвинутый)'),
             'crate_underwater_basic' => \Yii::t('common', 'Подводный ящик (базовый)'),
             'supply_drop' => \Yii::t('common', 'Аирдроп'),
-            'crate_open' => \Yii::t('common', 'Другой ящик'),
+            'barrel' => \Yii::t('common', 'Разбито бочек'),
+            'crate_open' => \Yii::t('common', 'Обычный ящик'),
             'bradleys' => \Yii::t('common', 'Взорванные танки'),
             'helicopters' => \Yii::t('common', 'Патрульные вертолёты'),
         ];
@@ -1237,12 +1237,12 @@ class StatsController extends BaseApiController
             ];
         }
 
-        // Карты доступа: всегда три позиции (Красная, Синяя, Зелёная), как на старом сайте
+        // Карты доступа: три позиции в порядке Зелёная → Синяя → Красная (обратный порядок)
         // Синяя (card_level_1) и Зелёная (card_level_2) в базе картинок перепутаны — подставляем изображения наоборот
         $accessCardKeys = [
-            ['key' => 'card_level_3', 'name' => \Yii::t('common', 'Красная карта доступа'), 'imageKey' => 'card_level_3'],
-            ['key' => 'card_level_2', 'name' => \Yii::t('common', 'Синяя карта доступа'), 'imageKey' => 'card_level_2'],
             ['key' => 'card_level_1', 'name' => \Yii::t('common', 'Зелёная карта доступа'), 'imageKey' => 'card_level_1'],
+            ['key' => 'card_level_2', 'name' => \Yii::t('common', 'Синяя карта доступа'), 'imageKey' => 'card_level_2'],
+            ['key' => 'card_level_3', 'name' => \Yii::t('common', 'Красная карта доступа'), 'imageKey' => 'card_level_3'],
         ];
         $access_cards = [];
         foreach ($accessCardKeys as $item) {
