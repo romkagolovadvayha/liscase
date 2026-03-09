@@ -1231,7 +1231,7 @@ class StatsController extends BaseApiController
             $loot[] = [
                 'key' => $key,
                 'name' => $name,
-                'image' => Statistics::getImage($images, $key),
+                'image' => Statistics::getImageLarge($images, $key),
                 'image_large' => Statistics::getImageLarge($images, $key),
                 'count' => $count,
             ];
@@ -1250,7 +1250,7 @@ class StatsController extends BaseApiController
             $access_cards[] = [
                 'key' => $item['key'],
                 'name' => $item['name'],
-                'image' => Statistics::getImage($images, $item['imageKey']),
+                'image' => Statistics::getImageLarge($images, $item['imageKey']),
                 'count' => $count,
             ];
         }
@@ -1267,7 +1267,7 @@ class StatsController extends BaseApiController
                 $blueprints[] = [
                     'key' => $key,
                     'name' => $name,
-                    'image' => Statistics::getImage($images, $key),
+                    'image' => Statistics::getImageLarge($images, $key),
                     'count' => $count,
                 ];
             }
