@@ -34,10 +34,10 @@ class BuildingsController extends BaseApiController
     {
         $behaviors = parent::behaviors();
 
-        // JWT авторизация требуется для постановки лайка, создания постройки и загрузки изображений
+        // JWT авторизация требуется для постановки лайка, создания постройки, удаления и загрузки изображений
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
-            'only' => ['like', 'create', 'upload-image'],
+            'only' => ['like', 'create', 'upload-image', 'delete'],
             'except' => ['index', 'view', 'likes', 'options'],
         ];
 
@@ -108,12 +108,13 @@ class BuildingsController extends BaseApiController
         $page = (int)$request->get('page', 1);
         $limit = (int)$request->get('limit', 10);
         $serverTag = $request->get('server_tag');
+        $steamId = $request->get('steam_id');
         $search = $request->get('search');
         $sort = $request->get('sort', 'created_at');
         $order = $request->get('order', 'desc');
 
         // Кэшируем только если нет фильтров (базовый список)
-        $hasFilters = !empty($serverTag) || !empty($search);
+        $hasFilters = !empty($serverTag) || !empty($search) || !empty($steamId);
         $cacheKey = null;
         $cachedData = null;
         
@@ -138,6 +139,15 @@ class BuildingsController extends BaseApiController
             // Фильтр по серверу
             if ($serverTag) {
                 $query->andWhere(['b.server_tag' => $serverTag]);
+            }
+
+            // Фильтр по автору или жильцу (steam_id): постройки, где игрок — автор или указан жильцом
+            if ($steamId !== null && $steamId !== '') {
+                $query->joinWith('user')
+                    ->leftJoin('building_resident br', 'br.building_id = b.id')
+                    ->leftJoin('user resident_user', 'resident_user.id = br.user_id')
+                    ->andWhere(['or', ['user.steam_id' => $steamId], ['resident_user.steam_id' => $steamId]])
+                    ->groupBy('b.id');
             }
 
             // Поиск по названию или описанию
@@ -608,6 +618,45 @@ class BuildingsController extends BaseApiController
             'isLiked' => $isLiked,
             'likes' => $building->likes,
         ]);
+    }
+
+    /**
+     * Удаление постройки (доступно только автору). Мягкое удаление: status = STATUS_DELETED.
+     *
+     * @OA\Delete(
+     *     path="/v1/buildings/{id}",
+     *     operationId="deleteBuilding",
+     *     tags={"Buildings"},
+     *     summary="Удалить постройку",
+     *     description="Удаляет постройку. Доступно только автору. Требует авторизации.",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, description="ID постройки", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Постройка удалена"),
+     *     @OA\Response(response=403, description="Нет прав на удаление"),
+     *     @OA\Response(response=404, description="Постройка не найдена")
+     * )
+     */
+    public function actionDelete($id)
+    {
+        $user = $this->getCurrentUser();
+
+        $building = Building::find()
+            ->where(['id' => (int) $id])
+            ->andWhere(['in', 'status', [Building::STATUS_ACTIVE, Building::STATUS_WAIT]])
+            ->one();
+
+        if (!$building) {
+            return $this->errorResponse('BUILDING_NOT_FOUND', 'Постройка не найдена', [], 404);
+        }
+
+        if ((int) $building->user_id !== (int) $user->id) {
+            return $this->errorResponse('FORBIDDEN', 'Удалять можно только свою постройку', [], 403);
+        }
+
+        $building->status = Building::STATUS_DELETED;
+        $building->save(false);
+
+        return $this->successResponse(['message' => 'Постройка удалена']);
     }
 
     /**

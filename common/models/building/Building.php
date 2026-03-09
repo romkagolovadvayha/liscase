@@ -33,6 +33,7 @@ class Building extends \yii\db\ActiveRecord
     public const STATUS_ACTIVE = 1;
     public const STATUS_REJECT = 2;
     public const STATUS_WAIT = 3;
+    public const STATUS_DELETED = 4;
 
     /**
      * {@inheritdoc}

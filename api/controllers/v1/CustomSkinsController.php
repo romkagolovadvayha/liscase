@@ -102,12 +102,13 @@ class CustomSkinsController extends BaseApiController
         $page = (int)$request->get('page', 1);
         $limit = (int)$request->get('limit', 10);
         $categoryId = $request->get('category_id');
+        $steamId = $request->get('steam_id');
         $search = $request->get('search');
         $sort = $request->get('sort', 'created_at');
         $order = $request->get('order', 'desc');
 
         // Кэшируем только базовый список (без фильтров, первая страница, дефолтная сортировка)
-        $hasFilters = !empty($categoryId) || !empty($search);
+        $hasFilters = !empty($categoryId) || !empty($search) || !empty($steamId);
         $isDefaultSort = $sort === 'created_at' && $order === 'desc';
         $cacheKey = null;
         $cachedData = null;
@@ -133,6 +134,11 @@ class CustomSkinsController extends BaseApiController
             // Фильтр по категории
             if ($categoryId) {
                 $query->andWhere(['s.server_skin_category_id' => (int)$categoryId]);
+            }
+
+            // Фильтр по добавившему скин (steam_id)
+            if ($steamId !== null && $steamId !== '') {
+                $query->joinWith('user')->andWhere(['user.steam_id' => $steamId]);
             }
 
             // Поиск по названию
