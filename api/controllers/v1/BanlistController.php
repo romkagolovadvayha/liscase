@@ -2,8 +2,11 @@
 
 namespace api\controllers\v1;
 
+use api\components\jwt\JwtService;
 use common\models\bans\Bans;
 use common\models\servers\Servers;
+use common\models\statistics\Reports;
+use common\models\user\User;
 use Yii;
 use yii\data\ActiveDataProvider;
 use yii\helpers\ArrayHelper;
@@ -48,6 +51,13 @@ class BanlistController extends BaseApiController
      *     description="Фильтр по ID сервера",
      *     required=false,
      *     @OA\Schema(type="integer")
+     *   ),
+     *   @OA\Parameter(
+     *     name="only_my_reports",
+     *     in="query",
+     *     description="Только баны игроков, на которых текущий пользователь отправлял жалобу (требуется авторизация)",
+     *     required=false,
+     *     @OA\Schema(type="integer", enum={0, 1})
      *   ),
      *   @OA\Parameter(
      *     name="sort",
@@ -106,11 +116,37 @@ class BanlistController extends BaseApiController
             $steamId = $request->get('steam_id');
             $reason = $request->get('reason');
             $serverId = $request->get('server_id');
+            $onlyMyReports = filter_var($request->get('only_my_reports'), FILTER_VALIDATE_BOOLEAN);
             $sortField = $request->get('sort', 'banned_at');
             $sortOrder = $request->get('order', 'desc') === 'asc' ? SORT_ASC : SORT_DESC;
+
+            // Для фильтра «только те, на кого я жаловался» нужен текущий пользователь из JWT
+            $currentUser = null;
+            if ($onlyMyReports) {
+                try {
+                    if (!Yii::$app->user->isGuest) {
+                        $currentUser = Yii::$app->user->identity;
+                    } else {
+                        $jwtService = Yii::$app->has('jwt') ? Yii::$app->get('jwt') : new JwtService();
+                        $token = $jwtService->extractTokenFromRequest($request);
+                        if ($token) {
+                            $payload = $jwtService->validateToken($token);
+                            $userId = $jwtService->getUserId($payload);
+                            $steamIdFromToken = $jwtService->getSteamId($payload);
+                            if ($userId) {
+                                $currentUser = User::findIdentity($userId);
+                            } elseif ($steamIdFromToken) {
+                                $currentUser = User::find()->where(['steam_id' => $steamIdFromToken])->one();
+                            }
+                        }
+                    }
+                } catch (\Exception $e) {
+                    // Токен невалидный — фильтр не применяем
+                }
+            }
             
             // Кэшируем только если нет фильтров (базовый список)
-            $hasFilters = !empty($steamId) || !empty($reason) || !empty($serverId);
+            $hasFilters = !empty($steamId) || !empty($reason) || !empty($serverId) || $onlyMyReports;
             $cacheKey = null;
             $cachedData = null;
             
@@ -155,6 +191,20 @@ class BanlistController extends BaseApiController
                 // Фильтр по серверу
                 if (!empty($serverId)) {
                     $query->andWhere(['server_id' => (int)$serverId]);
+                }
+
+                // Фильтр «только баны игроков, на которых я отправлял жалобу»
+                if ($onlyMyReports && $currentUser) {
+                    $reportedSteamIds = Reports::find()
+                        ->select('recepient_steam_id')
+                        ->where(['steam_id' => $currentUser->steam_id])
+                        ->distinct()
+                        ->column();
+                    if (empty($reportedSteamIds)) {
+                        $query->andWhere('1 = 0');
+                    } else {
+                        $query->andWhere(['steam_id' => $reportedSteamIds]);
+                    }
                 }
 
                 // Сортировка

@@ -25,6 +25,19 @@ class BlogController extends BaseApiController
      * @var bool|null Кэш существования таблицы comment_like
      */
     private static $commentLikeTableExists = null;
+
+    /**
+     * Проверяет существование таблицы comment_like (с кэшем).
+     * @return bool
+     */
+    private function commentLikeTableExists(): bool
+    {
+        if (self::$commentLikeTableExists === null) {
+            self::$commentLikeTableExists = Yii::$app->db->schema->getTableSchema('comment_like', true) !== null;
+        }
+        return self::$commentLikeTableExists;
+    }
+
     /**
      * Настройка behaviors
      */
@@ -679,18 +692,15 @@ class BlogController extends BaseApiController
             return $this->errorResponse('COMMENT_NOT_FOUND', 'Комментарий не найден', [], 404);
         }
 
-        // Проверяем, есть ли уже лайк
-        $likeExists = null;
-        try {
-            $likeExists = Yii::$app->db->createCommand('SELECT id FROM comment_like WHERE comment_id = :comment_id AND user_id = :user_id', [
-                ':comment_id' => $id,
-                ':user_id' => $user->id
-            ])->queryOne();
-        } catch (\Throwable $e) {
-            // Если таблица comment_like не существует, возвращаем ошибку
-            Yii::error('Error checking comment like (table may not exist): ' . $e->getMessage(), 'api');
+        if (!$this->commentLikeTableExists()) {
             return $this->errorResponse('FEATURE_NOT_AVAILABLE', 'Функция лайков комментариев недоступна', [], 501);
         }
+
+        // Проверяем, есть ли уже лайк
+        $likeExists = Yii::$app->db->createCommand('SELECT id FROM comment_like WHERE comment_id = :comment_id AND user_id = :user_id', [
+            ':comment_id' => $id,
+            ':user_id' => $user->id
+        ])->queryOne();
 
         if ($likeExists) {
             // Удаляем лайк
@@ -772,26 +782,23 @@ class BlogController extends BaseApiController
             }
         }
 
-        // Получаем количество лайков
+        // Получаем количество лайков (только если таблица comment_like существует)
         $likesCount = 0;
         $isLiked = false;
-        try {
-            $likesCount = (int)Yii::$app->db->createCommand('SELECT COUNT(*) FROM comment_like WHERE comment_id = :id', [':id' => $comment->id])
-                ->queryScalar();
-
-            // Проверяем, лайкнул ли текущий пользователь
-            if ($userId) {
-                $likeExists = Yii::$app->db->createCommand('SELECT id FROM comment_like WHERE comment_id = :comment_id AND user_id = :user_id', [
-                    ':comment_id' => $comment->id,
-                    ':user_id' => $userId
-                ])->queryOne();
-                $isLiked = (bool)$likeExists;
+        if ($this->commentLikeTableExists()) {
+            try {
+                $likesCount = (int)Yii::$app->db->createCommand('SELECT COUNT(*) FROM comment_like WHERE comment_id = :id', [':id' => $comment->id])
+                    ->queryScalar();
+                if ($userId) {
+                    $likeExists = Yii::$app->db->createCommand('SELECT id FROM comment_like WHERE comment_id = :comment_id AND user_id = :user_id', [
+                        ':comment_id' => $comment->id,
+                        ':user_id' => $userId
+                    ])->queryOne();
+                    $isLiked = (bool)$likeExists;
+                }
+            } catch (\Throwable $e) {
+                Yii::error('Error getting comment likes: ' . $e->getMessage(), 'api');
             }
-        } catch (\Throwable $e) {
-            // Если таблица comment_like не существует, просто возвращаем значения по умолчанию
-            Yii::error('Error getting comment likes (table may not exist): ' . $e->getMessage(), 'api');
-            $likesCount = 0;
-            $isLiked = false;
         }
 
         // Получаем дочерние комментарии

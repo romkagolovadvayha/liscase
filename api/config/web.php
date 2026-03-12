@@ -211,6 +211,9 @@ $config = [
 
                 // GameStores Payments API (для платежей через плагин)
                 'v1/integrations/payments/custom' => 'v1/game-stores/integrations-payments-custom',
+
+                // HighlightCaptureMod (Rust PvP киллы → Telegram)
+                'v1/rust/highlights' => 'v1/rust-highlights/index',
             ],
         ],
         'request' => [
