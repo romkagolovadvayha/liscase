@@ -62,6 +62,7 @@ $config = [
 
                 // User
                 'v1/user/profile' => 'v1/user/profile',
+                'v1/user/current-server' => 'v1/user/current-server',
                 'v1/user/social-links' => 'v1/user/social-links',
                 'v1/user/balance' => 'v1/user/balance',
                 'v1/user/history' => 'v1/user/history',

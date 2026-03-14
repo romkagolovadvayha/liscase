@@ -168,6 +168,80 @@ class UserController extends BaseApiController
     }
 
     /**
+     * Установка текущего сервера пользователя (для выдачи предметов и т.д.)
+     *
+     * @OA\Put(
+     *     path="/v1/user/current-server",
+     *     operationId="setCurrentServer",
+     *     tags={"User"},
+     *     summary="Установить текущий сервер пользователя",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="application/json",
+     *             @OA\Schema(
+     *                 required={"serverId"},
+     *                 @OA\Property(property="serverId", type="integer", description="ID сервера")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Сервер обновлён"),
+     *     @OA\Response(response=400, description="Неверный serverId"),
+     *     @OA\Response(response=404, description="Сервер не найден")
+     * )
+     */
+    public function actionCurrentServer()
+    {
+        $user = $this->getCurrentUser();
+
+        if (!Yii::$app->request->isPut && !Yii::$app->request->isPost) {
+            $server = $user->server;
+            return $this->successResponse([
+                'server' => $server ? [
+                    'id' => $server->id,
+                    'name' => $server->monitoring_name ?? $server->name ?? $server->tag,
+                    'tag' => $server->tag,
+                ] : null,
+            ]);
+        }
+
+        $post = Yii::$app->request->getBodyParams() ?: Yii::$app->request->post();
+        if (empty($post)) {
+            $raw = Yii::$app->request->getRawBody();
+            if (!empty($raw)) {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    $post = $decoded;
+                }
+            }
+        }
+
+        $serverId = isset($post['serverId']) ? (int) $post['serverId'] : null;
+        if (empty($serverId)) {
+            return $this->errorResponse('INVALID_DATA', 'Не указан serverId', [], 400);
+        }
+
+        $server = Servers::findOne($serverId);
+        if (!$server || !in_array($server->status, [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE], true)) {
+            return $this->errorResponse('SERVER_NOT_FOUND', 'Сервер не найден или недоступен', [], 404);
+        }
+
+        $user->server_id = $server->id;
+        if (!$user->save(false)) {
+            return $this->errorResponse('SAVE_ERROR', 'Ошибка при сохранении', [], 500);
+        }
+
+        return $this->successResponse([
+            'server' => [
+                'id' => $server->id,
+                'name' => $server->monitoring_name ?? $server->name ?? $server->tag,
+                'tag' => $server->tag,
+            ],
+        ]);
+    }
+
+    /**
      * Сохранение социальных ссылок
      * 
      * @OA\Put(
