@@ -10,6 +10,8 @@ use common\models\profit\Profit;
 use common\models\servers\Servers;
 use common\models\box\Category;
 use common\models\box\DropBlocked;
+use common\models\box\Drop;
+use common\models\rcon\RconTasks;
 use common\components\queue\process\ReturnDropJob;
 use api\components\jwt\JwtAuthFilter;
 use OpenApi\Annotations as OA;
@@ -186,25 +188,152 @@ class StoreController extends BaseApiController
             return $this->errorResponse('INVALID_STATUS', 'Предмет не доступен для выдачи', [], 400);
         }
 
-        $server = Servers::findOne($serverId);
-        if (!$server) {
-            return $this->errorResponse('SERVER_NOT_FOUND', 'Сервер не найден', [], 404);
+        // Как в ChatServer commandGetDrop: выдача только если пользователь «на сервере» (у него выбран сервер)
+        if (empty($user->server)) {
+            return $this->errorResponse(
+                'NOT_ON_SERVER',
+                Yii::t('common', 'Мы не нашли вас на сервере! Зайдите на сервер и получайте предметы через лаунчер.', [], 'ru-RU'),
+                [],
+                400
+            );
         }
 
-        // TODO: Реализовать логику доставки предмета на сервер
-        // Это требует интеграции с RCON или другой системой доставки
-        // Пока что просто помечаем как отправленный
-        $userDrop->status = UserDrop::STATUS_SENDED;
-        $userDrop->sended_at = date('Y-m-d H:i:s');
-        
-        if ($userDrop->save(false)) {
+        if ((int) $user->server->id !== (int) $serverId) {
+            return $this->errorResponse(
+                'WRONG_SERVER',
+                Yii::t('common', 'Выдача возможна только на тот сервер, на котором вы находитесь.', [], 'ru-RU'),
+                [],
+                400
+            );
+        }
+
+        $server = $user->server;
+
+        // Вайп-блок (как в ChatServer)
+        if (DropBlocked::getBlocked($userDrop->drop_id, $server->id, true)) {
+            return $this->errorResponse('BLOCKED', Yii::t('common', 'Товар в вайп-блоке!', [], 'ru-RU'), [], 400);
+        }
+
+        $drop = $userDrop->dropOne ?: Drop::findOne($userDrop->drop_id);
+        if (!$drop) {
+            return $this->errorResponse('DROP_NOT_FOUND', Yii::t('common', 'Предмет не найден!', [], 'ru-RU'), [], 404);
+        }
+
+        // Блокировка на время обработки (как в ChatServer)
+        $lockKey = 'userDrop_lock_' . $userDrop->id;
+        if (Yii::$app->cache->get($lockKey)) {
+            return $this->errorResponse(
+                'IN_PROGRESS',
+                Yii::t('common', 'Предмет уже обрабатывается, подождите немного!', [], 'ru-RU'),
+                [],
+                400
+            );
+        }
+        Yii::$app->cache->set($lockKey, true, 10);
+
+        $userDrop->refresh();
+        if ($userDrop->status !== UserDrop::STATUS_ACTIVE) {
+            Yii::$app->cache->delete($lockKey);
+            return $this->errorResponse(
+                'INVALID_STATUS',
+                Yii::t('common', 'Товар уже был выведен или недоступен!', [], 'ru-RU'),
+                [],
+                400
+            );
+        }
+
+        $userDrop->status = UserDrop::STATUS_WAIT;
+        $userDrop->save(false);
+
+        $rconUrl = Yii::$app->settings->get('site_rconUrl');
+        if (empty($rconUrl) || !Yii::$app->has('curl')) {
+            $userDrop->status = UserDrop::STATUS_ACTIVE;
+            $userDrop->save(false);
+            Yii::$app->cache->delete($lockKey);
+            return $this->errorResponse(
+                'CONFIG_ERROR',
+                Yii::t('common', 'Произошла ошибка, попробуйте позже!', [], 'ru-RU'),
+                [],
+                503
+            );
+        }
+
+        $isBlockedBuilding = $drop->is_blocked_building ? 'true' : 'false';
+        $command = "store.take {$user->steam_id} {$userDrop->id} {$isBlockedBuilding}";
+
+        try {
+            $response = (Yii::$app->curl)
+                ->setHeaders(['Content-Type' => 'application/json'])
+                ->setRawPostData(json_encode(['server' => $server->tag, 'command' => $command]))
+                ->post($rconUrl . '/send');
+        } catch (\Throwable $e) {
+            $userDrop->status = UserDrop::STATUS_ACTIVE;
+            $userDrop->save(false);
+            Yii::$app->cache->delete($lockKey);
+            return $this->errorResponse(
+                'RCON_ERROR',
+                Yii::t('common', 'Произошла ошибка, попробуйте позже!', [], 'ru-RU'),
+                [],
+                502
+            );
+        }
+
+        $rconTask = new RconTasks();
+        $rconTask->status = RconTasks::STATUS_DONE;
+        $rconTask->command = $command;
+        $rconTask->result = $response;
+        $rconTask->server_tag = $server->tag;
+        $rconTask->created_at = date('Y-m-d H:i:s');
+        $rconTask->save(false);
+
+        if (empty($response)) {
+            $userDrop->status = UserDrop::STATUS_ACTIVE;
+            $userDrop->save(false);
+            Yii::$app->cache->delete($lockKey);
+            return $this->errorResponse(
+                'RCON_FAIL',
+                Yii::t('common', 'Произошла ошибка, попробуйте позже!', [], 'ru-RU'),
+                [],
+                502
+            );
+        }
+
+        $decoded = null;
+        try {
+            $outer = json_decode($response, true);
+            $decoded = isset($outer['result']) ? json_decode($outer['result'], true) : null;
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        if (!is_array($decoded) || !isset($decoded['success'])) {
+            $userDrop->status = UserDrop::STATUS_ACTIVE;
+            $userDrop->save(false);
+            Yii::$app->cache->delete($lockKey);
+            return $this->errorResponse(
+                'RCON_FAIL',
+                Yii::t('common', 'Произошла ошибка, попробуйте позже!', [], 'ru-RU'),
+                [],
+                502
+            );
+        }
+
+        if (!empty($decoded['success'])) {
+            $userDrop->status = UserDrop::STATUS_SENDED;
+            $userDrop->sended_at = date('Y-m-d H:i:s');
+            $userDrop->save(false);
+            Yii::$app->cache->delete($lockKey);
             return $this->successResponse([
-                'message' => 'Предмет успешно выдан на сервер',
+                'message' => Yii::t('common', 'Товар успешно получен!', [], 'ru-RU'),
                 'itemId' => $userDrop->id,
             ]);
-        } else {
-            return $this->errorResponse('SAVE_ERROR', 'Ошибка при сохранении', [], 500);
         }
+
+        $userDrop->status = UserDrop::STATUS_ACTIVE;
+        $userDrop->save(false);
+        Yii::$app->cache->delete($lockKey);
+        $errorMessage = isset($decoded['error']) ? $decoded['error'] : Yii::t('common', 'Произошла ошибка, попробуйте позже!', [], 'ru-RU');
+        return $this->errorResponse('RCON_REJECT', $errorMessage, [], 400);
     }
 
     /**
