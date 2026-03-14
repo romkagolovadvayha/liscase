@@ -156,13 +156,16 @@ class BlogController extends BaseApiController
             $query->andWhere(['like', 'b.name', $search]);
         }
 
-        // Сортировка
+        // Сортировка (вторичная по created_at для однозначного порядка при равных значениях)
         $allowedSorts = ['created_at', 'views', 'name'];
         if (!in_array($sort, $allowedSorts)) {
             $sort = 'created_at';
         }
         $sortOrder = strtolower($order) === 'asc' ? SORT_ASC : SORT_DESC;
-        $query->orderBy(["b.{$sort}" => $sortOrder]);
+        $query->orderBy([
+            "b.{$sort}" => $sortOrder,
+            'b.created_at' => SORT_DESC,
+        ]);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,

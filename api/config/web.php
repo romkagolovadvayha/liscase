@@ -155,7 +155,9 @@ $config = [
                 'v1/support-game-stores/tickets/<id:[\w-]+>' => 'v1/support-game-stores/view', // ID может быть не только числом
                 'v1/support-game-stores/tickets/<id:[\w-]+>/messages' => 'v1/support-game-stores/send',
 
-                // Store
+                // Store (с авторизацией: список предметов, категорий, возврат, выдача на сервер)
+                'v1/store/items' => 'v1/store/items',
+                'v1/store/categories' => 'v1/store/categories',
                 'v1/store/deliver' => 'v1/store/deliver',
                 'v1/store/return' => 'v1/store/return',
 

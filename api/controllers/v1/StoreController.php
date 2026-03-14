@@ -8,6 +8,9 @@ use common\models\user\User;
 use common\models\user\UserDrop;
 use common\models\profit\Profit;
 use common\models\servers\Servers;
+use common\models\box\Category;
+use common\models\box\DropBlocked;
+use common\components\queue\process\ReturnDropJob;
 use api\components\jwt\JwtAuthFilter;
 use OpenApi\Annotations as OA;
 
@@ -33,6 +36,97 @@ class StoreController extends BaseApiController
         ];
 
         return $behaviors;
+    }
+
+    /**
+     * Список предметов в корзине пользователя (только активные)
+     *
+     * @OA\Get(
+     *     path="/v1/store/items",
+     *     operationId="storeItems",
+     *     tags={"Store"},
+     *     summary="Список предметов в корзине",
+     *     description="Требует JWT авторизации. Возвращает активные предметы пользователя с информацией о дропе и блокировке по вайпу.",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="Список предметов"),
+     *     @OA\Response(response=401, description="Не авторизован")
+     * )
+     */
+    public function actionItems()
+    {
+        $user = $this->getCurrentUser();
+        $serverId = !empty($user->server) ? (int) $user->server->id : null;
+
+        $userDrops = $user->getUserDrop()
+            ->andWhere(['status' => UserDrop::STATUS_ACTIVE])
+            ->orderBy(['id' => SORT_DESC])
+            ->all();
+
+        $items = [];
+        foreach ($userDrops as $userDrop) {
+            $drop = Yii::$app->drop->getActiveDropById($userDrop->drop_id);
+            if (!$drop) {
+                continue;
+            }
+            $blockedAt = $serverId ? DropBlocked::getBlocked($drop->id, $serverId) : null;
+            $blocked = !empty($blockedAt);
+            $items[] = [
+                'id' => $userDrop->id,
+                'drop_id' => $drop->id,
+                'count' => (int) $userDrop->count,
+                'category_id' => (int) $drop->category_id,
+                'name' => Yii::t('database', $drop->name),
+                'image' => $drop->image100(),
+                'blocked' => $blocked,
+                'blocked_at' => $blocked ? $blockedAt : null,
+                'can_return' => empty($userDrop->box_id) && empty($userDrop->sets_id) && empty($userDrop->parent_drop_id),
+            ];
+        }
+
+        return $this->successResponse([
+            'items' => $items,
+            'server' => $user->server ? [
+                'id' => $user->server->id,
+                'name' => $user->server->name,
+                'tag' => $user->server->tag,
+            ] : null,
+        ]);
+    }
+
+    /**
+     * Список категорий магазина
+     *
+     * @OA\Get(
+     *     path="/v1/store/categories",
+     *     operationId="storeCategories",
+     *     tags={"Store"},
+     *     summary="Список категорий",
+     *     description="Требует JWT авторизации.",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="Список категорий"),
+     *     @OA\Response(response=401, description="Не авторизован")
+     * )
+     */
+    public function actionCategories()
+    {
+        $this->getCurrentUser(); // проверка авторизации
+
+        $categories = Category::find()
+            ->orderBy(['sort' => SORT_ASC])
+            ->asArray()
+            ->all();
+
+        $list = [];
+        foreach ($categories as $c) {
+            $list[] = [
+                'id' => (int) $c['id'],
+                'name' => Yii::t('database', $c['name']),
+                'tag' => $c['tag'] ?? '',
+                'sort' => (int) ($c['sort'] ?? 0),
+            ];
+        }
+
+        return $this->successResponse(['categories' => $list]);
     }
 
     /**
@@ -168,32 +262,41 @@ class StoreController extends BaseApiController
             return $this->errorResponse('INVALID_STATUS', 'Предмет не доступен для возврата', [], 400);
         }
 
-        // Выполняем возврат (продажу)
         $userBalance = $user->getPersonalBalance();
-        
-        // Продаем все предметы в UserDrop
-        foreach ($userDrop->drop as $drop) {
-            $profit = new Profit();
-            $profit->status = 1;
-            $profit->type = Profit::TYPE_SELL_DROP;
-            $profit->amount = $drop->getRealPrice(false);
-            $profit->user_balance_id = $userBalance->id;
-            $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
-                'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
-            ], 'ru-RU');
-            $profit->created_at = date('Y-m-d H:i:s');
-            $profit->save(false);
+        $drop = $userDrop->dropOne;
+        if (!$drop) {
+            $drop = \common\models\box\Drop::findOne($userDrop->drop_id);
+        }
+        if (!$drop) {
+            return $this->errorResponse('DROP_NOT_FOUND', 'Предмет не найден', [], 404);
+        }
+
+        $profit = new Profit();
+        $profit->status = 1;
+        $profit->type = Profit::TYPE_SELL_DROP;
+        $profit->amount = $drop->getRealPrice(false);
+        $profit->user_balance_id = $userBalance->id;
+        $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
+            'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
+        ], 'ru-RU');
+        $profit->created_at = date('Y-m-d H:i:s');
+        if (!$profit->save(false)) {
+            return $this->errorResponse('SAVE_ERROR', 'Ошибка при сохранении возврата', [], 500);
         }
 
         $userDrop->status = UserDrop::STATUS_SELL;
-        if ($userDrop->save(false)) {
-            return $this->successResponse([
-                'message' => 'Предмет успешно возвращен',
-                'itemId' => $userDrop->id,
-            ]);
-        } else {
-            return $this->errorResponse('SAVE_ERROR', 'Ошибка при сохранении', [], 500);
+        if (!$userDrop->save(false)) {
+            return $this->errorResponse('SAVE_ERROR', 'Ошибка при обновлении статуса', [], 500);
         }
+
+        if (Yii::$app->has('queueProcess')) {
+            Yii::$app->queueProcess->push(new ReturnDropJob(['userDrop' => $userDrop]));
+        }
+
+        return $this->successResponse([
+            'message' => 'Предмет успешно возвращен',
+            'itemId' => $userDrop->id,
+        ]);
     }
 }
 
