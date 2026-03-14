@@ -42,10 +42,11 @@ class StoreController extends BaseApiController
     }
 
     /**
-     * Доступ к выдаче предметов на текущий сервер (как в frontend/views/store/index.php).
-     * На сервере без доната (is_store) и без скрытого магазина (hidden_store) — доступ только при user->store.
-     * При включённом is_store — доступ только если у пользователя включён признак доступа (user->store).
-     * При скрытом магазине — 10 ч на сервере ИЛИ user->store.
+     * Доступ к выдаче предметов на текущий сервер (логика как в frontend/views/store/index.php, строки 16–32).
+     * — При включённом is_store на сервере: доступ всем.
+     * — При выключенном is_store и выключенном hidden_store: нет доступа.
+     * — При выключенном is_store и включённом hidden_store: доступ при 10 ч на сервере.
+     * — При включённом user->store (признак доступа): доступ в любом случае.
      */
     private function getStoreVisible($user)
     {
@@ -54,20 +55,19 @@ class StoreController extends BaseApiController
             return $storeVisible;
         }
         $server = $user->server;
-        $userHasStoreAccess = !empty($user->store);
 
         if (!empty($server->is_store)) {
-            // Магазин на сервере включён — выдавать только при включённом признаке доступа у пользователя
-            $storeVisible = $userHasStoreAccess;
+            $storeVisible = true;
         } elseif (empty($server->hidden_store)) {
-            // Нет ни магазина, ни скрытого — без доступа
             $storeVisible = false;
         } else {
-            // Скрытый магазин: 10 ч на сервере или признак доступа
             $playtimeMinutes = (int) Statistics::find()
                 ->andWhere(['steam_id' => $user->steam_id, 'server_tag' => $server->tag, 'key' => 'playtime'])
                 ->sum('value');
-            $storeVisible = $playtimeMinutes >= 600 || $userHasStoreAccess;
+            $storeVisible = $playtimeMinutes >= 600;
+        }
+        if (!empty($user->store)) {
+            $storeVisible = true;
         }
         return $storeVisible;
     }
