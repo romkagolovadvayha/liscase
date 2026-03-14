@@ -12,6 +12,7 @@ use common\models\box\Category;
 use common\models\box\DropBlocked;
 use common\models\box\Drop;
 use common\models\rcon\RconTasks;
+use common\models\statistics\Statistics;
 use common\components\queue\process\ReturnDropJob;
 use api\components\jwt\JwtAuthFilter;
 use OpenApi\Annotations as OA;
@@ -41,6 +42,37 @@ class StoreController extends BaseApiController
     }
 
     /**
+     * Доступ к выдаче предметов на текущий сервер (как в frontend/views/store/index.php).
+     * На сервере без доната (is_store) и без скрытого магазина (hidden_store) — доступ только при user->store.
+     * При включённом is_store — доступ только если у пользователя включён признак доступа (user->store).
+     * При скрытом магазине — 10 ч на сервере ИЛИ user->store.
+     */
+    private function getStoreVisible($user)
+    {
+        $storeVisible = false;
+        if (empty($user->server)) {
+            return $storeVisible;
+        }
+        $server = $user->server;
+        $userHasStoreAccess = !empty($user->store);
+
+        if (!empty($server->is_store)) {
+            // Магазин на сервере включён — выдавать только при включённом признаке доступа у пользователя
+            $storeVisible = $userHasStoreAccess;
+        } elseif (empty($server->hidden_store)) {
+            // Нет ни магазина, ни скрытого — без доступа
+            $storeVisible = false;
+        } else {
+            // Скрытый магазин: 10 ч на сервере или признак доступа
+            $playtimeMinutes = (int) Statistics::find()
+                ->andWhere(['steam_id' => $user->steam_id, 'server_tag' => $server->tag, 'key' => 'playtime'])
+                ->sum('value');
+            $storeVisible = $playtimeMinutes >= 600 || $userHasStoreAccess;
+        }
+        return $storeVisible;
+    }
+
+    /**
      * Список предметов в корзине пользователя (только активные)
      *
      * @OA\Get(
@@ -58,6 +90,8 @@ class StoreController extends BaseApiController
     {
         $user = $this->getCurrentUser();
         $serverId = !empty($user->server) ? (int) $user->server->id : null;
+
+        $storeVisible = $this->getStoreVisible($user);
 
         $userDrops = $user->getUserDrop()
             ->andWhere(['status' => UserDrop::STATUS_ACTIVE])
@@ -92,6 +126,7 @@ class StoreController extends BaseApiController
                 'name' => $user->server->name,
                 'tag' => $user->server->tag,
             ] : null,
+            'can_deliver' => $storeVisible,
         ]);
     }
 
@@ -208,6 +243,16 @@ class StoreController extends BaseApiController
         }
 
         $server = $user->server;
+
+        // Доступ к выдаче: как в frontend/views/store/index.php (магазин/донат/10 ч)
+        if (!$this->getStoreVisible($user)) {
+            return $this->errorResponse(
+                'STORE_NOT_AVAILABLE',
+                Yii::t('common', 'Выдача предметов на этот сервер недоступна. Нужен донат или не менее 10 часов на сервере.', [], 'ru-RU'),
+                [],
+                403
+            );
+        }
 
         // Вайп-блок (как в ChatServer)
         if (DropBlocked::getBlocked($userDrop->drop_id, $server->id, true)) {
