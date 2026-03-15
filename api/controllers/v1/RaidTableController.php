@@ -47,7 +47,7 @@ class RaidTableController extends BaseApiController
         }
 
         // Кэшируем данные на 1 час (v2 = картинки 150px через getImageLarge)
-        $cacheKey = 'api_raid_table_v4';
+        $cacheKey = 'api_raid_table_v5';
         $cache = Yii::$app->cache;
         $data = $cache->get($cacheKey);
 
@@ -64,7 +64,7 @@ class RaidTableController extends BaseApiController
                 'chainsaw' => 'Бензопила',
                 'hammer' => 'Молот',
                 'rock' => 'Камень',
-                'flashlight.held' => 'Фонарик',
+                'flashlight' => 'Фонарик',
                 'torch' => 'Факел',
                 'axe.salvaged' => 'Самодельный топор',
                 'icepick.salvaged' => 'Ледоруб',
@@ -181,7 +181,7 @@ class RaidTableController extends BaseApiController
                 'yields' => 1,
                 'ingredients' => ['wood' => 1],
             ],
-            'flashlight.held' => [
+            'flashlight' => [
                 'yields' => 1,
                 'ingredients' => ['metal_fragments' => 25, 'tincan' => 1],
             ],
@@ -250,7 +250,7 @@ class RaidTableController extends BaseApiController
             ['key' => 'ladder-hatch', 'group' => 'Двери', 'weapons' => [
                 ['hatchet', 75], ['hatchet.stone', 385], ['pickaxe.stone', 311],
                 ['ammo_explosive', 63], ['c4thrown', 1], ['satchelsthrown', 4], ['rocket_basic', 2], ['40mm_grenade_he', 9],
-                ['hammer', 24], ['rock', 148], ['flashlight.held', 257], ['torch', 385],
+                ['hammer', 24], ['rock', 148], ['flashlight', 257], ['torch', 385],
             ]],
             ['key' => 'triangle-hatch', 'group' => 'Двери', 'weapons' => [
                 ['ammo_explosive', 63], ['c4thrown', 1], ['satchelsthrown', 4], ['rocket_basic', 2], ['40mm_grenade_he', 9],
@@ -259,48 +259,48 @@ class RaidTableController extends BaseApiController
             // Стены
             ['key' => 'wood-wall', 'group' => 'Стены', 'softside' => true, 'weapons' => [
                 ['axe.salvaged', 6], ['icepick.salvaged', 8], ['hatchet', 12], ['pickaxe', 11], ['hatchet.stone', 46], ['pickaxe.stone', 96],
-                ['arrow.fire', 125], ['handmade-shell', 93], ['jackhammer', 22], ['chainsaw', 35], ['hammer', 58], ['rock', 368], ['flashlight.held', 642], ['torch', 962],
+                ['arrow.fire', 125], ['handmade-shell', 93], ['jackhammer', 22], ['chainsaw', 35], ['hammer', 58], ['rock', 368], ['flashlight', 642], ['torch', 962],
                 ['flame-thrower', 206], ['grenade.molotov', 4], ['grenade.beancan', 13], ['satchelsthrown', 3],
                 ['ammo_explosive', 49], ['rocket_basic', 2], ['rocket_fire', 1], ['c4thrown', 1], ['40mm_grenade_he', 9], ['grenade.f1', 4],
             ], 'notes' => 'Огонь эффективен; C4/ракеты — оверкилл.'],
             ['key' => 'stone-wall', 'group' => 'Стены', 'softside' => true, 'weapons' => [
                 ['axe.salvaged', 80], ['icepick.salvaged', 54], ['hatchet', 167], ['pickaxe', 50], ['hatchet.stone', 1000], ['pickaxe.stone', 400],
-                ['handmade-shell', 556], ['jackhammer', 88], ['chainsaw', 695], ['hammer', 116], ['rock', 736], ['flashlight.held', 1283], ['torch', 1924],
+                ['handmade-shell', 556], ['jackhammer', 88], ['chainsaw', 695], ['hammer', 116], ['rock', 736], ['flashlight', 1283], ['torch', 1924],
                 ['grenade.beancan', 46], ['satchelsthrown', 10], ['ammo_explosive', 185], ['rocket_basic', 4],
                 ['c4thrown', 2], ['40mm_grenade_he', 29], ['grenade.f1', 8],
             ]],
             ['key' => 'metal-wall', 'group' => 'Стены', 'weapons' => [
                 ['axe.salvaged', 397], ['icepick.salvaged', 298], ['hatchet', 598], ['pickaxe', 345], ['hatchet.stone', 2565], ['pickaxe.stone', 1611],
-                ['jackhammer', 439], ['chainsaw', 2778], ['hammer', 463], ['rock', 2942], ['flashlight.held', 5129], ['torch', 7693],
+                ['jackhammer', 439], ['chainsaw', 2778], ['hammer', 463], ['rock', 2942], ['flashlight', 5129], ['torch', 7693],
                 ['grenade.beancan', 112], ['satchelsthrown', 23], ['ammo_explosive', 400], ['rocket_basic', 8], ['c4thrown', 4], ['40mm_grenade_he', 57], ['grenade.f1', 15],
             ]],
             ['key' => 'armored-wall', 'group' => 'Стены', 'weapons' => [
                 ['axe.salvaged', 794], ['icepick.salvaged', 569], ['hatchet', 1195], ['pickaxe', 690], ['hatchet.stone', 5129], ['pickaxe.stone', 3221],
-                ['jackhammer', 878], ['chainsaw', 5556], ['hammer', 926], ['rock', 5883], ['flashlight.held', 10257], ['torch', 15385],
+                ['jackhammer', 878], ['chainsaw', 5556], ['hammer', 926], ['rock', 5883], ['flashlight', 10257], ['torch', 15385],
                 ['grenade.beancan', 223], ['satchelsthrown', 46], ['ammo_explosive', 799], ['rocket_basic', 15], ['c4thrown', 8], ['40mm_grenade_he', 114], ['grenade.f1', 29],
             ]],
 
             // Двери
             ['key' => 'armored-door', 'group' => 'Двери', 'weapons' => [
                 ['hatchet', 239], ['hatchet.stone', 1231], ['pickaxe.stone', 994],
-                ['hammer', 75], ['rock', 471], ['flashlight.held', 821], ['torch', 1231],
+                ['hammer', 75], ['rock', 471], ['flashlight', 821], ['torch', 1231],
                 ['ammo_explosive', 250], ['grenade.beancan', 69], ['40mm_grenade_he', 36], ['satchelsthrown', 15], ['propane_bomb', 9],
                 ['rocket_basic', 5], ['c4thrown', 3], ['grenade.f1', 15],
             ]],
             ['key' => 'double-wooden-door', 'group' => 'Двери', 'weapons' => [
                 ['axe.salvaged', 7], ['icepick.salvaged', 9], ['hatchet', 11], ['pickaxe', 14], ['hatchet.stone', 44], ['pickaxe.stone', 103],
-                ['arrow.fire', 63], ['ammo_explosive', 20], ['c4thrown', 1], ['grenade.beancan', 6], ['handmade-shell', 45], ['jackhammer', 36], ['chainsaw', 38], ['hammer', 19], ['rock', 118], ['flashlight.held', 206], ['torch', 308],
+                ['arrow.fire', 63], ['ammo_explosive', 20], ['c4thrown', 1], ['grenade.beancan', 6], ['handmade-shell', 45], ['jackhammer', 36], ['chainsaw', 38], ['hammer', 19], ['rock', 118], ['flashlight', 206], ['torch', 308],
                 ['flame-thrower', 103], ['rocket_basic', 1], ['torpedo', 8], ['grenade.molotov', 2], ['propane_bomb', 1], ['rocket_fire', 1], ['grenade.f1', 3],
             ]],
             ['key' => 'double-sheet-metal-door', 'group' => 'Двери', 'weapons' => [
                 ['hatchet', 75], ['hatchet.stone', 385], ['pickaxe.stone', 311],
-                ['hammer', 24], ['rock', 148], ['flashlight.held', 257], ['torch', 385],
+                ['hammer', 24], ['rock', 148], ['flashlight', 257], ['torch', 385],
                 ['grenade.beancan', 18], ['satchelsthrown', 4], ['ammo_explosive', 63], ['c4thrown', 1], ['rocket_basic', 2],
                 ['torpedo', 32], ['40mm_grenade_he', 9], ['propane_bomb', 3], ['grenade.f1', 4],
             ]],
             ['key' => 'sheet-metal-door', 'group' => 'Двери', 'weapons' => [
                 ['hatchet', 75], ['hatchet.stone', 385], ['pickaxe.stone', 311],
-                ['hammer', 24], ['rock', 148], ['flashlight.held', 257], ['torch', 385],
+                ['hammer', 24], ['rock', 148], ['flashlight', 257], ['torch', 385],
                 ['grenade.beancan', 18], ['satchelsthrown', 4], ['ammo_explosive', 63], ['c4thrown', 1], ['rocket_basic', 2],
                 ['torpedo', 32], ['40mm_grenade_he', 9], ['propane_bomb', 3], ['grenade.f1', 4],
             ]],
@@ -310,7 +310,7 @@ class RaidTableController extends BaseApiController
             ]],
             ['key' => 'garage-door', 'group' => 'Двери', 'weapons' => [
                 ['hatchet', 180], ['hatchet.stone', 924], ['pickaxe.stone', 746],
-                ['hammer', 56], ['rock', 356], ['flashlight.held', 616], ['torch', 924],
+                ['hammer', 56], ['rock', 356], ['flashlight', 616], ['torch', 924],
                 ['grenade.beancan', 42], ['satchelsthrown', 9], ['ammo_explosive', 150], ['c4thrown', 2], ['rocket_basic', 3],
                 ['torpedo', 75], ['propane_bomb', 5], ['40mm_grenade_he', 22], ['grenade.f1', 9],
             ]],
@@ -318,25 +318,25 @@ class RaidTableController extends BaseApiController
             // Внешние стены/ворота
             ['key' => 'high-external-wood-wall', 'group' => 'Стены', 'weapons' => [
                 ['axe.salvaged', 12], ['icepick.salvaged', 15], ['hatchet', 23], ['pickaxe', 22], ['hatchet.stone', 92], ['pickaxe.stone', 191],
-                ['arrow.fire', 250], ['handmade-shell', 186], ['jackhammer', 44], ['chainsaw', 70], ['hammer', 116], ['rock', 736], ['flashlight.held', 1283], ['torch', 1924],
+                ['arrow.fire', 250], ['handmade-shell', 186], ['jackhammer', 44], ['chainsaw', 70], ['hammer', 116], ['rock', 736], ['flashlight', 1283], ['torch', 1924],
                 ['flame-thrower', 412], ['grenade.beancan', 26], ['satchelsthrown', 6], ['rocket_basic', 3], ['grenade.molotov', 7],
                 ['rocket_fire', 1], ['ammo_explosive', 98], ['propane_bomb', 4], ['40mm_grenade_he', 16], ['c4thrown', 1], ['grenade.f1', 7],
             ]],
             ['key' => 'high-external-stone-wall', 'group' => 'Стены', 'weapons' => [
                 ['axe.salvaged', 94], ['icepick.salvaged', 64], ['hatchet', 150], ['pickaxe', 72], ['hatchet.stone', 642], ['pickaxe.stone', 340],
-                ['handmade-shell', 556], ['jackhammer', 88], ['chainsaw', 695], ['hammer', 116], ['rock', 736], ['flashlight.held', 1283], ['torch', 1924],
+                ['handmade-shell', 556], ['jackhammer', 88], ['chainsaw', 695], ['hammer', 116], ['rock', 736], ['flashlight', 1283], ['torch', 1924],
                 ['grenade.beancan', 46], ['satchelsthrown', 10], ['rocket_basic', 4], ['grenade.molotov', 7],
                 ['rocket_fire', 1], ['ammo_explosive', 185], ['propane_bomb', 7], ['40mm_grenade_he', 29], ['c4thrown', 2], ['grenade.f1', 8],
             ]],
             ['key' => 'high-external-wood-gate', 'group' => 'Стены', 'weapons' => [
                 ['axe.salvaged', 12], ['icepick.salvaged', 15], ['hatchet', 23], ['pickaxe', 22], ['hatchet.stone', 92], ['pickaxe.stone', 191],
-                ['arrow.fire', 250], ['handmade-shell', 186], ['jackhammer', 44], ['chainsaw', 70], ['hammer', 116], ['rock', 736], ['flashlight.held', 1283], ['torch', 1924],
+                ['arrow.fire', 250], ['handmade-shell', 186], ['jackhammer', 44], ['chainsaw', 70], ['hammer', 116], ['rock', 736], ['flashlight', 1283], ['torch', 1924],
                 ['flame-thrower', 412], ['grenade.beancan', 26], ['satchelsthrown', 6], ['rocket_basic', 3], ['grenade.molotov', 7],
                 ['rocket_fire', 1], ['ammo_explosive', 98], ['propane_bomb', 4], ['40mm_grenade_he', 16], ['c4thrown', 1], ['grenade.f1', 7],
             ]],
             ['key' => 'high-external-stone-gate', 'group' => 'Стены', 'weapons' => [
                 ['axe.salvaged', 94], ['icepick.salvaged', 64], ['hatchet', 150], ['pickaxe', 72], ['hatchet.stone', 642], ['pickaxe.stone', 340],
-                ['handmade-shell', 556], ['jackhammer', 88], ['chainsaw', 695], ['hammer', 116], ['rock', 736], ['flashlight.held', 1283], ['torch', 1924],
+                ['handmade-shell', 556], ['jackhammer', 88], ['chainsaw', 695], ['hammer', 116], ['rock', 736], ['flashlight', 1283], ['torch', 1924],
                 ['grenade.beancan', 46], ['satchelsthrown', 10], ['rocket_basic', 4], ['grenade.molotov', 7],
                 ['rocket_fire', 1], ['ammo_explosive', 185], ['propane_bomb', 7], ['40mm_grenade_he', 29], ['c4thrown', 2], ['grenade.f1', 8],
             ]],
@@ -465,10 +465,11 @@ class RaidTableController extends BaseApiController
             $weapons = [];
             foreach ($d['weapons'] as $w) {
                 [$wKey, $cnt] = $w;
+                $imageKey = $wKey === 'flashlight' ? 'flashlight.held' : $wKey;
                 $row = [
                     'key' => $wKey,
                     'name' => Statistics::getName($names, $wKey),
-                    'image' => Statistics::getImageLarge($images, $wKey),
+                    'image' => Statistics::getImageLarge($images, $imageKey),
                     'count' => (int)$cnt,
                 ];
                 $weapons[] = $row;
