@@ -47,7 +47,7 @@ class RaidTableController extends BaseApiController
         }
 
         // Кэшируем данные на 1 час (v2 = картинки 150px через getImageLarge)
-        $cacheKey = 'api_raid_table_v3';
+        $cacheKey = 'api_raid_table_v4';
         $cache = Yii::$app->cache;
         $data = $cache->get($cacheKey);
 
