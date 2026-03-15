@@ -361,7 +361,7 @@ class RaidTableController extends BaseApiController
                 $row = [
                     'key' => $wKey,
                     'name' => Statistics::getName($names, $wKey),
-                    'image' => Statistics::getImage($images, $wKey),
+                    'image' => Statistics::getImageLarge($images, $wKey),
                     'count' => (int)$cnt,
                 ];
                 $weapons[] = $row;
@@ -370,7 +370,7 @@ class RaidTableController extends BaseApiController
             $grouped[$d['group']][] = [
                 'key' => $d['key'],
                 'name' => Statistics::getName($names, $d['key']),
-                'image' => Statistics::getImage($images, $d['key']),
+                'image' => Statistics::getImageLarge($images, $d['key']),
                 'softside' => !empty($d['softside']),
                 'notes' => $d['notes'] ?? null,
                 'weapons' => $weapons,
