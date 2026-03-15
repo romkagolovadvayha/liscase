@@ -54,6 +54,8 @@ class RaidTableController extends BaseApiController
         if ($data === false) {
             $images = Statistics::productsImages();
             $names = Statistics::productsNames();
+            // Названия для целей, которых может не быть в Drop (калькулятор рейдов)
+            $names = array_merge($names, ['shotgun-trap' => 'Гантрап']);
             $recipes = $this->recipes();
             $items = $this->getRaidTableList($names, $images);
 
@@ -303,11 +305,16 @@ class RaidTableController extends BaseApiController
                 ['40mm_grenade_he', 70], ['c4thrown', 3],
             ]],
 
-            // Турели / ПВО
+            // Турели / ПВО / ловушки
             ['key' => 'auto-turret', 'group' => 'Прочее', 'weapons' => [
                 ['handmade-shell', 56], ['grenade.beancan', 16], ['satchelsthrown', 2], ['rocket_basic', 4], ['grenade.molotov', 7],
                 ['rocket_fire', 1], ['ammo_explosive', 112], ['propane_bomb', 6], ['40mm_grenade_he', 16], ['c4thrown', 1],
                 ['rocket_hv', 3], ['grenade.f1', 10],
+            ]],
+            ['key' => 'shotgun-trap', 'group' => 'Прочее', 'weapons' => [
+                ['handmade-shell', 68], ['grenade.beancan', 19], ['satchelsthrown', 2], ['rocket_basic', 5], ['grenade.molotov', 8],
+                ['rocket_fire', 1], ['ammo_explosive', 134], ['propane_bomb', 7], ['40mm_grenade_he', 19], ['c4thrown', 1],
+                ['rocket_hv', 4], ['grenade.f1', 12],
             ]],
             ['key' => 'sam.site', 'group' => 'Прочее', 'weapons' => [
                 ['grenade.beancan', 67], ['satchelsthrown', 7], ['rocket_basic', 4], ['ammo_explosive', 112], ['40mm_grenade_he', 29],
