@@ -516,8 +516,9 @@ class SkinsController extends BaseApiController
             // Используем префикс из кэшированных данных
             $prefix = $commonData['prefix'];
             
-            // Проверка Trade-URL
-            if (!empty($user->userProfile->trade_link)) {
+            // Проверка Trade-URL (как в старой версии: !empty($user->userProfile->trade_link))
+            $tradeLink = $user->userProfile ? ($user->userProfile->trade_link ?? null) : null;
+            if ($tradeLink !== null && $tradeLink !== '' && trim((string) $tradeLink) !== '') {
                 $tradeLinkCompleted = true;
             }
             
@@ -532,7 +533,7 @@ class SkinsController extends BaseApiController
                 'isAuthenticated' => true,
                 'usernameCompleted' => $usernameCompleted,
                 'tradeLinkCompleted' => $tradeLinkCompleted,
-                'tradeLink' => $user->userProfile->trade_link ?? null,
+                'tradeLink' => $tradeLink,
                 'allCompleted' => $allCompleted,
             ];
         } else {
