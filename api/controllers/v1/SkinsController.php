@@ -276,10 +276,12 @@ class SkinsController extends BaseApiController
                 'rust' => [
                     'recentDrops' => [],
                     'totalCount' => 0,
+                    'totalAmount' => 0.0,
                 ],
                 'cs2' => [
                     'recentDrops' => [],
                     'totalCount' => 0,
+                    'totalAmount' => 0.0,
                 ],
             ];
 
@@ -329,14 +331,20 @@ class SkinsController extends BaseApiController
                 ];
             }
 
-            // Получаем количество разыгранных скинов для каждого типа
+            // Получаем количество и общую сумму разыгранных скинов для каждого типа
             $data['rust']['totalCount'] = (int)UserPayoutSkins::find()
                 ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'rust'])
                 ->count();
+            $data['rust']['totalAmount'] = (float)UserPayoutSkins::find()
+                ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'rust'])
+                ->sum('amount');
 
             $data['cs2']['totalCount'] = (int)UserPayoutSkins::find()
                 ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'cs2'])
                 ->count();
+            $data['cs2']['totalAmount'] = (float)UserPayoutSkins::find()
+                ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'cs2'])
+                ->sum('amount');
 
             // Сохраняем в кэш на 10 минут (600 секунд)
             $cache->set($cacheKey, $data, 600);
