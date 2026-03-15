@@ -452,8 +452,50 @@ class SkinsController extends BaseApiController
                 ];
             }
 
+            // Статистика раздач по дням недели из таблицы skindrops (Пн–Вс)
+            $chartByDay = [0, 0, 0, 0, 0, 0, 0];
+            $chartRows = Skindrops::find()
+                ->select([new \yii\db\Expression('DAYOFWEEK(created_at) AS dow'), new \yii\db\Expression('COUNT(*) AS cnt')])
+                ->groupBy(new \yii\db\Expression('DAYOFWEEK(created_at)'))
+                ->asArray()
+                ->all();
+            foreach ($chartRows as $row) {
+                $dow = (int)$row['dow'];
+                $cnt = (int)$row['cnt'];
+                if ($dow === 1) {
+                    $chartByDay[6] = $cnt;
+                } else {
+                    $chartByDay[$dow - 2] = $cnt;
+                }
+            }
+            $commonData['chartByDay'] = [
+                'days' => ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                'wins' => $chartByDay,
+            ];
+
             // Сохраняем общие данные в кэш на 10 минут (600 секунд)
             $cache->set($commonCacheKey, $commonData, 600);
+        } elseif (!isset($commonData['chartByDay'])) {
+            // Старый кэш без chartByDay — дополняем из таблицы skindrops
+            $chartByDay = [0, 0, 0, 0, 0, 0, 0];
+            $chartRows = Skindrops::find()
+                ->select([new \yii\db\Expression('DAYOFWEEK(created_at) AS dow'), new \yii\db\Expression('COUNT(*) AS cnt')])
+                ->groupBy(new \yii\db\Expression('DAYOFWEEK(created_at)'))
+                ->asArray()
+                ->all();
+            foreach ($chartRows as $row) {
+                $dow = (int)$row['dow'];
+                $cnt = (int)$row['cnt'];
+                if ($dow === 1) {
+                    $chartByDay[6] = $cnt;
+                } else {
+                    $chartByDay[$dow - 2] = $cnt;
+                }
+            }
+            $commonData['chartByDay'] = [
+                'days' => ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                'wins' => $chartByDay,
+            ];
         }
 
         // Данные пользователя (если авторизован) - не кэшируем, так как они индивидуальны
@@ -507,6 +549,7 @@ class SkinsController extends BaseApiController
             'rust' => $commonData['rust'],
             'cs2' => $commonData['cs2'],
             'prefix' => $commonData['prefix'],
+            'chartByDay' => $commonData['chartByDay'] ?? ['days' => ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], 'wins' => [0, 0, 0, 0, 0, 0, 0]],
             'user' => $userData,
         ]);
     }
