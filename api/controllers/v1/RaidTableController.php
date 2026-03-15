@@ -347,7 +347,7 @@ class RaidTableController extends BaseApiController
             ]],
 
             // Тула/ТЦ и т.п.
-            ['key' => 'tool-cupboard', 'group' => 'Прочее', 'weapons' => [
+            ['key' => 'cupboard.tool', 'group' => 'Прочее', 'weapons' => [
                 ['grenade.beancan', 3], ['satchelsthrown', 1], ['ammo_explosive', 10], ['c4thrown', 1], ['handmade-shell', 23], ['flame-thrower', 42], ['grenade.molotov', 1],
             ]],
         ];
