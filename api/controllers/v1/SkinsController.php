@@ -473,10 +473,10 @@ class SkinsController extends BaseApiController
                 'wins' => $chartByDay,
             ];
 
-            // Всего разыграно скинов и сумма из таблицы skindrops
+            // Всего разыграно скинов и сумма из таблицы skindrops (SELECT COUNT(*), SUM(price) FROM skindrops)
             $commonData['statsFromSkindrops'] = [
                 'totalCount' => (int)Skindrops::find()->count(),
-                'totalAmount' => (float)Skindrops::find()->sum(new \yii\db\Expression('COALESCE(CAST(price AS DECIMAL(12,2)), CAST(real_price AS DECIMAL(12,2)), 0)')),
+                'totalAmount' => (float)(Skindrops::find()->sum('price') ?? 0),
             ];
 
             // Сохраняем общие данные в кэш на 10 минут (600 секунд)
@@ -507,7 +507,7 @@ class SkinsController extends BaseApiController
         if (!isset($commonData['statsFromSkindrops'])) {
             $commonData['statsFromSkindrops'] = [
                 'totalCount' => (int)Skindrops::find()->count(),
-                'totalAmount' => (float)Skindrops::find()->sum(new \yii\db\Expression('COALESCE(CAST(price AS DECIMAL(12,2)), CAST(real_price AS DECIMAL(12,2)), 0)')),
+                'totalAmount' => (float)(Skindrops::find()->sum('price') ?? 0),
             ];
         }
 
@@ -564,6 +564,7 @@ class SkinsController extends BaseApiController
             'cs2' => $commonData['cs2'],
             'prefix' => $commonData['prefix'],
             'chartByDay' => $commonData['chartByDay'] ?? ['days' => ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], 'wins' => [0, 0, 0, 0, 0, 0, 0]],
+            'statsFromSkindrops' => $commonData['statsFromSkindrops'] ?? ['totalCount' => 0, 'totalAmount' => 0.0],
             'user' => $userData,
         ]);
     }
