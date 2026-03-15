@@ -354,12 +354,12 @@ class SkinsController extends BaseApiController
             if (!isset($data['rust']['totalAmount'])) {
                 $data['rust']['totalAmount'] = (float)UserPayoutSkins::find()
                     ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'rust'])
-                    ->sum('amount');
+                    ->sum(new \yii\db\Expression('COALESCE(NULLIF(amount, 0), price)'));
             }
             if (!isset($data['cs2']['totalAmount'])) {
                 $data['cs2']['totalAmount'] = (float)UserPayoutSkins::find()
                     ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'cs2'])
-                    ->sum('amount');
+                    ->sum(new \yii\db\Expression('COALESCE(NULLIF(amount, 0), price)'));
             }
         }
 
