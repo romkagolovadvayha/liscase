@@ -266,8 +266,8 @@ class SkinsController extends BaseApiController
             throw new NotFoundHttpException('Страница не найдена');
         }
 
-        // Кэшируем данные на 10 минут
-        $cacheKey = 'skin_giveaway_data';
+        // Кэшируем данные на 10 минут (ключ v2 — с totalAmount)
+        $cacheKey = 'skin_giveaway_data_v2';
         $cache = Yii::$app->cache;
         $data = $cache->get($cacheKey);
 
@@ -332,22 +332,35 @@ class SkinsController extends BaseApiController
             }
 
             // Получаем количество и общую сумму разыгранных скинов для каждого типа
+            // Сумма: используем COALESCE(amount, price), т.к. в разных местах заполняют amount или price
             $data['rust']['totalCount'] = (int)UserPayoutSkins::find()
                 ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'rust'])
                 ->count();
             $data['rust']['totalAmount'] = (float)UserPayoutSkins::find()
                 ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'rust'])
-                ->sum('amount');
+                ->sum(new \yii\db\Expression('COALESCE(NULLIF(amount, 0), price)'));
 
             $data['cs2']['totalCount'] = (int)UserPayoutSkins::find()
                 ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'cs2'])
                 ->count();
             $data['cs2']['totalAmount'] = (float)UserPayoutSkins::find()
                 ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'cs2'])
-                ->sum('amount');
+                ->sum(new \yii\db\Expression('COALESCE(NULLIF(amount, 0), price)'));
 
             // Сохраняем в кэш на 10 минут (600 секунд)
             $cache->set($cacheKey, $data, 600);
+        } else {
+            // Старый кэш мог быть без totalAmount — дополняем при отдаче
+            if (!isset($data['rust']['totalAmount'])) {
+                $data['rust']['totalAmount'] = (float)UserPayoutSkins::find()
+                    ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'rust'])
+                    ->sum('amount');
+            }
+            if (!isset($data['cs2']['totalAmount'])) {
+                $data['cs2']['totalAmount'] = (float)UserPayoutSkins::find()
+                    ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'cs2'])
+                    ->sum('amount');
+            }
         }
 
         return $this->successResponse($data);
