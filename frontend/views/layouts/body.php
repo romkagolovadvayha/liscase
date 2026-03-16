@@ -123,6 +123,8 @@ if (empty($this->params['_blog_similar_block'])) {
     $liveBlock = $this->render('@frontend/views/widgets/_live', ['servers' => $servers, 'PROJECT_STATS' => $projectStats, 'userData' => $userData, 'SETTINGS' => $SETTINGS, 'PAGE' => $page]);
 }
 
+$bannerSideBlock = $this->render('@frontend/views/widgets/_banner_side.twig', ['SETTINGS' => $SETTINGS, 'lang' => $lang]);
+
 // Виджет кнопки "ИТОГИ ГОДА"
 $yearReviewButton = '';
 ?>
@@ -147,6 +149,7 @@ $yearReviewButton = '';
     'user' => $userData,
     'MENU_HIDDEN' => $hiddenMenu,
     'SERVER_INFO_BLOCK' => $serverInfoBlock,
+    'BANNER_SIDE_BLOCK' => $bannerSideBlock,
     'PROFILE_BLOCK' => $profileBlock,
 //    'ALERT_MESSAGE' => $this->render('@frontend/views/widgets/_alert'),
 //    'SKINDROPS_BLOCK' => $this->render('@frontend/views/widgets/_skindrops'),

@@ -17,7 +17,7 @@
 {#        {{ ALERT_MESSAGE|raw }}#}
 {#        {{ SKINDROPS_BLOCK|raw }}#}
         {{ SERVER_INFO_BLOCK|raw }}
-        {% include '@frontend/views/widgets/_banner_side.twig' with {'SETTINGS': SETTINGS, 'lang': lang} %}
+        {{ BANNER_SIDE_BLOCK|raw }}
         {{ BLOG_POPULAR_LIST_BLOCK|raw }}
         {{ BLOG_COMMENTS_LIST_BLOCK|raw }}
         {{ BLOG_CATEGORY_LIST_BLOCK|raw }}
