@@ -312,6 +312,12 @@ document.addEventListener('DOMContentLoaded', function() {
             '<?= TaskV2::CHECK_TYPE_SKIN_ADD ?>': [
                 {name: 'count', label: '<?= Html::encode(Yii::t('common', 'Требуемое количество одобренных скинов')) ?>', type: 'number'}
             ],
+            '<?= TaskV2::CHECK_TYPE_COBALTLAB_REGISTRATION ?>': [
+                {name: 'token', label: '<?= Html::encode(Yii::t('common', 'Affiliate-токен CobaltLab')) ?>', type: 'text'}
+            ],
+            '<?= TaskV2::CHECK_TYPE_COBALTLAB_FIRST_DEPOSIT ?>': [
+                {name: 'token', label: '<?= Html::encode(Yii::t('common', 'Affiliate-токен CobaltLab')) ?>', type: 'text'}
+            ],
         };
         
         if (checkParamsData[checkTypeValue]) {

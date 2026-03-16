@@ -20,6 +20,9 @@ use OpenApi\Annotations as OA;
  */
 class TasksController extends BaseApiController
 {
+    /** Steam ID пользователей, которым видны задания CobaltLab (регистрация / первый депозит) */
+    private const COBALTLAB_VISIBLE_STEAM_IDS = ['76561198394504608', '76561199615706587'];
+
     /**
      * Настройка behaviors
      */
@@ -95,6 +98,11 @@ class TasksController extends BaseApiController
         } else {
             $allModels = $cachedTasks;
         }
+
+        // Задания CobaltLab видны только пользователям из списка
+        $allModels = array_values(array_filter($allModels, function ($task) use ($user) {
+            return $this->isCobaltLabTaskVisibleToUser($task, $user);
+        }));
 
         // Кастомная сортировка: ежедневная награда первая, затем новые, затем выполненные
         usort($allModels, function ($a, $b) use ($user) {
@@ -260,6 +268,10 @@ class TasksController extends BaseApiController
             throw new NotFoundHttpException('Задание не найдено');
         }
 
+        if (!$this->isCobaltLabTaskVisibleToUser($task, $user)) {
+            throw new NotFoundHttpException('Задание не найдено');
+        }
+
         $userStatus = $task->getUserStatus($user);
 
         // Для ежедневных наград
@@ -343,6 +355,10 @@ class TasksController extends BaseApiController
 
         $task = TaskV2::findOne(['id' => $id, 'is_active' => 1]);
         if (!$task) {
+            return $this->errorResponse('TASK_NOT_FOUND', 'Задание не найдено', [], 404);
+        }
+
+        if (!$this->isCobaltLabTaskVisibleToUser($task, $user)) {
             return $this->errorResponse('TASK_NOT_FOUND', 'Задание не найдено', [], 404);
         }
 
@@ -593,6 +609,22 @@ class TasksController extends BaseApiController
             $profit->save(false);
             $balance->recalculateBalance();
         }
+    }
+
+    /**
+     * Задания CobaltLab (регистрация / первый депозит) видны только пользователям с разрешённым steam_id.
+     * @param TaskV2 $task
+     * @param \common\models\user\User $user
+     * @return bool
+     */
+    protected function isCobaltLabTaskVisibleToUser(TaskV2 $task, $user): bool
+    {
+        if ($task->check_type !== TaskV2::CHECK_TYPE_COBALTLAB_REGISTRATION
+            && $task->check_type !== TaskV2::CHECK_TYPE_COBALTLAB_FIRST_DEPOSIT) {
+            return true;
+        }
+        $steamId = (string)($user->steam_id ?? '');
+        return in_array($steamId, self::COBALTLAB_VISIBLE_STEAM_IDS, true);
     }
 }
 

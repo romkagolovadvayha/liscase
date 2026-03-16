@@ -62,6 +62,8 @@ class TaskV2 extends ActiveRecord
     const CHECK_TYPE_BUILDING_ADD = 'building_add';
     const CHECK_TYPE_RADIO_TRACK_ADD = 'radio_track_add';
     const CHECK_TYPE_SKIN_ADD = 'skin_add';
+    const CHECK_TYPE_COBALTLAB_REGISTRATION = 'cobaltlab_registration';
+    const CHECK_TYPE_COBALTLAB_FIRST_DEPOSIT = 'cobaltlab_first_deposit';
 
     /**
      * {@inheritdoc}
@@ -431,6 +433,8 @@ class TaskV2 extends ActiveRecord
             self::CHECK_TYPE_BUILDING_ADD => Yii::t('common', 'Добавление постройки'),
             self::CHECK_TYPE_RADIO_TRACK_ADD => Yii::t('common', 'Добавление музыки в радио'),
             self::CHECK_TYPE_SKIN_ADD => Yii::t('common', 'Добавление скинов (одобренных)'),
+            self::CHECK_TYPE_COBALTLAB_REGISTRATION => Yii::t('common', 'Регистрация на CobaltLab'),
+            self::CHECK_TYPE_COBALTLAB_FIRST_DEPOSIT => Yii::t('common', 'Первый депозит на CobaltLab'),
         ];
     }
 

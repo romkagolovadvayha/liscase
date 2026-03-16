@@ -55,6 +55,8 @@ class TaskCheckerFactory
             TaskV2::CHECK_TYPE_BUILDING_ADD => BuildingAddChecker::class,
             TaskV2::CHECK_TYPE_RADIO_TRACK_ADD => RadioTrackAddChecker::class,
             TaskV2::CHECK_TYPE_SKIN_ADD => SkinAddChecker::class,
+            TaskV2::CHECK_TYPE_COBALTLAB_REGISTRATION => CobaltLabAffiliateChecker::class,
+            TaskV2::CHECK_TYPE_COBALTLAB_FIRST_DEPOSIT => CobaltLabAffiliateChecker::class,
         ];
 
         return $classes[$checkType] ?? CustomManualChecker::class;
