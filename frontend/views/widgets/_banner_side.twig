@@ -8,7 +8,7 @@
 {% endif %}
 
 {% if banner_link|default('')|trim != '' and banner_image|default('')|trim != '' %}
-<section class="stats-aside mobile_hide">
+<section class="mobile_hide">
     <a href="{{ banner_link }}" target="_blank" rel="noopener noreferrer" class="stats-aside__banner-link">
         <img src="{{ banner_image }}" alt="" class="stats-aside__banner-img" loading="lazy" />
     </a>
