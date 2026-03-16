@@ -406,4 +406,63 @@ class OpenAiApi
         return json_decode($complete['choices'][0]['message']['content'], 1);
     }
 
+    /**
+     * Translate text using OpenAI. Context: project is about Rust (Steam game).
+     *
+     * @param string $text
+     * @param string $targetLanguage ISO 639-1 code (e.g. 'en', 'ru')
+     * @return string translated text
+     * @throws \Exception
+     */
+    public function translateText($text, $targetLanguage = 'en')
+    {
+        $text = trim((string) $text);
+        if ($text === '') {
+            return '';
+        }
+        $langName = $this->getTargetLanguageName($targetLanguage);
+        $openAi = new OpenAi($this->apiKey);
+        $complete = $openAi->chat([
+            'model' => 'gpt-3.5-turbo-16k',
+            'messages' => [
+                [
+                    'role' => 'system',
+                    'content' => 'You are a professional translator. Translate the user message into ' . $langName . '. '
+                        . 'This project is about the video game Rust (Steam). Keep in-game terms, item names, and community jargon accurate where appropriate. '
+                        . 'Reply with ONLY the translation, no explanations or quotes.',
+                ],
+                [
+                    'role' => 'user',
+                    'content' => $text,
+                ],
+            ],
+            'temperature' => 0.3,
+        ]);
+        $decoded = json_decode($complete, true);
+        if (!isset($decoded['choices'][0]['message']['content'])) {
+            throw new \RuntimeException('OpenAI translate: invalid response');
+        }
+        return trim((string) $decoded['choices'][0]['message']['content']);
+    }
+
+    /**
+     * @param string $code ISO 639-1
+     * @return string
+     */
+    private function getTargetLanguageName($code)
+    {
+        $names = [
+            'en' => 'English',
+            'ru' => 'Russian',
+            'de' => 'German',
+            'es' => 'Spanish',
+            'fr' => 'French',
+            'it' => 'Italian',
+            'pt' => 'Portuguese',
+            'pl' => 'Polish',
+            'uk' => 'Ukrainian',
+            'tr' => 'Turkish',
+        ];
+        return $names[strtolower($code)] ?? 'English';
+    }
 }
