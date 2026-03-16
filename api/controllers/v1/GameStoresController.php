@@ -537,14 +537,14 @@ class GameStoresController extends BaseApiController
         $drop = $drops[$userDrop->drop_id] ?? null;
         
         if ($drop) {
-            Yii::info("makeIssued: Checking wipe block. basketId={$basketId}, dropId={$drop->id}, dropName=" . Yii::t('database', $drop->name, [], 'ru-RU') . ", rustId={$drop->rust_id}, hasCommand=" . (!empty($drop->command) ? 'yes' : 'no'), 'gamestores');
+            Yii::info("makeIssued: Checking wipe block. basketId={$basketId}, dropId={$drop->id}, dropName=" . Yii::t('database', $drop->name) . ", rustId={$drop->rust_id}, hasCommand=" . (!empty($drop->command) ? 'yes' : 'no'), 'gamestores');
             
             $wipeBlockCheck = $this->checkWipeBlock($drop, $server);
             
             Yii::info("makeIssued: Wipe block check result. basketId={$basketId}, dropId={$drop->id}, isBlocked={$wipeBlockCheck['isBlocked']}, leftTime={$wipeBlockCheck['leftTime']}", 'gamestores');
             
             if ($wipeBlockCheck['isBlocked']) {
-                Yii::warning("makeIssued: BLOCKED - Attempt to issue blocked item. basketId={$basketId}, dropId={$drop->id}, dropName=" . Yii::t('database', $drop->name, [], 'ru-RU') . ", rustId={$drop->rust_id}, leftTime={$wipeBlockCheck['leftTime']}, serverId={$server->id}", 'gamestores');
+                Yii::warning("makeIssued: BLOCKED - Attempt to issue blocked item. basketId={$basketId}, dropId={$drop->id}, dropName=" . Yii::t('database', $drop->name) . ", rustId={$drop->rust_id}, leftTime={$wipeBlockCheck['leftTime']}, serverId={$server->id}", 'gamestores');
                 return $this->errorResponseGameStores('Предмет временно заблокирован вайп блоком', 109);
             }
         } else {
@@ -552,7 +552,7 @@ class GameStoresController extends BaseApiController
         }
         
         $dropId = $drop ? $drop->id : 'unknown';
-        $dropName = $drop ? Yii::t('database', $drop->name, [], 'ru-RU') : 'unknown';
+        $dropName = $drop ? Yii::t('database', $drop->name) : 'unknown';
         Yii::info("makeIssued: SUCCESS - Issuing item. basketId={$basketId}, dropId={$dropId}, dropName={$dropName}", 'gamestores');
 
         $userDrop->sended_at = date('Y-m-d H:i:s');
@@ -929,7 +929,7 @@ class GameStoresController extends BaseApiController
     private function formatItem($userDrop, $drop, $images = [], $includeSubDrop = false)
     {
         // Логирование для отладки
-        Yii::info("formatItem: userDrop->drop_id={$userDrop->drop_id}, drop->id={$drop->id}, drop->rust_id={$drop->rust_id}, drop->name=" . Yii::t('database', $drop->name, [], 'ru-RU'), 'gamestores');
+        Yii::info("formatItem: userDrop->drop_id={$userDrop->drop_id}, drop->id={$drop->id}, drop->rust_id={$drop->rust_id}, drop->name=" . Yii::t('database', $drop->name), 'gamestores');
         
         $item = [
             'id' => $userDrop->id,
@@ -1278,7 +1278,7 @@ class GameStoresController extends BaseApiController
         }
         
         // Логирование для отладки
-        Yii::info("buyAndTake: Request dropId={$dropId}, found drop->id={$drop->id}, drop->rust_id={$drop->rust_id}, drop->name=" . Yii::t('database', $drop->name, [], 'ru-RU'), 'gamestores');
+        Yii::info("buyAndTake: Request dropId={$dropId}, found drop->id={$drop->id}, drop->rust_id={$drop->rust_id}, drop->name=" . Yii::t('database', $drop->name), 'gamestores');
 
         // Рассчитываем цену
         $basePrice = $drop->price - ($drop->price * ($drop->discount ?? 0) / 100);
@@ -1296,8 +1296,8 @@ class GameStoresController extends BaseApiController
         try {
             // Создаем Invoice для списания средств
             $comment = Yii::t('common', 'Мгновенная покупка предмета "{PARAMS_PREDNAME}"', [
-                'PARAMS_PREDNAME' => Yii::t('database', $drop->name, [], 'ru-RU')
-            ], 'ru-RU');
+                'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
+            ]);
             
             Invoice::createRecord(
                 $user->id,
@@ -1445,7 +1445,7 @@ class GameStoresController extends BaseApiController
                 }
                 
                 // Логирование для отладки
-                Yii::info("buyAndTake: dropId={$dropId}, userDrop->drop_id={$userDrop->drop_id}, userDrop->parent_drop_id={$userDrop->parent_drop_id}, userDropDrop->id={$userDropDrop->id}, userDropDrop->rust_id={$userDropDrop->rust_id}, userDropDrop->name=" . Yii::t('database', $userDropDrop->name, [], 'ru-RU'), 'gamestores');
+                Yii::info("buyAndTake: dropId={$dropId}, userDrop->drop_id={$userDrop->drop_id}, userDrop->parent_drop_id={$userDrop->parent_drop_id}, userDropDrop->id={$userDropDrop->id}, userDropDrop->rust_id={$userDropDrop->rust_id}, userDropDrop->name=" . Yii::t('database', $userDropDrop->name), 'gamestores');
                 
                 $item = $this->formatItem($userDrop, $userDropDrop, $images, true);
                 $items[] = $item;
@@ -1708,7 +1708,7 @@ class GameStoresController extends BaseApiController
             
             $result[] = [
                 'id' => $category->id,
-                'name' => Yii::t('database', $category->name, [], 'ru-RU'),
+                'name' => Yii::t('database', $category->name),
                 'tag' => $category->tag ?? '',
                 'image' => $category->getImageUrl() ?? '',
                 'sort' => $category->sort ?? 0,
@@ -1782,7 +1782,7 @@ class GameStoresController extends BaseApiController
                 
                 $item = [
                     'id' => $drop->id,
-                    'name' => Yii::t('database', $drop->name, [], 'ru-RU'),
+                    'name' => Yii::t('database', $drop->name),
                     'price' => (float)$realPrice,
                     'image' => $imageUrl,
                     'rust_id' => $drop->rust_id ?? 0,
@@ -1844,7 +1844,7 @@ class GameStoresController extends BaseApiController
             
             $item = [
                 'id' => $drop->id,
-                'name' => Yii::t('database', $drop->name, [], 'ru-RU'),
+                'name' => Yii::t('database', $drop->name),
                 'price' => (float)$realPrice,
                 'image' => $imageUrl,
                 'rust_id' => $drop->rust_id ?? 0,
@@ -1999,8 +1999,8 @@ class GameStoresController extends BaseApiController
         try {
             // Создаем Invoice для списания средств
             $comment = Yii::t('common', 'Мгновенная покупка предмета "{PARAMS_PREDNAME}"', [
-                'PARAMS_PREDNAME' => Yii::t('database', $drop->name, [], 'ru-RU')
-            ], 'ru-RU');
+                'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
+            ]);
             
             Invoice::createRecord(
                 $user->id,

@@ -227,7 +227,7 @@ class StoreController extends BaseApiController
         if (empty($user->server)) {
             return $this->errorResponse(
                 'NOT_ON_SERVER',
-                Yii::t('common', 'Мы не нашли вас на сервере! Зайдите на сервер и получайте предметы через лаунчер.', [], 'ru-RU'),
+                Yii::t('common', 'Мы не нашли вас на сервере! Зайдите на сервер и получайте предметы через лаунчер.'),
                 [],
                 400
             );
@@ -236,7 +236,7 @@ class StoreController extends BaseApiController
         if ((int) $user->server->id !== (int) $serverId) {
             return $this->errorResponse(
                 'WRONG_SERVER',
-                Yii::t('common', 'Выдача возможна только на тот сервер, на котором вы находитесь.', [], 'ru-RU'),
+                Yii::t('common', 'Выдача возможна только на тот сервер, на котором вы находитесь.'),
                 [],
                 400
             );
@@ -248,7 +248,7 @@ class StoreController extends BaseApiController
         if (!$this->getStoreVisible($user)) {
             return $this->errorResponse(
                 'STORE_NOT_AVAILABLE',
-                Yii::t('common', 'Выдача предметов на этот сервер недоступна. Нужен донат или не менее 10 часов на сервере.', [], 'ru-RU'),
+                Yii::t('common', 'Выдача предметов на этот сервер недоступна. Нужен донат или не менее 10 часов на сервере.'),
                 [],
                 403
             );
@@ -256,12 +256,12 @@ class StoreController extends BaseApiController
 
         // Вайп-блок (как в ChatServer)
         if (DropBlocked::getBlocked($userDrop->drop_id, $server->id, true)) {
-            return $this->errorResponse('BLOCKED', Yii::t('common', 'Товар в вайп-блоке!', [], 'ru-RU'), [], 400);
+            return $this->errorResponse('BLOCKED', Yii::t('common', 'Товар в вайп-блоке!'), [], 400);
         }
 
         $drop = $userDrop->dropOne ?: Drop::findOne($userDrop->drop_id);
         if (!$drop) {
-            return $this->errorResponse('DROP_NOT_FOUND', Yii::t('common', 'Предмет не найден!', [], 'ru-RU'), [], 404);
+            return $this->errorResponse('DROP_NOT_FOUND', Yii::t('common', 'Предмет не найден!'), [], 404);
         }
 
         // Блокировка на время обработки (как в ChatServer)
@@ -269,7 +269,7 @@ class StoreController extends BaseApiController
         if (Yii::$app->cache->get($lockKey)) {
             return $this->errorResponse(
                 'IN_PROGRESS',
-                Yii::t('common', 'Предмет уже обрабатывается, подождите немного!', [], 'ru-RU'),
+                Yii::t('common', 'Предмет уже обрабатывается, подождите немного!'),
                 [],
                 400
             );
@@ -281,7 +281,7 @@ class StoreController extends BaseApiController
             Yii::$app->cache->delete($lockKey);
             return $this->errorResponse(
                 'INVALID_STATUS',
-                Yii::t('common', 'Товар уже был выведен или недоступен!', [], 'ru-RU'),
+                Yii::t('common', 'Товар уже был выведен или недоступен!'),
                 [],
                 400
             );
@@ -297,7 +297,7 @@ class StoreController extends BaseApiController
             Yii::$app->cache->delete($lockKey);
             return $this->errorResponse(
                 'CONFIG_ERROR',
-                Yii::t('common', 'Произошла ошибка, попробуйте позже!', [], 'ru-RU'),
+                Yii::t('common', 'Произошла ошибка, попробуйте позже!'),
                 [],
                 503
             );
@@ -317,7 +317,7 @@ class StoreController extends BaseApiController
             Yii::$app->cache->delete($lockKey);
             return $this->errorResponse(
                 'RCON_ERROR',
-                Yii::t('common', 'Произошла ошибка, попробуйте позже!', [], 'ru-RU'),
+                Yii::t('common', 'Произошла ошибка, попробуйте позже!'),
                 [],
                 502
             );
@@ -337,7 +337,7 @@ class StoreController extends BaseApiController
             Yii::$app->cache->delete($lockKey);
             return $this->errorResponse(
                 'RCON_FAIL',
-                Yii::t('common', 'Произошла ошибка, попробуйте позже!', [], 'ru-RU'),
+                Yii::t('common', 'Произошла ошибка, попробуйте позже!'),
                 [],
                 502
             );
@@ -357,7 +357,7 @@ class StoreController extends BaseApiController
             Yii::$app->cache->delete($lockKey);
             return $this->errorResponse(
                 'RCON_FAIL',
-                Yii::t('common', 'Произошла ошибка, попробуйте позже!', [], 'ru-RU'),
+                Yii::t('common', 'Произошла ошибка, попробуйте позже!'),
                 [],
                 502
             );
@@ -369,7 +369,7 @@ class StoreController extends BaseApiController
             $userDrop->save(false);
             Yii::$app->cache->delete($lockKey);
             return $this->successResponse([
-                'message' => Yii::t('common', 'Товар успешно получен!', [], 'ru-RU'),
+                'message' => Yii::t('common', 'Товар успешно получен!'),
                 'itemId' => $userDrop->id,
             ]);
         }
@@ -377,7 +377,7 @@ class StoreController extends BaseApiController
         $userDrop->status = UserDrop::STATUS_ACTIVE;
         $userDrop->save(false);
         Yii::$app->cache->delete($lockKey);
-        $errorMessage = isset($decoded['error']) ? $decoded['error'] : Yii::t('common', 'Произошла ошибка, попробуйте позже!', [], 'ru-RU');
+        $errorMessage = isset($decoded['error']) ? $decoded['error'] : Yii::t('common', 'Произошла ошибка, попробуйте позже!');
         return $this->errorResponse('RCON_REJECT', $errorMessage, [], 400);
     }
 
@@ -452,7 +452,7 @@ class StoreController extends BaseApiController
         $profit->user_balance_id = $userBalance->id;
         $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
             'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
-        ], 'ru-RU');
+        ]);
         $profit->created_at = date('Y-m-d H:i:s');
         if (!$profit->save(false)) {
             return $this->errorResponse('SAVE_ERROR', 'Ошибка при сохранении возврата', [], 500);

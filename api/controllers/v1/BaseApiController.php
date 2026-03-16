@@ -44,7 +44,7 @@ abstract class BaseApiController extends Controller
                 'cors' => [
                     'Origin' => $allowedOrigins,
                     'Access-Control-Request-Method' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
-                    'Access-Control-Request-Headers' => ['Authorization', 'Content-Type', 'X-Requested-With', 'Accept'],
+                    'Access-Control-Request-Headers' => ['Authorization', 'Content-Type', 'X-Requested-With', 'Accept', 'Accept-Language'],
                     'Access-Control-Allow-Credentials' => true,
                     'Access-Control-Max-Age' => 86400,
                 ],

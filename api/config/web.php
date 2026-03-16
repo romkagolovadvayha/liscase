@@ -23,7 +23,7 @@ $config = [
     'language' => 'ru-RU',
     'bootstrap' => [
         'log',
-//        'languagepicker'
+        'api\components\LanguageBootstrap', // Yii::$app->language из куки NEXT_LOCALE / Accept-Language / ?language= для Yii::t()
     ],
     'controllerNamespace' => 'api\controllers',
     'aliases' => [

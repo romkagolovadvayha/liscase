@@ -104,7 +104,7 @@ class ProductsController extends BaseApiController
                 
                 $formattedCategories[] = [
                     'id' => $category->id,
-                    'name' => Yii::t('database', $category->name, [], 'ru-RU'),
+                    'name' => Yii::t('database', $category->name),
                     'image' => $categoryImage,
                     'tag' => $category->tag ?? null,
                 ];
@@ -316,7 +316,7 @@ class ProductsController extends BaseApiController
                                 'id' => $subDropRelation->id,
                                 'drop_id' => $subDrop->id,
                                 'count' => $subDropRelation->count ?? 1,
-                                'name' => Yii::t('database', $subDrop->name ?? '', [], 'ru-RU'),
+                                'name' => Yii::t('database', $subDrop->name ?? ''),
                                 'price' => (float)($subDrop->price ?? 0),
                                 'image' => $subDropImage,
                             ];
@@ -337,14 +337,14 @@ class ProductsController extends BaseApiController
 
                 $products[] = [
                     'id' => $drop->id,
-                    'name' => Yii::t('database', $drop->name, [], 'ru-RU'),
+                    'name' => Yii::t('database', $drop->name),
                     'image' => $imageUrl,
                     'price' => $price,
                     'priceReal' => $priceReal,
                     'discount' => $drop->discount ? (int)$drop->discount : null,
                     'count' => $drop->count ? (int)$drop->count : null,
                     'category_id' => $drop->category_id ? (int)$drop->category_id : null,
-                    'description' => $drop->description ? Yii::t('database', $drop->description, [], 'ru-RU') : null,
+                    'description' => $drop->description ? Yii::t('database', $drop->description) : null,
                     'drop_type' => $drop->drop_type ? (int)$drop->drop_type : null,
                     'subDrops' => !empty($subDrops) ? $subDrops : null,
                     'floating_price_percent' => $drop->floating_price_percent ? (int)$drop->floating_price_percent : null,
@@ -449,7 +449,7 @@ class ProductsController extends BaseApiController
                             'id' => $subDropRelation->id,
                             'drop_id' => $subDrop->id,
                             'count' => $subDropRelation->count ?? 1,
-                            'name' => Yii::t('database', $subDrop->name ?? '', [], 'ru-RU'),
+                            'name' => Yii::t('database', $subDrop->name ?? ''),
                             'price' => (float)($subDrop->price ?? 0),
                             'image' => $subDropImage,
                         ];
@@ -468,7 +468,7 @@ class ProductsController extends BaseApiController
 
             $product = [
                 'id' => $drop->id,
-                'name' => Yii::t('database', $drop->name, [], 'ru-RU'),
+                'name' => Yii::t('database', $drop->name),
                 'images' => $images,
                 'image' => !empty($images) ? $images[0] : null,
                 'price' => $price,
@@ -478,9 +478,9 @@ class ProductsController extends BaseApiController
                 'category_id' => $drop->category_id ? (int)$drop->category_id : null,
                 'category' => $drop->category ? [
                     'id' => $drop->category->id,
-                    'name' => Yii::t('database', $drop->category->name, [], 'ru-RU'),
+                    'name' => Yii::t('database', $drop->category->name),
                 ] : null,
-                'description' => $drop->description ? Yii::t('database', $drop->description, [], 'ru-RU') : null,
+                'description' => $drop->description ? Yii::t('database', $drop->description) : null,
                 'drop_type' => $drop->drop_type ? (int)$drop->drop_type : null,
                 'subDrops' => !empty($subDrops) ? $subDrops : null,
                 'floating_price_percent' => $drop->floating_price_percent ? (int)$drop->floating_price_percent : null,
@@ -653,8 +653,8 @@ class ProductsController extends BaseApiController
         try {
             // Создаем Invoice для списания средств
             $comment = Yii::t('common', 'Покупка предмета "{PARAMS_PREDNAME}"', [
-                'PARAMS_PREDNAME' => Yii::t('database', $targetDrop->name, [], 'ru-RU')
-            ], 'ru-RU');
+                'PARAMS_PREDNAME' => Yii::t('database', $targetDrop->name)
+            ]);
             
             Invoice::createRecord(
                 $user->id,

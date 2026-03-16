@@ -8,7 +8,7 @@ use yii\db\Query;
 /**
  * Переводы для фронта (аналог Yii::t / DbMessageSource).
  * GET /v1/translations — возвращает все переводы для языка одним запросом.
- * Язык (приоритет): 1) кука NEXT_LOCALE (ru/en), 2) ?language=, 3) заголовок Accept-Language, 4) по умолчанию ru-RU.
+ * Язык задаётся в api\components\LanguageBootstrap (кука NEXT_LOCALE / ?language= / Accept-Language).
  * Параметр ?keys= или POST {"keys": [...]} — недостающие ключи автоматически добавляются в БД (category=frontend).
  */
 class TranslationsController extends BaseApiController
@@ -24,7 +24,7 @@ class TranslationsController extends BaseApiController
      */
     public function actionIndex()
     {
-        $language = $this->getRequestLanguage();
+        $language = Yii::$app->language;
         $keys = $this->getRequestKeys();
         if (!empty($keys)) {
             $this->ensureKeys($keys);
@@ -127,36 +127,4 @@ class TranslationsController extends BaseApiController
         return array_filter(explode(',', $keysParam));
     }
 
-    private function getRequestLanguage(): string
-    {
-        $map = ['en' => 'en-US', 'ru' => 'ru-RU', 'de' => 'de-DE', 'uk' => 'uk-UA', 'es' => 'es-ES'];
-
-        // 1) Кука выбора языка (фронт ставит NEXT_LOCALE = ru | en)
-        $cookie = Yii::$app->request->cookies->get('NEXT_LOCALE');
-        if ($cookie && is_string($cookie->value)) {
-            $key = strtolower(trim($cookie->value));
-            if (isset($map[$key])) {
-                return $map[$key];
-            }
-            if (preg_match('/^[a-z]{2}/', $key)) {
-                return $map[substr($key, 0, 2)] ?? 'ru-RU';
-            }
-        }
-
-        // 2) Явный параметр ?language=
-        $param = Yii::$app->request->get('language');
-        if ($param && preg_match('/^[a-z]{2}(-[A-Z]{2})?$/i', $param)) {
-            $key = strtolower(strlen($param) === 2 ? $param : substr($param, 0, 2));
-            return $map[$key] ?? $param;
-        }
-
-        // 3) Заголовок Accept-Language
-        $header = Yii::$app->request->headers->get('Accept-Language');
-        if ($header && preg_match('/^([a-z]{2}(-[A-Z]{2})?)/i', trim(explode(',', $header)[0]), $m)) {
-            $key = strtolower(substr($m[1], 0, 2));
-            return $map[$key] ?? $m[1];
-        }
-
-        return 'ru-RU';
-    }
 }
