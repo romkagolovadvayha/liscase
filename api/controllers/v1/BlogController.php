@@ -114,16 +114,6 @@ class BlogController extends BaseApiController
      */
     public function actionIndex()
     {
-        try {
-            if (Yii::$app->has('telegramChats')) {
-                Yii::$app->telegramChats->sendMessage(
-                    '[Blog API] language: ' . Yii::$app->language
-                );
-            }
-        } catch (\Throwable $e) {
-            // не ломаем action при ошибке отправки в Telegram
-        }
-
         $request = Yii::$app->request;
         $page = (int)$request->get('page', 1);
         $limit = (int)$request->get('limit', 10);
