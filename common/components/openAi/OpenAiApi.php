@@ -438,11 +438,34 @@ class OpenAiApi
             ],
             'temperature' => 0.3,
         ]);
-        $decoded = json_decode($complete, true);
-        if (!isset($decoded['choices'][0]['message']['content'])) {
-            throw new \RuntimeException('OpenAI translate: invalid response');
+
+        if ($complete === false || $complete === null) {
+            Yii::warning('OpenAI translate: empty response', __METHOD__);
+            throw new \RuntimeException('OpenAI translate: empty or invalid response');
         }
-        return trim((string) $decoded['choices'][0]['message']['content']);
+
+        $decoded = is_array($complete) ? $complete : json_decode($complete, true);
+        if (!is_array($decoded)) {
+            $raw = is_string($complete) ? substr($complete, 0, 500) : gettype($complete);
+            Yii::warning('OpenAI translate: response is not JSON. Raw: ' . $raw, __METHOD__);
+            throw new \RuntimeException('OpenAI translate: response is not valid JSON');
+        }
+
+        if (isset($decoded['error']['message'])) {
+            $msg = $decoded['error']['message'];
+            Yii::warning('OpenAI translate API error: ' . $msg, __METHOD__);
+            throw new \RuntimeException('OpenAI translate: ' . $msg);
+        }
+
+        $content = isset($decoded['choices'][0]['message']['content'])
+            ? $decoded['choices'][0]['message']['content']
+            : null;
+        if ($content === null || $content === '') {
+            Yii::warning('OpenAI translate: no content in response. Keys: ' . implode(',', array_keys($decoded)) . ' Raw: ' . substr($complete, 0, 500), __METHOD__);
+            throw new \RuntimeException('OpenAI translate: invalid response (no choices[].message.content)');
+        }
+
+        return trim((string) $content);
     }
 
     /**
