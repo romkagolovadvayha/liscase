@@ -936,7 +936,7 @@ class GameStoresController extends BaseApiController
             'basketId' => $userDrop->id, // Для совместимости
             'productId' => (string)$drop->id, // ID продукта (drop)
             'amount' => $userDrop->count,
-            'name' => $drop->name,
+            'name' => Yii::t('database', $drop->name),
             'lvl_inspection' => 0,
             'full_only' => $drop->full_only,
             'is_blocked_building' => $drop->is_blocked_building,
@@ -1048,7 +1048,7 @@ class GameStoresController extends BaseApiController
             'productId' => (string)$drop->id, // ID продукта (drop)
             'amount' => $amount,
             'quantity' => $amount, // Для совместимости с LShop
-            'name' => $drop->name,
+            'name' => Yii::t('database', $drop->name),
             'price' => $realPrice, // Используем RealPrice
             'img' => $img,
             'image' => $img, // Для совместимости с LShop
@@ -1495,7 +1495,7 @@ class GameStoresController extends BaseApiController
             'id' => $drop->id,
             'productId' => (string)$drop->id,
             'amount' => $drop->count ?? 1,
-            'name' => $drop->name,
+            'name' => Yii::t('database', $drop->name),
             'img' => $img,
             'price' => $price,
             'blocked' => false,
@@ -1610,7 +1610,7 @@ class GameStoresController extends BaseApiController
             $item = [
                 'id' => $drop->id,
                 'productId' => (string)$drop->id,
-                'name' => $drop->name,
+                'name' => Yii::t('database', $drop->name),
                 'rust_id' => $drop->rust_id ?? '',
                 'item_id' => $drop->rust_id ?? '',
                 'blocked_hour' => $blockedHour,
@@ -2517,9 +2517,9 @@ class GameStoresController extends BaseApiController
         foreach ($tags as $tag) {
             if (!empty($tag->description)) {
                 $description[] = [
-                    'name' => $tag->name ?? '',
-                    'short_description' => $tag->short_description ?? '',
-                    'description' => $tag->description ?? ''
+                    'name' => Yii::t('database', $tag->name ?? ''),
+                    'short_description' => Yii::t('database', $tag->short_description ?? ''),
+                    'description' => Yii::t('database', $tag->description ?? '')
                 ];
             }
         }

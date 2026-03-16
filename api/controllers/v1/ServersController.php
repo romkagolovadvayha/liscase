@@ -45,7 +45,7 @@ class ServersController extends BaseApiController
      */
     public function actionIndex()
     {
-        $cacheKey = 'api_servers_index';
+        $cacheKey = 'api_servers_index_' . Yii::$app->language;
         $cached = Yii::$app->cache->get($cacheKey);
 
         if ($cached === false) {
@@ -149,8 +149,8 @@ class ServersController extends BaseApiController
      */
     public function actionTag($tagLink)
     {
-        // Кэшируем данные на 3 минуты
-        $cacheKey = 'api_servers_tag_' . $tagLink;
+        // Кэшируем данные на 3 минуты (по языку — name/description переводятся)
+        $cacheKey = 'api_servers_tag_' . $tagLink . '_' . Yii::$app->language;
         $cached = Yii::$app->cache->get($cacheKey);
 
         if ($cached === false) {
@@ -174,18 +174,18 @@ class ServersController extends BaseApiController
             $cached = [
                 'tag' => [
                     'id' => $tag->id,
-                    'name' => $tag->name,
-                    'title' => $tag->title ?? $tag->name,
+                    'name' => Yii::t('database', $tag->name ?: ''),
+                    'title' => Yii::t('database', $tag->title ?: $tag->name ?: ''),
                     'link_name' => $tag->link_name,
                     'link' => $tag->link_name,
-                    'short_description' => $tag->short_description ?? '',
-                    'description' => $tag->description ?? '',
+                    'short_description' => Yii::t('database', $tag->short_description ?: ''),
+                    'description' => Yii::t('database', $tag->description ?: ''),
                     'color' => $tag->color ?? null,
                 ],
                 'servers' => $serversData,
             ];
 
-            // Кэшируем на 180 секунд
+            // Кэшируем на 180 секунд (по языку — name/description переводятся)
             Yii::$app->cache->set($cacheKey, $cached, 180);
         }
 
@@ -218,8 +218,8 @@ class ServersController extends BaseApiController
      */
     public function actionRules($serverTag)
     {
-        // Кэшируем правила на 10 минут
-        $cacheKey = 'api_servers_rules_' . $serverTag;
+        // Кэшируем правила на 10 минут (по языку — category/rule текст переводится)
+        $cacheKey = 'api_servers_rules_' . $serverTag . '_' . Yii::$app->language;
         $cached = Yii::$app->cache->get($cacheKey);
 
         if ($cached !== false) {
@@ -242,7 +242,7 @@ class ServersController extends BaseApiController
                 $category = $rule->category;
                 $categories[$categoryId] = [
                     'id' => $category->id,
-                    'name' => $category->name,
+                    'name' => Yii::t('database', $category->name ?: ''),
                     'icon' => $category->icon,
                     'sort' => $category->sort,
                     'no_numbering' => (bool)$category->no_numbering,
@@ -252,9 +252,9 @@ class ServersController extends BaseApiController
             
             $categories[$categoryId]['rules'][] = [
                 'id' => $rule->id,
-                'title' => $rule->title,
-                'content' => $rule->content,
-                'punishment' => $rule->punishment,
+                'title' => Yii::t('database', $rule->title ?: ''),
+                'content' => Yii::t('database', $rule->content ?: ''),
+                'punishment' => $rule->punishment ? Yii::t('database', $rule->punishment) : null,
                 'sort' => $rule->sort,
             ];
         }
@@ -365,7 +365,7 @@ class ServersController extends BaseApiController
         foreach ($servers as $server) {
             $wipeBlocks[] = [
                 'tag' => $server->tag,
-                'name' => $server->monitoring_name,
+                'name' => Yii::t('database', $server->name ?: $server->monitoring_name ?: ''),
                 'current_wipe' => $server->wipe ?? null,
                 'next_wipe' => $server->next_wipe ?? null,
             ];
@@ -392,7 +392,7 @@ class ServersController extends BaseApiController
         $data = [
             'id' => $server->id,
             'tag' => $server->tag,
-            'name' => $server->monitoring_name,
+            'name' => Yii::t('database', $server->name ?: $server->monitoring_name ?: ''),
             'monitoring_name' => $server->monitoring_name,
             'description' => $server->monitoring_description ?? '',
             'monitoring_description' => $server->monitoring_description ?? '',
@@ -446,8 +446,8 @@ class ServersController extends BaseApiController
             foreach ($server->serversTags as $tag) {
                 $data['tags'][] = [
                     'id' => $tag->id,
-                    'name' => $tag->name,
-                    'title' => $tag->title,
+                    'name' => Yii::t('database', $tag->name ?: ''),
+                    'title' => Yii::t('database', $tag->title ?: $tag->name ?: ''),
                     'link' => $tag->link,
                     'link_name' => $tag->link_name,
                     'color' => $tag->color,

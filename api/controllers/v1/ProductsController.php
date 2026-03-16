@@ -66,8 +66,8 @@ class ProductsController extends BaseApiController
     {
         $showMainBlock = Yii::$app->request->get('show_main_block');
         
-        // Кэшируем категории на 1 час, с учетом параметра show_main_block
-        $cacheKey = 'api_products_categories_' . ($showMainBlock !== null ? (int)$showMainBlock : 'all');
+        // Кэшируем категории на 1 час (по языку — name переводится)
+        $cacheKey = 'api_products_categories_' . ($showMainBlock !== null ? (int)$showMainBlock : 'all') . '_' . Yii::$app->language;
         $cache = Yii::$app->cache;
         $formattedCategories = $cache->get($cacheKey);
 

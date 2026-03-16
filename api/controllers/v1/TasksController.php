@@ -56,8 +56,8 @@ class TasksController extends BaseApiController
         $type = Yii::$app->request->get('type');
         $sort = Yii::$app->request->get('sort');
 
-        // Кэшируем список заданий на 5 минут (без пользовательских данных)
-        $cacheKey = 'api_tasks_list_' . md5(($type ?? '') . '_' . ($sort ?? ''));
+        // Кэшируем список заданий на 5 минут (без пользовательских данных), ключ с языком — title/reward переводимы
+        $cacheKey = 'api_tasks_list_' . md5(($type ?? '') . '_' . ($sort ?? '')) . '_' . Yii::$app->language;
         $cache = Yii::$app->cache;
         $cachedTasks = $cache->get($cacheKey);
         
@@ -419,15 +419,15 @@ class TasksController extends BaseApiController
         
         return [
             'id' => $task->id,
-            'title' => $task->title,
-            'short_description' => $task->short_description,
+            'title' => Yii::t('database', $task->title),
+            'short_description' => $task->short_description ? Yii::t('database', $task->short_description) : null,
             'type' => $task->type,
             'check_type' => $task->check_type,
             'reward_type' => $task->reward_type,
             'reward_amount' => $task->reward_amount ? (float)$task->reward_amount : null,
             'reward_item' => $task->rewardItem ? [
                 'id' => $task->rewardItem->id,
-                'name' => $task->rewardItem->name,
+                'name' => Yii::t('database', $task->rewardItem->name),
                 'image' => $task->rewardItem->imageOrig ? $task->rewardItem->imageOrig->getImagePubUrl() : null,
             ] : null,
             'is_vip_only' => (bool)$task->is_vip_only,
@@ -448,9 +448,9 @@ class TasksController extends BaseApiController
     {
         return [
             'id' => $task->id,
-            'title' => $task->title,
-            'short_description' => $task->short_description,
-            'full_description' => $task->full_description,
+            'title' => Yii::t('database', $task->title),
+            'short_description' => $task->short_description ? Yii::t('database', $task->short_description) : null,
+            'full_description' => $task->full_description ? Yii::t('database', $task->full_description) : null,
             'image' => $task->image_path ? rtrim(Yii::$app->settings->get('s3_publicUrl'), '/') . '/' . ltrim($task->image_path, '/') : null,
             'type' => $task->type,
             'check_type' => $task->check_type,
@@ -458,11 +458,11 @@ class TasksController extends BaseApiController
             'reward_amount' => $task->reward_amount ? (float)$task->reward_amount : null,
             'reward_item' => $task->rewardItem ? [
                 'id' => $task->rewardItem->id,
-                'name' => $task->rewardItem->name,
+                'name' => Yii::t('database', $task->rewardItem->name),
                 'image' => $task->rewardItem->imageOrig ? $task->rewardItem->imageOrig->getImagePubUrl() : null,
             ] : null,
             'is_vip_only' => (bool)$task->is_vip_only,
-            'button_text' => $task->button_text,
+            'button_text' => $task->button_text ? Yii::t('database', $task->button_text) : null,
             'extra_buttons' => is_array($task->extra_buttons) ? $task->extra_buttons : ($task->extra_buttons ? json_decode($task->extra_buttons, true) : null),
             'max_progress' => $task->max_progress,
             'global_completed' => (int)$task->global_completed,

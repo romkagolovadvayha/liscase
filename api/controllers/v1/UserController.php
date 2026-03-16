@@ -200,7 +200,7 @@ class UserController extends BaseApiController
             return $this->successResponse([
                 'server' => $server ? [
                     'id' => $server->id,
-                    'name' => $server->monitoring_name ?? $server->name ?? $server->tag,
+                    'name' => Yii::t('database', $server->name ?: $server->monitoring_name ?: $server->tag),
                     'tag' => $server->tag,
                 ] : null,
             ]);
@@ -235,7 +235,7 @@ class UserController extends BaseApiController
         return $this->successResponse([
             'server' => [
                 'id' => $server->id,
-                'name' => $server->monitoring_name ?? $server->name ?? $server->tag,
+                'name' => Yii::t('database', $server->name ?: $server->monitoring_name ?: $server->tag),
                 'tag' => $server->tag,
             ],
         ]);
@@ -1554,7 +1554,7 @@ class UserController extends BaseApiController
                 
                 $awardData = [
                     'id' => $taskId,
-                    'name' => is_array($task) ? $task['title'] : $task->title,
+                    'name' => Yii::t('database', is_array($task) ? $task['title'] : $task->title),
                     'image' => $image,
                     'completed' => true,
                 ];

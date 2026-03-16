@@ -123,7 +123,7 @@ class StoreController extends BaseApiController
             'items' => $items,
             'server' => $user->server ? [
                 'id' => $user->server->id,
-                'name' => $user->server->name,
+                'name' => Yii::t('database', $user->server->name ?: $user->server->monitoring_name ?: ''),
                 'tag' => $user->server->tag,
             ] : null,
             'can_deliver' => $storeVisible,

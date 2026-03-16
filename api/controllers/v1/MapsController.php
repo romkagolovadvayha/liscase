@@ -285,7 +285,7 @@ class MapsController extends BaseApiController
         $serverData = [
             'id' => $server->id,
             'tag' => $server->tag,
-            'name' => $server->name,
+            'name' => Yii::t('database', $server->name ?: $server->monitoring_name ?: ''),
             'monitoringName' => $server->monitoring_name,
             'description' => $server->monitoring_description ?? '',
             'status' => $server->status,
@@ -332,7 +332,7 @@ class MapsController extends BaseApiController
             foreach ($server->serversTags as $tag) {
                 $serverData['tags'][] = [
                     'id' => $tag->id,
-                    'name' => $tag->name,
+                    'name' => Yii::t('database', $tag->name ?: ''),
                     'link' => $tag->link,
                 ];
             }
