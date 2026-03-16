@@ -85,6 +85,9 @@ $config = [
                 // Settings
                 'v1/settings' => 'v1/settings/index',
 
+                // Translations (i18n для фронта — один запрос все ключи)
+                'v1/translations' => 'v1/translations/index',
+
                 // Skins
                 'v1/skins' => 'v1/skins/index',
                 'v1/skins/giveaway' => 'v1/skins/giveaway',
