@@ -485,6 +485,22 @@
   //    }
   //  }
   //}
+
+  &__banner {
+    &.stats-aside__stat-block {
+      padding: 0;
+      overflow: hidden;
+    }
+    &-link {
+      display: block;
+    }
+    &-img {
+      display: block;
+      width: 100%;
+      height: auto;
+      vertical-align: top;
+    }
+  }
 }
 .stat-block__server.server.server_item_js.server_status0 {
   .server__progress__status.offline_js {
