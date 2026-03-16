@@ -129,7 +129,7 @@ class BlogController extends BaseApiController
         $cachedData = null;
         
         if (!$hasFilters && $page === 1 && $isDefaultSort) {
-            $cacheKey = 'api_blog_list_' . $limit;
+            $cacheKey = 'api_blog_list_' . $limit . '_' . Yii::$app->language;
             $cache = Yii::$app->cache;
             $cachedData = $cache->get($cacheKey);
             
@@ -218,13 +218,14 @@ class BlogController extends BaseApiController
                 }
             }
 
-            // Обрабатываем контент для замены ссылок на изображения на S3 URL
-            $processedContent = $blog->processContentWithS3Images($blog->content);
+            // Контент: перевод по текущему языку (как во frontend), затем замена ссылок на S3
+            $contentTranslated = Yii::t('database', $blog->content);
+            $processedContent = $blog->processContentWithS3Images($contentTranslated);
 
             $posts[] = [
                 'id' => $blog->id,
-                'title' => $blog->name,
-                'description' => $blog->description,
+                'title' => Yii::t('database', $blog->name),
+                'description' => Yii::t('database', $blog->description),
                 'content' => $processedContent,
                 'image' => $imageUrl,
                 'views' => $blog->views ?? 0,
@@ -233,7 +234,7 @@ class BlogController extends BaseApiController
                 'url' => $categoryUrl ? "/posts/{$categoryUrl}/post-{$blog->link_name}" : "/posts/post-{$blog->link_name}",
                 'category' => $blog->blogCategory ? [
                     'id' => $blog->blogCategory->id,
-                    'name' => $blog->blogCategory->name,
+                    'name' => Yii::t('database', $blog->blogCategory->name),
                     'linkName' => $blog->blogCategory->link_name,
                 ] : null,
                 'createdAt' => $blog->created_at,
@@ -281,8 +282,8 @@ class BlogController extends BaseApiController
      */
     public function actionCategories()
     {
-        // Кэшируем категории на 1 час
-        $cacheKey = 'api_blog_categories';
+        // Кэшируем категории на 1 час (по языку — name/description переводятся)
+        $cacheKey = 'api_blog_categories_' . Yii::$app->language;
         $cache = Yii::$app->cache;
         $categories = $cache->get($cacheKey);
 
@@ -307,17 +308,17 @@ class BlogController extends BaseApiController
                 foreach ($children as $child) {
                     $childrenData[] = [
                         'id' => $child->id,
-                        'name' => $child->name,
+                        'name' => Yii::t('database', $child->name),
                         'linkName' => $child->link_name,
-                        'description' => $child->description,
+                        'description' => Yii::t('database', $child->description),
                     ];
                 }
 
                 $categories[] = [
                     'id' => $parentCategory->id,
-                    'name' => $parentCategory->name,
+                    'name' => Yii::t('database', $parentCategory->name),
                     'linkName' => $parentCategory->link_name,
-                    'description' => $parentCategory->description,
+                    'description' => Yii::t('database', $parentCategory->description),
                     'children' => $childrenData,
                 ];
             }
@@ -424,14 +425,14 @@ class BlogController extends BaseApiController
 
             $posts[] = [
                 'id' => $similarBlogFull->id,
-                'title' => $similarBlogFull->name,
-                'description' => $similarBlogFull->description,
+                'title' => Yii::t('database', $similarBlogFull->name),
+                'description' => Yii::t('database', $similarBlogFull->description),
                 'image' => $imageUrl,
                 'linkName' => $similarBlogFull->link_name,
                 'url' => $categoryUrl ? "/posts/{$categoryUrl}/post-{$similarBlogFull->link_name}" : "/posts/post-{$similarBlogFull->link_name}",
                 'category' => $similarBlogFull->blogCategory ? [
                     'id' => $similarBlogFull->blogCategory->id,
-                    'name' => $similarBlogFull->blogCategory->name,
+                    'name' => Yii::t('database', $similarBlogFull->blogCategory->name),
                     'linkName' => $similarBlogFull->blogCategory->link_name,
                 ] : null,
                 'createdAt' => $similarBlogFull->created_at,
