@@ -486,20 +486,14 @@
   //  }
   //}
 
-  &__banner {
-    &.stats-aside__stat-block {
-      padding: 0;
-      overflow: hidden;
-    }
-    &-link {
-      display: block;
-    }
-    &-img {
-      display: block;
-      width: 100%;
-      height: auto;
-      vertical-align: top;
-    }
+  .stats-aside__banner-link {
+    display: block;
+  }
+  .stats-aside__banner-img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    vertical-align: top;
   }
 }
 .stat-block__server.server.server_item_js.server_status0 {

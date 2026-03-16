@@ -1,13 +1,14 @@
 {# Баннер в сайдбаре: показываем только если ссылка для текущего языка не пустая #}
 {% if lang == 'en' %}
-    {% set banner_link = SETTINGS.get('design_banner_side_en_link') %}
-    {% set banner_image = SETTINGS.get('design_banner_side_en_image') %}
+    {% set banner_link = SETTINGS.get('banner_side_en_link') %}
+    {% set banner_image = SETTINGS.get('banner_side_en_image') %}
 {% else %}
-    {% set banner_link = SETTINGS.get('design_banner_side_ru_link') %}
-    {% set banner_image = SETTINGS.get('design_banner_side_image') %}
+    {% set banner_link = SETTINGS.get('banner_side_ru_link') %}
+    {% set banner_image = SETTINGS.get('banner_side_image') %}
 {% endif %}
+
 {% if banner_link|default('')|trim != '' and banner_image|default('')|trim != '' %}
-<section class="stats-aside__stat-block stat-block stats-aside__banner">
+<section class="stats-aside mobile_hide">
     <a href="{{ banner_link }}" target="_blank" rel="noopener noreferrer" class="stats-aside__banner-link">
         <img src="{{ banner_image }}" alt="" class="stats-aside__banner-img" loading="lazy" />
     </a>
