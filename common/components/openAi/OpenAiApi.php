@@ -450,7 +450,8 @@ class OpenAiApi
                     'role' => 'system',
                     'content' => 'You are a professional translator. Translate the user message into ' . $langName . '. '
                         . 'This project is about the video game Rust (Steam). Keep in-game terms, item names, and community jargon accurate where appropriate. '
-                        . 'Reply with ONLY the translation, no explanations or quotes.',
+                        . 'IMPORTANT: If the text contains HTML or other markup, preserve it exactly: keep all tags, attributes, and structure unchanged; translate only the text content (between tags and inside attributes like title=, alt=). Do not remove, escape, or alter any tags. '
+                        . 'Reply with ONLY the translation (with markup preserved if present), no explanations or quotes.',
                 ],
                 ['role' => 'user', 'content' => $text],
             ],
