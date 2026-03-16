@@ -125,9 +125,6 @@ class CobaltLabAffiliateChecker implements TaskCheckerInterface
         $curlError = curl_error($ch);
         curl_close($ch);
 
-        // Отправка запроса и ответа в Telegram для теста
-        $this->sendTestToTelegram($body, $response, $httpCode, $curlError);
-
         if ($response === false || $curlError !== '') {
             Yii::warning('CobaltLabAffiliateChecker cURL error: ' . $curlError, __METHOD__);
             return null;
@@ -140,44 +137,5 @@ class CobaltLabAffiliateChecker implements TaskCheckerInterface
         }
 
         return $decoded;
-    }
-
-    /**
-     * Отправить запрос и ответ API в Telegram-чат для теста (tgbotAlert_chatId).
-     * Токен в теле запроса маскируется.
-     */
-    private function sendTestToTelegram(string $requestBody, $responseRaw, int $httpCode, string $curlError): void
-    {
-        if (!Yii::$app->has('telegramChats')) {
-            return;
-        }
-
-        $requestForLog = $requestBody;
-        $decoded = json_decode($requestBody, true);
-        if (is_array($decoded) && isset($decoded['token']) && $decoded['token'] !== '') {
-            $t = $decoded['token'];
-            $masked = strlen($t) <= 6 ? '***' : (substr($t, 0, 3) . '***' . substr($t, -3));
-            $decoded['token'] = $masked;
-            $requestForLog = json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-        }
-
-        $responseForLog = $responseRaw === false || $responseRaw === ''
-            ? '(cURL error: ' . $curlError . ')'
-            : (is_string($responseRaw) ? $responseRaw : json_encode($responseRaw));
-
-        $maxLen = 3500;
-        if (strlen($responseForLog) > $maxLen) {
-            $responseForLog = substr($responseForLog, 0, $maxLen) . "\n... (обрезано)";
-        }
-
-        $text = "<b>CobaltLab CHECK_AFFILIATES_V2 [TEST]</b>\n\n"
-            . "<b>REQUEST:</b>\n<pre>" . htmlspecialchars($requestForLog, ENT_QUOTES, 'UTF-8') . "</pre>\n\n"
-            . "<b>RESPONSE (HTTP {$httpCode}):</b>\n<pre>" . htmlspecialchars($responseForLog, ENT_QUOTES, 'UTF-8') . "</pre>";
-
-        try {
-            Yii::$app->telegramChats->sendMessage($text);
-        } catch (\Throwable $e) {
-            Yii::warning('CobaltLabAffiliateChecker: failed to send test to Telegram: ' . $e->getMessage(), __METHOD__);
-        }
     }
 }
