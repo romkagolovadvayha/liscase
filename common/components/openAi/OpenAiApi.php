@@ -2,6 +2,7 @@
 
 namespace common\components\openAi;
 
+use GuzzleHttp\Client;
 use Orhanerday\OpenAi\OpenAi;
 use Yii;
 
@@ -414,6 +415,27 @@ class OpenAiApi
      * @return string translated text
      * @throws \Exception
      */
+    /**
+     * HTTP client for translate (with proxy from settings if set).
+     *
+     * @return Client
+     */
+    private function getTranslateClient()
+    {
+        $clientConfig = [
+            'base_uri' => 'https://api.openai.com/v1/',
+            'headers'  => [
+                'Authorization' => 'Bearer ' . $this->apiKey,
+                'Content-Type'  => 'application/json',
+            ],
+        ];
+        if (Yii::$app->has('settings') && !empty(Yii::$app->settings->get('proxy_ip'))) {
+            $proxy = 'http://' . Yii::$app->settings->get('proxy_username') . ':' . Yii::$app->settings->get('proxy_password') . '@' . Yii::$app->settings->get('proxy_ip');
+            $clientConfig['proxy'] = ['http' => $proxy, 'https' => $proxy];
+        }
+        return new Client($clientConfig);
+    }
+
     public function translateText($text, $targetLanguage = 'en')
     {
         $text = trim((string) $text);
@@ -421,8 +443,7 @@ class OpenAiApi
             return '';
         }
         $langName = $this->getTargetLanguageName($targetLanguage);
-        $openAi = new OpenAi($this->apiKey);
-        $complete = $openAi->chat([
+        $payload = [
             'model' => 'gpt-3.5-turbo-16k',
             'messages' => [
                 [
@@ -431,23 +452,17 @@ class OpenAiApi
                         . 'This project is about the video game Rust (Steam). Keep in-game terms, item names, and community jargon accurate where appropriate. '
                         . 'Reply with ONLY the translation, no explanations or quotes.',
                 ],
-                [
-                    'role' => 'user',
-                    'content' => $text,
-                ],
+                ['role' => 'user', 'content' => $text],
             ],
             'temperature' => 0.3,
-        ]);
+        ];
 
-        if ($complete === false || $complete === null) {
-            Yii::warning('OpenAI translate: empty response', __METHOD__);
-            throw new \RuntimeException('OpenAI translate: empty or invalid response');
-        }
+        $response = $this->getTranslateClient()->post('chat/completions', ['json' => $payload]);
+        $complete = (string) $response->getBody();
+        $decoded = json_decode($complete, true);
 
-        $decoded = is_array($complete) ? $complete : json_decode($complete, true);
         if (!is_array($decoded)) {
-            $raw = is_string($complete) ? substr($complete, 0, 500) : gettype($complete);
-            Yii::warning('OpenAI translate: response is not JSON. Raw: ' . $raw, __METHOD__);
+            Yii::warning('OpenAI translate: response is not JSON. Raw: ' . substr($complete, 0, 500), __METHOD__);
             throw new \RuntimeException('OpenAI translate: response is not valid JSON');
         }
 
@@ -461,7 +476,7 @@ class OpenAiApi
             ? $decoded['choices'][0]['message']['content']
             : null;
         if ($content === null || $content === '') {
-            Yii::warning('OpenAI translate: no content in response. Keys: ' . implode(',', array_keys($decoded)) . ' Raw: ' . substr($complete, 0, 500), __METHOD__);
+            Yii::warning('OpenAI translate: no content in response. Keys: ' . implode(',', array_keys($decoded)), __METHOD__);
             throw new \RuntimeException('OpenAI translate: invalid response (no choices[].message.content)');
         }
 
