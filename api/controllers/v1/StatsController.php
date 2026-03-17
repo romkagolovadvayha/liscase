@@ -99,12 +99,24 @@ class StatsController extends BaseApiController
      */
     public function actionStats($serverTag, $wipe = null)
     {
-        $server = Servers::find()->where(['tag' => $serverTag])->one();
+        // Один запрос: все серверы (кэш 30 сек), нужный — по tag из списка
+        $servers = Servers::find()
+            ->cache(30)
+            ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        $server = null;
+        foreach ($servers as $s) {
+            if ($s->tag === $serverTag) {
+                $server = $s;
+                break;
+            }
+        }
         if (!$server) {
             throw new NotFoundHttpException('Сервер не найден');
         }
 
-        // Если wipe не передан, используем текущий вайп сервера
         if ($wipe === null) {
             $wipe = $server->currentWipe();
         }
@@ -117,18 +129,9 @@ class StatsController extends BaseApiController
             Yii::$app->cache->set($cacheKey, $cached, StatsCacheHelper::CACHE_TTL);
         }
 
-        // Добавляем список вайпов в ответ (не кэшируем, так как не зависит от wipe)
         $response = $cached;
-        $response['wipes'] = $server->getWipes(true); // true = обновить кэш, как в старой версии
-        $response['wipe'] = $wipe; // Текущий выбранный вайп
-        
-        // Получаем список всех серверов для навигации (как в старой версии)
-        $servers = Servers::find()
-            ->cache(30)
-            ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
-            ->orderBy(['sort' => SORT_ASC])
-            ->all();
-        
+        $response['wipes'] = $server->getWipes(false);
+        $response['wipe'] = $wipe;
         $response['servers'] = array_map(function($s) {
             return [
                 'id' => $s->id,
