@@ -151,13 +151,16 @@ class TranslationsController extends BaseApiController
 
     /**
      * Добавить ключ в language_source (category new_front) и пустые записи в language_translate, если ещё нет.
+     * Поиск существующего ключа без учёта регистра (ПН = Пн), чтобы не создавать дубликаты и не перезаписывать перевод.
      * @return int id записи в language_source (0 при ошибке)
      */
     private function ensureNewFrontKey(string $message): int
     {
+        $messageLower = mb_strtolower($message, 'UTF-8');
         $existing = (new Query())
             ->from('{{%language_source}}')
-            ->where(['category' => self::CATEGORY_NEW_FRONT, 'message' => $message])
+            ->where(['category' => self::CATEGORY_NEW_FRONT])
+            ->andWhere('LOWER([[message]]) = :msg', [':msg' => $messageLower])
             ->select('id')
             ->scalar(Yii::$app->db);
         if ($existing !== false) {
