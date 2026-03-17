@@ -179,11 +179,13 @@ class BlogController extends BaseApiController
         $posts = [];
         foreach ($dataProvider->getModels() as $blog) {
             $imageUrl = null;
+            $imageUrl100 = null;
             $blogImages = $blog->blogImages; // Получаем коллекцию
             if (!empty($blogImages) && is_array($blogImages) && count($blogImages) > 0) {
                 $firstImage = reset($blogImages);
                 if ($firstImage) {
                     $imageUrl = $firstImage->getPublicUrl();
+                    $imageUrl100 = $firstImage->getPublicUrl100();
                 }
             } elseif (!empty($blogImages) && is_object($blogImages)) {
                 // Если это ActiveQuery, получаем все записи
@@ -192,6 +194,7 @@ class BlogController extends BaseApiController
                     $firstImage = reset($images);
                     if ($firstImage) {
                         $imageUrl = $firstImage->getPublicUrl();
+                        $imageUrl100 = $firstImage->getPublicUrl100();
                     }
                 }
             }
@@ -229,6 +232,7 @@ class BlogController extends BaseApiController
                 'description' => Yii::t('database', $blog->description),
                 'content' => $processedContent,
                 'image' => $imageUrl,
+                'image_100' => $imageUrl100,
                 'views' => $blog->views ?? 0,
                 'commentsCount' => $commentsCount,
                 'linkName' => $blog->link_name,
@@ -359,12 +363,14 @@ class BlogController extends BaseApiController
             }
             
             $imageUrl = null;
+            $imageUrl100 = null;
             $blogImages = $similarBlogFull->blogImages;
             if (!empty($blogImages)) {
                 if (is_array($blogImages) && count($blogImages) > 0) {
                     $firstImage = reset($blogImages);
                     if ($firstImage) {
                         $imageUrl = $firstImage->getPublicUrl();
+                        $imageUrl100 = $firstImage->getPublicUrl100();
                     }
                 } elseif (is_object($blogImages)) {
                     $images = $blogImages->all();
@@ -372,6 +378,7 @@ class BlogController extends BaseApiController
                         $firstImage = reset($images);
                         if ($firstImage) {
                             $imageUrl = $firstImage->getPublicUrl();
+                            $imageUrl100 = $firstImage->getPublicUrl100();
                         }
                     }
                 }
@@ -393,6 +400,7 @@ class BlogController extends BaseApiController
                 'title' => Yii::t('database', $similarBlogFull->name),
                 'description' => Yii::t('database', $similarBlogFull->description),
                 'image' => $imageUrl,
+                'image_100' => $imageUrl100,
                 'linkName' => $similarBlogFull->link_name,
                 'url' => $categoryUrl ? "/posts/{$categoryUrl}/post-{$similarBlogFull->link_name}" : "/posts/post-{$similarBlogFull->link_name}",
                 'category' => $similarBlogFull->blogCategory ? [

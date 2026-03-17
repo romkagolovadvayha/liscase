@@ -9,6 +9,8 @@ use Yii;
  *
  * @property int $id
  * @property string $link
+ * @property string|null $image_100
+ * @property string|null $image_400
  * @property string $description
  * @property int $blog_id
  * @property string $created_at
@@ -32,7 +34,7 @@ class BlogImage extends \yii\db\ActiveRecord
     {
         return [
             [['blog_id'], 'required'],
-            [['link', 'description'], 'string'],
+            [['link', 'description', 'image_100', 'image_400'], 'string'],
             [['blog_id'], 'integer'],
             [['created_at'], 'safe'],
             [['blog_id'], 'exist', 'skipOnError' => true, 'targetClass' => Blog::class, 'targetAttribute' => ['blog_id' => 'id']],
@@ -56,6 +58,8 @@ class BlogImage extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'link' => 'Link',
+            'image_100' => 'Image 100',
+            'image_400' => 'Image 400',
             'blog_id' => 'Blog ID',
             'created_at' => 'Created At',
         ];
@@ -71,9 +75,29 @@ class BlogImage extends \yii\db\ActiveRecord
         return $this->hasOne(Blog::class, ['id' => 'blog_id']);
     }
 
-    public function getPublicUrl() {
-        
+    public function getPublicUrl()
+    {
         return Yii::$app->settings->get('s3_publicUrl') . '/blog/' . $this->link;
+    }
+
+    /**
+     * Публичный URL уменьшенной копии 100px (если есть).
+     */
+    public function getPublicUrl100()
+    {
+        return $this->image_100
+            ? Yii::$app->settings->get('s3_publicUrl') . '/blog/' . $this->image_100
+            : null;
+    }
+
+    /**
+     * Публичный URL уменьшенной копии 400px (если есть).
+     */
+    public function getPublicUrl400()
+    {
+        return $this->image_400
+            ? Yii::$app->settings->get('s3_publicUrl') . '/blog/' . $this->image_400
+            : null;
     }
 
     public static function getMimetypeFromExtension($extension)
