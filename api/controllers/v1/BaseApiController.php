@@ -81,6 +81,8 @@ abstract class BaseApiController extends Controller
             'http://localhost',
             'http://127.0.0.1',
             'http://45.129.128.211:3000',
+            'http://prostoj.local',
+            'http://en.prostoj.local',
             'https://prostoj.store',
             'https://www.prostoj.store',
             'https://new.prostoj.store',
