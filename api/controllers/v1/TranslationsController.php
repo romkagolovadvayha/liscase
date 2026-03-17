@@ -4,6 +4,8 @@ namespace api\controllers\v1;
 
 use Yii;
 use yii\db\Query;
+use common\components\google\TranslateApi;
+use DemonDogSL\translateManager\models\LanguageTranslate;
 
 /**
  * Переводы для фронта (аналог Yii::t / DbMessageSource).
@@ -97,27 +99,49 @@ class TranslationsController extends BaseApiController
         }
 
         $language = Yii::$app->language;
-        $this->ensureNewFrontKey($key);
+        $sourceId = $this->ensureNewFrontKey($key);
 
-        $message = "🌐 Перевод new_front\n"
-            . "Переводим: " . $key . "\n"
-            . "На язык: " . $language . "\n"
-            . "(перевод в БД отсутствует — добавьте в language_translate)";
+        $translatedText = $key;
+        if ($sourceId > 0 && $language !== 'ru-RU' && isset(Yii::$app->openAi)) {
+            try {
+                $targetLang = $language === 'en-US' ? 'en' : (strpos($language, '-') ? substr($language, 0, 2) : $language);
+                $google = new TranslateApi();
+                $translatedText = $google->translateText($key, $targetLang);
+                $translatedText = str_replace('&#39;', "'", $translatedText);
+                $translatedText = str_replace('&quot;', '"', $translatedText);
+
+                $model = LanguageTranslate::findOne(['id' => $sourceId, 'language' => $language]);
+                if ($model === null) {
+                    $model = new LanguageTranslate();
+                    $model->id = $sourceId;
+                    $model->language = $language;
+                }
+                $model->translation = $translatedText;
+                $model->save(false);
+            } catch (\Throwable $e) {
+                Yii::warning('TranslateApi failed: ' . $e->getMessage(), __METHOD__);
+            }
+        }
+
+        $telegramLine = $language === 'ru-RU'
+            ? "🌐 new_front: «" . $key . "» — язык ru-RU (оригинал)"
+            : "🌐 new_front: «" . $key . "» → «" . $translatedText . "» (язык " . $language . ")";
         try {
             if (isset(Yii::$app->telegramChats)) {
-                Yii::$app->telegramChats->sendMessage($message);
+                Yii::$app->telegramChats->sendMessage($telegramLine);
             }
         } catch (\Throwable $e) {
             Yii::warning('telegramChats sendMessage failed: ' . $e->getMessage(), __METHOD__);
         }
 
-        return $this->successResponse(['reported' => true]);
+        return $this->successResponse(['reported' => true, 'translation' => $translatedText]);
     }
 
     /**
      * Добавить ключ в language_source (category new_front) и пустые записи в language_translate, если ещё нет.
+     * @return int id записи в language_source (0 при ошибке)
      */
-    private function ensureNewFrontKey(string $message): void
+    private function ensureNewFrontKey(string $message): int
     {
         $existing = (new Query())
             ->from('{{%language_source}}')
@@ -125,7 +149,7 @@ class TranslationsController extends BaseApiController
             ->select('id')
             ->scalar(Yii::$app->db);
         if ($existing !== false) {
-            return;
+            return (int) $existing;
         }
         try {
             Yii::$app->db->createCommand()->insert('{{%language_source}}', [
@@ -142,8 +166,9 @@ class TranslationsController extends BaseApiController
                     ])->execute();
                 }
             }
+            return $id;
         } catch (\Throwable $e) {
-            // Дубликат или другая ошибка — игнорируем
+            return 0;
         }
     }
 

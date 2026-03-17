@@ -26,7 +26,8 @@ class TranslateController extends Controller
     public function actionImportApi()
     {
         Yii::$app->runAction('/translateManager/console/scan');
-        Yii::$app->runAction('/translateManager/console/optimize');
+        // optimize не запускаем: не удаляем ключи из БД, которых нет в проекте (категории new_front и др. остаются)
+        // Yii::$app->runAction('/translateManager/console/optimize');
 
         $languages = [
             'en' => 'en-US',
