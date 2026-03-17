@@ -112,6 +112,7 @@ class TranslationsController extends BaseApiController
             && $existingTranslation !== null
             && trim((string) $existingTranslation) !== '';
 
+        $didTranslate = false;
         if ($hasExistingTranslation) {
             $translatedText = (string) $existingTranslation;
         } elseif ($sourceId > 0 && $language !== 'ru-RU' && isset(Yii::$app->openAi)) {
@@ -130,20 +131,21 @@ class TranslationsController extends BaseApiController
                 }
                 $model->translation = $translatedText;
                 $model->save(false);
+                $didTranslate = true;
             } catch (\Throwable $e) {
                 Yii::warning('TranslateApi failed: ' . $e->getMessage(), __METHOD__);
             }
         }
 
-        $telegramLine = $language === 'ru-RU'
-            ? "🌐 new_front: «" . $key . "» — язык ru-RU (оригинал)"
-            : "🌐 new_front: «" . $key . "» → «" . $translatedText . "» (язык " . $language . ")";
-        try {
-            if (isset(Yii::$app->telegramChats)) {
+        if ($didTranslate && isset(Yii::$app->telegramChats)) {
+            $telegramLine = $language === 'ru-RU'
+                ? "🌐 new_front: «" . $key . "» — язык ru-RU (оригинал)"
+                : "🌐 new_front: «" . $key . "» → «" . $translatedText . "» (язык " . $language . ")";
+            try {
                 Yii::$app->telegramChats->sendMessage($telegramLine);
+            } catch (\Throwable $e) {
+                Yii::warning('telegramChats sendMessage failed: ' . $e->getMessage(), __METHOD__);
             }
-        } catch (\Throwable $e) {
-            Yii::warning('telegramChats sendMessage failed: ' . $e->getMessage(), __METHOD__);
         }
 
         return $this->successResponse(['reported' => true, 'translation' => $translatedText]);
@@ -151,16 +153,15 @@ class TranslationsController extends BaseApiController
 
     /**
      * Добавить ключ в language_source (category new_front) и пустые записи в language_translate, если ещё нет.
-     * Поиск существующего ключа без учёта регистра (ПН = Пн), чтобы не создавать дубликаты и не перезаписывать перевод.
+     * Поиск существующего ключа без учёта регистра (ПН = Пн) через COLLATE, чтобы не создавать дубликаты.
      * @return int id записи в language_source (0 при ошибке)
      */
     private function ensureNewFrontKey(string $message): int
     {
-        $messageLower = mb_strtolower($message, 'UTF-8');
         $existing = (new Query())
             ->from('{{%language_source}}')
             ->where(['category' => self::CATEGORY_NEW_FRONT])
-            ->andWhere('LOWER([[message]]) = :msg', [':msg' => $messageLower])
+            ->andWhere('[[message]] COLLATE utf8_unicode_ci = :msg', [':msg' => $message])
             ->select('id')
             ->scalar(Yii::$app->db);
         if ($existing !== false) {
