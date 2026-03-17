@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\SettingsCacheHelper;
 use common\models\site\SiteSetting;
 use OpenApi\Annotations as OA;
 
@@ -80,106 +81,15 @@ class SettingsController extends BaseApiController
             $categories = self::ALLOWED_CATEGORIES;
         }
 
-        // Получаем настройки из кэша
-        $cacheKey = 'api_settings_' . md5(implode(',', $categories));
+        $cacheKey = SettingsCacheHelper::cacheKey($categories);
         $settings = Yii::$app->cache->get($cacheKey);
 
         if ($settings === false) {
-            $settings = $this->loadSettings($categories);
-            // Кэшируем на 1 час
-            Yii::$app->cache->set($cacheKey, $settings, 3600);
+            $settings = SettingsCacheHelper::buildPayload($categories);
+            Yii::$app->cache->set($cacheKey, $settings, SettingsCacheHelper::CACHE_TTL);
         }
 
         return $this->successResponse($settings);
-    }
-
-    /**
-     * Загрузка настроек из базы данных
-     * 
-     * @param array $categories Список категорий
-     * @return array
-     */
-    protected function loadSettings($categories)
-    {
-        $settings = [];
-
-        foreach ($categories as $category) {
-            $categorySettings = SiteSetting::find()
-                ->where(['category' => $category])
-                ->all();
-
-            $settings[$category] = [];
-
-            foreach ($categorySettings as $setting) {
-                $key = $setting->code;
-                $fullKey = $category . '_' . $key;
-
-                // Пропускаем секретные данные
-                if ($this->isSecretKey($fullKey)) {
-                    continue;
-                }
-
-                // Форматируем значение согласно типу
-                $value = $this->formatValue($setting);
-
-                // Для категорий section используем только ключ code, без префикса category
-                if ($category === 'section') {
-                    $settings[$category][$fullKey] = $value; // Оставляем полный ключ для section
-                } else {
-                    $settings[$category][$key] = $value;
-                }
-            }
-        }
-
-        return $settings;
-    }
-
-    /**
-     * Проверка, является ли ключ секретным
-     * 
-     * @param string $key
-     * @return bool
-     */
-    protected function isSecretKey($key)
-    {
-        foreach (self::EXCLUDED_PATTERNS as $pattern) {
-            if (preg_match($pattern, $key)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Форматирование значения согласно типу настройки
-     * 
-     * @param SiteSetting $setting
-     * @return mixed
-     */
-    protected function formatValue($setting)
-    {
-        $value = $setting->getValue();
-
-        switch ($setting->type) {
-            case 'checkbox':
-                return (bool)$value;
-            
-            case 'number':
-                if (is_numeric($value)) {
-                    return strpos($value, '.') !== false ? (float)$value : (int)$value;
-                }
-                return 0;
-            
-            case 'image':
-            case 'video':
-                // getValue() уже возвращает полный URL для image/video
-                return $value;
-            
-            case 'text':
-            case 'longtext':
-            default:
-                return (string)$value;
-        }
     }
 }
 

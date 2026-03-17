@@ -148,19 +148,26 @@ class StoreController extends BaseApiController
     {
         $this->getCurrentUser(); // проверка авторизации
 
-        $categories = Category::find()
-            ->orderBy(['sort' => SORT_ASC])
-            ->asArray()
-            ->all();
+        $cacheKey = 'api_store_categories_' . Yii::$app->language;
+        $cache = Yii::$app->cache;
+        $list = $cache->get($cacheKey);
 
-        $list = [];
-        foreach ($categories as $c) {
-            $list[] = [
-                'id' => (int) $c['id'],
-                'name' => Yii::t('database', $c['name']),
-                'tag' => $c['tag'] ?? '',
-                'sort' => (int) ($c['sort'] ?? 0),
-            ];
+        if ($list === false) {
+            $categories = Category::find()
+                ->orderBy(['sort' => SORT_ASC])
+                ->asArray()
+                ->all();
+
+            $list = [];
+            foreach ($categories as $c) {
+                $list[] = [
+                    'id' => (int) $c['id'],
+                    'name' => Yii::t('database', $c['name']),
+                    'tag' => $c['tag'] ?? '',
+                    'sort' => (int) ($c['sort'] ?? 0),
+                ];
+            }
+            $cache->set($cacheKey, $list, 3600); // 1 час
         }
 
         return $this->successResponse(['categories' => $list]);

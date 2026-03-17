@@ -26,12 +26,21 @@ class TranslationsController extends BaseApiController
      * Ответ: { "key": "translation", ... } — ключ как в language_source.message.
      * Ключи: GET ?keys= (для коротких без запятых) или POST body JSON {"keys": ["текст1", "текст2"]}.
      */
+    private const TRANSLATIONS_CACHE_TTL = 1800; // 30 минут
+
     public function actionIndex()
     {
         $language = Yii::$app->language;
         $keys = $this->getRequestKeys();
         if (!empty($keys)) {
             $this->ensureKeys($keys);
+            Yii::$app->cache->delete('api_translations_' . $language);
+        }
+
+        $cacheKey = 'api_translations_' . $language;
+        $data = Yii::$app->cache->get($cacheKey);
+        if ($data !== false && is_array($data)) {
+            return $this->successResponse($data);
         }
 
         $rows = (new Query())
@@ -46,6 +55,7 @@ class TranslationsController extends BaseApiController
         foreach ($rows as $row) {
             $data[$row['message']] = (string) ($row['translation'] ?? $row['message']);
         }
+        Yii::$app->cache->set($cacheKey, $data, self::TRANSLATIONS_CACHE_TTL);
 
         return $this->successResponse($data);
     }
@@ -57,6 +67,11 @@ class TranslationsController extends BaseApiController
     public function actionNewFront()
     {
         $language = Yii::$app->language;
+        $cacheKey = 'api_translations_new_front_' . $language;
+        $data = Yii::$app->cache->get($cacheKey);
+        if ($data !== false && is_array($data)) {
+            return $this->successResponse($data);
+        }
 
         $rows = (new Query())
             ->select(['ls.message', 'COALESCE(lt.translation, ls.message) as translation'])
@@ -70,6 +85,7 @@ class TranslationsController extends BaseApiController
         foreach ($rows as $row) {
             $data[$row['message']] = (string) ($row['translation'] ?? $row['message']);
         }
+        Yii::$app->cache->set($cacheKey, $data, self::TRANSLATIONS_CACHE_TTL);
 
         return $this->successResponse($data);
     }

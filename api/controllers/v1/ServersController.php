@@ -4,6 +4,7 @@ namespace api\controllers\v1;
 
 use Yii;
 use yii\web\NotFoundHttpException;
+use common\helpers\ServersCacheHelper;
 use common\models\servers\Servers;
 use common\models\servers\ServersTags;
 use common\models\stats\Wipe;
@@ -49,26 +50,8 @@ class ServersController extends BaseApiController
         $cached = Yii::$app->cache->get($cacheKey);
 
         if ($cached === false) {
-            $servers = Servers::find()
-                ->with(['serversTags', 'mapEntity', 'mapList'])
-                ->where(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
-                ->orderBy(['sort' => SORT_ASC])
-                ->all();
-
-            $projectStats = \common\models\statistics\Statistics::projectStats();
-
-            $serversData = [];
-            foreach ($servers as $server) {
-                $serversData[] = $this->formatServer($server);
-            }
-
-            $cached = [
-                'servers' => $serversData,
-                'projectStats' => $projectStats,
-            ];
-
-            // Кэшируем на 180 секунд
-            Yii::$app->cache->set($cacheKey, $cached, 180);
+            $cached = ServersCacheHelper::buildIndexPayload(Yii::$app->language);
+            Yii::$app->cache->set($cacheKey, $cached, ServersCacheHelper::CACHE_TTL);
         }
 
         return $this->successResponse($cached);
@@ -383,84 +366,7 @@ class ServersController extends BaseApiController
      */
     protected function formatServer($server, $detailed = false)
     {
-        // Статус как число: 0 - неактивен, 1 - активен, 2 - ожидание
-        $statusNumber = $server->status;
-        
-        // Используем метод monitoring() из модели для вычисления процентов
-        $monitoring = $server->monitoring();
-        
-        $data = [
-            'id' => $server->id,
-            'tag' => $server->tag,
-            'name' => Yii::t('database', $server->name ?: $server->monitoring_name ?: ''),
-            'monitoring_name' => Yii::t('database', $server->monitoring_name ?: ''),
-            'description' => Yii::t('database', $server->monitoring_description ?? ''),
-            'monitoring_description' => Yii::t('database', $server->monitoring_description ?? ''),
-            'status' => $statusNumber, // Число для совместимости с фронтендом
-            'players' => (int)$server->players,
-            'max' => (int)$server->max,
-            'joined' => (int)($server->joined ?? 0),
-            'queued' => (int)($server->queued ?? 0),
-            'ip' => $server->ip,
-            'text_ip' => $server->text_ip,
-            'port' => (int)$server->port,
-            'minMapSize' => (int)$server->min_map_size,
-            'maxMapSize' => (int)$server->max_map_size,
-            'nextWipe' => $server->next_wipe,
-            'nextWipeTimestamp' => $server->next_wipe ? (($timestamp = strtotime($server->next_wipe)) !== false ? $timestamp : null) : null,
-            'wipeType' => $server->wipeTypeText() ?? 'Вайп',
-            'wipe_type' => (int)($server->wipe_type ?? 0),
-            'current_wipe' => $server->wipe ?? null,
-            'monitoring' => [
-                'percentPlayers' => $monitoring['percentPlayers'] ?? 0,
-                'percentJoined' => $monitoring['percentJoined'] ?? 0,
-                'percentQueued' => $monitoring['percentQueued'] ?? 0,
-                'percentPlayersAbsolute' => $monitoring['percentPlayersAbsolute'] ?? 0,
-                'percentJoinedAbsolute' => $monitoring['percentJoinedAbsolute'] ?? 0,
-                'percentQueuedAbsolute' => $monitoring['percentQueuedAbsolute'] ?? 0,
-            ],
-        ];
-
-        // Текущая карта: приоритет mapList (картинка большего размера для качества), иначе mapEntity
-        if ($server->mapList) {
-            $imagePath = $server->mapList->image ?? $server->mapList->image_preview ?? null;
-            $data['map'] = [
-                'id' => $server->mapList->id,
-                'name' => $server->mapList->hash ?? $server->mapList->name ?? null,
-                'size' => $server->mapList->size ?? $server->mapList->size_int ?? null,
-                'seed' => $server->mapList->seed ?? null,
-                'image' => $this->getMapImageUrl($imagePath),
-            ];
-        } elseif ($server->mapEntity) {
-            $data['map'] = [
-                'id' => $server->mapEntity->id,
-                'name' => $server->mapEntity->name,
-                'size' => $server->mapEntity->size ?? null,
-                'seed' => $server->mapEntity->seed ?? null,
-                'image' => $server->mapEntity->image ?? null,
-            ];
-        }
-
-        if ($server->serversTags) {
-            $data['tags'] = [];
-            foreach ($server->serversTags as $tag) {
-                $data['tags'][] = [
-                    'id' => $tag->id,
-                    'name' => Yii::t('database', $tag->name ?: ''),
-                    'title' => Yii::t('database', $tag->title ?: $tag->name ?: ''),
-                    'link' => $tag->link,
-                    'link_name' => $tag->link_name,
-                    'color' => $tag->color,
-                    'icon' => $tag->icon,
-                ];
-            }
-        }
-
-        if ($detailed) {
-            $data['sort'] = $server->sort ?? null;
-        }
-
-        return $data;
+        return ServersCacheHelper::formatServer($server, $detailed);
     }
 
     /**
@@ -483,27 +389,5 @@ class ServersController extends BaseApiController
         }
     }
 
-    /**
-     * Формирует публичный URL изображения карты (S3 или как есть для полного URL).
-     * Логика как в MapsController::getMapImageUrl().
-     *
-     * @param string|null $path Путь к изображению
-     * @return string|null
-     */
-    private function getMapImageUrl(?string $path): ?string
-    {
-        if (empty($path)) {
-            return null;
-        }
-        if (preg_match('#^https?://#i', $path)) {
-            return $path;
-        }
-        $s3PublicUrl = Yii::$app->settings->get('s3_publicUrl');
-        if (empty($s3PublicUrl)) {
-            return $path;
-        }
-        $path = ltrim($path, '/');
-        return rtrim($s3PublicUrl, '/') . '/' . $path;
-    }
 }
 

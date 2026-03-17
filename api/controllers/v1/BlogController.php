@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\BlogCacheHelper;
 use common\models\blog\Blog;
 use common\models\blog\BlogCategory;
 use common\models\user\User;
@@ -282,49 +283,13 @@ class BlogController extends BaseApiController
      */
     public function actionCategories()
     {
-        // Кэшируем категории на 1 час (по языку — name/description переводятся)
         $cacheKey = 'api_blog_categories_' . Yii::$app->language;
         $cache = Yii::$app->cache;
         $categories = $cache->get($cacheKey);
 
         if ($categories === false) {
-            // Получаем все родительские категории (без parent_id)
-            $parentCategories = BlogCategory::find()
-                ->where(['blog_category_id' => null])
-                ->andWhere(['status' => BlogCategory::STATUS_ACTIVE])
-                ->orderBy(['name' => SORT_ASC])
-                ->all();
-
-            $categories = [];
-            foreach ($parentCategories as $parentCategory) {
-                // Получаем дочерние категории
-                $children = BlogCategory::find()
-                    ->where(['blog_category_id' => $parentCategory->id])
-                    ->andWhere(['status' => BlogCategory::STATUS_ACTIVE])
-                    ->orderBy(['name' => SORT_ASC])
-                    ->all();
-
-                $childrenData = [];
-                foreach ($children as $child) {
-                    $childrenData[] = [
-                        'id' => $child->id,
-                        'name' => Yii::t('database', $child->name),
-                        'linkName' => $child->link_name,
-                        'description' => Yii::t('database', $child->description),
-                    ];
-                }
-
-                $categories[] = [
-                    'id' => $parentCategory->id,
-                    'name' => Yii::t('database', $parentCategory->name),
-                    'linkName' => $parentCategory->link_name,
-                    'description' => Yii::t('database', $parentCategory->description),
-                    'children' => $childrenData,
-                ];
-            }
-
-            // Сохраняем в кэш на 1 час (3600 секунд)
-            $cache->set($cacheKey, $categories, 3600);
+            $categories = BlogCacheHelper::buildCategoriesPayload(Yii::$app->language);
+            $cache->set($cacheKey, $categories, BlogCacheHelper::CATEGORIES_CACHE_TTL);
         }
 
         return $this->successResponse($categories);

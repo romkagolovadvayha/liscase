@@ -14,7 +14,12 @@ use common\models\statistics\Teams;
 use common\models\user\User;
 use common\models\user\UserDrop;
 use common\models\user\UserTop;
+use common\helpers\BlogCacheHelper;
+use common\helpers\ProductsCacheHelper;
+use common\helpers\ServersCacheHelper;
+use common\helpers\SettingsCacheHelper;
 use common\helpers\StatsCacheHelper;
+use common\models\servers\ServersRadioStation;
 use Yii;
 use common\models\box\Box;
 use yii\base\BaseObject;
@@ -138,6 +143,7 @@ class StorageController extends Controller
         ini_set('memory_limit', '512M');
         Drop::updateCache();
         $this->updateUserDropStatus();
+        $this->actionWarmCaches();
         Yii::$app->cache->delete($cacheKey);
     }
 
@@ -151,7 +157,7 @@ class StorageController extends Controller
                 ['status' => UserDrop::STATUS_ACTIVE],
                 ['status' => UserDrop::STATUS_WAIT]
             );
-            
+
             if ($count > 0) {
                 Yii::info("Updated {$count} UserDrop records from STATUS_WAIT to STATUS_ACTIVE", __METHOD__);
             }
@@ -179,8 +185,17 @@ class StorageController extends Controller
 
         Yii::$app->cache->set($cacheKey, 1, 5*60);
         ini_set('memory_limit', '512M');
-        foreach ($servers as $server) {
-            $server->getWipes(true);
+        try {
+            foreach ($servers as $server) {
+                $server->getWipes(true);
+            }
+            // Прогрев кэша API /v1/servers — список серверов отдаётся из кэша для ru и en
+            foreach (['ru', 'en'] as $lang) {
+                $payload = ServersCacheHelper::buildIndexPayload($lang);
+                Yii::$app->cache->set('api_servers_index_' . $lang, $payload, ServersCacheHelper::CACHE_TTL);
+            }
+        } catch (\Exception $e) {
+            Yii::$app->telegramChats->sendMessage('storage/update-servers ' . $e->getMessage());
         }
         Yii::$app->cache->delete($cacheKey);
     }
@@ -192,5 +207,54 @@ class StorageController extends Controller
      */
     public function actionUpdatePriceCsGo() {
         Yii::$app->csGoMarket->items(true);
+    }
+
+    /**
+     * storage/warm-caches — прогрев кэшей API: настройки (метрики), категории продуктов, категории блога, радио.
+     * Уменьшает постоянные запросы к БД при обращении к /v1/settings, /v1/products/categories, /v1/blog/categories, /v1/radio/list.
+     */
+    public function actionWarmCaches()
+    {
+        $cache = Yii::$app->cache;
+        try {
+            // Настройки (в т.ч. метрики сайта) — один ключ по умолчанию
+            $categories = SettingsCacheHelper::DEFAULT_CATEGORIES;
+            $payload = SettingsCacheHelper::buildPayload($categories);
+            $cache->set(SettingsCacheHelper::cacheKey($categories), $payload, SettingsCacheHelper::CACHE_TTL);
+
+            // Категории продуктов: ru, en × all, 0, 1
+            foreach (['ru', 'en'] as $lang) {
+                foreach ([null, 0, 1] as $showMainBlock) {
+                    $payload = ProductsCacheHelper::buildCategoriesPayload($showMainBlock, $lang);
+                    $cache->set(ProductsCacheHelper::categoriesCacheKey($showMainBlock, $lang), $payload, ProductsCacheHelper::CATEGORIES_CACHE_TTL);
+                }
+            }
+
+            // Категории блога: ru, en
+            foreach (['ru', 'en'] as $lang) {
+                $payload = BlogCacheHelper::buildCategoriesPayload($lang);
+                $cache->set('api_blog_categories_' . $lang, $payload, BlogCacheHelper::CATEGORIES_CACHE_TTL);
+            }
+
+            // Список радиостанций (как в RadioController::actionList)
+            $stations = ServersRadioStation::find()
+                ->where(['status' => ServersRadioStation::STATUS_ACTIVE])
+                ->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC])
+                ->all();
+            $list = [];
+            foreach ($stations as $station) {
+                $item = ['name' => $station->name, 'url' => $station->url];
+                if ($station->logo) {
+                    $item['logo'] = $station->getLogoUrl();
+                }
+                $list[] = $item;
+            }
+            $cache->set('api_radio_list', $list, 600);
+
+            echo "Warmed: settings, products categories, blog categories, radio list.\n";
+        } catch (\Exception $e) {
+            Yii::$app->telegramChats->sendMessage('storage/warm-caches ' . $e->getMessage());
+            throw $e;
+        }
     }
 }

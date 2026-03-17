@@ -52,6 +52,13 @@ class PaymentController extends BaseApiController
      */
     public function actionMethods()
     {
+        $cacheKey = 'api_payment_methods';
+        $cache = Yii::$app->cache;
+        $cached = $cache->get($cacheKey);
+        if ($cached !== false && is_array($cached)) {
+            return $this->successResponse($cached);
+        }
+
         $typeList = Deposit::getTypeList();
         $iconList = Deposit::getIconTypeList();
         $limits = Deposit::getLimits();
@@ -114,10 +121,13 @@ class PaymentController extends BaseApiController
             ];
         }, $bonuses);
 
-        return $this->successResponse([
+        $response = [
             'methods' => $methods,
             'bonuses' => $bonusesList,
-        ]);
+        ];
+        $cache->set($cacheKey, $response, 600); // 10 минут
+
+        return $this->successResponse($response);
     }
 
     /**

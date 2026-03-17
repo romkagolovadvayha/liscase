@@ -1393,7 +1393,20 @@ class StatsController extends BaseApiController
         if (!$server) {
             throw new NotFoundHttpException('Сервер не найден');
         }
-        $tops = StatsCacheHelper::getTopsFormatted($server, $wipe);
+        if ($wipe === null) {
+            $wipe = $server->currentWipe();
+        }
+        $cacheKey = StatsCacheHelper::cacheKey($server->tag, $wipe);
+        $cached = Yii::$app->cache->get($cacheKey);
+        if ($cached !== false && isset($cached['tops'])) {
+            $tops = $cached['tops'];
+        } else {
+            $tops = StatsCacheHelper::getTopsFormatted($server, $wipe);
+            if ($cached === false) {
+                $payload = StatsCacheHelper::buildPayload($server, $wipe);
+                Yii::$app->cache->set($cacheKey, $payload, StatsCacheHelper::CACHE_TTL);
+            }
+        }
 
         return $this->successResponse([
             'server_tag' => $serverTag,

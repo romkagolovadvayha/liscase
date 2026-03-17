@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ProductsCacheHelper;
 use common\models\box\Drop;
 use common\models\box\Category;
 use common\models\box\DropImage;
@@ -65,55 +66,15 @@ class ProductsController extends BaseApiController
     public function actionCategories()
     {
         $showMainBlock = Yii::$app->request->get('show_main_block');
-        
-        // Кэшируем категории на 1 час (по языку — name переводится)
-        $cacheKey = 'api_products_categories_' . ($showMainBlock !== null ? (int)$showMainBlock : 'all') . '_' . Yii::$app->language;
+        $cacheKey = ProductsCacheHelper::categoriesCacheKey($showMainBlock, Yii::$app->language);
         $cache = Yii::$app->cache;
         $formattedCategories = $cache->get($cacheKey);
 
         if ($formattedCategories === false) {
-            $query = Category::find();
-            
-            if ($showMainBlock !== null) {
-                $query->andWhere(['show_main_block' => (int)$showMainBlock]);
-            }
-            
-            $query->orderBy(['sort' => SORT_ASC, 'name' => SORT_ASC]);
-            
-            $categories = $query->all();
-            
-            $formattedCategories = [];
-            foreach ($categories as $category) {
-                // Форматируем изображение категории для S3, если оно есть
-                $categoryImage = null;
-                if (!empty($category->image)) {
-                    // Если изображение начинается с /images/, добавляем префикс uploads для S3
-                    if (strpos($category->image, '/images/') === 0) {
-                        // Формируем ключ для S3: /images/... -> uploads/images/...
-                        $s3Key = 'uploads' . $category->image;
-                        $categoryImage = Yii::$app->s3Api->getPublicUrl($s3Key);
-                    } elseif (strpos($category->image, '/uploads/') === 0) {
-                        // Если изображение уже начинается с /uploads/, используем как есть
-                        $s3Key = ltrim($category->image, '/');
-                        $categoryImage = Yii::$app->s3Api->getPublicUrl($s3Key);
-                    } else {
-                        // Если это уже полный URL или относительный путь, используем как есть
-                        $categoryImage = $category->image;
-                    }
-                }
-                
-                $formattedCategories[] = [
-                    'id' => $category->id,
-                    'name' => Yii::t('database', $category->name),
-                    'image' => $categoryImage,
-                    'tag' => $category->tag ?? null,
-                ];
-            }
-            
-            // Сохраняем в кэш на 1 час (3600 секунд)
-            $cache->set($cacheKey, $formattedCategories, 3600);
+            $formattedCategories = ProductsCacheHelper::buildCategoriesPayload($showMainBlock, Yii::$app->language);
+            $cache->set($cacheKey, $formattedCategories, ProductsCacheHelper::CATEGORIES_CACHE_TTL);
         }
-        
+
         return $this->successResponse($formattedCategories);
     }
 

@@ -100,6 +100,33 @@ class MapsController extends BaseApiController
             return $this->errorResponse('SERVER_NOT_FOUND', 'Сервер не найден', [], 404);
         }
 
+        $language = Yii::$app->language;
+        $cache = Yii::$app->cache;
+        $listCacheKey = 'api_maps_list_' . $server->tag . '_' . $language;
+        $cachedList = $cache->get($listCacheKey);
+        if ($cachedList !== false && is_array($cachedList)) {
+            $userVotedMapIds = [];
+            $currentUser = Yii::$app->user->identity;
+            if ($currentUser) {
+                $userVotedMapIds = MapListVote::find()
+                    ->where(['server_id' => $server->id, 'user_id' => $currentUser->id])
+                    ->select('map_list_id')
+                    ->column();
+            }
+            $maps = $cachedList['maps'];
+            foreach ($maps as &$m) {
+                $m['isVoted'] = in_array($m['id'], $userVotedMapIds);
+            }
+            unset($m);
+            return $this->successResponse([
+                'maps' => $maps,
+                'server' => $cachedList['server'],
+                'totalMaps' => $cachedList['totalMaps'],
+                'totalVotes' => $cachedList['totalVotes'],
+                'maxVotes' => $cachedList['maxVotes'],
+            ]);
+        }
+
         // Получаем ID карт, которые уже зафиксированы на любом из серверов (кэшируем на 5 минут)
         $cacheKey = 'api_maps_fixed_ids';
         $cache = Yii::$app->cache;
@@ -338,13 +365,26 @@ class MapsController extends BaseApiController
             }
         }
 
-        return $this->successResponse([
+        $response = [
             'maps' => $mapsData,
             'server' => $serverData,
             'totalMaps' => count($mapsData),
             'totalVotes' => $totalVotes,
             'maxVotes' => $maxVotes,
-        ]);
+        ];
+        $toCache = [
+            'maps' => array_map(function ($m) {
+                $m['isVoted'] = false;
+                return $m;
+            }, $mapsData),
+            'server' => $serverData,
+            'totalMaps' => count($mapsData),
+            'totalVotes' => $totalVotes,
+            'maxVotes' => $maxVotes,
+        ];
+        $cache->set($listCacheKey, $toCache, 300);
+
+        return $this->successResponse($response);
     }
 
     /**
@@ -527,6 +567,24 @@ class MapsController extends BaseApiController
 
         $request = Yii::$app->request;
         $serverId = $request->get('server_id');
+        $serverIdKey = $serverId ? (int) $serverId : 0;
+        $language = Yii::$app->language;
+        $cacheKey = 'api_maps_detail_' . $id . '_' . $serverIdKey . '_' . $language;
+        $cache = Yii::$app->cache;
+        $cached = $cache->get($cacheKey);
+        if ($cached !== false && is_array($cached)) {
+            $user = Yii::$app->user->identity;
+            if ($user && $serverIdKey) {
+                $server = Servers::findOne($serverIdKey);
+                if ($server) {
+                    $userVote = MapListVote::find()
+                        ->where(['map_list_id' => $map->id, 'server_id' => $server->id, 'user_id' => $user->id])
+                        ->exists();
+                    $cached['userVotedMapIds'] = $userVote ? [(int) $map->id] : [];
+                }
+            }
+            return $this->successResponse($cached);
+        }
 
         $server = null;
         if ($serverId) {
@@ -631,6 +689,10 @@ class MapsController extends BaseApiController
             'voters' => $voters,
             'userVotedMapIds' => $userVotedMapIds,
         ];
+
+        $toCache = $mapData;
+        $toCache['userVotedMapIds'] = [];
+        $cache->set($cacheKey, $toCache, 300); // 5 минут
 
         return $this->successResponse($mapData);
     }
