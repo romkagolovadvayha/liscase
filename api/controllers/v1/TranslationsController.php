@@ -102,7 +102,19 @@ class TranslationsController extends BaseApiController
         $sourceId = $this->ensureNewFrontKey($key);
 
         $translatedText = $key;
-        if ($sourceId > 0 && $language !== 'ru-RU' && isset(Yii::$app->openAi)) {
+        $existingTranslation = (new Query())
+            ->from('{{%language_translate}}')
+            ->where(['id' => $sourceId, 'language' => $language])
+            ->select('translation')
+            ->scalar(Yii::$app->db);
+
+        $hasExistingTranslation = $existingTranslation !== false
+            && $existingTranslation !== null
+            && trim((string) $existingTranslation) !== '';
+
+        if ($hasExistingTranslation) {
+            $translatedText = (string) $existingTranslation;
+        } elseif ($sourceId > 0 && $language !== 'ru-RU' && isset(Yii::$app->openAi)) {
             try {
                 $targetLang = $language === 'en-US' ? 'en' : (strpos($language, '-') ? substr($language, 0, 2) : $language);
                 $google = new TranslateApi();
