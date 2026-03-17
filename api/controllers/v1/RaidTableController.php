@@ -46,8 +46,8 @@ class RaidTableController extends BaseApiController
             return $this->errorResponse('RAID_CALCULATOR_DISABLED', 'Калькулятор рейдов отключен', [], 404);
         }
 
-        // Кэшируем данные на 1 час (v2 = картинки 150px через getImageLarge)
-        $cacheKey = 'api_raid_table_v5';
+        // Кэшируем данные на 1 час (v5; ключ с языком — prodNames и fallback-названия зависят от локали)
+        $cacheKey = 'api_raid_table_v5_' . Yii::$app->language;
         $cache = Yii::$app->cache;
         $data = $cache->get($cacheKey);
 

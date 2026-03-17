@@ -197,7 +197,7 @@ class ProductsController extends BaseApiController
         $cacheSuffix = ($showMainBlock !== null && $showMainBlock !== '') ? '_main_' . (int)$showMainBlock : '_all';
 
         if (!$hasFilters && $offset === 0 && $isDefaultSort && empty($favoriteDropIds)) {
-            $cacheKey = 'api_products_list_' . $limit . $cacheSuffix;
+            $cacheKey = 'api_products_list_' . $limit . $cacheSuffix . '_' . Yii::$app->language;
             $cache = Yii::$app->cache;
             $cachedData = $cache->get($cacheKey);
 
@@ -403,8 +403,8 @@ class ProductsController extends BaseApiController
      */
     public function actionView($id)
     {
-        // Кэшируем детальную информацию о товаре на 10 минут
-        $cacheKey = 'api_products_view_' . $id;
+        // Кэшируем детальную информацию о товаре на 10 минут (ключ с языком — ответ содержит переводы)
+        $cacheKey = 'api_products_view_' . $id . '_' . Yii::$app->language;
         $cache = Yii::$app->cache;
         $cachedProduct = $cache->get($cacheKey);
 

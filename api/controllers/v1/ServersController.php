@@ -100,8 +100,8 @@ class ServersController extends BaseApiController
      */
     public function actionView($tag)
     {
-        // Кэшируем данные сервера на 3 минуты
-        $cacheKey = 'api_servers_view_' . $tag;
+        // Кэшируем данные сервера на 3 минуты (formatServer использует Yii::t — ключ с языком)
+        $cacheKey = 'api_servers_view_' . $tag . '_' . Yii::$app->language;
         $cached = Yii::$app->cache->get($cacheKey);
 
         if ($cached === false) {

@@ -266,8 +266,8 @@ class SkinsController extends BaseApiController
             throw new NotFoundHttpException('Страница не найдена');
         }
 
-        // Кэшируем данные на 10 минут (ключ v2 — с totalAmount)
-        $cacheKey = 'skin_giveaway_data_v2';
+        // Кэшируем данные на 10 минут (v2; ключ с языком — в ответе есть «Неизвестный» и др.)
+        $cacheKey = 'skin_giveaway_data_v2_' . Yii::$app->language;
         $cache = Yii::$app->cache;
         $data = $cache->get($cacheKey);
 
@@ -386,8 +386,8 @@ class SkinsController extends BaseApiController
 
         $cache = Yii::$app->cache;
         
-        // Кэшируем общие данные (выигрыши и префикс) на 10 минут
-        $commonCacheKey = 'skindrops_common_data';
+        // Кэшируем общие данные (выигрыши, префикс, дни недели) на 10 минут; ключ с языком
+        $commonCacheKey = 'skindrops_common_data_' . Yii::$app->language;
         $commonData = $cache->get($commonCacheKey);
 
         // Проверяем структуру данных (на случай старых данных в кэше)
