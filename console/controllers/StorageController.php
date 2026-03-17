@@ -14,6 +14,7 @@ use common\models\statistics\Teams;
 use common\models\user\User;
 use common\models\user\UserDrop;
 use common\models\user\UserTop;
+use common\helpers\StatsCacheHelper;
 use Yii;
 use common\models\box\Box;
 use yii\base\BaseObject;
@@ -111,6 +112,10 @@ class StorageController extends Controller
                 UserTop::getUserTops($server, $server->currentWipe(), true);
                 UserTop::getAllUserTops($server, $server->currentWipe(), true);
                 DropBlocked::getBlockedList($server->id, true);
+                // Прогрев кэша API /v1/stats — ответ сразу отдаётся из кэша без тяжёлого getTops
+                $wipe = $server->currentWipe();
+                $payload = StatsCacheHelper::buildPayload($server, $wipe);
+                Yii::$app->cache->set(StatsCacheHelper::cacheKey($server->tag, $wipe), $payload, StatsCacheHelper::CACHE_TTL);
             }
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage('storage/update ' . $e->getMessage());
