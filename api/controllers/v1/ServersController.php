@@ -393,9 +393,9 @@ class ServersController extends BaseApiController
             'id' => $server->id,
             'tag' => $server->tag,
             'name' => Yii::t('database', $server->name ?: $server->monitoring_name ?: ''),
-            'monitoring_name' => $server->monitoring_name,
-            'description' => $server->monitoring_description ?? '',
-            'monitoring_description' => $server->monitoring_description ?? '',
+            'monitoring_name' => Yii::t('database', $server->monitoring_name ?: ''),
+            'description' => Yii::t('database', $server->monitoring_description ?? ''),
+            'monitoring_description' => Yii::t('database', $server->monitoring_description ?? ''),
             'status' => $statusNumber, // Число для совместимости с фронтендом
             'players' => (int)$server->players,
             'max' => (int)$server->max,
