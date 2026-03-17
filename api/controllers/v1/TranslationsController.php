@@ -178,7 +178,7 @@ class TranslationsController extends BaseApiController
                     Yii::$app->db->createCommand()->insert('{{%language_translate}}', [
                         'id' => $id,
                         'language' => $lang,
-                        'translation' => $message,
+                        'translation' => $lang === 'ru-RU' ? $message : '',
                     ])->execute();
                 }
             }
