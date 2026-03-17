@@ -161,7 +161,7 @@ class TranslationsController extends BaseApiController
         $existing = (new Query())
             ->from('{{%language_source}}')
             ->where(['category' => self::CATEGORY_NEW_FRONT])
-            ->andWhere('[[message]] COLLATE utf8_unicode_ci = :msg', [':msg' => $message])
+            ->andWhere('[[message]] COLLATE utf8mb4_unicode_ci = :msg', [':msg' => $message])
             ->select('id')
             ->scalar(Yii::$app->db);
         if ($existing !== false) {
