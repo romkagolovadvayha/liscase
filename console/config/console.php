@@ -140,6 +140,7 @@ $config['modules']['translateManager'] = [
     'root'                    => [
         '@frontend',
         '@common',
+        '@api',
     ],
     //    'scanRootParentDirectory' => true,
     //    'ignoredCategories'       => ['yii', 'kvdrp'],
