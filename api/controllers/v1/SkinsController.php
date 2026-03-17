@@ -417,7 +417,7 @@ class SkinsController extends BaseApiController
                     'id' => $payout->id,
                     'name' => $payout->name,
                     'price' => (float)$payout->amount,
-                    'image' => $payout->image300 ?: $payout->image,
+                    'image' => $payout->image,
                     'user' => [
                         'id' => $user->id ?? null,
                         'username' => $user->username ?? 'Неизвестный',
@@ -442,7 +442,7 @@ class SkinsController extends BaseApiController
                     'id' => $payout->id,
                     'name' => $payout->name,
                     'price' => (float)$payout->amount,
-                    'image' => $payout->image300 ?: $payout->image,
+                    'image' => $payout->image,
                     'user' => [
                         'id' => $user->id ?? null,
                         'username' => $user->username ?? 'Неизвестный',

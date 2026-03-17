@@ -86,10 +86,13 @@ class AuthController extends BaseApiController
             }
         }
         
+        // URL, на который Steam вернёт пользователя после авторизации — обязательно текущий хост API,
+        // иначе callback попадёт на прод/тест другой инстанс и сессия с redirect_uri будет потеряна
+        $apiCallbackUrl = rtrim(Yii::$app->request->hostInfo, '/') . '/v1/auth/callback';
         $config = [
             'apikey' => Yii::$app->settings->get('steam_apiKey'), // Steam API KEY
-            'domainname' => Yii::$app->params['homePage'] . '/', // Displayed domain in the login-screen
-            'loginpage' => Yii::$app->params['homePage'] . '/v1/auth/callback', // Returns to callback page
+            'domainname' => (Yii::$app->params['homePage'] ?? $apiCallbackUrl) . '/', // Displayed domain in the login-screen
+            'loginpage' => $apiCallbackUrl, // Returns to callback page — текущий API, чтобы сессия сохранилась
             "logoutpage" => "",
             "skipAPI" => true, // true = dont get the data from steam, just return the steamid64
         ];
@@ -136,10 +139,12 @@ class AuthController extends BaseApiController
      */
     public function actionCallback()
     {
+        // loginpage должен совпадать с тем, что был в actionOauth (текущий хост API)
+        $apiCallbackUrl = rtrim(Yii::$app->request->hostInfo, '/') . '/v1/auth/callback';
         $config = [
             'apikey' => Yii::$app->settings->get('steam_apiKey'),
-            'domainname' => Yii::$app->params['homePage'] . '/',
-            'loginpage' => Yii::$app->params['homePage'] . '/v1/auth/callback',
+            'domainname' => (Yii::$app->params['homePage'] ?? $apiCallbackUrl) . '/',
+            'loginpage' => $apiCallbackUrl,
             "logoutpage" => "",
             "skipAPI" => true,
         ];
