@@ -2,6 +2,7 @@
 
 namespace api\controllers\v1;
 
+use api\components\jwt\JwtAuthFilter;
 use common\components\VideoMetadataFetcher;
 use common\models\video\UserVideo;
 use Yii;
@@ -12,6 +13,19 @@ use Yii;
  */
 class UserVideoController extends BaseApiController
 {
+    /**
+     * JWT требуется только для actionCreate; actionIndex публичный.
+     */
+    public function behaviors()
+    {
+        $behaviors = parent::behaviors();
+        $behaviors['authenticator'] = [
+            'class' => JwtAuthFilter::class,
+            'only' => ['create'],
+        ];
+        return $behaviors;
+    }
+
     /**
      * Публичный список всех видео. Авторизация не требуется.
      * GET /v1/user-videos?page=1&limit=20
