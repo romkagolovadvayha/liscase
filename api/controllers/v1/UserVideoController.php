@@ -14,7 +14,7 @@ use Yii;
 class UserVideoController extends BaseApiController
 {
     /**
-     * JWT требуется только для actionCreate; actionIndex публичный.
+     * JWT требуется только для actionCreate. Для actionIndex — опционально (чтобы вернуть «мои» на модерации).
      */
     public function behaviors()
     {
@@ -23,11 +23,16 @@ class UserVideoController extends BaseApiController
             'class' => JwtAuthFilter::class,
             'only' => ['create'],
         ];
+        $behaviors['optionalAuth'] = [
+            'class' => JwtAuthFilter::class,
+            'only' => ['index'],
+            'throwException' => false,
+        ];
         return $behaviors;
     }
 
     /**
-     * Публичный список всех видео. Авторизация не требуется.
+     * Список видео: только активные (опубликованные). Если передан JWT — дополнительно my_videos (на модерации/отклонённые).
      * GET /v1/user-videos?page=1&limit=20
      */
     public function actionIndex()
@@ -37,32 +42,16 @@ class UserVideoController extends BaseApiController
 
         $query = UserVideo::find()
             ->joinWith(['user'])
+            ->andWhere(['user_video.status' => UserVideo::STATUS_ACTIVE])
             ->orderBy(['user_video.id' => SORT_DESC]);
 
         $total = $query->count();
         $offset = ($page - 1) * $limit;
         $list = $query->offset($offset)->limit($limit)->all();
 
-        $items = array_map(function (UserVideo $v) {
-            $row = [
-                'id' => $v->id,
-                'name' => $v->name,
-                'type' => $v->type,
-                'video_link' => $v->video_link,
-                'poster_image' => $v->poster_image,
-                'poster_image_150' => $v->poster_image_150,
-                'poster_image_400' => $v->poster_image_400,
-                'status' => $v->status,
-                'status_label' => (UserVideo::getStatusList())[$v->status] ?? '',
-                'created_at' => $v->created_at,
-            ];
-            if ($v->user) {
-                $row['username'] = $v->user->username;
-            }
-            return $row;
-        }, $list);
+        $items = array_map([$this, 'formatVideoItem'], $list);
 
-        return $this->successResponse([
+        $data = [
             'videos' => $items,
             'pagination' => [
                 'page' => $page,
@@ -70,7 +59,41 @@ class UserVideoController extends BaseApiController
                 'total' => $total,
                 'total_pages' => $limit > 0 ? (int) ceil($total / $limit) : 0,
             ],
-        ]);
+        ];
+
+        if (!Yii::$app->user->isGuest) {
+            $myPending = UserVideo::find()
+                ->joinWith(['user'])
+                ->andWhere(['user_video.user_id' => Yii::$app->user->id])
+                ->andWhere(['in', 'user_video.status', [UserVideo::STATUS_WAIT, UserVideo::STATUS_REJECT]])
+                ->orderBy(['user_video.id' => SORT_DESC])
+                ->all();
+            $data['my_videos'] = array_map([$this, 'formatVideoItem'], $myPending);
+        } else {
+            $data['my_videos'] = [];
+        }
+
+        return $this->successResponse($data);
+    }
+
+    private function formatVideoItem(UserVideo $v): array
+    {
+        $row = [
+            'id' => $v->id,
+            'name' => $v->name,
+            'type' => $v->type,
+            'video_link' => $v->video_link,
+            'poster_image' => $v->poster_image,
+            'poster_image_150' => $v->poster_image_150,
+            'poster_image_400' => $v->poster_image_400,
+            'status' => $v->status,
+            'status_label' => (UserVideo::getStatusList())[$v->status] ?? '',
+            'created_at' => $v->created_at,
+        ];
+        if ($v->user) {
+            $row['username'] = $v->user->username;
+        }
+        return $row;
     }
 
     /**
@@ -115,7 +138,7 @@ class UserVideoController extends BaseApiController
 
         try {
             $username = $user->username ?? '—';
-            $text = "🎬 Новое видео на модерации: " . $model->name . "\nПользователь: " . $username;
+            $text = "🎬 Новое видео на модерации: " . $model->name . "\nПользователь: " . $username . "\nСсылка: " . $model->video_link;
             $posterUrl = $model->poster_image_400 ?: $model->poster_image;
             Yii::$app->telegramSupport->sendMessage(
                 $text,
