@@ -151,9 +151,10 @@ class KickController extends Controller
             $kickId = (string)$data['id'];
         }
         $channel = $kickUser['channel'] ?? $data['channel'] ?? null;
-        $kickSlug = $kickUser['slug'] ?? $kickUser['username'] ?? $kickUser['login'] ?? $kickUser['channel_slug'] ?? $kickUser['user_name']
+        // В ответе /users slug приходит в поле name: {"data":[{"user_id":...,"name":"romkadvayha",...}]}
+        $kickSlug = $kickUser['slug'] ?? $kickUser['name'] ?? $kickUser['username'] ?? $kickUser['login'] ?? $kickUser['channel_slug'] ?? $kickUser['user_name']
             ?? (is_array($channel) ? ($channel['slug'] ?? $channel['username'] ?? $channel['user_name'] ?? null) : null)
-            ?? $data['slug'] ?? $data['username'] ?? $data['channel_slug'] ?? null;
+            ?? $data['slug'] ?? $data['name'] ?? $data['username'] ?? $data['channel_slug'] ?? null;
         // Если slug не нашли в ответе /users — запрашиваем канал по id (slug нужен для ссылки kick.com/romkadvayha)
         if (empty($kickSlug) && !empty($kickId)) {
             $channelResponse = $this->fetchKickChannelByUserId($kickId, $tokenData['access_token']);
