@@ -139,7 +139,7 @@ class KickController extends Controller
                 'message' => 'Ошибка при разборе ответа Kick',
             ];
         }
-        // Kick может вернуть: { "data": { "id": ..., "slug": ... } }, { "data": [ {...} ] } или { "id": ..., "slug": ... }
+        // Kick может вернуть: { "data": { "id", "channel": { "slug" } } }, { "data": [ {...} ] }, или slug в корне/в channel
         $kickUser = $data['data'] ?? $data;
         if (isset($kickUser[0]) && is_array($kickUser[0])) {
             $kickUser = $kickUser[0];
@@ -148,7 +148,17 @@ class KickController extends Controller
         if (empty($kickId) && isset($data['id'])) {
             $kickId = (string)$data['id'];
         }
-        $kickSlug = $kickUser['slug'] ?? $kickUser['username'] ?? $kickUser['login'] ?? $data['slug'] ?? $data['username'] ?? null;
+        $channel = $kickUser['channel'] ?? $data['channel'] ?? null;
+        $kickSlug = $kickUser['slug'] ?? $kickUser['username'] ?? $kickUser['login']
+            ?? (is_array($channel) ? ($channel['slug'] ?? $channel['username'] ?? $channel['user_name'] ?? null) : null)
+            ?? $data['slug'] ?? $data['username'] ?? null;
+        // Если slug не нашли в ответе /users — запрашиваем канал по id (slug нужен для ссылки kick.com/romkadvayha)
+        if (empty($kickSlug) && !empty($kickId)) {
+            $channelResponse = $this->fetchKickChannelByUserId($kickId, $tokenData['access_token']);
+            if ($channelResponse !== null) {
+                $kickSlug = $channelResponse;
+            }
+        }
         if (empty($kickId)) {
             Yii::error("Kick API user response missing id. Response: {$userResponse}", __METHOD__);
             return [
@@ -164,24 +174,36 @@ class KickController extends Controller
                 $user->kick_id = $kickId;
                 if ($user->save(false)) {
                     if (!empty($user->userProfile)) {
-                        $user->userProfile->kick_link = !empty($kickSlug)
-                            ? 'https://kick.com/' . $kickSlug
-                            : 'https://kick.com/channel/' . $kickId;
+                        if ($user->userProfile->hasAttribute('kick_link')) {
+                            $user->userProfile->kick_link = !empty($kickSlug)
+                                ? 'https://kick.com/' . $kickSlug
+                                : 'https://kick.com/channel/' . $kickId;
+                        }
                         $user->userProfile->save(false);
                     }
                     Yii::$app->response->format = Response::FORMAT_RAW;
-                    $redirectTo = (!empty($returnUrl) && \api\components\LinkReturnUrlHelper::isValidReturnUrl($returnUrl))
-                        ? $returnUrl
-                        : \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
+                    try {
+                        $redirectTo = (!empty($returnUrl) && \api\components\LinkReturnUrlHelper::isValidReturnUrl($returnUrl))
+                            ? $returnUrl
+                            : \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
+                    } catch (\Throwable $e) {
+                        Yii::error('Kick callback redirect URL error: ' . $e->getMessage(), __METHOD__);
+                        $redirectTo = \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
+                    }
                     return $this->redirect($redirectTo);
                 }
             }
         }
 
         Yii::$app->response->format = Response::FORMAT_RAW;
-        $redirectTo = (!empty($returnUrl) && \api\components\LinkReturnUrlHelper::isValidReturnUrl($returnUrl))
-            ? $returnUrl
-            : \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
+        try {
+            $redirectTo = (!empty($returnUrl) && \api\components\LinkReturnUrlHelper::isValidReturnUrl($returnUrl))
+                ? $returnUrl
+                : \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
+        } catch (\Throwable $e) {
+            Yii::error('Kick callback redirect URL error: ' . $e->getMessage(), __METHOD__);
+            $redirectTo = \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
+        }
         return $this->redirect($redirectTo);
     }
 }
