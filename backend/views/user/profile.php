@@ -186,6 +186,12 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
                     if (!empty($user->discord_id)) {
                         $infoRows[] = ['label' => 'Discord', 'value' => $user->discord_id];
                     }
+                    if (!empty($user->twitch_id)) {
+                        $infoRows[] = ['label' => 'Twitch', 'value' => $user->twitch_id];
+                    }
+                    if (!empty($user->kick_id)) {
+                        $infoRows[] = ['label' => 'Kick', 'value' => $user->kick_id];
+                    }
                     if ($user->telegram_chat_id) {
                         $infoRows[] = ['label' => 'Telegram', 'value' => $user->telegram_chat_id];
                     }
