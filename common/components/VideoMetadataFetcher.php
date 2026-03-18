@@ -29,7 +29,7 @@ class VideoMetadataFetcher
 
     public static function isYouTubeUrl(string $url): bool
     {
-        return (bool) preg_match('#(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)[\w-]+#i', $url);
+        return (bool) preg_match('#(?:youtube\.com/watch\?v=|youtube\.com/shorts/|youtu\.be/|youtube\.com/embed/)[\w-]+#i', $url);
     }
 
     public static function isTikTokUrl(string $url): bool
@@ -47,6 +47,9 @@ class VideoMetadataFetcher
             return 'https://www.youtube.com/watch?v=' . $m[1];
         }
         if (preg_match('#youtube\.com/embed/([\w-]+)#i', $url, $m)) {
+            return 'https://www.youtube.com/watch?v=' . $m[1];
+        }
+        if (preg_match('#youtube\.com/shorts/([\w-]+)#i', $url, $m)) {
             return 'https://www.youtube.com/watch?v=' . $m[1];
         }
         return $url;
@@ -71,6 +74,8 @@ class VideoMetadataFetcher
         if (preg_match('#/vi/([\w-]+)/#', $thumb, $m)) {
             $videoId = $m[1];
         } elseif (preg_match('#youtube\.com/watch\?v=([\w-]+)#i', $url, $m)) {
+            $videoId = $m[1];
+        } elseif (preg_match('#youtube\.com/shorts/([\w-]+)#i', $url, $m)) {
             $videoId = $m[1];
         } elseif (preg_match('#youtu\.be/([\w-]+)#i', $url, $m)) {
             $videoId = $m[1];
