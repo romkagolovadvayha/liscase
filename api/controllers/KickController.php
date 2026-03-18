@@ -149,9 +149,9 @@ class KickController extends Controller
             $kickId = (string)$data['id'];
         }
         $channel = $kickUser['channel'] ?? $data['channel'] ?? null;
-        $kickSlug = $kickUser['slug'] ?? $kickUser['username'] ?? $kickUser['login']
+        $kickSlug = $kickUser['slug'] ?? $kickUser['username'] ?? $kickUser['login'] ?? $kickUser['channel_slug'] ?? $kickUser['user_name']
             ?? (is_array($channel) ? ($channel['slug'] ?? $channel['username'] ?? $channel['user_name'] ?? null) : null)
-            ?? $data['slug'] ?? $data['username'] ?? null;
+            ?? $data['slug'] ?? $data['username'] ?? $data['channel_slug'] ?? null;
         // Если slug не нашли в ответе /users — запрашиваем канал по id (slug нужен для ссылки kick.com/romkadvayha)
         if (empty($kickSlug) && !empty($kickId)) {
             $channelResponse = $this->fetchKickChannelByUserId($kickId, $tokenData['access_token']);
@@ -166,6 +166,9 @@ class KickController extends Controller
                 'error' => 'no_user_id',
                 'message' => 'ID пользователя Kick не получен',
             ];
+        }
+        if (empty($kickSlug)) {
+            Yii::info("Kick API /users response (slug empty), trying channel endpoint. Response: {$userResponse}", __METHOD__);
         }
 
         if (!empty($userId)) {
@@ -205,5 +208,45 @@ class KickController extends Controller
             $redirectTo = \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
         }
         return $this->redirect($redirectTo);
+    }
+
+    /**
+     * Запрос канала по id для получения slug (ссылка kick.com/{slug}).
+     * @param string $channelOrUserId id канала или пользователя Kick
+     * @param string $accessToken Bearer-токен
+     * @return string|null slug или null
+     */
+    private function fetchKickChannelByUserId(string $channelOrUserId, string $accessToken): ?string
+    {
+        $urls = [
+            "https://api.kick.com/public/v2/channels/{$channelOrUserId}",
+            "https://api.kick.com/public/v1/channels/{$channelOrUserId}",
+        ];
+        foreach ($urls as $url) {
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bearer ' . $accessToken,
+            ]);
+            $body = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            if ($httpCode !== 200 || empty($body)) {
+                continue;
+            }
+            $json = json_decode($body, true);
+            if (!is_array($json)) {
+                continue;
+            }
+            $channel = $json['data'] ?? $json;
+            if (isset($channel[0]) && is_array($channel[0])) {
+                $channel = $channel[0];
+            }
+            $slug = $channel['slug'] ?? $channel['username'] ?? $channel['user_name'] ?? null;
+            if (!empty($slug) && is_string($slug)) {
+                return $slug;
+            }
+        }
+        return null;
     }
 }
