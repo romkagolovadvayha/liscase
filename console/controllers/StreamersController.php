@@ -51,9 +51,6 @@ class StreamersController extends Controller
             }
         }
 
-        if ($this->isVerbose()) {
-            echo "Streamers checked: " . count($users) . ", updated stream_live_at: {$updated}\n";
-        }
         return 0;
     }
 }
