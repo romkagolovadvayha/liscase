@@ -211,41 +211,41 @@ class KickController extends Controller
     }
 
     /**
-     * Запрос канала по id для получения slug (ссылка kick.com/{slug}).
-     * @param string $channelOrUserId id канала или пользователя Kick
-     * @param string $accessToken Bearer-токен
+     * Запрос канала по broadcaster_user_id для получения slug (ссылка kick.com/{slug}).
+     * API: GET /public/v1/channels?broadcaster_user_id=...
+     * @param string $broadcasterUserId id канала/пользователя Kick (broadcaster_user_id)
+     * @param string $accessToken Bearer-токен (для публичного запроса может не требоваться)
      * @return string|null slug или null
      */
-    private function fetchKickChannelByUserId(string $channelOrUserId, string $accessToken): ?string
+    private function fetchKickChannelByUserId(string $broadcasterUserId, string $accessToken): ?string
     {
-        $urls = [
-            "https://api.kick.com/public/v2/channels/{$channelOrUserId}",
-            "https://api.kick.com/public/v1/channels/{$channelOrUserId}",
-        ];
-        foreach ($urls as $url) {
+        $url = 'https://api.kick.com/public/v1/channels?broadcaster_user_id=' . urlencode($broadcasterUserId);
+        foreach ([[ 'Authorization: Bearer ' . $accessToken ], []] as $headers) {
             $ch = curl_init($url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Authorization: Bearer ' . $accessToken,
-            ]);
+            if (!empty($headers)) {
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            }
             $body = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-            if ($httpCode !== 200 || empty($body)) {
-                continue;
+            if ($httpCode === 200 && !empty($body)) {
+                break;
             }
-            $json = json_decode($body, true);
-            if (!is_array($json)) {
-                continue;
-            }
-            $channel = $json['data'] ?? $json;
-            if (isset($channel[0]) && is_array($channel[0])) {
-                $channel = $channel[0];
-            }
-            $slug = $channel['slug'] ?? $channel['username'] ?? $channel['user_name'] ?? null;
-            if (!empty($slug) && is_string($slug)) {
-                return $slug;
-            }
+        }
+        if (empty($body) || $httpCode !== 200) {
+            Yii::info("Kick channels by broadcaster_user_id: HTTP {$httpCode}, url={$url}", __METHOD__);
+            return null;
+        }
+        $json = json_decode($body, true);
+        if (!is_array($json)) {
+            return null;
+        }
+        $data = $json['data'] ?? $json;
+        $channel = isset($data[0]) && is_array($data[0]) ? $data[0] : $data;
+        $slug = $channel['slug'] ?? $channel['username'] ?? $channel['user_name'] ?? null;
+        if (!empty($slug) && is_string($slug)) {
+            return $slug;
         }
         return null;
     }
