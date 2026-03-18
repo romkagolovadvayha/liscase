@@ -31,6 +31,7 @@ class UserVideo extends \yii\db\ActiveRecord
     const STATUS_WAIT = 3;
 
     const TYPE_YOUTUBE = 'youtube';
+    const TYPE_SHORTS = 'shorts';
     const TYPE_TIKTOK = 'tiktok';
     const TYPE_OTHER = 'other';
 
@@ -55,6 +56,7 @@ class UserVideo extends \yii\db\ActiveRecord
     {
         return [
             self::TYPE_YOUTUBE => 'YouTube',
+            self::TYPE_SHORTS  => 'Shorts',
             self::TYPE_TIKTOK => 'TikTok',
             self::TYPE_OTHER  => Yii::t('common', 'Другое'),
         ];

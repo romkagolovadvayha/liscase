@@ -34,9 +34,8 @@ class VideoMetadataFetcher
 
     public static function isTikTokUrl(string $url): bool
     {
-        // @username/video/ID, возможны vm.tiktok.com и query-параметры
-        return (bool) preg_match('#(?:www\.|vm\.)?tiktok\.com/@?[^/]+/video/[\d]+#i', $url)
-            || (bool) preg_match('#tiktok\.com/[^/]+/video/[\d]+#i', $url);
+        // Ссылка на видео: tiktok.com (любой поддомен) / @user или user / video / цифры
+        return (bool) preg_match('#tiktok\.com/.+?/video/[0-9]+#i', $url);
     }
 
     /**
@@ -102,31 +101,61 @@ class VideoMetadataFetcher
     protected static function fetchTikTok(string $url): array
     {
         $oembedUrl = 'https://www.tiktok.com/oembed?url=' . rawurlencode($url);
-        $json = self::httpGet($oembedUrl, 10);
+        $json = self::httpGet($oembedUrl, 15, self::getTikTokUserAgent());
+        $fallbackName = self::getTikTokFallbackName($url);
         if ($json === null) {
-            return [];
+            return self::tiktokMetaFallback($fallbackName);
         }
         $data = json_decode($json, true);
-        if (!is_array($data) || empty($data['title'])) {
-            return [];
+        if (!is_array($data)) {
+            return self::tiktokMetaFallback($fallbackName);
+        }
+        $title = trim((string) ($data['title'] ?? ''));
+        if ($title === '') {
+            $title = $fallbackName;
         }
         $thumb = $data['thumbnail_url'] ?? $data['thumbnail'] ?? '';
         return [
             'type' => UserVideo::TYPE_TIKTOK,
-            'name' => $data['title'],
-            'poster_image' => $thumb,
-            'poster_image_150' => $thumb,
-            'poster_image_400' => $thumb,
+            'name' => $title,
+            'poster_image' => $thumb ?: null,
+            'poster_image_150' => $thumb ?: null,
+            'poster_image_400' => $thumb ?: null,
         ];
     }
 
-    private static function httpGet(string $url, int $timeout = 10): ?string
+    private static function getTikTokFallbackName(string $url): string
     {
+        if (preg_match('#tiktok\.com/@([^/]+)/video/#i', $url, $m)) {
+            return 'TikTok @' . $m[1];
+        }
+        return 'TikTok video';
+    }
+
+    private static function tiktokMetaFallback(string $name): array
+    {
+        return [
+            'type' => UserVideo::TYPE_TIKTOK,
+            'name' => $name,
+            'poster_image' => null,
+            'poster_image_150' => null,
+            'poster_image_400' => null,
+        ];
+    }
+
+    private static function getTikTokUserAgent(): string
+    {
+        return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    }
+
+    private static function httpGet(string $url, int $timeout = 10, ?string $userAgent = null): ?string
+    {
+        $userAgent = $userAgent ?? 'Mozilla/5.0 (compatible; Bot/1.0)';
         $ctx = stream_context_create([
             'http' => [
                 'timeout' => $timeout,
                 'ignore_errors' => true,
-                'header' => "User-Agent: Mozilla/5.0 (compatible; Bot/1.0)\r\n",
+                'header' => "User-Agent: {$userAgent}\r\n",
             ],
         ]);
         $raw = @file_get_contents($url, false, $ctx);

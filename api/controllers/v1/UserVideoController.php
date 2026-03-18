@@ -180,13 +180,13 @@ class UserVideoController extends BaseApiController
     public function actionCreate()
     {
         $user = $this->getCurrentUser();
-        $videoLink = trim(Yii::$app->request->post('video_link', ''));
+        $rawLink = trim(Yii::$app->request->post('video_link', ''));
 
-        if ($videoLink === '') {
+        if ($rawLink === '') {
             return $this->errorResponse('VALIDATION_ERROR', 'Укажите ссылку на видео', ['video_link' => 'Ссылка обязательна'], 400);
         }
 
-        $videoLink = VideoMetadataFetcher::normalizeUrl($videoLink);
+        $videoLink = VideoMetadataFetcher::normalizeUrl($rawLink);
 
         if (!VideoMetadataFetcher::isYouTubeUrl($videoLink) && !VideoMetadataFetcher::isTikTokUrl($videoLink)) {
             return $this->errorResponse('UNSUPPORTED_LINK', 'Поддерживаются только ссылки на YouTube и TikTok', ['video_link' => 'Недопустимая ссылка'], 400);
@@ -194,7 +194,17 @@ class UserVideoController extends BaseApiController
 
         $meta = VideoMetadataFetcher::fetch($videoLink);
         if (empty($meta['name'])) {
-            return $this->errorResponse('FETCH_ERROR', 'Не удалось получить данные видео. Проверьте ссылку.', [], 400);
+            if (VideoMetadataFetcher::isTikTokUrl($videoLink)) {
+                $meta = [
+                    'type' => \common\models\video\UserVideo::TYPE_TIKTOK,
+                    'name' => preg_match('#tiktok\.com/@([^/]+)/video/#i', $videoLink, $m) ? 'TikTok @' . $m[1] : 'TikTok video',
+                    'poster_image' => null,
+                    'poster_image_150' => null,
+                    'poster_image_400' => null,
+                ];
+            } else {
+                return $this->errorResponse('FETCH_ERROR', 'Не удалось получить данные видео. Проверьте ссылку.', [], 400);
+            }
         }
 
         $posterUrls = null;
@@ -211,7 +221,9 @@ class UserVideoController extends BaseApiController
         $model = new UserVideo();
         $model->user_id = $user->id;
         $model->name = $meta['name'];
-        $model->type = $meta['type'];
+        $model->type = ($meta['type'] === UserVideo::TYPE_YOUTUBE && preg_match('#youtube\.com/shorts/#i', $rawLink))
+            ? UserVideo::TYPE_SHORTS
+            : $meta['type'];
         $model->video_link = $videoLink;
         $model->poster_image = $meta['poster_image'] ?? null;
         $model->poster_image_150 = $meta['poster_image_150'] ?? null;
