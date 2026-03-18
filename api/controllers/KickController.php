@@ -49,6 +49,7 @@ class KickController extends Controller
 
         $userId = $stateData['user_id'] ?? null;
         $codeVerifier = $stateData['code_verifier'] ?? null;
+        $returnUrl = $stateData['return_url'] ?? null;
         Yii::$app->cache->delete($stateCacheKey);
 
         if (empty($code) || empty($codeVerifier)) {
@@ -130,10 +131,26 @@ class KickController extends Controller
         }
 
         $data = json_decode($userResponse, true);
-        $kickUser = isset($data['data']) ? $data['data'] : $data;
-        $kickId = isset($kickUser['id']) ? (string)$kickUser['id'] : (isset($data['id']) ? (string)$data['id'] : null);
+        if (!is_array($data)) {
+            Yii::error("Kick API user invalid JSON: {$userResponse}", __METHOD__);
+            return [
+                'success' => false,
+                'error' => 'user_error',
+                'message' => 'Ошибка при разборе ответа Kick',
+            ];
+        }
+        // Kick может вернуть: { "data": { "id": ..., "slug": ... } }, { "data": [ {...} ] } или { "id": ..., "slug": ... }
+        $kickUser = $data['data'] ?? $data;
+        if (isset($kickUser[0]) && is_array($kickUser[0])) {
+            $kickUser = $kickUser[0];
+        }
+        $kickId = isset($kickUser['id']) ? (string)$kickUser['id'] : (isset($kickUser['user_id']) ? (string)$kickUser['user_id'] : null);
+        if (empty($kickId) && isset($data['id'])) {
+            $kickId = (string)$data['id'];
+        }
         $kickSlug = $kickUser['slug'] ?? $kickUser['username'] ?? $kickUser['login'] ?? $data['slug'] ?? $data['username'] ?? null;
         if (empty($kickId)) {
+            Yii::error("Kick API user response missing id. Response: {$userResponse}", __METHOD__);
             return [
                 'success' => false,
                 'error' => 'no_user_id',
@@ -153,14 +170,18 @@ class KickController extends Controller
                         $user->userProfile->save(false);
                     }
                     Yii::$app->response->format = Response::FORMAT_RAW;
-                    $frontendUrl = Yii::$app->params['homePage'] ?? $baseUrl;
-                    return $this->redirect(rtrim($frontendUrl, '/') . '/profile');
+                    $redirectTo = (!empty($returnUrl) && \api\components\LinkReturnUrlHelper::isValidReturnUrl($returnUrl))
+                        ? $returnUrl
+                        : \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
+                    return $this->redirect($redirectTo);
                 }
             }
         }
 
         Yii::$app->response->format = Response::FORMAT_RAW;
-        $frontendUrl = Yii::$app->params['homePage'] ?? $baseUrl;
-        return $this->redirect(rtrim($frontendUrl, '/') . '/profile');
+        $redirectTo = (!empty($returnUrl) && \api\components\LinkReturnUrlHelper::isValidReturnUrl($returnUrl))
+            ? $returnUrl
+            : \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
+        return $this->redirect($redirectTo);
     }
 }

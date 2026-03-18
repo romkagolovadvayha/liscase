@@ -47,6 +47,7 @@ class TwitchController extends Controller
         }
 
         $userId = $stateData['user_id'] ?? null;
+        $returnUrl = $stateData['return_url'] ?? null;
         Yii::$app->cache->delete($stateCacheKey);
 
         if (empty($code)) {
@@ -143,20 +144,24 @@ class TwitchController extends Controller
             $user = User::findOne($userId);
             if ($user) {
                 $user->twitch_id = (string)$twitchId;
-                if ($user->save(false)) {
+                    if ($user->save(false)) {
                     if (!empty($user->userProfile) && !empty($twitchLogin)) {
                         $user->userProfile->twitch_link = 'https://www.twitch.tv/' . $twitchLogin;
                         $user->userProfile->save(false);
                     }
                     Yii::$app->response->format = Response::FORMAT_RAW;
-                    $frontendUrl = Yii::$app->params['homePage'] ?? $baseUrl;
-                    return $this->redirect(rtrim($frontendUrl, '/') . '/profile');
+                    $redirectTo = (!empty($returnUrl) && \api\components\LinkReturnUrlHelper::isValidReturnUrl($returnUrl))
+                        ? $returnUrl
+                        : \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
+                    return $this->redirect($redirectTo);
                 }
             }
         }
 
         Yii::$app->response->format = Response::FORMAT_RAW;
-        $frontendUrl = Yii::$app->params['homePage'] ?? $baseUrl;
-        return $this->redirect(rtrim($frontendUrl, '/') . '/profile');
+        $redirectTo = (!empty($returnUrl) && \api\components\LinkReturnUrlHelper::isValidReturnUrl($returnUrl))
+            ? $returnUrl
+            : \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
+        return $this->redirect($redirectTo);
     }
 }

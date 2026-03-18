@@ -49,6 +49,7 @@ class DiscordController extends Controller
         }
         
         $userId = $stateData['user_id'] ?? null;
+        $returnUrl = $stateData['return_url'] ?? null;
         Yii::$app->cache->delete($stateCacheKey);
 
         if (empty($code)) {
@@ -162,21 +163,20 @@ class DiscordController extends Controller
                 $user->discord_id = $discordUser['id'];
                 if ($user->save(false)) {
                     Yii::$app->session->remove('discord_oauth_user_id');
-                    // Редиректим на страницу профиля с успешным сообщением
                     Yii::$app->response->format = Response::FORMAT_RAW;
-                    Yii::$app->session->setFlash('success', Yii::t('common', 'Discord аккаунт успешно привязан!'));
-                    return $this->redirect(Yii::$app->params['homePage'] . '/user/profile');
+                    $redirectTo = (!empty($returnUrl) && \api\components\LinkReturnUrlHelper::isValidReturnUrl($returnUrl))
+                        ? $returnUrl
+                        : \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
+                    return $this->redirect($redirectTo);
                 }
             }
         }
 
-        // Если не удалось привязать, сохраняем в сессии для ручной привязки
-        Yii::$app->session->set('discord_oauth_user_id_temp', $discordUser['id']);
-
-        // Редиректим на страницу профиля
         Yii::$app->response->format = Response::FORMAT_RAW;
-        Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при сохранении Discord ID. Попробуйте еще раз.'));
-        return $this->redirect(Yii::$app->params['homePage'] . '/user/profile');
+        $redirectTo = (!empty($returnUrl) && \api\components\LinkReturnUrlHelper::isValidReturnUrl($returnUrl))
+            ? $returnUrl
+            : \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
+        return $this->redirect($redirectTo);
     }
 }
 

@@ -266,7 +266,8 @@ class AuthController extends BaseApiController
         $baseUrl = rtrim(Yii::$app->request->hostInfo, '/');
         $redirectUri = $baseUrl . '/v1/auth/discord-callback';
         $state = Yii::$app->security->generateRandomString(32);
-        Yii::$app->cache->set('discord_oauth_state_' . $state, ['state' => $state, 'user_id' => $user->id], 600);
+        $returnUrl = $this->getLinkReturnUrl();
+        Yii::$app->cache->set('discord_oauth_state_' . $state, ['state' => $state, 'user_id' => $user->id, 'return_url' => $returnUrl], 600);
         $params = [
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
@@ -291,7 +292,8 @@ class AuthController extends BaseApiController
         $baseUrl = rtrim(Yii::$app->request->hostInfo, '/');
         $redirectUri = $baseUrl . '/v1/auth/twitch-callback';
         $state = Yii::$app->security->generateRandomString(32);
-        Yii::$app->cache->set('twitch_oauth_state_' . $state, ['state' => $state, 'user_id' => $user->id], 600);
+        $returnUrl = $this->getLinkReturnUrl();
+        Yii::$app->cache->set('twitch_oauth_state_' . $state, ['state' => $state, 'user_id' => $user->id, 'return_url' => $returnUrl], 600);
         $params = [
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
@@ -318,10 +320,12 @@ class AuthController extends BaseApiController
         $state = Yii::$app->security->generateRandomString(32);
         $codeVerifier = Yii::$app->security->generateRandomString(64);
         $codeChallenge = strtr(rtrim(base64_encode(hash('sha256', $codeVerifier, true)), '='), '+/', '-_');
+        $returnUrl = $this->getLinkReturnUrl();
         Yii::$app->cache->set('kick_oauth_state_' . $state, [
             'state' => $state,
             'user_id' => $user->id,
             'code_verifier' => $codeVerifier,
+            'return_url' => $returnUrl,
         ], 600);
         $params = [
             'response_type' => 'code',
@@ -334,6 +338,27 @@ class AuthController extends BaseApiController
         ];
         $authUrl = 'https://id.kick.com/oauth/authorize?' . http_build_query($params);
         return $this->redirect($authUrl);
+    }
+
+    /**
+     * URL, куда редиректить пользователя после привязки (Discord/Twitch/Kick).
+     * Берётся из query return_url/redirect_uri, Referer или params['frontendUrl'], иначе из домена без api.
+     */
+    protected function getLinkReturnUrl()
+    {
+        $returnUrl = Yii::$app->request->get('return_url') ?: Yii::$app->request->get('redirect_uri');
+        if (!empty($returnUrl) && preg_match('#^https?://#i', $returnUrl)) {
+            return $returnUrl;
+        }
+        $referer = Yii::$app->request->getReferrer();
+        if (!empty($referer)) {
+            $apiHost = parse_url(rtrim(Yii::$app->request->hostInfo, '/'), PHP_URL_HOST);
+            $refHost = parse_url($referer, PHP_URL_HOST);
+            if ($refHost && $refHost !== $apiHost) {
+                return rtrim($referer, '/');
+            }
+        }
+        return \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
     }
 
     /**
