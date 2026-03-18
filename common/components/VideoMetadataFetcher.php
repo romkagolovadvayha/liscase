@@ -34,7 +34,9 @@ class VideoMetadataFetcher
 
     public static function isTikTokUrl(string $url): bool
     {
-        return (bool) preg_match('#tiktok\.com/[^/]+/video/\d+#i', $url);
+        // @username/video/ID, возможны vm.tiktok.com и query-параметры
+        return (bool) preg_match('#(?:www\.|vm\.)?tiktok\.com/@?[^/]+/video/[\d]+#i', $url)
+            || (bool) preg_match('#tiktok\.com/[^/]+/video/[\d]+#i', $url);
     }
 
     /**
