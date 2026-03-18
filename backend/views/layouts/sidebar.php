@@ -321,6 +321,12 @@ if ($admin) {
                 'url' => ['/settings/create'],
                 'active' => _checkActive('/settings/create'),
             ],
+            [
+                'label' => 'Файлы S3',
+                'icon' => 'fas fa-cloud',
+                'url' => ['/s3-storage/index'],
+                'active' => _checkActive('/s3-storage'),
+            ],
         ]
     ];
     $projectItems[] = [

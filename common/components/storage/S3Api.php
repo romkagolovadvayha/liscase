@@ -2,6 +2,7 @@
 
 namespace common\components\storage;
 
+use GuzzleHttp\Promise\Utils as PromiseUtils;
 use Yii;
 use Aws\S3\S3Client;
 use Aws\Credentials\Credentials;
@@ -94,7 +95,6 @@ class S3Api
                                                                 'Bucket' => $uid,
                                                                 'Key' => $fileName,
                                                                 'CacheControl' => 'public, max-age=' . self::DEFAULT_CACHE_MAX_AGE,
-                                                                'ContentDisposition' => 'inline',
                                                             ]);
 
         $uploadId = $createMultipartUpload->get('UploadId');
@@ -208,7 +208,6 @@ class S3Api
                 'Key' => $fileName,
                 'Body' => $fileContent,
                 'CacheControl' => 'public, max-age=' . self::DEFAULT_CACHE_MAX_AGE,
-                'ContentDisposition' => 'inline',
             ];
 
             if ($contentType) {
@@ -244,6 +243,247 @@ class S3Api
         // Иначе формируем публичный URL на основе baseUrl и uid (bucket)
         // Для Timeweb Cloud формат: https://s3.timeweb.cloud/{bucket}/{key}
         return rtrim($baseUrl, '/') . '/' . $uid . '/' . ltrim($fileName, '/');
+    }
+
+    /**
+     * Возвращает настроенный S3Client (настройки из Settings).
+     * @return S3Client
+     */
+    protected function getClient(): S3Client
+    {
+        $baseUrl = Yii::$app->settings->get('s3_baseUrl') ?: 'https://s3.timeweb.cloud';
+        $accessKey = Yii::$app->settings->get('s3_accessKey') ?: '';
+        $secretAccessKey = Yii::$app->settings->get('s3_secretAccessKey') ?: '';
+        $region = Yii::$app->settings->get('s3_region') ?: 'ru-1';
+        putenv("AWS_SUPPRESS_PHP_DEPRECATION_WARNING=true");
+        $credentials = new Credentials($accessKey, $secretAccessKey);
+        return new S3Client([
+            'version' => '2006-03-01',
+            'region' => $region,
+            'endpoint' => $baseUrl,
+            'use_path_style_endpoint' => true,
+            'credentials' => $credentials,
+        ]);
+    }
+
+    /**
+     * Возвращает UID бакета из настроек.
+     * @return string
+     */
+    protected function getBucket(): string
+    {
+        return (string) (Yii::$app->settings->get('s3_uid') ?: '');
+    }
+
+    /**
+     * Список объектов и «папок» по префиксу (с delimiter).
+     * @param string $prefix Префикс (каталог), например "uploads/tasks-v2" или ""
+     * @param string $delimiter Разделитель, по умолчанию "/"
+     * @return array{prefixes: string[], objects: array{array{key: string, size: int, lastModified: string}}}
+     */
+    public function listObjects(string $prefix = '', string $delimiter = '/'): array
+    {
+        $uid = $this->getBucket();
+        if ($uid === '') {
+            return ['prefixes' => [], 'objects' => []];
+        }
+        $prefix = ltrim($prefix, '/');
+        if ($prefix !== '') {
+            $prefix = rtrim($prefix, '/') . '/';
+        }
+        try {
+            $s3 = $this->getClient();
+            $result = $s3->listObjectsV2([
+                'Bucket' => $uid,
+                'Prefix' => $prefix,
+                'Delimiter' => $delimiter,
+            ]);
+            $prefixes = [];
+            foreach ((array) ($result->get('CommonPrefixes') ?? []) as $cp) {
+                $p = (string) ($cp['Prefix'] ?? '');
+                if ($p !== '') {
+                    $prefixes[] = rtrim($p, '/');
+                }
+            }
+            $objects = [];
+            foreach ((array) ($result->get('Contents') ?? []) as $obj) {
+                $key = (string) ($obj['Key'] ?? '');
+                if ($key === '' || $key === $prefix) {
+                    continue;
+                }
+                $objects[] = [
+                    'key' => $key,
+                    'size' => (int) ($obj['Size'] ?? 0),
+                    'lastModified' => (string) ($obj['LastModified'] ?? ''),
+                ];
+            }
+            return ['prefixes' => $prefixes, 'objects' => $objects];
+        } catch (\Exception $e) {
+            Yii::error('S3 listObjects: ' . $e->getMessage() . ', prefix: ' . $prefix, __METHOD__);
+            return ['prefixes' => [], 'objects' => []];
+        }
+    }
+
+    /**
+     * Все ключи под префиксом (без delimiter, для массовой установки заголовков).
+     * @param string $prefix Префикс (каталог)
+     * @return string[]
+     */
+    public function listAllKeysUnderPrefix(string $prefix): array
+    {
+        $uid = $this->getBucket();
+        if ($uid === '') {
+            return [];
+        }
+        $prefix = ltrim($prefix, '/');
+        if ($prefix !== '') {
+            $prefix = rtrim($prefix, '/') . '/';
+        }
+        $keys = [];
+        try {
+            $s3 = $this->getClient();
+            $continuationToken = null;
+            do {
+                $params = ['Bucket' => $uid, 'Prefix' => $prefix];
+                if ($continuationToken !== null) {
+                    $params['ContinuationToken'] = $continuationToken;
+                }
+                $result = $s3->listObjectsV2($params);
+                foreach ((array) ($result->get('Contents') ?? []) as $obj) {
+                    $key = (string) ($obj['Key'] ?? '');
+                    if ($key !== '' && $key !== $prefix) {
+                        $keys[] = $key;
+                    }
+                }
+                $continuationToken = $result->get('NextContinuationToken');
+            } while ($continuationToken);
+        } catch (\Exception $e) {
+            Yii::error('S3 listAllKeysUnderPrefix: ' . $e->getMessage(), __METHOD__);
+        }
+        return $keys;
+    }
+
+    /**
+     * Метаданные объекта (Content-Type и т.д.).
+     * @param string $key Ключ в S3
+     * @return array|null Массив с ключами ContentType, ContentLength, CacheControl и т.д. или null при ошибке
+     */
+    public function headObject(string $key): ?array
+    {
+        $uid = $this->getBucket();
+        if ($uid === '') {
+            return null;
+        }
+        try {
+            $s3 = $this->getClient();
+            $result = $s3->headObject(['Bucket' => $uid, 'Key' => $key]);
+            return [
+                'ContentType' => $result->get('ContentType'),
+                'ContentLength' => $result->get('ContentLength'),
+                'CacheControl' => $result->get('CacheControl'),
+            ];
+        } catch (\Exception $e) {
+            Yii::warning('S3 headObject: ' . $e->getMessage() . ', key: ' . $key, __METHOD__);
+            return null;
+        }
+    }
+
+    /**
+     * Устанавливает заголовки кэширования (и при необходимости Content-Type) для существующего объекта.
+     * Копирует объект сам на себя с MetadataDirective REPLACE.
+     * @param string $key Ключ в S3
+     * @return bool Успех
+     */
+    public function setObjectCacheHeaders(string $key): bool
+    {
+        $uid = $this->getBucket();
+        if ($uid === '') {
+            return false;
+        }
+        try {
+            $s3 = $this->getClient();
+            $head = $this->headObject($key);
+            $contentType = ($head['ContentType'] ?? null) ?: 'application/octet-stream';
+            $copySource = $uid . '/' . rawurlencode($key);
+            $s3->copyObject([
+                'Bucket' => $uid,
+                'Key' => $key,
+                'CopySource' => $copySource,
+                'MetadataDirective' => 'REPLACE',
+                'CacheControl' => 'public, max-age=' . self::DEFAULT_CACHE_MAX_AGE,
+                'ContentType' => $contentType,
+            ]);
+            return true;
+        } catch (\Exception $e) {
+            Yii::error('S3 setObjectCacheHeaders: ' . $e->getMessage() . ', key: ' . $key, __METHOD__);
+            return false;
+        }
+    }
+
+    /**
+     * Устанавливает заголовки кэша для многих объектов параллельно (батчами).
+     * Быстрее, чем вызывать setObjectCacheHeaders по одному.
+     *
+     * @param string[] $keys Ключи в S3
+     * @param int $concurrency Сколько запросов выполнять одновременно (по умолчанию 25)
+     * @return array{ok: int, fail: int} Количество успешных и неудачных
+     */
+    public function setObjectCacheHeadersBulk(array $keys, int $concurrency = 25): array
+    {
+        $uid = $this->getBucket();
+        if ($uid === '') {
+            return ['ok' => 0, 'fail' => count($keys)];
+        }
+        if (empty($keys)) {
+            return ['ok' => 0, 'fail' => 0];
+        }
+        $s3 = $this->getClient();
+        $cacheControl = 'public, max-age=' . self::DEFAULT_CACHE_MAX_AGE;
+        $contentTypes = [];
+        $chunks = array_chunk($keys, $concurrency);
+        foreach ($chunks as $chunk) {
+            $promises = [];
+            foreach ($chunk as $key) {
+                $promises[$key] = $s3->headObjectAsync(['Bucket' => $uid, 'Key' => $key]);
+            }
+            $results = PromiseUtils::settle($promises)->wait();
+            foreach ($results as $key => $result) {
+                if ($result['state'] === 'fulfilled') {
+                    $ct = $result['value']->get('ContentType');
+                    $contentTypes[$key] = $ct ?: 'application/octet-stream';
+                }
+            }
+        }
+        $ok = 0;
+        $fail = count($keys) - count($contentTypes);
+        $copyChunks = array_chunk(array_keys($contentTypes), $concurrency);
+        foreach ($copyChunks as $copyChunk) {
+            $promises = [];
+            foreach ($copyChunk as $key) {
+                $copySource = $uid . '/' . rawurlencode($key);
+                $promises[$key] = $s3->copyObjectAsync([
+                    'Bucket' => $uid,
+                    'Key' => $key,
+                    'CopySource' => $copySource,
+                    'MetadataDirective' => 'REPLACE',
+                    'CacheControl' => $cacheControl,
+                    'ContentType' => $contentTypes[$key],
+                ]);
+            }
+            $results = PromiseUtils::settle($promises)->wait();
+            foreach ($results as $key => $result) {
+                if ($result['state'] === 'fulfilled') {
+                    $ok++;
+                } else {
+                    $fail++;
+                    $reason = isset($result['reason']) && $result['reason'] instanceof \Throwable
+                        ? $result['reason']->getMessage()
+                        : 'unknown';
+                    Yii::error("S3 setObjectCacheHeadersBulk copy fail: {$reason}, key: {$key}", __METHOD__);
+                }
+            }
+        }
+        return ['ok' => $ok, 'fail' => $fail];
     }
 
 }
