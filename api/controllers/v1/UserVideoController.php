@@ -218,6 +218,17 @@ class UserVideoController extends BaseApiController
             $meta['poster_image_400'] = $posterUrls['poster_image_400'];
         }
 
+        if ($meta['type'] === UserVideo::TYPE_TIKTOK && Yii::$app->has('telegramChats')) {
+            try {
+                $log = 'UserVideo create TikTok: name=' . ($meta['name'] ?? '') . ' has_meta_poster=' . ($posterUrlFromMeta !== '' ? '1' : '0')
+                    . ' upload_s3_ok=' . ($posterUrls !== null ? '1' : '0')
+                    . ' link=' . $videoLink;
+                Yii::$app->telegramChats->sendMessage($log);
+            } catch (\Throwable $e) {
+                Yii::warning('UserVideo telegramChats: ' . $e->getMessage(), __METHOD__);
+            }
+        }
+
         $videoName = trim((string) ($meta['name'] ?? ''));
         if ($videoName === '' && isset($meta['type']) && $meta['type'] === UserVideo::TYPE_TIKTOK) {
             $videoName = preg_match('#tiktok\.com/@([^/]+)/video/#i', $videoLink, $m) ? 'TikTok @' . $m[1] : 'TikTok video';

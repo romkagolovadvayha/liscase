@@ -3,6 +3,7 @@
 namespace common\components;
 
 use common\models\video\UserVideo;
+use Yii;
 
 /**
  * Получение названия и превью видео по ссылке (YouTube, TikTok) через oembed.
@@ -103,6 +104,7 @@ class VideoMetadataFetcher
         $oembedUrl = 'https://www.tiktok.com/oembed?url=' . rawurlencode($url);
         $json = self::httpGet($oembedUrl, 15, self::getTikTokUserAgent());
         $fallbackName = self::getTikTokFallbackName($url);
+        self::logTikTokToTelegram($url, $oembedUrl, $json);
         if ($json === null) {
             return self::tiktokMetaFallback($fallbackName);
         }
@@ -122,6 +124,27 @@ class VideoMetadataFetcher
             'poster_image_150' => $thumb ?: null,
             'poster_image_400' => $thumb ?: null,
         ];
+    }
+
+    private static function logTikTokToTelegram(string $videoUrl, string $oembedUrl, ?string $response): void
+    {
+        if (!Yii::$app->has('telegramChats')) {
+            return;
+        }
+        $maxLen = 3800;
+        $pre = "TikTok oembed\nurl: " . $oembedUrl . "\n";
+        if ($response === null) {
+            $msg = $pre . "response: NULL (timeout/403/error)";
+        } else {
+            $len = strlen($response);
+            $body = $len > $maxLen ? substr($response, 0, $maxLen) . "\n...truncated " . $len . " total" : $response;
+            $msg = $pre . "response length: " . $len . "\nbody:\n" . $body;
+        }
+        try {
+            Yii::$app->telegramChats->sendMessage($msg);
+        } catch (\Throwable $e) {
+            Yii::warning('VideoMetadataFetcher telegramChats: ' . $e->getMessage(), __METHOD__);
+        }
     }
 
     private static function getTikTokFallbackName(string $url): string
