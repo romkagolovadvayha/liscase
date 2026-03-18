@@ -172,7 +172,7 @@ class VideoMetadataFetcher
     }
 
     /**
-     * Запрос TikTok oembed с полным набором браузерных заголовков (TikTok отдаёт 400 без них).
+     * Запрос TikTok oembed через cURL (браузерные заголовки + опционально прокси из настроек).
      */
     private static function httpGetTikTok(string $url): ?string
     {
@@ -190,14 +190,30 @@ class VideoMetadataFetcher
             'Sec-Ch-Ua-Mobile: ?0',
             'Sec-Ch-Ua-Platform: "Windows"',
         ];
-        $ctx = stream_context_create([
-            'http' => [
-                'timeout' => 15,
-                'ignore_errors' => true,
-                'header' => implode("\r\n", $headers) . "\r\n",
-            ],
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTPHEADER => $headers,
         ]);
-        $raw = @file_get_contents($url, false, $ctx);
+        if (Yii::$app->has('settings')) {
+            $proxyIp = Yii::$app->settings->get('proxy_ip');
+            if (!empty($proxyIp)) {
+                curl_setopt($ch, CURLOPT_PROXY, $proxyIp);
+                $proxyUser = Yii::$app->settings->get('proxy_username');
+                $proxyPass = Yii::$app->settings->get('proxy_password');
+                if ($proxyUser !== null && $proxyUser !== '' && $proxyPass !== null) {
+                    curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxyUser . ':' . $proxyPass);
+                }
+            }
+        }
+        $raw = curl_exec($ch);
+        $err = curl_error($ch);
+        curl_close($ch);
+        if ($raw === false || $err !== '') {
+            return null;
+        }
         return is_string($raw) ? $raw : null;
     }
 
