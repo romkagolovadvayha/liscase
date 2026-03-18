@@ -72,6 +72,7 @@ class UserVideoController extends BaseApiController
                 'id' => $user->id,
                 'username' => $user->username,
                 'avatar' => $user->getAvatar(),
+                'steam_id' => $user->steam_id ? (string) $user->steam_id : null,
                 'twitch_link' => $twitchLink,
                 'kick_link' => $kickLink,
                 'is_live' => $isLive,
@@ -166,6 +167,7 @@ class UserVideoController extends BaseApiController
         if ($v->user) {
             $row['username'] = $v->user->username;
             $row['avatar'] = $v->user->getAvatar();
+            $row['steam_id'] = $v->user->steam_id ? (string) $v->user->steam_id : null;
         }
         return $row;
     }
