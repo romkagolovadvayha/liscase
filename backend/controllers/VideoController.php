@@ -3,6 +3,8 @@
 namespace backend\controllers;
 
 use common\components\helpers\Role;
+use common\components\VideoMetadataFetcher;
+use common\components\VideoPosterUploader;
 use common\models\video\UserVideo;
 use Yii;
 use yii\filters\AccessControl;
@@ -75,9 +77,12 @@ class VideoController extends Controller
         $model = new UserVideo();
 
         if ($this->request->isPost) {
-            if ($model->load($this->request->post()) && $model->save()) {
-                $this->sendVideoToTelegramIfWait($model);
-                return $this->redirect(['view', 'id' => $model->id]);
+            if ($model->load($this->request->post())) {
+                $this->fetchAndUploadPosterIfNeeded($model);
+                if ($model->save()) {
+                    $this->sendVideoToTelegramIfWait($model);
+                    return $this->redirect(['view', 'id' => $model->id]);
+                }
             }
         } else {
             $model->loadDefaultValues();
@@ -104,11 +109,14 @@ class VideoController extends Controller
         $model = $this->findModel($id);
         $oldStatus = $model->getOldAttribute('status');
 
-        if ($this->request->isPost && $model->load($this->request->post()) && $model->save()) {
-            if ($model->status === UserVideo::STATUS_WAIT && $oldStatus !== UserVideo::STATUS_WAIT) {
-                $this->sendVideoToTelegramIfWait($model);
+        if ($this->request->isPost && $model->load($this->request->post())) {
+            $this->fetchAndUploadPosterIfNeeded($model);
+            if ($model->save()) {
+                if ($model->status === UserVideo::STATUS_WAIT && $oldStatus !== UserVideo::STATUS_WAIT) {
+                    $this->sendVideoToTelegramIfWait($model);
+                }
+                return $this->redirect(['view', 'id' => $model->id]);
             }
-            return $this->redirect(['view', 'id' => $model->id]);
         }
 
         $this->view->params['contentClass'] = 'content-no-padding';
@@ -182,7 +190,7 @@ class VideoController extends Controller
         }
         try {
             $username = $model->user ? $model->user->username : '—';
-            $text = "🎬 Новое видео на модерации: " . $model->name . "\nПользователь: " . $username;
+            $text = "🎬 Новое видео на модерации: " . $model->name . "\nПользователь: " . $username . "\nСсылка: " . $model->video_link;
             $posterUrl = !empty($model->poster_image_400) ? $model->poster_image_400 : (!empty($model->poster_image) ? $model->poster_image : null);
             Yii::$app->telegramSupport->sendMessage(
                 $text,
@@ -207,6 +215,47 @@ class VideoController extends Controller
         } catch (\Exception $e) {
             Yii::error('Video telegram moderation: ' . $e->getMessage(), __METHOD__);
         }
+    }
+
+    /**
+     * Если заполнена ссылка на видео (YouTube/TikTok) и постер ещё не загружен на S3 — получаем метаданные и загружаем постер в S3 (TinyPNG + 150px по высоте).
+     */
+    protected function fetchAndUploadPosterIfNeeded(UserVideo $model): void
+    {
+        $videoLink = trim($model->video_link ?? '');
+        if ($videoLink === '') {
+            return;
+        }
+        $videoLink = VideoMetadataFetcher::normalizeUrl($videoLink);
+        if (!VideoMetadataFetcher::isYouTubeUrl($videoLink) && !VideoMetadataFetcher::isTikTokUrl($videoLink)) {
+            return;
+        }
+        $meta = VideoMetadataFetcher::fetch($videoLink);
+        if (empty($meta['name'])) {
+            return;
+        }
+        if (empty($model->name)) {
+            $model->name = $meta['name'];
+        }
+        if (empty($model->type)) {
+            $model->type = $meta['type'];
+        }
+        $posterUrl = $meta['poster_image'] ?? $meta['poster_image_400'] ?? '';
+        if ($posterUrl === '') {
+            return;
+        }
+        if (Yii::$app->has('s3Api')) {
+            $posterUrls = VideoPosterUploader::uploadPoster($posterUrl);
+            if ($posterUrls !== null) {
+                $model->poster_image = $posterUrls['poster_image'];
+                $model->poster_image_150 = $posterUrls['poster_image_150'];
+                $model->poster_image_400 = $posterUrls['poster_image_400'];
+                return;
+            }
+        }
+        $model->poster_image = $meta['poster_image'] ?? $model->poster_image;
+        $model->poster_image_150 = $meta['poster_image_150'] ?? $model->poster_image_150;
+        $model->poster_image_400 = $meta['poster_image_400'] ?? $model->poster_image_400;
     }
 
     protected function findModel($id)

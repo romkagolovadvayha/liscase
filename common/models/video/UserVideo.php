@@ -19,8 +19,10 @@ use Yii;
  * @property int $status
  * @property string|null $created_at
  * @property string|null $updated_at
+ * @property int $likes
  *
  * @property User $user
+ * @property UserVideoLike[] $videoLikes
  */
 class UserVideo extends \yii\db\ActiveRecord
 {
@@ -65,7 +67,7 @@ class UserVideo extends \yii\db\ActiveRecord
     {
         return [
             [['user_id', 'name', 'type', 'video_link', 'status'], 'required'],
-            [['user_id', 'status'], 'integer'],
+            [['user_id', 'status', 'likes'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['name'], 'string', 'max' => 255],
             [['video_link', 'poster_image', 'poster_image_150', 'poster_image_400'], 'string', 'max' => 500],
@@ -114,5 +116,13 @@ class UserVideo extends \yii\db\ActiveRecord
     public function getUser()
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getVideoLikes()
+    {
+        return $this->hasMany(UserVideoLike::class, ['user_video_id' => 'id']);
     }
 }

@@ -3,8 +3,12 @@
 namespace api\controllers\v1;
 
 use api\components\jwt\JwtAuthFilter;
+use common\components\StreamersLiveHelper;
 use common\components\VideoMetadataFetcher;
+use common\components\VideoPosterUploader;
+use common\models\user\User;
 use common\models\video\UserVideo;
+use common\models\video\UserVideoLike;
 use Yii;
 
 /**
@@ -21,7 +25,7 @@ class UserVideoController extends BaseApiController
         $behaviors = parent::behaviors();
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
-            'only' => ['create'],
+            'only' => ['create', 'like'],
         ];
         $behaviors['optionalAuth'] = [
             'class' => JwtAuthFilter::class,
@@ -29,6 +33,54 @@ class UserVideoController extends BaseApiController
             'throwException' => false,
         ];
         return $behaviors;
+    }
+
+    /**
+     * Список стримеров (is_blogger) с Twitch/Kick ссылками и статусом «В эфире».
+     * GET /v1/user-videos/streamers
+     */
+    public function actionStreamers()
+    {
+        $query = User::find()
+            ->joinWith(['userProfile'])
+            ->where(['user.is_blogger' => 1])
+            ->andWhere(
+                '(user_profile.twitch_link IS NOT NULL AND TRIM(COALESCE(user_profile.twitch_link, "")) != "")' .
+                ' OR (user_profile.kick_link IS NOT NULL AND TRIM(COALESCE(user_profile.kick_link, "")) != "")' .
+                ' OR (user.twitch_id IS NOT NULL AND user.twitch_id != "")' .
+                ' OR (user.kick_id IS NOT NULL AND user.kick_id != "")'
+            )
+            ->orderBy(['user.username' => SORT_ASC]);
+
+        $users = $query->all();
+        $items = [];
+        foreach ($users as $user) {
+            $twitchLink = $user->userProfile && trim((string) ($user->userProfile->twitch_link ?? '')) !== ''
+                ? trim($user->userProfile->twitch_link)
+                : ($user->twitch_id ? 'https://www.twitch.tv/' . $user->twitch_id : null);
+            $kickLink = $user->userProfile && trim((string) ($user->userProfile->kick_link ?? '')) !== ''
+                ? trim($user->userProfile->kick_link)
+                : ($user->kick_id ? 'https://kick.com/channel/' . $user->kick_id : null);
+            if ($twitchLink === null && $kickLink === null) {
+                continue;
+            }
+            $isLive = false;
+            if ($user->twitch_id) {
+                $isLive = StreamersLiveHelper::isTwitchLive((string) $user->twitch_id);
+            }
+            if (!$isLive && $user->kick_id) {
+                $isLive = StreamersLiveHelper::isKickLive((string) $user->kick_id);
+            }
+            $items[] = [
+                'id' => $user->id,
+                'username' => $user->username,
+                'avatar' => $user->getAvatar(),
+                'twitch_link' => $twitchLink,
+                'kick_link' => $kickLink,
+                'is_live' => $isLive,
+            ];
+        }
+        return $this->successResponse(['streamers' => $items]);
     }
 
     /**
@@ -49,7 +101,17 @@ class UserVideoController extends BaseApiController
         $offset = ($page - 1) * $limit;
         $list = $query->offset($offset)->limit($limit)->all();
 
-        $items = array_map([$this, 'formatVideoItem'], $list);
+        $likedVideoIds = [];
+        if (!Yii::$app->user->isGuest && !empty($list)) {
+            $ids = array_map(function (UserVideo $v) { return $v->id; }, $list);
+            $likedVideoIds = UserVideoLike::find()
+                ->where(['user_id' => Yii::$app->user->id, 'user_video_id' => $ids])
+                ->select('user_video_id')
+                ->column();
+        }
+        $items = array_map(function (UserVideo $v) use ($likedVideoIds) {
+            return $this->formatVideoItem($v, $likedVideoIds);
+        }, $list);
 
         $data = [
             'videos' => $items,
@@ -68,7 +130,14 @@ class UserVideoController extends BaseApiController
                 ->andWhere(['in', 'user_video.status', [UserVideo::STATUS_WAIT]])
                 ->orderBy(['user_video.id' => SORT_DESC])
                 ->all();
-            $data['my_videos'] = array_map([$this, 'formatVideoItem'], $myPending);
+            $myIds = array_map(function (UserVideo $v) { return $v->id; }, $myPending);
+            $myLikedIds = !empty($myIds) ? UserVideoLike::find()
+                ->where(['user_id' => Yii::$app->user->id, 'user_video_id' => $myIds])
+                ->select('user_video_id')
+                ->column() : [];
+            $data['my_videos'] = array_map(function (UserVideo $v) use ($myLikedIds) {
+                return $this->formatVideoItem($v, $myLikedIds);
+            }, $myPending);
         } else {
             $data['my_videos'] = [];
         }
@@ -76,7 +145,11 @@ class UserVideoController extends BaseApiController
         return $this->successResponse($data);
     }
 
-    private function formatVideoItem(UserVideo $v): array
+    /**
+     * @param UserVideo $v
+     * @param int[] $likedVideoIds IDs видео, которым текущий пользователь поставил лайк
+     */
+    private function formatVideoItem(UserVideo $v, array $likedVideoIds = []): array
     {
         $row = [
             'id' => $v->id,
@@ -89,6 +162,8 @@ class UserVideoController extends BaseApiController
             'status' => $v->status,
             'status_label' => (UserVideo::getStatusList())[$v->status] ?? '',
             'created_at' => $v->created_at,
+            'likes' => (int) ($v->likes ?? 0),
+            'is_liked' => in_array($v->id, $likedVideoIds, false),
         ];
         if ($v->user) {
             $row['username'] = $v->user->username;
@@ -120,6 +195,17 @@ class UserVideoController extends BaseApiController
         $meta = VideoMetadataFetcher::fetch($videoLink);
         if (empty($meta['name'])) {
             return $this->errorResponse('FETCH_ERROR', 'Не удалось получить данные видео. Проверьте ссылку.', [], 400);
+        }
+
+        $posterUrls = null;
+        $posterUrlFromMeta = $meta['poster_image'] ?? $meta['poster_image_400'] ?? '';
+        if ($posterUrlFromMeta !== '' && Yii::$app->has('s3Api')) {
+            $posterUrls = VideoPosterUploader::uploadPoster($posterUrlFromMeta);
+        }
+        if ($posterUrls !== null) {
+            $meta['poster_image'] = $posterUrls['poster_image'];
+            $meta['poster_image_150'] = $posterUrls['poster_image_150'];
+            $meta['poster_image_400'] = $posterUrls['poster_image_400'];
         }
 
         $model = new UserVideo();
@@ -183,5 +269,98 @@ class UserVideoController extends BaseApiController
             'status' => $model->status,
             'created_at' => $model->created_at,
         ], [], 201);
+    }
+
+    /**
+     * Список пользователей, поставивших лайк видео.
+     * GET /v1/user-videos/{id}/likes
+     */
+    public function actionLikes($id)
+    {
+        $video = UserVideo::find()
+            ->where(['id' => $id, 'status' => UserVideo::STATUS_ACTIVE])
+            ->one();
+        if (!$video) {
+            return $this->errorResponse('NOT_FOUND', 'Видео не найдено', [], 404);
+        }
+
+        $page = (int) Yii::$app->request->get('page', 1);
+        $limit = min(50, max(1, (int) Yii::$app->request->get('limit', 20)));
+
+        $query = UserVideoLike::find()
+            ->where(['user_video_id' => $id])
+            ->with(['user']);
+
+        $total = $query->count();
+        $offset = ($page - 1) * $limit;
+        $likes = $query->orderBy(['created_at' => SORT_DESC])->offset($offset)->limit($limit)->all();
+
+        $users = [];
+        foreach ($likes as $like) {
+            if ($like->user) {
+                $users[] = [
+                    'id' => $like->user->id,
+                    'username' => $like->user->username,
+                    'steamId' => $like->user->steam_id,
+                    'avatar' => $like->user->getAvatar(),
+                    'likedAt' => $like->created_at,
+                ];
+            }
+        }
+
+        return $this->successResponse([
+            'users' => $users,
+            'pagination' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'total_pages' => $limit > 0 ? (int) ceil($total / $limit) : 0,
+            ],
+        ]);
+    }
+
+    /**
+     * Поставить или убрать лайк видео. Требует авторизации.
+     * POST /v1/user-videos/{id}/like
+     */
+    public function actionLike($id)
+    {
+        $user = $this->getCurrentUser();
+
+        $video = UserVideo::find()
+            ->where(['id' => $id, 'status' => UserVideo::STATUS_ACTIVE])
+            ->one();
+        if (!$video) {
+            return $this->errorResponse('NOT_FOUND', 'Видео не найдено', [], 404);
+        }
+
+        $userLike = UserVideoLike::find()
+            ->where(['user_video_id' => $id, 'user_id' => $user->id])
+            ->one();
+
+        if ($userLike) {
+            $userLike->delete();
+            $video->likes = max(0, (int) $video->likes - 1);
+            $video->save(false);
+            $isLiked = false;
+        } else {
+            $like = new UserVideoLike();
+            $like->user_id = $user->id;
+            $like->user_video_id = (int) $id;
+            $like->type = UserVideoLike::TYPE_LIKE;
+            $like->created_at = date('Y-m-d H:i:s');
+            if ($like->save()) {
+                $video->likes = (int) $video->likes + 1;
+                $video->save(false);
+                $isLiked = true;
+            } else {
+                return $this->errorResponse('SAVE_ERROR', 'Ошибка при сохранении лайка', $like->errors, 500);
+            }
+        }
+
+        return $this->successResponse([
+            'isLiked' => $isLiked,
+            'likes' => (int) $video->likes,
+        ]);
     }
 }

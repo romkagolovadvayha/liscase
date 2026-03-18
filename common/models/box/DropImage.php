@@ -248,4 +248,85 @@ class DropImage extends ActiveRecord
         
         return true;
     }
+
+    /**
+     * Уменьшает изображение по высоте (ширина пропорционально).
+     * Используется для постеров видео: poster_image_150 = 150px по высоте.
+     *
+     * @param string $sourcePath   путь к исходному файлу
+     * @param string $destinationPath путь к результату (PNG)
+     * @param int    $targetHeight целевая высота в пикселях
+     * @return bool
+     */
+    public static function resizeImageByHeight($sourcePath, $destinationPath, $targetHeight)
+    {
+        $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+        if ($extension === 'svg') {
+            return false;
+        }
+        if (!file_exists($sourcePath) || !is_readable($sourcePath)) {
+            \Yii::error('Source image file does not exist or is not readable: ' . $sourcePath, __METHOD__);
+            return false;
+        }
+        try {
+            $image = Image::getImagine()->open($sourcePath);
+        } catch (\Exception $e) {
+            \Yii::error('Failed to open image: ' . $sourcePath . ' - ' . $e->getMessage(), __METHOD__);
+            return false;
+        }
+        $size = $image->getSize();
+        $originalWidth = $size->getWidth();
+        $originalHeight = $size->getHeight();
+        if ($originalWidth <= 0 || $originalHeight <= 0) {
+            return false;
+        }
+        $ratio = min($targetHeight / $originalHeight, 1);
+        $newHeight = (int) round($originalHeight * $ratio);
+        $newWidth = (int) round($originalWidth * $ratio);
+        if ($newWidth <= 0 || $newHeight <= 0) {
+            return false;
+        }
+        $box = new \Imagine\Image\Box($newWidth, $newHeight);
+        try {
+            $resizedImage = $image->resize($box);
+        } catch (\Exception $e) {
+            \Yii::error('Failed to resize image by height: ' . $e->getMessage(), __METHOD__);
+            return false;
+        }
+        $destinationDir = dirname($destinationPath);
+        if ($destinationDir !== '.' && $destinationDir !== '/' && !file_exists($destinationDir)) {
+            @mkdir($destinationDir, 0777, true);
+        }
+        try {
+            $resizedImage->save($destinationPath, [
+                'format' => 'png',
+                'png_compression_level' => 9,
+                'flatten' => false,
+            ]);
+        } catch (\Exception $e) {
+            \Yii::error('Failed to save resized image: ' . $e->getMessage(), __METHOD__);
+            return false;
+        }
+        if ($targetHeight === 150) {
+            try {
+                if (method_exists('\Tinify\Tinify', 'setTimeout')) {
+                    \Tinify\Tinify::setTimeout(3);
+                }
+                \Tinify\setKey("dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8");
+                $source = \Tinify\fromFile($destinationPath);
+                $source->toFile($destinationPath);
+            } catch (\Tinify\Exception $e) {
+                try {
+                    \Tinify\setKey("SQMyJN0ZNs1zQfzrwBjMcsRHCnpffCbl");
+                    $source = \Tinify\fromFile($destinationPath);
+                    $source->toFile($destinationPath);
+                } catch (\Tinify\Exception $e2) {
+                    \Yii::info('Tinify skip for video poster 150: ' . $e2->getMessage(), __METHOD__);
+                }
+            } catch (\Exception $e) {
+                \Yii::info('Tinify error: ' . $e->getMessage(), __METHOD__);
+            }
+        }
+        return file_exists($destinationPath) && is_readable($destinationPath);
+    }
 }

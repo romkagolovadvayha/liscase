@@ -213,7 +213,10 @@ $config = [
                 'v1/custom-skins' => 'v1/custom-skins/index',
 
                 // User Videos (Медиа)
+                'v1/user-videos/streamers' => 'v1/user-video/streamers',
                 'v1/user-videos/create' => 'v1/user-video/create',
+                'v1/user-videos/<id:\d+>/like' => 'v1/user-video/like',
+                'v1/user-videos/<id:\d+>/likes' => 'v1/user-video/likes',
                 'v1/user-videos' => 'v1/user-video/index',
 
                 // GameStores API (для плагина GameStoresRUST)
