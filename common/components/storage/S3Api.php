@@ -62,6 +62,9 @@ class S3Api
         return (string) $s3->createPresignedRequest($command, '+15 minutes')->getUri();
     }
 
+    /** Кэш по умолчанию для загружаемых файлов: 30 дней */
+    const DEFAULT_CACHE_MAX_AGE = 2592000; // 30 * 24 * 60 * 60
+
     /**
      * @param $body
      *
@@ -90,6 +93,8 @@ class S3Api
         $createMultipartUpload = $s3->createMultipartUpload([
                                                                 'Bucket' => $uid,
                                                                 'Key' => $fileName,
+                                                                'CacheControl' => 'public, max-age=' . self::DEFAULT_CACHE_MAX_AGE,
+                                                                'ContentDisposition' => 'inline',
                                                             ]);
 
         $uploadId = $createMultipartUpload->get('UploadId');
@@ -202,6 +207,8 @@ class S3Api
                 'Bucket' => $uid,
                 'Key' => $fileName,
                 'Body' => $fileContent,
+                'CacheControl' => 'public, max-age=' . self::DEFAULT_CACHE_MAX_AGE,
+                'ContentDisposition' => 'inline',
             ];
 
             if ($contentType) {
