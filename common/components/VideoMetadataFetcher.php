@@ -102,14 +102,14 @@ class VideoMetadataFetcher
     protected static function fetchTikTok(string $url): array
     {
         $oembedUrl = 'https://www.tiktok.com/oembed?url=' . rawurlencode($url);
-        $json = self::httpGet($oembedUrl, 15, self::getTikTokUserAgent());
+        $json = self::httpGetTikTok($oembedUrl);
         $fallbackName = self::getTikTokFallbackName($url);
         self::logTikTokToTelegram($url, $oembedUrl, $json);
         if ($json === null) {
             return self::tiktokMetaFallback($fallbackName);
         }
         $data = json_decode($json, true);
-        if (!is_array($data)) {
+        if (!is_array($data) || isset($data['code']) || empty($data['title'])) {
             return self::tiktokMetaFallback($fallbackName);
         }
         $title = trim((string) ($data['title'] ?? ''));
@@ -169,6 +169,36 @@ class VideoMetadataFetcher
     private static function getTikTokUserAgent(): string
     {
         return 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+    }
+
+    /**
+     * Запрос TikTok oembed с полным набором браузерных заголовков (TikTok отдаёт 400 без них).
+     */
+    private static function httpGetTikTok(string $url): ?string
+    {
+        $ua = self::getTikTokUserAgent();
+        $headers = [
+            'User-Agent: ' . $ua,
+            'Accept: application/json, text/plain, */*',
+            'Accept-Language: en-US,en;q=0.9',
+            'Referer: https://www.tiktok.com/',
+            'Origin: https://www.tiktok.com',
+            'Sec-Fetch-Dest: empty',
+            'Sec-Fetch-Mode: cors',
+            'Sec-Fetch-Site: same-origin',
+            'Sec-Ch-Ua: "Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+            'Sec-Ch-Ua-Mobile: ?0',
+            'Sec-Ch-Ua-Platform: "Windows"',
+        ];
+        $ctx = stream_context_create([
+            'http' => [
+                'timeout' => 15,
+                'ignore_errors' => true,
+                'header' => implode("\r\n", $headers) . "\r\n",
+            ],
+        ]);
+        $raw = @file_get_contents($url, false, $ctx);
+        return is_string($raw) ? $raw : null;
     }
 
     private static function httpGet(string $url, int $timeout = 10, ?string $userAgent = null): ?string

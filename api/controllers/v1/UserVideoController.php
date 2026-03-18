@@ -167,6 +167,7 @@ class UserVideoController extends BaseApiController
         ];
         if ($v->user) {
             $row['username'] = $v->user->username;
+            $row['avatar'] = $v->user->getAvatar();
         }
         return $row;
     }
