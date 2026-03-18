@@ -8,6 +8,7 @@ use common\models\building\Building;
 use common\models\rcon\RconTasks;
 use common\models\serverskin\ServerSkin;
 use common\models\user\User;
+use common\models\video\UserVideo;
 use Yii;
 use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
@@ -283,6 +284,68 @@ class Chats extends ActiveRecord
                                                            'action'   => 'success-skin',
                                                            'skin_id'  => $skinId,
                                                        ])
+                    ],
+                ],
+            ];
+        }
+        return '⛔ Произошла ошибка';
+    }
+
+    public static function actionSuccessVideo($buttonValueObj)
+    {
+        $videoId = ArrayHelper::getValue($buttonValueObj, 'video_id');
+        $model = UserVideo::findOne($videoId);
+        if (!$model) {
+            return '⛔ Видео не найдено';
+        }
+        if ($model->status === UserVideo::STATUS_ACTIVE) {
+            return '⛔ Видео уже одобрено!';
+        }
+        $model->status = UserVideo::STATUS_ACTIVE;
+        if ($model->save(false)) {
+            if ($model->user && !empty($model->user->telegram_chat_id)) {
+                Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '🎬 Ваше видео успешно прошло модерацию и опубликовано!');
+            }
+            return [
+                'editMessageReplyMarkup' => true,
+                'buttons' => [
+                    [
+                        'text' => '🔴 Отклонить',
+                        'callback_data' => json_encode([
+                            'action' => 'reject-video',
+                            'video_id' => $videoId,
+                        ]),
+                    ],
+                ],
+            ];
+        }
+        return '⛔ Произошла ошибка';
+    }
+
+    public static function actionRejectVideo($buttonValueObj)
+    {
+        $videoId = ArrayHelper::getValue($buttonValueObj, 'video_id');
+        $model = UserVideo::findOne($videoId);
+        if (!$model) {
+            return '⛔ Видео не найдено';
+        }
+        if ($model->status === UserVideo::STATUS_REJECT) {
+            return '⛔ Видео уже отклонено!';
+        }
+        $model->status = UserVideo::STATUS_REJECT;
+        if ($model->save(false)) {
+            if ($model->user && !empty($model->user->telegram_chat_id)) {
+                Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '🎬 Ваше видео не прошло модерацию.');
+            }
+            return [
+                'editMessageReplyMarkup' => true,
+                'buttons' => [
+                    [
+                        'text' => '🟢 Принять',
+                        'callback_data' => json_encode([
+                            'action' => 'success-video',
+                            'video_id' => $videoId,
+                        ]),
                     ],
                 ],
             ];

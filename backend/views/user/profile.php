@@ -232,6 +232,7 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
             'ban_notify' => Yii::t('common', 'Уведомления о бане'),
             'store' => Yii::t('common', 'Доступ к магазину на без донатном сервере?'),
             'is_stats' => Yii::t('common', 'Показывать в статистике?'),
+            'is_blogger' => Yii::t('common', 'Блогер'),
             'blocked_support' => Yii::t('common', 'Блок поддержки'),
         ];
         $boolAttrs = \backend\controllers\UserController::getUserBoolAttributes();

@@ -105,6 +105,7 @@ class UserController extends CrudController
             'ban_notify',
             'store',
             'is_stats',
+            'is_blogger',
             'blocked_support',
         ];
     }

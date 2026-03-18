@@ -484,6 +484,12 @@ class PersonalBotSystem extends AbstractSystem
                     if (!empty($action) && $action == 'reject-skin') {
                       return Chats::actionRejectSkin($buttonValueObj);
                     }
+                    if (!empty($action) && $action == 'success-video') {
+                      return Chats::actionSuccessVideo($buttonValueObj);
+                    }
+                    if (!empty($action) && $action == 'reject-video') {
+                      return Chats::actionRejectVideo($buttonValueObj);
+                    }
                     if (!empty($action) && $action == 'success-building') {
                       return Chats::actionSuccessBuilding($buttonValueObj);
                     }

@@ -130,8 +130,6 @@ class KickController extends Controller
             ];
         }
 
-        $this->sendKickDebugToTelegram('Kick GET /public/v1/users', $userResponse, $httpCode ?? 0);
-
         $data = json_decode($userResponse, true);
         if (!is_array($data)) {
             Yii::error("Kick API user invalid JSON: {$userResponse}", __METHOD__);
@@ -163,7 +161,6 @@ class KickController extends Controller
             }
         }
         $kickLink = !empty($kickSlug) ? 'https://kick.com/' . $kickSlug : 'https://kick.com/channel/' . $kickId;
-        $this->sendKickDebugToTelegram('Kick parsed', "kickId={$kickId} kickSlug=" . ($kickSlug ?? 'null') . " kick_link={$kickLink}", 0);
         if (empty($kickId)) {
             Yii::error("Kick API user response missing id. Response: {$userResponse}", __METHOD__);
             return [
@@ -171,9 +168,6 @@ class KickController extends Controller
                 'error' => 'no_user_id',
                 'message' => 'ID пользователя Kick не получен',
             ];
-        }
-        if (empty($kickSlug)) {
-            Yii::info("Kick API /users response (slug empty), trying channel endpoint. Response: {$userResponse}", __METHOD__);
         }
 
         if (!empty($userId)) {
@@ -236,9 +230,6 @@ class KickController extends Controller
                 break;
             }
         }
-        if (isset(Yii::$app->telegramChats)) {
-            $this->sendKickDebugToTelegram('Kick GET /public/v1/channels?broadcaster_user_id=' . $broadcasterUserId, $body, $httpCode);
-        }
         if (empty($body) || $httpCode !== 200) {
             Yii::info("Kick channels by broadcaster_user_id: HTTP {$httpCode}, url={$url}", __METHOD__);
             return null;
@@ -254,23 +245,5 @@ class KickController extends Controller
             return $slug;
         }
         return null;
-    }
-
-    /**
-     * Отправка ответа Kick API в telegramChats для отладки (структура ответа, slug).
-     */
-    private function sendKickDebugToTelegram(string $label, string $body, int $httpCode = 0): void
-    {
-        if (!isset(Yii::$app->telegramChats)) {
-            return;
-        }
-        $maxLen = 3800;
-        $suffix = strlen($body) > $maxLen ? "\n...truncated" : '';
-        $text = "[Kick debug] {$label}\nHTTP: {$httpCode}\n" . substr($body, 0, $maxLen) . $suffix;
-        try {
-            Yii::$app->telegramChats->sendMessage($text);
-        } catch (\Throwable $e) {
-            Yii::warning('Kick debug telegram: ' . $e->getMessage(), __METHOD__);
-        }
     }
 }

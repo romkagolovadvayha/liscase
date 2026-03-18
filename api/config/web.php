@@ -212,6 +212,10 @@ $config = [
                 'v1/custom-skins/<id:\d+>/like' => 'v1/custom-skins/like',
                 'v1/custom-skins' => 'v1/custom-skins/index',
 
+                // User Videos (Медиа)
+                'v1/user-videos/create' => 'v1/user-video/create',
+                'v1/user-videos' => 'v1/user-video/index',
+
                 // GameStores API (для плагина GameStoresRUST)
                 // Отдельный роутинг для store.pluginInfo (с точкой)
                 'v1/game-stores/<method:[\w\.-]+>' => 'v1/game-stores/index',

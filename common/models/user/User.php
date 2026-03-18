@@ -70,6 +70,7 @@ use yii\web\JsExpression;
  * @property bool            $ban_notify
  * @property bool            $store
  * @property bool            $is_stats
+ * @property bool            $is_blogger
  * @property string          $blocked_support_at
  * @property bool            $blocked_support
  * @property string          $stat_status
@@ -207,6 +208,7 @@ class User extends ActiveRecord implements IdentityInterface
             'ban_by'          => Yii::t('common', 'Кем забанен'),
             'store'          => Yii::t('common', 'Доступ к магазину на без донатном сервере?'),
             'is_stats'          => Yii::t('common', 'Показывать в статистике?'),
+            'is_blogger'        => Yii::t('common', 'Блогер'),
             'ip'          => Yii::t('common', 'IP игрока'),
             'ping'          => Yii::t('common', 'Ping игрока'),
             'promocode'          => Yii::t('common', 'Промокод'),
@@ -218,7 +220,7 @@ class User extends ActiveRecord implements IdentityInterface
     {
         return [
             [['email', 'password_hash', 'auth_key', 'ref_code', 'socket_room', 'status'], 'required'],
-            [['status', 'auto', 'steam_id', 'store', 'is_stats', 'avatar_frame'], 'integer'],
+            [['status', 'auto', 'steam_id', 'store', 'is_stats', 'is_blogger', 'avatar_frame'], 'integer'],
             [['ref_code'], 'number'],
             [['email', 'password_hash', 'stat_status'], 'string', 'max' => 255],
             [['promocode'], 'string', 'max' => 120, 'min' => 5],

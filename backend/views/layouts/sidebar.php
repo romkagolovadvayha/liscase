@@ -14,6 +14,9 @@ $buildingBadge = \common\models\building\Building::find()
 $skinsBadge = \common\models\serverskin\ServerSkin::find()
     ->andWhere(['status' => \common\models\serverskin\ServerSkin::STATUS_WAIT])
     ->count();
+$videosBadge = \common\models\video\UserVideo::find()
+    ->andWhere(['status' => \common\models\video\UserVideo::STATUS_WAIT])
+    ->count();
 $radioBadge = \common\models\radio\RadioTrack::find()
     ->andWhere(['status' => \common\models\radio\RadioTrack::STATUS_WAIT])
     ->count();
@@ -115,6 +118,13 @@ if ($moder) {
         'url' => ['/server-skin/index'],
         'visibility' => Yii::$app->settings->get('section_skins'),
         'active' => _checkActive('/server-skin'),
+    ];
+    $moderationItems[] = [
+        'label' => Yii::t('common', 'Видео'),
+        'icon' => 'fa-solid fa-video',
+        'badgeDanger' => $videosBadge,
+        'url' => ['/video/index'],
+        'active' => _checkActive('/video'),
     ];
     $moderationItems[] = [
         'label' => Yii::t('common', 'Предметы'),

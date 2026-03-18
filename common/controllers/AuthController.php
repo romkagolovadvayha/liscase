@@ -577,9 +577,10 @@ class AuthController extends WebController
         }
         $kickId = isset($kickUser['id']) ? (string)$kickUser['id'] : (isset($kickUser['user_id']) ? (string)$kickUser['user_id'] : (isset($data['id']) ? (string)$data['id'] : null));
         $channel = $kickUser['channel'] ?? $data['channel'] ?? null;
-        $kickSlug = $kickUser['slug'] ?? $kickUser['username'] ?? $kickUser['login']
+        // В ответе /users slug приходит в поле name: {"data":[{"user_id":...,"name":"romkadvayha",...}]}
+        $kickSlug = $kickUser['slug'] ?? $kickUser['name'] ?? $kickUser['username'] ?? $kickUser['login']
             ?? (is_array($channel) ? ($channel['slug'] ?? $channel['username'] ?? $channel['user_name'] ?? null) : null)
-            ?? $data['slug'] ?? $data['username'] ?? null;
+            ?? $data['slug'] ?? $data['name'] ?? $data['username'] ?? null;
         if (empty($kickId)) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'ID пользователя Kick не получен.'));
             return $this->redirect(['/user/profile']);
