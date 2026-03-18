@@ -63,7 +63,22 @@ class SettingsCacheHelper
 
     public static function cacheKey(array $categories): string
     {
+        sort($categories);
         return 'api_settings_' . md5(implode(',', $categories));
+    }
+
+    /**
+     * Очистить кэш API настроек (вызывать при сохранении настроек в backend).
+     * Удаляет ключи для полного набора категорий и для каждой категории по отдельности.
+     */
+    public static function clearApiSettingsCache(): void
+    {
+        $cache = Yii::$app->cache;
+        $categories = self::DEFAULT_CATEGORIES;
+        $cache->delete(self::cacheKey($categories));
+        foreach ($categories as $category) {
+            $cache->delete(self::cacheKey([$category]));
+        }
     }
 
     public static function isSecretKey(string $key): bool
