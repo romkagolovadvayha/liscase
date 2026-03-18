@@ -572,8 +572,14 @@ class AuthController extends WebController
         }
         $data = json_decode($userResponse, true);
         $kickUser = isset($data['data']) ? $data['data'] : $data;
-        $kickId = isset($kickUser['id']) ? (string)$kickUser['id'] : (isset($data['id']) ? (string)$data['id'] : null);
-        $kickSlug = $kickUser['slug'] ?? $kickUser['username'] ?? $kickUser['login'] ?? $data['slug'] ?? $data['username'] ?? null;
+        if (isset($kickUser[0]) && is_array($kickUser[0])) {
+            $kickUser = $kickUser[0];
+        }
+        $kickId = isset($kickUser['id']) ? (string)$kickUser['id'] : (isset($kickUser['user_id']) ? (string)$kickUser['user_id'] : (isset($data['id']) ? (string)$data['id'] : null));
+        $channel = $kickUser['channel'] ?? $data['channel'] ?? null;
+        $kickSlug = $kickUser['slug'] ?? $kickUser['username'] ?? $kickUser['login']
+            ?? (is_array($channel) ? ($channel['slug'] ?? $channel['username'] ?? $channel['user_name'] ?? null) : null)
+            ?? $data['slug'] ?? $data['username'] ?? null;
         if (empty($kickId)) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'ID пользователя Kick не получен.'));
             return $this->redirect(['/user/profile']);
@@ -585,7 +591,7 @@ class AuthController extends WebController
         if ($user) {
             $user->kick_id = $kickId;
             if ($user->save(false)) {
-                if (!empty($user->userProfile)) {
+                if (!empty($user->userProfile) && $user->userProfile->hasAttribute('kick_link')) {
                     $user->userProfile->kick_link = !empty($kickSlug)
                         ? 'https://kick.com/' . $kickSlug
                         : 'https://kick.com/channel/' . $kickId;
