@@ -108,11 +108,16 @@ class VideoPosterUploader
 
     private static function downloadImage(string $url): ?string
     {
+        $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+        $headers = "User-Agent: {$ua}\r\n";
+        if (stripos($url, 'tiktok') !== false) {
+            $headers .= "Referer: https://www.tiktok.com/\r\n";
+        }
         $ctx = stream_context_create([
             'http' => [
                 'timeout' => 15,
                 'ignore_errors' => true,
-                'header' => "User-Agent: Mozilla/5.0 (compatible; Bot/1.0)\r\n",
+                'header' => $headers,
             ],
         ]);
         $raw = @file_get_contents($url, false, $ctx);

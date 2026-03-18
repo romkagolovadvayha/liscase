@@ -218,9 +218,14 @@ class UserVideoController extends BaseApiController
             $meta['poster_image_400'] = $posterUrls['poster_image_400'];
         }
 
+        $videoName = trim((string) ($meta['name'] ?? ''));
+        if ($videoName === '' && isset($meta['type']) && $meta['type'] === UserVideo::TYPE_TIKTOK) {
+            $videoName = preg_match('#tiktok\.com/@([^/]+)/video/#i', $videoLink, $m) ? 'TikTok @' . $m[1] : 'TikTok video';
+        }
+
         $model = new UserVideo();
         $model->user_id = $user->id;
-        $model->name = $meta['name'];
+        $model->name = $videoName !== '' ? $videoName : $meta['name'];
         $model->type = ($meta['type'] === UserVideo::TYPE_YOUTUBE && preg_match('#youtube\.com/shorts/#i', $rawLink))
             ? UserVideo::TYPE_SHORTS
             : $meta['type'];
